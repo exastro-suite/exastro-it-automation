@@ -1502,6 +1502,10 @@ setTableEvents() {
             tb.modalFlag = true;
             let file = tb.getFileData( fileId, rest, type );
 
+            const option = {
+                endPoint: `/menu/${tb.params.menuNameRest}/${id}/${rest}/file/`
+            };
+
             // ファイルモード
             if ( tb.option.fileFlag === false && fileName !== '' && file === undefined ) {
                 const restType = $a.attr('data-restType');
@@ -1511,9 +1515,7 @@ setTableEvents() {
                     endPoint += `journal/${journalId}/`;
                 }
                 try {
-                    const binary = await fn.getFile( endPoint );
-                    const binaryString = String.fromCharCode( ...binary );
-                    file = btoa(binaryString);
+                    file = await fn.getFile( option.endPoint, 'GET', null, { base64: true } );
                 } catch ( e ) {
                     console.error( e );
                     alert( getMessage.FTE00179 );
@@ -1780,9 +1782,7 @@ setTableEvents() {
             // ファイルが空、かつ編集可能の場合はファイルを取得する
             if ( tb.option.fileFlag === false && fileName !== '' && file === undefined && ( fileType === 'text' || fileType === 'image') ) {
                 try {
-                    const binary = await fn.getFile( option.endPoint );
-                    const binaryString = String.fromCharCode( ...binary );
-                    file = btoa( binaryString );
+                    file = await fn.getFile( option.endPoint, 'GET', null, { base64: true } );
                 } catch ( e ) {
                     console.error( e );
                     alert( getMessage.FTE00179 );

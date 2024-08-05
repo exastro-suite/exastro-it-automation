@@ -726,17 +726,30 @@ getFile: function( endPoint, method = 'GET', data, option = {} ) {
                     position += chunk.length;
                 }
 
+                let fileData;
+                if ( option.base64 = true ) {
+                    // BASE64に変換する
+                    const maxLength = 1024;
+                    let binaryString = '';
+                    for ( let i = 0; i < chunksAll.length; i += maxLength ){
+                        binaryString += String.fromCharCode( ...chunksAll.slice( i, i + maxLength ) );
+                    }
+                    fileData = btoa( binaryString );
+                } else {
+                    fileData = chunksAll;
+                }
+
                 // バーのtransition-duration: .2s;分ずらす
                 setTimeout(function(){
                     progressModal.close();
                     progressModal = null;
                     if ( option.fileName ) {
                         resolve({
-                            file: chunksAll,
+                            file: fileData,
                             fileName: fileName
                          });
                     } else {
-                        resolve( chunksAll );
+                        resolve( fileData );
                     }
                 }, 200 );
             } else {
@@ -4186,11 +4199,12 @@ fileEditor: function( fileData, fileName, mode = 'edit', option = {} ) {
         };
 
         let modal = new Dialog( config, funcs );
+        modal.open();
 
         if ( fileType === 'text') {
             if ( fileData === null ) fileData = '';
             cmn.fileOrBase64ToText( fileData ).then(function( text ){
-                modal.open( modalHtmlSelect() );
+                modal.setBody( modalHtmlSelect() );
                 if ( mode === 'edit') {
                     modal.$.dbody.find('.editorFileName').val( fileName );
                 }
@@ -4310,7 +4324,7 @@ fileEditor: function( fileData, fileName, mode = 'edit', option = {} ) {
                     cmn.download('base64', base64, fileName );
                 };
 
-                modal.open( modalHtmlSelect() );
+                modal.setBody( modalHtmlSelect() );
                 if ( mode === 'edit') {
                     modal.$.dbody.find('.editorFileName').val( fileName );
 
@@ -4358,7 +4372,7 @@ fileEditor: function( fileData, fileName, mode = 'edit', option = {} ) {
                 }
             };
 
-            modal.open( modalHtmlSelect() );
+            modal.setBody( modalHtmlSelect() );
             if ( mode === 'edit') {
                 modal.$.dbody.find('.editorFileName').val( fileName );
 

@@ -85,6 +85,41 @@ services:
     networks:
       - exastro
 
+  ita-api-ansible-execution-receiver:
+    user: 1000:1000
+    build:
+      dockerfile: ./ita_root/ita_api_ansible_execution_receiver/Dockerfile
+      context: ../.
+      args:
+        - HTTP_PROXY=${HTTP_PROXY}
+        - http_proxy=${HTTP_PROXY}
+        - HTTPS_PROXY=${HTTPS_PROXY}
+        - https_proxy=${HTTPS_PROXY}
+    environment:
+      - TZ=Asia/Tokyo
+      - LISTEN_PORT=8000
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
+      - DEFAULT_LANGUAGE=ja
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_ADMIN_USER=${DB_ADMIN_USER}
+      - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
+      - MONGO_OPTION_SSL=${MONGO_OPTION_SSL:-FALSE}
+      - MONGO_SCHEME=${MONGO_SCHEME:-mongodb}
+      - MONGO_HOST=${MONGO_HOST-ita-mongodb}
+      - MONGO_PORT=${MONGO_PORT:-27017}
+      - PLATFORM_API_HOST=platform-api
+      - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
+    profiles:
+      - ita-ansible-execution
+
   ita-api-oase-receiver:
     user: 1000:1000
     build:

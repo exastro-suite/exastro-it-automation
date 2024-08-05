@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "ita-ag-ansible"
+version = "0.1.0"
+description = ""
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+
+
+[tool.poetry.group.first_install.dependencies]
+certifi = ">=0.0.0"
+
+
+[tool.poetry.group.develop_build.dependencies]
+debugpy = ">=0.0.0"
+flake8 = ">=0.0.0"
+autopep8 = ">=0.0.0"
+requests = ">=0.0.0"
+flask = "^2.3.3"
+connexion = ">=0.0.0"
+python-dotenv = ">=0.0.0"
+ansible-builder = ">=3.0.0"
+ansible-runner = ">=2.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

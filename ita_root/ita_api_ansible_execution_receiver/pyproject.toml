@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "ita-api-ansible-receiver"
+version = "0.1.0"
+description = ""
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+
+
+[tool.poetry.group.first_install.dependencies]
+certifi = ">=0.0.0"
+
+
+[tool.poetry.group.develop_build.dependencies]
+python-dotenv = ">=0.0.0"
+connexion = ">=0.0.0"
+flask = "^2.3.3"
+requests = ">=0.0.0"
+autopep8 = ">=0.0.0"
+debugpy = ">=0.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

@@ -1,0 +1,43 @@
+#   Copyright 2023 NEC Corporation
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+version: '3.7'
+services:
+  ita-ag-ansible-execution:
+    user: 1000:1000
+    build:
+      dockerfile: ./ita_root/ita_ag_ansible_execution/Dockerfile
+      context: ../.
+      args:
+        - HTTP_PROXY=${HTTP_PROXY}
+        - http_proxy=${HTTP_PROXY}
+        - HTTPS_PROXY=${HTTPS_PROXY}
+        - https_proxy=${HTTPS_PROXY}
+    environment:
+      - TZ=Asia/Tokyo
+      - DEFAULT_LANGUAGE=en
+      - AGENT_NAME=${AG_ANSIBLE_AGENT_NAME}
+      - EXASTRO_ORGANIZATION_ID=${AG_ANSIBLE_EXASTRO_ORGANIZATION_ID}
+      - EXASTRO_WORKSPACE_ID=${AG_ANSIBLE_EXASTRO_WORKSPACE_ID}
+      - EXASTRO_USERNAME=${AG_ANSIBLE_EXASTRO_USERNAME}
+      - EXASTRO_PASSWORD=${AG_ANSIBLE_EXASTRO_PASSWORD}
+      - EXECUTE_INTERVAL=${AG_ANSIBLE_EXECUTE_INTERVAL}
+      - EXASTRO_URL=${AG_ANSIBLE_EXASTRO_URL}
+      - LOG_LEVEL=${AG_ANSIBLE_LOG_LEVEL:-INFO}
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
+    profiles:
+      - ita-ag-ansible-execution
+

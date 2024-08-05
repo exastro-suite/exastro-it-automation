@@ -36,6 +36,7 @@ def unexecuted_instance(objdbca, organization_id, workspace_id):
     t_ansp_exec_sts_inst = "T_ANSP_EXEC_STS_INST"
     t_ansr_exec_sts_inst = "T_ANSR_EXEC_STS_INST"
     t_ansc_execdev = "T_ANSC_EXECDEV"
+    t_ansc_info = "T_ANSC_IF_INFO"
 
     # 各Driverパス
     legacy_dir_path = "/driver/ansible/legacy"
@@ -175,12 +176,18 @@ def unexecuted_instance(objdbca, organization_id, workspace_id):
         password = record['PASSWORD']
         password = ky_decrypt(password)
 
+    # 実行時データ削除フラグ取得
+    ret = objdbca.table_select(t_ansc_info, 'WHERE  DISUSE_FLAG=%s' ['0'])
+    for record in ret:
+        anstwr_del_runtime_data = record['ANSTWR_DEL_RUNTIME_DATA']
+
     result = {"legacy": tmp_legacy_result,
             "pioneer": tmp_pioneer_result,
             "legacy_role": tmp_role_result,
             "build_type": build_type,
             "user_name": user_name,
-            "password": password}
+            "password": password,
+            "anstwr_del_runtime_data": anstwr_del_runtime_data}
 
     objdbca.db_commit()
 

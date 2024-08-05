@@ -1509,10 +1509,9 @@ setTableEvents() {
             // ファイルモード
             if ( tb.option.fileFlag === false && fileName !== '' && file === undefined ) {
                 const restType = $a.attr('data-restType');
-                let endPoint = `/menu/${tb.params.menuNameRest}/${id}/${rest}/file/`;
                 if ( restType === 'history' && tb.mode === 'history') {
                     const journalId = $a.attr('data-journalId');
-                    endPoint += `journal/${journalId}/`;
+                    option.endPoint += `journal/${journalId}/`;
                 }
                 try {
                     file = await fn.getFile( option.endPoint, 'GET', null, { base64: true } );
@@ -1522,13 +1521,13 @@ setTableEvents() {
                     file = '';
                 }
 
-                fn.fileEditor( file, fileName, 'preview').then(function(){
+                fn.fileEditor( file, fileName, 'preview', option ).then(function(){
                     $button.prop('disabled', false );
                     tb.modalFlag = false;
                 });
             } else {
                 if ( !file ) file = '';
-                fn.fileEditor( file, fileName, 'preview').then(function(){
+                fn.fileEditor( file, fileName, 'preview', option ).then(function(){
                     $button.prop('disabled', false );
                     tb.modalFlag = false;
                 });

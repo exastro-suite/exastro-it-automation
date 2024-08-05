@@ -67,7 +67,7 @@ class APIClientCommon:
         if no_proxy_large.find(noproxy_host) > -1 or \
            no_proxy_small.find(noproxy_host) > -1:
             # 環境変数NO_PROXYに、接続先のドメインが存在していた場合、
-            # プロキシ軽油だと、Authorizationヘッダーがプロキシで破棄され、接続出来なくな
+            # プロキシ経由だと、Authorizationヘッダーがプロキシで破棄され、接続出来なくなる
             self.verify = False
         elif self.url.find("https") > -1:
             # 接続先のプロトコルが、HTTSの場合
@@ -201,7 +201,6 @@ class APIClientCommon:
             # 値がリスト形式かチェック
             if isinstance(respons_key_json, list) is False:
                 # respons_key_jsonが配列以外の場合
-                g.applogger.info(g.appmsg.get_log_message("AGT-10003", [self.respons_key, self.event_collection_settings_id]))
                 self.setEventIDforEvent(result_json, now_time)
                 return False, result_json
 
@@ -248,7 +247,6 @@ class APIClientCommon:
             # イベントIDキーが取得できない場合
             g.applogger.info(g.appmsg.get_log_message("AGT-10030", [self.event_id_key, self.event_collection_settings_id]))
             return False, event_json
-
         else:
             # 過去のイベントidに存在していない場合
             event_id = str(event_id)

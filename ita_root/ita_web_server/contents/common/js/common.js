@@ -727,7 +727,7 @@ getFile: function( endPoint, method = 'GET', data, option = {} ) {
                 }
 
                 let fileData;
-                if ( option.base64 = true ) {
+                if ( option.base64 === true ) {
                     // BASE64に変換する
                     const maxLength = 1024;
                     let binaryString = '';

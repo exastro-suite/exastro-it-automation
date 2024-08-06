@@ -404,7 +404,7 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
             os.remove(workspace_path + '/tmp/driver/import_menu/skip_all_service')
 
 
-def _dp_preparation(objdbca, workspace_id, menu_name_rest_list, execution_no_path, imported_table_list, dp_mode):
+def _dp_preparation(objdbca, workspace_id, menu_name_rest_list, execution_no_path, imported_table_list, dp_mode, file_put_flg=True):
     tmp_msg = '_dp_preparation START: '
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
@@ -417,14 +417,22 @@ def _dp_preparation(objdbca, workspace_id, menu_name_rest_list, execution_no_pat
             # トランザクション開始
             debug_msg = g.appmsg.get_log_message("BKY-20004", [])
             g.applogger.info(debug_msg)
+            db_reconnention(objdbca, True) if objdbca else None
             objdbca.db_transaction_start()
 
-            _basic_table_preparation(objdbca, workspace_id, menu_name_rest_list, _menu_name, execution_no_path, imported_table_list, dp_mode)
+            objmenu, file_path_info = _basic_table_preparation(objdbca, workspace_id, menu_name_rest_list, _menu_name, execution_no_path, imported_table_list, dp_mode)
 
             # コミット/トランザクション終了
             debug_msg = g.appmsg.get_log_message("BKY-20005", [])
             g.applogger.info(debug_msg)
             objdbca.db_transaction_end(True)
+
+            # ファイル配置
+            if file_put_flg:
+                if _menu_name + '_JNL' in file_path_info:
+                    _bulk_register_file(objdbca, objmenu, execution_no_path, _menu_name + '_JNL', file_path_info)
+                if _menu_name in file_path_info:
+                    _bulk_register_file(objdbca, objmenu, execution_no_path, _menu_name, file_path_info)
 
             g.applogger.info(f"Target Menu: {_menu_name} END")
 
@@ -442,6 +450,7 @@ def _basic_table_preparation(objdbca, workspace_id, menu_name_rest_list, menu_na
 
     menu_id, table_name, history_table_flag = _menu_data_file_read(menu_name_rest, 'menu_id', execution_no_path)
 
+    file_info_list = {}
     if history_table_flag == '1':
         if dp_mode == '1':
             rpt.set_time(f"{menu_name_rest}: delete table jnl")
@@ -450,7 +459,7 @@ def _basic_table_preparation(objdbca, workspace_id, menu_name_rest_list, menu_na
             objdbca.sql_execute(delete_jnl_sql, [])
         imported_table_list.append(table_name + '_JNL')
         rpt.set_time(f"{menu_name_rest}: register data jnl")
-        _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_rest + '_JNL', menu_id, table_name + "_JNL", dp_mode)
+        objmenu, file_info_list[menu_name_rest + '_JNL' ] = _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_rest + '_JNL', menu_id, table_name + "_JNL", dp_mode)
         rpt.set_time(f"{menu_name_rest}: register data jnl")
 
     if dp_mode == '1':
@@ -460,13 +469,15 @@ def _basic_table_preparation(objdbca, workspace_id, menu_name_rest_list, menu_na
         rpt.set_time(f"{menu_name_rest}: delete table")
     imported_table_list.append(table_name)
     rpt.set_time(f"{menu_name_rest}: register data")
-    _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name, dp_mode)
+    objmenu, file_info_list[menu_name_rest] = _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name, dp_mode)
     rpt.set_time(f"{menu_name_rest}: register data")
 
     menu_name_rest_list.remove(menu_name_rest)
 
     tmp_msg = '_basic_table_preparation END: '
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
+    return objmenu, file_info_list
 
 
 def _update_t_menu_export_import(objdbca, execution_no, status, user_language="en", execute_log=None, msg=None, trace_msg=None):
@@ -596,9 +607,6 @@ def _register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_
 
     for json_record in json_sql_data:
         file_param = json_record['file']
-        for k, v in file_param.items():
-            if isinstance(v, str):
-                v = v.encode()
         param = json_record['parameter']
 
         # 移行先に主キーの重複データが既に存在するか確認
@@ -944,9 +952,21 @@ def _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_
         sql_data = file_open_read_close(execution_no_path + '/' + data_file_name)
         json_sql_data = json.loads(sql_data)
         g.applogger.debug(addline_msg('{}'.format(f"{menu_name_rest}, {table_name}, {len(json_sql_data)}")))  # noqa: F405
-        if len(json_sql_data) == 0:
-            g.applogger.info(f"{menu_name_rest}: recode 0.")
-            return objmenu, file_info_list
+
+        # _DATAファイルの追加
+        _json_sql_data = []
+        if os.path.isfile(execution_no_path + '/' + menu_name_rest) is True:
+            # DATAファイル読み込み
+            sql_data = file_open_read_close(execution_no_path + '/' + menu_name_rest)
+            _json_sql_data = json.loads(sql_data)
+            g.applogger.debug(addline_msg('{}'.format(f"{menu_name_rest}, {table_name}, {len(_json_sql_data)}")))  # noqa: F405
+        if len(_json_sql_data) != 0:
+            ret_t_comn_menu_column_link = objdbca.table_select(t_comn_menu_column_link, 'WHERE MENU_ID = %s AND COL_NAME = %s', [menu_id, pk])  # noqa: E501
+            pk_name = ret_t_comn_menu_column_link[0].get('COLUMN_NAME_REST') if len(ret_t_comn_menu_column_link) != 0 \
+                else None
+            if pk_name:
+                _id_list =  [jsd["parameter"].get(pk_name) for jsd in json_sql_data if "parameter" in jsd]
+                [json_sql_data.append(_jsd) for _jsd in _json_sql_data if "parameter" in _jsd and _jsd["parameter"][pk_name] not in _id_list]
     else:
         # DATAファイル確認
         if os.path.isfile(execution_no_path + '/' + menu_name_rest) is False:
@@ -973,11 +993,6 @@ def _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_
     ret_pass_column = objdbca.table_select(t_comn_menu_column_link, 'WHERE MENU_ID = %s AND COLUMN_CLASS IN %s', [menu_id, pass_column])  # noqa: E501
     pass_column_list = [record['COLUMN_NAME_REST'] for record in ret_pass_column] if len(ret_pass_column) != 0 else []
 
-    # ファイルアップロード系カラムを取得する
-    file_column = ["9", "20"]  # [FileUploadColumn, FileUploadEncryptColumn]
-    file_column_list = []
-    ret_file_column = objdbca.table_select(t_comn_menu_column_link, 'WHERE MENU_ID = %s AND COLUMN_CLASS IN %s AND DISUSE_FLAG = %s', [menu_id, file_column, 0])  # noqa: E501
-    file_column_list = [record['COLUMN_NAME_REST'] for record in ret_file_column] if len(ret_file_column) != 0 else []
 
     # 環境移行、パラメータシートの場合
     if dp_mode == '1' and table_name.startswith('T_CMDB'):
@@ -1001,9 +1016,6 @@ def _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_
     chk_pk_record = objdbca.sql_execute(chk_pk_sql, [])
     for json_record in json_sql_data:
         file_param = json_record['file']
-        for k, v in file_param.items():
-            if isinstance(v, str):
-                v = v.encode()
         param = json_record['parameter']
 
         # 移行先に主キーの重複データが既に存在するか確認
@@ -1119,53 +1131,6 @@ def _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_
 
         g.applogger.debug(query_str)  # noqa: F405
         objdbca.sql_execute(query_str)
-
-        # ファイルアップロード系カラムの配置処理
-        if len(file_column_list) == 0:
-            g.applogger.debug(f"{menu_name_rest}: Skip due to 0 file upload targets")
-        else:
-            g.applogger.debug(f"{menu_name_rest}: 'File upload & symlink")
-            # ファイル配置: 各レコード->ファイル項目
-            for _jfd in _json_f_data:
-                for _jfk, _jfv in _jfd["file_path"].items():
-                    if _jfv is None:
-                        # file_pathがNoneの時、SKIP
-                        continue
-
-                    if isinstance(_jfv, dict):
-                        # path
-                        f_src_dir = f"/storage/{organization_id}/{workspace_id}{_jfv['src'].replace(_jfv['name'], '')}"
-                        f_src = f"/storage/{organization_id}/{workspace_id}{_jfv['src']}"
-                        # f_dst_dir = f"/storage/{organization_id}/{workspace_id}{_jfv['dst'].replace(_jfv['name'], '')}"
-                        f_dst = f"/storage/{organization_id}/{workspace_id}{_jfv['dst']}"
-                        tmp_f_src = f_src.replace("/storage/", "/tmp/")
-                        tmp_f_entity = f"{execution_no_path}{_jfv['src']}"
-
-                        g.applogger.debug(f"{os.path.isfile(tmp_f_entity)} {tmp_f_entity}")
-                        if not os.path.isfile(tmp_f_entity):
-                            # KYMファイル解凍後のuploadfiles配下にファイルが無い場合、SKIP
-                            g.applogger.info(f"{tmp_f_entity} does not exist, so it will be skipped")
-                            continue
-
-                        # makedirs -> remove
-                        os.makedirs(f_src_dir) if not os.path.isdir(f_src_dir) else None
-                        os.remove(tmp_f_src) if os.path.isfile(tmp_f_src) else None
-                        os.remove(f_src) if os.path.isfile(f_src) else None
-
-                        # upload_file
-                        if _jfv['class_name'] == "FileUploadEncryptColumn":
-                            objsr = storage_read()
-                            objsr.open(tmp_f_entity, mode="rb")
-                            tmp_f_entity_f = base64.b64encode(objsr.read()).decode()
-                            objsr.close()
-                            encrypt_upload_file(f_src, tmp_f_entity_f, mode="w")
-                        else:
-                            shutil.copyfile(tmp_f_entity, f_src)
-
-                        # symlink
-                        if os.path.isfile(f_src):
-                            os.unlink(f_dst) if os.path.islink(f_dst) else None
-                            os.symlink(f_src, f_dst)
 
     except Exception as e:
         trace_msg = traceback.format_exc()
@@ -1977,6 +1942,7 @@ def import_table_and_data(
     t_comn_menu_data_json,
     menu_name_rest_list,
     file_path_info={},
+    file_put_flg=True,
     ita_base_menu_flg=False,
     ws_db_sb=None,
     ):
@@ -2013,6 +1979,8 @@ def import_table_and_data(
 
     rpt = RecordProcessingTimes()
     for record in menus_list:
+        db_reconnention(objdbca) if objdbca else None
+        db_reconnention(ws_db_sb) if ws_db_sb else None
         param = record['parameter']
         # menu_id = param.get('uuid')
         menu_id = param.get('menu_name')
@@ -2112,6 +2080,8 @@ def import_table_and_data(
                         # トランザクション開始
                         debug_msg = g.appmsg.get_log_message("BKY-20004", [])
                         g.applogger.info(debug_msg)
+                        db_reconnention(objdbca, True) if objdbca else None
+                        db_reconnention(ws_db_sb, True) if ws_db_sb else None
                         objdbca.db_transaction_start()
 
                     truncate_sql = "DELETE FROM {}".format(table_name)
@@ -2204,16 +2174,18 @@ def import_table_and_data(
             # トランザクション開始
             debug_msg = g.appmsg.get_log_message("BKY-20004", [])
             g.applogger.info(debug_msg)
+            db_reconnention(objdbca, True) if objdbca else None
+            db_reconnention(ws_db_sb, True) if ws_db_sb else None
             objdbca.db_transaction_start()
 
         # 0件なら次へ
+        objmenu = None
+        # loadTable() for objdbcaの接続先 / インポート用一時作業DB(ita_sd_*)
+        if ws_db_sb is None:
+            objmenu = load_table.loadTable(objdbca, menu_name_rest)
+        else:
+            objmenu = load_table.loadTable(ws_db_sb, menu_name_rest)
         if get_record_count(execution_no_path, menu_name_rest) != 0:
-            # loadTable() for objdbcaの接続先 / インポート用一時作業DB(ita_sd_*)
-            if ws_db_sb is None:
-                objmenu = load_table.loadTable(objdbca, menu_name_rest)
-            else:
-                objmenu = load_table.loadTable(ws_db_sb, menu_name_rest)
-
             if history_table_flag == '1':
                 rpt.set_time(f"{menu_name_rest}:  register data jnl")
                 if ws_db_sb is None:
@@ -2240,6 +2212,13 @@ def import_table_and_data(
             g.applogger.info(debug_msg)
             objdbca.db_transaction_end(True)
             objdbca._is_transaction = False
+
+        # ファイル配置
+        if file_put_flg and objmenu:
+            if menu_name_rest + '_JNL' in file_path_info:
+                _bulk_register_file(objdbca, objmenu, execution_no_path, menu_name_rest + '_JNL', file_path_info)
+            if menu_name_rest in file_path_info:
+                _bulk_register_file(objdbca, objmenu, execution_no_path, menu_name_rest, file_path_info)
 
         g.applogger.info(f"Target Menu: {menu_name_rest} END")
 
@@ -2350,10 +2329,10 @@ def menu_import_exec_same_version(
 
     # 環境移行にて削除したテーブル名を記憶する用
     imported_table_list = []
-
+    db_reconnention(objdbca) if objdbca else None
     # load_table.loadTableを使用するため特定のメニューは事前に処理しておく
     _dp_preparation(objdbca, workspace_id, menu_name_rest_list, execution_no_path, imported_table_list, dp_mode)
-
+    db_reconnention(objdbca) if objdbca else None
     # 作成したview名を記憶する用
     tmp_table_list = []
     # インポート対象メニュー取得
@@ -2383,6 +2362,7 @@ def menu_import_exec_same_version(
         t_comn_menu_data_json,
         menu_name_rest_list,
         {},
+        file_put_flg=True,
         ita_base_menu_flg=True
     )
     rpt.set_time("import: ita_default_menus ")
@@ -2401,6 +2381,7 @@ def menu_import_exec_same_version(
         t_comn_menu_data_json,
         menu_name_rest_list,
         {},
+        file_put_flg=True,
         ita_base_menu_flg=False
     )
     rpt.set_time("import: ita_create_menus ")
@@ -2736,6 +2717,7 @@ def sandbox_workspace_create(workspace_id):  # noqa: E501
             g.applogger.debug("executed " + ddl_file)
 
             # insert initial data of workspace-db
+            db_reconnention(ws_db_sb, True) if ws_db_sb else None
             ws_db_sb.db_transaction_start()
             # #2079 /storage配下ではないので対象外
             with open(dml_file, "r") as f:
@@ -2822,9 +2804,10 @@ def sandbox_workspace_menu_import(
     # 環境移行にて削除したテーブル名を記憶する用
     imported_table_list = []
 
+    db_reconnention(objdbca) if objdbca else None
     # load_table.loadTableを使用するため特定のメニューは事前に処理しておく
-    _dp_preparation(objdbca, workspace_id, menu_name_rest_list, execution_no_path, imported_table_list, "2")
-
+    _dp_preparation(objdbca, workspace_id, menu_name_rest_list, execution_no_path, imported_table_list, "2", file_put_flg=False)
+    db_reconnention(objdbca) if objdbca else None
     # 作成したview名を記憶する用
     tmp_table_list = []
     # インポート対象メニュー取得
@@ -2856,6 +2839,7 @@ def sandbox_workspace_menu_import(
         t_comn_menu_data_json,
         menu_name_rest_list,
         file_path_info={},
+        file_put_flg=False,
         ita_base_menu_flg=True
     )
     rpt.set_time("import: ita_default_menus ")
@@ -2874,6 +2858,7 @@ def sandbox_workspace_menu_import(
         t_comn_menu_data_json,
         menu_name_rest_list,
         file_path_info={},
+        file_put_flg=False,
         ita_base_menu_flg=False
     )
     rpt.set_time("import: ita_create_menus ")
@@ -2959,6 +2944,7 @@ def import_from_sandbox_to_maindb(
         t_comn_menu_data_json,
         base_menu_name_list,
         file_path_info,
+        file_put_flg=True,
         ita_base_menu_flg=True,
         ws_db_sb=ws_db_sb
     )
@@ -2978,6 +2964,7 @@ def import_from_sandbox_to_maindb(
         t_comn_menu_data_json,
         menu_name_rest_list,
         file_path_info,
+        file_put_flg=True,
         ita_base_menu_flg=True,
         ws_db_sb=ws_db_sb
     )
@@ -2997,6 +2984,7 @@ def import_from_sandbox_to_maindb(
         t_comn_menu_data_json,
         menu_name_rest_list,
         file_path_info,
+        file_put_flg=True,
         ita_base_menu_flg=False,
         ws_db_sb=ws_db_sb
     )
@@ -3019,11 +3007,6 @@ def _export_sandboxdb_bulk_register_maindb(objdbca, ws_db_sb, objmenu, workspace
         RETURN:
             objmenu
     """
-    t_comn_menu_column_link = 'T_COMN_MENU_COLUMN_LINK'
-
-    organization_id = g.get("ORGANIZATION_ID")
-    workspace_id = g.get("WORKSPACE_ID")
-
     pk = objmenu.get_primary_key()
 
     _record_count = get_record_count(execution_no_path, menu_name_rest)
@@ -3049,14 +3032,6 @@ def _export_sandboxdb_bulk_register_maindb(objdbca, ws_db_sb, objmenu, workspace
                 delete_table_sql = f"DELETE FROM `{table_name}` WHERE `{_pk}` in ({_prepared_list})"
                 objdbca.sql_execute(delete_table_sql, _ids[i: i+n])
         sb_rows = ws_db_sb.table_select(table_name)
-
-    # ファイルアップロード系カラムを取得する
-    file_column = ["9", "20"]  # [FileUploadColumn, FileUploadEncryptColumn]
-    file_column_list = []
-    ret_file_column = ws_db_sb.table_select(t_comn_menu_column_link, 'WHERE MENU_ID = %s AND COLUMN_CLASS IN %s AND DISUSE_FLAG = %s', [menu_id, file_column, 0])  # noqa: E501
-    file_column_list = [record['COLUMN_NAME_REST'] for record in ret_file_column] if len(ret_file_column) != 0 else []
-
-    _json_f_data = file_path_info[menu_name_rest] if menu_name_rest in file_path_info else []
 
     # LOAD DATA LOCAL INFILE用CSV変換
     try:
@@ -3113,54 +3088,6 @@ def _export_sandboxdb_bulk_register_maindb(objdbca, ws_db_sb, objmenu, workspace
         g.applogger.debug(query_str)  # noqa: F405
         g.applogger.debug((os.path.isfile(csv_path), csv_path))
         objdbca.sql_execute(query_str)
-
-        # ファイルアップロード系カラムの配置処理
-        if len(file_column_list) == 0:
-            g.applogger.debug(f"{menu_name_rest}: Skip due to 0 file upload targets")
-        else:
-            g.applogger.debug(f"{menu_name_rest}: 'File upload & symlink")
-            # ファイル配置: 各レコード->ファイル項目
-            for _jfd in _json_f_data:
-                for _jfk, _jfv in _jfd["file_path"].items():
-                    if _jfv is None:
-                        # file_pathがNoneの時、SKIP
-                        continue
-
-                    if isinstance(_jfv, dict):
-                        # path
-                        f_src_dir = f"/storage/{organization_id}/{workspace_id}{_jfv['src'].replace(_jfv['name'], '')}"
-                        f_src = f"/storage/{organization_id}/{workspace_id}{_jfv['src']}"
-                        # f_dst_dir = f"/storage/{organization_id}/{workspace_id}{_jfv['dst'].replace(_jfv['name'], '')}"
-                        f_dst = f"/storage/{organization_id}/{workspace_id}{_jfv['dst']}"
-                        tmp_f_src = f_src.replace("/storage/", "/tmp/")
-                        tmp_f_entity = f"{execution_no_path}{_jfv['src']}"
-
-                        g.applogger.debug(f"{os.path.isfile(tmp_f_entity)} {tmp_f_entity}")
-                        if not os.path.isfile(tmp_f_entity):
-                            # KYMファイル解凍後のuploadfiles配下にファイルが無い場合、SKIP
-                            g.applogger.info(f"{tmp_f_entity} does not exist, so it will be skipped")
-                            continue
-
-                        # makedirs -> remove
-                        os.makedirs(f_src_dir) if not os.path.isdir(f_src_dir) else None
-                        os.remove(tmp_f_src) if os.path.isfile(tmp_f_src) else None
-                        os.remove(f_src) if os.path.isfile(f_src) else None
-
-                        # upload_file
-                        if _jfv['class_name'] == "FileUploadEncryptColumn":
-                            objsr = storage_read()
-                            objsr.open(tmp_f_entity, mode="rb")
-                            tmp_f_entity_f = base64.b64encode(objsr.read()).decode()
-                            objsr.close()
-                            encrypt_upload_file(f_src, tmp_f_entity_f, mode="w")
-                        else:
-                            shutil.copyfile(tmp_f_entity, f_src)
-
-                        # symlink
-                        if os.path.isfile(f_src):
-                            os.unlink(f_dst) if os.path.islink(f_dst) else None
-                            os.symlink(f_src, f_dst)
-
     except Exception as e:
         trace_msg = traceback.format_exc()
         g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(trace_msg)))
@@ -3171,6 +3098,80 @@ def _export_sandboxdb_bulk_register_maindb(objdbca, ws_db_sb, objmenu, workspace
         pass
 
     return objmenu, []
+
+
+def _bulk_register_file(objdbca, objmenu, execution_no_path, menu_name_rest, file_info_list):
+    """
+        インポート一括処理用
+        ARGS:
+            objdbca: DBConnectWs()
+            objmenu: load_table.bulkLoadTable()
+            execution_no_path: 一時作業用: /tmp/<execution_no>
+            menu_name_rest: menu_name_rest
+        RETURN:
+            objmenu
+    """
+    # t_comn_menu_column_link = 'T_COMN_MENU_COLUMN_LINK'
+
+    organization_id = g.get("ORGANIZATION_ID")
+    workspace_id = g.get("WORKSPACE_ID")
+    jnl_flg = True if menu_name_rest.endswith("_JNL") else False
+    # ファイルアップロード系カラムを取得する
+    file_column = ["9", "20"]  # [FileUploadColumn, FileUploadEncryptColumn]
+    ret_file_column = [oc for ok, oc in objmenu.get_objcols().items() if oc.get("COLUMN_CLASS", "-") in file_column]
+    file_column_list = [record.get('COLUMN_NAME_REST') for record in ret_file_column] if len(ret_file_column) != 0 else []
+
+    _json_f_data = file_info_list[menu_name_rest] if menu_name_rest in file_info_list else []
+
+    # ファイルアップロード系カラムの配置処理
+    if len(file_column_list) == 0:
+        g.applogger.debug(f"{menu_name_rest}: Skip due to 0 file upload targets")
+        return
+
+    g.applogger.debug(f"{menu_name_rest}: 'File upload & symlink")
+    # ファイル配置: 各レコード->ファイル項目
+    for _jfd in _json_f_data:
+        for _jfk, _jfv in _jfd["file_path"].items():
+            if _jfv is None:
+                # file_pathがNoneの時、SKIP
+                continue
+
+            if isinstance(_jfv, dict):
+                # path
+                f_src_dir = f"/storage/{organization_id}/{workspace_id}{_jfv['src'].replace(_jfv['name'], '')}"
+                f_src = f"/storage/{organization_id}/{workspace_id}{_jfv['src']}"
+                # f_dst_dir = f"/storage/{organization_id}/{workspace_id}{_jfv['dst'].replace(_jfv['name'], '')}"
+                f_dst = f"/storage/{organization_id}/{workspace_id}{_jfv['dst']}"
+                tmp_f_src = f_src.replace("/storage/", "/tmp/")
+                tmp_f_entity = f"{execution_no_path}{_jfv['src']}"
+
+                g.applogger.debug(f"{os.path.isfile(tmp_f_entity)} {tmp_f_entity}")
+                if not os.path.isfile(tmp_f_entity):
+                    # KYMファイル解凍後のuploadfiles配下にファイルが無い場合、SKIP
+                    g.applogger.info(f"{tmp_f_entity} does not exist, so it will be skipped")
+                    continue
+
+                # makedirs -> remove
+                os.makedirs(f_src_dir) if not os.path.isdir(f_src_dir) else None
+                os.remove(tmp_f_src) if os.path.isfile(tmp_f_src) else None
+                os.remove(f_src) if jnl_flg and os.path.isfile(f_src) else None
+
+                # upload_file
+                if _jfv['class_name'] == "FileUploadEncryptColumn":
+                    objsr = storage_read()
+                    objsr.open(tmp_f_entity, mode="rb")
+                    tmp_f_entity_f = base64.b64encode(objsr.read()).decode()
+                    objsr.close()
+                    encrypt_upload_file(f_src, tmp_f_entity_f, mode="w")
+                else:
+                    shutil.copyfile(tmp_f_entity, f_src)
+
+                # symlink
+                if os.path.isfile(f_src):
+                    os.unlink(f_dst) if os.path.islink(f_dst) else None
+                    os.symlink(f_src, f_dst)
+    return
+
 
 def clear_uploadfiles_for_exclusion(objdbca, target_menus):
     """
@@ -3254,6 +3255,22 @@ def get_record_count(execution_no_path, menu_name_rest):
     result = len(json_sql_data) if isinstance(json_sql_data, list) else 0
 
     return result
+
+def db_reconnention(obj,force=False):
+    """ check connection DBConnect<XX> (reconnect)
+    Args:
+        obj : DBConnect<xxx>()
+    """
+    try:
+        obj.sql_execute("SELECT 1;")
+        connect = True
+    except:
+        connect = False
+
+    if force or connect is False:
+        g.applogger.info(f"{obj=}: reconnect.")
+        obj.db_disconnect()
+        obj.db_connect()
 
 class RecordProcessingTimes():
     def __init__(self) -> None:

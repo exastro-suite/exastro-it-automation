@@ -205,76 +205,84 @@ def get_execution_status(organization_id, workspace_id, execution_no, status, dr
 
     if driver_id == "legacy":
         from_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "in/project"
+        tmp_out_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "/out"
+        tmp_parameters_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "/parameters"
+        tmp_conductor_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "/conductor"
     elif driver_id == "pioneer":
         from_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/pioneer/" + execution_no + "in/project"
+        tmp_out_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "/out"
+        tmp_parameters_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "/parameters"
+        tmp_conductor_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "/conductor"
     else:
         from_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy_role/" + execution_no + "in/project"
-
-    dir_path = "/storage/" + organization_id + "/" + workspace_id + "/tmp/out"
+        tmp_out_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "/out"
+        tmp_parameters_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "/parameters"
+        tmp_conductor_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "/conductor"
 
     # 作業ディレクトリ作成
-    if not os.path.exists(dir_path):
-        os.mkdir(dir_path)
-        os.chmod(dir_path, 0o777)
+    if not os.path.exists(tmp_out_path):
+        os.mkdir(tmp_out_path)
+        os.chmod(tmp_out_path, 0o777)
 
     # outディレクトリのtarファイル展開
-    decode_tar_file(out_base64_data, dir_path)
+    decode_tar_file(out_base64_data, tmp_out_path)
 
     # 展開したファイルの一覧を取得
-    lst = os.listdir(dir_path)
+    lst = os.listdir(tmp_out_path)
 
     if status == AnscConst.PROCESSING or status == AnscConst.PROCESS_DELAYED:
         for file_name in lst:
             if file_name == "error.log" or file_name == "exec.log":
                 # 通知されたファイルで上書き
-                shutil.move(dir_path + "/" + file_name, from_path)
+                shutil.move(tmp_out_path + "/" + file_name, from_path)
     elif status == AnscConst.COMPLETE or status == AnscConst.FAILURE:
         for file_name in lst:
             # 通知されたファイルで上書き
-            shutil.move(dir_path + "/" + file_name, from_path)
-
-    dir_path = "/storage/" + organization_id + "/" + workspace_id + "/tmp/parameters"
+            shutil.move(tmp_out_path + "/" + file_name, from_path)
 
     # 作業ディレクトリ作成
-    if not os.path.exists(dir_path):
-        os.mkdir(dir_path)
-        os.chmod(dir_path, 0o777)
+    if not os.path.exists(tmp_parameters_path):
+        os.mkdir(tmp_parameters_path)
+        os.chmod(tmp_parameters_path, 0o777)
 
     # parametersディレクトリのtarファイル展開
-    decode_tar_file(parameters_base64_data, dir_path)
+    decode_tar_file(parameters_base64_data, tmp_parameters_path)
 
     # 展開したファイルの一覧を取得
-    lst = os.listdir(dir_path)
+    lst = os.listdir(tmp_parameters_path)
 
     if status == AnscConst.COMPLETE or status == AnscConst.FAILURE:
         for dir_name in lst:
             # 展開したファイルの一覧を取得
-            lst = os.listdir(dir_path + "/" + dir_name)
+            lst = os.listdir(tmp_parameters_path + "/" + dir_name)
             for file_name in lst:
                 # 通知されたファイルで上書き
-                shutil.move(dir_path + "/" + dir_name + "/" + file_name, from_path)
-
-    dir_path = "/storage/" + organization_id + "/" + workspace_id + "/tmp/conductor"
+                shutil.move(tmp_parameters_path + "/" + dir_name + "/" + file_name, from_path)
 
     # 作業ディレクトリ作成
-    if not os.path.exists(dir_path):
-        os.mkdir(dir_path)
-        os.chmod(dir_path, 0o777)
+    if not os.path.exists(tmp_conductor_path):
+        os.mkdir(tmp_conductor_path)
+        os.chmod(tmp_conductor_path, 0o777)
 
     # conductorディレクトリのtarファイル展開
-    decode_tar_file(conductor_base64_data, dir_path)
+    decode_tar_file(conductor_base64_data, tmp_conductor_path)
 
     # 展開したファイルの一覧を取得
-    lst = os.listdir(dir_path)
+    lst = os.listdir(tmp_conductor_path)
 
     if status == AnscConst.COMPLETE or status == AnscConst.FAILURE:
         for file_name in lst:
             # 通知されたファイルで上書き
-            shutil.move(dir_path + "/" + file_name, from_path)
+            shutil.move(tmp_conductor_path + "/" + file_name, from_path)
 
     if status == AnscConst.SCRAM:
         # 緊急停止された
         return True
+
+    # 作業ディレクトリ削除
+    shutil.rmtree(tmp_out_path)
+    shutil.rmtree(tmp_parameters_path)
+    shutil.rmtree(tmp_conductor_path)
 
     return False
 

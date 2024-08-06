@@ -505,12 +505,6 @@ def organization_update(organization_id, body=None):  # noqa: E501
                 # bodyのdriversに指定のドライバ名以外のkeyがある際にエラーとする。
                 if driver_name not in driver_list:
                     return '', "Value of key[drivers] is invalid.", "499-00004", 499
-                # インストール済みのドライバをtrue、インストールしていないドライバをfalseに指定した際にエラーとする。
-                elif driver_name not in no_install_driver and driver_bool is True:
-                    return '', "{} is already installed. ".format(json.dumps(driver_name)), "499-00007", 499
-                elif driver_name in no_install_driver and driver_bool is False:
-                    return '', "{} is already uninstalled.".format(json.dumps(driver_name)), "499-00007", 499
-
         else:
             # body内でdriverが指定されていないためエラーとする。
             return '', "Body paramater 'drivers' is required.", "499-00004", 499

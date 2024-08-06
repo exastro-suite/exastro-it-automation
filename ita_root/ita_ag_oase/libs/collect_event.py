@@ -104,7 +104,7 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
                 g.applogger.info(g.appmsg.get_log_message("AGT-10031", [setting["RESPONSE_KEY"], setting["EVENT_COLLECTION_SETTINGS_ID"]]))
                 # 「利用できない」フラグをonにする
                 for event in json_data:
-                    event = setNotAvailable(event, "RESPONSE_LIST_FLAG must be True")
+                    event = setNotAvailable(event, "RESPONSE_LIST_FLAG is incorrect.(Not Dict Type)")
                     event = init_label(event, fetched_time, setting)
                     events.append(event)
             else:
@@ -122,7 +122,7 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
                 g.applogger.info(g.appmsg.get_log_message("AGT-10003", [setting["RESPONSE_KEY"], setting["EVENT_COLLECTION_SETTINGS_ID"]]))
                 # 「利用できない」フラグをonにする
                 if len(json_data) > 0:
-                    event = setNotAvailable(json_data, "RESPONSE_LIST_FLAG must be False")
+                    event = setNotAvailable(json_data, "RESPONSE_LIST_FLAG is incorrect.(Not List Type)")
                     event = init_label(event, fetched_time, setting)
                     events.append(event)
             else:

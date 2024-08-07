@@ -1463,12 +1463,15 @@ setTableEvents() {
                     endPoint += `journal/${journalId}/`;
                 }
                 $a.addClass('nowDownload');
-                fn.getFile( endPoint ).then(function( binaryFile ){
+                fn.getFile( endPoint, 'GET', null, { title: getMessage.FTE00185 }).then(function( binaryFile ){
                     fn.download('binary', binaryFile, fileName );
                     $a.removeClass('nowDownload');
                 }).catch(function( e ){
-                    console.error( e );
-                    alert( getMessage.FTE00179 );
+                    if ( e !== 'break') {
+                        console.error( e );
+                        alert( getMessage.FTE00179 );
+                    }
+                    $a.removeClass('nowDownload');
                 });
             } else {
                 if ( file !== undefined && file !== null ) {
@@ -1516,11 +1519,14 @@ setTableEvents() {
                 try {
                     file = await fn.getFile( option.endPoint, 'GET', null, { base64: true } );
                 } catch ( e ) {
-                    console.error( e );
-                    alert( getMessage.FTE00179 );
-                    file = '';
+                    if ( e !== 'break') {
+                        console.error( e );
+                        alert( getMessage.FTE00179 );
+                    }
+                    $button.prop('disabled', false );
+                    tb.modalFlag = false;
+                    return;
                 }
-
                 fn.fileEditor( file, fileName, 'preview', option ).then(function(){
                     $button.prop('disabled', false );
                     tb.modalFlag = false;
@@ -1557,10 +1563,12 @@ setTableEvents() {
 
             $button.prop('disabled', true );
             try {
-                const file = await fn.getFile( url, 'POST', tb.filterParams );
+                const file = await fn.getFile( url, 'POST', tb.filterParams, { title: getMessage.FTE00185 });
                 fn.download('binary', file, fileName );
             } catch ( error ) {
-                fn.gotoErrPage( error.message );
+                if ( error !== 'break') {
+                    fn.gotoErrPage( error.message );
+                }
             }
             fn.disabledTimer( $button, false, 1000 );
         };
@@ -1783,9 +1791,13 @@ setTableEvents() {
                 try {
                     file = await fn.getFile( option.endPoint, 'GET', null, { base64: true } );
                 } catch ( e ) {
-                    console.error( e );
-                    alert( getMessage.FTE00179 );
-                    file = null;
+                    if ( e !== 'break') {
+                        console.error( e );
+                        alert( getMessage.FTE00179 );
+                    }
+                    $button.prop('disabled', false );
+                    tb.modalFlag = false;
+                    return;
                 }
             } else {
                 if ( !file ) file = null;
@@ -2145,12 +2157,14 @@ setTableEvents() {
                               method = $button.attr('data-method'),
                               nameKey = $button.attr('data-filename'),
                               dataKey = $button.attr('data-filedata');
-                        fn.getFile( url, method, null, { fileName: true }).then(function( result ){
+                        fn.getFile( url, method, null, { fileName: true, title: getMessage.FTE00185 }).then(function( result ){
                             const fileName = fn.cv( result.fileName, '');
                             fn.download('binary', result.file, fileName );
                         }).catch(function( error ){
-                            alert( error.message );
-                            window.console.error( error );
+                            if ( error !== 'break') {
+                                alert( error.message );
+                                window.console.error( error );
+                            }
                         }).then(function(){
                             $button.prop('disabled', false );
                         });

@@ -537,6 +537,9 @@ animation: none;
 .iconButton .icon {
 margin-right: 8px;
 }
+.iconButton .icon.iconOnly {
+margin-right: 0;
+}
 .itaButton {
 display: block;
 max-width: 100%;

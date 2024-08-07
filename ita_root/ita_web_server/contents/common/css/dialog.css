@@ -60,10 +60,6 @@ animation:  dialogOpen .1s forwards;
 .dialogMain > div {
 min-height: 0;
 }
-.dialogHeader {
-flex: 0 0 48px;
-border-bottom: 1px solid #DBDEE0;
-}
 .dialogBody {
 overflow: auto;
 flex: 1 1 auto;
@@ -73,12 +69,17 @@ flex: 0 0 48px;
 background-color: #DBDEE0;
 }
 .dialogHeader {
+display: flex;
+flex: 0 0 48px;
+border-bottom: 1px solid #DBDEE0;
 height: 48px;
 background-color: var(--mainColor100);
 background-image: linear-gradient( rgba( 255,255,255,.1 ), transparent );
 border-bottom: 4px solid var(--accentColor100);
 }
 .dialogHeaderTitle {
+flex: 1 1 auto;
+min-width: 0;
 display: flex;
 align-items: center;
 height: 100%;
@@ -92,6 +93,19 @@ display: block;
 overflow: hidden;
 text-overflow: ellipsis;
 white-space: nowrap;
+}
+.dialogHeaderClose {
+flex: 0 0 44px;
+}
+.dialogHeaderCloseButton {
+width: 44px; height: 44px;
+font-size: 16px;
+color: #FFF;
+}
+.dialogHeaderCloseButton > .inner {
+display: flex;
+justify-content: center;
+align-items: center;
 }
 .dialogFooterMenuList {
 display: flex;

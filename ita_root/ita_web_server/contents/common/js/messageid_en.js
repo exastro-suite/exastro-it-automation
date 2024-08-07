@@ -220,6 +220,7 @@ export function messageid_en() {
         'FTE00182' : "Download all (JSON:No File)",
         'FTE00183' : "JSON download (No File)",
         'FTE00184' : "Editing reflected",
+        'FTE00185' : "Download",
 
         // Create parameter sheet
         'FTE01001' : "Item",

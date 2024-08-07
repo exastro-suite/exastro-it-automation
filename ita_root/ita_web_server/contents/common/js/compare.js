@@ -356,7 +356,7 @@ compareEvents() {
             case 'download': {
                 $button.prop('disabled', true );
                 cp.getCompareSettingData();
-                fn.getFile( cp.rest.download, 'POST', cp.compareData, { fileName: true }).then(function( result ){
+                fn.getFile( cp.rest.download, 'POST', cp.compareData, { fileName: true, title: getMessage.FTE00185 }).then(function( result ){
                     const fileName = fn.cv( result.fileName, '');
                     fn.download('binary', result.file, fileName );
                 }).catch(function( error ){
@@ -367,7 +367,9 @@ compareEvents() {
                             alert( getMessage.FTE06033 );
                         }
                     } else {
-                        alert( getMessage.FTE06033 );
+                        if ( error !== 'break') {
+                            alert( getMessage.FTE06033 );
+                        }
                     }
                 }).then(function(){
                     $button.prop('disabled', false );

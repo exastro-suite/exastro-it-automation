@@ -68,7 +68,7 @@ open( body ) {
             if ( d.getActiveCheck ) {
                 if ( d.btnFn && d.btnFn[kind] ) {
                     d.btnFn[kind].call( d );
-                } else if ( kind === 'close') {
+                } else if ( kind === 'close' || kind === 'headerClose') {
                     d.close();
                 } else {
                     window.console.error('Dialog "config" error.');
@@ -78,7 +78,7 @@ open( body ) {
 
         // Set
         d.$.modalContainer.append( d.$.dialog );
-        d.$.dialog.find('.dialog').find( d.focusElements ).first().focus();
+        d.$.dialog.find('.dialog').find( d.focusElements ).not('.dialogHeaderCloseButton').first().focus();
         
         // callback
         if ( d.callback ) d.callback.call( d );
@@ -266,7 +266,7 @@ header() {
           html = [];
     if ( h.title ) html.push(`<div class="dialogHeaderTitle"><span class="dialogHeaderTitleInner">${h.title}</span></div>`);
     if ( h.move ) className.push('dialogHeaderMove');
-    if ( h.close ) html.push(`<div class="dialogHeaderClose">${d.button('dialogButton dialogHeaderCloseButton', 'close')}</div>`);
+    if ( h.close ) html.push(`<div class="dialogHeaderClose">${fn.html.iconButton('cross', '', 'dialogButton dialogHeaderCloseButton', {kind: 'headerClose'})}</div>`);
     return `<div class="${className.join(' ')}">${html.join('')}</div>`;
 }
 /*

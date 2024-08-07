@@ -651,13 +651,15 @@ class Status {
             $link.addClass('nowDownload');
 
             const endPoint = `/menu/${Status.string[op.menu].executionListMenu}/${op.id}/${rest}/file/`;
-            fn.getFile( endPoint ).then(function( file ){
+            fn.getFile( endPoint, 'GET', null, { title: getMessage.FTE00185 }).then(function( file ){
                 fn.download('binary', file, fileName ).then(function(){
                     $link.removeClass('nowDownload');
                 });
             }).catch(function( e ){
-                console.error( e );
-                alert( getMessage.FTE00179 );
+                if ( e !== 'break') {
+                    console.error( e );
+                    alert( getMessage.FTE00179 );
+                }
             });
         });
 

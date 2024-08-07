@@ -662,8 +662,19 @@ arrayCopy: function( array ) {
 getFile: function( endPoint, method = 'GET', data, option = {} ) {
     return new Promise( async function( resolve, reject ){
         try {
-            let progressModal = cmn.progressModal( getMessage.FTE00180 );
+            const getFileController = new AbortController();
+            const title = ( option.title )? option.title: getMessage.FTE00180;
+            let progressModal = cmn.progressModal( title, { close: true });
 
+            // 閉じたときに処理を中断する
+            progressModal.btnFn = {
+                headerClose: function(){
+                    getFileController.abort();
+                    progressModal.close();
+                    progressModal = null;
+                    reject('break');
+                }
+            };
             const token = ( cmmonAuthFlag )? CommonAuth.getToken():
                 ( iframeFlag && window.parent.getToken )? window.parent.getToken(): null;
 
@@ -672,7 +683,8 @@ getFile: function( endPoint, method = 'GET', data, option = {} ) {
                 headers: {
                     Authorization: `Bearer ${token}`,
                     'Content-Type': 'application/json'
-                }
+                },
+                signal: getFileController.signal
             };
 
             // body
@@ -741,15 +753,17 @@ getFile: function( endPoint, method = 'GET', data, option = {} ) {
 
                 // バーのtransition-duration: .2s;分ずらす
                 setTimeout(function(){
-                    progressModal.close();
-                    progressModal = null;
-                    if ( option.fileName ) {
-                        resolve({
-                            file: fileData,
-                            fileName: fileName
-                         });
-                    } else {
-                        resolve( fileData );
+                    if ( progressModal !== null ) {
+                        progressModal.close();
+                        progressModal = null;
+                        if ( option.fileName ) {
+                            resolve({
+                                file: fileData,
+                                fileName: fileName
+                            });
+                        } else {
+                            resolve( fileData );
+                        }
                     }
                 }, 200 );
             } else {
@@ -1797,7 +1811,8 @@ html: {
         return `<button ${attr.join(' ')}><span class="inner">${html.join('')}</span></button>`;
     },
     iconButton: function( icon, element, className, attrs = {}, option = {}) {
-        const html = `${cmn.html.icon( icon, 'iconButtonIcon')}<span class="iconButtonBody">${element}</span>`;
+        const iconClass = ( element === '')? ' iconOnly': '';
+        const html = `${cmn.html.icon( icon, `iconButtonIcon${iconClass}`)}<span class="iconButtonBody">${element}</span>`;
         className = classNameCheck( className, 'iconButton');
         return cmn.html.button( html, className, attrs, option );
     },
@@ -2442,7 +2457,7 @@ processingModal: function( title ) {
     進捗モーダル
 ##################################################
 */
-progressModal: function( title ) {
+progressModal: function( title, option = {}) {
     const config = {
         mode: 'modeless',
         position: 'center',
@@ -2451,6 +2466,11 @@ progressModal: function( title ) {
         },
         width: '320px'
     };
+
+    // 閉じるボタン
+    if ( option.close !== undefined ) {
+        config.header.close = true;
+    }
 
     const dialog = new Dialog( config );
     const html = ``
@@ -4363,11 +4383,13 @@ fileEditor: function( fileData, fileName, mode = 'edit', option = {} ) {
                     cmn.download('file', fileData, fileName );
                 } else {
                     try {
-                        const binary = await fn.getFile( option.endPoint );
+                        const binary = await fn.getFile( option.endPoint, 'GET', null, { title: getMessage.FTE00185 } );
                         cmn.download('binary', binary, fileName );
                     } catch ( e ) {
-                        console.error( e );
-                        alert( getMessage.FTE00179 );
+                        if ( e !== 'break') {
+                            console.error( e );
+                            alert( getMessage.FTE00179 );
+                        }
                     }
                 }
             };

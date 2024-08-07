@@ -1407,10 +1407,12 @@ defaultMenu( sheetType, dataType = 'n', fileFlag = true ) {
             const downloadFile = async function( type, url, fileName ){
                 $button.prop('disabled', true );
                 try {
-                    const file = await fn.getFile( url );
+                    const file = await fn.getFile( url, 'GET', null, { title: getMessage.FTE00185 });
                     fn.download('binary', file, fileName );
                 } catch ( error ) {
-                    fn.gotoErrPage( error.message );
+                    if ( error !== 'break') {
+                        fn.gotoErrPage( error.message );
+                    }
                 }
                 fn.disabledTimer( $button, false, 1000 );
             };

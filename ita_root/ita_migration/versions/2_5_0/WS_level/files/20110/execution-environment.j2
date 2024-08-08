@@ -1,0 +1,23 @@
+version: 3
+
+build_arg_defaults:
+  ANSIBLE_GALAXY_CLI_COLLECTION_OPTS: '--ignore-certs'
+
+images:
+  base_image:
+    name: {{ image }}
+
+dependencies:
+  ansible_core:
+    package_pip: {{ ansible_core }}
+  ansible_runner:
+    package_pip: {{ ansible_runner }}
+  system: {{ bindep_file }}
+  python: {{ python_requirements_file }}
+  {{ galaxy_tag }}: {{ galaxy_requirements_file }}
+  python_interpreter:
+    package_system: "python39"
+    python_path: "/usr/bin/python3.9"
+
+options:
+  package_manager_path: /usr/bin/dnf

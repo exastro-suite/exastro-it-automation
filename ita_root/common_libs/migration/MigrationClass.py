@@ -107,13 +107,16 @@ class Migration:
         if os.path.isdir(src_dir):
             config_file_list = [f for f in os.listdir(src_dir) if os.path.isfile(os.path.join(src_dir, f))]
             g.applogger.info(f"[Trace] config_file_list={config_file_list}")
+
             for config_file_name in config_file_list:
-                # 対象のconfigファイルがインストール必要なドライバのものか判断
-                driver_name = config_file_name.replace('_config.json', '')
-                if driver_name in driver_list:
-                    if driver_name in no_install_driver:
-                        g.applogger.info(f"[Trace] SKIP config_file_name=[{config_file_name}] BECAUSE DRIVER IS NOT INSTALLED.")
-                        continue
+                if config_file_name != "config.json":
+                    # 対象のconfigファイルがインストール必要なドライバのものか判断
+                    driver_name = config_file_name.replace('_config.json', '')
+                    if driver_name in driver_list:
+                        if driver_name in no_install_driver:
+                            g.applogger.info(f"[Trace] SKIP CONFIG FILE NAME=[{config_file_name}] BECAUSE {driver_name} IS NOT INSTALLED.")
+                            continue
+
                 dest_dir = os.path.join(self._work_dir_path, "uploadfiles")
                 config_file_path = os.path.join(src_dir, config_file_name)
                 g.applogger.info(f"[Trace] dest_dir={dest_dir}")
@@ -155,7 +158,7 @@ class Migration:
             'ci_cd',
             'oase'
         ]
-        g.applogger.info("[Trace] migrate jnl start")
+
         # ドライバ情報を取得する
         if self._no_install_driver is None or len(self._no_install_driver) == 0:
             no_install_driver = []
@@ -172,18 +175,20 @@ class Migration:
             g.applogger.info(f"[Trace] config_file_list={config_file_list}")
 
             for config_file_name in config_file_list:
-                # 対象のconfigファイルがインストール必要なドライバのものか判断
-                driver_name = config_file_name.replace('_config.json', '')
-                if driver_name in driver_list:
-                    if driver_name in no_install_driver:
-                        g.applogger.info(f"[Trace] SKIP config_file_name=[{config_file_name}] BECAUSE DRIVER IS NOT INSTALLED.")
-                        continue
+                if config_file_name != "config.json":
+                    # 対象のconfigファイルがインストール必要なドライバのものか判断
+                    driver_name = config_file_name.replace('_config.json', '')
+                    if driver_name in driver_list:
+                        if driver_name in no_install_driver:
+                            g.applogger.info(f"[Trace] SKIP CONFIG FILE NAME=[{config_file_name}] BECAUSE {driver_name} IS NOT INSTALLED.")
+                            continue
+
                 dest_dir = os.path.join(self._work_dir_path, "uploadfiles")
                 config_file_path = os.path.join(src_dir, config_file_name)
                 g.applogger.info(f"[Trace] dest_dir={dest_dir}")
                 g.applogger.info(f"[Trace] config_file_path={config_file_path}")
                 put_uploadfiles_jnl(_db_conn, config_file_path, src_dir, dest_dir)
-        g.applogger.info("[Trace] migrate jnl complete")
+        g.applogger.info("[Trace] delivery jnl files complete")
 
     def migrate_specific(self):
         """

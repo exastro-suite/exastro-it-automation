@@ -903,7 +903,6 @@ def put_uploadfiles_jnl(_db_conn, config_file_path, src_dir, dest_dir):
                 sql_execute_flag = False
                 for count, jnl_record in enumerate(jnl_record_list, start=0):
                     for jnl_id, jnl_data_list in jnl_record.items():
-                        g.applogger.info(f"[Trace] jnl_id={jnl_id}")
                         # 履歴テーブルに指定の履歴IDと同じものが存在するか確認する
                         where_str = "WHERE JOURNAL_SEQ_NO = %s AND DISUSE_FLAG = %s"
                         is_primary_key_exit = _db_conn.table_select(table_name_jnl, where_str, [jnl_id, 0])
@@ -932,10 +931,6 @@ def put_uploadfiles_jnl(_db_conn, config_file_path, src_dir, dest_dir):
                             org_file = os.path.join(os.path.join(src_dir, menu_id), file_name)
                             old_file_path = os.path.join(dest_dir, menu_id) + jnl_data[1]
                             file_path = os.path.join(dest_dir, menu_id) + jnl_data[2]
-                            g.applogger.info(f"[Trace] file_name={file_name}")
-                            g.applogger.info(f"[Trace] org_file={org_file}")
-                            g.applogger.info(f"[Trace] old_file_path={old_file_path}")
-                            g.applogger.info(f"[Trace] file_path={file_path}")
                             # 指定のディレクトリ・ファイルを作成する
                             if not os.path.isdir(old_file_path):
                                 os.makedirs(old_file_path)
@@ -995,12 +990,7 @@ def put_uploadfiles_jnl(_db_conn, config_file_path, src_dir, dest_dir):
                             org_file = os.path.join(os.path.join(src_dir, menu_id), file_name)
                             old_file_path = os.path.join(dest_dir, menu_id) + jnl_data[1]
                             file_path = os.path.join(dest_dir, menu_id) + jnl_data[2]
-                            g.applogger.info(f"[Trace] file_name={file_name}")
-                            g.applogger.info(f"[Trace] org_file={org_file}")
-                            g.applogger.info(f"[Trace] old_file_path={old_file_path}")
-                            g.applogger.info(f"[Trace] file_path={file_path}")
                             dir_path_file = file_path + file_name
-                            g.applogger.info(f"[Trace] dir_path_file={dir_path_file}")
 
                             # 更新前シンボリックリンクがある場合は削除してから作成する
                             if previous_file_name is not None:

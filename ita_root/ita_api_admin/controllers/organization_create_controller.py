@@ -714,21 +714,26 @@ def organization_update(organization_id, body=None):  # noqa: E501
 
                 # files配下のconfigファイルを取得し、インストール中のドライバと一致していたら実行する
                 src_dir = os.path.join(os.environ.get('PYTHONPATH'), "files")
+                g.applogger.info(f"[Trace] src_dir={src_dir}")
                 if os.path.isdir(src_dir):
                     config_file_list = [f for f in os.listdir(src_dir) if os.path.isfile(os.path.join(src_dir, f))]
                     g.applogger.info(f"[Trace] config_file_list={config_file_list}")
+
                     for config_file_name in config_file_list:
-                        # 対象のconfigファイルがインストール必要なドライバのものか判断
-                        driver_name = config_file_name.replace('_config.json', '')
-                        if driver_name in driver_list:
-                            if driver_name in no_install_driver:
-                                g.applogger.info(f"[Trace] SKIP config_file_name=[{config_file_name}] BECAUSE DRIVER IS NOT INSTALLED.")
+                        if config_file_name != "config.json":
+                            # 対象のconfigファイルがインストール中のドライバに必要なものか判断する
+                            driver_name = config_file_name.replace('_config.json', '')
+                            if driver_name != install_driver:
                                 continue
+
                         dest_dir = os.path.join(workspace_dir, "uploadfiles")
                         config_file_path = os.path.join(src_dir, config_file_name)
+                        g.applogger.info(f"[Trace] dest_dir={dest_dir}")
+                        g.applogger.info(f"[Trace] config_file_path={config_file_path}")
                         put_uploadfiles(config_file_path, src_dir, dest_dir)
-                g.applogger.info("set initial material jnl")
+                g.applogger.info("set initial material files")
 
+                # jnl配下のconfigファイルを取得し、インストール中のドライバと一致していたら実行する
                 src_dir = os.path.join(os.environ.get('PYTHONPATH'), "jnl")
                 g.applogger.info(f"[Trace] src_dir={src_dir}")
                 if os.path.isdir(src_dir):
@@ -736,17 +741,18 @@ def organization_update(organization_id, body=None):  # noqa: E501
                     g.applogger.info(f"[Trace] config_file_list={config_file_list}")
 
                     for config_file_name in config_file_list:
-                        # 対象のconfigファイルがインストール必要なドライバのものか判断
-                        driver_name = config_file_name.replace('_config.json', '')
-                        if driver_name in driver_list:
+                        if config_file_name != "config.json":
+                            # 対象のconfigファイルがインストール中のドライバに必要なものか判断する
+                            driver_name = config_file_name.replace('_config.json', '')
                             if driver_name != install_driver:
                                 continue
-                            dest_dir = os.path.join(workspace_dir, "uploadfiles")
-                            config_file_path = os.path.join(src_dir, config_file_name)
-                            g.applogger.info(f"[Trace] dest_dir={dest_dir}")
-                            g.applogger.info(f"[Trace] config_file_path={config_file_path}")
-                            put_uploadfiles_jnl(ws_db, config_file_path, src_dir, dest_dir)
-                g.applogger.info("set initial material jnl")
+
+                        dest_dir = os.path.join(workspace_dir, "uploadfiles")
+                        config_file_path = os.path.join(src_dir, config_file_name)
+                        g.applogger.info(f"[Trace] dest_dir={dest_dir}")
+                        g.applogger.info(f"[Trace] config_file_path={config_file_path}")
+                        put_uploadfiles_jnl(ws_db, config_file_path, src_dir, dest_dir)
+                g.applogger.info("set initial material jnl files")
 
                 g.applogger.info(" INSTALLING {} IS ENDED".format(install_driver))
 

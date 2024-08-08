@@ -28,7 +28,7 @@ from common_libs.api import api_filter_admin
 from common_libs.common.dbconnect import *  # noqa: F403
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectOrg, MONGOConnectWs
 from common_libs.common.mongoconnect.const import Const as mongoConst
-from common_libs.common.util import ky_encrypt, ky_decrypt, get_timestamp, url_check, arrange_stacktrace_format
+from common_libs.common.util import ky_encrypt, ky_decrypt, get_timestamp, url_check, arrange_stacktrace_format, put_uploadfiles, put_uploadfiles_jnl
 from common_libs.ansible_driver.classes.gitlab import GitLabAgent
 from common_libs.common.exception import AppException
 
@@ -530,6 +530,13 @@ def organization_update(organization_id, body=None):  # noqa: E501
             "ci_cd": [['cicd.sql', 'cicd_master.sql']],
             "oase": [['oase.sql', 'oase_master.sql']],
         }
+        # インストール時に利用する削除対象ディレクトリのパスの一覧
+        add_driver_files = {
+            "terraform_cloud_ep": [''],
+            "terraform_cli": [''],
+            "ci_cd": [''],
+            "oase": ['/uploadfiles/110102'],
+        }
 
         # アンインストール時に利用するSQLファイル名の一覧
         remove_driver_sql = {
@@ -693,6 +700,54 @@ def organization_update(organization_id, body=None):  # noqa: E501
 
                             ws_db.sql_execute(sql, prepared_list)
                     ws_db.db_commit()
+
+                # set initial material
+                # 対象ドライバのディレクトリの削除を実行してから再作成を行う
+                remove_files_list = add_driver_files[install_driver]
+                for remove_files in remove_files_list:
+                    # /uploadfiles配下
+                    if remove_files != '':
+                        remove_path_uploadfiles = workspace_dir + remove_files
+                        if os.path.isdir(remove_path_uploadfiles):
+                            g.applogger.info(" remove " + remove_path_uploadfiles)
+                            shutil.rmtree(remove_path_uploadfiles)
+
+                # files配下のconfigファイルを取得し、インストール中のドライバと一致していたら実行する
+                src_dir = os.path.join(os.environ.get('PYTHONPATH'), "files")
+                if os.path.isdir(src_dir):
+                    config_file_list = [f for f in os.listdir(src_dir) if os.path.isfile(os.path.join(src_dir, f))]
+                    g.applogger.info(f"[Trace] config_file_list={config_file_list}")
+                    for config_file_name in config_file_list:
+                        # 対象のconfigファイルがインストール必要なドライバのものか判断
+                        driver_name = config_file_name.replace('_config.json', '')
+                        if driver_name in driver_list:
+                            if driver_name in no_install_driver:
+                                g.applogger.info(f"[Trace] SKIP config_file_name=[{config_file_name}] BECAUSE DRIVER IS NOT INSTALLED.")
+                                continue
+                        dest_dir = os.path.join(workspace_dir, "uploadfiles")
+                        config_file_path = os.path.join(src_dir, config_file_name)
+                        put_uploadfiles(config_file_path, src_dir, dest_dir)
+                g.applogger.info("set initial material jnl")
+
+                src_dir = os.path.join(os.environ.get('PYTHONPATH'), "jnl")
+                g.applogger.info(f"[Trace] src_dir={src_dir}")
+                if os.path.isdir(src_dir):
+                    config_file_list = [f for f in os.listdir(src_dir) if os.path.isfile(os.path.join(src_dir, f))]
+                    g.applogger.info(f"[Trace] config_file_list={config_file_list}")
+
+                    for config_file_name in config_file_list:
+                        # 対象のconfigファイルがインストール必要なドライバのものか判断
+                        driver_name = config_file_name.replace('_config.json', '')
+                        if driver_name in driver_list:
+                            if driver_name != install_driver:
+                                continue
+                            dest_dir = os.path.join(workspace_dir, "uploadfiles")
+                            config_file_path = os.path.join(src_dir, config_file_name)
+                            g.applogger.info(f"[Trace] dest_dir={dest_dir}")
+                            g.applogger.info(f"[Trace] config_file_path={config_file_path}")
+                            put_uploadfiles_jnl(ws_db, config_file_path, src_dir, dest_dir)
+                g.applogger.info("set initial material jnl")
+
                 g.applogger.info(" INSTALLING {} IS ENDED".format(install_driver))
 
             # 削除対象のドライバをループし、SQLファイルを実行・必要のないディレクトリの削除・MongoDBの削除を実行する。

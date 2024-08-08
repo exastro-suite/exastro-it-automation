@@ -46,6 +46,23 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
     # SQLiteモジュール
     sqliteDB = sqliteConnect(organization_id, workspace_id)
 
+    # 環境変数の取得
+    base_url = os.environ["EXASTRO_URL"]
+    username = os.environ.get("EXASTRO_USERNAME")
+    password = os.environ.get("EXASTRO_PASSWORD")
+    refresh_token = os.environ.get("EXASTRO_REFRESH_TOKEN")
+
+    # ITAのAPI呼び出しモジュール
+    exastro_api = Exastro_API(
+        base_url,
+        username,
+        password,
+        refresh_token
+    )
+    # ITAへの認証がtokenの場合
+    if refresh_token is not None:
+        exastro_api.get_access_token( organization_id, refresh_token)
+
     # ループに入る前にevent_collection_settings.jsonを削除
     setting_removed = remove_file()
     if setting_removed is True:
@@ -58,7 +75,7 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
         print("")
 
         try:
-            collection_logic(sqliteDB, organization_id, workspace_id)
+            collection_logic(sqliteDB, organization_id, workspace_id, exastro_api)
         except AppException as e:  # noqa F405
             app_exception(e)
         except Exception as e:
@@ -85,18 +102,9 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
         g.applogger.info(g.appmsg.get_log_message("AGT-10026", []))
 
 
-def collection_logic(sqliteDB, organization_id, workspace_id):
+def collection_logic(sqliteDB, organization_id, workspace_id, exastro_api):
 
-    # 環境変数の取得
-    username = os.environ["EXASTRO_USERNAME"]
-    password = os.environ["EXASTRO_PASSWORD"]
     setting_name_list = os.environ["EVENT_COLLECTION_SETTINGS_NAMES"].split(",")
-    baseUrl = os.environ["EXASTRO_URL"]
-    # ITAのAPI呼び出しモジュール
-    exastro_api = Exastro_API(
-        username,
-        password
-    )
 
     g.applogger.debug(g.appmsg.get_log_message("AGT-10006", []))
 
@@ -107,7 +115,7 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
 
     # イベント収集設定ファイルが無い場合、ITAから設定を取得 + 設定ファイル作成
     if settings is False:
-        endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/oase_agent/event_collection/settings"
+        endpoint = f"/api/{organization_id}/workspaces/{workspace_id}/oase_agent/event_collection/settings"
         g.applogger.info(g.appmsg.get_log_message("AGT-10008", []))
         try:
             status_code, response = exastro_api.api_request(
@@ -237,7 +245,7 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
             event_count = event_count + len(event["event"])
         # "Sending {} events to Exastro IT Automation"
         g.applogger.info(g.appmsg.get_log_message("AGT-10017", [event_count]))
-        endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/oase_agent/events"
+        endpoint = f"/api/{organization_id}/workspaces/{workspace_id}/oase_agent/events"
         try:
             status_code, response = exastro_api.api_request(
                 "POST",

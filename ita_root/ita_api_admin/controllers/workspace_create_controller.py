@@ -80,13 +80,6 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         org_db.db_disconnect()
         return '', "ALREADY EXISTS", "499-00001", 499
 
-    driver_list = [
-        'terraform_cloud_ep',
-        'terraform_cli',
-        'ci_cd',
-        'oase'
-    ]
-
     try:
         # make workspace-db connect infomation
         ws_db_name, db_username, db_user_password = org_db.userinfo_generate("ITA_WS")
@@ -254,10 +247,9 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
                 if config_file_name != "config.json":
                     # 対象のconfigファイルがインストール必要なドライバのものか判断
                     driver_name = config_file_name.replace('_config.json', '')
-                    if driver_name in driver_list:
-                        if driver_name in no_install_driver:
-                            g.applogger.info(f"[Trace] SKIP CONFIG FILE NAME=[{config_file_name}] BECAUSE {driver_name} IS NOT INSTALLED.")
-                            continue
+                    if driver_name in no_install_driver:
+                        g.applogger.info(f"[Trace] SKIP CONFIG FILE NAME=[{config_file_name}] BECAUSE {driver_name} IS NOT INSTALLED.")
+                        continue
 
                 dest_dir = os.path.join(workspace_dir, "uploadfiles")
                 config_file_path = os.path.join(src_dir, config_file_name)
@@ -277,10 +269,9 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
                 if config_file_name != "config.json":
                     # 対象のconfigファイルがインストール必要なドライバのものか判断
                     driver_name = config_file_name.replace('_config.json', '')
-                    if driver_name in driver_list:
-                        if driver_name in no_install_driver:
-                            g.applogger.info(f"[Trace] SKIP CONFIG FILE NAME=[{config_file_name}] BECAUSE {driver_name} IS NOT INSTALLED.")
-                            continue
+                    if driver_name in no_install_driver:
+                        g.applogger.info(f"[Trace] SKIP CONFIG FILE NAME=[{config_file_name}] BECAUSE {driver_name} IS NOT INSTALLED.")
+                        continue
 
                 dest_dir = os.path.join(workspace_dir, "uploadfiles")
                 config_file_path = os.path.join(src_dir, config_file_name)

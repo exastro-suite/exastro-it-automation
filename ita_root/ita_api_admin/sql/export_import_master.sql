@@ -41,7 +41,13 @@ INSERT INTO T_COMN_MENU_TABLE_LINK (TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_
             ・廃止を含む
                     廃止したレコードを含めてエクスポートします。
             ・廃止を除く
-                    廃止したレコードを除いてエクスポートします。','The following functions are provided.
+                    廃止したレコードを除いてエクスポートします。
+
+            履歴
+            ・履歴あり
+                    履歴のレコードを含めてエクスポートします。
+            ・履歴なし
+                    履歴のレコードを含めずにエクスポートします。','The following functions are provided.
    ・Menu export
       Select the menu that you want to export data from and click the "Export" button.
 
@@ -57,7 +63,13 @@ Abolition data
    ・All records
       Exports all records
    ・Exclude discarded records
-      Exports without discarded records','20','0','0','0','0','0','0','0','0','0',NULL,NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
+      Exports without discarded records
+
+history
+   ・History available
+      Exports include a record of history.
+   ・No history
+      Exports without the history record.','20','0','0','0','0','0','0','0','0','0',NULL,NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_TABLE_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,HOSTGROUP,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(60101,_____DATE_____,'INSERT','60101','60101',NULL,NULL,NULL,'下記の機能を提供しています。
     ・メニューエクスポート
             データをエクスポートするメニューを選択し、エクスポートボタンをクリックしてください。
@@ -72,7 +84,13 @@ INSERT INTO T_COMN_MENU_TABLE_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOUR
             ・廃止を含む
                     廃止したレコードを含めてエクスポートします。
             ・廃止を除く
-                    廃止したレコードを除いてエクスポートします。','The following functions are provided.
+                    廃止したレコードを除いてエクスポートします。
+
+            履歴
+            ・履歴あり
+                    履歴のレコードを含めてエクスポートします。
+            ・履歴なし
+                    履歴のレコードを含めずにエクスポートします。','The following functions are provided.
    ・Menu export
       Select the menu that you want to export data from and click the "Export" button.
 
@@ -88,7 +106,13 @@ Abolition data
    ・All records
       Exports all records
    ・Exclude discarded records
-      Exports without discarded records','20','0','0','0','0','0','0','0','0','0',NULL,NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
+      Exports without discarded records
+
+history
+   ・History available
+      Exports include a record of history.
+   ・No history
+      Exports without the history record.','20','0','0','0','0','0','0','0','0','0',NULL,NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_TABLE_LINK (TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,HOSTGROUP,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('60102','60102',NULL,NULL,NULL,'下記の機能を提供しています。
 ・インポートデータのアップロード
     インポートするデータを圧縮したkymファイルをアップロードしてください。

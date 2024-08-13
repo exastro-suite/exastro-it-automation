@@ -4,6 +4,104 @@
 UPDATE T_COMN_MENU SET WEB_PRINT_LIMIT = 10000, WEB_PRINT_CONFIRM = 1000 WHERE MENU_ID IN ('60101','60102','60103','60104','60105','60106');
 UPDATE T_COMN_MENU_JNL SET WEB_PRINT_LIMIT = 10000, WEB_PRINT_CONFIRM = 1000 WHERE MENU_ID IN ('60101','60102','60103','60104','60105','60106');
 
+-- ------------------------------------------------------------
+-- T_COMN_MENU_TABLE_LINK: UPDATE
+-- ------------------------------------------------------------
+UPDATE T_COMN_MENU_TABLE_LINK
+SET MENU_INFO_JA =  '下記の機能を提供しています。
+    ・メニューエクスポート
+            データをエクスポートするメニューを選択し、エクスポートボタンをクリックしてください。
+
+            モード
+            ・環境移行
+                    指定メニューのすべてのデータをエクスポートします。インポート先のデータをすべて置き換えます。
+            ・時刻指定
+                    指定時刻以降のデータのみエクスポートします。インポート先のデータとIDが被った場合はエクスポートしたデータが優先してインポートされます。
+
+            廃止情報
+            ・廃止を含む
+                    廃止したレコードを含めてエクスポートします。
+            ・廃止を除く
+                    廃止したレコードを除いてエクスポートします。
+
+            履歴
+            ・履歴あり
+                    履歴のレコードを含めてエクスポートします。
+            ・履歴なし
+                    履歴のレコードを含めずにエクスポートします。',
+MENU_INFO_EN = 'The following functions are provided.
+   ・Menu export
+      Select the menu that you want to export data from and click the "Export" button.
+
+Mode
+   ・Environment migration
+      Exports all the data of the selected menu and replaces the data in the import destination.
+
+   ・Time specification
+      Exports the data at the specified time.
+If the ID is the same as the data of the important destination, the exported data has priority over the imported data.
+
+Abolition data
+   ・All records
+      Exports all records
+   ・Exclude discarded records
+      Exports without discarded records
+
+history
+   ・History available
+      Exports include a record of history.
+   ・No history
+      Exports without the history record.',
+LAST_UPDATE_TIMESTAMP = _____DATE_____
+    WHERE MENU_ID = '60101';
+
+UPDATE T_COMN_MENU_TABLE_LINK_JNL
+SET MENU_INFO_JA =  '下記の機能を提供しています。
+    ・メニューエクスポート
+            データをエクスポートするメニューを選択し、エクスポートボタンをクリックしてください。
+
+            モード
+            ・環境移行
+                    指定メニューのすべてのデータをエクスポートします。インポート先のデータをすべて置き換えます。
+            ・時刻指定
+                    指定時刻以降のデータのみエクスポートします。インポート先のデータとIDが被った場合はエクスポートしたデータが優先してインポートされます。
+
+            廃止情報
+            ・廃止を含む
+                    廃止したレコードを含めてエクスポートします。
+            ・廃止を除く
+                    廃止したレコードを除いてエクスポートします。
+
+            履歴
+            ・履歴あり
+                    履歴のレコードを含めてエクスポートします。
+            ・履歴なし
+                    履歴のレコードを含めずにエクスポートします。',
+MENU_INFO_EN = 'The following functions are provided.
+   ・Menu export
+      Select the menu that you want to export data from and click the "Export" button.
+
+Mode
+   ・Environment migration
+      Exports all the data of the selected menu and replaces the data in the import destination.
+
+   ・Time specification
+      Exports the data at the specified time.
+If the ID is the same as the data of the important destination, the exported data has priority over the imported data.
+
+Abolition data
+   ・All records
+      Exports all records
+   ・Exclude discarded records
+      Exports without discarded records
+
+history
+   ・History available
+      Exports include a record of history.
+   ・No history
+      Exports without the history record.',
+LAST_UPDATE_TIMESTAMP = _____DATE_____
+    WHERE JOURNAL_SEQ_NO = '60101';
 
 -- ------------------------------------------------------------
 -- T_COMN_MENU_COLUMN_LINK: INSERT

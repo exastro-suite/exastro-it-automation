@@ -86,6 +86,82 @@ class Exastro_API:
 
         return status_code, response.json()
 
+    def api_request_formdata(self, method, endpoint, body=None, files=None):
+        """
+            method: "GET" or "POST"
+            Content-Type: "multipart/form-data"
+        """
+        response = None
+        status_code = None
+
+        headers = self.headers.copy()
+        headers["Content-Type"] = "multipart/form-data"
+        auth = None
+        if self.access_token:
+        # Barer認証
+            headers["Authorization"] = f"Bearer {self.access_token}"
+        else:
+        # ID/PASS認証（BAISC）
+            auth = (self.username, self.password)
+
+        try:
+            response = requests.request(
+                method=method,
+                url=f"{self.base_url}{endpoint}",
+                headers=headers,
+                auth=auth,
+                json=body,
+                files=files,
+                verify=False
+            )
+
+            status_code = response.status_code
+
+            if status_code != 200:
+                return status_code, response.text
+        except Exception as e:
+            raise AppException("AGT-00004", [e])
+
+        return status_code, response.json()
+
+    def api_request_stream(self, method, endpoint, body=None, files=None):
+        """
+            method: "GET" or "POST"
+            stream: True
+            ファイルの保存は、呼び元で実施。
+        """
+        response = None
+        status_code = None
+
+        headers = self.headers.copy()
+        auth = None
+        if self.access_token:
+        # Barer認証
+            headers["Authorization"] = f"Bearer {self.access_token}"
+        else:
+        # ID/PASS認証（BAISC）
+            auth = (self.username, self.password)
+
+        try:
+            response = requests.request(
+                method=method,
+                url=f"{self.base_url}{endpoint}",
+                headers=headers,
+                auth=auth,
+                json=body,
+                verify=False,
+                stream=True
+            )
+
+            status_code = response.status_code
+
+            if status_code != 200:
+                return status_code, response.text
+        except Exception as e:
+            raise AppException("AGT-00004", [e])
+
+        return status_code, response
+
     def get_access_token(self, organization_id, refresh_token=None):
         endpoint = f"/auth/realms/{organization_id}/protocol/openid-connect/token"
         headers = {

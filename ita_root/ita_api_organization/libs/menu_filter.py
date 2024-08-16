@@ -53,9 +53,9 @@ def rest_count(objdbca, menu, filter_parameter):
         wsMongo = MONGOConnectWs()
         try:
             load_collection = loadCollection(wsMongo, objmenu)
+            status_code, result, msg = load_collection.rest_filter(filter_parameter, mode)
         finally:
             wsMongo.disconnect()
-        status_code, result, msg = load_collection.rest_filter(filter_parameter, mode)
     else:
         status_code, result, msg = objmenu.rest_filter(filter_parameter, mode)
 
@@ -97,9 +97,9 @@ def rest_filter(objdbca, menu, filter_parameter, base64_file_flg=True):
         wsMongo = MONGOConnectWs()
         try:
             load_collection = loadCollection(wsMongo, objmenu)
+            status_code, result, msg = load_collection.rest_filter(filter_parameter, mode)
         finally:
             wsMongo.disconnect()
-        status_code, result, msg = load_collection.rest_filter(filter_parameter, mode)
 
     else:
         status_code, result, msg = objmenu.rest_filter(filter_parameter, mode, base64_file_flg=base64_file_flg)

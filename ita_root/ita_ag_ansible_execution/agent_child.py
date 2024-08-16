@@ -32,8 +32,8 @@ def agent_child():
         execution_no = args[3]
         driver_id = args[4]
         build_type = args[5]
-        redhad_user_name = [6]
-        redhad_password = [7]
+        redhad_user_name = args[6]
+        redhad_password = args[7]
 
         # in/out親ディレクトリパス
         root_dir_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/" + driver_id + "/" + execution_no
@@ -54,11 +54,32 @@ def agent_child():
         username = os.environ["EXASTRO_USERNAME"]
         password = os.environ["EXASTRO_PASSWORD"]
         baseUrl = os.environ["EXASTRO_URL"]
+        refresh_token = os.getenv('EXASTRO_REFRESH_TOKEN') #####
+
         # ITAのAPI呼び出しモジュール
         exastro_api = Exastro_API(
-            username,
-            password
+            baseUrl,
+            username=username,
+            password=password,
+            refresh_token=refresh_token,
         )
+        ##### 投入資材取得、展開テスト
+        # _chunk_size=1024*1024 #####
+        # method = "GET"
+        # endpoint = f"/api/{organization_id}/workspaces/{workspace_id}/execution/xxxxxx" #####
+        # status_code, response = retry_api_call(exastro_api, endpoint, mode="stream" ,method="POST")
+        # if not status_code == 200:
+        #     g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
+        #     raise AppException()
+        # tmp_dir_path = f"{root_dir_path}.tmp.gz"
+        # dir_path = f"{tmp_dir_path}".replace("/storage/", "/tmp/")
+        # with open(dir_path, 'wb') as f:
+        #     for chunk in response.iter_content(chunk_size=_chunk_size):
+        #         if chunk:
+        #             f.write(chunk)
+        #             f.flush()
+        # response.close()
+        # 解凍→配置(input, conductor) #####
 
         # 実行環境構築方法がITAの場合builder.sh実行
         if build_type == "ITA":
@@ -92,6 +113,7 @@ def agent_child():
                 if os.path.isfile(file_path):
                     # 緊急停止ボタンが押された
                     cmd = root_dir_path + "in/runner_executable_files/stop.sh"
+                    ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
                     if ret.returncode != 0:
                         msg = g.appmsg.get_api_message('MSG-10951', [])
                         raise app_exception(msg)
@@ -125,6 +147,27 @@ def agent_child():
                                 except AppException as e:  # noqa E405
                                     app_exception(e)
                                 break
+                                ##### 以下、テスト
+                                # # 作業状態通知送信
+                                # endpoint = f"/api/{organization_id}/workspaces/{workspace_id}/execution/xxxxx" #####
+                                # body = {}
+                                # g.applogger.info(g.appmsg.get_log_message("MSG-10956", []))
+                                # status_code, response = retry_api_call(exastro_api, endpoint, mode="json", method="POST", body=body)
+                                # if not status_code == 200:
+                                #     g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
+                                #     raise AppException()
+
+                                # # 作業状態通知送信(ログ、ファイル)
+                                # endpoint = f"/api/{organization_id}/workspaces/{workspace_id}/execution/xxxxx" #####
+                                # body = {}
+                                # g.applogger.info(g.appmsg.get_log_message("MSG-10956", []))
+                                # upload_path = root_dir_path + "/out/log.tar.gz" #####
+                                # with open(upload_path, "rb") as r:
+                                #     files = {"file": (r.name, r.read())}
+                                #     status_code, response = retry_api_call(exastro_api, endpoint, mode="form", method="POST", body=body, files=files)
+                                # if not status_code == 200:
+                                #     g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
+                                #     raise AppException()
                             else:
                                 # 作業状態通知送信
                                 endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/execution/status"
@@ -228,7 +271,7 @@ def agent_child():
                         continue
             else:
                 # 作業実行が停止中
-                file_path = "exastro/share_volume_dir/" + driver_id + "/" + execution_no + "/out/forced_exec"
+                file_path = root_dir_path + "/out/forced_exec"
                 if os.path.isfile(file_path):
                     # 緊急停止
                     # 作業状態通知送信
@@ -313,3 +356,34 @@ def agent_child():
 
     except Exception as e:
         raise AppException(e)
+
+def retry_api_call(exastro_api, endpoint, mode="json" ,method="POST", body=None, files=None, retry=3):
+    """
+    """
+    status_code = None
+    response = None
+    for t in range(int(retry)):
+        try:
+            if mode == "json":
+                status_code, response = exastro_api.api_request(
+                    method,
+                    endpoint
+                )
+            elif mode == "form":
+                status_code, response = exastro_api.api_request_formdata(
+                    method,
+                    endpoint,
+                    body,
+                    files
+                )
+            elif mode == "stream":
+                status_code, response = exastro_api.api_request_stream(
+                    method,
+                    endpoint,
+                    body,
+                )
+            if status_code == 200:
+                break
+        except Exception as e:
+            g.applogger.info(f"{endpoint=} {status_code=} retry:{t} \n {e}")
+    return status_code, response,

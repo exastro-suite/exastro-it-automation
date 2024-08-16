@@ -30,10 +30,9 @@ from common_libs.api import api_filter_admin, check_request_body_key
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectOrg, MONGOConnectWs
 from common_libs.common.mongoconnect.const import Const as mongoConst
 from common_libs.common.dbconnect import *  # noqa: F403
-from common_libs.common.util import ky_decrypt, ky_encrypt, get_timestamp, create_dirs, put_uploadfiles, arrange_stacktrace_format
+from common_libs.common.util import ky_decrypt, ky_encrypt, get_timestamp, create_dirs, put_uploadfiles, put_uploadfiles_jnl, arrange_stacktrace_format
 from libs.admin_common import initial_settings_ansible
 from common_libs.common.exception import AppException
-from common_libs.api import app_exception_response, exception_response
 
 
 @api_filter_admin
@@ -82,18 +81,6 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         return '', "ALREADY EXISTS", "499-00001", 499
 
     try:
-        # make storage directory for workspace job
-        create_dir_list = os.path.join(os.environ.get('PYTHONPATH'), "config", "create_dir_list.txt")
-        create_dirs(create_dir_list, workspace_dir)
-        g.applogger.info("make storage directory for workspace job")
-
-        # set initial material
-        src_dir = os.path.join(os.environ.get('PYTHONPATH'), "files")
-        dest_dir = os.path.join(workspace_dir, "uploadfiles")
-        config_file_path = os.path.join(src_dir, "config.json")
-        put_uploadfiles(config_file_path, src_dir, dest_dir)
-        g.applogger.info("set initial material")
-
         # make workspace-db connect infomation
         ws_db_name, db_username, db_user_password = org_db.userinfo_generate("ITA_WS")
 
@@ -244,6 +231,55 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
                     ws_db.sql_execute(sql, prepared_list)
             ws_db.db_commit()
 
+        # make storage directory for workspace job
+        create_dir_list = os.path.join(os.environ.get('PYTHONPATH'), "config", "create_dir_list.txt")
+        create_dirs(create_dir_list, workspace_dir)
+        g.applogger.info("make storage directory for workspace job")
+
+        # set initial material files
+        src_dir = os.path.join(os.environ.get('PYTHONPATH'), "files")
+        g.applogger.info(f"[Trace] src_dir={src_dir}")
+        if os.path.isdir(src_dir):
+            config_file_list = [f for f in os.listdir(src_dir) if os.path.isfile(os.path.join(src_dir, f))]
+            g.applogger.info(f"[Trace] config_file_list={config_file_list}")
+
+            for config_file_name in config_file_list:
+                if config_file_name != "config.json":
+                    # 対象のconfigファイルがインストール必要なドライバのものか判断
+                    driver_name = config_file_name.replace('_config.json', '')
+                    if driver_name in no_install_driver:
+                        g.applogger.info(f"[Trace] SKIP CONFIG FILE NAME=[{config_file_name}] BECAUSE {driver_name} IS NOT INSTALLED.")
+                        continue
+
+                dest_dir = os.path.join(workspace_dir, "uploadfiles")
+                config_file_path = os.path.join(src_dir, config_file_name)
+                g.applogger.info(f"[Trace] dest_dir={dest_dir}")
+                g.applogger.info(f"[Trace] config_file_path={config_file_path}")
+                put_uploadfiles(config_file_path, src_dir, dest_dir)
+        g.applogger.info("set initial material files")
+
+        # set initial material jnl
+        src_dir = os.path.join(os.environ.get('PYTHONPATH'), "jnl")
+        g.applogger.info(f"[Trace] src_dir={src_dir}")
+        if os.path.isdir(src_dir):
+            config_file_list = [f for f in os.listdir(src_dir) if os.path.isfile(os.path.join(src_dir, f))]
+            g.applogger.info(f"[Trace] config_file_list={config_file_list}")
+
+            for config_file_name in config_file_list:
+                if config_file_name != "config.json":
+                    # 対象のconfigファイルがインストール必要なドライバのものか判断
+                    driver_name = config_file_name.replace('_config.json', '')
+                    if driver_name in no_install_driver:
+                        g.applogger.info(f"[Trace] SKIP CONFIG FILE NAME=[{config_file_name}] BECAUSE {driver_name} IS NOT INSTALLED.")
+                        continue
+
+                dest_dir = os.path.join(workspace_dir, "uploadfiles")
+                config_file_path = os.path.join(src_dir, config_file_name)
+                g.applogger.info(f"[Trace] dest_dir={dest_dir}")
+                g.applogger.info(f"[Trace] config_file_path={config_file_path}")
+                put_uploadfiles_jnl(ws_db, config_file_path, src_dir, dest_dir)
+        g.applogger.info("set initial material jnl files")
+
         # 初期データ設定(ansible)
         if (inistial_data_ansible_if is not None) and (len(inistial_data_ansible_if) != 0):
             ws_db.db_transaction_start()
@@ -335,9 +371,6 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
 
         if 'org_mongo' in locals():
             org_mongo.disconnect()
-
-        if 'ws_mongo' in locals():
-            ws_mongo.disconnect()
 
     return '',
 
@@ -452,15 +485,5 @@ def workspace_delete(organization_id, workspace_id):  # noqa: E501
             g.applogger.info("Workspace is reused")
 
         org_db.db_disconnect()
-
-
-        if 'org_db' in locals():
-            org_db.db_disconnect()
-
-        if 'org_root_db' in locals():
-            org_root_db.db_disconnect()
-
-        if 'org_mongo' in locals():
-            org_mongo.disconnect()
 
     return '',

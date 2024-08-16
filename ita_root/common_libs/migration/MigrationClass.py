@@ -16,8 +16,10 @@ import json
 import os
 import re
 from flask import g
-from common_libs.common.util import create_dirs, put_uploadfiles, put_uploadfiles_not_override, get_timestamp
+from common_libs.common.util import create_dirs, put_uploadfiles, put_uploadfiles_jnl, put_uploadfiles_not_override, get_timestamp
 from importlib import import_module
+import shutil
+import datetime
 
 
 class Migration:
@@ -50,16 +52,25 @@ class Migration:
         """
         g.applogger.info(f"[Trace] work_dir_path:{self._work_dir_path}")
 
+        # ドライバ情報を取得する
+        if self._no_install_driver is None or len(self._no_install_driver) == 0:
+            no_install_driver = []
+        else:
+            no_install_driver = json.loads(self._no_install_driver)
+
         # DBパッチ
-        self.migrate_db()
+        self.migrate_db(no_install_driver)
 
         # FILE処理
-        self.migrate_file()
+        self.migrate_file(no_install_driver)
+
+        # 履歴パッチ
+        self.migrate_jnl(no_install_driver)
 
         # 特別処理
         self.migrate_specific()
 
-    def migrate_db(self):
+    def migrate_db(self, no_install_driver):
         """
         migrate db
         """
@@ -69,10 +80,10 @@ class Migration:
         sql_dir = os.path.join(self._resource_dir_path, "sql")
         if os.path.isdir(sql_dir):
             g.applogger.info("[Trace] migrate db start")
-            self._db_migrate(sql_dir)
+            self._db_migrate(sql_dir, no_install_driver)
         g.applogger.info("[Trace] migrate db complete")
 
-    def migrate_file(self):
+    def migrate_file(self, no_install_driver):
         """
         migrate file
         """
@@ -85,14 +96,25 @@ class Migration:
 
         # ファイル配置 (uploadfiles only)
         src_dir = os.path.join(self._resource_dir_path, "files")
-        dest_dir = os.path.join(self._work_dir_path, "uploadfiles")
-        config_file_path = os.path.join(src_dir, "config.json")
         g.applogger.info(f"[Trace] src_dir={src_dir}")
-        g.applogger.info(f"[Trace] dest_dir={dest_dir}")
-        g.applogger.info(f"[Trace] config_file_path={config_file_path}")
-        if os.path.isfile(config_file_path):
-            put_uploadfiles(config_file_path, src_dir, dest_dir)
-            g.applogger.info("[Trace] delivery files complete")
+        if os.path.isdir(src_dir):
+            config_file_list = [f for f in os.listdir(src_dir) if os.path.isfile(os.path.join(src_dir, f))]
+            g.applogger.info(f"[Trace] config_file_list={config_file_list}")
+
+            for config_file_name in config_file_list:
+                if config_file_name != "config.json":
+                    # 対象のconfigファイルがインストール必要なドライバのものか判断
+                    driver_name = config_file_name.replace('_config.json', '')
+                    if driver_name in no_install_driver:
+                        g.applogger.info(f"[Trace] SKIP CONFIG FILE NAME=[{config_file_name}] BECAUSE {driver_name} IS NOT INSTALLED.")
+                        continue
+
+                dest_dir = os.path.join(self._work_dir_path, "uploadfiles")
+                config_file_path = os.path.join(src_dir, config_file_name)
+                g.applogger.info(f"[Trace] dest_dir={dest_dir}")
+                g.applogger.info(f"[Trace] config_file_path={config_file_path}")
+                put_uploadfiles(config_file_path, src_dir, dest_dir)
+        g.applogger.info("[Trace] delivery files complete")
 
     def migrate_file_not_override(self):
         """
@@ -118,6 +140,35 @@ class Migration:
             put_uploadfiles_not_override(config_file_path, src_dir, dest_dir)
             g.applogger.info("[Trace] delivery files complete")
 
+    def migrate_jnl(self, no_install_driver):
+        """
+        migrate jnl
+        """
+
+        _db_conn = self._db_conn
+
+        # jnlパッチ用のconfigファイルを取得する
+        src_dir = os.path.join(self._resource_dir_path, "jnl")
+        g.applogger.info(f"[Trace] src_dir={src_dir}")
+        if os.path.isdir(src_dir):
+            config_file_list = [f for f in os.listdir(src_dir) if os.path.isfile(os.path.join(src_dir, f))]
+            g.applogger.info(f"[Trace] config_file_list={config_file_list}")
+
+            for config_file_name in config_file_list:
+                if config_file_name != "config.json":
+                    # 対象のconfigファイルがインストール必要なドライバのものか判断
+                    driver_name = config_file_name.replace('_config.json', '')
+                    if driver_name in no_install_driver:
+                        g.applogger.info(f"[Trace] SKIP CONFIG FILE NAME=[{config_file_name}] BECAUSE {driver_name} IS NOT INSTALLED.")
+                        continue
+
+                dest_dir = os.path.join(self._work_dir_path, "uploadfiles")
+                config_file_path = os.path.join(src_dir, config_file_name)
+                g.applogger.info(f"[Trace] dest_dir={dest_dir}")
+                g.applogger.info(f"[Trace] config_file_path={config_file_path}")
+                put_uploadfiles_jnl(_db_conn, config_file_path, src_dir, dest_dir)
+        g.applogger.info("[Trace] delivery jnl files complete")
+
     def migrate_specific(self):
         """
         migrate specific
@@ -130,7 +181,7 @@ class Migration:
             self._specific_logic(config_file_path, src_dir)
             g.applogger.info("[Trace] specific logic complete")
 
-    def _db_migrate(self, sql_dir):
+    def _db_migrate(self, sql_dir, no_install_driver):
         """
         DB migrate
 
@@ -143,11 +194,6 @@ class Migration:
 
         with open(config_file_path, "r") as config_str:
             file_list = json.load(config_str)
-
-        if self._no_install_driver is None or len(self._no_install_driver) == 0:
-            no_install_driver = []
-        else:
-            no_install_driver = json.loads(self._no_install_driver)
 
         last_update_timestamp = str(get_timestamp())
         for sql_files in file_list:

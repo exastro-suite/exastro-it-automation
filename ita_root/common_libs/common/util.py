@@ -871,6 +871,140 @@ def put_uploadfiles_not_override(config_file_path, src_dir, dest_dir):
     return True
 
 
+def put_uploadfiles_jnl(_db_conn, config_file_path, src_dir, dest_dir):
+    """
+    config_file_pathのファイルに記載されているファイルをdest_dir配下に作成する
+
+    Arguments:
+        _db_conn: WorkspaceDBインスタンス
+        config_file_path: 設定ファイル
+        src_dir: コピー元のファイル格納ディレクトリ
+        dest_dir: 作成するディレクトリ
+    Returns:
+        is success:(bool)
+    """
+
+    # 現在時間を取得する
+    last_update_timestamp = get_timestamp()
+
+    # バックヤードユーザのユーザIDを取得しリストに格納する
+    backyard_user_data = _db_conn.table_select("T_COMN_BACKYARD_USER", "WHERE DISUSE_FLAG = %s", [0])
+    backyard_user_list = []
+    for backyard_user in backyard_user_data:
+        backyard_user_list.append(backyard_user["USER_ID"])
+
+    with open(config_file_path, 'r') as material_conf_json:
+        material_conf = json.load(material_conf_json)
+        _db_conn.db_transaction_start()
+        for menu_id, menu_record in material_conf.items():
+            # 対象メニューの通常テーブル名・履歴テーブル名・rest名でのPrimaryキーを取得する
+            table_data = _db_conn.table_select("T_COMN_MENU_TABLE_LINK", "WHERE MENU_ID = %s AND DISUSE_FLAG = %s", [menu_id, 0])[0]
+            table_name = table_data["TABLE_NAME"]
+            table_name_jnl = table_name + "_JNL"
+            primary_key_rest = table_data["PK_COLUMN_NAME_REST"]
+            # 対象メニューの通常テーブルのPrimaryキーのカラム名を取得する
+            primary_key_name = _db_conn.table_select("T_COMN_MENU_COLUMN_LINK", "WHERE MENU_ID = {} AND COLUMN_NAME_REST = '{}' AND DISUSE_FLAG = {}".format(menu_id, primary_key_rest, 0))[0]["COL_NAME"]
+            for primary_key_value, jnl_record_list in menu_record.items():
+                sql_execute_flag = False
+                for count, jnl_record in enumerate(jnl_record_list, start=0):
+                    for jnl_id, jnl_data_list in jnl_record.items():
+                        # 履歴テーブルに指定の履歴IDと同じものが存在するか確認する
+                        jnl_id_record = _db_conn.table_select(table_name_jnl, "WHERE JOURNAL_SEQ_NO = %s AND DISUSE_FLAG = %s", [jnl_id, 0])
+                        # 既に履歴テーブルに指定の履歴IDと同じものが存在する際はSQL文を実行しない
+                        if len(jnl_id_record) != 0:
+                            g.applogger.info(f"[Trace] Processing was skipped because the specified history ID={jnl_id}(primary_key_value={primary_key_value}) already exists in the history table.")
+                            continue
+
+                        # _____DATE_____の置換、繰り返す中で1秒ずつ増やす
+                        last_update_timestamp_count = str(last_update_timestamp + datetime.timedelta(seconds=count))
+                        # SQL文を取得し、実行する
+                        sql = jnl_data_list[0]
+                        sql_execute = sql.replace("_____DATE_____", "STR_TO_DATE('" + last_update_timestamp_count + "','%Y-%m-%d %H:%i:%s.%f')")
+                        _db_conn.sql_execute(sql_execute)
+                        sql_execute_flag = True
+
+                        # ファイル名等が指定されていなければスキップする
+                        if len(jnl_data_list) < 2:
+                            continue
+                        for jnl_data in jnl_data_list[1]:
+                            # ファイル等の指定が3つそろっていない際はスキップする
+                            if len(jnl_data) != 3:
+                                continue
+                            # ファイル名、パスを取得する
+                            file_name = jnl_data[0]
+                            org_file = os.path.join(os.path.join(src_dir, menu_id), file_name)
+                            old_file_path = os.path.join(dest_dir, menu_id) + jnl_data[1]
+                            file_path = os.path.join(dest_dir, menu_id) + jnl_data[2]
+                            # 指定のディレクトリ・ファイルを作成する
+                            if not os.path.isdir(old_file_path):
+                                os.makedirs(old_file_path)
+                            shutil.copy(org_file, old_file_path + file_name)
+
+                # primaryキーの値単位で1度もSQL文を実行しなかったデータは下記処理をスキップする
+                if sql_execute_flag is False:
+                    continue
+
+                # 履歴テーブル内で、通常テーブル内primaryキーの値が一致する中で変更日時が最新のレコードを取得する
+                latest_last_update_record_jnl = _db_conn.table_select(table_name_jnl, "WHERE {} = '{}' ORDER BY `JOURNAL_REG_DATETIME` DESC LIMIT 1".format(primary_key_name, primary_key_value))[0]
+                # 取得したレコードから最終更新者を取得
+                latest_last_update_user = latest_last_update_record_jnl["LAST_UPDATE_USER"]
+
+                # 取得した最終更新者がバックヤードユーザか判断する
+                if latest_last_update_user not in backyard_user_list:
+                    continue
+                else:
+                    # 履歴テーブル最新レコードと通常テーブル最新レコードが一致しないため、通常テーブルにUPDATEを行う（ファイルを指定している際はシンボリックリンクの張り替えを行う）
+                    # 更新前の通常テーブル最新レコードを取得する
+                    previous_record = _db_conn.table_select(table_name, "WHERE {} = '{}' AND DISUSE_FLAG = {}".format(primary_key_name, primary_key_value, 0))[0]
+
+                    last_update_record_copy = latest_last_update_record_jnl.copy()
+
+                    # 通常テーブルに履歴テーブルのレコードから履歴テーブル特有のkey,valueを削除したものをUPDATEする
+                    del latest_last_update_record_jnl["JOURNAL_SEQ_NO"]
+                    del latest_last_update_record_jnl["JOURNAL_REG_DATETIME"]
+                    del latest_last_update_record_jnl["JOURNAL_ACTION_CLASS"]
+                    _db_conn.table_update(table_name, latest_last_update_record_jnl, primary_key_name, False, False)
+
+                # 取得したレコードとconfigファイルを照らし合わせてファイル名・パスを取得する
+                for jnl_record in jnl_record_list:
+                    for jnl_id, jnl_data_list in jnl_record.items():
+                        if jnl_id != last_update_record_copy["JOURNAL_SEQ_NO"]:
+                            continue
+                        # ファイル名等が指定されていなければスキップする
+                        if len(jnl_data_list) < 2:
+                            continue
+                        for jnl_data in jnl_data_list[1]:
+                            # ファイル等の指定が3つそろっていない際はスキップする
+                            if len(jnl_data) != 3:
+                                continue
+                            # 更新前のファイル名を取得する
+                            file_column_rest_name = jnl_data[1].split('/')[1]
+                            file_column_name = _db_conn.table_select("T_COMN_MENU_COLUMN_LINK", "WHERE MENU_ID = {} AND COLUMN_NAME_REST = '{}' AND DISUSE_FLAG = {}".format(menu_id, file_column_rest_name, 0))[0]["COL_NAME"]
+                            previous_file_name = previous_record[file_column_name]
+                            # ファイル名、パスを取得する
+                            file_name = jnl_data[0]
+                            org_file = os.path.join(os.path.join(src_dir, menu_id), file_name)
+                            old_file_path = os.path.join(dest_dir, menu_id) + jnl_data[1]
+                            file_path = os.path.join(dest_dir, menu_id) + jnl_data[2]
+                            dir_path_file = file_path + file_name
+
+                            # 更新前シンボリックリンクがある場合は削除してから作成する
+                            if previous_file_name is not None:
+                                if os.path.isfile(file_path + previous_file_name):
+                                    os.unlink(file_path + previous_file_name)
+                            # シンボリックリンクを作成する
+                            try:
+                                os.symlink(old_file_path + file_name, dir_path_file)
+                            except Exception:
+                                retBool = False
+                                msg = g.appmsg.get_api_message('MSG-00015', [old_file_path + file_name, dir_path_file])
+                                return retBool, msg
+
+        _db_conn.db_commit()
+
+    return True
+
+
 def get_maintenance_mode_setting():
     """
     メンテナンスモードの状態を取得する
@@ -910,7 +1044,7 @@ def url_check(url_string, scheme='', path=False, params=False, query=False, frag
         assert len(parse_obj.netloc) > 0, "netloc"  # ネットワーク上の位置（hostname:port）
         assert parse_obj.hostname is not None, "hostname"  # ホスト名 (小文字)
         if path is True:
-            assert  len(parse_obj.path) > 0, "path"  # 階層的パス
+            assert len(parse_obj.path) > 0, "path"  # 階層的パス
         if params is True:
             assert len(parse_obj.params) > 0, "params"  # 最後のパス要素に対するパラメータ
         if query is True:
@@ -963,10 +1097,10 @@ def get_ita_version(common_db):
     version = ret[0].get('VERSION')
     installed_driver_ja = json.loads(ret[0].get('INSTALLED_DRIVER_JA'))
     installed_driver_en = json.loads(ret[0].get('INSTALLED_DRIVER_EN'))
-    installed_driver =  installed_driver_ja if lang == 'ja' else installed_driver_en
+    installed_driver = installed_driver_ja if lang == 'ja' else installed_driver_en
 
     # NO_INSTALL_DRIVERを取得
-    _nid = common_db.table_select('T_COMN_ORGANIZATION_DB_INFO', 'WHERE ORGANIZATION_ID = %s AND DISUSE_FLAG = %s', [g.get('ORGANIZATION_ID'),0])
+    _nid = common_db.table_select('T_COMN_ORGANIZATION_DB_INFO', 'WHERE ORGANIZATION_ID = %s AND DISUSE_FLAG = %s', [g.get('ORGANIZATION_ID'), 0])
     # 件数確認
     if len(ret) != 1:
         raise AppException("499-00601")

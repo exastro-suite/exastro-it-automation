@@ -53,7 +53,7 @@ def post_event_collection_settings(body, organization_id, workspace_id):  # noqa
     wsDb = DBConnectWs(workspace_id)
 
     try:
-        menu = 'agent'
+        menu = 'event_collection'
         # メニューの存在確認
         check_menu_info(menu, wsDb)
         # メニューに対するロール権限をチェック
@@ -81,7 +81,8 @@ def post_event_collection_settings(body, organization_id, workspace_id):  # noqa
             data['SECRET_ACCESS_KEY'] = agent_encrypt(secret_access_key, pass_phrase)
     finally:
         wsDb.db_disconnect()
-
+    print("aa　　　　　　　　　　　　　　　　　　　　　　　　")
+    print(data_list)
     return data_list,
 
 

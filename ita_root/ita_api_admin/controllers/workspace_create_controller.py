@@ -145,6 +145,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             'MONGO_DATABASE': ws_mongo_name,
             'MONGO_USER': ws_mongo_user,
             'MONGO_PASSWORD': ky_encrypt(ws_mongo_password),
+            'NO_INSTALL_DRIVER': no_install_driver_tmp,
             'DISUSE_FLAG': 0,
             'LAST_UPDATE_USER': g.get('USER_ID')
         }

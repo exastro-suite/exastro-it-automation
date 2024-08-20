@@ -81,8 +81,7 @@ def post_event_collection_settings(body, organization_id, workspace_id):  # noqa
             data['SECRET_ACCESS_KEY'] = agent_encrypt(secret_access_key, pass_phrase)
     finally:
         wsDb.db_disconnect()
-    print("aa　　　　　　　　　　　　　　　　　　　　　　　　")
-    print(data_list)
+
     return data_list,
 
 

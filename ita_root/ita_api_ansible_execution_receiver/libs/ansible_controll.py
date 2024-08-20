@@ -38,6 +38,102 @@ def unexecuted_instance(objdbca, organization_id, workspace_id):
     t_ansc_execdev = "T_ANSC_EXECDEV"
     t_ansc_info = "T_ANSC_IF_INFO"
 
+    # Legacy_role
+    # 準備完了の作業インスタンス取得
+    ret = objdbca.table_select(t_ansl_exec_sts_inst, 'WHERE  DISUSE_FLAG=%s AND STATUS_ID = %s', ['0', '11'])
+
+    result = {}
+    for record in ret:
+        execution_no = record.get("EXECUTION_NO") # 作業番号
+        ans_vent_path = record.get("I_ANS_VENT_PATH") # 仮想環境パス
+
+        result[execution_no] = {
+            "driver_id": "legacy",
+            "ans_vent_path": ans_vent_path
+        }
+
+    # pioneer
+    # 準備完了の作業インスタンス取得
+    ret = objdbca.table_select(t_ansp_exec_sts_inst, 'WHERE  DISUSE_FLAG=%s AND STATUS_ID = %s', ['0', '11'])
+
+    for record in ret:
+        execution_no = record.get("EXECUTION_NO") # 作業番号
+        ans_vent_path = record.get("I_ANS_VENT_PATH") # 仮想環境パス
+
+        result[execution_no] = {
+            "driver_id": "pioneer",
+            "ans_vent_path": ans_vent_path
+        }
+
+    # role
+    # 準備完了の作業インスタンス取得
+    ret = objdbca.table_select(t_ansr_exec_sts_inst, 'WHERE  DISUSE_FLAG=%s AND STATUS_ID = %s', ['0', '11'])
+
+    for record in ret:
+        execution_no = record.get("EXECUTION_NO") # 作業番号
+        ans_vent_path = record.get("I_ANS_VENT_PATH") # 仮想環境パス
+
+        result[execution_no] = {
+            "driver_id": "legacy_role",
+            "ans_vent_path": ans_vent_path
+        }
+
+    # 実行環境構築方法取得
+    ret = objdbca.table_select(t_ansc_execdev, 'WHERE  DISUSE_FLAG=%s' ['0'])
+
+    for record in ret:
+        build_type = record['BUILD_TYPE']
+        user_name = record['USER_NAME']
+        password = record['PASSWORD']
+        base_image = record['BASE_IMAGE_OS_TYPE']
+        password = ky_decrypt(password)
+
+    # 実行時データ削除フラグ取得
+    ret = objdbca.table_select(t_ansc_info, 'WHERE  DISUSE_FLAG=%s' ['0'])
+    for record in ret:
+        anstwr_del_runtime_data = record['ANSTWR_DEL_RUNTIME_DATA']
+
+    result[execution_no]["build_type"] = build_type
+    result[execution_no]["user_name"] = user_name
+    result[execution_no]["password"] = password
+    result[execution_no]["base_image"] = base_image
+    result[execution_no]["anstwr_del_runtime_data"] = anstwr_del_runtime_data
+
+    objdbca.db_commit()
+
+    return result
+
+def get_execution_status(status):
+    """
+        緊急停止状態を返す
+        ARGS:
+            organization_id:OrganizationID
+            workspace_id: WorkspaceID
+        RETRUN:
+            statusCode, {}, msg
+    """
+
+    if status == AnscConst.SCRAM:
+        return True
+
+    return False
+
+
+def get_populated_data(objdbca, organization_id, workspace_id):
+    """
+        投入データ取得
+        ARGS:
+            organization_id:OrganizationID
+            workspace_id: WorkspaceID
+        RETRUN:
+            statusCode, {}, msg
+    """
+
+    # 各テーブル
+    t_ansl_exec_sts_inst = "T_ANSL_EXEC_STS_INST"
+    t_ansp_exec_sts_inst = "T_ANSP_EXEC_STS_INST"
+    t_ansr_exec_sts_inst = "T_ANSR_EXEC_STS_INST"
+
     # 各Driverパス
     legacy_dir_path = "/driver/ansible/legacy"
     pioneer_dir_path = "/driver/ansible/pioneer"
@@ -50,41 +146,40 @@ def unexecuted_instance(objdbca, organization_id, workspace_id):
     # 準備完了の作業インスタンス取得
     ret = objdbca.table_select(t_ansl_exec_sts_inst, 'WHERE  DISUSE_FLAG=%s AND STATUS_ID = %s FOR UPDATE', ['0', '11'])
 
+    result = {}
     for record in ret:
         execution_no = record.get("EXECUTION_NO") # 作業番号
-        ans_vent_path = record.get("I_ANS_VENT_PATH") # 仮想環境パス
         conductor_name = record.get("CONDUCTOR_NAME") # 呼出元conductor
         conductor_instance_no = record.get("CONDUCTOR_INSTANCE_NO") # conductorインスタンスNO
 
         # in,outディレクトリをtarファイルにまとめる
         dir_path = "/storage/" + organization_id + "/" + workspace_id + legacy_dir_path + "/" + execution_no
-        gztar_path = dir_path + ".tar.gz"
-        with tarfile.open(gztar_path, "w:gz") as tar:
-            tar.add(dir_path, arcname="")
-
-        # tarファイルをbase64に変換する
-        in_out_data = encode_tar_file(dir_path, execution_no + ".tar.gz")
-
-        # conductorから実行されている場合、__conductor_workflowdir__をtarファイルにまとめる
-        if conductor_name is None:
-            dir_path = "/storage/" + organization_id + "/" + workspace_id + legacy_dir_path + "/" + conductor_instance_no
+        if os.path.exists(dir_path):
             gztar_path = dir_path + ".tar.gz"
             with tarfile.open(gztar_path, "w:gz") as tar:
                 tar.add(dir_path, arcname="")
 
             # tarファイルをbase64に変換する
-            conductor_data = encode_tar_file(dir_path, conductor_instance_no + ".tar.gz")
-        else:
-            conductor_data = ""
+            in_out_data = encode_tar_file(dir_path, execution_no + ".tar.gz")
 
-        tmp_legacy_result = {execution_no: {
-            "driver_id": "legacy",
-            "ans_vent_path": ans_vent_path,
-            "in_out_data": in_out_data,
-            "conductor_data": conductor_data
-        }}
+            # conductorから実行されている場合、__conductor_workflowdir__をtarファイルにまとめる
+            if conductor_name is None:
+                dir_path = "/storage/" + organization_id + "/" + workspace_id + legacy_dir_path + "/" + conductor_instance_no
+                gztar_path = dir_path + ".tar.gz"
+                with tarfile.open(gztar_path, "w:gz") as tar:
+                    tar.add(dir_path, arcname="")
 
-        objdbca.db_commit()
+                # tarファイルをbase64に変換する
+                conductor_data = encode_tar_file(dir_path, conductor_instance_no + ".tar.gz")
+            else:
+                conductor_data = ""
+
+            result[execution_no] = {
+                "in_out_data": in_out_data,
+                "conductor_data": conductor_data
+            }
+
+            objdbca.db_commit()
 
     # pioneer
     # 準備完了の作業インスタンス取得
@@ -92,39 +187,37 @@ def unexecuted_instance(objdbca, organization_id, workspace_id):
 
     for record in ret:
         execution_no = record.get("EXECUTION_NO") # 作業番号
-        ans_vent_path = record.get("I_ANS_VENT_PATH") # 仮想環境パス
         conductor_name = record.get("CONDUCTOR_NAME") # 呼出元conductor
         conductor_instance_no = record.get("CONDUCTOR_INSTANCE_NO") # conductorインスタンスNO
 
         # in,outディレクトリをtarファイルにまとめる
         dir_path = "/storage/" + organization_id + "/" + workspace_id + pioneer_dir_path + "/" + execution_no
-        gztar_path = dir_path + ".tar.gz"
-        with tarfile.open(gztar_path, "w:gz") as tar:
-            tar.add(dir_path, arcname="")
-
-        # tarファイルをbase64に変換する
-        in_out_data = encode_tar_file(dir_path, execution_no + ".tar.gz")
-
-        # conductorから実行されている場合、__conductor_workflowdir__をtarファイルにまとめる
-        if conductor_name is None:
-            dir_path = "/storage/" + organization_id + "/" + workspace_id + pioneer_dir_path + "/" + conductor_instance_no
+        if os.path.exists(dir_path):
             gztar_path = dir_path + ".tar.gz"
             with tarfile.open(gztar_path, "w:gz") as tar:
                 tar.add(dir_path, arcname="")
 
             # tarファイルをbase64に変換する
-            conductor_data = encode_tar_file(dir_path, conductor_instance_no + ".tar.gz")
-        else:
-            conductor_data = ""
+            in_out_data = encode_tar_file(dir_path, execution_no + ".tar.gz")
 
-        tmp_pioneer_result = {execution_no: {
-            "driver_id": "pioneer",
-            "ans_vent_path": ans_vent_path,
-            "in_out_data": in_out_data,
-            "conductor_data": conductor_data
-        }}
+            # conductorから実行されている場合、__conductor_workflowdir__をtarファイルにまとめる
+            if conductor_name is None:
+                dir_path = "/storage/" + organization_id + "/" + workspace_id + pioneer_dir_path + "/" + conductor_instance_no
+                gztar_path = dir_path + ".tar.gz"
+                with tarfile.open(gztar_path, "w:gz") as tar:
+                    tar.add(dir_path, arcname="")
 
-        objdbca.db_commit()
+                # tarファイルをbase64に変換する
+                conductor_data = encode_tar_file(dir_path, conductor_instance_no + ".tar.gz")
+            else:
+                conductor_data = ""
+
+            result[execution_no] = {
+                "in_out_data": in_out_data,
+                "conductor_data": conductor_data
+            }
+
+            objdbca.db_commit()
 
     # role
     # 準備完了の作業インスタンス取得
@@ -132,70 +225,47 @@ def unexecuted_instance(objdbca, organization_id, workspace_id):
 
     for record in ret:
         execution_no = record.get("EXECUTION_NO") # 作業番号
-        ans_vent_path = record.get("I_ANS_VENT_PATH") # 仮想環境パス
         conductor_name = record.get("CONDUCTOR_NAME") # 呼出元conductor
         conductor_instance_no = record.get("CONDUCTOR_INSTANCE_NO") # conductorインスタンスNO
 
         # in,outディレクトリをtarファイルにまとめる
         dir_path = "/storage/" + organization_id + "/" + workspace_id + role_dir_path + "/" + execution_no
-        gztar_path = dir_path + ".tar.gz"
-        with tarfile.open(gztar_path, "w:gz") as tar:
-            tar.add(dir_path, arcname="")
-
-        # tarファイルをbase64に変換する
-        in_out_data = encode_tar_file(dir_path, execution_no + ".tar.gz")
-
-        # conductorから実行されている場合、__conductor_workflowdir__をtarファイルにまとめる
-        if conductor_name is None:
-            dir_path = "/storage/" + organization_id + "/" + workspace_id + role_dir_path + "/" + conductor_instance_no
+        if os.path.exists(dir_path):
             gztar_path = dir_path + ".tar.gz"
             with tarfile.open(gztar_path, "w:gz") as tar:
                 tar.add(dir_path, arcname="")
 
             # tarファイルをbase64に変換する
-            conductor_data = encode_tar_file(dir_path, conductor_instance_no + ".tar.gz")
-        else:
-            conductor_data = ""
+            in_out_data = encode_tar_file(dir_path, execution_no + ".tar.gz")
 
-        # ステータスを実行待ちに変更
-        objdbca.table_update(t_ansr_exec_sts_inst, 'WHERE  DISUSE_FLAG=%s AND STATUS_ID = %s FOR UPDATE', ['0', '12'])
+            # conductorから実行されている場合、__conductor_workflowdir__をtarファイルにまとめる
+            if conductor_name is None:
+                dir_path = "/storage/" + organization_id + "/" + workspace_id + role_dir_path + "/" + conductor_instance_no
+                gztar_path = dir_path + ".tar.gz"
+                with tarfile.open(gztar_path, "w:gz") as tar:
+                    tar.add(dir_path, arcname="")
 
-        tmp_role_result = {execution_no: {
-            "driver_id": "legacy_role",
-            "ans_vent_path": ans_vent_path,
-            "in_out_data": in_out_data,
-            "conductor_data": conductor_data
-        }}
+                # tarファイルをbase64に変換する
+                conductor_data = encode_tar_file(dir_path, conductor_instance_no + ".tar.gz")
+            else:
+                conductor_data = ""
 
-    # 実行環境構築方法取得
-    ret = objdbca.table_select(t_ansc_execdev, 'WHERE  DISUSE_FLAG=%s' ['0'])
+            result[execution_no] = {
+                "in_out_data": in_out_data,
+                "conductor_data": conductor_data
+            }
 
-    for record in ret:
-        build_type = record['BUILD_TYPE']
-        user_name = record['USER_NAME']
-        password = record['PASSWORD']
-        password = ky_decrypt(password)
-
-    # 実行時データ削除フラグ取得
-    ret = objdbca.table_select(t_ansc_info, 'WHERE  DISUSE_FLAG=%s' ['0'])
-    for record in ret:
-        anstwr_del_runtime_data = record['ANSTWR_DEL_RUNTIME_DATA']
-
-    result = {"legacy": tmp_legacy_result,
-            "pioneer": tmp_pioneer_result,
-            "legacy_role": tmp_role_result,
-            "build_type": build_type,
-            "user_name": user_name,
-            "password": password,
-            "anstwr_del_runtime_data": anstwr_del_runtime_data}
+    # ステータスを実行待ちに変更
+    objdbca.table_update(t_ansr_exec_sts_inst, 'WHERE  DISUSE_FLAG=%s AND STATUS_ID = %s FOR UPDATE', ['0', '12'])
 
     objdbca.db_commit()
 
     return result
 
-def get_execution_status(organization_id, workspace_id, execution_no, status, driver_id, out_base64_data, parameters_base64_data, conductor_base64_data):
+
+def result_data_update(organization_id, workspace_id, execution_no, status, driver_id, out_base64_data, parameters_base64_data, conductor_base64_data):
     """
-        通知されたファイルの更新と緊急停止状態を返す
+        通知されたファイルの更新
         ARGS:
             organization_id:OrganizationID
             workspace_id: WorkspaceID
@@ -275,17 +345,10 @@ def get_execution_status(organization_id, workspace_id, execution_no, status, dr
             # 通知されたファイルで上書き
             shutil.move(tmp_conductor_path + "/" + file_name, from_path)
 
-    if status == AnscConst.SCRAM:
-        # 緊急停止された
-        return True
-
     # 作業ディレクトリ削除
     shutil.rmtree(tmp_out_path)
     shutil.rmtree(tmp_parameters_path)
     shutil.rmtree(tmp_conductor_path)
-
-    return False
-
 
 def encode_tar_file(dir_path, file_name):
     """

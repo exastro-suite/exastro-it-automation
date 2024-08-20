@@ -29,13 +29,13 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
     max = int(loop_count)
 
     # 環境変数の取得
-    username = os.environ["EXASTRO_USERNAME"]
-    password = os.environ["EXASTRO_PASSWORD"]
     baseUrl = os.environ["EXASTRO_URL"]
+    refresh_token = os.environ['EXASTRO_REFRESH_TOKEN']
+
     # ITAのAPI呼び出しモジュール
     exastro_api = Exastro_API(
-        username,
-        password
+        base_url=baseUrl,
+        refresh_token=refresh_token
     )
 
     # バージョン通知API実行
@@ -64,25 +64,22 @@ def main_logic(organization_id, workspace_id, exastro_api, baseUrl):
     endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/unexecuted/instance"
     g.applogger.info(g.appmsg.get_log_message("MSG-10954", []))
 
-    try:
-        status_code, response = exastro_api.api_request(
-            "GET",
-            endpoint
-        )
-        if status_code == 200:
-            for execution_no, value in response.items():
+    status_code, response = exastro_api.api_request(
+        "GET",
+        endpoint
+    )
+    if status_code == 200:
+        for execution_no, value in response.items():
 
-                # 子プロ起動
-                command = ["python3", "agent/agent_child_init.py", organization_id, workspace_id, execution_no, value["driver_id"]]
-                cp = subprocess.Popen(command)  # noqa: F841
+            # 子プロ起動
+            command = ["python3", "agent/agent_child_init.py", organization_id, workspace_id, execution_no, value["driver_id"]]
+            cp = subprocess.Popen(command)  # noqa: F841
 
-                # 子プロ死活監視
-                child_process_exist_check(organization_id, workspace_id, execution_no, value["driver_id"], value["build_type"], value["user_name"], value["password"])
+            # 子プロ死活監視
+            child_process_exist_check(organization_id, workspace_id, execution_no, value["driver_id"], value["build_type"], value["user_name"], value["password"])
 
-        else:
-            g.applogger.info(g.appmsg.get_log_message("MSG-10955", [status_code, response]))
-    except AppException as e:  # noqa E405
-        app_exception(e)
+    else:
+        g.applogger.info(g.appmsg.get_log_message("MSG-10955", [status_code, response]))
 
 
 def decode_tar_file(base_64data, dir_path):
@@ -99,8 +96,7 @@ def decode_tar_file(base_64data, dir_path):
     ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
 
     if ret.returncode != 0:
-        msg = g.appmsg.get_api_message('MSG-10947', [])
-        raise app_exception(msg)
+        raise AppException('MSG-10947', [])
 
 def conductor_decode_tar_file(base_64data, dir_path):
     """
@@ -116,8 +112,7 @@ def conductor_decode_tar_file(base_64data, dir_path):
     ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
 
     if ret.returncode != 0:
-        msg = g.appmsg.get_api_message('MSG-10947', [])
-        raise app_exception(msg)
+        raise AppException('MSG-10947', [])
 
 
 def child_process_exist_check(organization_id, workspace_id, execution_no, driver_id, build_type, user_name, password):

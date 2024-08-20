@@ -1,16 +1,16 @@
-# # Copyright 2024 NEC Corporation#
-# # Licensed under the Apache License, Version 2.0 (the "License");
-# # you may not use this file except in compliance with the License.
-# # You may obtain a copy of the License at
-# #
-# #     http://www.apache.org/licenses/LICENSE-2.0
-# #
-# # Unless required by applicable law or agreed to in writing, software
-# # distributed under the License is distributed on an "AS IS" BASIS,
-# # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# # See the License for the specific language governing permissions and
-# # limitations under the License.
-# #
+# Copyright 2024 NEC Corporation#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
 import subprocess
 import time
@@ -72,41 +72,12 @@ def main_logic(organization_id, workspace_id, exastro_api, baseUrl):
         if status_code == 200:
             for execution_no, value in response.items():
 
-                # 投入データ取得
-                second_endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/populated_data"
-                g.applogger.info(g.appmsg.get_log_message("MSG-10954", []))
+                # 子プロ起動
+                command = ["python3", "agent/agent_child_init.py", organization_id, workspace_id, execution_no, value["driver_id"]]
+                cp = subprocess.Popen(command)  # noqa: F841
 
-                second_status_code, second_response = exastro_api.api_request(
-                    "GET",
-                    second_endpoint
-                )
-                if second_status_code == 200:
-                    for second_execution_no, second_value in second_response.items():
-                        if execution_no == second_execution_no:
-                            # tarファイルを解凍
-                            tar_data = second_value["in_out_data"]
-                            dir_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/" + value["driver_id"] + "/" + execution_no
-                            decode_tar_file(tar_data, dir_path)
-
-                            conductor_tar_data = second_value["conductor_data"]
-                            # conductor用tarファイルがあるか確認
-                            if not conductor_tar_data == "":
-                                # conductor用tarファイルを解凍
-                                conductor_dir_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/conductor/" + execution_no
-                                conductor_decode_tar_file(conductor_tar_data, dir_path)
-
-                                # tarファイルの中身のディレクトリ、ファイル移動
-                                decompress_tar_file(organization_id, workspace_id, value["driver_id"], dir_path, conductor_dir_path, "tmp.gz", "conductor_tmp.gz", value["driver_id"], execution_no)
-                            else:
-                                # tarファイルの中身のディレクトリ、ファイル移動
-                                decompress_tar_file(organization_id, workspace_id, value["driver_id"], dir_path, conductor_dir_path, "tmp.gz", "", value["driver_id"], execution_no)
-
-                            # 子プロ起動
-                            command = ["python3", "agent_child.py", organization_id, workspace_id, execution_no, value["driver_id"]]
-                            cp = subprocess.Popen(command)  # noqa: F841
-
-                            # 子プロ死活監視
-                            child_process_exist_check(organization_id, workspace_id, execution_no, value["driver_id"], value["build_type"], value["user_name"], value["password"])
+                # 子プロ死活監視
+                child_process_exist_check(organization_id, workspace_id, execution_no, value["driver_id"], value["build_type"], value["user_name"], value["password"])
 
         else:
             g.applogger.info(g.appmsg.get_log_message("MSG-10955", [status_code, response]))
@@ -259,7 +230,7 @@ def child_process_exist_check_ps():
         # 例外を起こす
         cp3.check_returncode()
 
-def decompress_tar_file(organization_id, workspace_id, driver_id, dir_path, conductor_dir_path, file_name, conductor_file_name, driver_id, execution_no):
+def decompress_tar_file(organization_id, workspace_id, driver_id, dir_path, conductor_dir_path, file_name, conductor_file_name, execution_no):
     """
     tarファイルを解凍してagent用のディレクトリに移動する
     ARGS:

@@ -20,7 +20,44 @@ from flask import g
 from common_libs.common import *  # noqa: F403
 from common_libs.ag.util import app_exception, exception
 from common_libs.common.storage_access import storage_read
+from common_libs.common.exception import AppException
 from agent.libs.exastro_api import Exastro_API
+from common_libs.ansible_driver.functions.util import get_OSTmpPath
+from common_libs.ansible_driver.functions.util import rmAnsibleCreateFiles
+
+
+def agent_child_main():
+    """
+    agent_childのラッパー
+    """
+    # コマンドラインから引数を受け取る["自身のファイル名", "organization_id", "workspace_id", …, …]
+    args = sys.argv
+    execution_no = args[3]
+
+    global ansc_const
+    global driver_error_log_file
+
+    g.applogger.set_tag("EXECUTION_NO", execution_no)
+
+    g.applogger.debug(g.appmsg.get_log_message("MSG-10720", [execution_no]))
+
+    g.AnsibleCreateFilesPath = "{}/Ansible_{}".format(get_OSTmpPath(), execution_no) #####
+
+    try:
+        # ステータスファイル作成は？ ####
+        agent_child()
+        # 正常終了 / 以外 #####
+        # ステータスファイル削除 ####
+    except AppException as e:
+        # ステータスファイル削除 ####
+        raise AppException(e)
+    except Exception as e:
+        raise Exception(e)
+    finally:
+        # /tmpをゴミ掃除
+        # rmAnsibleCreateFiles()
+        pass
+    return 0
 
 
 def agent_child():
@@ -32,8 +69,8 @@ def agent_child():
         execution_no = args[3]
         driver_id = args[4]
         build_type = args[5]
-        redhad_user_name = args[6]
-        redhad_password = args[7]
+        # redhad_user_name = args[6]
+        # redhad_password = args[7]
 
         # in/out親ディレクトリパス
         root_dir_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/" + driver_id + "/" + execution_no
@@ -387,3 +424,6 @@ def retry_api_call(exastro_api, endpoint, mode="json" ,method="POST", body=None,
         except Exception as e:
             g.applogger.info(f"{endpoint=} {status_code=} retry:{t} \n {e}")
     return status_code, response,
+
+if __name__ == "__main__":
+    agent_child_main()

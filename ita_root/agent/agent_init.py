@@ -48,14 +48,24 @@ def main():
             g.appmsg = MessageTemplate(g.LANGUAGE)
 
             # 実行インターバル
-            interval = int(os.environ.get("EXECUTE_INTERVAL", 5))
-            interval = 3 if interval <= 3 else interval  # 下限値
+            interval = int(os.environ.get("EXECUTE_INTERVAL", 5))  # デフォルト 5s
+            interval = 3 if interval <= 3 else interval  # 下限値 3s
 
             # コマンドラインから引数を受け取る["自身のファイル名", "ループ回数"]
             args = sys.argv
-            # ループ回数
-            loop_count = int(os.environ.get("ITERATION", 10))
-            loop_count = 10 if loop_count <= 10 else loop_count  # 下限値
+            # （一連の処理の）ループ回数
+            loop_count = int(os.environ.get("ITERATION", 10))  # デフォルト 10回
+            loop_count = 10 if loop_count <= 10 else loop_count  # 下限値 10回
+            loop_count = 120 if loop_count > 120 else loop_count  # 上限値 120回
+            if interval * loop_count >= 86400:
+                # EXECUTE_INTERVAL × ITERATIONが1日をこえるような場合は
+                # インターバルを優先して、調整をかける
+                loop_count = 86400 // (interval + 10)
+                if loop_count < 1:
+                    interval = 86400 - 10
+                    loop_count = 1
+            # print(f'{interval=}')
+            # print(f'{loop_count=}')
             loop_count = loop_count if len(args) == 1 else int(args[1])  # コマンドライン指定すると上書き
 
             # 妥当な設定（organization_id, workspace_id）でなければ、メイン処理に回さない

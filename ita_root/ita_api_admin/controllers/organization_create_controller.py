@@ -689,15 +689,15 @@ def organization_update(organization_id, body=None):  # noqa: E501
             ws_no_install_driver = ws_info[0]["NO_INSTALL_DRIVER"]
             if ws_no_install_driver is None:
                 ws_no_install_driver = []
-            elif type(ws_no_install_driver) is str:
-                ws_no_install_driver = eval(ws_no_install_driver)
+            else:
+                ws_no_install_driver = json.loads(ws_no_install_driver)
 
             last_update_timestamp = str(get_timestamp())
 
             # 追加対象のドライバをループし、SQLファイルを実行する。
             for install_driver in add_drivers:
                 # 既に対象ws内に追加対象ドライバがインストールされていたらスキップする
-                if ws_no_install_driver is not None and install_driver not in ws_no_install_driver:
+                if install_driver not in ws_no_install_driver:
                     g.applogger.info(f" SKIP INSTALL DRIVER BECAUSE {install_driver} IS ALREADY INSTALLED.")
                     continue
                 g.applogger.info(" INSTALLING {} START".format(install_driver))
@@ -779,7 +779,7 @@ def organization_update(organization_id, body=None):  # noqa: E501
             # 削除対象のドライバをループし、SQLファイルを実行・必要のないディレクトリの削除・MongoDBの削除を実行する。
             for uninstall_driver in remove_drivers:
                 # 既に対象ws内に削除対象ドライバがアンインストールされていたらスキップする
-                if ws_no_install_driver is not None and uninstall_driver in ws_no_install_driver:
+                if uninstall_driver in ws_no_install_driver:
                     g.applogger.info(f" SKIP UNINSTALL DRIVER BECAUSE {uninstall_driver} IS ALREADY UNINSTALLED.")
                     continue
                 g.applogger.info(" UNINSTALLING {} START".format(uninstall_driver))

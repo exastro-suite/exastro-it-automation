@@ -16,36 +16,15 @@ from flask import g
 from common_libs.common.dbconnect import *  # noqa: F403
 
 
-def main(work_dir_path, wsdb):
-    #####################
-    # menu_ref_issue2501
-    #####################
-    g.applogger.info("[Trace] Begin Menu Ref migrate(specific). #issue2501")
-
-    data_list = wsdb.table_select('t_comn_menu_table_link', 'WHERE HOSTGROUP = %s AND SHEET_TYPE IN (%s, %s)', ['1', '5', '6'])
-
-    for data in data_list:
-        cmdb_table_name = data["TABLE_NAME"]
-        if cmdb_table_name[0:7] == 'T_CMDB_' and cmdb_table_name[-3:] == '_SV':
-            continue
-
-        update_data = {
-            "TABLE_DEFINITION_ID": data["TABLE_DEFINITION_ID"],
-            "TABLE_NAME": cmdb_table_name + '_SV',
-            "VIEW_NAME": data["VIEW_NAME"] + '_SV'
-        }
-        wsdb.table_update('t_comn_menu_table_link', update_data, "TABLE_DEFINITION_ID", True)
-
-    wsdb.db_commit()
-
-    ###########################################################
-    # workspace単位のINFOテーブルに必要であればドライバ情報を追加
-    ###########################################################
+def main(work_dir_path, db_conn):
+    # ###########################################################
+    # # workspace単位のINFOテーブルに必要であればドライバ情報を追加
+    # ###########################################################
     g.applogger.info("[Trace] Begin Add driver information if necessary to the info table for each workspace")
     common_db = DBConnectCommon()  # noqa: F405
 
-    organization_id = wsdb.organization_id
-    workspace_id = wsdb._workspace_id
+    organization_id = db_conn.organization_id
+    workspace_id = db_conn._workspace_id
 
     # organization単位のドライバ情報を取得する
     org_no_install_driver = common_db.table_select("T_COMN_ORGANIZATION_DB_INFO", "WHERE ORGANIZATION_ID = '{}' AND DISUSE_FLAG = {}".format(organization_id, 0))[0]["NO_INSTALL_DRIVER"]
@@ -65,5 +44,3 @@ def main(work_dir_path, wsdb):
         org_db.db_commit()
 
     return 0
-
-

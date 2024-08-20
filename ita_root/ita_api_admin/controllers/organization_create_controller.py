@@ -514,11 +514,6 @@ def organization_update(organization_id, body=None):  # noqa: E501
         g.applogger.info("plan to add these drivers({})".format(add_drivers))
         g.applogger.info("plan to remove these drivers({})".format(remove_drivers))
 
-        if len(update_no_install_driver) > 0:
-            update_no_install_driver_json = json.dumps(update_no_install_driver)
-        else:
-            update_no_install_driver_json = None
-
         # インストール時に利用するSQLファイル名の一覧
         add_driver_sql = {
             "terraform_cloud_ep": [['terraform_cloud_ep.sql', 'terraform_cloud_ep_master.sql']],
@@ -692,15 +687,19 @@ def organization_update(organization_id, body=None):  # noqa: E501
             ws_db = DBConnectWs(workspace_id, organization_id)  # noqa: F405
             ws_info = org_db.table_select("T_COMN_WORKSPACE_DB_INFO", "WHERE WORKSPACE_ID = '{}' AND DISUSE_FLAG = {}".format(workspace_id, 0))
             ws_no_install_driver = ws_info[0]["NO_INSTALL_DRIVER"]
+            if ws_no_install_driver is None:
+                ws_no_install_driver = []
+            elif type(ws_no_install_driver) is str:
+                ws_no_install_driver = eval(ws_no_install_driver)
+
             last_update_timestamp = str(get_timestamp())
 
             # 追加対象のドライバをループし、SQLファイルを実行する。
             for install_driver in add_drivers:
                 # 既に対象ws内に追加対象ドライバがインストールされていたらスキップする
-                if ws_no_install_driver is not None:
-                    if install_driver not in ws_no_install_driver:
-                        g.applogger.info(f" SKIP INSTALL DRIVER BECAUSE {install_driver} IS ALREADY INSTALLED.")
-                        continue
+                if ws_no_install_driver is not None and install_driver not in ws_no_install_driver:
+                    g.applogger.info(f" SKIP INSTALL DRIVER BECAUSE {install_driver} IS ALREADY INSTALLED.")
+                    continue
                 g.applogger.info(" INSTALLING {} START".format(install_driver))
                 # SQLファイルを特定する。
                 sql_files_list = add_driver_sql[install_driver]
@@ -747,29 +746,42 @@ def organization_update(organization_id, body=None):  # noqa: E501
                 if install_driver in config_file_dict:
                     dest_dir = os.path.join(workspace_dir, "uploadfiles")
                     config_file_path = os.path.join(src_dir, config_file_dict[install_driver])
-                    g.applogger.info(f"[Trace] dest_dir={dest_dir}")
-                    g.applogger.info(f"[Trace] config_file_path={config_file_path}")
+                    g.applogger.info(f" [Trace] dest_dir={dest_dir}")
+                    g.applogger.info(f" [Trace] config_file_path={config_file_path}")
                     put_uploadfiles(config_file_path, src_dir, dest_dir)
-                g.applogger.info("set initial material files")
+                g.applogger.info(" set initial material files")
 
                 # jnl配下のconfigファイルを取得し、インストール中のドライバと一致していたら実行する
                 if install_driver in config_file_dict:
                     dest_dir = os.path.join(workspace_dir, "uploadfiles")
                     config_jnl_file_path = os.path.join(src_jnl_dir, config_jnl_file_dict[install_driver])
-                    g.applogger.info(f"[Trace] dest_dir={dest_dir}")
-                    g.applogger.info(f"[Trace] config_jnl_file_path={config_jnl_file_path}")
+                    g.applogger.info(f" [Trace] dest_dir={dest_dir}")
+                    g.applogger.info(f" [Trace] config_jnl_file_path={config_jnl_file_path}")
                     put_uploadfiles_jnl(ws_db, config_jnl_file_path, src_jnl_dir, dest_dir)
-                g.applogger.info("set initial material jnl files")
+                g.applogger.info(" set initial material jnl files")
+
+                # t_comn_workspace_db_infoテーブルのNO_INSTALL_DRIVERを更新する
+                ws_no_install_driver.remove(install_driver)
+                if len(ws_no_install_driver) > 0:
+                    ws_no_install_driver_json = json.dumps(ws_no_install_driver)
+                else:
+                    ws_no_install_driver_json = None
+                org_db.db_transaction_start()
+                data = {
+                    'PRIMARY_KEY': workspace_data['PRIMARY_KEY'],
+                    'NO_INSTALL_DRIVER': ws_no_install_driver_json,
+                }
+                org_db.table_update('T_COMN_WORKSPACE_DB_INFO', data, 'PRIMARY_KEY')
+                org_db.db_commit()
 
                 g.applogger.info(" INSTALLING {} IS ENDED".format(install_driver))
 
             # 削除対象のドライバをループし、SQLファイルを実行・必要のないディレクトリの削除・MongoDBの削除を実行する。
             for uninstall_driver in remove_drivers:
                 # 既に対象ws内に削除対象ドライバがアンインストールされていたらスキップする
-                if ws_no_install_driver is not None:
-                    if uninstall_driver in ws_no_install_driver:
-                        g.applogger.info(f" SKIP UNINSTALL DRIVER BECAUSE {uninstall_driver} IS ALREADY UNINSTALLED.")
-                        continue
+                if ws_no_install_driver is not None and uninstall_driver in ws_no_install_driver:
+                    g.applogger.info(f" SKIP UNINSTALL DRIVER BECAUSE {uninstall_driver} IS ALREADY UNINSTALLED.")
+                    continue
                 g.applogger.info(" UNINSTALLING {} START".format(uninstall_driver))
                 # SQLファイルを特定する。
                 sql_files_list = remove_driver_sql[uninstall_driver]
@@ -837,6 +849,20 @@ def organization_update(organization_id, body=None):  # noqa: E501
                             org_db.db_commit()
 
                             g.applogger.info(" Updating infomation of mongo on workspace(workspace_id = {})".format(workspace_id))
+
+                # t_comn_workspace_db_infoテーブルのNO_INSTALL_DRIVERを更新する
+                ws_no_install_driver.append(uninstall_driver)
+                if len(ws_no_install_driver) > 0:
+                    ws_no_install_driver_json = json.dumps(ws_no_install_driver)
+                else:
+                    ws_no_install_driver_json = None
+                org_db.db_transaction_start()
+                data = {
+                    'PRIMARY_KEY': workspace_data['PRIMARY_KEY'],
+                    'NO_INSTALL_DRIVER': ws_no_install_driver_json,
+                }
+                org_db.table_update('T_COMN_WORKSPACE_DB_INFO', data, 'PRIMARY_KEY')
+                org_db.db_commit()
 
                 g.applogger.info(" UNINSTALLING {} IS ENDED".format(uninstall_driver))
 
@@ -917,16 +943,12 @@ def organization_update(organization_id, body=None):  # noqa: E501
                 g.db_connect_info.pop("WS_MONGO_USER")
                 g.db_connect_info.pop("WS_MONGO_PASSWORD")
 
-            # t_comn_workspace_db_infoテーブルのNO_INSTALL_DRIVERを更新する
-            org_db.db_transaction_start()
-            data = {
-                'PRIMARY_KEY': workspace_data['PRIMARY_KEY'],
-                'NO_INSTALL_DRIVER': update_no_install_driver_json,
-            }
-            org_db.table_update('T_COMN_WORKSPACE_DB_INFO', data, 'PRIMARY_KEY')
-            org_db.db_commit()
-
         # t_comn_organization_db_infoテーブルのMONGODB接続情報, NO_INSTALL_DRIVERを更新する
+        if len(update_no_install_driver) > 0:
+            update_no_install_driver_json = json.dumps(update_no_install_driver)
+        else:
+            update_no_install_driver_json = None
+
         common_db.db_transaction_start()
         data = {
             'PRIMARY_KEY': org_connect_info['PRIMARY_KEY'],

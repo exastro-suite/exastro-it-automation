@@ -1148,7 +1148,7 @@ filterHtml( filterHeaderFlag = true ) {
                     case 'EnvironmentIDColumn': case 'TextColumn': case 'RoleIDColumn':
                     case 'JsonIDColumn': case 'UserIDColumn': case 'NotificationIDColumn':
                     case 'FilterConditionSettingColumn': case 'ConclusionEventSettingColumn':
-                    case 'ColorCodeColumn':
+                    case 'ColorCodeColumn': case 'ExecutionEnvironmentDefinitionIDColumn':
                         return 'text';
                     break;
                     // 数値のFROM,TO
@@ -3704,6 +3704,7 @@ viewCellHtml( item, columnKey, journal ) {
         case 'FileUploadEncryptColumn': case 'JsonIDColumn':
         case 'UserIDColumn': case 'NotificationIDColumn':
         case 'FilterConditionSettingColumn': case 'ConclusionEventSettingColumn':
+        case 'ExecutionEnvironmentDefinitionIDColumn':
             return checkJournal( value );
 
         // リンク
@@ -3946,6 +3947,7 @@ editCellHtml( item, columnKey ) {
             case 'JsonColumn':
             case 'IDColumn': case 'LinkIDColumn': case 'RoleIDColumn': case 'UserIDColumn':
             case 'EnvironmentIDColumn': case 'JsonIDColumn': case 'NotificationIDColumn':
+            case 'ExecutionEnvironmentDefinitionIDColumn':
                 return fn.cv( v, '');
             case 'FilterConditionSettingColumn': case 'ConclusionEventSettingColumn':
                 if ( !tb.partsFlag ) {
@@ -4089,7 +4091,7 @@ editCellHtml( item, columnKey ) {
 
         // プルダウン
         case 'IDColumn': case 'LinkIDColumn': case 'RoleIDColumn': case 'UserIDColumn':
-        case 'EnvironmentIDColumn': case 'JsonIDColumn': {
+        case 'EnvironmentIDColumn': case 'JsonIDColumn': case 'ExecutionEnvironmentDefinitionIDColumn': {
             const displayValue = fn.cv( value, '', true );
             inputClassName.push('tableEditInputSelectContainer');
             return `<div class="${inputClassName.join(' ')}">`
@@ -4564,7 +4566,7 @@ changeEdtiMode( changeMode ) {
             const columnInfo = info[ key ];
 
             // セレクト必須選択項目
-            const selectTarget = ['IDColumn', 'LinkIDColumn', 'AppIDColumn', 'RoleIDColumn', 'JsonIDColumn', 'UserIDColumn', 'NotificationIDColumn'];
+            const selectTarget = ['IDColumn', 'LinkIDColumn', 'AppIDColumn', 'RoleIDColumn', 'JsonIDColumn', 'UserIDColumn', 'NotificationIDColumn', 'ExecutionEnvironmentDefinitionIDColumn'];
             if ( selectTarget.indexOf( columnInfo.column_type ) !== -1
               && columnInfo.required_item === '1'
               && columnInfo.initial_value === null ) {

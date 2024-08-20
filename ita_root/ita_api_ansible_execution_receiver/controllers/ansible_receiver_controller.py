@@ -21,6 +21,7 @@ from common_libs.common import menu_info
 from common_libs.api import api_filter
 from libs.organization_common import check_menu_info, check_auth_menu, check_sheet_type
 from ita_api_ansible_execution_receiver.libs import ansible_controll
+from common_libs.api import api_filter, api_filter_download_file
 from flask import g
 
 
@@ -53,10 +54,11 @@ def get_unexecuted_instance(organization_id, workspace_id):  # noqa: E501
     return result_data,
 
 
-def execution_status_notification(organization_id, workspace_id, execution_no, start_sh_result):  # noqa: E501
+@api_filter
+def get_execution_status(organization_id, workspace_id, execution_no, start_sh_result):  # noqa: E501
     """get_unexecuted_instance
 
-    未実行インスタンス確認 # noqa: E501
+    作業状態通知 # noqa: E501
 
     :param organization_id: OrganizationID
     :type organization_id: str
@@ -73,6 +75,35 @@ def execution_status_notification(organization_id, workspace_id, execution_no, s
 
         # 作業実行関連のメニューの基本情報および項目情報の取得
         result_data = ansible_controll.get_execution_status(objdbca, organization_id, workspace_id, execution_no, start_sh_result)
+        # result_data.setdefault("menu_info", tmp_data[0]["data"])
+    except Exception as e:
+        raise e
+    finally:
+        objdbca.db_disconnect()
+    return result_data,
+
+
+@api_filter_download_file
+def get_populated_data(organization_id, workspace_id, execution_no, start_sh_result):  # noqa: E501
+    """get_unexecuted_instance
+
+    作業状態通知 # noqa: E501
+
+    :param organization_id: OrganizationID
+    :type organization_id: str
+    :param workspace_id: WorkspaceID
+    :type workspace_id: str
+
+    :rtype: InlineResponse2006
+    """
+
+    # DB接続
+    objdbca = DBConnectWs(workspace_id)  # noqa: F405
+
+    try:
+
+        # 作業実行関連のメニューの基本情報および項目情報の取得
+        result_data = ansible_controll.get_populated_data(objdbca, organization_id, workspace_id, execution_no, start_sh_result)
         # result_data.setdefault("menu_info", tmp_data[0]["data"])
     except Exception as e:
         raise e

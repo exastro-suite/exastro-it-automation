@@ -61,8 +61,9 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
 
 def main_logic(organization_id, workspace_id, exastro_api, baseUrl):
     # 未実行インスタンス確認送信
-    endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/unexecuted/instance"
+    endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/unexecuted/instance"
     g.applogger.info(g.appmsg.get_log_message("MSG-10954", []))
+
     try:
         status_code, response = exastro_api.api_request(
             "GET",
@@ -70,34 +71,45 @@ def main_logic(organization_id, workspace_id, exastro_api, baseUrl):
         )
         if status_code == 200:
             for execution_no, value in response.items():
-                # tarファイルを解凍
-                tar_data = response["in_out_data"]
-                dir_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/" + value["driver_id"] + "/" + execution_no
-                decode_tar_file(tar_data, dir_path)
 
-                conductor_tar_data = value["conductor_data"]
-                # conductor用tarファイルがあるか確認
-                if not conductor_tar_data == "":
-                    # conductor用tarファイルを解凍
-                    conductor_dir_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/conductor/" + execution_no
-                    conductor_decode_tar_file(conductor_tar_data, dir_path)
+                # 投入データ取得
+                second_endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/populated_data"
+                g.applogger.info(g.appmsg.get_log_message("MSG-10954", []))
 
-                    # tarファイルの中身のディレクトリ、ファイル移動
-                    decompress_tar_file(organization_id, workspace_id, value["driver_id"], dir_path, conductor_dir_path, "tmp.gz", "conductor_tmp.gz", value["driver_id"], execution_no)
-                else:
-                    # tarファイルの中身のディレクトリ、ファイル移動
-                    decompress_tar_file(organization_id, workspace_id, value["driver_id"], dir_path, conductor_dir_path, "tmp.gz", "", value["driver_id"], execution_no)
+                second_status_code, second_response = exastro_api.api_request(
+                    "GET",
+                    second_endpoint
+                )
+                if second_status_code == 200:
+                    for second_execution_no, second_value in second_response.items():
+                        if execution_no == second_execution_no:
+                            # tarファイルを解凍
+                            tar_data = second_value["in_out_data"]
+                            dir_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/" + value["driver_id"] + "/" + execution_no
+                            decode_tar_file(tar_data, dir_path)
 
-                # 子プロ起動
-                command = ["python3", "agent_child.py", organization_id, workspace_id, execution_no, value["driver_id"]]
-                cp = subprocess.Popen(command)  # noqa: F841
+                            conductor_tar_data = second_value["conductor_data"]
+                            # conductor用tarファイルがあるか確認
+                            if not conductor_tar_data == "":
+                                # conductor用tarファイルを解凍
+                                conductor_dir_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/conductor/" + execution_no
+                                conductor_decode_tar_file(conductor_tar_data, dir_path)
 
-                # 子プロ死活監視
-                child_process_exist_check(organization_id, workspace_id, execution_no, value["driver_id"], value["build_type"], value["user_name"], value["password"])
+                                # tarファイルの中身のディレクトリ、ファイル移動
+                                decompress_tar_file(organization_id, workspace_id, value["driver_id"], dir_path, conductor_dir_path, "tmp.gz", "conductor_tmp.gz", value["driver_id"], execution_no)
+                            else:
+                                # tarファイルの中身のディレクトリ、ファイル移動
+                                decompress_tar_file(organization_id, workspace_id, value["driver_id"], dir_path, conductor_dir_path, "tmp.gz", "", value["driver_id"], execution_no)
+
+                            # 子プロ起動
+                            command = ["python3", "agent_child.py", organization_id, workspace_id, execution_no, value["driver_id"]]
+                            cp = subprocess.Popen(command)  # noqa: F841
+
+                            # 子プロ死活監視
+                            child_process_exist_check(organization_id, workspace_id, execution_no, value["driver_id"], value["build_type"], value["user_name"], value["password"])
 
         else:
             g.applogger.info(g.appmsg.get_log_message("MSG-10955", [status_code, response]))
-            settings = False
     except AppException as e:  # noqa E405
         app_exception(e)
 

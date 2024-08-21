@@ -88,7 +88,7 @@ paths:
       tags:
         - Ansible Execution
       description: 作業状態通知
-      operationId: getExecutionStatus
+      operationId: executionStatusNotification
       x-openapi-router-controller: controllers.ansible_receiver_controller
       parameters:
         - name: organization_id
@@ -171,7 +171,7 @@ paths:
                   data:
                     type: object
                     items: {}
-                    example: {execution_no: {"in_out_data": "base64 encode file", "conductor_data": "base64 encode file"}}
+                    example: {execution_no: {"in_out_data": "string", "conductor_data": "string"}}
                   message:
                     type: string
         '401':
@@ -226,21 +226,123 @@ paths:
           schema:
             type: string
       requestBody:
-        required: true
         content:
           application/json:
             schema:
-              description: 各種tarファイルをbase64形式で指定
+              description: 各種tarファイルを指定
               properties:
-                out_base64_data:
+                file:
+                  type: object
+                  properties:
+                    rest_key_name:
+                      type: string
+                      example: base64 encode file
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
                   type: string
-                  example: "base64 encode file"
-                parameters_base64_data:
-                  type: string
-                  example: "base64 encode file"
-                conductor_base64_data:
-                  type: string
-                  example: "base64 encode file"
+                  description: 各種tarファイルを指定
+                  format: binary
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: boolean
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/version:
+    get:
+      tags:
+        - Ansible Execution
+      description: バージョン通知
+      operationId: getAgentVersion
+      x-openapi-router-controller: controllers.ansible_receiver_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: object
+                    items: {}
+                    example: {"agent_name": "string", "version": "string"}
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/execution/notification:
+    get:
+      tags:
+        - Ansible Execution
+      description: 作業中通知
+      operationId: executionNotification
+      x-openapi-router-controller: controllers.ansible_receiver_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
       responses:
         '200':
           description: Success

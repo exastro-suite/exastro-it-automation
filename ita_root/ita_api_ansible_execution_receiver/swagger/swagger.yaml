@@ -78,7 +78,7 @@ paths:
       tags:
       - Ansible Execution
       description: 作業状態通知
-      operationId: get_execution_status
+      operationId: execution_status_notification
       parameters:
       - name: organization_id
         in: path
@@ -219,7 +219,95 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/status_result_data_body'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/status_result_data_body_1'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_1'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.ansible_receiver_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/version:
+    get:
+      tags:
+      - Ansible Execution
+      description: バージョン通知
+      operationId: get_agent_version
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
         required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_3'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.ansible_receiver_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/execution/notification:
+    get:
+      tags:
+      - Ansible Execution
+      description: 作業中通知
+      operationId: execution_notification
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
       responses:
         "200":
           description: Success
@@ -306,8 +394,8 @@ components:
           type: array
           example:
             execution_no:
-              in_out_data: base64 encode file
-              conductor_data: base64 encode file
+              in_out_data: string
+              conductor_data: string
           items: {}
         message:
           type: string
@@ -315,21 +403,47 @@ components:
         result: 000-00000
         data:
           execution_no:
-            in_out_data: base64 encode file
-            conductor_data: base64 encode file
+            in_out_data: string
+            conductor_data: string
         message: message
+    apiorganization_idworkspacesworkspace_idansible_execution_agentexecution_nodriver_idstatusresult_data_file:
+      type: object
+      properties:
+        rest_key_name:
+          type: string
+          example: base64 encode file
     status_result_data_body:
       properties:
-        out_base64_data:
+        file:
+          $ref: '#/components/schemas/apiorganization_idworkspacesworkspace_idansible_execution_agentexecution_nodriver_idstatusresult_data_file'
+      description: 各種tarファイルを指定
+    status_result_data_body_1:
+      type: object
+      properties:
+        file:
           type: string
-          example: base64 encode file
-        parameters_base64_data:
+          description: 各種tarファイルを指定
+          format: binary
+    inline_response_200_3:
+      type: object
+      properties:
+        result:
           type: string
-          example: base64 encode file
-        conductor_base64_data:
+          example: 000-00000
+        data:
+          type: array
+          example:
+            agent_name: string
+            version: string
+          items: {}
+        message:
           type: string
-          example: base64 encode file
-      description: 各種tarファイルをbase64形式で指定
+      example:
+        result: 000-00000
+        data:
+          agent_name: string
+          version: string
+        message: message
   responses:
     UnauthorizedError:
       description: Access token is missing or invalid

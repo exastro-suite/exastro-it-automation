@@ -2452,6 +2452,9 @@ def menu_import_exec_difference_version(
         # migrate file
         exec_ws_migration(import_info, objdbca, "file")
 
+        # migrate jnl
+        exec_ws_migration(import_info, objdbca, "jnl")
+
         # migrate specific
         exec_ws_migration(import_info, objdbca, "specific")
 
@@ -2568,7 +2571,7 @@ def exec_ws_migration(import_info, objdbca, mode="db"):
     Args:
         import_info:  user, password, db name
         objdbca: DBConnectWsSandbox() or DBConnectWs()
-        mode: db:DBパッチ, file:ファイル配置, specific:特別処理
+        mode: db:DBパッチ, file:ファイル配置, jnl:履歴 specific:特別処理
     """
     try:
         g.applogger.info(f"Begin sandbox migration. ({mode=})")
@@ -2631,6 +2634,8 @@ def migration_execute(ws_worker, mode="db"):
         ws_worker.migrate_db()
     elif mode == "file":
         ws_worker.migrate_file()
+    elif mode == "jnl":
+        ws_worker.migrate_jnl()
     elif mode == "specific":
         ws_worker.migrate_specific()
 

@@ -36,4 +36,3 @@ def main(work_dir_path, wsdb):
 
     return 0
 
-

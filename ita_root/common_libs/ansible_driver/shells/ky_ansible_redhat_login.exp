@@ -1,0 +1,46 @@
+#!/usr/bin/expect
+# Copyright 2022 NEC Corporation#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+######################################################################
+#   registry.redhat.ioにログインする
+#   <<引数>>
+#     expect kyregistry_redhat_io_login.exp
+#   <<環境変数>>
+#     PASSWORD:          パスワード
+#     USER:              ユーザー名
+#   <<exit code>>
+#     0:   正常
+#     他:　異常
+######################################################################
+set PASSWORD         $env(PASSWORD)
+set USER             $env(USER)
+set timeout 5
+spawn podman login --username ${USER} registry.redhat.io
+expect "Password:" {
+        send "${PASSWORD}\n"
+        exp_continue
+    } " " {
+        exp_continue
+    } timeout {
+        exit 200
+    } eof {
+       catch wait result
+       set OS_ERROR [ lindex $result 2 ]
+       if { ${OS_ERROR} == -1 } {
+           exit 202
+       }
+       set STATUS [ lindex $result 3 ]
+       exit ${STATUS}
+    }
+exit 0

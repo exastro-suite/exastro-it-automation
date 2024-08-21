@@ -161,7 +161,7 @@ class IndividualDialogColumn(IDColumn):
         result.setdefault("bindkey", bindkeys)
         result.setdefault("bindvalue", bindvalues)
         result.setdefault("where", str_where)
-        print(str_where)
+
         return result
 
 

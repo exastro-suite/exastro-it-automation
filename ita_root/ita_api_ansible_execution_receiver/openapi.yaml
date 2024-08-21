@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
-  title: Exastro ITA OASE Receiver API
-  description: Exastro ITA OASE Receiver API
-  version: "2.4"
+  title: Exastro ITA Ansible Execution Receiver API
+  description: Exastro ITA Ansible Execution Receiver API
+  version: "2.5"
 
 servers:
   - url: "https://{host}"
@@ -323,7 +323,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
-  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/execution/notification:
+  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/notification:
     get:
       tags:
         - Ansible Execution
@@ -340,6 +340,12 @@ paths:
         - name: workspace_id
           in: path
           description: WorkspaceID
+          required: true
+          schema:
+            type: string
+        - name: execution_no
+          in: path
+          description: 作業番号
           required: true
           schema:
             type: string

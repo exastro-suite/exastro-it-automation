@@ -806,7 +806,8 @@ def post_driver_scram(organization_id, workspace_id, menu, execution_no, body=No
                 # Terraform CLI用 緊急停止処理
                 t_cli_execution_scram(objdbca, execution_no)
 
-        objdbca.db_transaction_end(False)  # roleback
+        # 緊急停止フラグcommit
+        objdbca.db_transaction_end(True)
 
         # 緊急停止を受付ました
         result_msg = g.appmsg.get_api_message("MSG-10891", [execution_no])

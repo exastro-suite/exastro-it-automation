@@ -32,6 +32,7 @@ from common_libs.ansible_driver.classes.AnslConstClass import AnslConst
 from common_libs.ansible_driver.classes.AnspConstClass import AnspConst
 from common_libs.ansible_driver.classes.AnsrConstClass import AnsrConst
 from common_libs.ansible_driver.functions.util import getAnsibleConst
+from common_libs.ansible_driver.functions.ag_util import get_AGChildProcessRestartCountFilepath
 from common_libs.ansible_driver.classes.controll_ansible_agent import DockerMode, KubernetesMode
 from common_libs.common.exception import AppException
 from libs import common_functions as cm
@@ -93,7 +94,7 @@ def main_logic(common_db):
         # 実行中のコンテナの状態確認
         g.applogger.debug("START child_process_exist_check")
         if child_process_exist_check(common_db, target_shema, ansibleAg) is False:
-            g.applogger.debug(g.appmsg.get_log_message("MSG-10059"))
+            g.applogger.info(g.appmsg.get_log_message("MSG-10059"))
             return False
 
         if len(execution_list) == 0:
@@ -282,6 +283,8 @@ def child_process_exist_check(common_db, target_shema, ansibleAg):
         bool
     """
     global ansc_const
+    restart_count_max = 0
+
     # psコマンドでbackyard_child_init.pyの起動プロセスリストを作成
     # psコマンドがマレに起動プロセスリストを取りこぼすことがあるので3回分を作成
     # command = ["python3", "backyard/backyard_child_init.py", organization_id, workspace_id, execution_no, driver_id]
@@ -307,6 +310,14 @@ def child_process_exist_check(common_db, target_shema, ansibleAg):
 
         ansc_const = getAnsibleConst(driver_id)
 
+        # ANSIBLEインタフェース情報を取得
+        retBool, result = cm.get_ansible_interface_info(wsDb)
+        if retBool is False:
+            err_log = g.appmsg.get_log_message(result, [execution_no])
+            raise Exception(err_log)
+
+        ans_if_info = result
+
         # 子プロ起動確認
         is_running = False
         # command = ["python3", "backyard/backyard_child_init.py", organization_id, workspace_id, execution_no, driver_id]
@@ -330,51 +341,95 @@ def child_process_exist_check(common_db, target_shema, ansibleAg):
                     is_running = True
 
         # DBのステータスが実行中なのに、子プロセスが存在しない
-        if is_running is False:
-            g.applogger.info(g.appmsg.get_log_message("MSG-10056", [driver_name, execution_no]))
+        # 実行エンジンがansibel agent以外の場合
+        if ans_if_info["ANSIBLE_EXEC_MODE"] != ansc_const.DF_EXEC_MODE_AG:
+            if is_running is False:
+                g.applogger.info(g.appmsg.get_log_message("MSG-10056", [driver_name, execution_no]))
 
-            # 子プロで/tmpに作成したファイル・ディレクトリパスを保存するファイル名
-            g.AnsibleCreateFilesPath = "{}/Ansible_{}".format(get_OSTmpPath(), execution_no)
+                # 子プロで/tmpに作成したファイル・ディレクトリパスを保存するファイル名
+                g.AnsibleCreateFilesPath = "{}/Ansible_{}".format(get_OSTmpPath(), execution_no)
 
-            # /tmpをゴミ掃除
-            rmAnsibleCreateFiles()
+                # /tmpをゴミ掃除
+                rmAnsibleCreateFiles()
 
-            # 情報を再取得して、想定外エラーにする
-            result = cm.get_execution_process_info(wsDb, ansc_const, execution_no)
-            if result[0] is False:
-                g.applogger.info(g.appmsg.get_log_message(result[1], [execution_no]))
-                wsDb.db_disconnect()
-                return False
-            execute_data = result[1]
+                # 情報を再取得して、想定外エラーにする
+                result = cm.get_execution_process_info(wsDb, ansc_const, execution_no)
+                if result[0] is False:
+                    err_log = g.appmsg.get_log_message(result[1], [execution_no])
+                    wsDb.db_disconnect()
+                    raise Exception(err_log)
+                execute_data = result[1]
 
-            # 実行中か再確認
-            status_id_list = [ansc_const.PREPARE, ansc_const.PROCESSING, ansc_const.PROCESS_DELAYED]
-            if execute_data["STATUS_ID"] in status_id_list:
-                # 更新
-                wsDb.db_transaction_start()
-                time_stamp = get_timestamp()
-                data = {
-                    "EXECUTION_NO": execution_no,
-                    "STATUS_ID": ansc_const.EXCEPTION,
-                    "TIME_END": time_stamp,
-                    "TIME_START": time_stamp,
-                }
-                result = cm.update_execution_record(wsDb, ansc_const, data)
+                # 実行中か再確認
+                status_id_list = [ansc_const.PREPARE, ansc_const.PROCESSING, ansc_const.PROCESS_DELAYED]
+                if execute_data["STATUS_ID"] in status_id_list:
+                    # 更新
+                    wsDb.db_transaction_start()
+                    time_stamp = get_timestamp()
+                    data = {
+                        "EXECUTION_NO": execution_no,
+                        "STATUS_ID": ansc_const.EXCEPTION,
+                        "TIME_END": time_stamp,
+                        "TIME_START": time_stamp,
+                    }
+                    result = cm.update_execution_record(wsDb, ansc_const, data)
+                    if result[0] is True:
+                        wsDb.db_commit()
+                        g.applogger.info(g.appmsg.get_log_message("MSG-10060", [driver_name, execution_no]))
+
+                # コンテナが残っている場合に備えて掃除
+                # ゴミ掃除に失敗しても処理は続ける
+                result = ansibleAg.is_container_running(execution_no)
                 if result[0] is True:
-                    wsDb.db_commit()
-                    g.applogger.debug(g.appmsg.get_log_message("MSG-10060", [driver_name, execution_no]))
+                    result = ansibleAg.container_kill(ansc_const, execution_no)
+                    if result[0] is False:
+                        g.applogger.info(g.appmsg.get_log_message("BKY-10007", [result[1], execution_no]))
+                else:
+                    result = ansibleAg.container_clean(ansc_const, execution_no)
+                    if result[0] is False:
+                        g.applogger.info(g.appmsg.get_log_message("BKY-10007", [result[1], execution_no]))
+        else:
+            if is_running is False:
+                # 子プロで/tmpに作成したファイル・ディレクトリパスを保存するファイル名
+                g.AnsibleCreateFilesPath = "{}/Ansible_{}".format(get_OSTmpPath(), execution_no)
 
-            # コンテナが残っている場合に備えて掃除
-            # ゴミ掃除に失敗しても処理は続ける
-            result = ansibleAg.is_container_running(execution_no)
-            if result[0] is True:
-                result = ansibleAg.container_kill(ansc_const, execution_no)
+                # /tmpをゴミ掃除
+                rmAnsibleCreateFiles()
+
+                # 情報を再取得して、子プロ再起動回数の上限に達するまで再起動する。子プロ再起動回数の上限に達している場合は想定外エラーにする
+                result = cm.get_execution_process_info(wsDb, ansc_const, execution_no)
                 if result[0] is False:
-                    g.applogger.info(g.appmsg.get_log_message("BKY-10007", [result[1], execution_no]))
-            else:
-                result = ansibleAg.container_clean(ansc_const, execution_no)
-                if result[0] is False:
-                    g.applogger.info(g.appmsg.get_log_message("BKY-10007", [result[1], execution_no]))
+                    g.applogger.info(g.appmsg.get_log_message(result[1], [execution_no]))
+                    wsDb.db_disconnect()
+                    return False
+                execute_data = result[1]
+
+                # 実行中か再確認
+                status_id_list = [ansc_const.PREPARE, ansc_const.PROCESSING, ansc_const.PROCESS_DELAYED, ansc_const.PREPARE_COMPLETE, ansc_const.PROCESSING_WAIT]
+                if execute_data["STATUS_ID"] in status_id_list:
+                    # 更新
+                    g.applogger.info(g.appmsg.get_log_message("MSG-10970", [driver_name, execution_no]))
+                    # 再起動回数判定
+                    ret = chkAGChildProcessRestartCount(ansc_const, driver_name, execution_no, restart_count_max)
+                    if ret is True:
+                        g.applogger.info(g.appmsg.get_log_message("MSG-10971", [driver_name, execution_no]))
+                        # 再起動の上限に達していないので、子プロセス再起動
+                        ret = rerun_child_process(wsDb, ansc_const, execute_data, organization_id, workspace_id)
+                    else:
+                        g.applogger.info(g.appmsg.get_log_message("MSG-10972", [driver_name, execution_no, restart_count_max]))
+                        # 再起動の上限に達した
+                        wsDb.db_transaction_start()
+                        time_stamp = get_timestamp()
+                        data = {
+                            "EXECUTION_NO": execution_no,
+                            "STATUS_ID": ansc_const.EXCEPTION,
+                            "TIME_END": time_stamp,
+                            "TIME_START": time_stamp,
+                        }
+                        result = cm.update_execution_record(wsDb, ansc_const, data)
+                        if result[0] is True:
+                            wsDb.db_commit()
+                            g.applogger.info(g.appmsg.get_log_message("MSG-10060", [driver_name, execution_no]))
 
         wsDb.db_disconnect()
 
@@ -445,13 +500,11 @@ def get_running_process(common_db, target_shema):
             else:
                 sql += "SELECT * FROM `" + table_schema + "`.`" + table_name + "` "
 
-            sql += " WHERE `DISUSE_FLAG` = 0 AND `STATUS_ID` in ('{}', '{}', '{}') ".format(ansc_const.PREPARE, ansc_const.PROCESSING, ansc_const.PROCESS_DELAYED)
+            sql += " WHERE `DISUSE_FLAG` = 0 AND `STATUS_ID` in ('{}', '{}', '{}', '{}', '{}') ".format(ansc_const.PREPARE, ansc_const.PROCESSING, ansc_const.PROCESS_DELAYED, ansc_const.PREPARE_COMPLETE, ansc_const.PROCESSING_WAIT )
 
             if len(target_shema) > count:
                 sql += "UNION ALL "
-
         records = common_db.sql_execute(sql, [])
-
     return records
 
 
@@ -534,7 +587,35 @@ def run_child_process(wsDb, execute_data, organization_id, workspace_id):
     # 子プロセスにして、実行
     g.applogger.debug(g.appmsg.get_log_message("MSG-10745", [driver_name, execution_no]))
 
-    command = ["python3", "backyard/backyard_child_init.py", organization_id, workspace_id, execution_no, driver_id]
+    command = ["python3", "backyard/backyard_child_init.py", organization_id, workspace_id, execution_no, driver_id, "run"]
+    # cp = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    cp = subprocess.Popen(command)  # noqa: F841
+
+    return True,
+
+def chkAGChildProcessRestartCount(ansc_const, driver_name, execution_no, restart_count_max):
+    file_path = get_AGChildProcessRestartCountFilepath(ansc_const, execution_no)
+    if os.path.isfile(file_path) is False:
+        with open(file_path, 'w') as f:
+            f.write("0")
+    with open(file_path, 'r') as f:
+        restart_count = f.read()
+        restart_count = int(restart_count)
+    if restart_count_max > restart_count:
+        with open(file_path, 'w') as f:
+            restart_count = restart_count + 1
+            f.write(str(restart_count))
+            return True
+    return False
+
+def rerun_child_process(wsDb, ansc_const, execute_data, organization_id, workspace_id):
+    """
+    作業実行するための子プロセスの再起動
+    """
+    driver_id = ansc_const.vg_driver_id
+    execution_no = execute_data["EXECUTION_NO"]
+
+    command = ["python3", "backyard/backyard_child_init.py", organization_id, workspace_id, execution_no, driver_id, "rerun"]
     # cp = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     cp = subprocess.Popen(command)  # noqa: F841
 

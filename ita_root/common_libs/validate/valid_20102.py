@@ -81,7 +81,7 @@ def external_valid_menu_before(objdbca, objtable, option):
         # 組織名は必須項目から外す。
         ary.append({"VALUE": str_token, "MSG_CODE": "MSG-10885", "EXIST": True})
         # 実行エンジンがTowerの場合の、Ansible Towerインターフェースの必須入力チェック
-        if str_exec_mode != AnscConst.DF_EXEC_MODE_ANSIBLE:
+        if str_exec_mode == AnscConst.DF_EXEC_MODE_AAC:
             for i in ary:
                 # nullまたはNoneの場合空文字と同じ扱いにする
                 if i["VALUE"] is None:

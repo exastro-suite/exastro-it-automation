@@ -55,7 +55,7 @@ INSERT INTO T_COMN_COLUMN_GROUP_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL
 -- - ▼ カラムクラス管理
 -- -    ExecutionEnvironmentDefinitionIDColumn  追加
 -- ------------------------------------------------------------
-INSERT INTO T_COMN_COLUMN_CLASS (COLUMN_CLASS_ID,COLUMN_CLASS_NAME,COLUMN_CLASS_DISP_NAME_JA,COLUMN_CLASS_DISP_NAME_EN,MENU_CREATE_TARGET_FLAG,DISP_SEQ,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(32,'ExecutionEnvironmentDefinitionIDColumn ','プルダウン選択(実行環境定義)','Pulldown selection(Execution environment definition)','0',320,NULL,'0',_____DATE_____,1);
+INSERT INTO T_COMN_COLUMN_CLASS (COLUMN_CLASS_ID,COLUMN_CLASS_NAME,COLUMN_CLASS_DISP_NAME_JA,COLUMN_CLASS_DISP_NAME_EN,MENU_CREATE_TARGET_FLAG,DISP_SEQ,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(32,'ExecutionEnvironmentDefinitionIDColumn','プルダウン選択(実行環境定義)','Pulldown selection(Execution environment definition)','0',320,NULL,'0',_____DATE_____,1);
 
 -- ------------------------------------------------------------
 -- - ▼ メニュー・カラム紐づけ

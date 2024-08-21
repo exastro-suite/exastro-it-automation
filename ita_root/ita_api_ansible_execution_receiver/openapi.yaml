@@ -33,7 +33,7 @@ tags:
     description: Ansibleの情報を取得
 
 paths:
-  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/unexecuted/instance:
+  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/instance/unexecuted:
     get:
       tags:
         - Ansible Execution
@@ -67,7 +67,7 @@ paths:
                   data:
                     type: object
                     items: {}
-                    example: {execution_no: {"driver_id": "string", "ans_vent_path": "string", "build_type": "string", "user_name": "string", "password": "string", "base_image": "string", "anstwr_del_runtime_data": "string"}}
+                    example: {execution_no: {"driver_id": "string", "build_type": "string", "user_name": "string", "password": "string", "base_image": "string", "attach_repository": "string", "anstwr_del_runtime_data": boolean}}
                   message:
                     type: string
         '401':
@@ -83,7 +83,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
-  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/execution/{status}:
+  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/notification/status:
     get:
       tags:
         - Ansible Execution
@@ -103,9 +103,9 @@ paths:
           required: true
           schema:
             type: string
-        - name: status
+        - name: execution_no
           in: path
-          description: ステータス
+          description: 作業番号
           required: true
           schema:
             type: string
@@ -121,7 +121,8 @@ paths:
                     type: string
                     example: 000-00000
                   data:
-                    type: boolean
+                    items: {}
+                    example: {"scram_status": boolean}
                   message:
                     type: string
         '401':
@@ -157,6 +158,12 @@ paths:
           required: true
           schema:
             type: string
+        - name: driver_id
+          in: query
+          description: ドライバーID
+          required: true
+          schema:
+            type: string
       responses:
         '200':
           description: Success
@@ -187,7 +194,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
-  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/{driver_id}/{status}/result_data:
+  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/result_data:
     post:
       tags:
         - Ansible Execution
@@ -213,38 +220,37 @@ paths:
           required: true
           schema:
             type: string
-        - name: driver_id
-          in: path
-          description: ドライバーID
-          required: true
-          schema:
-            type: string
-        - name: status
-          in: path
-          description: ステータス
-          required: true
-          schema:
-            type: string
       requestBody:
         content:
           application/json:
             schema:
-              description: 各種tarファイルを指定
+              description: ドライバーID、ステータス、各種tarファイルを指定
               properties:
+                driver_id:
+                  type: string
+                status:
+                  type: string
                 file:
                   type: object
                   properties:
-                    rest_key_name:
+                    file_name:
                       type: string
                       example: base64 encode file
           multipart/form-data:
             schema:
+              description: ドライバーID、ステータス、各種tarファイルを指定
               type: object
               properties:
-                file:
+                driver_id:
                   type: string
-                  description: 各種tarファイルを指定
-                  format: binary
+                status:
+                  type: string
+                file:
+                  type: object
+                  properties:
+                    file_name:
+                      type: string
+                      example: base64 encode file
       responses:
         '200':
           description: Success
@@ -274,11 +280,11 @@ paths:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
   /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/version:
-    get:
+    post:
       tags:
         - Ansible Execution
       description: バージョン通知
-      operationId: getAgentVersion
+      operationId: agentVersion
       x-openapi-router-controller: controllers.ansible_receiver_controller
       parameters:
         - name: organization_id
@@ -293,6 +299,18 @@ paths:
           required: true
           schema:
             type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: エージェントID、エージェント名、バージョン情報を指定
+              properties:
+                agent_id:
+                  type: string
+                agent_name:
+                  type: string
+                version:
+                  type: string
       responses:
         '200':
           description: Success
@@ -305,9 +323,8 @@ paths:
                     type: string
                     example: 000-00000
                   data:
-                    type: object
                     items: {}
-                    example: {"agent_name": "string", "version": "string"}
+                    example: {"version_diff": boolean}
                   message:
                     type: string
         '401':
@@ -323,8 +340,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
-  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/notification:
-    get:
+  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/notification/execution:
+    post:
       tags:
         - Ansible Execution
       description: 作業中通知
@@ -343,12 +360,27 @@ paths:
           required: true
           schema:
             type: string
-        - name: execution_no
-          in: path
-          description: 作業番号
-          required: true
-          schema:
-            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: 作業実行中の作業番号を指定する
+              properties:
+                legacy:
+                  type: array
+                  description: 作業番号を指定する
+                  items:
+                    type: string
+                pioneer:
+                  type: array
+                  description: 作業番号を指定する
+                  items:
+                    type: string
+                legacy_role:
+                  type: array
+                  description: 作業番号を指定する
+                  items:
+                    type: string
       responses:
         '200':
           description: Success

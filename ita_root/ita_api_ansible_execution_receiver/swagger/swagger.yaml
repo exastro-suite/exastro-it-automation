@@ -30,7 +30,7 @@ tags:
 - name: Ansible Execution
   description: Ansibleの情報を取得
 paths:
-  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/unexecuted/instance:
+  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/instance/unexecuted:
     get:
       tags:
       - Ansible Execution
@@ -73,7 +73,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.ansible_receiver_controller
-  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/execution/{status}:
+  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/notification/status:
     get:
       tags:
       - Ansible Execution
@@ -96,9 +96,9 @@ paths:
         explode: false
         schema:
           type: string
-      - name: status
+      - name: execution_no
         in: path
-        description: ステータス
+        description: 作業番号
         required: true
         style: simple
         explode: false
@@ -147,6 +147,14 @@ paths:
         explode: false
         schema:
           type: string
+      - name: driver_id
+        in: query
+        description: ドライバーID
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
       responses:
         "200":
           description: Success
@@ -167,7 +175,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.ansible_receiver_controller
-  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/{driver_id}/{status}/result_data:
+  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/result_data:
     post:
       tags:
       - Ansible Execution
@@ -198,73 +206,14 @@ paths:
         explode: false
         schema:
           type: string
-      - name: driver_id
-        in: path
-        description: ドライバーID
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: status
-        in: path
-        description: ステータス
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/status_result_data_body'
+              $ref: '#/components/schemas/execution_no_result_data_body'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/status_result_data_body_1'
-      responses:
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_200_1'
-        "401":
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
-        "500":
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
-      x-openapi-router-controller: controllers.ansible_receiver_controller
-  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/version:
-    get:
-      tags:
-      - Ansible Execution
-      description: バージョン通知
-      operationId: get_agent_version
-      parameters:
-      - name: organization_id
-        in: path
-        description: OrganizationID
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: workspace_id
-        in: path
-        description: WorkspaceID
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
+              $ref: '#/components/schemas/execution_no_result_data_body_1'
       responses:
         "200":
           description: Success
@@ -285,8 +234,56 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.ansible_receiver_controller
-  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/notification:
-    get:
+  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/version:
+    post:
+      tags:
+      - Ansible Execution
+      description: バージョン通知
+      operationId: agent_version
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ansible_execution_agent_version_body'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_4'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.ansible_receiver_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/notification/execution:
+    post:
       tags:
       - Ansible Execution
       description: 作業中通知
@@ -308,21 +305,18 @@ paths:
         explode: false
         schema:
           type: string
-      - name: execution_no
-        in: path
-        description: 作業番号
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/notification_execution_body'
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_1'
+                $ref: '#/components/schemas/inline_response_200_3'
         "401":
           description: Unauthorized
           content:
@@ -357,12 +351,12 @@ components:
           example:
             execution_no:
               driver_id: string
-              ans_vent_path: string
               build_type: string
               user_name: string
               password: string
               base_image: string
-              anstwr_del_runtime_data: string
+              attach_repository: string
+              anstwr_del_runtime_data: boolean
           items: {}
         message:
           type: string
@@ -371,12 +365,12 @@ components:
         data:
           execution_no:
             driver_id: string
-            ans_vent_path: string
             build_type: string
             user_name: string
             password: string
             base_image: string
-            anstwr_del_runtime_data: string
+            attach_repository: string
+            anstwr_del_runtime_data: boolean
         message: message
     inline_response_200_1:
       type: object
@@ -385,12 +379,16 @@ components:
           type: string
           example: 000-00000
         data:
-          type: boolean
+          type: array
+          example:
+            scram_status: boolean
+          items: {}
         message:
           type: string
       example:
         result: 000-00000
-        data: true
+        data:
+          scram_status: boolean
         message: message
     inline_response_200_2:
       type: object
@@ -414,25 +412,55 @@ components:
             in_out_data: string
             conductor_data: string
         message: message
-    apiorganization_idworkspacesworkspace_idansible_execution_agentexecution_nodriver_idstatusresult_data_file:
+    apiorganization_idworkspacesworkspace_idansible_execution_agentexecution_noresult_data_file:
       type: object
       properties:
-        rest_key_name:
+        file_name:
           type: string
           example: base64 encode file
-    status_result_data_body:
+    execution_no_result_data_body:
       properties:
+        driver_id:
+          type: string
+        status:
+          type: string
         file:
-          $ref: '#/components/schemas/apiorganization_idworkspacesworkspace_idansible_execution_agentexecution_nodriver_idstatusresult_data_file'
-      description: 各種tarファイルを指定
-    status_result_data_body_1:
+          $ref: '#/components/schemas/apiorganization_idworkspacesworkspace_idansible_execution_agentexecution_noresult_data_file'
+      description: ドライバーID、ステータス、各種tarファイルを指定
+    execution_no_result_data_body_1:
       type: object
       properties:
-        file:
+        driver_id:
           type: string
-          description: 各種tarファイルを指定
-          format: binary
+        status:
+          type: string
+        file:
+          $ref: '#/components/schemas/apiorganization_idworkspacesworkspace_idansible_execution_agentexecution_noresult_data_file'
+      description: ドライバーID、ステータス、各種tarファイルを指定
     inline_response_200_3:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          type: boolean
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data: true
+        message: message
+    ansible_execution_agent_version_body:
+      properties:
+        agent_id:
+          type: string
+        agent_name:
+          type: string
+        version:
+          type: string
+      description: エージェントID、エージェント名、バージョン情報を指定
+    inline_response_200_4:
       type: object
       properties:
         result:
@@ -441,17 +469,33 @@ components:
         data:
           type: array
           example:
-            agent_name: string
-            version: string
+            version_diff: boolean
           items: {}
         message:
           type: string
       example:
         result: 000-00000
         data:
-          agent_name: string
-          version: string
+          version_diff: boolean
         message: message
+    notification_execution_body:
+      properties:
+        legacy:
+          type: array
+          description: 作業番号を指定する
+          items:
+            type: string
+        pioneer:
+          type: array
+          description: 作業番号を指定する
+          items:
+            type: string
+        legacy_role:
+          type: array
+          description: 作業番号を指定する
+          items:
+            type: string
+      description: 作業実行中の作業番号を指定する
   responses:
     UnauthorizedError:
       description: Access token is missing or invalid

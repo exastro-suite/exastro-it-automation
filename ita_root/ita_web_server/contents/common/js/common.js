@@ -789,46 +789,6 @@ getFile: function( endPoint, method = 'GET', data, option = {} ) {
 },
 /*
 ##################################################
-   ファイルダウンロード
-##################################################
-*/
-fileDownload: function( endPoint ) {
-    // トークン
-    const token = ( cmmonAuthFlag )? CommonAuth.getToken():
-        ( iframeFlag && window.parent.getToken )? window.parent.getToken(): null;
-
-    // URL
-    if ( windowFlag ) endPoint = cmn.getRestApiUrl( endPoint );
-
-    // iframe作成
-    const $iframe = $('<iframe/>', {
-        name: 'download_target'
-    }).css('display', 'none');
-
-    // フォーム作成
-    const $form = $('<form/>', {
-        method: 'POST',
-        action: endPoint,
-        target: 'download_target',
-        // enctype: 'multipart/form-data'
-    }).append( $('<input/>', {
-        type: 'hidden',
-        id: 'authorization',
-        name: 'authorization',
-        value: `Bearer ${token}`
-    }));
-
-    // セット
-    $('body').append( $iframe, $form );
-
-    $iframe.on('load', function(){
-        alert('完了');
-    });
-
-    $form.submit();
-},
-/*
-##################################################
    データ登録（進捗表示）
 ##################################################
 */

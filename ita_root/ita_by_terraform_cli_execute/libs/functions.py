@@ -142,13 +142,7 @@ def file_upload(wsDb, const, update_data, execute_data, file_upload_column_name,
 
     if os.path.isfile(zip_tmp_save_path):
         # zipファイルをエンコードする
-        ZipDataData = file_encode(zip_tmp_save_path)
-        if ZipDataData is False:
-            # エンコード失敗
-            msgstr = g.appmsg.get_api_message("BKY-52001", [execution_no])
-            g.applogger.error(msgstr)
-            return False, msgstr
-        uploadfiles = {rest_name_config[file_upload_column_name]: ZipDataData}
+        uploadfiles = {rest_name_config[file_upload_column_name]: zip_tmp_save_path}
 
         # 一時的に作成したzipファイル削除
         subprocess.run(['/bin/rm', '-fr', '*'], cwd=tmp_execution_dir)
@@ -159,12 +153,11 @@ def file_upload(wsDb, const, update_data, execute_data, file_upload_column_name,
     # load_tableで更新
     parameters = {
         "parameter": execute_table_paramater,
-        "file": uploadfiles,
         "type": "Update"
     }
     menu_name = "execution_list_terraform_cli"
     objmenu = load_table.loadTable(wsDb, menu_name)
-    retAry = objmenu.exec_maintenance(parameters, execution_no, "", False, False, True)
+    retAry = objmenu.exec_maintenance(parameters, execution_no, "", False, False, True, record_file_paths=uploadfiles)
     if retAry[0] is False:
         raise Exception(str(retAry))
 

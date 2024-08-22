@@ -1414,13 +1414,7 @@ def InstanceRecodeUpdate(wsDb, driver_id, execution_no, execute_data, update_col
     uploadfiles = {}
     if update_column_name == "FILE_INPUT" or update_column_name == "FILE_RESULT":
         if zip_tmp_save_path:
-            ZipDataData = file_encode(zip_tmp_save_path)
-            if ZipDataData is False:
-                # エンコード失敗
-                msgstr = g.appmsg.get_api_message("499-00909", [])
-                return False, msgstr
-            uploadfiles = {RestNameConfig[update_column_name]: ZipDataData}
-
+            uploadfiles = {RestNameConfig[update_column_name]: zip_tmp_save_path}
     # 実行中の場合
     if update_column_name == "FILE_INPUT":
         if execute_data["FILE_INPUT"]:
@@ -1463,13 +1457,12 @@ def InstanceRecodeUpdate(wsDb, driver_id, execution_no, execute_data, update_col
 
     parameters = {
         "parameter": ExecStsInstTableConfig,
-        "file": uploadfiles,
         "type": "Update"
     }
     objmenu = load_table.loadTable(wsDb, MenuName)
     if db_update_need_no_jnl is True:
         objmenu.set_history_flg(False)
-    retAry = objmenu.exec_maintenance(parameters, execution_no, "", False, False, True)
+    retAry = objmenu.exec_maintenance(parameters, execution_no, "", False, False, True, record_file_paths=uploadfiles)
     result = retAry[0]
     if result is False:
         return False, str(retAry)

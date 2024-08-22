@@ -18,6 +18,7 @@ import datetime
 import base64
 import json
 import subprocess
+import shutil
 
 from flask import g
 
@@ -735,7 +736,7 @@ def backyard_main(organization_id, workspace_id):
                                                             tmp_param['file'][col_name] = ''
 
                                                         # ファイルアップロード対象リストのファイルデータをセット
-                                                        upload_filepath = None
+                                                        upload_filepath = {}
                                                         if hostname in arrTargetUploadLists and varmembermembervalue in arrTargetUploadLists[hostname]:
                                                             upload_filepath = arrTargetUploadLists[hostname][varmembermembervalue]
 
@@ -746,9 +747,7 @@ def backyard_main(organization_id, workspace_id):
                                                                     break
 
                                                         if upload_filepath:
-                                                            filedata = file_encode(upload_filepath)
-                                                            if filedata is not False:
-                                                                tmp_param['file'][col_name] = filedata
+                                                            tmp_param['file'][col_name] = upload_filepath
 
                                                     # バンドル使用のメニュー名を保持
                                                     if vertical_flag and menu_name not in bandle_menus:
@@ -770,6 +769,8 @@ def backyard_main(organization_id, workspace_id):
                                             output_flag = True
                                             for input_order, tmparr3 in bdl_array(tmparr):
                                                 filename = tmparr3.pop('input_file')
+                                                uploadFiles = tmparr3["file"]
+                                                del tmparr3["file"]
                                                 if output_flag is True:
                                                     FREE_LOG1 = g.appmsg.get_api_message("MSG-10849", [hostname, filename])
                                                     collection_log = '%s\n%s' % (collection_log, FREE_LOG1) if collection_log else FREE_LOG1
@@ -847,7 +848,7 @@ def backyard_main(organization_id, workspace_id):
                                                         RESTEXEC_FLG = 1
                                                         rec_cnt = rec_cnt + 1
 
-                                                        ret = objmenu.exec_maintenance(tmparr3, tmparr3['parameter']['uuid'], tmparr3['type'], pk_use_flg=False, auth_check=False)
+                                                        ret = objmenu.exec_maintenance(tmparr3, tmparr3['parameter']['uuid'], tmparr3['type'], pk_use_flg=False, auth_check=False, record_file_paths=uploadFiles)
                                                         if ret[0] is True:
                                                             dbAccess.db_commit()
 
@@ -887,6 +888,16 @@ def backyard_main(organization_id, workspace_id):
 
                         NOTICE_FLG = str(NOTICE_FLG)
 
+                        # logを一時ファイルに書き込み
+                        tmp_log_dir = f"/tmp/{execNo}"
+                        os.mkdir(tmp_log_dir)
+                        tmp_log_path = f"{tmp_log_dir}/{tmpCollectlogfile}"
+                        log_lines = collection_log.splitlines()
+                        with open(tmp_log_path, "w") as f:
+                            for line in log_lines:
+                                f.write(line + "\n")
+                        uploadFiles = {'collection_log': tmp_log_path}
+
                         request_param = {}
                         request_param['type'] = load_table.CMD_UPDATE
                         request_param['file'] = {}
@@ -895,10 +906,13 @@ def backyard_main(organization_id, workspace_id):
                         request_param['parameter']['collection_status'] = collect_sts_info[NOTICE_FLG] if NOTICE_FLG in collect_sts_info else ''
                         request_param['parameter']['last_update_date_time'] = last_update_timestamp
                         if len(collection_log) > 0:
-                            request_param['file']['collection_log'] = base64.b64encode(collection_log.encode()).decode()
                             request_param['parameter']['collection_log'] = tmpCollectlogfile
 
-                        ret = objmenu_orch.exec_maintenance(request_param, request_param['parameter']['execution_no'], load_table.CMD_UPDATE, pk_use_flg=False, auth_check=False)
+                        ret = objmenu_orch.exec_maintenance(request_param, request_param['parameter']['execution_no'], load_table.CMD_UPDATE, pk_use_flg=False, auth_check=False, record_file_paths=uploadFiles)
+
+                        # 一時ファイルを削除
+                        shutil.rmtree(tmp_log_dir)
+
                         if ret[0] is False:
                             dbAccess.db_rollback()
                             if len(ret) >= 3:

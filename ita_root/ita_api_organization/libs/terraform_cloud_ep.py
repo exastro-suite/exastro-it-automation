@@ -15,6 +15,7 @@
 import json
 import base64
 import re
+import uuid
 from flask import g  # noqa: F401
 
 from common_libs.common import *  # noqa: F403
@@ -939,11 +940,13 @@ def get_policy_file(objdbca, tf_organization_name, policy_name, parameters):
 
     # ファイルをエンコード
     if responseContents:
-        file = base64.b64encode(responseContents.encode('utf-8')).decode()
+        tmp_uuid = str(uuid.uuid4())
+        tmp_file_path = f"/tmp/{tmp_uuid}/{file_name}"
+        os.makedirs(tmp_file_path)
+        with open(tmp_file_path, "w")as f:
+            f.write(responseContents)
 
-    return_data = {'file_name': file_name, 'file': file}
-
-    return return_data
+    return tmp_file_path
 
 
 def get_policy_set_list(objdbca):  # noqa: C901

@@ -147,7 +147,7 @@ to { background-position: 32px 0; }
 .progressWrap {
 overflow: hidden;
 position: absolute;
-left: 50%; top: 50%;
+left: 50%; top: calc( 50% - 10px );
 z-index: 2;
 transform: translate(-50%,-50%);
 width: calc( 100% - 32px ); height: 16px;
@@ -155,6 +155,26 @@ background-color: #333;
 background-image: linear-gradient( rgba( 255,255,255,0 ), rgba( 255,255,255,.3 ) );
 box-shadow: 0 0 0 2px var(--mainColor50);
 border-radius: 8px;
+}
+.progressTimer {
+overflow: hidden;
+position: absolute;
+width: calc( 20% - 16px );
+left: 16px; bottom: 12px;
+text-align: left;
+font-size: 10px;
+font-weight: bold;
+opacity: .7;
+}
+.progressText {
+overflow: hidden;
+position: absolute;
+width: calc( 80% - 16px );
+right: 16px; bottom: 12px;
+text-align: right;
+font-size: 10px;
+font-weight: bold;
+opacity: .7;
 }
 .progressBar {
 position: absolute;
@@ -183,7 +203,7 @@ font-weight: bold;
 color: #FFF;
 animation: 1s progressPercentage linear infinite;;
 }
-.progressPercentage > span {
+.progressPercentage > span.progressPercentageUnit {
 margin-left: 4px;
 font-size: 80%;
 }

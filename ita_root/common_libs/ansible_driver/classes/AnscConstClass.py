@@ -60,6 +60,14 @@ class AnscConst:
     DF_GITREPO_SYMPHONY_PATH = "GITREPO_SYMPHONY_PATH"
     DF_GITREPO_CONDUCTOR_PATH = "GITREPO_CONDUCTOR_PATH"
 
+    # Ansible Egent 実行環境構築方法
+    DF_AG_BUILD_TYPE_MANUAL = '1'
+    DF_AG_BUILD_TYPE_ITA = '2'
+
+    # Ansible Egent ベースイメージOS種別
+    DF_AG_BASE_IMAGE_TYPE_REDHAT = '1'
+    DF_AG_BASE_IMAGE_TYPE_OTHOR = '2'
+
     # AnsibleTower処理区分
     DF_EXECUTION_FUNCTION = '1'
     DF_CHECKCONDITION_FUNCTION = '2'

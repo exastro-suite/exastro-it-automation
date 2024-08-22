@@ -299,9 +299,6 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id, rerun_mode, workspace
         # [処理]処理対象インスタンス 作業確認の開始(作業No.:{})
         g.applogger.debug(g.appmsg.get_log_message("MSG-10737", [execution_no]))
 
-    wsDb.db_disconnect()
-    wsDb = DBConnectWs()
-
     check_interval = 3
     # 10分間 ansibe agent起動確認ファイルの更新が無かった場合、想定外エラーにする
     # enomoto 　環境変数から取得

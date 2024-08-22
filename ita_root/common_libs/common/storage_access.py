@@ -42,6 +42,22 @@ class storage_base:
         else:
             return False
 
+    def get_disk_usage(self):
+        usage = shutil.disk_usage(os.environ.get('STORAGEPATH'))
+        disk_stats = {
+            "total_space": usage.total,
+            "used_space": usage.used,
+            "free_space": usage.free
+        }
+        return disk_stats
+
+    def validate_disk_space(self, file_size):
+        usage = self.get_disk_usage()
+        free_space = usage["free_space"]
+        # 保存できる容量があるか判定
+        can_save = int(free_space) >= int(file_size)
+        return can_save, free_space
+
 class storage_read(storage_base):
     def __init__(self):
         storage_file_path = None
@@ -72,6 +88,10 @@ class storage_read(storage_base):
     def read(self):
         # read
         return self.fd.read()
+
+    def chunk_read(self, chunk):
+        # read by chunk
+        return self.fd.read(chunk)
 
     def close(self, file_del = True):
         # close

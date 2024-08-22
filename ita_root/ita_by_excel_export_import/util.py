@@ -187,9 +187,6 @@ def zip(execution_no, dirPath, status_id, zipFileName, objdbca):
 
         # ファイル更新用パラメータを作成
         parameters = {
-            "file": {
-                "file_name": file_encode(tmp_dir_file_path)
-            },
             "parameter": {
                 "file_name": zipFileName,
                 "status": status,
@@ -200,7 +197,7 @@ def zip(execution_no, dirPath, status_id, zipFileName, objdbca):
         }
 
         objmenu = load_table.loadTable(objdbca, 'bulk_excel_export_import_list')
-        retAry = objmenu.exec_maintenance(parameters, execution_no, "", False, False, True)  # noqa: E999
+        retAry = objmenu.exec_maintenance(parameters, execution_no, "", False, False, True, record_file_paths=tmp_dir_file_path)  # noqa: E999
         result = retAry[0]
         if result is False:
             raise AppException("499-00701", [retAry], [retAry])

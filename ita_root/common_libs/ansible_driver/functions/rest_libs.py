@@ -178,13 +178,7 @@ def insert_execution_list(objdbca, run_mode, driver_id, operation_row, movement_
         if os.path.isfile(path) is False:
             # 対象ファイルなし
             raise AppException("499-00905", [], [])
-
-        AnsibleCfgData = file_encode(path)
-        if AnsibleCfgData is False:
-            # エンコード失敗
-            raise AppException("499-00909", [], [])
-
-        uploadfiles = {RestNameConfig["I_ANSIBLE_CONFIG_FILE"]: AnsibleCfgData}
+        uploadfiles = {RestNameConfig["I_ANSIBLE_CONFIG_FILE"]: path}
 
     # オペレーション/No.
     ExecStsInstTableConfig[RestNameConfig["OPERATION_ID"]] = operation_row["OPERATION_ID"]
@@ -239,11 +233,10 @@ def insert_execution_list(objdbca, run_mode, driver_id, operation_row, movement_
 
     parameters = {
         "parameter": ExecStsInstTableConfig,
-        "file": uploadfiles,
         "type": "Register"
     }
     objmenu = load_table.loadTable(objdbca, MenuName)
-    retAry = objmenu.exec_maintenance(parameters, "", "", False, False)
+    retAry = objmenu.exec_maintenance(parameters, "", "", False, False, record_file_paths=uploadfiles)
     # (False, '499-00201', {'host_specific_format': [{'status_code': '', 'msg_args': '', 'msg': '..'},,,]})
     result = retAry[0]
     if result is True:

@@ -78,7 +78,7 @@ class FileUploadEncryptColumn(FileUploadColumn):
 
         if val is not None:
             if len(val) != 0:
-                decode_option = option.get("file_data")
+                tmp_file_path = option.get("file_path")
 
                 uuid = option["uuid"]
                 uuid_jnl = option["uuid_jnl"]
@@ -97,7 +97,7 @@ class FileUploadEncryptColumn(FileUploadColumn):
 
                 # old配下にファイルアップロード
                 if len(old_dir_path) > 0:
-                    result = encrypt_upload_file(old_dir_path, decode_option)  # noqa: F405
+                    result = encrypt_upload_file(old_dir_path, tmp_file_path=tmp_file_path)# noqa: F405
                     if result is False:
                         retBool = False
                         msg = g.appmsg.get_api_message('MSG-00033', [val])

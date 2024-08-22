@@ -430,7 +430,7 @@ def upload_file(file_path, text, mode="bw"):
     return True
 
 
-def encrypt_upload_file(file_path, text, mode="w"):
+def encrypt_upload_file(file_path, text="", mode="w", tmp_file_path=""):
     """
     Encode and upload file
 
@@ -441,7 +441,11 @@ def encrypt_upload_file(file_path, text, mode="w"):
         is success:(bool)
     """
     try:
-        text = base64.b64decode(text.encode()).decode()
+        if tmp_file_path == "":
+            text = base64.b64decode(text.encode()).decode()
+        else:
+            with open(tmp_file_path, "r") as f:
+                text = f.read()
         text = ky_encrypt(text)
     except Exception as e:
         msg = "file_path:{} err_msg:{}".format(file_path, e)

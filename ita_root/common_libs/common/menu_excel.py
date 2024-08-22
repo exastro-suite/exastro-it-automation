@@ -1540,13 +1540,6 @@ def execute_excel_maintenance(
     if backyard_exec == 1:
         lang = backyard_lang
 
-    # make storage directory for excel
-    strage_path = os.environ.get('STORAGEPATH')
-    excel_dir = strage_path + \
-        "/".join([organization_id, workspace_id]) + "/tmp/excel"
-    if not os.path.isdir(excel_dir):
-        os.makedirs(excel_dir)
-        g.applogger.debug("made excel_dir")
 
     # 変数定義
     t_common_menu_column_link = 'T_COMN_MENU_COLUMN_LINK'
@@ -1560,14 +1553,9 @@ def execute_excel_maintenance(
         api_msg_args = [msg]
         raise AppException(status_code, log_msg_args, api_msg_args)     # noqa: F405
 
-    wbDecode = base64.b64decode(excel_data.encode('utf-8'))
 
     # 受け取ったデータを編集用として一時的にエクセルファイルに保存
-    file_name = 'post_excel_maintenance_tmp.xlsx'
-    file_path = excel_dir + '/' + file_name
-    file_write.open(file_path, mode="wb")
-    file_write.write(wbDecode)
-    file_write.close()
+    file_path = excel_data
 
     try:
         # ファイルを読み込む
@@ -1759,7 +1747,7 @@ def execute_excel_maintenance(
     return result_data
 
 
-def create_upload_parameters(connexion_request):
+def create_upload_parameters(connexion_request, organization_id, workspace_id):
     """
     create_maintenance_parameters
         Use connexion.request
@@ -1778,7 +1766,6 @@ def create_upload_parameters(connexion_request):
         bool, excel_data,
     """
 
-    excel_data = {}
     # if connexion_request:
     if connexion_request.is_json:
         # application/json
@@ -1786,17 +1773,44 @@ def create_upload_parameters(connexion_request):
         excel_data = check_request_body_key(body, 'excel')  # keyが無かったら400-00002エラー
     elif connexion_request.files:
         # get files & set parameter['excel']
+
+        # ファイルが保存できる容量があるか確認
+        file_size = connexion_request.headers.get("Content-Length")
+        file_size_mb = f"{int(file_size)/(1024*1024):,.6f} MB"
+        storage = storage_base()
+        can_save, free_space = storage.validate_disk_space(file_size)
+        if can_save is False:
+            status_code = "499-00222"
+            log_msg_args = [file_size_mb]
+            api_msg_args = [file_size_mb]
+            raise AppException(status_code, log_msg_args, api_msg_args)
+
+        strage_path = os.environ.get('STORAGEPATH')
+        excel_dir = strage_path + \
+            "/".join([organization_id, workspace_id]) + "/tmp/excel"
+        if not os.path.isdir(excel_dir):
+            os.makedirs(excel_dir)
+        file_path = excel_dir + "/" + 'post_excel_maintenance_tmp.xlsx'
+
         for _file_key in connexion_request.files:
             # set excel str_b64_file_data
             _file_data = connexion_request.files[_file_key]
-            _str_b64_file_data = base64.b64encode(_file_data.stream.read()).decode()
-            excel_data.setdefault('excel', None)
-            excel_data['excel'] = _str_b64_file_data
-        excel_data = check_request_body_key(excel_data, 'excel')  # keyが無かったら400-00002エラー
+            file_name = _file_data.filename
+
+            f = open(file_path, 'wb')
+            while True:
+                # fileの読み込み
+                buf = _file_data.stream.read(1000000)
+                if len(buf) == 0:
+                    break
+                # yield buf
+                # fileの書き込み
+                f.write(buf)
+            f.close()
     else:
         return False, {},
 
-    return True, excel_data,
+    return True, file_path,
 
 
 def analysys_menu_info(menu_info_data):

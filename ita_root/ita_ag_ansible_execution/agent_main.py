@@ -16,12 +16,14 @@ import subprocess
 import time
 import os
 import tarfile
+import glob
 
 from flask import g
 from common_libs.common import *  # noqa: F403
 from common_libs.ag.util import app_exception, exception
 from common_libs.common.storage_access import storage_read
 from agent.libs.exastro_api import Exastro_API
+from libs.util import *
 
 
 def agent_main(organization_id, workspace_id, loop_count, interval):
@@ -31,14 +33,21 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
     # 環境変数の取得
     baseUrl = os.environ["EXASTRO_URL"]
     refresh_token = os.environ['EXASTRO_REFRESH_TOKEN']
+    agent_name = os.environ['AGENT_NAME']
 
     # ITAのAPI呼び出しモジュール
     exastro_api = Exastro_API(
         base_url=baseUrl,
         refresh_token=refresh_token
     )
+    exastro_api.get_access_token(organization_id, refresh_token)
 
     # バージョン通知API実行
+    status_code, response = post_agent_version(organization_id, workspace_id, exastro_api)
+    if not status_code == 200:
+        g.applogger.info(f"{status_code=} {response=}") #####
+        g.applogger.info(f"バージョン通知に失敗しました。") #####
+        # g.applogger.info(g.appmsg.get_log_message("MSG-10955", [status_code, response])) #####
 
     while True:
         print("")
@@ -60,19 +69,14 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
             count = count + 1
 
 def main_logic(organization_id, workspace_id, exastro_api, baseUrl):
-    # 未実行インスタンス確認送信
-    endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/unexecuted/instance"
-    g.applogger.info(g.appmsg.get_log_message("MSG-10954", []))
-
-    status_code, response = exastro_api.api_request(
-        "GET",
-        endpoint
-    )
+    # 未実行インスタンス取得
+    status_code, response = get_unexecuted_instance(organization_id, workspace_id, exastro_api)
     if status_code == 200:
-        for execution_no, value in response.items():
+        target_executions = response["data"] if isinstance(response["data"], dict) else {}
+        for execution_no, value in target_executions.items():
 
             # 子プロ起動
-            command = ["python3", "agent/agent_child_init.py", organization_id, workspace_id, execution_no, value["driver_id"]]
+            command = ["python3", "agent/agent_child_init.py", organization_id, workspace_id, execution_no, value["driver_id"], value["build_type"], value["user_name"], value["password"]]
             cp = subprocess.Popen(command)  # noqa: F841
 
             # 子プロ死活監視
@@ -81,6 +85,18 @@ def main_logic(organization_id, workspace_id, exastro_api, baseUrl):
     else:
         g.applogger.info(g.appmsg.get_log_message("MSG-10955", [status_code, response]))
 
+    # 実行中インスタンス取得
+    working_ps_list, error_ps_list = get_working_child_process(organization_id, workspace_id)
+
+    # 作業中通知
+    status_code, response = post_notification_execution(organization_id, workspace_id, exastro_api, working_ps_list)
+    if not status_code == 200:
+        g.applogger.info(f"作業中通知に失敗しました。") #####
+        g.applogger.info(f"{status_code=} {response=}") #####
+        # g.applogger.info(g.appmsg.get_log_message("MSG-10955", [status_code, response])) #####
+
+    # 指定リトライ回数以上のステータス更新、ステータスファイルファイルの削除
+    update_error_executions(organization_id, workspace_id, exastro_api, error_ps_list)
 
 def decode_tar_file(base_64data, dir_path):
     """
@@ -156,7 +172,8 @@ def child_process_exist_check(organization_id, workspace_id, execution_no, drive
 
     if is_running is False:
         # ステータスファイルがあるか確認
-        status_file_path = "/storage/" + organization_id + "/" + workspace_id + "/ag_ansible_execution/status/" + execution_no
+        # status_file_path = "/storage/" + organization_id + "/" + workspace_id + "/ag_ansible_execution/status/" + execution_no
+        status_file_path = f"/storage/{organization_id}/{workspace_id}/ag_ansible_execution/status/{driver_id}/{execution_no}"
         if os.path.isfile(status_file_path):
             # ステータスファイルに書き込まれている再起動回数取得
             obj = storage_read()
@@ -317,3 +334,79 @@ def check_child_process(execution_no):
         execution_no: 作業番号
 
     """
+
+def get_working_child_process(organization_id, workspace_id):
+    """ステータスファイルから作業一覧取得
+    Args:
+        organization_id (_type_): organization_id
+        workspace_id (_type_): workspace_id
+
+    Returns:
+        working_ps_list: { driver_id : []}
+        error_ps_list: { driver_id : []}
+    """
+    driver_id_list = [
+        "legacy",
+        "pioneer",
+        "legacy_role",
+    ]
+    working_ps_list = {}
+    error_ps_list = {}
+    status_file_dir = f"/storage/{organization_id}/{workspace_id}/ag_ansible_execution/status/"
+
+    [working_ps_list.setdefault(_d, []) for _d in driver_id_list]
+    [error_ps_list.setdefault(_d, []) for _d in driver_id_list]
+
+    for driver_id in driver_id_list:
+        for _file in glob.glob(f"{status_file_dir}/{driver_id}/*"):
+            # ステータスファイルに書き込まれている再起動回数取得
+            obj = storage_read()
+            obj.open(_file)
+            reboot_cnt = obj.read()
+            obj.close()
+            reboot_cnt = int(reboot_cnt) if len(reboot_cnt) != 0 else 0
+            execution_no = os.path.basename(_file)
+            if int(reboot_cnt) <= 10:
+                working_ps_list[driver_id].append(execution_no)
+            else:
+                error_ps_list[driver_id].append(execution_no)
+
+    return working_ps_list, error_ps_list
+
+def update_error_executions(organization_id, workspace_id, exastro_api, error_ps_list):
+    for driver_id , del_execution_list in error_ps_list.items():
+        for del_execution in del_execution_list:
+            status_update = True
+            # 作業状態通知送信: 異常時
+            body = {
+                "driver_id": driver_id,
+                "status": 6, ##### 6,7
+            }
+            status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, del_execution, body)
+            if not status_code == 200:
+                g.applogger.info(f"作業状態通知送信: 異常時に失敗しました。") #####
+                g.applogger.info(f"{status_code=} {response=}") #####
+                # g.applogger.info(g.appmsg.get_log_message("MSG-10955", [status_code, response])) #####
+                status_update = False
+
+            # 作業状態通知送信(ファイル)
+            body = {
+                "driver_id": driver_id,
+                "status": 6, ##### 6,7
+            }
+            # upload_path_list = get_upload_file_info(organization_id, workspace_id, driver_id, del_execution)
+            # dummyfile1 = "/storage/out_1.zip"
+            # dummyfile2 = "/storage/conductor_1.zip"
+            # upload_path_list = {
+            #     "out_data" : dummyfile1,
+            #     "conductor": dummyfile2,
+            # }
+            # status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, del_execution, body, upload_path_list)
+            # if not status_code == 200:
+            #     g.applogger.info(f"作業状態通知送信(ファイル): 異常時に失敗しました。") #####
+            #     g.applogger.info(f"{status_code=} {response=}") #####
+            #     g.applogger.info(g.appmsg.get_log_message("MSG-10955", [status_code, response])) #####
+
+            if status_update:
+                # ステータスファイルの削除
+                delete_status_file(organization_id, workspace_id, driver_id, del_execution)

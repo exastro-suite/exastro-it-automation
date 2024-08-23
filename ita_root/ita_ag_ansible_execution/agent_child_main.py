@@ -1,16 +1,16 @@
-# # Copyright 2024 NEC Corporation#
-# # Licensed under the Apache License, Version 2.0 (the "License");
-# # you may not use this file except in compliance with the License.
-# # You may obtain a copy of the License at
-# #
-# #     http://www.apache.org/licenses/LICENSE-2.0
-# #
-# # Unless required by applicable law or agreed to in writing, software
-# # distributed under the License is distributed on an "AS IS" BASIS,
-# # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# # See the License for the specific language governing permissions and
-# # limitations under the License.
-# #
+# Copyright 2024 NEC Corporation#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
 import subprocess
 import os
@@ -23,6 +23,7 @@ from common_libs.ag.util import app_exception, exception
 from common_libs.ansible_driver.functions.util import get_OSTmpPath
 from common_libs.ansible_driver.functions.util import rmAnsibleCreateFiles
 from agent.libs.exastro_api import Exastro_API
+from libs.util import *
 
 def agent_child_main():
     """
@@ -73,7 +74,7 @@ def agent_child():
     root_dir_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/" + driver_id + "/" + execution_no
 
     # 実行状態確認用のステータスファイル作成
-    status_file_path = "/storage/" + organization_id + "/" + workspace_id + "/ag_ansible_execution/status"
+    status_file_path = "/storage/" + organization_id + "/" + workspace_id + "/ag_ansible_execution/status/" + driver_id
     if not os.path.exists(status_file_path):
         os.mkdir(status_file_path)
         os.chmod(status_file_path, 0o777)
@@ -81,8 +82,8 @@ def agent_child():
         # ファイル名を作業番号で作成
         obj = storage_write()
         obj.open(status_file_path + "/" + execution_no, 'w')
-        obj.write(0)
-        obj.close
+        obj.write("0")
+        obj.close()
 
     # 環境変数の取得
     baseUrl = os.environ["EXASTRO_URL"]
@@ -93,6 +94,7 @@ def agent_child():
         base_url=baseUrl,
         refresh_token=refresh_token
     )
+    exastro_api.get_access_token(organization_id, refresh_token)
 
     ##### 投入資材取得、展開テスト
     # _chunk_size=1024*1024 #####
@@ -367,37 +369,6 @@ def agent_child():
 
     # ステータスファイル削除
     os.remove(status_file_path + "/" + execution_no)
-
-def retry_api_call(exastro_api, endpoint, mode="json" ,method="POST", body=None, files=None, retry=3):
-    """
-    """
-    status_code = None
-    response = None
-    for t in range(int(retry)):
-        try:
-            if mode == "json":
-                status_code, response = exastro_api.api_request(
-                    method,
-                    endpoint
-                )
-            elif mode == "form":
-                status_code, response = exastro_api.api_request_formdata(
-                    method,
-                    endpoint,
-                    body,
-                    files
-                )
-            elif mode == "stream":
-                status_code, response = exastro_api.api_request_stream(
-                    method,
-                    endpoint,
-                    body,
-                )
-            if status_code == 200:
-                break
-        except Exception as e:
-            g.applogger.info(f"{endpoint=} {status_code=} retry:{t} \n {e}")
-    return status_code, response,
 
 if __name__ == "__main__":
     agent_child_main()

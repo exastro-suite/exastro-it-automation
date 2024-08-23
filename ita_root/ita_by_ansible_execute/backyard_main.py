@@ -283,7 +283,8 @@ def child_process_exist_check(common_db, target_shema, ansibleAg):
         bool
     """
     global ansc_const
-    restart_count_max = 0
+    # 再起動回数　初期値
+    restart_count_max = 3
 
     # psコマンドでbackyard_child_init.pyの起動プロセスリストを作成
     # psコマンドがマレに起動プロセスリストを取りこぼすことがあるので3回分を作成

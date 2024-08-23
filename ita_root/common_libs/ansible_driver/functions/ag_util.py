@@ -116,6 +116,9 @@ def CreateAG_ITABuilderShellFiles(objDBCA, AnscObj, out_dir, execution_no, movem
         msgstr = g.appmsg.get_api_message("MSG-10960", [movemrnt_row['AG_EXECUTION_ENVIRONMENT_NAME']])
         return False, msgstr
     execdev_row = rows[0]
+    # Ansible Egent 実行環境構築方法がITA以外の場合
+    if execdev_row['BUILD_TYPE'] != AnscConst.DF_AG_BUILD_TYPE_ITA:
+        return True, ""
     # 実行環境に紐づくパラメメータシートの情報取得
     # row['EXECUTION_ENVIRONMENT_ID']の中身は"パラメータシートテーブル,パラメータシートテーブルのROW_ID"
     key = execdev_row['EXECUTION_ENVIRONMENT_ID'].split(',')
@@ -129,7 +132,22 @@ def CreateAG_ITABuilderShellFiles(objDBCA, AnscObj, out_dir, execution_no, movem
     sql = "SELECT * FROM `{}` WHERE ROW_ID = '{}' AND DISUSE_FLAG = '0' ".format(sheet_table_name, row_id)
     rows = objDBCA.sql_execute(sql, bind_value_list=[])
     if len(rows) == 0:
-        msgstr = g.appmsg.get_api_message("MSG-10962", [sheet_table_name, row_id])
+        lang = g.get('LANGUAGE')
+        lang_menu_name_column = {}
+        lang_menu_name_column['ja'] = "MENU_NAME_JA"
+        lang_menu_name_column['en'] = "MENU_NAME_EN"
+        sql = """
+              SELECT {} AS MENU_NAME FROM T_COMN_MENU
+              WHERE MENU_ID in (
+                SELECT MENU_ID FROM T_MENU_TABLE_LINK WHERE TABLE_NAME = '{}'
+                               )
+              """.format(lang_menu_name_column[lang], sheet_table_name)
+        tblrows = objDBCA.sql_execute(sql, bind_value_list=[])
+        if len(tblrows) != 0:
+            sheet_name = tblrows[0]['MENU_NAME']
+        else:
+            sheet_name = sheet_table_name
+        msgstr = g.appmsg.get_api_message("MSG-10962", [sheet_name, row_id])
         return False, msgstr
     row = rows[0]
     uploadfiledir_uuid = row['ROW_ID']

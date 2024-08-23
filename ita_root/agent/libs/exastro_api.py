@@ -50,7 +50,7 @@ class Exastro_API:
             self.userid = userid
             self.headers["User-Id"] = self.userid
 
-    def api_request(self, method, endpoint, body=None):
+    def api_request(self, method, endpoint, body=None, query=None):
         """
             method: "GET" or "POST"
             Content-Type: "application/json"(json引数に辞書を挿入するとデフォルトでContent-Typeがapplication/jsonになる)
@@ -74,6 +74,7 @@ class Exastro_API:
                 headers=headers,
                 auth=auth,
                 json=body,
+                params=query,
                 verify=False
             )
 
@@ -86,7 +87,7 @@ class Exastro_API:
 
         return status_code, response.json()
 
-    def api_request_formdata(self, method, endpoint, body=None, files=None):
+    def api_request_formdata(self, method, endpoint, body=None, query=None, files=None):
         """
             method: "GET" or "POST"
             Content-Type: "multipart/form-data"
@@ -112,6 +113,7 @@ class Exastro_API:
                 auth=auth,
                 json=body,
                 files=files,
+                params=query,
                 verify=False
             )
 
@@ -124,7 +126,7 @@ class Exastro_API:
 
         return status_code, response.json()
 
-    def api_request_stream(self, method, endpoint, body=None, files=None):
+    def api_request_stream(self, method, endpoint, body=None, query=None, files=None):
         """
             method: "GET" or "POST"
             stream: True
@@ -149,10 +151,10 @@ class Exastro_API:
                 headers=headers,
                 auth=auth,
                 json=body,
+                params=query,
                 verify=False,
                 stream=True
             )
-
             status_code = response.status_code
 
             if status_code != 200:

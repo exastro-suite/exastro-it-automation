@@ -15,11 +15,14 @@ certifi = ">=0.0.0"
 
 [tool.poetry.group.develop_build.dependencies]
 python-dotenv = ">=0.0.0"
-connexion = ">=0.0.0"
-flask = "^2.3.3"
+flask = "^2.0.0"
 requests = ">=0.0.0"
 autopep8 = ">=0.0.0"
 debugpy = ">=0.0.0"
+pytz = ">=0.0.0"
+pycryptodome = ">=0.0.0"
+pymysql = ">=0.0.0"
+connexion = {version = "^2.0.0", extras = ["swagger-ui", "uvicorn"]}
 
 [build-system]
 requires = ["poetry-core"]

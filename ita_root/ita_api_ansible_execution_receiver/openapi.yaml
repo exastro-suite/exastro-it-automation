@@ -39,7 +39,7 @@ paths:
         - Ansible Execution
       description: 未実行インスタンス取得
       operationId: getUnexecutedInstance
-      x-openapi-router-controller: controllers.ansible_receiver_controller
+      x-openapi-router-controller: controllers.ansible_execution_controller
       parameters:
         - name: organization_id
           in: path
@@ -84,12 +84,12 @@ paths:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
   /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/notification/status:
-    get:
+    post:
       tags:
         - Ansible Execution
       description: 作業状態通知
       operationId: executionStatusNotification
-      x-openapi-router-controller: controllers.ansible_receiver_controller
+      x-openapi-router-controller: controllers.ansible_execution_controller
       parameters:
         - name: organization_id
           in: path
@@ -109,6 +109,16 @@ paths:
           required: true
           schema:
             type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: ドライバーID、ステータス
+              properties:
+                driver_id:
+                  type: string
+                status:
+                  type: string
       responses:
         '200':
           description: Success
@@ -138,13 +148,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
-  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/populated_data:
+  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/populated_data:
     get:
       tags:
         - Ansible Execution
       description: 投入データ取得
       operationId: getPopulatedData
-      x-openapi-router-controller: controllers.ansible_receiver_controller
+      x-openapi-router-controller: controllers.ansible_execution_controller
       parameters:
         - name: organization_id
           in: path
@@ -155,6 +165,12 @@ paths:
         - name: workspace_id
           in: path
           description: WorkspaceID
+          required: true
+          schema:
+            type: string
+        - name: execution_no
+          in: path
+          description: 作業番号
           required: true
           schema:
             type: string
@@ -200,7 +216,7 @@ paths:
         - Ansible Execution
       description: 結果データ受け取り・更新
       operationId: updateResultData
-      x-openapi-router-controller: controllers.ansible_receiver_controller
+      x-openapi-router-controller: controllers.ansible_execution_controller
       parameters:
         - name: organization_id
           in: path
@@ -285,7 +301,7 @@ paths:
         - Ansible Execution
       description: バージョン通知
       operationId: agentVersion
-      x-openapi-router-controller: controllers.ansible_receiver_controller
+      x-openapi-router-controller: controllers.ansible_execution_controller
       parameters:
         - name: organization_id
           in: path
@@ -346,7 +362,7 @@ paths:
         - Ansible Execution
       description: 作業中通知
       operationId: executionNotification
-      x-openapi-router-controller: controllers.ansible_receiver_controller
+      x-openapi-router-controller: controllers.ansible_execution_controller
       parameters:
         - name: organization_id
           in: path

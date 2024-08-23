@@ -495,7 +495,7 @@ def execute_excel_bulk_export(objdbca, menu, body):
 
     return result_data
 
-def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca):
+def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca, path_data):
     """
         Excel一括インポートのアップロード
         ARGS:
@@ -511,20 +511,15 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca):
 
     body_zipfile = body.get('zipfile')
     # upload_idの作成
-    date = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-    upload_id = date + str(secrets.randbelow(9999999999))
+
+    upload_id = path_data["upload_id"]
 
     fileName = upload_id + '_ita_data.zip'
 
     # ファイル保存
-    uploadFilePath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/upload/" + fileName
-    uploadPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/upload/"
-    importPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/import/"
-    ret = upload_file(uploadFilePath, body_zipfile['base64'])
-
-    if ret == 0:
-        if os.path.exists(uploadPath + fileName):
-            os.remove(uploadPath + fileName)
+    uploadFilePath = path_data["file_path"]
+    uploadPath = path_data["upload_path"]
+    importPath = path_data["import_path"]
 
     # zip解凍
     # 解凍はtmp配下で行う
@@ -666,7 +661,7 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca):
     intResultCode = "000"
 
     arrayResult["upload_id"] = upload_id
-    arrayResult["data_portability_upload_file_name"] = body['zipfile']['name']
+    arrayResult["data_portability_upload_file_name"] = path_data["upload_file_name"]
 
     if intResultCode == "000":
         arrayResult["import_list"] = retImportAry
@@ -1243,7 +1238,7 @@ def getParentMenuGroupInfo(menu_group_id, objdbca=None):
 
     return data
 
-def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body):
+def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body, path_data):
     """
         メニューアップロード
         ARGS:
@@ -1255,18 +1250,14 @@ def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body):
     """
     lang = g.get('LANGUAGE')
     # upload_idの作成
-    date = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-    upload_id = date + str(secrets.randbelow(9999999999))
+    upload_id = path_data["upload_id"]
+
 
     # パスの設定
-    strage_path = os.environ.get('STORAGEPATH')
-    import_menu_dir = strage_path + "/".join([organization_id, workspace_id]) + "/tmp/driver/import_menu"
-    upload_dir_name = import_menu_dir + '/' + 'upload'
-    import_dir_name = import_menu_dir + '/' + 'import'
-    upload_id_path = upload_dir_name + '/' + upload_id
-    import_id_path = import_dir_name + '/' + upload_id
-    file_name = upload_id + '_ita_data.tar.gz'
-    file_path = upload_dir_name + '/' + file_name
+    upload_dir_name = path_data["upload_dir_name"]
+    upload_id_path = path_data["upload_path"]
+    import_id_path = path_data["import_path"]
+    file_path = path_data['file_path']
     if not os.path.isdir(upload_dir_name):
         os.makedirs(upload_dir_name)
         g.applogger.debug("made import_dir")
@@ -1279,16 +1270,9 @@ def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body):
         raise AppException("401-00001", log_msg_args, api_msg_args) # noqa: F405
 
     objcolumn = FileUploadColumn(objdbca, objmenu.objtable, "file_name", '')
-    option = {"file_data": ""}
-    valid_result = objcolumn.check_basic_valid(body['name'], option)
-    if valid_result[0] is False:
-        log_msg_args = [valid_result[1]]
-        api_msg_args = [valid_result[1]]
-        raise AppException("499-01502", log_msg_args, api_msg_args)  # noqa: F405
 
     try:
         # アップロードファイルbase64変換処理
-        _decode_zip_file(file_path, body['base64'])
 
         # zip解凍
         with tarfile.open(file_path, 'r:gz') as tar:
@@ -1401,7 +1385,7 @@ def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body):
 
     result_data = {
         'upload_id': upload_id,
-        'file_name': body['name'],
+        'file_name': path_data["upload_file_name"],
         'mode': dp_mode,
         'abolished_type': abolished_type,
         'specified_time': specified_time,
@@ -1922,8 +1906,53 @@ def _format_loadtable_msg(loadtable_msg):
 
     return result_msg
 
+def generate_path_data(organization_id, workspace_id, excel=False):
+    """
+    Args:
+        organization_id
+        workspace_id
+        excel
 
-def create_upload_parameters(connexion_request, key_name):
+    Returns:
+        dict
+    """
+    storage_path = os.environ.get('STORAGEPATH')
+    base_path = f"{storage_path}{organization_id}/{workspace_id}"
+    date = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+    upload_id = date + str(secrets.randbelow(9999999999))
+
+
+    if excel:
+        file_name = upload_id + "_ita_data.zip"
+        menu_path = "/tmp/bulk_excel/import"
+        upload_path = base_path + menu_path + "/upload/"
+        import_path = base_path + menu_path + "/import/"
+        file_path = upload_path + file_name
+        upload_dir_name = ""
+        os.makedirs(upload_path, exist_ok=True)
+    else:
+        file_name = upload_id + "_ita_data.tar.gz"
+        menu_path ="/tmp/driver/import_menu"
+        upload_dir_name = base_path + menu_path + "/upload"
+        upload_path = upload_dir_name + "/" + upload_id
+        import_path = base_path + menu_path + "/import" + "/" + upload_id
+        file_path = upload_dir_name + "/" + file_name
+        os.makedirs(upload_dir_name, exist_ok=True)
+
+
+    path_data = {
+        "upload_id": upload_id,
+        "file_path": file_path,
+        "upload_dir_name": upload_dir_name,
+        "upload_path": upload_path,
+        "import_path": import_path,
+        "file_name": file_name
+    }
+
+    return path_data
+
+
+def create_upload_parameters(connexion_request, key_name, organization_id, workspace_id, excel=False):
     """
     create_upload_parameters
         Use connexion.request
@@ -1948,14 +1977,38 @@ def create_upload_parameters(connexion_request, key_name):
         upload_data = dict(connexion_request.get_json())
     elif connexion_request.files:
         # get files & set parameter['file'][rest_name]
+        # ファイルが保存できる容量があるか確認
+        file_size = connexion_request.headers.get("Content-Length")
+        file_size_mb = f"{int(file_size)/(1024*1024):,.6f} MB"
+        storage = storage_base()
+        can_save, free_space = storage.validate_disk_space(file_size)
+        if can_save is False:
+            status_code = "499-00222"
+            log_msg_args = [file_size_mb]
+            api_msg_args = [file_size_mb]
+            raise AppException(status_code, log_msg_args, api_msg_args)
+
         for _file_key in connexion_request.files:
             # set key_name -> name, base64
             _file_data = connexion_request.files[_file_key]
-            _str_b64_file_data = base64.b64encode(_file_data.stream.read()).decode()
             upload_data.setdefault(key_name, {})
-            upload_data[key_name]["name"] = _file_data.filename
-            upload_data[key_name]["base64"] = _str_b64_file_data
+
+            path_data = generate_path_data(organization_id, workspace_id, excel)
+            path_data["upload_file_name"] = _file_data.filename
+            file_path = path_data["file_path"]
+            f = open(file_path, "wb")
+            while True:
+                # fileの読み込み
+                buf = _file_data.stream.read(1000000)
+                if len(buf) == 0:
+                    break
+                # yield buf
+                # fileの書き込み
+                f.write(buf)
+            f.close()
+
+
     else:
         return False, {},
 
-    return True, upload_data,
+    return True, upload_data, path_data

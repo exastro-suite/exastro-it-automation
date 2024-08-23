@@ -237,7 +237,7 @@ def post_excel_maintenance(organization_id, workspace_id, menu, body=None, **kwa
         check_request_body()
 
         excel_data = {}
-        retBool, excel_data = menu_excel.create_upload_parameters(connexion.request)
+        retBool, excel_data = menu_excel.create_upload_parameters(connexion.request, organization_id, workspace_id)
         if retBool is False:
             status_code = "400-00003"
             request_content_type = connexion.request.content_type.lower()

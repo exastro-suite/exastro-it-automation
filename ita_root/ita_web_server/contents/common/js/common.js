@@ -721,13 +721,13 @@ getFile: function( endPoint, method = 'GET', data, option = {} ) {
                 let chunks = [];
                 while( true ) {
                     const { done, value } = await reader.read();
-                    if ( done ) break;
+                    if ( done ) {
+                        break;
+                    }
 
                     chunks.push( value );
                     receivedLength += value.length;
-
-                    const rate = Math.round( receivedLength / contentLength * 100 );
-                    progressModal.progress( rate );
+                    progressModal.progress( receivedLength, contentLength );
                 }
 
                 // Uint8Array連結
@@ -779,7 +779,11 @@ getFile: function( endPoint, method = 'GET', data, option = {} ) {
                 });
             }
         } catch ( e ) {
-            reject( e );
+            if ( e.message === 'network error') {
+                reject('break');
+            } else {
+                reject( e );
+            }
         }
     });
 },
@@ -790,7 +794,17 @@ getFile: function( endPoint, method = 'GET', data, option = {} ) {
 */
 xhr: function( url, formData ) {
     return new Promise(function( resolve, reject ){
-        let progressModal = cmn.progressModal( getMessage.FTE00184 );
+        let progressModal = cmn.progressModal( getMessage.FTE00184, { close: true });
+
+        // 閉じたときに処理を中断する
+        progressModal.btnFn = {
+            headerClose: function(){
+                ajax.abort();
+                progressModal.close();
+                progressModal = null;
+                reject('break');
+            }
+        };
 
         const token = ( cmmonAuthFlag )? CommonAuth.getToken():
             ( iframeFlag && window.parent.getToken )? window.parent.getToken(): null;
@@ -798,11 +812,10 @@ xhr: function( url, formData ) {
         if ( windowFlag ) url = cmn.getRestApiUrl( url );
 
         const progress = function( e ) {
-            const rate = Math.round( e.loaded / e.total * 100 );
-            progressModal.progress( rate );
+            progressModal.progress( e.loaded, e.total );
         };
 
-        $.ajax({
+        const ajax = $.ajax({
             url: url,
             method: 'post',
             dataType: 'json',
@@ -827,13 +840,15 @@ xhr: function( url, formData ) {
                 reject( null );
             }
         }).fail(function( jqXHR ){
-            setTimeout(function(){
-                cmn.responseError( jqXHR.status, jqXHR.responseJSON ).then(function( result ){
-                    progressModal.close();
-                    progressModal = null;
-                    reject( result );
-                });
-            }, 200 );
+            if ( jqXHR.statusText !== 'abort') {
+                setTimeout(function(){
+                    cmn.responseError( jqXHR.status, jqXHR.responseJSON ).then(function( result ){
+                        progressModal.close();
+                        progressModal = null;
+                        reject( result );
+                    });
+                }, 200 );
+            }
         });
     });
 },
@@ -2477,16 +2492,42 @@ progressModal: function( title, option = {}) {
     + `<div class="progressConteinar">`
         + `<div class="progressWrap">`
             + `<div class="progressBar"></div>`
-            + `<div class="progressPercentage">0<span>%</span></div>`
+            + `<div class="progressPercentage"><span class="progressPercentageNumber">0</span><span class="progressPercentageUnit">%</span></div>`
         + `</div>`
+        + `<div class="progressTimer">00:00:00</div>`
+        + `<div class="progressText">0 Byte / 0 Byte</div>`
     + `</div>`;
     dialog.open( html );
 
-    dialog.progress = function( percentage ) {
-        const text = percentage + '%';
-        dialog.$.dbody.find('.progressBar').css('width', text);
-        dialog.$.dbody.find('.progressPercentage').text( text );
+
+    dialog.progress = function( receivedLength, contentLength ) {
+        const rate = ( Number( receivedLength ) / Number( contentLength ) * 100 ).toFixed(2);
+        dialog.$.dbody.find('.progressBar').css('width', rate + '%' );
+        dialog.$.dbody.find('.progressPercentageNumber').text( rate );
+        dialog.$.dbody.find('.progressText').text(`${Number( receivedLength ).toLocaleString()} Byte / ${Number( contentLength ).toLocaleString()} Byte`);
     };
+
+    // HH:MM:SS 変換
+    const convertTime = function( milliseconds ) {
+        const totalSeconds = Math.floor( milliseconds / 1000 );
+        const minutes = Math.floor( totalSeconds / 60 );
+        const seconds = fn.zeroPadding( totalSeconds % 60, 2 );
+        const hours = Math.floor( minutes / 60);
+        const displayHours = ( hours < 100 )? fn.zeroPadding( hours, 2 ): hours;
+        const remainingMinutes = fn.zeroPadding( minutes % 60, 2 );
+        return `${displayHours}:${remainingMinutes}:${seconds}`;
+    };
+
+    const start = performance.now();
+    const timer = function() {
+        const now = performance.now();
+        const time = now - start;
+        dialog.$.dbody.find('.progressTimer').text( convertTime( time ) );
+        if ( dialog.$.dialog.is(':visible') ) {
+            setTimeout( timer, 1000 );
+        };
+    };
+    timer();
 
     return dialog;
 },
@@ -4013,6 +4054,28 @@ fileTypeCheck: function( fileName ) {
 },
 /*
 ##################################################
+   独自メニューファイルタイプ拡張子
+##################################################
+*/
+customMenufileTypeCheck: function( fileName ) {
+    const extension = cmn.cv( fileName.split('.').pop(), '');
+
+    const fileTypes = {
+        image: ['gif','jpe','jpg','jpeg','png','svg','webp','bmp','ico'],
+        text: ['txt','yaml','yml','json','hc','hcl','tf','sentinel','py','j2','html','htm'],
+        style: ['css'],
+        script: ['js']
+    }
+
+    for ( const fileType in fileTypes ) {
+        if ( fileTypes[fileType].indexOf( extension ) !== -1 ) {
+            return fileType;
+        }
+    }
+    return false;
+},
+/*
+##################################################
    画像ファイルのMIMEタイプ
 ##################################################
 */
@@ -4409,7 +4472,7 @@ fileEditor: function( fileData, fileName, mode = 'edit', option = {} ) {
                         file: fileData
                     });
                 };
-            }            
+            }
         }
     });
 

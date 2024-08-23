@@ -24,7 +24,7 @@ function customMenu( info ) {
 
                         const
                         base64 = info.custom_menu[ fileName ],
-                        fileType = fn.fileTypeCheck( fileName ),
+                        fileType = fn.customMenufileTypeCheck( fileName ),
                         attr = ( fileType === 'style')? 'href': 'src',
                         reg = new RegExp(`(?<=${attr}=")${fileName}(.*?)(?=")`),
                         mine = ( fileType === 'style')? 'text/css': ( fileType === 'script')? 'text/javascript': `image/${fn.imageMimeTypeCheck( fileName )}`
@@ -38,11 +38,11 @@ function customMenu( info ) {
                         srcdoc: text,
                         src: 'about:blank'
                     });
-                    resolve( $iframe );                    
+                    resolve( $iframe );
                 } catch ( error ) {
                     window.console.error( error );
                     reject();
-                }            
+                }
             }).catch(function( error ){
                 window.console.error( error );
                 reject();

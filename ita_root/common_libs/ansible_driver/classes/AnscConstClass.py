@@ -97,6 +97,7 @@ class AnscConst:
     # 実行エンジン
     DF_EXEC_MODE_ANSIBLE = '1'    # Ansibleで実行
     DF_EXEC_MODE_AAC = '2'        # ansible automation controllerで実行
+    DF_EXEC_MODE_AG = '3'        # Ansible Execution Agentで実行
 
     # 機器一覧 AACホスト一覧  認証方式(LOGIN_AUTH_TYPE)
     DF_LOGIN_AUTH_TYPE_KEY = '1'         # 鍵認証(パスフレーズなし)

@@ -24,6 +24,8 @@ import copy
 import shlex
 import subprocess
 import shutil
+from pathlib import Path
+import time
 
 from common_libs.common.dbconnect import *
 from common_libs.common.exception import AppException, ValidationException
@@ -43,6 +45,7 @@ from common_libs.ansible_driver.functions.util import getAnsibleConst
 from common_libs.ansible_driver.functions.util import get_OSTmpPath
 from common_libs.ansible_driver.functions.util import addAnsibleCreateFilesPath
 from common_libs.ansible_driver.functions.util import rmAnsibleCreateFiles
+from common_libs.ansible_driver.functions.ag_util import get_AGStatusFilepath
 from common_libs.ansible_driver.functions.ansibletowerlibs.AnsibleTowerExecute import AnsibleTowerExecution
 from common_libs.driver.functions import operation_LAST_EXECUTE_TIMESTAMP_update
 from common_libs.ci.util import app_exception_driver_log, exception_driver_log, validation_exception_driver_log, validation_exception
@@ -67,6 +70,7 @@ def backyard_child_main(organization_id, workspace_id):
     args = sys.argv
     execution_no = args[3]
     driver_id = args[4]
+    rerun_mode = args[5]
     global ansc_const
     global driver_error_log_file
 
@@ -75,7 +79,7 @@ def backyard_child_main(organization_id, workspace_id):
     g.applogger.debug(g.appmsg.get_log_message("MSG-10720", [execution_no]))
 
     # db instance
-    wsDb = DBConnectWs(workspace_id)  # noqa: F405
+    wsDb = DBConnectWs()
     # /tmpに作成したファイル・ディレクトリパスを保存するファイル名
     g.AnsibleCreateFilesPath = "{}/Ansible_{}".format(get_OSTmpPath(), execution_no)
 
@@ -102,7 +106,7 @@ def backyard_child_main(organization_id, workspace_id):
         if not os.path.isdir(work_dir):
             os.makedirs(work_dir)
 
-        result = main_logic(wsDb, execution_no, driver_id)
+        result = main_logic(wsDb, execution_no, driver_id, rerun_mode, workspace_id)
         if result[0] is True:
             # 正常終了
             g.applogger.debug(g.appmsg.get_log_message("MSG-10721", [execution_no]))
@@ -171,11 +175,13 @@ def update_status_error(wsDb: DBConnectWs, ansConstObj, execution_no):
     }
     result = cm.update_execution_record(wsDb, ansConstObj, data)
     if result[0] is True:
-        wsDb.db_commit()
+        wsDb.db_transaction_end(True)
         g.applogger.debug(g.appmsg.get_log_message("MSG-10735", [execution_no]))
+    else:
+        wsDb.db_transaction_end(False)
 
 
-def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
+def main_logic(wsDb: DBConnectWs, execution_no, driver_id, rerun_mode, workspace_id):  # noqa: C901
     """
     main logic
 
@@ -190,10 +196,12 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
     global ansc_const
     global driver_error_log_file
 
+    tower_host_list = {}
+
     # 処理対象の作業インスタンス情報取得
     retBool, execute_data = cm.get_execution_process_info(wsDb, ansc_const, execution_no)
     if retBool is False:
-        err_log = g.appmsg.get_log_message(execute_data, [execution_no])
+        err_log = "Failed to get execution instance. execution_no:{}".fromat[execution_no]
         raise Exception(err_log)
 
     execution_no = execute_data["EXECUTION_NO"]
@@ -202,98 +210,118 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
     # ANSIBLEインタフェース情報を取得
     retBool, result = cm.get_ansible_interface_info(wsDb)
     if retBool is False:
-        err_log = g.appmsg.get_log_message(execute_data, [execution_no])
+        err_log = g.appmsg.get_log_message(result, [execution_no])
         raise Exception(err_log)
 
     ans_if_info = result
 
     # ansible実行に必要なファイル群を生成するクラス
     ansdrv = CreateAnsibleExecFiles(driver_id, ans_if_info, execution_no, "", execute_data['I_ANSIBLE_CONFIG_FILE'], wsDb)  # noqa: E501
+    # 子プロ起動モードが通常起動の場合
+    if rerun_mode == "run":
+        # 	処理区分("1")、パラメータ確認、作業実行、ドライラン
+        # 		代入値自動登録とパラメータシートからデータを抜く
+        # 		該当のオペレーション、Movementのデータを代入値管理に登録
+        # 一時的に呼ばないようにパッチ
+        sub_value_auto_reg = SubValueAutoReg(driver_id, wsDb)
+        try:
+            sub_value_auto_reg.get_data_from_parameter_sheet(execute_data["OPERATION_ID"], execute_data["MOVEMENT_ID"], execution_no)
+        except ValidationException as e:
+            raise ValidationException(e)
+        except AppException as e:
+            raise AppException(e)
+        except Exception as e:
+            raise Exception(e)
 
-    # 	処理区分("1")、パラメータ確認、作業実行、ドライラン
-    # 		代入値自動登録とパラメータシートからデータを抜く
-    # 		該当のオペレーション、Movementのデータを代入値管理に登録
-    # 一時的に呼ばないようにパッチ
-    sub_value_auto_reg = SubValueAutoReg(driver_id, wsDb)
-    try:
-        sub_value_auto_reg.get_data_from_parameter_sheet(execute_data["OPERATION_ID"], execute_data["MOVEMENT_ID"], execution_no)
-    except ValidationException as e:
-        raise ValidationException(e)
-    except AppException as e:
-        raise AppException(e)
-    except Exception as e:
-        raise Exception(e)
+        # 実行モードが「パラメータ確認」の場合は終了
+        if run_mode == ansc_const.CHK_PARA:
+            timestamp = get_timestamp()
+            wsDb.db_transaction_start()
+            data = {
+                "EXECUTION_NO": execution_no,
+                "STATUS_ID": ansc_const.COMPLETE,
+                "TIME_START": timestamp,
+                "TIME_END": timestamp,
+            }
+            result = cm.update_execution_record(wsDb, ansc_const, data)
+            if result[0] is True:
+                wsDb.db_transaction_end(True)
+                g.applogger.debug(g.appmsg.get_log_message("MSG-10735", [execution_no]))
+            else:
+                wsDb.db_transaction_end(False)
+            return True,
 
-    # 実行モードが「パラメータ確認」の場合は終了
-    if run_mode == ansc_const.CHK_PARA:
-        timestamp = get_timestamp()
+        # 投入オペレーションの最終実施日を更新する
         wsDb.db_transaction_start()
-        data = {
-            "EXECUTION_NO": execution_no,
-            "STATUS_ID": ansc_const.COMPLETE,
-            "TIME_START": timestamp,
-            "TIME_END": timestamp,
-        }
-        result = cm.update_execution_record(wsDb, ansc_const, data)
+        result = operation_LAST_EXECUTE_TIMESTAMP_update(wsDb, execute_data["OPERATION_ID"])
         if result[0] is True:
-            wsDb.db_commit()
-            g.applogger.debug(g.appmsg.get_log_message("MSG-10735", [execution_no]))
-        return True,
+            wsDb.db_transaction_end(True)
+            g.applogger.debug(g.appmsg.get_log_message("BKY-10003", [execution_no]))
+        else:
+            wsDb.db_transaction_end(False)
 
-    # 投入オペレーションの最終実施日を更新する
-    wsDb.db_transaction_start()
-    result = operation_LAST_EXECUTE_TIMESTAMP_update(wsDb, execute_data["OPERATION_ID"])
-    if result[0] is True:
-        wsDb.db_commit()
-        g.applogger.debug(g.appmsg.get_log_message("BKY-10003", [execution_no]))
+        # 処理対象の作業インスタンス実行
+        retBool, execute_data, result_data = instance_execution(wsDb, ansdrv, ans_if_info, execute_data, driver_id)
 
-    # 処理対象の作業インスタンス実行
-    retBool, execute_data, result_data = instance_execution(wsDb, ansdrv, ans_if_info, execute_data, driver_id)
+        # 実行結果から、処理対象の作業インスタンスのステータス更新
+        if retBool is False:
+            # ステータスを想定外エラーに設定
+            execute_data["STATUS_ID"] = ansc_const.EXCEPTION
+            execute_data["TIME_START"] = get_timestamp()
+            execute_data["TIME_END"] = get_timestamp()
 
-    # 実行結果から、処理対象の作業インスタンスのステータス更新
-    if retBool is False:
-        # ステータスを想定外エラーに設定
-        execute_data["STATUS_ID"] = ansc_const.EXCEPTION
-        execute_data["TIME_START"] = get_timestamp()
-        execute_data["TIME_END"] = get_timestamp()
+        wsDb.db_transaction_start()
+        if execute_data['FILE_INPUT']:
+            zip_tmp_save_path = get_OSTmpPath() + "/" + execute_data['FILE_INPUT']
+            # /tmpに作成したファイルはゴミ掃除リストに追加
+            addAnsibleCreateFilesPath(zip_tmp_save_path)
+        else:
+            zip_tmp_save_path = ''
 
-    wsDb.db_transaction_start()
-    if execute_data['FILE_INPUT']:
-        zip_tmp_save_path = get_OSTmpPath() + "/" + execute_data['FILE_INPUT']
-        # /tmpに作成したファイルはゴミ掃除リストに追加
-        addAnsibleCreateFilesPath(zip_tmp_save_path)
-    else:
-        zip_tmp_save_path = ''
-    result = InstanceRecodeUpdate(wsDb, driver_id, execution_no, execute_data, 'FILE_INPUT', zip_tmp_save_path)
+        result = InstanceRecodeUpdate(wsDb, driver_id, execution_no, execute_data, 'FILE_INPUT', zip_tmp_save_path)
 
-    if result[0] is True:
-        wsDb.db_commit()
-        g.applogger.debug(g.appmsg.get_log_message("BKY-10004", [execute_data["STATUS_ID"], execution_no]))
-    else:
-        wsDb.db_rollback()
-        return False, "InstanceRecodeUpdate->" + str(result[1])
+        if result[0] is True:
+            wsDb.db_transaction_end(True)
+            g.applogger.debug(g.appmsg.get_log_message("BKY-10004", [execute_data["STATUS_ID"], execution_no]))
+        else:
+            wsDb.db_transaction_end(False)
+            return False, "InstanceRecodeUpdate->" + str(result[1])
 
-    # ステータスが実行中以外は終了
-    if execute_data["STATUS_ID"] != ansc_const.PROCESSING:
-        return False, g.appmsg.get_log_message("BKY-10005", [execute_data["STATUS_ID"], execution_no])
+        # 実行エンジンがAnsible Agent以外の場合
+        if ans_if_info['ANSIBLE_EXEC_MODE'] != ansc_const.DF_EXEC_MODE_AG:
+            # ステータスが実行中以外は終了
+            if execute_data["STATUS_ID"] != ansc_const.PROCESSING:
+                return False, g.appmsg.get_log_message("BKY-10005", [execute_data["STATUS_ID"], execution_no])
 
-    # 実行結果から取得
-    tower_host_list = result_data
+        # 実行結果から取得
+        tower_host_list = result_data
 
-    # [処理]処理対象インスタンス 作業確認の開始(作業No.:{})
-    g.applogger.debug(g.appmsg.get_log_message("MSG-10737", [execution_no]))
+        # [処理]処理対象インスタンス 作業確認の開始(作業No.:{})
+        g.applogger.debug(g.appmsg.get_log_message("MSG-10737", [execution_no]))
+
+    wsDb.db_disconnect()
+    wsDb = DBConnectWs()
 
     check_interval = 3
+    # 10分間 ansibe agent起動確認ファイルの更新が無かった場合、想定外エラーにする
+    # enomoto 　環境変数から取得
+    get_time = int(os.environ.get("ANSIBLE_AGENT_NON_COMMUNICATION_DETECTION_TIME",0))
+    if get_time < 60 or get_time > 600:
+        g.applogger.info(g.appmsg.get_log_message("MSG-10977", []))
+        Timeout_Interval = 600
+    else:
+        Timeout_Interval = get_time
     while True:
         time.sleep(check_interval)
 
         # 処理対象の作業インスタンス情報取得
         retBool, execute_data = cm.get_execution_process_info(wsDb, ansc_const, execution_no)
         if retBool is False:
-            return False, execute_data
+            err_log = "Failed to get execution instance. execution_no:{}".format[execution_no]
+            raise Exception(err_log)
         clone_execute_data = execute_data
         # 実行結果の確認
-        retBool, clone_execute_data, db_update_need, db_update_need_no_jnl = instance_checkcondition(wsDb, ansdrv, ans_if_info, clone_execute_data, driver_id, tower_host_list)  # noqa: E501
+        retBool, clone_execute_data, db_update_need, db_update_need_no_jnl = instance_checkcondition(wsDb, ansdrv, ans_if_info, clone_execute_data, driver_id, tower_host_list, Timeout_Interval)  # noqa: E501
 
         # ステータスが更新されたか判定
         if db_update_need is True:
@@ -306,19 +334,20 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
             else:
                 zip_tmp_save_path = ''
 
-            # ステータスが作業終了状態か判定
-            if execute_data['STATUS_ID'] in [ansc_const.COMPLETE, ansc_const.FAILURE, ansc_const.EXCEPTION, ansc_const.SCRAM]:
+            # ステータスが作業終了状態か判定、Ansibel Egent用にステータス判定追加
+            if clone_execute_data['STATUS_ID'] in [ansc_const.COMPLETE, ansc_const.FAILURE, ansc_const.EXCEPTION, ansc_const.SCRAM]:
                 result = InstanceRecodeUpdate(wsDb, driver_id, execution_no, clone_execute_data, 'FILE_RESULT', zip_tmp_save_path)
             else:
                 result = InstanceRecodeUpdate(wsDb, driver_id, execution_no, clone_execute_data, 'UPDATE', zip_tmp_save_path, db_update_need_no_jnl)
 
             if result[0] is True:
-                wsDb.db_commit()
+                wsDb.db_transaction_end(True)
                 g.applogger.debug(g.appmsg.get_log_message("BKY-10004", [clone_execute_data["STATUS_ID"], execution_no]))
             else:
-                wsDb.db_rollback()
+                wsDb.db_transaction_end(False)
                 return False, "InstanceRecodeUpdate->" + str(result[1])
 
+        # ステータスが作業終了状態か判定、Ansibel Egent用にステータス判定追加
         if clone_execute_data['STATUS_ID'] in [ansc_const.COMPLETE, ansc_const.FAILURE, ansc_const.EXCEPTION, ansc_const.SCRAM]:
             break
 
@@ -350,7 +379,7 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
     ansible_exec_options = ans_if_info['ANSIBLE_EXEC_OPTIONS']
     # 2.0では不要 非コンテナ版の場合に有効にする。
     # ans_exec_user = ans_if_info['ANSIBLE_EXEC_USER']
-    ans_exec_mode = ans_if_info['ANSIBLE_EXEC_MODE']
+    ans_exec_mode = execute_data['EXEC_MODE']
 
     # Ansibleコマンド実行ユーザー設定
     # 2.0では不要 非コンテナ版の場合に有効にする。
@@ -383,7 +412,7 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
     option_parameter = option_parameter.replace("--verbose", "-v")
 
     # Tower実行の場合にオプションパラメータをチェックする。
-    if ans_exec_mode != ansc_const.DF_EXEC_MODE_ANSIBLE:
+    if ans_exec_mode == ansc_const.DF_EXEC_MODE_AAC:
         # Pioneerの場合の並列実行数のパラメータ設定
         if driver_id == ansc_const.DF_PIONEER_DRIVER_ID:
             if tgt_exec_count != '0':
@@ -401,9 +430,10 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
 
             err_msg_ary = result[1]
             for err_msg in err_msg_ary:
+                log_dir = getAnsibleExecutDirPath(ansc_const, execution_no) + "/out"
                 ansdrv.LocalLogPrint(
                     os.path.basename(inspect.currentframe().f_code.co_filename),
-                    str(inspect.currentframe().f_lineno), err_msg)
+                    str(inspect.currentframe().f_lineno), err_msg, log_dir)
             return False, execute_data, g.appmsg.get_log_message("BKY-00004", ["getAnsiblePlaybookOptionParameter", ",".join(err_msg_ary)])
 
         retBool, err_msg_ary, JobTemplatePropertyParameterAry, JobTemplatePropertyNameAry, param_arry_exc = result
@@ -411,11 +441,15 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
     tmp_array_dirs = ansdrv.getAnsibleWorkingDirectories(ansc_const.vg_OrchestratorSubId_dir, execution_no)
     zip_data_source_dir = tmp_array_dirs[3]
 
+    # 実行エンジンがAnsible Agentの場合、オプションパラメータをinventory配下に配置する
+    if ans_exec_mode == ansc_const.DF_EXEC_MODE_AG:
+        file_path = "{}/{}".format(ansdrv.getAnsible_in_env_Dir(), "cmdline")
+    else:
+        file_path = "{}/{}".format(zip_data_source_dir, "AnsibleExecOption.txt")
     # ansible-playbookコマンド実行時のオプションパラメータを共有ディレクトリのファイルに出力
-    obj = storage_write()
-    obj.open(zip_data_source_dir + "/AnsibleExecOption.txt", "w")
-    obj.write(option_parameter)
-    obj.close()
+    fd = open(file_path, "w")
+    fd.write(option_parameter)
+    fd.close()
 
     # 投入データ用ZIPファイル作成
     retBool, err_msg, zip_input_file = createTmpZipFile(
@@ -434,8 +468,24 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
 
     # 準備で異常がなければ実行にうつる
     g.applogger.debug(g.appmsg.get_log_message("MSG-10761", [execution_no]))
-    # 実行エンジンを判定
-    if ans_exec_mode == ansc_const.DF_EXEC_MODE_ANSIBLE:
+
+    # 実行エンジンがAnsible Agentの場合
+    if ans_exec_mode == ansc_const.DF_EXEC_MODE_AG:
+        ansible_execute = AnsibleExecute()
+        if not ans_if_info['ANSIBLE_VAULT_PASSWORD']:
+            ans_if_info['ANSIBLE_VAULT_PASSWORD'] = ky_encrypt(AnscConst.DF_ANSIBLE_VAULT_PASSWORD)
+
+        if retBool is True:
+            # ステータス準備完了
+            execute_data["STATUS_ID"] = ansc_const.PREPARE_COMPLETE
+            execute_data["TIME_START"] = get_timestamp()
+        else:
+            # ステータスを想定外エラーに設定
+            execute_data["STATUS_ID"] = ansc_const.EXCEPTION
+            execute_data["TIME_START"] = get_timestamp()
+            execute_data["TIME_END"] = get_timestamp()
+            return False, execute_data, err_msg
+    elif ans_exec_mode == ansc_const.DF_EXEC_MODE_ANSIBLE:
         ansible_execute = AnsibleExecute()
         if not ans_if_info['ANSIBLE_VAULT_PASSWORD']:
             ans_if_info['ANSIBLE_VAULT_PASSWORD'] = ky_encrypt(AnscConst.DF_ANSIBLE_VAULT_PASSWORD)
@@ -454,11 +504,12 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
             err_msg = ansible_execute.getLastError()
             if not isinstance(err_msg, str):
                 err_msg = str(err_msg)
+            log_dir = getAnsibleExecutDirPath(ansc_const, execution_no) + "/out"
             ansdrv.LocalLogPrint(
                 os.path.basename(inspect.currentframe().f_code.co_filename),
-                str(inspect.currentframe().f_lineno), err_msg)
+                str(inspect.currentframe().f_lineno), err_msg, log_dir)
             return False, execute_data, err_msg
-    else:
+    elif ans_exec_mode == ansc_const.DF_EXEC_MODE_AAC:
         uiexec_log_path = ansdrv.getAnsible_out_Dir() + "/exec.log"  # 使ってる？
         uierror_log_path = ansdrv.getAnsible_out_Dir() + "/error.log"  # 使ってる？
         multiple_log_mark = ""
@@ -517,10 +568,12 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
     return True, execute_data, tower_host_list
 
 
-def instance_checkcondition(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if_info, execute_data, driver_id, tower_host_list):
+def instance_checkcondition(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if_info, execute_data, driver_id, tower_host_list, Timeout_Interval):
     global ansc_const
     db_update_need = False
     db_update_need_no_jnl = False
+
+    befor_status = execute_data['STATUS_ID']
 
     TowerProjectsScpPath = ansdrv.getTowerProjectsScpPath()
     TowerInstanceDirPath = ansdrv.getTowerInstanceDirPath()
@@ -530,7 +583,7 @@ def instance_checkcondition(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, a
     # ANSIBLEインタフェース情報をローカル変数に格納
     # 2.0では不要 非コンテナ版の場合に有効にする。
     # ans_exec_user = ans_if_info['ANSIBLE_EXEC_USER']
-    ans_exec_mode = ans_if_info['ANSIBLE_EXEC_MODE']
+    ans_exec_mode = execute_data['EXEC_MODE']
 
     # Ansibleコマンド実行ユーザー設定
     # 2.0では不要 非コンテナ版の場合に有効にする。
@@ -549,10 +602,11 @@ def instance_checkcondition(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, a
             err_msg = ansible_execute.getLastError()
             if not isinstance(err_msg, str):
                 err_msg = str(err_msg)
+            log_dir = getAnsibleExecutDirPath(ansc_const, execution_no) + "/out"
             ansdrv.LocalLogPrint(
                 os.path.basename(inspect.currentframe().f_code.co_filename),
-                str(inspect.currentframe().f_lineno), err_msg)
-    else:
+                str(inspect.currentframe().f_lineno), err_msg, log_dir)
+    elif ans_exec_mode == ansc_const.DF_EXEC_MODE_AAC:
         uiexec_log_path = ansdrv.getAnsible_out_Dir() + "/exec.log"  # 使ってる？
         uierror_log_path = ansdrv.getAnsible_out_Dir() + "/error.log"  # 使ってる？
         multiple_log_mark = ""
@@ -596,62 +650,84 @@ def instance_checkcondition(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, a
         else:
             status = -1
 
+    else:
+        # 実行エンジンがAnsible Agenntの場合
+        status = ag_execute_statuscheck(ansdrv, wsDb, ansc_const, execution_no, Timeout_Interval)
+
     # 状態をログに出力
-    g.applogger.debug(g.appmsg.get_log_message("BKY-10006", [execution_no, status]))
+    g.applogger.info(g.appmsg.get_log_message("BKY-10006", [execution_no, status]))
 
     # 5:正常終了時
     # 6:完了(異常)
     # 7:想定外エラー
     # 8:緊急停止
-    if status in [ansc_const.COMPLETE, ansc_const.FAILURE, ansc_const.EXCEPTION, ansc_const.SCRAM] or error_flag != 0:
-        db_update_need = True
-        # 実行エンジンを判定
-        if ans_exec_mode == ansc_const.DF_EXEC_MODE_ANSIBLE:
-            pass
-        else:
-            # 実行結果ファイルをTowerから転送
-            # 戻り値は確認しない
-            multiple_log_mark = ""
-            multiple_log_file_json_ary = ""
-            AnsibleTowerExecution(
-                driver_id,
-                ansc_const.DF_RESULTFILETRANSFER_FUNCTION,
-                ans_if_info,
-                tower_host_list,
-                execute_data,
-                Ansible_out_Dir, uiexec_log_path,
-                uierror_log_path,
-                multiple_log_mark, multiple_log_file_json_ary,
-                status,
-                None,
-                None,
-                TowerProjectsScpPath,
-                TowerInstanceDirPath,
-                wsDb)
+    # 実行エンジンがAnsible Agente以外か判定
+    if ans_exec_mode != ansc_const.DF_EXEC_MODE_AG:
+        if status in [ansc_const.COMPLETE, ansc_const.FAILURE, ansc_const.EXCEPTION, ansc_const.SCRAM] or error_flag != 0:
+            db_update_need = True
+            # 実行エンジンを判定　実行エンジンがAACの場合
+            if ans_exec_mode == ansc_const.DF_EXEC_MODE_AAC:
+                # 実行結果ファイルをTowerから転送
+                # 戻り値は確認しない
+                multiple_log_mark = ""
+                multiple_log_file_json_ary = ""
+                AnsibleTowerExecution(
+                    driver_id,
+                    ansc_const.DF_RESULTFILETRANSFER_FUNCTION,
+                    ans_if_info,
+                    tower_host_list,
+                    execute_data,
+                    Ansible_out_Dir, uiexec_log_path,
+                    uierror_log_path,
+                    multiple_log_mark, multiple_log_file_json_ary,
+                    status,
+                    None,
+                    None,
+                    TowerProjectsScpPath,
+                    TowerInstanceDirPath,
+                    wsDb)
 
-        tmp_array_dirs = ansdrv.getAnsibleWorkingDirectories(ansc_const.vg_OrchestratorSubId_dir, execution_no)
-        zip_data_source_dir = tmp_array_dirs[4]
+            tmp_array_dirs = ansdrv.getAnsibleWorkingDirectories(ansc_const.vg_OrchestratorSubId_dir, execution_no)
+            zip_data_source_dir = tmp_array_dirs[4]
 
-        # 結果データ用ZIPファイル作成
-        retBool, err_msg, zip_result_file = createTmpZipFile(
-            execution_no,
-            zip_data_source_dir,
-            'FILE_RESULT',
-            'ResultData_')
+            # 結果データ用ZIPファイル作成
+            retBool, err_msg, zip_result_file = createTmpZipFile(
+                execution_no,
+                zip_data_source_dir,
+                'FILE_RESULT',
+                'ResultData_')
 
-        if retBool is True:
-            execute_data['FILE_RESULT'] = zip_result_file
-        else:
-            # ZIPファイル作成の作成に失敗しても、ログに出して次に進む
-            g.applogger.info(g.appmsg.get_log_message("BKY-00004", ["createTmpZipFile", err_msg]))
+            if retBool is True:
+                execute_data['FILE_RESULT'] = zip_result_file
+            else:
+                # ZIPファイル作成の作成に失敗しても、ログに出して次に進む
+                g.applogger.info(g.appmsg.get_log_message("BKY-00004", ["createTmpZipFile", err_msg]))
 
-    # statusによって処理を分岐
-    if status != -1:
-        if status == ansc_const.PROCESSING and execute_data["STATUS_ID"] == ansc_const.PROCESS_DELAYED:
-            pass
-        else:
             execute_data["STATUS_ID"] = status
             execute_data["TIME_END"] = get_timestamp()
+
+    # 実行エンジンがAnsible Agentか判定
+    else:
+        # statusによって処理を分岐
+        if status in [ansc_const.COMPLETE, ansc_const.FAILURE, ansc_const.EXCEPTION, ansc_const.SCRAM] or error_flag != 0:
+            db_update_need = True
+            execute_data["STATUS_ID"] = status
+            execute_data["TIME_END"] = get_timestamp()
+            tmp_array_dirs = ansdrv.getAnsibleWorkingDirectories(ansc_const.vg_OrchestratorSubId_dir, execution_no)
+            zip_data_source_dir = tmp_array_dirs[4]
+
+            # 結果データ用ZIPファイル作成
+            retBool, err_msg, zip_result_file = createTmpZipFile(
+                execution_no,
+                zip_data_source_dir,
+                'FILE_RESULT',
+                'ResultData_')
+
+            if retBool is True:
+                execute_data['FILE_RESULT'] = zip_result_file
+            else:
+                # ZIPファイル作成の作成に失敗しても、ログに出して次に進む
+                g.applogger.info(g.appmsg.get_log_message("BKY-00004", ["createTmpZipFile", err_msg]))
 
     # 遅延を判定
     # 遅延タイマを取得
@@ -659,29 +735,30 @@ def instance_checkcondition(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, a
     delay_flag = 0
 
     # ステータスが実行中(3)、かつ制限時間が設定されている場合のみ遅延判定する
-    if execute_data["STATUS_ID"] == ansc_const.PROCESSING and time_limit:
-        # 開始時刻(「エポック秒.マイクロ秒」)を生成(localタイムでutcタイムではない)
-        rec_time_start = execute_data['TIME_START']
-        starttime_unixtime = rec_time_start.timestamp()
-        # 開始時刻(マイクロ秒)＋制限時間(分→秒)＝制限時刻(マイクロ秒)
-        limit_unixtime = starttime_unixtime + (time_limit * 60)
-        # 現在時刻(「エポック秒.マイクロ秒」)を生成(localタイムでutcタイムではない)
-        now_unixtime = time.time()
+    if status not in [ansc_const.COMPLETE, ansc_const.FAILURE, ansc_const.EXCEPTION, ansc_const.SCRAM] or error_flag != 0:
+        if befor_status == ansc_const.PROCESSING and time_limit:
+            # 開始時刻(「エポック秒.マイクロ秒」)を生成(localタイムでutcタイムではない)
+            rec_time_start = execute_data['TIME_START']
+            starttime_unixtime = rec_time_start.timestamp()
+            # 開始時刻(マイクロ秒)＋制限時間(分→秒)＝制限時刻(マイクロ秒)
+            limit_unixtime = starttime_unixtime + (time_limit * 60)
+            # 現在時刻(「エポック秒.マイクロ秒」)を生成(localタイムでutcタイムではない)
+            now_unixtime = time.time()
 
-        # 制限時刻と現在時刻を比較
-        if limit_unixtime < now_unixtime:
-            delay_flag = 1
-            g.applogger.debug(g.appmsg.get_log_message("MSG-10707", [execution_no]))
-        else:
-            g.applogger.debug(g.appmsg.get_log_message("MSG-10708", [execution_no]))
+            # 制限時刻と現在時刻を比較
+            if limit_unixtime < now_unixtime:
+                delay_flag = 1
+                g.applogger.debug(g.appmsg.get_log_message("MSG-10707", [execution_no]))
+            else:
+                g.applogger.debug(g.appmsg.get_log_message("MSG-10708", [execution_no]))
 
-    if delay_flag == 1:
-        db_update_need = True
-        # ステータスを「実行中(遅延)」とする
-        execute_data["STATUS_ID"] = ansc_const.PROCESS_DELAYED
+        if delay_flag == 1:
+            db_update_need = True
+            # ステータスを「実行中(遅延)」とする
+            execute_data["STATUS_ID"] = ansc_const.PROCESS_DELAYED
 
     # 実行エンジンを判定
-    if ans_exec_mode != ansc_const.DF_EXEC_MODE_ANSIBLE:
+    if ans_exec_mode == ansc_const.DF_EXEC_MODE_AAC:
         # 5:正常終了時
         # 6:完了(異常)
         # 7:想定外エラー
@@ -1337,13 +1414,7 @@ def InstanceRecodeUpdate(wsDb, driver_id, execution_no, execute_data, update_col
     uploadfiles = {}
     if update_column_name == "FILE_INPUT" or update_column_name == "FILE_RESULT":
         if zip_tmp_save_path:
-            ZipDataData = file_encode(zip_tmp_save_path)
-            if ZipDataData is False:
-                # エンコード失敗
-                msgstr = g.appmsg.get_api_message("499-00909", [])
-                return False, msgstr
-            uploadfiles = {RestNameConfig[update_column_name]: ZipDataData}
-
+            uploadfiles = {RestNameConfig[update_column_name]: zip_tmp_save_path}
     # 実行中の場合
     if update_column_name == "FILE_INPUT":
         if execute_data["FILE_INPUT"]:
@@ -1378,19 +1449,48 @@ def InstanceRecodeUpdate(wsDb, driver_id, execution_no, execute_data, update_col
             ExecStsInstTableConfig[RestNameConfig["LOGFILELIST_JSON"]] = execute_data["LOGFILELIST_JSON"]
 
     # 最終更新日時
-    ExecStsInstTableConfig[RestNameConfig["LAST_UPDATE_TIMESTAMP"]] = execute_data['LAST_UPDATE_TIMESTAMP'].strftime('%Y/%m/%d %H:%M:%S.%f')
+    # MSG-00005対応で最終更新日時を取得
+    sql = "SELECT LAST_UPDATE_TIMESTAMP FROM {} WHERE EXECUTION_NO = %s".format(TableDict["TABLE"][driver_id])
+    rows = wsDb.sql_execute(sql, [execution_no])
+    row = rows[0]
+    ExecStsInstTableConfig[RestNameConfig["LAST_UPDATE_TIMESTAMP"]] = row['LAST_UPDATE_TIMESTAMP'].strftime('%Y/%m/%d %H:%M:%S.%f')
 
     parameters = {
         "parameter": ExecStsInstTableConfig,
-        "file": uploadfiles,
         "type": "Update"
     }
     objmenu = load_table.loadTable(wsDb, MenuName)
     if db_update_need_no_jnl is True:
         objmenu.set_history_flg(False)
-    retAry = objmenu.exec_maintenance(parameters, execution_no, "", False, False, True)
+    retAry = objmenu.exec_maintenance(parameters, execution_no, "", False, False, True, record_file_paths=uploadfiles)
     result = retAry[0]
     if result is False:
         return False, str(retAry)
     else:
         return True, ""
+
+def ag_execute_statuscheck(ansdrv, wsDb, ansc_const, execution_no, Timeout_Interval):
+    retBool, execute_data = cm.get_execution_process_info(wsDb, ansc_const, execution_no)
+    if retBool is False:
+        err_log = "Failed to get execution instance. execution_no:{}".format[execution_no]
+        raise Exception(err_log)
+    ret_status = execute_data["STATUS_ID"]
+    ag_status_file_path = get_AGStatusFilepath(ansc_const, execution_no)
+    # ansibe agent起動確認ファイルの有無判定
+    if os.path.isfile(ag_status_file_path) is False:
+        # 無い場合は作成
+        Path(ag_status_file_path).touch()
+    # ansibe agent作業状態通知受信ファイルの更新日時所得
+    ag_status_file_unix_time = os.path.getatime(ag_status_file_path)
+    # 現在時刻取得
+    now_unix_time = time.time()
+    # ansibe agent作業状態通知受信ファイルの更新がTimeout_Interval以上更新されなかったら、想定外エラーにする。
+    if((ag_status_file_unix_time + Timeout_Interval) < now_unix_time):
+        # enomoto
+        err_msg = g.appmsg.get_log_message("MSG-10969", [str(Timeout_Interval),execution_no])
+        log_dir = getAnsibleExecutDirPath(ansc_const, execution_no) + "/out"
+        ansdrv.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                             str(inspect.currentframe().f_lineno), err_msg, log_dir)
+        ret_status = ansc_const.EXCEPTION
+    return ret_status
+

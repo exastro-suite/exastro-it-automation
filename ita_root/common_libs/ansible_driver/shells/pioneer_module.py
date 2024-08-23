@@ -30,6 +30,10 @@
 ##       ssh_key_file:       SSH秘密鍵ファイル
 ##       extra_args:         ssh/telnet接続時の追加パラメータ
 ##       lang:               文字コード
+##       original_exec_dir: オリジナルダイアログ格納ディレクトリ
+##       encode_column_encode_value_file: パスワードカラム用具体値ファイル
+##       ssh_phrases:        sshパスフレーズ
+##       ssh_phrases_flg     パスフレーズ付き鍵ファイルの有無
 ##      <<返却値>>
 ##       なし
 ##
@@ -77,6 +81,23 @@ option:
     required: true
     description:
       - target host lang
+  original_exec_dir:
+    required: true
+    description:
+      - original execution dir
+  encode_column_encode_value_file:
+    required: true
+    description:
+      - File that encodes the password column value
+  ssh_phrases
+    required: true
+    description:
+      - ssh phrases
+  ssh_phrases_flg
+    required: true
+    description:
+      - Private key file with passphrase
+        Yes: passphrase need  No:passphrase Not need
 author: exastro
 '''
 
@@ -143,6 +164,10 @@ def main():
       ssh_key_file=dict(required=True),
       extra_args=dict(required=True),
       lang=dict(required=True),
+      original_exec_dir=dict(required=True),
+      encode_column_encode_value_file=dict(required=True),
+      ssh_phrases=dict(required=True),
+      ssh_phrases_flg=dict(required=True),
     ),
 #  ドライランモード許可設定
     supports_check_mode=True
@@ -158,6 +183,11 @@ def main():
   ssh_key_file   = module.params['ssh_key_file']
   extra_args = module.params['extra_args']
   lang       = module.params['lang']
+  ssh_phrases = module.params['ssh_phrases']
+  ssh_phrases_flg = module.params['ssh_phrases_flg']
+
+  original_exec_file = "{}/{}".format(module.params['original_exec_dir'], os.path.basename(module.params['exec_file']))
+
   if not module.params['exec_file']:
     #########################################################
     # normal exit
@@ -187,14 +217,11 @@ def main():
     module.fail_json(msg=host_name + ": " + msg,exec_log=exec_log)
 
   # オリジナル対話ファイルにyaml文法エラーがない事を確認する。
-  with_tmp = module.params['exec_file']
-  with_tmp = with_tmp.replace("/in/", "/tmp/")
-  with_tmp = with_tmp.replace("/dialog_files/", "/original_dialog_files/")
 
   try:
     # #2079 ファイル名が被るので対象外
     if yaml_var >= str(5):
-      with_file = yaml.load(open(with_tmp).read(), Loader=yaml.FullLoader)
+      with_file = yaml.load(open(original_exec_file).read(), Loader=yaml.FullLoader)
     else:
       with_file = yaml.load(open(with_tmp).read())
   # パーサーの例外をキャッチするようにする
@@ -251,13 +278,6 @@ def main():
   yaml.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,lambda loader, node: OrderedDict(loader.construct_pairs(node)))
 
   try:
-    # プロセスIDをファイルに出力
-    pid = os.getpid()
-    pid_file_name = module.params['log_file_dir'] + "/pioneer." + str(pid)
-    # #2079 ファイル名が被るので対象外
-    fp = open(pid_file_name, "w")
-    fp.write(str(pid))
-    fp.close()
 
     # ログに表示するパスワード
     output_password = '********'
@@ -300,15 +320,13 @@ def main():
       chk_mode = ''
 
     # 暗号化変数ファイル読み込み
-    vault_vars_file = module.params['host_vars_file']
-    vault_vars_file = vault_vars_file.replace("/original_host_vars/", "/vault_host_vars/")
     # パーサーの例外をキャッチするようにする
     try:
       # #2079 ファイル名が被るので対象外
       if yaml_var >= str(5):
-        vault_vars_def = yaml.load(open(vault_vars_file).read(), Loader=yaml.FullLoader)
+        vault_vars_def = yaml.load(open(module.params['encode_column_encode_value_file']).read(), Loader=yaml.FullLoader)
       else:
-        vault_vars_def = yaml.load(open(vault_vars_file).read())
+        vault_vars_def = yaml.load(open(module.params['encode_column_encode_value_file']).read())
     except Exception as e:
       msg = "Cryptographic variable file yaml load failure."
       private_log_output(log_file_name,host_name,msg)
@@ -325,6 +343,31 @@ def main():
         enc_value = base64.b64decode(codecs.encode(value, "rot-13"))
         enc_value= enc_value.decode('utf-8','replace')
         vault_vars_def[var] = enc_value;
+
+    if module.params['ssh_phrases_flg'] == "Yes":
+      # Ansibel Agentでパスフレーズ付き鍵ファイル認証の場合に、パスフレーズを入力する
+      try:
+        if ssh_phrases_flg == "Yes":
+          dec_ssh_phrases = base64.b64decode(codecs.encode(ssh_phrases, "rot-13"))
+          dec_ssh_phrases = dec_ssh_phrases.decode('utf-8','replace')
+          prompt = "Enter passphrase for"
+          p.expect(prompt, timeout=5)
+          exec_log_output('prompt match')
+          exec_log_output('before:[' + unicode2encode(p.before) + ']')
+          exec_log_output('match:[' + unicode2encode(p.after) + ']')
+          exec_log_output('after:[' + unicode2encode(p.buffer) + ']')
+          p.sendline(dec_ssh_phrases)
+      except pexpect.TIMEOUT:
+        exec_log_output('Incorrect private key file or passphrase')
+        private_log_output(log_file_name,host_name,'Incorrect private key file or passphrase')
+        loger = 'buffer:[' + unicode2encode(p.before) + ']'
+        exec_log_output('buffer:[' + unicode2encode(p.buffer) + ']')
+        exec_log_output(loger)
+        private_log_output(log_file_name,host_name,loger)
+        #########################################################
+        # fail exit
+        #########################################################
+        module.fail_json(msg=host_name + ': ' + 'Incorrect private key file or passphrase',exec_log=exec_log)
 
     # exec_list read
     for input in config['exec_list']:
@@ -658,14 +701,10 @@ def main():
           elif 'with_items' == cmd:
 
             # オリジナル対話ファイルを読み込む
-            with_tmp = module.params['exec_file']
-            with_tmp = with_tmp.replace("/in/", "/tmp/")
-            with_tmp = with_tmp.replace("/dialog_files/", "/original_dialog_files/")
-
             try:
               # #2079 ファイル名が被るので対象外
               if yaml_var >= str(5):
-                with_file = yaml.load(open(with_tmp).read(), Loader=yaml.FullLoader)
+                with_file = yaml.load(open(original_exec_file).read(), Loader=yaml.FullLoader)
               else:
                 with_file = yaml.load(open(with_tmp).read())
 
@@ -683,7 +722,7 @@ def main():
 
             # ホスト変数ファイルを読み込む
             try:
-              # #2079 ファイル名が被るので対象外
+              # 2079 ファイル名が被るので対象外
               if yaml_var >= str(5):
                 with_def = yaml.load(open(module.params['host_vars_file']).read(), Loader=yaml.FullLoader)
               else:

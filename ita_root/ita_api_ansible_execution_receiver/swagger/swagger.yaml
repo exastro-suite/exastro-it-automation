@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
-  title: Exastro ITA OASE Receiver API
-  description: Exastro ITA OASE Receiver API
-  version: "2.4"
+  title: Exastro ITA Ansible Execution Receiver API
+  description: Exastro ITA Ansible Execution Receiver API
+  version: "2.5"
 servers:
 - url: "https://{host}"
   description: API endpoint
@@ -30,7 +30,7 @@ tags:
 - name: Ansible Execution
   description: Ansibleの情報を取得
 paths:
-  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/unexecuted/instance:
+  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/instance/unexecuted:
     get:
       tags:
       - Ansible Execution
@@ -73,12 +73,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.ansible_receiver_controller
-  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/execution/{status}:
+  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/notification/status:
     get:
       tags:
       - Ansible Execution
       description: 作業状態通知
-      operationId: get_execution_status
+      operationId: execution_status_notification
       parameters:
       - name: organization_id
         in: path
@@ -96,9 +96,9 @@ paths:
         explode: false
         schema:
           type: string
-      - name: status
+      - name: execution_no
         in: path
-        description: ステータス
+        description: 作業番号
         required: true
         style: simple
         explode: false
@@ -147,6 +147,14 @@ paths:
         explode: false
         schema:
           type: string
+      - name: driver_id
+        in: query
+        description: ドライバーID
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
       responses:
         "200":
           description: Success
@@ -167,7 +175,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.ansible_receiver_controller
-  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/{driver_id}/{status}/result_data:
+  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/result_data:
     post:
       tags:
       - Ansible Execution
@@ -198,17 +206,52 @@ paths:
         explode: false
         schema:
           type: string
-      - name: driver_id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/execution_no_result_data_body'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/execution_no_result_data_body_1'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_3'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.ansible_receiver_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/version:
+    post:
+      tags:
+      - Ansible Execution
+      description: バージョン通知
+      operationId: agent_version
+      parameters:
+      - name: organization_id
         in: path
-        description: ドライバーID
+        description: OrganizationID
         required: true
         style: simple
         explode: false
         schema:
           type: string
-      - name: status
+      - name: workspace_id
         in: path
-        description: ステータス
+        description: WorkspaceID
         required: true
         style: simple
         explode: false
@@ -218,15 +261,62 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/status_result_data_body'
-        required: true
+              $ref: '#/components/schemas/ansible_execution_agent_version_body'
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_1'
+                $ref: '#/components/schemas/inline_response_200_4'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.ansible_receiver_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/notification/execution:
+    post:
+      tags:
+      - Ansible Execution
+      description: 作業中通知
+      operationId: execution_notification
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/notification_execution_body'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_3'
         "401":
           description: Unauthorized
           content:
@@ -261,12 +351,12 @@ components:
           example:
             execution_no:
               driver_id: string
-              ans_vent_path: string
               build_type: string
               user_name: string
               password: string
               base_image: string
-              anstwr_del_runtime_data: string
+              attach_repository: string
+              anstwr_del_runtime_data: boolean
           items: {}
         message:
           type: string
@@ -275,14 +365,79 @@ components:
         data:
           execution_no:
             driver_id: string
-            ans_vent_path: string
             build_type: string
             user_name: string
             password: string
             base_image: string
-            anstwr_del_runtime_data: string
+            attach_repository: string
+            anstwr_del_runtime_data: boolean
         message: message
     inline_response_200_1:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          type: array
+          example:
+            scram_status: boolean
+          items: {}
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
+          scram_status: boolean
+        message: message
+    inline_response_200_2:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          type: array
+          example:
+            execution_no:
+              in_out_data: string
+              conductor_data: string
+          items: {}
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
+          execution_no:
+            in_out_data: string
+            conductor_data: string
+        message: message
+    apiorganization_idworkspacesworkspace_idansible_execution_agentexecution_noresult_data_file:
+      type: object
+      properties:
+        file_name:
+          type: string
+          example: base64 encode file
+    execution_no_result_data_body:
+      properties:
+        driver_id:
+          type: string
+        status:
+          type: string
+        file:
+          $ref: '#/components/schemas/apiorganization_idworkspacesworkspace_idansible_execution_agentexecution_noresult_data_file'
+      description: ドライバーID、ステータス、各種tarファイルを指定
+    execution_no_result_data_body_1:
+      type: object
+      properties:
+        driver_id:
+          type: string
+        status:
+          type: string
+        file:
+          $ref: '#/components/schemas/apiorganization_idworkspacesworkspace_idansible_execution_agentexecution_noresult_data_file'
+      description: ドライバーID、ステータス、各種tarファイルを指定
+    inline_response_200_3:
       type: object
       properties:
         result:
@@ -296,7 +451,16 @@ components:
         result: 000-00000
         data: true
         message: message
-    inline_response_200_2:
+    ansible_execution_agent_version_body:
+      properties:
+        agent_id:
+          type: string
+        agent_name:
+          type: string
+        version:
+          type: string
+      description: エージェントID、エージェント名、バージョン情報を指定
+    inline_response_200_4:
       type: object
       properties:
         result:
@@ -305,31 +469,33 @@ components:
         data:
           type: array
           example:
-            execution_no:
-              in_out_data: base64 encode file
-              conductor_data: base64 encode file
+            version_diff: boolean
           items: {}
         message:
           type: string
       example:
         result: 000-00000
         data:
-          execution_no:
-            in_out_data: base64 encode file
-            conductor_data: base64 encode file
+          version_diff: boolean
         message: message
-    status_result_data_body:
+    notification_execution_body:
       properties:
-        out_base64_data:
-          type: string
-          example: base64 encode file
-        parameters_base64_data:
-          type: string
-          example: base64 encode file
-        conductor_base64_data:
-          type: string
-          example: base64 encode file
-      description: 各種tarファイルをbase64形式で指定
+        legacy:
+          type: array
+          description: 作業番号を指定する
+          items:
+            type: string
+        pioneer:
+          type: array
+          description: 作業番号を指定する
+          items:
+            type: string
+        legacy_role:
+          type: array
+          description: 作業番号を指定する
+          items:
+            type: string
+      description: 作業実行中の作業番号を指定する
   responses:
     UnauthorizedError:
       description: Access token is missing or invalid

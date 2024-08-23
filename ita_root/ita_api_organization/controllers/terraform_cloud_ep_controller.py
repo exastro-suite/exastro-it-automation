@@ -15,7 +15,7 @@
 import connexion
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectWs
-from common_libs.api import api_filter
+from common_libs.api import api_filter, api_filter_download_temporary_file
 from libs.organization_common import check_menu_info, check_auth_menu, check_sheet_type
 from libs import terraform_cloud_ep
 
@@ -469,7 +469,7 @@ def get_terraform_organization_list(organization_id, workspace_id):  # noqa: E50
     return data,
 
 
-@api_filter
+@api_filter_download_temporary_file
 def get_terraform_policy_file(organization_id, workspace_id, tf_organization_name, policy_name, body=None):  # noqa: E501
     """get_terraform_policy_file
 

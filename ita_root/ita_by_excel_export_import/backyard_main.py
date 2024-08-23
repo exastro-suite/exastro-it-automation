@@ -294,7 +294,7 @@ def backyard_main(organization_id, workspace_id):
                     elif os.path.exists(chk_path2):
                         targetImportPath = chk_path2
 
-                    excel_data = util.file_encode(targetImportPath)
+                    excel_data = targetImportPath
 
                     # メニューの存在確認
                     menu_record = util.check_menu_info(menuNameRest, objdbca)

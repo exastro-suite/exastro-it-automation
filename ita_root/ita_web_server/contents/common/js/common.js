@@ -696,6 +696,7 @@ getFile: function( endPoint, method = 'GET', data, option = {} ) {
                 }
             }
 
+
             // データ読込開始
             if ( windowFlag ) endPoint = cmn.getRestApiUrl( endPoint );
             const response = await fetch( endPoint, init );
@@ -715,41 +716,48 @@ getFile: function( endPoint, method = 'GET', data, option = {} ) {
                         fileName = decodeURIComponent(matches[1].replace(/['"]/g, ''));
                     }
                 }
+                
+                /*
+                // データ読込
+                const chunks = [];
+                let receivedLength = 0;
+                while( true ) {
+                    const { done, value } = await reader.read();
+                    if ( done === true ) {
+                        break;
+                    } else {
+                        chunks.push( value );
+                        receivedLength += value.length;
+                        progressModal.progress( receivedLength, contentLength );
+                    }
+                }
+                // ファイルに変換
+                const blob = new Blob( chunks );
+                const fileData = new File([blob], fileName, { type: blob.type });
+                */
+
+                // オリジンプライベートファイルシステム
+                const root = await navigator.storage.getDirectory();
+                const fileHandle = await root.getFileHandle( fileName, { create: true });
+                const wstream = await fileHandle.createWritable();
+                const writer = wstream.getWriter();
 
                 // データ読込
                 let receivedLength = 0;
-                let chunks = [];
                 while( true ) {
                     const { done, value } = await reader.read();
-                    if ( done ) {
+                    if ( done === true ) {
+                        await writer.close();
                         break;
+                    } else {
+                        await writer.write( value );
+                        receivedLength += value.length;
+                        progressModal.progress( receivedLength, contentLength );
                     }
-
-                    chunks.push( value );
-                    receivedLength += value.length;
-                    progressModal.progress( receivedLength, contentLength );
                 }
 
-                // Uint8Array連結
-                let chunksAll = new Uint8Array( receivedLength );
-                let position = 0;
-                for ( const chunk of chunks ) {
-                    chunksAll.set( chunk, position );
-                    position += chunk.length;
-                }
-
-                let fileData;
-                if ( option.base64 === true ) {
-                    // BASE64に変換する
-                    const maxLength = 1024;
-                    let binaryString = '';
-                    for ( let i = 0; i < chunksAll.length; i += maxLength ){
-                        binaryString += String.fromCharCode( ...chunksAll.slice( i, i + maxLength ) );
-                    }
-                    fileData = btoa( binaryString );
-                } else {
-                    fileData = chunksAll;
-                }
+                // ファイル取得
+                const fileData = await fileHandle.getFile();
 
                 // バーのtransition-duration: .2s;分ずらす
                 setTimeout(function(){
@@ -864,9 +872,7 @@ download: async function( type, data, fileName = 'noname') {
         switch ( type ) {
             // ファイル
             case 'file': {
-                // File > BASE64
-                const base64 = await cmn.fileToBase64( data );
-                url = 'data:;base64,' + base64;
+                url = URL.createObjectURL( data );
             } break;
 
             // エクセル
@@ -4446,8 +4452,8 @@ fileEditor: function( fileData, fileName, mode = 'edit', option = {} ) {
                     cmn.download('file', fileData, fileName );
                 } else {
                     try {
-                        const binary = await fn.getFile( option.endPoint, 'GET', null, { title: getMessage.FTE00185 } );
-                        cmn.download('binary', binary, fileName );
+                        const file = await fn.getFile( option.endPoint, 'GET', null, { title: getMessage.FTE00185 } );
+                        cmn.download('file', file, fileName );
                     } catch ( e ) {
                         if ( e !== 'break') {
                             console.error( e );

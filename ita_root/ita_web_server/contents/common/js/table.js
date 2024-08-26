@@ -1463,8 +1463,8 @@ setTableEvents() {
                     endPoint += `journal/${journalId}/`;
                 }
                 $a.addClass('nowDownload');
-                fn.getFile( endPoint, 'GET', null, { title: getMessage.FTE00185 }).then(function( binaryFile ){
-                    fn.download('binary', binaryFile, fileName );
+                fn.getFile( endPoint, 'GET', null, { title: getMessage.FTE00185 }).then(function( file ){
+                    fn.download('file', file, fileName );
                     $a.removeClass('nowDownload');
                 }).catch(function( e ){
                     if ( e !== 'break') {
@@ -1517,7 +1517,7 @@ setTableEvents() {
                     option.endPoint += `journal/${journalId}/`;
                 }
                 try {
-                    file = await fn.getFile( option.endPoint, 'GET', null, { base64: true } );
+                    file = await fn.getFile( option.endPoint, 'GET', null );
                 } catch ( e ) {
                     if ( e !== 'break') {
                         console.error( e );
@@ -1564,7 +1564,7 @@ setTableEvents() {
             $button.prop('disabled', true );
             try {
                 const file = await fn.getFile( url, 'POST', tb.filterParams, { title: getMessage.FTE00185 });
-                fn.download('binary', file, fileName );
+                fn.download('file', file, fileName );
             } catch ( error ) {
                 if ( error !== 'break') {
                     fn.gotoErrPage( error.message );
@@ -1789,7 +1789,7 @@ setTableEvents() {
             // ファイルが空、かつ編集可能の場合はファイルを取得する
             if ( tb.option.fileFlag === false && fileName !== '' && file === undefined && ( fileType === 'text' || fileType === 'image') ) {
                 try {
-                    file = await fn.getFile( option.endPoint, 'GET', null, { base64: true } );
+                    file = await fn.getFile( option.endPoint, 'GET', null );
                 } catch ( e ) {
                     if ( e !== 'break') {
                         console.error( e );
@@ -2157,9 +2157,9 @@ setTableEvents() {
                               method = $button.attr('data-method'),
                               nameKey = $button.attr('data-filename'),
                               dataKey = $button.attr('data-filedata');
-                        fn.getFile( url, method, null, { fileName: true, title: getMessage.FTE00185 }).then(function( result ){
-                            const fileName = fn.cv( result.fileName, '');
-                            fn.download('binary', result.file, fileName );
+                        fn.getFile( url, method, null, { title: getMessage.FTE00185 }).then(function( file ){
+                            const fileName = fn.cv( file.name, '');
+                            fn.download('file', file, fileName );
                         }).catch(function( error ){
                             if ( error !== 'break') {
                                 alert( error.message );

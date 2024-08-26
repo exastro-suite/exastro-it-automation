@@ -356,9 +356,9 @@ compareEvents() {
             case 'download': {
                 $button.prop('disabled', true );
                 cp.getCompareSettingData();
-                fn.getFile( cp.rest.download, 'POST', cp.compareData, { fileName: true, title: getMessage.FTE00185 }).then(function( result ){
-                    const fileName = fn.cv( result.fileName, '');
-                    fn.download('binary', result.file, fileName );
+                fn.getFile( cp.rest.download, 'POST', cp.compareData, { title: getMessage.FTE00185 }).then(function( file ){
+                    const fileName = fn.cv( file.name, '');
+                    fn.download('file', file, fileName );
                 }).catch(function( error ){
                     if ( fn.typeof( error ) === 'object') {
                         if ( fn.typeof( error.message ) === 'string') {

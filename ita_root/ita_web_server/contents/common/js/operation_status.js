@@ -652,7 +652,7 @@ class Status {
 
             const endPoint = `/menu/${Status.string[op.menu].executionListMenu}/${op.id}/${rest}/file/`;
             fn.getFile( endPoint, 'GET', null, { title: getMessage.FTE00185 }).then(function( file ){
-                fn.download('binary', file, fileName ).then(function(){
+                fn.download('file', file, fileName ).then(function(){
                     $link.removeClass('nowDownload');
                 });
             }).catch(function( e ){

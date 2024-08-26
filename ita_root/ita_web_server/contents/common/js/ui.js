@@ -1408,7 +1408,7 @@ defaultMenu( sheetType, dataType = 'n', fileFlag = true ) {
                 $button.prop('disabled', true );
                 try {
                     const file = await fn.getFile( url, 'GET', null, { title: getMessage.FTE00185 });
-                    fn.download('binary', file, fileName );
+                    fn.download('file', file, fileName );
                 } catch ( error ) {
                     if ( error !== 'break') {
                         fn.gotoErrPage( error.message );

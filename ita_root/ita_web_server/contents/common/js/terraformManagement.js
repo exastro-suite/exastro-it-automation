@@ -85,7 +85,7 @@ setup() {
     tm.$.content.find('.section').each(function(){
         const $section = $( this ),
               id = $section.attr('id');
-        
+
         tm.$[ id ] = $section;
 
         const button = {
@@ -95,7 +95,7 @@ setup() {
             action: 'default',
             minWidth: '160px'
         };
-        
+
         $section.find('.sectionBody').html(``
         + `<div class="tableContainer noFilter noData">`
             + `<div class="tableHeader">`
@@ -117,7 +117,7 @@ setup() {
     tm.$.content.find('.operationMenuButton').on('click', function(){
         const $button = $( this ),
               type = $button.attr('data-type');
-        
+
         $button.prop('disabled', true );
         tm.getSet( type ).then(function(){
             $button.prop('disabled', false );
@@ -131,7 +131,7 @@ setup() {
               buttonText = $button.text(),
               tabType = $button.attr('data-tab'),
               type = $button.attr('data-type');
-        
+
         $button.prop('disabled', true );
 
         const set = { rest: null, method: null, body: null, option: {}};
@@ -246,20 +246,18 @@ getSet( type ) {
 exeRestApi( buttonText, rest, method, body, option ) {
     return new Promise(function( resolve ){
         if ( option.download ) {
-            let process = fn.processingModal( getMessage.FTE00120 );
-            fn.fetch( rest, null, method, body ).then(function( result ){
-                fn.download('base64', result.file, result.file_name );
+            fn.getFile( rest, method, body, { title: getMessage.FTE00185 }).then(function( file ){
+                const fileName = fn.cv( file.name, '');
+                fn.download('file', file, fileName );
             }).catch(function( error ){
                 window.console.error( error );
                 alert( error.message );
             }).then(function(){
-                process.close();
-                process = null;
                 resolve('noUpdate');
             });
         } else {
             const text = getMessage.FTE00119( buttonText );
-                
+
             fn.alert(`${buttonText}${getMessage.FTE00118}`, text, 'confiarm', {
                 ok: { text: getMessage.FTE00122, action: 'default', style: 'width:160px', className: 'dialogPositive'},
                 cancel: { text: getMessage.FTE00123, action: 'negative', style: 'width:120px'}
@@ -457,7 +455,7 @@ linkList( row, itemData, list, rowspan ) {
             }
         }
     }
-    
+
     return tdHtml;
 }
 

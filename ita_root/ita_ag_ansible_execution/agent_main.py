@@ -48,6 +48,8 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
         g.applogger.info(f"{status_code=} {response=}") #####
         g.applogger.info(f"バージョン通知に失敗しました。") #####
         # g.applogger.info(g.appmsg.get_log_message("MSG-10955", [status_code, response])) #####
+    else:
+        g.applogger.info(f"post_agent_version: {status_code=} {response=}") #####
 
     while True:
         print("")
@@ -72,6 +74,7 @@ def main_logic(organization_id, workspace_id, exastro_api, baseUrl):
     # 未実行インスタンス取得
     status_code, response = get_unexecuted_instance(organization_id, workspace_id, exastro_api)
     if status_code == 200:
+        g.applogger.info(f"get_unexecuted_instance: {status_code=} {response=}") #####
         target_executions = response["data"] if isinstance(response["data"], dict) else {}
         for execution_no, value in target_executions.items():
 
@@ -94,6 +97,8 @@ def main_logic(organization_id, workspace_id, exastro_api, baseUrl):
         g.applogger.info(f"作業中通知に失敗しました。") #####
         g.applogger.info(f"{status_code=} {response=}") #####
         # g.applogger.info(g.appmsg.get_log_message("MSG-10955", [status_code, response])) #####
+    else:
+        g.applogger.info(f"post_notification_execution: {status_code=} {response=}") #####
 
     # 指定リトライ回数以上のステータス更新、ステータスファイルファイルの削除
     update_error_executions(organization_id, workspace_id, exastro_api, error_ps_list)
@@ -186,7 +191,7 @@ def child_process_exist_check(organization_id, workspace_id, execution_no, drive
                 # ステータスファイルに再起動回数書き込み
                 obj = storage_write()
                 obj.open(status_file_path, 'w')
-                obj.write(int(reboot_cnt)   + 1)
+                obj.write(str(int(reboot_cnt) + 1))
                 obj.close()
 
                 # 子プロ再起動
@@ -380,7 +385,7 @@ def update_error_executions(organization_id, workspace_id, exastro_api, error_ps
             # 作業状態通知送信: 異常時
             body = {
                 "driver_id": driver_id,
-                "status": 6, ##### 6,7
+                "status": "6", ##### 6,7
             }
             status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, del_execution, body)
             if not status_code == 200:
@@ -388,11 +393,13 @@ def update_error_executions(organization_id, workspace_id, exastro_api, error_ps
                 g.applogger.info(f"{status_code=} {response=}") #####
                 # g.applogger.info(g.appmsg.get_log_message("MSG-10955", [status_code, response])) #####
                 status_update = False
+            else:
+                g.applogger.info(f"post_update_execution_status: {status_code=} {response=}") #####
 
             # 作業状態通知送信(ファイル)
             body = {
                 "driver_id": driver_id,
-                "status": 6, ##### 6,7
+                "status": "6", ##### 6,7
             }
             # upload_path_list = get_upload_file_info(organization_id, workspace_id, driver_id, del_execution)
             # dummyfile1 = "/storage/out_1.zip"
@@ -401,12 +408,13 @@ def update_error_executions(organization_id, workspace_id, exastro_api, error_ps
             #     "out_data" : dummyfile1,
             #     "conductor": dummyfile2,
             # }
-            # status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, del_execution, body, upload_path_list)
+            # status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, del_execution, body, upload_path_list=upload_path_list)
             # if not status_code == 200:
             #     g.applogger.info(f"作業状態通知送信(ファイル): 異常時に失敗しました。") #####
             #     g.applogger.info(f"{status_code=} {response=}") #####
-            #     g.applogger.info(g.appmsg.get_log_message("MSG-10955", [status_code, response])) #####
-
+            # else:
+            #     g.applogger.info(f"post_update_execution_status: {status_code=} {response=}") #####
+            status_update = False
             if status_update:
                 # ステータスファイルの削除
                 delete_status_file(organization_id, workspace_id, driver_id, del_execution)

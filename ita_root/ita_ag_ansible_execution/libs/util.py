@@ -96,7 +96,7 @@ def get_upload_file_info(organization_id, workspace_id, driver_id, execution_no)
         pass
 
 
-def retry_api_call(exastro_api, endpoint, mode="json" ,method="POST", body=None, query=None, files=None, retry=3):
+def retry_api_call(exastro_api, endpoint, mode="json" ,method="POST", body=None, query=None, files=None, data=None, retry=3):
     """
         api_requestのリトライ用
     Args:
@@ -129,15 +129,17 @@ def retry_api_call(exastro_api, endpoint, mode="json" ,method="POST", body=None,
                     endpoint,
                     body=body,
                     query=query,
-                    files=files
-
+                    files=files,
+                    data=data
                 )
             elif mode == "stream":
                 status_code, response = exastro_api.api_request_stream(
                     method,
                     endpoint,
                     body=body,
-                    query=query
+                    query=query,
+                    files=files,
+                    data=data
                 )
             if status_code == 200:
                 break
@@ -259,17 +261,13 @@ def post_upload_execution_files(organization_id, workspace_id, exastro_api, exec
     """
     endpoint = f"/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/result_data"
     files = {} if len(upload_path_list) != 0 else None
-    # _upload_path_list = [v for v in upload_path_list if os.path.isfile(v)]
-    # for _file in  _upload_path_list:
     _upload_path_list = {k:v for k,v in upload_path_list.items() if os.path.isfile(v)}
     for key, _file in  _upload_path_list.items():
-        with open(_file, "rb") as r:
-            f_name = os.path.basename(r.name)
         files[key] = open(_file, "rb")
     try:
-        status_code, response = retry_api_call(exastro_api, endpoint, mode="form", method="POST", body=body, query=query, files=files, retry=retry)
+        status_code, response = retry_api_call(exastro_api, endpoint, mode="form", method="POST", data=body, files=files, retry=retry)
     finally:
         for key, _file in  _upload_path_list.items():
-            print(f"{key} ({_file})")
+            print(f" os.remove {key} ({_file})") #####
             ### os.remove(_file) if os.path.isfile(_file) else None
     return status_code, response

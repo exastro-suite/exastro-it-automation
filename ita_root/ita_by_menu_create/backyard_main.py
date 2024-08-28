@@ -520,6 +520,13 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
                 if not result:
                     raise AppException(msg)
 
+        # 初期化の場合、uploadfiles/<menu_id>/配下をクリア #2489
+        if create_type == 'initialize':
+            menu_upload_dir = f"/storage/{g.ORGANIZATION_ID}/{g.WORKSPACE_ID}/uploadfiles/{input_menu_uuid}/"
+            if os.path.isdir(menu_upload_dir):
+                shutil.rmtree(menu_upload_dir)
+                g.applogger.info(f"shutil.rmtree: {menu_upload_dir=}")
+
         # ホストグループ利用時、ホストグループ分割対象へのレコード登録
         if hostgroup_flag:
             # 「分割対象メニュー」「登録対象メニュー」の「MENU_NAME_REST」

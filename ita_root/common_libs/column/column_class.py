@@ -849,7 +849,7 @@ class Column():
                 for bindvalue in tmp_conf:
                     tmp_result = self.convert_value_input(bindvalue)
                     if tmp_result[0] is True:
-                        bindvalue = json.dumps(tmp_result[2])
+                        bindvalue = json.dumps(tmp_result[2], ensure_ascii=False)
                     if len(str_where) != 0:
                         conjunction = 'or'
                     bindkey = "__{}__{}__".format(self.get_col_name(), listno)

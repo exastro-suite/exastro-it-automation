@@ -6552,13 +6552,9 @@ conductorStatusPopup( $target, id ) {
   }
   
   // ノードの状態で表示・非表示を切り替える
-  console.log( $target.is('.node-jump') );
-  console.log( $target.closest('.node').text() );
   if ( $target.is('.node-jump') ) {
-    console.log('visible')
     $popup.css('visibility','visible');
   } else {
-    console.log('hidden')
     $popup.css('visibility','hidden');
   }
   

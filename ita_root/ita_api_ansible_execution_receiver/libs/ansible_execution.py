@@ -13,6 +13,8 @@
 #   limitations under the License.
 
 import subprocess
+import tarfile
+import datetime
 
 from flask import g
 from common_libs.common import *  # noqa: F403
@@ -138,17 +140,17 @@ def get_execution_status(objdbca, execution_no, body):
         ret = objdbca.table_select(t_ansl_exec_sts_inst, 'WHERE  EXECUTION_NO=%s', [execution_no])
         for record in ret:
             result["SCRAM_STATUS"] = record.get["ABORT_EXECUTE_FLAG"]
-        objdbca.table_update(t_ansl_exec_sts_inst, data_list, execution_no)
+        objdbca.table_update(t_ansl_exec_sts_inst, data_list, "EXECUTION_NO")
     elif driver_id == "pioneer":
         ret = objdbca.table_select(t_ansp_exec_sts_inst, 'WHERE  EXECUTION_NO=%s', [execution_no])
         for record in ret:
             result["SCRAM_STATUS"] = record.get["ABORT_EXECUTE_FLAG"]
-        objdbca.table_update(t_ansp_exec_sts_inst, data_list, execution_no)
+        objdbca.table_update(t_ansp_exec_sts_inst, data_list, "EXECUTION_NO")
     elif driver_id == "legacy_role":
         ret = objdbca.table_select(t_ansr_exec_sts_inst, 'WHERE  EXECUTION_NO=%s', [execution_no])
         for record in ret:
             result["SCRAM_STATUS"] = record.get["ABORT_EXECUTE_FLAG"]
-        objdbca.table_update(t_ansr_exec_sts_inst, data_list, execution_no)
+        objdbca.table_update(t_ansr_exec_sts_inst, data_list, "EXECUTION_NO")
 
     objdbca.db_commit()
 
@@ -178,21 +180,33 @@ def get_populated_data_path(objdbca, organization_id, workspace_id, execution_no
     # トランザクション開始
     objdbca.db_transaction_start()
 
-    result = {}
     if driver_id == "legacy":
         # in,outディレクトリ相当のパス
         dir_path = "/storage/" + organization_id + "/" + workspace_id + legacy_dir_path + "/" + execution_no
+        tmp_path = "/tmp/" + organization_id + "/" + workspace_id + legacy_dir_path
         if os.path.exists(dir_path):
-            result[execution_no] = {"in_out_data": dir_path}
+            # 一時フォルダに移動
+            if not os.path.exists(tmp_path):
+                os.makedirs(tmp_path)
+                os.chmod(tmp_path, 0o777)
+            shutil.move(dir_path, tmp_path)
 
         # conductorディレクトリ相当のパス
         conductor_dir_path = "/storage/" + organization_id + "/" + workspace_id + legacy_dir_path + "/" + execution_no + "/conductor"
-        if os.path.exists(dir_path):
-            result[execution_no] = {"conductor_data": conductor_dir_path}
+        if os.path.exists(conductor_dir_path):
+            # 一時フォルダに移動
+            if not os.path.exists(tmp_path):
+                os.makedirs(tmp_path)
+                os.chmod(tmp_path, 0o777)
+            shutil.move(dir_path, tmp_path)
+
+        gztar_path = tmp_path + "/" + execution_no + ".tar.gz"
+        with tarfile.open(gztar_path, "w:gz") as tar:
+            tar.add(tmp_path, arcname="")
 
         # ステータスを実行待ちに変更
         data_list = {"STATUS_ID": "12", "EXECUTION_NO": execution_no}
-        objdbca.table_update(t_ansl_exec_sts_inst, data_list, execution_no)
+        objdbca.table_update(t_ansl_exec_sts_inst, data_list, "EXECUTION_NO")
 
         objdbca.db_commit()
 
@@ -200,17 +214,30 @@ def get_populated_data_path(objdbca, organization_id, workspace_id, execution_no
     if driver_id == "pioneer":
         # in,outディレクトリ相当のパス
         dir_path = "/storage/" + organization_id + "/" + workspace_id + pioneer_dir_path + "/" + execution_no
+        tmp_path = "/tmp/" + organization_id + "/" + workspace_id + pioneer_dir_path
         if os.path.exists(dir_path):
-            result[execution_no] = {"in_out_data": dir_path}
+            # 一時フォルダに移動
+            if not os.path.exists(tmp_path):
+                os.makedirs(tmp_path)
+                os.chmod(tmp_path, 0o777)
+            shutil.move(dir_path, tmp_path)
 
         # conductorディレクトリ相当のパス
         conductor_dir_path = "/storage/" + organization_id + "/" + workspace_id + pioneer_dir_path + "/" + execution_no + "/conductor"
-        if os.path.exists(dir_path):
-            result[execution_no] = {"conductor_data": conductor_dir_path}
+        if os.path.exists(conductor_dir_path):
+            # 一時フォルダに移動
+            if not os.path.exists(tmp_path):
+                os.makedirs(tmp_path)
+                os.chmod(tmp_path, 0o777)
+            shutil.move(dir_path, tmp_path)
+
+        gztar_path = tmp_path + "/" + execution_no + ".tar.gz"
+        with tarfile.open(gztar_path, "w:gz") as tar:
+            tar.add(tmp_path, arcname="")
 
         # ステータスを実行待ちに変更
         data_list = {"STATUS_ID": "12", "EXECUTION_NO": execution_no}
-        objdbca.table_update(t_ansp_exec_sts_inst, data_list, execution_no)
+        objdbca.table_update(t_ansp_exec_sts_inst, data_list, "EXECUTION_NO")
 
         objdbca.db_commit()
 
@@ -218,21 +245,33 @@ def get_populated_data_path(objdbca, organization_id, workspace_id, execution_no
     if driver_id == "pioneer":
         # in,outディレクトリ相当のパス
         dir_path = "/storage/" + organization_id + "/" + workspace_id + role_dir_path + "/" + execution_no
+        tmp_path = "/tmp/" + organization_id + "/" + workspace_id + role_dir_path
         if os.path.exists(dir_path):
-            result[execution_no] = {"in_out_data": dir_path}
+            # 一時フォルダに移動
+            if not os.path.exists(tmp_path):
+                os.makedirs(tmp_path)
+                os.chmod(tmp_path, 0o777)
+            shutil.move(dir_path, tmp_path)
 
         # conductorディレクトリ相当のパス
         conductor_dir_path = "/storage/" + organization_id + "/" + workspace_id + role_dir_path + "/" + execution_no + "/conductor"
-        if os.path.exists(dir_path):
-            result[execution_no] = {"conductor_data": conductor_dir_path}
+        # 一時フォルダに移動
+        if not os.path.exists(tmp_path):
+            os.makedirs(tmp_path)
+            os.chmod(tmp_path, 0o777)
+        shutil.move(dir_path, tmp_path)
+
+        gztar_path = tmp_path + "/" + execution_no + ".tar.gz"
+        with tarfile.open(gztar_path, "w:gz") as tar:
+            tar.add(tmp_path, arcname="")
 
         # ステータスを実行待ちに変更
         data_list = {"STATUS_ID": "12", "EXECUTION_NO": execution_no}
-        objdbca.table_update(t_ansr_exec_sts_inst, data_list, execution_no)
+        objdbca.table_update(t_ansr_exec_sts_inst, data_list, "EXECUTION_NO")
 
         objdbca.db_commit()
 
-    return result
+    return gztar_path
 
 
 def update_result_data(organization_id, workspace_id, execution_no, body):
@@ -256,6 +295,9 @@ def update_result_data(organization_id, workspace_id, execution_no, body):
     parameters_base64_data = body["parameters_tar_data"]
     parameters_file_base64_data = body["parameters_file_tar_data"]
     conductor_base64_data = body["conductor_tar_data"]
+
+    print("---------------------")
+    print(body)
 
     if driver_id == "legacy":
         from_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "in/project"
@@ -360,7 +402,7 @@ def update_result_data(organization_id, workspace_id, execution_no, body):
     shutil.rmtree(tmp_parameters_path)
     shutil.rmtree(tmp_conductor_path)
 
-def get_agent_version(objdbca, organization_id, workspace_id):
+def get_agent_version(objdbca, body):
     """
         エージェント名とバージョン情報を取得
         ARGS:
@@ -370,23 +412,85 @@ def get_agent_version(objdbca, organization_id, workspace_id):
             statusCode, {}, msg
     """
 
-    # 環境変数からエージェント名を取得
-    agent_name = os.environ.get("AGENT_NAME")
+    # エージェント名
+    agent_name = body["agent_name"]
+    version = body["version"]
 
-    # ファイルからバージョン情報を取得
-    file_path = "exastro/common_libs/ansible_execution/version.txt"
-    if os.path.isfile(file_path):
+    # トランザクション開始
+    objdbca.db_transaction_start()
+
+    # エージェント管理へ登録
+    data_list = {
+        "AGENT_NAME": agent_name,
+        "VERSION": version,
+        "DISUSE_FLAG": "0"
+    }
+    ret = objdbca.table_insert("T_ANSC_AGENT", data_list, "ROW_ID", False)
+    if ret is False:
+        return False
+
+    objdbca.db_commit()
+
+    # ITA側のバージョン情報をファイルから取得
+    file_path = "/exastro/common_libs/ansible_execution/VERSION.txt"
+    if os.path.exists(file_path):
         obj = storage_access.storage_read()
         obj.open(file_path)
-        version = obj.read()
+        ita_version = obj.read()
         obj.close()
+    else:
+        ita_version = ""
 
-    result = {
-        "agent_name": agent_name,
-        "version": version
-    }
+    result = {}
+    # ITAとエージェントのバージョン比較
+    if ita_version == version:
+        result["version_diff"] = True
+    else:
+        result["version_diff"] = False
 
     return result
+
+def update_ansible_agent_status_file(organization_id, workspace_id, body):
+    """
+        作業中通知
+        ARGS:
+            body: 作業実行中の作業番号リスト
+            workspace_id: ファイル名
+        RETRUN:
+            statusCode, {}, msg
+    """
+
+    legacy = body["legacy"]
+    pioneer = body["pioneer"]
+    legacy_role = body["legacy_role"]
+
+    # 作業状態通知受信ファイルを空更新する
+    for execution_no in legacy:
+        file_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "/out/ansible_agent_status_file.txt"
+        print("--------------")
+        print(file_path)
+        if os.path.exists(file_path):
+            # 元の日時を取得
+            sr = os.stat(path=file_path)
+            # 更新日時のみ変更
+            now = datetime.datetime.now().timestamp()
+            os.utime(path=file_path, times=(sr.st_atime, now))
+    for execution_no in pioneer:
+        file_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/pioneer/" + execution_no + "out/ansible_agent_status_file.txt"
+        if os.path.exists(file_path):
+            # 元の日時を取得
+            sr = os.stat(path=file_path)
+            # 更新日時のみ変更
+            os.utime(path=file_path, times=(sr.st_atime, datetime.datetime.now()))
+    for execution_no in legacy_role:
+        file_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy_role/" + execution_no + "out/ansible_agent_status_file.txt"
+        if os.path.exists(file_path):
+            # 元の日時を取得
+            sr = os.stat(path=file_path)
+            # 更新日時のみ変更
+            os.utime(path=file_path, times=(sr.st_atime, datetime.datetime.now()))
+
+    return True
 
 def encode_tar_file(dir_path, file_name):
     """

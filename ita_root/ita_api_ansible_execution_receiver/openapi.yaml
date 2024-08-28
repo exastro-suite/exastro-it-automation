@@ -192,9 +192,8 @@ paths:
                     type: string
                     example: 000-00000
                   data:
-                    type: object
-                    items: {}
-                    example: {execution_no: {"in_out_data": "string", "conductor_data": "string"}}
+                    type: string
+                    description: 各種ファイルを1つにまとめてそのパスを返す
                   message:
                     type: string
         '401':
@@ -319,10 +318,8 @@ paths:
         content:
           application/json:
             schema:
-              description: エージェントID、エージェント名、バージョン情報を指定
+              description: エージェント名、バージョン情報を指定
               properties:
-                agent_id:
-                  type: string
                 agent_name:
                   type: string
                 version:

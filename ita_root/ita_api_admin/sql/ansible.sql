@@ -435,6 +435,22 @@ CREATE TABLE T_ANSC_EXECDEV_JNL
 
 
 
+-- 20112 エージェント管理
+CREATE TABLE T_ANSC_AGENT
+(
+    ROW_ID                          VARCHAR(40),                                -- 項番
+    AGENT_NAME                      VARCHAR(255),                               -- エージェント名
+    VERSION                         VARCHAR(40),                                -- バージョン
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(ROW_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
+
 -- 20201 Legacy Movemnet一覧
 CREATE VIEW V_ANSL_MOVEMENT AS
 SELECT 

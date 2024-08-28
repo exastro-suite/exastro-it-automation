@@ -34,7 +34,7 @@ def rest_count(objdbca, menu, filter_parameter):
         RETRUN:
             statusCode, {}, msg
     """
-
+    check_filter_parameter(filter_parameter)
     mode = 'count'
     objmenu = load_table.loadTable(objdbca, menu)
     if objmenu.get_objtable() is False:
@@ -79,7 +79,7 @@ def rest_filter(objdbca, menu, filter_parameter, base64_file_flg=True):
         RETRUN:
             statusCode, {}, msg
     """
-
+    check_filter_parameter(filter_parameter)
     mode = 'nomal'
     objmenu = load_table.loadTable(objdbca, menu)
     if objmenu.get_objtable() is False:
@@ -253,3 +253,46 @@ def get_history_file_path(objdbca, menu, uuid, column, journal_uuid):
                 break
 
     return file_path
+
+
+def check_filter_parameter(parameter):
+    """
+    filter条件の簡易チェック #2534
+    Args:
+        parameter: {"key": "mode": filter config }
+    Raises:
+        AppException: 499-00201 {"no": key:[message,,,]}
+    """
+
+    if parameter:
+        accept_option = ["NORMAL", "LIST", "RANGE"]
+        str_accept_option = ','.join(accept_option)
+        i = 0
+        err_msg = ""
+        _err_list = {}
+        for sk, scs in parameter.items():
+            for sm, sc in scs.items():
+                # optionの簡易チェック
+                _base_msg = g.appmsg.get_api_message("MSG-00034", [str_accept_option, {json.dumps(sm)}])\
+                    if sm not in accept_option else ""
+
+                # 検索条件の簡易チェック
+                sc = sc if isinstance(sc, list) or isinstance(sc, dict) else str(sc)
+                if len(sc) == 0:
+                    _base_msg += g.appmsg.get_api_message("MSG-00035", [json.dumps(sc)])
+
+                # エラーメッセージ設定
+                if len(_base_msg) != 0:
+                    _base_msg.rstrip()
+                    _err_list.setdefault(f"{i}", {})
+                    _err_list[f"{i}"].setdefault(sk, [])
+                    _err_list[f"{i}"][sk].append(f"{_base_msg}")
+                    i += 1
+
+        if len(_err_list) != 0:
+            err_msg = json.dumps(_err_list, ensure_ascii=False)
+            status_code = '499-00201'
+            log_msg_args = [err_msg]
+            api_msg_args = [err_msg]
+            raise AppException(status_code, log_msg_args, api_msg_args)
+

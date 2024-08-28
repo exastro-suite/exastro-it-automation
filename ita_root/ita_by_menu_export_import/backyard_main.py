@@ -177,6 +177,8 @@ def backyard_main(organization_id, workspace_id):
             g.applogger.info("menu_import_exec START")
             main_func_result, msg, trace_msg = menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_dir, uploadfiles_60103_dir)
             g.applogger.info("menu_import_exec END")
+
+        db_reconnention(objdbca, True) if objdbca else None
         # メイン処理がFalseの場合、異常系処理
         if not main_func_result:
             # エラーログ出力
@@ -415,9 +417,9 @@ def _dp_preparation(objdbca, workspace_id, menu_name_rest_list, execution_no_pat
             g.applogger.info(f"Target Menu: {_menu_name} START")
 
             # トランザクション開始
+            db_reconnention(objdbca, True) if objdbca else None
             debug_msg = g.appmsg.get_log_message("BKY-20004", [])
             g.applogger.info(debug_msg)
-            db_reconnention(objdbca, True) if objdbca else None
             objdbca.db_transaction_start()
 
             objmenu, file_path_info = _basic_table_preparation(objdbca, workspace_id, menu_name_rest_list, _menu_name, execution_no_path, imported_table_list, dp_mode)
@@ -1251,8 +1253,8 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
             filter_parameter_jnl = {"LAST_UPDATE_TIMESTAMP": specified_time}
 
         for menu in menu_list:
-            DB_path = dir_path + '/' + menu
             # objmenu = load_table.loadTable(objdbca, menu)   # noqa: F405
+            db_reconnention(objdbca, True) if objdbca else None
             objmenu = load_table.bulkLoadTable(objdbca, menu)   # noqa: F405
             if menu == 'movement_list_ansible_legacy':
                 filter_parameter["orchestrator"] = {"LIST": ['Ansible Legacy']}
@@ -1273,26 +1275,32 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
                 api_msg_args = [msg]
                 raise AppException(status_code, log_msg_args, api_msg_args)
 
-            _collect_files(objmenu, dir_path, menu, result)
-            file_open_write_close(DB_path, 'w', json.dumps(result, ensure_ascii=False, indent=4))
-
             # 履歴テーブル
+            db_reconnention(objdbca, True) if objdbca else None
+            objmenu = load_table.bulkLoadTable(objdbca, menu)   # noqa: F405
             history_flag = objmenu.get_objtable().get('MENUINFO').get('HISTORY_TABLE_FLAG')
             if history_flag == '1':
-                DB_path = dir_path + '/' + menu + '_JNL'
                 filter_mode = 'export_jnl'
                 g.applogger.info(addline_msg('{}'.format(f'{menu+ "_JNL"}')))
                 # 廃止を含まない場合、本体のテーブルの廃止状態を確認してデータ取得
-                status_code, result, msg = objmenu.rest_export_filter(filter_parameter_jnl, filter_mode, abolished_type, journal_type)
+                status_code, result_jnl, msg = objmenu.rest_export_filter(filter_parameter_jnl, filter_mode, abolished_type, journal_type)
                 if status_code != '000-00000':
                     log_msg_args = [msg]
                     api_msg_args = [msg]
                     raise AppException(status_code, log_msg_args, api_msg_args)
 
-                _collect_files(objmenu, dir_path, menu + '_JNL', result)
-                file_open_write_close(DB_path, 'w', json.dumps(result, ensure_ascii=False, indent=4))
+            # データ配置、ファイル収集
+            DB_path = dir_path + '/' + menu
+            _collect_files(objmenu, dir_path, menu, result)
+            file_open_write_close(DB_path, 'w', json.dumps(result, ensure_ascii=False, indent=4))
+
+            if history_flag == '1':
+                DB_path = dir_path + '/' + menu + '_JNL'
+                _collect_files(objmenu, dir_path, menu + '_JNL', result_jnl)
+                file_open_write_close(DB_path, 'w', json.dumps(result_jnl, ensure_ascii=False, indent=4))
 
         # 対象のDBのテーブル定義を出力（sqldump用
+        db_reconnention(objdbca, True) if objdbca else None
         menu_id_sql = " SELECT * FROM `T_COMN_MENU` WHERE `DISUSE_FLAG` <> 1 AND `MENU_NAME_REST` IN %s "
         t_comn_menu_record = objdbca.sql_execute(menu_id_sql, [menu_list])
         menu_id_dict = {}
@@ -1423,6 +1431,7 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
         version_data = get_ita_version(common_db)
         version_path = dir_path + '/VERSION'
         file_open_write_close(version_path, 'w', version_data["version"])
+        common_db.db_disconnect()
 
         # エクスポート環境のドライバ情報をDRIVERSに確保しておく
         installed_driver_path = dir_path + '/DRIVERS'
@@ -1457,6 +1466,8 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
 
         # tmpに作成したデータは削除する
         shutil.rmtree(dir_path)
+
+        db_reconnention(objdbca, True) if objdbca else None
 
         # 対象レコードの最終更新日時を取得
         export_import_sql = " SELECT * FROM `T_MENU_EXPORT_IMPORT` WHERE `DISUSE_FLAG` <> 1 AND `EXECUTION_NO` = %s "
@@ -2078,10 +2089,10 @@ def import_table_and_data(
                 else:
                     if objdbca._is_transaction is False and ita_base_menu_flg is True:
                         # トランザクション開始
-                        debug_msg = g.appmsg.get_log_message("BKY-20004", [])
-                        g.applogger.info(debug_msg)
                         db_reconnention(objdbca, True) if objdbca else None
                         db_reconnention(ws_db_sb, True) if ws_db_sb else None
+                        debug_msg = g.appmsg.get_log_message("BKY-20004", [])
+                        g.applogger.info(debug_msg)
                         objdbca.db_transaction_start()
 
                     truncate_sql = "DELETE FROM {}".format(table_name)
@@ -2172,10 +2183,10 @@ def import_table_and_data(
 
         if objdbca._is_transaction is False and ita_base_menu_flg is False:
             # トランザクション開始
-            debug_msg = g.appmsg.get_log_message("BKY-20004", [])
-            g.applogger.info(debug_msg)
             db_reconnention(objdbca, True) if objdbca else None
             db_reconnention(ws_db_sb, True) if ws_db_sb else None
+            debug_msg = g.appmsg.get_log_message("BKY-20004", [])
+            g.applogger.info(debug_msg)
             objdbca.db_transaction_start()
 
         # 0件なら次へ

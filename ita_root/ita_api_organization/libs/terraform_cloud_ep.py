@@ -933,7 +933,7 @@ def get_policy_file(objdbca, tf_organization_name, policy_name, parameters):
         raise AppException("400-00002", ['download_path'], ['download_path'])  # noqa: F405
 
     # policyファイルを取得
-    responseContents = policy_file_download(restApiCaller, download_path, False)  # noqa: F405
+    responseContents = policy_file_download(restApiCaller, download_path, False, False)  # noqa: F405
 
     # ファイル名を作成
     file_name = str(policy_name) + '.sentinel'
@@ -941,8 +941,9 @@ def get_policy_file(objdbca, tf_organization_name, policy_name, parameters):
     # ファイルをエンコード
     if responseContents:
         tmp_uuid = str(uuid.uuid4())
-        tmp_file_path = f"/tmp/{tmp_uuid}/{file_name}"
-        os.makedirs(tmp_file_path)
+        tmp_file_dir = f"/tmp/{tmp_uuid}"
+        tmp_file_path = f"{tmp_file_dir}/{file_name}"
+        os.makedirs(tmp_file_dir)
         with open(tmp_file_path, "w")as f:
             f.write(responseContents)
 

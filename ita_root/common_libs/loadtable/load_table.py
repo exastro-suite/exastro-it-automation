@@ -1007,7 +1007,9 @@ class loadTable():
                 # where生成
                 if len(filter_querys) > 0:
                     for filter_query in filter_querys:
-                        if filter_query.get('where') is not None:
+                        # 検索条件不備の対応 #2534
+                        if filter_query.get('where') is not None \
+                            and len(filter_query.get('where')) != 0:
                             if len(where_str) != 0:
                                 conjunction = 'and'
                             tmp_where_str = ' {} {}'.format(conjunction, filter_query.get('where'))
@@ -1451,6 +1453,11 @@ class loadTable():
 
                         # カラムクラス呼び出し
                         objcolumn = self.get_columnclass(rest_key, cmd_type)
+
+                        # None以外は文字列型とする #2523
+                        if rest_val and objcolumn.class_name in ["SingleTextColumn", "MultiTextColumn"]:
+                            rest_val = str(rest_val) if rest_val is not None else rest_val
+                            entry_parameter[rest_key] = rest_val
 
                         if import_mode is False:
                             # カラムクラス毎の処理:レコード操作前 + カラム毎の個別処理:レコード操作前

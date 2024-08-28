@@ -773,11 +773,6 @@ class CreateAnsibleExecFiles():
             os.chmod(c_dirwk, 0o777)
             self.setAnsible_in_builder_files_Dir(c_dirwk)
 
-            ret, msgstr  = CreateAG_ITABuilderShellFiles(self.lv_objDBCA, self.AnscObj, self.getAnsible_in_builder_files_Dir(), in_execno, movement_row)
-            if ret is False:
-                self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                               str(inspect.currentframe().f_lineno), msgstr)
-                return False, mt_rolenames, mt_rolevars, mt_roleglobalvars, mt_role_rolepackage_id, mt_def_vars_list, mt_def_array_vars_list
             # 実行エンジンがAnsible Agentの場合、runner_executable_filesディレクトリを生成する
             c_dirwk = c_indir + "/" + self.LC_ANS_RUNNER_EXECUTABLE_FILES_DIR
             if os.path.isdir(c_dirwk) is False:
@@ -785,13 +780,6 @@ class CreateAnsibleExecFiles():
             os.chmod(c_dirwk, 0o777)
 
             self.setAnsible_in_runner_files_Dir(c_dirwk)
-
-            # 実行エンジンがAnsible Agentの場合、runner_executable_files配下にstart.sh・stop.sh・alive.shを生成する
-            ret, msgstr = CreateAG_ITARunnerShellFiles(self.lv_objDBCA, self.AnscObj, self.getAnsible_in_runner_files_Dir(), in_execno, movement_row)
-            if ret is False:
-                self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                               str(inspect.currentframe().f_lineno), msgstr)
-                return False, mt_rolenames, mt_rolevars, mt_roleglobalvars, mt_role_rolepackage_id, mt_def_vars_list, mt_def_array_vars_list
 
         # グローバル変数管理からグローバル変数の情報を取得
         self.lva_global_vars_list = {}
@@ -1153,6 +1141,22 @@ class CreateAnsibleExecFiles():
             os.chmod(c_tmpdir, 0o777)
 
         self.setTemporary_file_Dir(c_tmpdir)
+
+        # Ansible Egent用のディレクトリを作成
+        if self.lv_exec_mode == AnscConst.DF_EXEC_MODE_AG:
+            # Ansibe bulder用　shell作成
+            ret, msgstr  = CreateAG_ITABuilderShellFiles(self.lv_objDBCA, self.AnscObj, self.getAnsible_in_builder_files_Dir(), in_execno, movement_row)
+            if ret is False:
+                self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                            str(inspect.currentframe().f_lineno), msgstr)
+                return False, mt_rolenames, mt_rolevars, mt_roleglobalvars, mt_role_rolepackage_id, mt_def_vars_list, mt_def_array_vars_list
+
+            # unner_executable_files配下にstart.sh・stop.sh・alive.shを生成する
+            ret, msgstr = CreateAG_ITARunnerShellFiles(self.lv_objDBCA, self.AnscObj, self.getAnsible_in_runner_files_Dir(), in_execno, movement_row)
+            if ret is False:
+                self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                                   str(inspect.currentframe().f_lineno), msgstr)
+                return False, mt_rolenames, mt_rolevars, mt_roleglobalvars, mt_role_rolepackage_id, mt_def_vars_list, mt_def_array_vars_list
 
         # ansible実行時、aah-agentで必要なexpectファイルを所定の場所にコピーする。
         self.CopysshAgentExpectfile()

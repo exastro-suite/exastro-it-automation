@@ -72,9 +72,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
-      x-openapi-router-controller: controllers.ansible_receiver_controller
+      x-openapi-router-controller: controllers.ansible_execution_controller
   /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/notification/status:
-    get:
+    post:
       tags:
       - Ansible Execution
       description: 作業状態通知
@@ -104,6 +104,11 @@ paths:
         explode: false
         schema:
           type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/notification_status_body'
       responses:
         "200":
           description: Success
@@ -123,8 +128,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
-      x-openapi-router-controller: controllers.ansible_receiver_controller
-  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/populated_data:
+      x-openapi-router-controller: controllers.ansible_execution_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/populated_data:
     get:
       tags:
       - Ansible Execution
@@ -142,6 +147,14 @@ paths:
       - name: workspace_id
         in: path
         description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: execution_no
+        in: path
+        description: 作業番号
         required: true
         style: simple
         explode: false
@@ -174,7 +187,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
-      x-openapi-router-controller: controllers.ansible_receiver_controller
+      x-openapi-router-controller: controllers.ansible_execution_controller
   /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/result_data:
     post:
       tags:
@@ -233,7 +246,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
-      x-openapi-router-controller: controllers.ansible_receiver_controller
+      x-openapi-router-controller: controllers.ansible_execution_controller
   /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/version:
     post:
       tags:
@@ -281,7 +294,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
-      x-openapi-router-controller: controllers.ansible_receiver_controller
+      x-openapi-router-controller: controllers.ansible_execution_controller
   /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/notification/execution:
     post:
       tags:
@@ -329,7 +342,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
-      x-openapi-router-controller: controllers.ansible_receiver_controller
+      x-openapi-router-controller: controllers.ansible_execution_controller
 components:
   schemas:
     ERROR_TEMPLATE:
@@ -372,6 +385,13 @@ components:
             attach_repository: string
             anstwr_del_runtime_data: boolean
         message: message
+    notification_status_body:
+      properties:
+        driver_id:
+          type: string
+        status:
+          type: string
+      description: ドライバーID、ステータス
     inline_response_200_1:
       type: object
       properties:

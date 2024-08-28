@@ -18,7 +18,8 @@ from flask import g
 import traceback
 
 from common_libs.common.exception import AppException
-from common_libs.common.util import arrange_stacktrace_format
+from common_libs.common.util import arrange_stacktrace_format, print_exception_msg
+from common_libs.common.encrypt import *
 
 
 def app_exception(e):
@@ -68,3 +69,27 @@ def exception(e):
     # catch - other all error
     t = traceback.format_exc()
     g.applogger.error(arrange_stacktrace_format(t))
+
+def ky_decrypt(lcstr, input_encrypt_key=None):
+    """
+    Decode a string
+
+    Arguments:
+        lcstr: Decoding target value
+    Returns:
+        Decoded string
+    """
+
+    if lcstr is None:
+        return ""
+
+    if len(str(lcstr)) == 0:
+        return ""
+
+    # パラメータシート更新で任意の項目からパスワード項目に変更した場合システムエラーになるので、
+    # try~exceptで対応する
+    try:
+        return decrypt_str(lcstr, input_encrypt_key)
+    except Exception as e:
+        print_exception_msg(e)
+        return ""

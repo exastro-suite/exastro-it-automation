@@ -364,7 +364,7 @@ def module_upload(restApiCaller, gztar_path, upload_url):
     """
     # /storage配下のファイルアクセスを/tmp経由で行うモジュール
     file_read = storage_access.storage_read_bytes()
-    
+
     # Moduleファイルアップロード用RESTAPIの特殊な仕様として、module_upload_flagをTrueとしてRESTAPIを実行する
     api_uri = None
     content = file_read.read_bytes(gztar_path)
@@ -860,7 +860,7 @@ def policy_file_upload(restApiCaller, tf_manage_policy_id, policy_file_data):
     """
     # /storage配下のファイルアクセスを/tmp経由で行うモジュール
     file_read = storage_access.storage_read_bytes()
-    
+
     # Moduleファイルアップロード用RESTAPIの特殊な仕様として、module_upload_flagをTrueとしてRESTAPIを実行する
     api_uri = '/policies/%s/upload' % (tf_manage_policy_id)
     upload_url = None
@@ -872,7 +872,7 @@ def policy_file_upload(restApiCaller, tf_manage_policy_id, policy_file_data):
     return response_array
 
 
-def policy_file_download(restApiCaller, download_path, direct_flag=False):
+def policy_file_download(restApiCaller, download_path, direct_flag=False, env_setting_flag=False):
     """
         policyファイルをダウンロードする
         ARGS:
@@ -883,7 +883,7 @@ def policy_file_download(restApiCaller, download_path, direct_flag=False):
             response_array: RESTAPI返却値
 
     """
-    responseContents = restApiCaller.get_log_data('GET', download_path, direct_flag)
+    responseContents = restApiCaller.get_log_data('GET', download_path, direct_flag, env_setting_flag)
 
     return responseContents
 

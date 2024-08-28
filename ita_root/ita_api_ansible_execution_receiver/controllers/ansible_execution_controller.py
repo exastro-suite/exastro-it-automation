@@ -143,7 +143,7 @@ def update_result_data(organization_id, workspace_id, execution_no, body):  # no
             check_request_body_key(body, 'status')
 
         # 作業実行関連のメニューの基本情報および項目情報の取得
-        result_data = update_result_data(objdbca, organization_id, workspace_id, execution_no, body)
+        result_data = update_result_data(organization_id, workspace_id, execution_no, body)
         # result_data.setdefault("menu_info", tmp_data[0]["data"])
     except Exception as e:
         raise e
@@ -153,7 +153,7 @@ def update_result_data(organization_id, workspace_id, execution_no, body):  # no
 
 
 @api_filter
-def agent_version(organization_id, workspace_id):  # noqa: E501
+def agent_version(organization_id, workspace_id, body):  # noqa: E501
     """update_result_data
 
     バージョン通知 # noqa: E501
@@ -170,10 +170,19 @@ def agent_version(organization_id, workspace_id):  # noqa: E501
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
     try:
+        # DB接続
+        objdbca = DBConnectWs(workspace_id)  # noqa: F405
+
+        # bodyのjson形式チェック
+        check_request_body()
+
+        if connexion.request.is_json:
+            body = dict(connexion.request.get_json())
+            check_request_body_key(body, 'agent_name')  # keyが無かったら400-00002エラー
+            check_request_body_key(body, 'version')
 
         # エージェント名とバージョン情報を取得
-        result_data = get_agent_version(objdbca)
-        # result_data.setdefault("menu_info", tmp_data[0]["data"])
+        result_data = get_agent_version(objdbca, body)
     except Exception as e:
         raise e
     finally:
@@ -181,10 +190,10 @@ def agent_version(organization_id, workspace_id):  # noqa: E501
     return result_data,
 
 @api_filter
-def execution_notification(organization_id, workspace_id):  # noqa: E501
-    """update_result_data
+def execution_notification(organization_id, workspace_id, body):  # noqa: E501
+    """execution_notification
 
-    バージョン通知 # noqa: E501
+    作業中通知 # noqa: E501
 
     :param organization_id: OrganizationID
     :type organization_id: str
@@ -198,9 +207,7 @@ def execution_notification(organization_id, workspace_id):  # noqa: E501
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
     try:
-
-        # エージェント名とバージョン情報を取得
-        result_data = get_agent_version(objdbca, organization_id, workspace_id)
+        result_data = update_ansible_agent_status_file(organization_id, workspace_id, body)
         # result_data.setdefault("menu_info", tmp_data[0]["data"])
     except Exception as e:
         raise e

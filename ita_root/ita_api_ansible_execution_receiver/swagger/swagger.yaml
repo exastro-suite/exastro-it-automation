@@ -417,20 +417,13 @@ components:
           type: string
           example: 000-00000
         data:
-          type: array
-          example:
-            execution_no:
-              in_out_data: string
-              conductor_data: string
-          items: {}
+          type: string
+          description: 各種ファイルを1つにまとめてそのパスを返す
         message:
           type: string
       example:
         result: 000-00000
-        data:
-          execution_no:
-            in_out_data: string
-            conductor_data: string
+        data: data
         message: message
     apiorganization_idworkspacesworkspace_idansible_execution_agentexecution_noresult_data_file:
       type: object
@@ -473,13 +466,11 @@ components:
         message: message
     ansible_execution_agent_version_body:
       properties:
-        agent_id:
-          type: string
         agent_name:
           type: string
         version:
           type: string
-      description: エージェントID、エージェント名、バージョン情報を指定
+      description: エージェント名、バージョン情報を指定
     inline_response_200_4:
       type: object
       properties:

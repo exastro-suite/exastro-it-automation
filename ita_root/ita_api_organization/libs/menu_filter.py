@@ -273,12 +273,15 @@ def check_filter_parameter(parameter):
         for sk, scs in parameter.items():
             for sm, sc in scs.items():
                 # optionの簡易チェック
-                _base_msg = g.appmsg.get_api_message("MSG-00034", [str_accept_option, {json.dumps(sm)}])\
+                _base_msg = g.appmsg.get_api_message("MSG-00034", [str_accept_option, sm])\
                     if sm not in accept_option else ""
 
                 # 検索条件の簡易チェック
-                sc = sc if isinstance(sc, list) or isinstance(sc, dict) else str(sc)
-                if len(sc) == 0:
+                if sc:
+                    sc = sc if isinstance(sc, list) or isinstance(sc, dict) else str(sc)
+                    if len(sc) == 0 and sm in accept_option:
+                        _base_msg += g.appmsg.get_api_message("MSG-00035", [json.dumps(sc)])
+                elif sm in accept_option:
                     _base_msg += g.appmsg.get_api_message("MSG-00035", [json.dumps(sc)])
 
                 # エラーメッセージ設定

@@ -13,6 +13,8 @@
 #
 
 import requests
+from requests_toolbelt.multipart.encoder import MultipartEncoder
+from requests_toolbelt.streaming_iterator import StreamingIterator
 import urllib3
 from urllib3.exceptions import InsecureRequestWarning
 urllib3.disable_warnings(InsecureRequestWarning)
@@ -165,6 +167,52 @@ class Exastro_API:
             raise AppException("AGT-00004", [e])
 
         return status_code, response
+
+    def api_request_formdata_stream_file(self, method, endpoint, query=None, fields=None):
+
+        """
+            method: "POST"
+            Content-Type: "multipart/form-data"
+        """
+        response = None
+        status_code = None
+
+        headers = self.headers.copy()
+        auth = None
+        if self.access_token:
+        # Barer認証
+            headers["Authorization"] = f"Bearer {self.access_token}"
+        else:
+        # ID/PASS認証（BAISC）
+            auth = (self.username, self.password)
+
+        # パラメーター設定
+        multipart_data = MultipartEncoder(
+            fields=fields
+        )
+        data_size = multipart_data.len
+        stream = StreamingIterator(data_size, multipart_data)
+        headers["Content-Type"] = multipart_data.content_type
+
+        try:
+            response = requests.request(
+                method=method,
+                url=f"{self.base_url}{endpoint}",
+                headers=headers,
+                params=query,
+                auth=auth,
+                data=stream,
+                verify=False,
+            )
+
+            status_code = response.status_code
+
+            if status_code != 200:
+                return status_code, response.text
+        except Exception as e:
+            raise AppException("AGT-00004", [e])
+
+        return status_code, response.json()
 
     def get_access_token(self, organization_id, refresh_token=None):
         endpoint = f"/auth/realms/{organization_id}/protocol/openid-connect/token"

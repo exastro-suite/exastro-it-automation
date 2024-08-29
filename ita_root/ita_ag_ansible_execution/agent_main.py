@@ -402,18 +402,21 @@ def update_error_executions(organization_id, workspace_id, exastro_api, error_ps
                 "status": "6", ##### 6,7
             }
             # upload_path_list = get_upload_file_info(organization_id, workspace_id, driver_id, del_execution)
-            # dummyfile1 = "/storage/out_1.zip"
-            # dummyfile2 = "/storage/conductor_1.zip"
-            # upload_path_list = {
-            #     "out_data" : dummyfile1,
-            #     "conductor": dummyfile2,
-            # }
+            dummyfile1 = "/storage/out_1.zip"
+            dummyfile2 = "/storage/conductor_1.zip"
+            form_data = {
+                "json_parameters": json.dumps(body),
+                "out_data" : (os.path.basename(dummyfile1), open(dummyfile1, "rb"), mimetypes.guess_type(dummyfile1, False)[0]),
+                "conductor": (os.path.basename(dummyfile2), open(dummyfile2, "rb"), mimetypes.guess_type(dummyfile2, False)[0])
+            }
             # status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, del_execution, body, upload_path_list=upload_path_list)
-            # if not status_code == 200:
-            #     g.applogger.info(f"作業状態通知送信(ファイル): 異常時に失敗しました。") #####
-            #     g.applogger.info(f"{status_code=} {response=}") #####
-            # else:
-            #     g.applogger.info(f"post_update_execution_status: {status_code=} {response=}") #####
+            status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, del_execution, body, form_data=form_data)
+            if not status_code == 200:
+                g.applogger.info(f"作業状態通知送信(ファイル): 異常時に失敗しました。") #####
+                g.applogger.info(f"{status_code=} {response=}") #####
+            else:
+                g.applogger.info(f"post_upload_execution_files: {status_code=} {response=}") #####
+
             status_update = False
             if status_update:
                 # ステータスファイルの削除

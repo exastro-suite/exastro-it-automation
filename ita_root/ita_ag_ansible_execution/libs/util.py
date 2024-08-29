@@ -25,6 +25,7 @@ import shutil
 import shlex
 import subprocess
 import json
+import mimetypes
 
 from common_libs.common.exception import AppException
 from common_libs.common.util import arrange_stacktrace_format
@@ -96,16 +97,19 @@ def get_upload_file_info(organization_id, workspace_id, driver_id, execution_no)
         pass
 
 
-def retry_api_call(exastro_api, endpoint, mode="json" ,method="POST", body=None, query=None, files=None, data=None, retry=3):
+def retry_api_call(exastro_api, endpoint, mode="json" ,method="POST", body=None, query=None, files=None, data=None, fields=None, retry=3):
     """
         api_requestのリトライ用
     Args:
         exastro_api: Exastro_API()
         endpoint: endpoint
-        mode: mode, Defaults to json , (json, form, stream)
+        mode: mode, Defaults to json , (json, form, stream, form_stream)
         method: method, Defaults to POST,
         body: {} Defaults to None
-        files: {file: file_data} Defaults to None
+        query: {key: value}, Defaults to None
+        files: {file: file_data}, Defaults to None
+        data: {}, Defaults to None
+        fields: { key: json.dumps(xxx) or (filename, open(filepath,'rb'), content_type)}, Defaults to None
         retry: retry, Defaults to 3
     Returns:
         status_code:
@@ -141,6 +145,13 @@ def retry_api_call(exastro_api, endpoint, mode="json" ,method="POST", body=None,
                     files=files,
                     data=data
                 )
+            elif mode == "form_stream":
+                status_code, response = exastro_api.api_request_formdata_stream_file(
+                    method,
+                    endpoint,
+                    query=query,
+                    fields=fields
+                )
             if status_code == 200:
                 break
             else:
@@ -160,6 +171,8 @@ def post_agent_version(organization_id, workspace_id, exastro_api, body=None, qu
         organization_id : organization_id
         workspace_id : workspace_id
         exastro_api : Exastro_API()
+        body: {}, Defaults to None
+        query: {key: value}, Defaults to None
         retry: retry. Defaults to 3.
     Returns:
         status_code:
@@ -198,7 +211,8 @@ def post_notification_execution(organization_id, workspace_id, exastro_api, body
         organization_id : organization_id
         workspace_id : workspace_id
         exastro_api : Exastro_API()
-        body: {}
+        body: {}, Defaults to None
+        query: {key: value}, Defaults to None
         retry: retry. Defaults to 3.
     Returns:
         status_code:
@@ -216,7 +230,8 @@ def get_execution_populated_data(organization_id, workspace_id, exastro_api, exe
         workspace_id : workspace_id
         exastro_api : Exastro_API()
         execution_no: execution_no
-        body: {}
+        body: {}, Defaults to None
+        query: {key: value}, Defaults to None
         retry: retry. Defaults to 3.
     Returns:
         status_code:
@@ -234,7 +249,8 @@ def post_update_execution_status(organization_id, workspace_id, exastro_api, exe
         workspace_id : workspace_id
         exastro_api : Exastro_API()
         execution_no: execution_no
-        body: {}
+        body: {}, Defaults to None
+        query: {key: value}, Defaults to None
         retry: retry. Defaults to 3.
     Returns:
         status_code:
@@ -244,7 +260,7 @@ def post_update_execution_status(organization_id, workspace_id, exastro_api, exe
     status_code, response = retry_api_call(exastro_api, endpoint, mode="json", method="POST", body=body, query=query, retry=retry)
     return status_code, response
 
-def post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body=None, query=None, upload_path_list={}, retry=3):
+def post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body=None, query=None, form_data=None, retry=3):
     """
         作業状態通知(ファイル): 結果データ受け取り・更新 : agent_child_main
     Args:
@@ -252,22 +268,19 @@ def post_upload_execution_files(organization_id, workspace_id, exastro_api, exec
         workspace_id : workspace_id
         exastro_api : Exastro_API()
         execution_no: execution_no
-        body: {}
-        upload_path_list: {}
+        body: {}, Defaults to None
+        query: {key: value}, Defaults to None
+        fields: { key: json.dumps(xxx) or (filename, open(filepath,'rb'), content_type)}, Defaults to None
         retry: retry. Defaults to 3.
     Returns:
         status_code:
         response:
     """
     endpoint = f"/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/result_data"
-    files = {} if len(upload_path_list) != 0 else None
-    _upload_path_list = {k:v for k,v in upload_path_list.items() if os.path.isfile(v)}
-    for key, _file in  _upload_path_list.items():
-        files[key] = open(_file, "rb")
     try:
-        status_code, response = retry_api_call(exastro_api, endpoint, mode="form", method="POST", data=body, files=files, retry=retry)
+        status_code, response = retry_api_call(exastro_api, endpoint, mode="form_stream", method="POST", fields=form_data, retry=retry)
+    except Exception as e:
+        raise e
     finally:
-        for key, _file in  _upload_path_list.items():
-            print(f" os.remove {key} ({_file})") #####
-            ### os.remove(_file) if os.path.isfile(_file) else None
+        pass
     return status_code, response

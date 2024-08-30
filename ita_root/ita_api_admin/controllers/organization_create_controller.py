@@ -665,17 +665,6 @@ def organization_update(organization_id, body=None):  # noqa: E501
                         driver_name = config_file_name.replace('_config.json', '')
                         config_file_dict[driver_name] = config_file_name
 
-            # jnl配下のconfigファイルを取得する
-            src_jnl_dir = os.path.join(os.environ.get('PYTHONPATH'), "jnl")
-            g.applogger.info(f"[Trace] src_jnl_dir={src_jnl_dir}")
-            if os.path.isdir(src_jnl_dir):
-                config_jnl_file_list = [f for f in os.listdir(src_jnl_dir) if os.path.isfile(os.path.join(src_jnl_dir, f))]
-                g.applogger.info(f"[Trace] config_jnl_file_list={config_jnl_file_list}")
-                for config_jnl_file_name in config_jnl_file_list:
-                    if config_jnl_file_name != "config.json":
-                        driver_name = config_jnl_file_name.replace('_config.json', '')
-                        config_jnl_file_dict[driver_name] = config_jnl_file_name
-
         # 対象のワークスペースをループし、追加するドライバについてのデータベース処理（SQLを実行しテーブルやレコードを作成）を行う
         for workspace_data in workspace_data_list:
             workspace_id = workspace_data['WORKSPACE_ID']
@@ -750,15 +739,6 @@ def organization_update(organization_id, body=None):  # noqa: E501
                     g.applogger.info(f" [Trace] config_file_path={config_file_path}")
                     put_uploadfiles(config_file_path, src_dir, dest_dir)
                 g.applogger.info(" set initial material files")
-
-                # jnl配下のconfigファイルを取得し、インストール中のドライバと一致していたら実行する
-                if install_driver in config_jnl_file_dict:
-                    dest_dir = os.path.join(workspace_dir, "uploadfiles")
-                    config_jnl_file_path = os.path.join(src_jnl_dir, config_jnl_file_dict[install_driver])
-                    g.applogger.info(f" [Trace] dest_dir={dest_dir}")
-                    g.applogger.info(f" [Trace] config_jnl_file_path={config_jnl_file_path}")
-                    put_uploadfiles_jnl(ws_db, config_jnl_file_path, src_jnl_dir, dest_dir)
-                g.applogger.info(" set initial material jnl files")
 
                 # t_comn_workspace_db_infoテーブルのNO_INSTALL_DRIVERを更新する
                 ws_no_install_driver.remove(install_driver)

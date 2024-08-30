@@ -14,9 +14,8 @@
 
 import json
 
-from common_libs.common.exception import AppException
 from flask import g
-
+from common_libs.common.exception import AppException
 from .const import Const
 
 
@@ -78,6 +77,8 @@ class CollectionBase():
         event_data_dict["event_status"] = event_status_dict
         event_data_dict["event_name"] = event_name_dict
 
+        # 検索の際のバリデーション用に言語設定に合わせてカラム名を取得
+        # 11010401: オブジェクトID, 11010403: イベント収集日時, 11010404: イベント有効日時, 11010409: 利用イベント
         column_name_list = objdbca.table_select("T_COMN_MENU_COLUMN_LINK", "WHERE COLUMN_DEFINITION_ID IN ('{}', '{}', '{}', '{}')".format("11010401", "11010403", "11010404", "11010409"))
         for column_name in column_name_list:
             column_name_dict[column_name['COLUMN_DEFINITION_ID']] = column_name[column_name_lang]

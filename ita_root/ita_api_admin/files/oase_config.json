@@ -1,0 +1,9 @@
+{
+    "110102":
+    [
+        {"New.j2":["/template_file/1/old/1-2/","/template_file/1/"]},
+        {"Known(evaluated).j2":["/template_file/2/old/2-2/","/template_file/2/"]},
+        {"Known(timeout).j2":["/template_file/3/old/3-2/","/template_file/3/"]},
+        {"Undetected.j2":["/template_file/4/old/4-2/","/template_file/4/"]}
+    ]
+}

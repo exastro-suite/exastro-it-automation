@@ -40,7 +40,7 @@ def rest_count(objdbca, menu, filter_parameter):
     if objmenu.get_objtable() is False:
         log_msg_args = ["not menu or table"]
         api_msg_args = ["not menu or table"]
-        raise AppException("401-00001", log_msg_args, api_msg_args) # noqa: F405
+        raise AppException("401-00001", log_msg_args, api_msg_args)  # noqa: F405
 
     # MongoDB向けの処理はmodeで分岐させているため、対象のシートタイプの場合はmodeを上書き
     # 26 : MongoDBを利用するシートタイプ
@@ -53,7 +53,7 @@ def rest_count(objdbca, menu, filter_parameter):
         wsMongo = MONGOConnectWs()
         try:
             load_collection = loadCollection(wsMongo, objmenu)
-            status_code, result, msg = load_collection.rest_filter(filter_parameter, mode)
+            status_code, result, msg = load_collection.rest_filter(filter_parameter, mode, objdbca)
         finally:
             wsMongo.disconnect()
     else:
@@ -85,7 +85,7 @@ def rest_filter(objdbca, menu, filter_parameter, base64_file_flg=True):
     if objmenu.get_objtable() is False:
         log_msg_args = ["not menu or table"]
         api_msg_args = ["not menu or table"]
-        raise AppException("401-00001", log_msg_args, api_msg_args) # noqa: F405
+        raise AppException("401-00001", log_msg_args, api_msg_args)  # noqa: F405
 
     # MongoDB向けの処理はmodeで分岐させているため、対象のシートタイプの場合はmodeを上書き
     wsMongo = None
@@ -97,7 +97,7 @@ def rest_filter(objdbca, menu, filter_parameter, base64_file_flg=True):
         wsMongo = MONGOConnectWs()
         try:
             load_collection = loadCollection(wsMongo, objmenu)
-            status_code, result, msg = load_collection.rest_filter(filter_parameter, mode)
+            status_code, result, msg = load_collection.rest_filter(filter_parameter, mode, objdbca)
         finally:
             wsMongo.disconnect()
 

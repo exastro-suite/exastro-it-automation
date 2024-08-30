@@ -752,7 +752,7 @@ def organization_update(organization_id, body=None):  # noqa: E501
                 g.applogger.info(" set initial material files")
 
                 # jnl配下のconfigファイルを取得し、インストール中のドライバと一致していたら実行する
-                if install_driver in config_file_dict:
+                if install_driver in config_jnl_file_dict:
                     dest_dir = os.path.join(workspace_dir, "uploadfiles")
                     config_jnl_file_path = os.path.join(src_jnl_dir, config_jnl_file_dict[install_driver])
                     g.applogger.info(f" [Trace] dest_dir={dest_dir}")

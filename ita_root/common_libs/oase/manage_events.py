@@ -229,24 +229,24 @@ class ManageEvents:
             undetected = str(event['labels']['_exastro_undetected'])
             timeout = str(event["labels"]["_exastro_timeout"])
             localsts = str(event[oaseConst.DF_LOCAL_LABLE_NAME][oaseConst.DF_LOCAL_LABLE_STATUS])
-            status = "不明"
+            status = "Unknown"  # 不明
             if evaluated == '0' and undetected == '1' and timeout == '0':
-                status = "未知        "
+                status = "Undetected        "  # 未知
             elif evaluated == '0' and undetected == '0' and timeout == '1':
-                status = "タイムアウト"
+                status = "Timeout"  # タイムアウト
             elif evaluated == '0' and undetected == '0' and timeout == '0':
-                status = "今は対応不要"
+                status = "Currently no action required"  # 今は対応不要
             elif evaluated == '1' and undetected == '0' and timeout == '0':
-                status = "要対応      "
+                status = "Action required      "  # 要対応
             if localsts == oaseConst.DF_PROC_EVENT:
-                localsts = "処理対象:〇"
+                localsts = "Process target:〇"  # 処理対象:〇
             elif localsts == oaseConst.DF_POST_PROC_TIMEOUT_EVENT:
-                localsts = "処理対象　処理後タイムアウト:●"
+                localsts = "Process target. Post-process timeout:●"  # 処理対象　処理後タイムアウト:●
             elif localsts == oaseConst.DF_TIMEOUT_EVENT:
-                localsts = "タイムアウト"
+                localsts = "Timeout"  # タイムアウト
             elif localsts == oaseConst.DF_NOT_PROC_EVENT:
-                localsts = "対象外"
-            tmp_msg = "id:{} 状態:{}  _exastro_evaluated:{}  _exastro_undetected:{}  _exastro_timeout:{} local_status:{}".format(id, status, evaluated, undetected, timeout, localsts)
+                localsts = "Not target"  # 対象外
+            tmp_msg = "id:{} status:{}  _exastro_evaluated:{}  _exastro_undetected:{}  _exastro_timeout:{} local_status:{}".format(id, status, evaluated, undetected, timeout, localsts)
             g.applogger.info(self.addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     def addline_msg(self, msg=''):

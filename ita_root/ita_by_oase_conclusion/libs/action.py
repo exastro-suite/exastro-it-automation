@@ -169,7 +169,7 @@ class Action():
                 NotificationEventList.append(EventRow)
         # 通知処理（既知（判定済み））
         if len(NotificationEventList) > 0:
-            tmp_msg = g.appmsg.get_log_message("BKY-90008", ['Known (evaluated)'])
+            tmp_msg = g.appmsg.get_log_message("BKY-90008", ['Known(evaluated)'])
             g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             OASE.send(self.wsDb, NotificationEventList, {"notification_type": OASENotificationType.EVALUATED})
 

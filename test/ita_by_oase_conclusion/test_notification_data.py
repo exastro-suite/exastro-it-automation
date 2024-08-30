@@ -79,7 +79,7 @@ class test_const:
     # conductorインスタンスID
     #   「Conductor > Conductor一覧]画面で、Conductorを選択し、【詳細】
     #   「Conductor > Conductor編集/作業実行」画面で、【作業実行】
-    #   「Conductor > Conductor作業一覧]画面の「ConductorインスタンスID」
+    #   「Conductor > Conductor作業履歴]画面の「ConductorインスタンスID」
     CONDUCTOR_INSTANCE_ID = '5474cf36-fc00-458b-9efe-96f07d7caa97'
     # ログレベル(ERROR|INFO|DEBUG)
     LOG_LEVEL = 'INFO'

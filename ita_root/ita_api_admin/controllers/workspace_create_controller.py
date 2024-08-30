@@ -259,28 +259,6 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
                 put_uploadfiles(config_file_path, src_dir, dest_dir)
         g.applogger.info("set initial material files")
 
-        # set initial material jnl
-        src_dir = os.path.join(os.environ.get('PYTHONPATH'), "jnl")
-        g.applogger.info(f"[Trace] src_dir={src_dir}")
-        if os.path.isdir(src_dir):
-            config_file_list = [f for f in os.listdir(src_dir) if os.path.isfile(os.path.join(src_dir, f))]
-            g.applogger.info(f"[Trace] config_file_list={config_file_list}")
-
-            for config_file_name in config_file_list:
-                if config_file_name != "config.json":
-                    # 対象のconfigファイルがインストール必要なドライバのものか判断
-                    driver_name = config_file_name.replace('_config.json', '')
-                    if driver_name in no_install_driver:
-                        g.applogger.info(f"[Trace] SKIP CONFIG FILE NAME=[{config_file_name}] BECAUSE {driver_name} IS NOT INSTALLED.")
-                        continue
-
-                dest_dir = os.path.join(workspace_dir, "uploadfiles")
-                config_file_path = os.path.join(src_dir, config_file_name)
-                g.applogger.info(f"[Trace] dest_dir={dest_dir}")
-                g.applogger.info(f"[Trace] config_file_path={config_file_path}")
-                put_uploadfiles_jnl(ws_db, config_file_path, src_dir, dest_dir)
-        g.applogger.info("set initial material jnl files")
-
         # 初期データ設定(ansible)
         if (inistial_data_ansible_if is not None) and (len(inistial_data_ansible_if) != 0):
             ws_db.db_transaction_start()

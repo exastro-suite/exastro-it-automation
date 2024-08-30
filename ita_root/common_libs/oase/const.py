@@ -30,15 +30,14 @@ class oaseConst():
     DF_CON_METHOD_NOT_AGENT = "99"  # エージェント不使用
 
     # イベントの状態名
-    DF_EVENT_STATUS_NEW = "検討中"
-    DF_EVENT_STATUS_UNDETECTED = "未知"
-    DF_EVENT_STATUS_EVALUATED = "判定済み"
-    DF_EVENT_STATUS_TIMEOUT = "時間切れ"
-
+    DF_EVENT_STATUS_NEW = "1"
+    DF_EVENT_STATUS_UNDETECTED = "2"
+    DF_EVENT_STATUS_EVALUATED = "3"
+    DF_EVENT_STATUS_TIMEOUT = "4"
 
     # イベントのタイプ名
-    DF_EVENT_TYPE_EVENT = "イベント"
-    DF_EVENT_TYPE_CONCLUSION = "結論イベント"
+    DF_EVENT_TYPE_EVENT = "1"
+    DF_EVENT_TYPE_CONCLUSION = "2"
 
     # イベントデータに一時的に追加する項目定期
     # 親ラベル

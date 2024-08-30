@@ -135,7 +135,7 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
                 timeout_notification_list.append(EventRow)
 
         if len(timeout_notification_list) > 0:
-            tmp_msg = g.appmsg.get_log_message("BKY-90008", ['Known (timeout)'])
+            tmp_msg = g.appmsg.get_log_message("BKY-90008", ['Known(timeout)'])
             g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             OASE.send(wsDb, timeout_notification_list, {"notification_type": OASENotificationType.TIMEOUT})
 

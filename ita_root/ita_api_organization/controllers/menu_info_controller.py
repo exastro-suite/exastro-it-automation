@@ -187,7 +187,7 @@ def get_search_candidates(organization_id, workspace_id, menu, column):  # noqa:
             menu_record = menu_record[0]
             menu_table_link_record = menu_table_link_record[0]
 
-            data = menu_info.collect_search_candidates_from_mongodb(wsMongo, column, menu_record, menu_table_link_record)
+            data = menu_info.collect_search_candidates_from_mongodb(wsMongo, column, menu_record, menu_table_link_record, objdbca)
 
         else:
             # 対象項目のプルダウン検索候補一覧を取得

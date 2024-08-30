@@ -14,10 +14,13 @@
 
 import datetime
 import json
-
+from flask import g
+import re
 from bson.objectid import ObjectId
-from common_libs.oase.const import oaseConst
+
+from common_libs.common.exception import AppException
 from common_libs.common.mongoconnect.collection_base import CollectionBase
+from common_libs.oase.const import oaseConst
 
 
 class LabeledEventCollection(CollectionBase):
@@ -63,56 +66,201 @@ class LabeledEventCollection(CollectionBase):
 
         return tmp_item_name
 
-    def _create_search_value(self, collection_item_name, value):
-        tmp_value = super()._create_search_value(collection_item_name, value)
+    def _create_search_value(self, collection_item_name, value, event_data_dict, column_name_dict=None):
+        # tmp_value = super()._create_search_value(collection_item_name, value)
+        tmp_value_list = []
+        if collection_item_name == "_id":
+            try:
+                tmp_value = ObjectId(value)
+            except Exception:
+                msg_tmp = {0: {}}
+                # ObjectId: Only exact match search is possible for object ID. (Input value:{})
+                msg_tmp[0][column_name_dict["11010401"]] = [g.appmsg.get_api_message("499-01824", [value])]
+                msg = json.dumps(msg_tmp, ensure_ascii=False)
+                raise AppException("499-00201", [msg], [msg])
+            return tmp_value
 
-        if collection_item_name == "labels._exastro_fetched_time":
-            return int(datetime.datetime.strptime(tmp_value, '%Y/%m/%d %H:%M:%S').timestamp())
+        elif collection_item_name in ["labels._exastro_fetched_time", "labels._exastro_end_time"]:
+            # 日付形式のチェック
+            # Noneまたは空文字の場合はエラー
+            if value is None or len(value) == 0:
+                retBool = False
+            # YYYY/MM/DD hh:mm:ssの場合OK
+            elif re.match(r'^[0-9]{4}/(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01]) ([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$', value) is not None:
+                retBool = True
+                format = '%Y/%m/%d %H:%M:%S'
+            # YYYY/MM/DD hh:mmの場合OK
+            elif re.match(r'^[0-9]{4}/(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01]) ([01][0-9]|2[0-3]):[0-5][0-9]$', value) is not None:
+                retBool = True
+                format = '%Y/%m/%d %H:%M'
+            # YYYY/MM/DD hhの場合OK
+            elif re.match(r'^[0-9]{4}/(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01]) ([01][0-9]|2[0-3])$', value) is not None:
+                retBool = True
+                format = '%Y/%m/%d %H'
+            # YYYY/MM/DDの場合OK
+            elif re.match(r'^[0-9]{4}/(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01])$', value) is not None:
+                retBool = True
+                format = '%Y/%m/%d'
+            else:
+                retBool = False
 
-        if collection_item_name == "labels._exastro_end_time":
-            return int(datetime.datetime.strptime(tmp_value, '%Y/%m/%d %H:%M:%S').timestamp())
+            if retBool is False:
+                msg_tmp = {0: {}}
+                if collection_item_name == "labels._exastro_fetched_time":
+                    # Fetched time: The value format (YYYY/MM/DD hh:mm:ss) is invalid.( input value: {} )
+                    msg_tmp[0][column_name_dict["11010403"]] = [g.appmsg.get_api_message("MSG-00002", ['YYYY/MM/DD hh:mm:ss', value])]
+                else:
+                    # End time: The value format (YYYY/MM/DD hh:mm:ss) is invalid.( input value: {} )
+                    msg_tmp[0][column_name_dict["11010404"]] = [g.appmsg.get_api_message("MSG-00002", ['YYYY/MM/DD hh:mm:ss', value])]
+                msg = json.dumps(msg_tmp, ensure_ascii=False)
+                raise AppException("499-00201", [msg], [msg])
+
+            return int(datetime.datetime.strptime(value, format).timestamp())
+
+        elif collection_item_name == "exastro_events":
+            try:
+                # ["ObjectId('xxxxxxxxxxxxxxxxxxxxxxxx')"] の場合OK
+                if re.match(re.compile(r'''^\["ObjectId\('[a-zA-Z0-9-_]{24}[a-zA-Z0-9-_\[\]"'\(\) ,]*'\)"\]$'''), value):
+                    tmp_value = json.loads(value)
+                # "ObjectId('xxxxxxxxxxxxxxxxxxxxxxxx')" の場合OK
+                elif re.match(re.compile(r'''^"ObjectId\('[a-zA-Z0-9-_]{24}[a-zA-Z0-9-_\[\]"'\(\) ,]*'\)"$'''), value):
+                    tmp_value = '[{}]'.format(value)
+                    # tmp_value = '[' + value + ']'
+                    tmp_value = json.loads(tmp_value)
+                # ObjectId('xxxxxxxxxxxxxxxxxxxxxxxx') の場合OK
+                elif re.match(re.compile(r'''^ObjectId\('[a-zA-Z0-9-_]{24}'\)$'''), value):
+                    tmp_value = '["{}"]'.format(value)
+                    # tmp_value = '["' + value + '"]'
+                    tmp_value = json.loads(tmp_value)
+                else:
+                    value = value.replace(" ", "")
+                    value_list = value.split(',')
+                    for value in value_list:
+                        # xxxxxxxxxxxxxxxxxxxxxxxx の場合OK
+                        if re.match(re.compile(r"^[a-zA-Z0-9-_]{24}$"), value):
+                            tmp_value = "ObjectId('{}')".format(value)
+                            # tmp_value = 'ObjectId(' + "'" + value + "'" + ')'
+                            tmp_value_list.append(tmp_value)
+                        else:
+                            raise Exception
+                    tmp_value_str = json.dumps(tmp_value_list)
+                    tmp_value = json.loads(tmp_value_str)
+            except Exception:
+                msg_tmp = {0: {}}
+                # Please search in the format of object ID.
+                msg_tmp[0][column_name_dict["11010409"]] = [g.appmsg.get_api_message("499-01825")]
+                msg = json.dumps(msg_tmp, ensure_ascii=False)
+                raise AppException("499-00201", [msg], [msg])
+
+            return tmp_value
+
+        elif collection_item_name in ["labels._exastro_event_collection_settings_id", "labels._exastro_rule_name"]:
+            return value
+
+        event_status_dict = event_data_dict['event_status']
+        event_name_dict = event_data_dict['event_name']
 
         if collection_item_name == "labels._exastro_timeout":
-            if value == oaseConst.DF_EVENT_STATUS_TIMEOUT:  # 時間切れ
+            if value in event_status_dict[oaseConst.DF_EVENT_STATUS_TIMEOUT]:  # 時間切れ
                 return "1"
             else:
                 return "0"
 
-        if collection_item_name == "labels._exastro_evaluated":
-            if value == oaseConst.DF_EVENT_STATUS_EVALUATED:  # 判定済み
+        elif collection_item_name == "labels._exastro_evaluated":
+            if value in event_status_dict[oaseConst.DF_EVENT_STATUS_EVALUATED]:  # 判定済み
                 return "1"
             else:
                 return "0"
 
-        if collection_item_name == "labels._exastro_undetected":
-            if value == oaseConst.DF_EVENT_STATUS_UNDETECTED:  # 未知
+        elif collection_item_name == "labels._exastro_undetected":
+            if value in event_status_dict[oaseConst.DF_EVENT_STATUS_UNDETECTED]:  # 未知
                 return "1"
             else:
                 return "0"
 
-        if collection_item_name == "labels._exastro_type":
-            if value == oaseConst.DF_EVENT_TYPE_EVENT:  # イベント
-                return "event"
-            elif value == oaseConst.DF_EVENT_TYPE_CONCLUSION:  # 結論イベント
+        elif collection_item_name == "labels._exastro_type":
+            if value == event_name_dict[oaseConst.DF_EVENT_TYPE_CONCLUSION]:  # 結論イベント
                 return "conclusion"
-
-        if collection_item_name == "exastro_events":
-            return ObjectId(tmp_value)
+            elif value == event_name_dict[oaseConst.DF_EVENT_TYPE_EVENT]:  # イベント
+                return "event"
 
         return tmp_value
 
-    def _create_separated_supported_search_value(self, rest_key_name, type, value):
+    def _create_search_value_list(self, collection_item_name, value, event_data_dict, column_name_dict=None):
+        # tmp_value = super()._create_search_value(collection_item_name, value)
+        if collection_item_name == "_id":
+            try:
+                tmp_value = ObjectId(value)
+            except Exception:
+                msg_tmp = {0: {}}
+                # ObjectId: Only exact match search is possible for object ID. (Input value:{})
+                msg_tmp[0][column_name_dict["11010401"]] = [g.appmsg.get_api_message("499-01824", [value])]
+                msg = json.dumps(msg_tmp, ensure_ascii=False)
+                raise AppException("499-00201", [msg], [msg])
+            return tmp_value
+
+        elif collection_item_name in ["labels._exastro_fetched_time", "labels._exastro_end_time"]:
+            # 日付形式のチェック
+            # Noneまたは空文字の場合はエラー
+            if value is None or len(value) == 0:
+                retBool = False
+            # YYYY/MM/DD hh:mm:ssの場合OK
+            elif re.match(r'^[0-9]{4}/(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01]) ([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$', value) is not None:
+                retBool = True
+                format = '%Y/%m/%d %H:%M:%S'
+            else:
+                retBool = False
+
+            if retBool is False:
+                msg_tmp = {0: {}}
+                if collection_item_name == "labels._exastro_fetched_time":
+                    # Fetched time: The value format (YYYY/MM/DD hh:mm:ss) is invalid.( input value: {} )
+                    msg_tmp[0][column_name_dict["11010403"]] = [g.appmsg.get_api_message("MSG-00002", ['YYYY/MM/DD hh:mm:ss', value])]
+                else:
+                    # End time: The value format (YYYY/MM/DD hh:mm:ss) is invalid.( input value: {} )
+                    msg_tmp[0][column_name_dict["11010404"]] = [g.appmsg.get_api_message("MSG-00002", ['YYYY/MM/DD hh:mm:ss', value])]
+                msg = json.dumps(msg_tmp, ensure_ascii=False)
+                raise AppException("499-00201", [msg], [msg])
+
+            return int(datetime.datetime.strptime(value, format).timestamp())
+
+        elif collection_item_name == "exastro_events":
+            try:
+                # ["ObjectId('xxxxxxxxxxxxxxxxxxxxxxxx')"] の場合OK
+                tmp_value = json.loads(value)
+            except Exception:
+                msg_tmp = {0: {}}
+                # Please search in the format of object ID.
+                msg_tmp[0][column_name_dict["11010409"]] = [g.appmsg.get_api_message("499-01825")]
+                msg = json.dumps(msg_tmp, ensure_ascii=False)
+                raise AppException("499-00201", [msg], [msg])
+
+            return tmp_value
+
+        elif collection_item_name in ["labels._exastro_event_collection_settings_id", "labels._exastro_rule_name"]:
+            return value
+
+        elif collection_item_name == "labels._exastro_type":
+            event_name_dict = event_data_dict['event_name']
+            if value == event_name_dict[oaseConst.DF_EVENT_TYPE_EVENT]:  # イベント
+                return "event"
+            elif value == event_name_dict[oaseConst.DF_EVENT_TYPE_CONCLUSION]:  # 結論イベント
+                return "conclusion"
+
+        return value
+
+    def _create_separated_supported_search_value(self, rest_key_name, type, value, event_data_dict):
         # _exastro_event_statusにLISTが指定された場合$orを使用する必要があるため個別対応とした
         if rest_key_name == "_exastro_event_status" and type == "LIST":
             tmp_list: list = value
             if len(tmp_list) == 1:
 
-                return self.__create_exastro_event_status_search_value(tmp_list[0])
+                return self.__create_exastro_event_status_search_value(tmp_list[0], event_data_dict)
 
             elif len(tmp_list) > 1:
                 result_list = []
                 for item in tmp_list:
-                    result_list.append(self.__create_exastro_event_status_search_value(item))
+                    result_list.append(self.__create_exastro_event_status_search_value(item, event_data_dict))
 
                 return {"$or": result_list}
 
@@ -126,53 +274,63 @@ class LabeledEventCollection(CollectionBase):
 
         return {rest_key_name: value}
 
-    def __create_exastro_event_status_search_value(self, item):
-        if item == oaseConst.DF_EVENT_STATUS_NEW:  # 検討中
+    def __create_exastro_event_status_search_value(self, item, event_data_dict):
+        event_status_dict = event_data_dict['event_status']
+
+        if item == event_status_dict[oaseConst.DF_EVENT_STATUS_NEW]:  # 検討中
             return {
                 "labels._exastro_timeout": "0",
                 "labels._exastro_evaluated": "0",
                 "labels._exastro_undetected": "0"
             }
 
-        elif item == oaseConst.DF_EVENT_STATUS_TIMEOUT:  # 時間切れ
+        elif item == event_status_dict[oaseConst.DF_EVENT_STATUS_TIMEOUT]:  # 時間切れ
             return {
                 "labels._exastro_timeout": "1",
                 "labels._exastro_evaluated": "0",
                 "labels._exastro_undetected": "0"
             }
 
-        elif item == oaseConst.DF_EVENT_STATUS_EVALUATED:  # 判定済み
+        elif item == event_status_dict[oaseConst.DF_EVENT_STATUS_EVALUATED]:  # 判定済み
             return {
                 "labels._exastro_timeout": "0",
                 "labels._exastro_evaluated": "1",
                 "labels._exastro_undetected": "0"
             }
 
-        elif item == oaseConst.DF_EVENT_STATUS_UNDETECTED:  # 未知
+        elif item == event_status_dict[oaseConst.DF_EVENT_STATUS_UNDETECTED]:  # 未知
             return {
                 "labels._exastro_timeout": "0",
                 "labels._exastro_evaluated": "0",
                 "labels._exastro_undetected": "1"
             }
         else:
-            return {}
+            return {
+                "labels._exastro_timeout": "2",
+                "labels._exastro_evaluated": "2",
+                "labels._exastro_undetected": "2"
+            }
 
-    def _format_result_value(self, item):
+    def _format_result_value(self, item, event_data_dict):
         format_item = super()._format_result_value(item)
+
+        # # イベント履歴用のイベント状態, イベント種別を取得（言語対応）
+        event_status_dict = event_data_dict['event_status']
+        event_name_dict = event_data_dict['event_name']
 
         # イベント状態の判定で使用するマップ。
         # 判定する値は左から_exastro_timeout, _exastro_evaluated, _exastro_undetectedの順に文字列結合する想定。
         event_status_map = {
-            "000": oaseConst.DF_EVENT_STATUS_NEW,  # 検討中
-            "001": oaseConst.DF_EVENT_STATUS_UNDETECTED,  # 未知
-            "010": oaseConst.DF_EVENT_STATUS_EVALUATED,  # 判定済み
-            "100": oaseConst.DF_EVENT_STATUS_TIMEOUT  # 時間切れ
+            "000": event_status_dict[oaseConst.DF_EVENT_STATUS_NEW],  # 検討中
+            "001": event_status_dict[oaseConst.DF_EVENT_STATUS_UNDETECTED],  # 未知
+            "010": event_status_dict[oaseConst.DF_EVENT_STATUS_EVALUATED],  # 判定済み
+            "100": event_status_dict[oaseConst.DF_EVENT_STATUS_TIMEOUT]  # 時間切れ
         }
 
         # イベント種別の判定で使用するマップ
         event_type_map = {
-            "event": oaseConst.DF_EVENT_TYPE_EVENT,
-            "conclusion": oaseConst.DF_EVENT_TYPE_CONCLUSION
+            "event": event_name_dict[oaseConst.DF_EVENT_TYPE_EVENT],  # イベント
+            "conclusion": event_name_dict[oaseConst.DF_EVENT_TYPE_CONCLUSION]  # 結論イベント
         }
 
         # labels配下の特定項目は一段上に引き上げる必要がある。

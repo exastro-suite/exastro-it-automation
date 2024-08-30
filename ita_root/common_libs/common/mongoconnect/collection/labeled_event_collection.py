@@ -16,11 +16,11 @@ import datetime
 import json
 from flask import g
 import re
-from common_libs.common.exception import AppException
-
 from bson.objectid import ObjectId
-from common_libs.oase.const import oaseConst
+
+from common_libs.common.exception import AppException
 from common_libs.common.mongoconnect.collection_base import CollectionBase
+from common_libs.oase.const import oaseConst
 
 
 class LabeledEventCollection(CollectionBase):
@@ -74,6 +74,7 @@ class LabeledEventCollection(CollectionBase):
                 tmp_value = ObjectId(value)
             except Exception:
                 msg_tmp = {0: {}}
+                # ObjectId: Only exact match search is possible for object ID. (Input value:{})
                 msg_tmp[0][column_name_dict["11010401"]] = [g.appmsg.get_api_message("499-01824", [value])]
                 msg = json.dumps(msg_tmp, ensure_ascii=False)
                 raise AppException("499-00201", [msg], [msg])
@@ -106,8 +107,10 @@ class LabeledEventCollection(CollectionBase):
             if retBool is False:
                 msg_tmp = {0: {}}
                 if collection_item_name == "labels._exastro_fetched_time":
+                    # Fetched time: The value format (YYYY/MM/DD hh:mm:ss) is invalid.( input value: {} )
                     msg_tmp[0][column_name_dict["11010403"]] = [g.appmsg.get_api_message("MSG-00002", ['YYYY/MM/DD hh:mm:ss', value])]
                 else:
+                    # End time: The value format (YYYY/MM/DD hh:mm:ss) is invalid.( input value: {} )
                     msg_tmp[0][column_name_dict["11010404"]] = [g.appmsg.get_api_message("MSG-00002", ['YYYY/MM/DD hh:mm:ss', value])]
                 msg = json.dumps(msg_tmp, ensure_ascii=False)
                 raise AppException("499-00201", [msg], [msg])
@@ -144,6 +147,7 @@ class LabeledEventCollection(CollectionBase):
                     tmp_value = json.loads(tmp_value_str)
             except Exception:
                 msg_tmp = {0: {}}
+                # Please search in the format of object ID.
                 msg_tmp[0][column_name_dict["11010409"]] = [g.appmsg.get_api_message("499-01825")]
                 msg = json.dumps(msg_tmp, ensure_ascii=False)
                 raise AppException("499-00201", [msg], [msg])
@@ -189,6 +193,7 @@ class LabeledEventCollection(CollectionBase):
                 tmp_value = ObjectId(value)
             except Exception:
                 msg_tmp = {0: {}}
+                # ObjectId: Only exact match search is possible for object ID. (Input value:{})
                 msg_tmp[0][column_name_dict["11010401"]] = [g.appmsg.get_api_message("499-01824", [value])]
                 msg = json.dumps(msg_tmp, ensure_ascii=False)
                 raise AppException("499-00201", [msg], [msg])
@@ -209,8 +214,10 @@ class LabeledEventCollection(CollectionBase):
             if retBool is False:
                 msg_tmp = {0: {}}
                 if collection_item_name == "labels._exastro_fetched_time":
+                    # Fetched time: The value format (YYYY/MM/DD hh:mm:ss) is invalid.( input value: {} )
                     msg_tmp[0][column_name_dict["11010403"]] = [g.appmsg.get_api_message("MSG-00002", ['YYYY/MM/DD hh:mm:ss', value])]
                 else:
+                    # End time: The value format (YYYY/MM/DD hh:mm:ss) is invalid.( input value: {} )
                     msg_tmp[0][column_name_dict["11010404"]] = [g.appmsg.get_api_message("MSG-00002", ['YYYY/MM/DD hh:mm:ss', value])]
                 msg = json.dumps(msg_tmp, ensure_ascii=False)
                 raise AppException("499-00201", [msg], [msg])
@@ -223,6 +230,7 @@ class LabeledEventCollection(CollectionBase):
                 tmp_value = json.loads(value)
             except Exception:
                 msg_tmp = {0: {}}
+                # Please search in the format of object ID.
                 msg_tmp[0][column_name_dict["11010409"]] = [g.appmsg.get_api_message("499-01825")]
                 msg = json.dumps(msg_tmp, ensure_ascii=False)
                 raise AppException("499-00201", [msg], [msg])

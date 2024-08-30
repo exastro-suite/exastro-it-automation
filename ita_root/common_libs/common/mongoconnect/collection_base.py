@@ -78,7 +78,7 @@ class CollectionBase():
         event_data_dict["event_status"] = event_status_dict
         event_data_dict["event_name"] = event_name_dict
 
-        column_name_list = objdbca.table_select("T_COMN_MENU_COLUMN_LINK", "WHERE COLUMN_DEFINITION_ID = '{}' OR COLUMN_DEFINITION_ID = '{}' OR COLUMN_DEFINITION_ID = '{}' OR COLUMN_DEFINITION_ID = '{}'".format("11010401", "11010403", "11010404", "11010409"))
+        column_name_list = objdbca.table_select("T_COMN_MENU_COLUMN_LINK", "WHERE COLUMN_DEFINITION_ID IN ('{}', '{}', '{}', '{}')".format("11010401", "11010403", "11010404", "11010409"))
         for column_name in column_name_list:
             column_name_dict[column_name['COLUMN_DEFINITION_ID']] = column_name[column_name_lang]
 

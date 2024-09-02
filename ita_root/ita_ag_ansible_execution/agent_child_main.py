@@ -108,7 +108,8 @@ def agent_child():
     if not status_code == 200:
         g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
         raise AppException()
-    for execution_no, value in response.items():
+    target_executions = response["data"] if isinstance(response["data"], dict) else {}
+    for execution_no, value in target_executions.items():
         dir_path = value["in_out_data"]
         conductor_dir_path = value["conductor_data"]
         with open(dir_path, 'wb') as f:

@@ -28,8 +28,6 @@ from libs.util import *
 
 
 def agent_main(organization_id, workspace_id, loop_count, interval):
-    count = 1
-    max = int(loop_count)
 
     # 環境変数の取得
     baseUrl = os.environ["EXASTRO_URL"]
@@ -46,12 +44,30 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
         refresh_token=refresh_token
     )
 
-    # バージョン通知API実行
-    status_code, response = post_agent_version(organization_id, workspace_id, exastro_api)
-    if not status_code == 200:
-        # g.applogger.info(f"バージョン通知に失敗しました。")
-        g.applogger.info(g.appmsg.get_log_message("MSG-10981"))
-        g.applogger.info(f"post_agent_version: {status_code=} {response=}")
+    # バージョン通知API実行(バージョン違いの場合、6回ループで処理終了)
+    count = 1
+    max = 6
+    while True:
+        status_code, response = post_agent_version(organization_id, workspace_id, exastro_api)
+        if not status_code == 200:
+            # g.applogger.info(f"バージョン通知に失敗しました。")
+            g.applogger.info(g.appmsg.get_log_message("MSG-10981"))
+            g.applogger.info(f"post_agent_version: {status_code=} {response=}")
+
+        target_data = response["data"] if isinstance(response["data"], dict) else {}
+        # バージョンが同じならループ抜ける
+        if target_data["version_diff"] is True:
+            break
+
+        # インターバルを置いて、max数までループする
+        time.sleep(interval)
+        if count >= max:
+            return
+        else:
+            count = count + 1
+
+    count = 1
+    max = int(loop_count)
 
     while True:
         print("")

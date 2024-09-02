@@ -15,6 +15,7 @@
 import subprocess
 import tarfile
 import datetime
+import glob
 
 from flask import g
 from common_libs.common import *  # noqa: F403
@@ -139,17 +140,69 @@ def get_execution_status(objdbca, execution_no, body):
     if driver_id == "legacy":
         ret = objdbca.table_select(t_ansl_exec_sts_inst, 'WHERE  EXECUTION_NO=%s', [execution_no])
         for record in ret:
+            current_status = record.get["STATUS"]
             result["SCRAM_STATUS"] = record.get["ABORT_EXECUTE_FLAG"]
+        # ステータス更新制御
+        # 実行中(遅延)→実行中にならないように
+        if current_status == AnscConst.PROCESS_DELAYED and status == AnscConst.PROCESSING:
+            return result
+        # 完了→実行中、実行中(遅延)、完了(異常)、想定外エラー、緊急停止にならないように
+        if current_status == AnscConst.COMPLETE and status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED, AnscConst.FAILURE, AnscConst.EXCEPTION, AnscConst.SCRAM]:
+            return result
+        # 完了(異常)→実行中、実行中(遅延)、完了、想定外エラー、緊急停止にならないように
+        if current_status == AnscConst.FAILURE and status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED, AnscConst.COMPLETE, AnscConst.EXCEPTION, AnscConst.SCRAM]:
+            return result
+        # 想定外エラー→実行中、実行中(遅延)、完了、完了(異常)、緊急停止にならないように
+        if current_status == AnscConst.EXCEPTION and status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED, AnscConst.COMPLETE, AnscConst.FAILURE, AnscConst.SCRAM]:
+            return result
+        # 緊急停止→実行中、実行中(遅延)、完了、完了(異常)、想定外エラーにならないように
+        if current_status == AnscConst.SCRAM and status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED, AnscConst.COMPLETE, AnscConst.FAILURE, AnscConst.EXCEPTION]:
+            return result
+        # ステータス更新
         objdbca.table_update(t_ansl_exec_sts_inst, data_list, "EXECUTION_NO")
     elif driver_id == "pioneer":
         ret = objdbca.table_select(t_ansp_exec_sts_inst, 'WHERE  EXECUTION_NO=%s', [execution_no])
         for record in ret:
             result["SCRAM_STATUS"] = record.get["ABORT_EXECUTE_FLAG"]
+        # ステータス更新制御
+        # 実行中(遅延)→実行中にならないように
+        if current_status == AnscConst.PROCESS_DELAYED and status == AnscConst.PROCESSING:
+            return result
+        # 完了→実行中、実行中(遅延)、完了(異常)、想定外エラー、緊急停止にならないように
+        if current_status == AnscConst.COMPLETE and status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED, AnscConst.FAILURE, AnscConst.EXCEPTION, AnscConst.SCRAM]:
+            return result
+        # 完了(異常)→実行中、実行中(遅延)、完了、想定外エラー、緊急停止にならないように
+        if current_status == AnscConst.FAILURE and status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED, AnscConst.COMPLETE, AnscConst.EXCEPTION, AnscConst.SCRAM]:
+            return result
+        # 想定外エラー→実行中、実行中(遅延)、完了、完了(異常)、緊急停止にならないように
+        if current_status == AnscConst.EXCEPTION and status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED, AnscConst.COMPLETE, AnscConst.FAILURE, AnscConst.SCRAM]:
+            return result
+        # 緊急停止→実行中、実行中(遅延)、完了、完了(異常)、想定外エラーにならないように
+        if current_status == AnscConst.SCRAM and status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED, AnscConst.COMPLETE, AnscConst.FAILURE, AnscConst.EXCEPTION]:
+            return result
+        # ステータス更新
         objdbca.table_update(t_ansp_exec_sts_inst, data_list, "EXECUTION_NO")
     elif driver_id == "legacy_role":
         ret = objdbca.table_select(t_ansr_exec_sts_inst, 'WHERE  EXECUTION_NO=%s', [execution_no])
         for record in ret:
             result["SCRAM_STATUS"] = record.get["ABORT_EXECUTE_FLAG"]
+        # ステータス更新制御
+        # 実行中(遅延)→実行中にならないように
+        if current_status == AnscConst.PROCESS_DELAYED and status == AnscConst.PROCESSING:
+            return result
+        # 完了→実行中、実行中(遅延)、完了(異常)、想定外エラー、緊急停止にならないように
+        if current_status == AnscConst.COMPLETE and status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED, AnscConst.FAILURE, AnscConst.EXCEPTION, AnscConst.SCRAM]:
+            return result
+        # 完了(異常)→実行中、実行中(遅延)、完了、想定外エラー、緊急停止にならないように
+        if current_status == AnscConst.FAILURE and status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED, AnscConst.COMPLETE, AnscConst.EXCEPTION, AnscConst.SCRAM]:
+            return result
+        # 想定外エラー→実行中、実行中(遅延)、完了、完了(異常)、緊急停止にならないように
+        if current_status == AnscConst.EXCEPTION and status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED, AnscConst.COMPLETE, AnscConst.FAILURE, AnscConst.SCRAM]:
+            return result
+        # 緊急停止→実行中、実行中(遅延)、完了、完了(異常)、想定外エラーにならないように
+        if current_status == AnscConst.SCRAM and status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED, AnscConst.COMPLETE, AnscConst.FAILURE, AnscConst.EXCEPTION]:
+            return result
+        # ステータス更新
         objdbca.table_update(t_ansr_exec_sts_inst, data_list, "EXECUTION_NO")
 
     objdbca.db_commit()
@@ -274,7 +327,7 @@ def get_populated_data_path(objdbca, organization_id, workspace_id, execution_no
     return gztar_path
 
 
-def update_result_data(organization_id, workspace_id, execution_no, body):
+def update_result(organization_id, workspace_id, execution_no, parameters, file_path):
     """
         通知されたファイルの更新
         ARGS:
@@ -286,121 +339,74 @@ def update_result_data(organization_id, workspace_id, execution_no, body):
     """
 
     # ドライバーID
-    driver_id = body["driver_id"]
+    driver_id = parameters["driver_id"]
     # ステータス
-    status = body["status"]
-
-    # outディレクトリ相当のtarデータ
-    out_base64_data = body["out_tar_data"]
-    parameters_base64_data = body["parameters_tar_data"]
-    parameters_file_base64_data = body["parameters_file_tar_data"]
-    conductor_base64_data = body["conductor_tar_data"]
-
-    print("---------------------")
-    print(body)
+    status = parameters["status"]
 
     if driver_id == "legacy":
-        from_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "in/project"
-        tmp_out_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "/out"
-        tmp_parameters_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "/parameters"
-        tmp_parameters_file_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "/parameters_file"
-        tmp_conductor_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "/conductor"
+        out_directory_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "/out"
+        in_directory_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "/in/project"
+        conductor_directory_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "/conductor"
+        tmp_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "/"
     elif driver_id == "pioneer":
-        from_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/pioneer/" + execution_no + "in/project"
-        tmp_out_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/pioneer/" + execution_no + "/out"
-        tmp_parameters_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/pioneer/" + execution_no + "/parameters"
-        tmp_parameters_file_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/pioneer/" + execution_no + "/parameters_file"
-        tmp_conductor_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/pioneer/" + execution_no + "/conductor"
+        out_directory_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/pioneer/" + execution_no + "/out"
+        in_directory_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/pioneer/" + execution_no + "/in/project"
+        conductor_directory_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/pioneer/" + execution_no + "/conductor"
+        tmp_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/pioneer/" + execution_no + "/"
     else:
-        from_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy_role/" + execution_no + "in/project"
-        tmp_out_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy_role/" + execution_no + "/out"
-        tmp_parameters_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy_role/" + execution_no + "/parameters"
-        tmp_parameters_file_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy_role/" + execution_no + "/parameters_file"
-        tmp_conductor_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy_role/" + execution_no + "/conductor"
+        out_directory_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy_role/" + execution_no + "/out"
+        in_directory_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy_role/" + execution_no + "/in/project"
+        conductor_directory_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy_role/" + execution_no + "/conductor"
+        tmp_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy_role/" + execution_no + "/"
 
-    # outディレクトリ更新
-    # 作業ディレクトリ作成
-    if not os.path.exists(tmp_out_path):
-        os.mkdir(tmp_out_path)
-        os.chmod(tmp_out_path, 0o777)
+    for file_key, record_file_paths in file_path.items():
+        if not os.path.exists(tmp_path + file_key):
+            os.mkdir(tmp_path + file_key)
+        with tarfile.open(record_file_paths, 'r:gz') as tar:
+            tar.extractall(path=tmp_path + file_key)
 
-    # outディレクトリのtarファイル展開
-    decode_tar_file(out_base64_data, tmp_out_path)
-
-    # 展開したファイルの一覧を取得
-    lst = os.listdir(tmp_out_path)
-
-    if status == AnscConst.PROCESSING or status == AnscConst.PROCESS_DELAYED:
-        for file_name in lst:
-            if file_name == "error.log" or file_name == "exec.log":
-                # 通知されたファイルで上書き
-                shutil.move(tmp_out_path + "/" + file_name, from_path)
-    elif status == AnscConst.COMPLETE or status == AnscConst.FAILURE:
-        for file_name in lst:
-            # 通知されたファイルで上書き
-            shutil.move(tmp_out_path + "/" + file_name, from_path)
-
-    # parametersディレクトリ更新
-    # 作業ディレクトリ作成
-    if not os.path.exists(tmp_parameters_path):
-        os.mkdir(tmp_parameters_path)
-        os.chmod(tmp_parameters_path, 0o777)
-
-    # parametersディレクトリのtarファイル展開
-    decode_tar_file(parameters_base64_data, tmp_parameters_path)
-
-    # 展開したファイルの一覧を取得
-    lst = os.listdir(tmp_parameters_path)
-
-    if status == AnscConst.COMPLETE or status == AnscConst.FAILURE:
-        for dir_name in lst:
+        # outディレクトリ更新
+        if file_key == "out_tar_data":
             # 展開したファイルの一覧を取得
-            lst = os.listdir(tmp_parameters_path + "/" + dir_name)
-            for file_name in lst:
+            lst = glob.glob(tmp_path + file_key + "/**", recursive=True)
+            file_list = []
+            for path in lst:
+                if os.path.isfile(path):
+                    file_list.append(path)
+
+            for file_path in file_list:
                 # 通知されたファイルで上書き
-                shutil.move(tmp_parameters_path + "/" + dir_name + "/" + file_name, from_path)
+                shutil.move(file_path, out_directory_path + "/" + os.path.basename(file_path))
 
-    # parameters_fileディレクトリ更新
-    # 作業ディレクトリ作成
-    if not os.path.exists(tmp_parameters_file_path):
-        os.mkdir(tmp_parameters_file_path)
-        os.chmod(tmp_parameters_file_path, 0o777)
+        # parameters, parameters_fileディレクトリ更新
+        if file_key == "parameters_tar_data" or file_key == "parameters_file_tar_data":
+            # ステータスが完了、完了(異常)の場合
+            if status == AnscConst.COMPLETE or status == AnscConst.FAILURE:
+                # 展開したファイルの一覧を取得
+                lst = glob.glob(tmp_path + file_key + "/**", recursive=True)
+                file_list = {}
+                for path in lst:
+                    if os.path.isfile(path):
+                        path = Path(path)
+                        parent_dirctory = str(path.parent)
+                        file_list[parent_dirctory] = os.path.basename(path)
+                for dir_name, file_name in file_list.items():
+                    # 通知されたファイルで上書き
+                    shutil.move(dir_name + "/" + file_name, in_directory_path + "/" + os.path.basename(dir_name) + "/" + os.path.basename(file_name))
 
-    # parametersディレクトリのtarファイル展開
-    decode_tar_file(parameters_file_base64_data, tmp_parameters_file_path)
+        # conductorディレクトリ更新
+        if file_key == "conductor_tar_data":
+            if status == AnscConst.COMPLETE or status == AnscConst.FAILURE:
+                # 展開したファイルの一覧を取得
+                lst = glob.glob(tmp_path + file_key + "/**", recursive=True)
+                file_list = []
+                for path in lst:
+                    if os.path.isfile(path):
+                        file_list.append(path)
 
-    # 展開したファイルの一覧を取得
-    lst = os.listdir(tmp_parameters_file_path)
-
-    if status == AnscConst.COMPLETE or status == AnscConst.FAILURE:
-        for dir_name in lst:
-            # 展開したファイルの一覧を取得
-            lst = os.listdir(tmp_parameters_file_path + "/" + dir_name)
-            for file_name in lst:
-                # 通知されたファイルで上書き
-                shutil.move(tmp_parameters_file_path + "/" + dir_name + "/" + file_name, from_path)
-
-    # conductorディレクトリ更新
-    # 作業ディレクトリ作成
-    if not os.path.exists(tmp_conductor_path):
-        os.mkdir(tmp_conductor_path)
-        os.chmod(tmp_conductor_path, 0o777)
-
-    # conductorディレクトリのtarファイル展開
-    decode_tar_file(conductor_base64_data, tmp_conductor_path)
-
-    # 展開したファイルの一覧を取得
-    lst = os.listdir(tmp_conductor_path)
-
-    if status == AnscConst.COMPLETE or status == AnscConst.FAILURE:
-        for file_name in lst:
-            # 通知されたファイルで上書き
-            shutil.move(tmp_conductor_path + "/" + file_name, from_path)
-
-    # 作業ディレクトリ削除
-    shutil.rmtree(tmp_out_path)
-    shutil.rmtree(tmp_parameters_path)
-    shutil.rmtree(tmp_conductor_path)
+                for file_path in file_list:
+                    # 通知されたファイルで上書き
+                    shutil.move(file_path, conductor_directory_path + "/" + os.path.basename(file_path))
 
 def get_agent_version(objdbca, body):
     """
@@ -419,15 +425,28 @@ def get_agent_version(objdbca, body):
     # トランザクション開始
     objdbca.db_transaction_start()
 
-    # エージェント管理へ登録
-    data_list = {
-        "AGENT_NAME": agent_name,
-        "VERSION": version,
-        "DISUSE_FLAG": "0"
-    }
-    ret = objdbca.table_insert("T_ANSC_AGENT", data_list, "ROW_ID", False)
-    if ret is False:
-        return False
+    where = "AGENT_NAME = %s AND DISUSE_FLAG = '0'"
+    ret = objdbca.table_select("T_ANSC_AGENT", where, [agent_name])
+
+    if len(ret) == 0:
+        # エージェント管理へ登録
+        data_list = {
+            "AGENT_NAME": agent_name,
+            "VERSION": version,
+            "DISUSE_FLAG": "0"
+        }
+        ret = objdbca.table_insert("T_ANSC_AGENT", data_list, "ROW_ID", False)
+        if ret is False:
+            return False
+    else:
+        # エージェント管理へ登録
+        data_list = {
+            "AGENT_NAME": agent_name,
+            "VERSION": version,
+        }
+        ret = objdbca.table_insert("T_ANSC_AGENT", data_list, "AGENT_NAME")
+        if ret is False:
+            return False
 
     objdbca.db_commit()
 
@@ -467,8 +486,6 @@ def update_ansible_agent_status_file(organization_id, workspace_id, body):
     # 作業状態通知受信ファイルを空更新する
     for execution_no in legacy:
         file_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "/out/ansible_agent_status_file.txt"
-        print("--------------")
-        print(file_path)
         if os.path.exists(file_path):
             # 元の日時を取得
             sr = os.stat(path=file_path)
@@ -537,3 +554,83 @@ def decode_tar_file(base64_data, dir_path):
         raise app_exception(msg)
 
     return base64_data
+
+def create_file_path(connexion_request, tmp_path, execution_no):
+    """
+        base64をtarファイルに変換する
+        ARGS:
+            connexion_request: connexion.request
+            tmp_path: ファイル格納先
+            execution_no: 作業番号
+        RETRUN:
+            bool, parameters, file_paths
+    """
+
+    parameters = []
+    file_paths = {}
+
+    # get parameters
+    if connexion_request.is_json:
+        # application/json
+        parameters = connexion_request.get_json()
+    elif connexion_request.form:
+        # multipart/form-data, application/x-www-form-urlencoded
+        # check key : json_parameters
+        if 'json_parameters' in connexion_request.form:
+            # json.loads
+            try:
+                parameters = json.loads(connexion_request.form['json_parameters'])
+            except Exception as e:   # noqa: E722
+                print_exception_msg(e)
+
+                parameters = connexion_request.form['json_parameters']
+                if isinstance(parameters, (list, dict)) is False:
+                    return False, [], file_paths
+
+            if parameters["driver_id"] == "legacy":
+                tmp_path = tmp_path + "/driver/ansible/legacy/" + execution_no
+            elif parameters["driver_id"] == "pioneer":
+                tmp_path = tmp_path + "/driver/ansible/pioneer" + execution_no
+            elif parameters["driver_id"] == "legacy_role":
+                tmp_path = tmp_path + "/driver/ansible/legacy_role" + execution_no
+
+            # set parameter['file'][rest_name]
+            if connexion_request.files:
+                # ファイルが保存できる容量があるか確認
+                file_size = connexion_request.headers.get("Content-Length")
+                file_size_mb = f"{int(file_size)/(1024*1024):,.6f} MB"
+                storage = storage_base()
+                can_save, free_space = storage.validate_disk_space(file_size)
+                if can_save is False:
+                    status_code = "499-00222"
+                    log_msg_args = [file_size_mb]
+                    api_msg_args = [file_size_mb]
+                    raise AppException(status_code, log_msg_args, api_msg_args)
+
+                for _file_key in connexion_request.files:
+                    _file_data = connexion_request.files[_file_key]
+                    file_name = _file_data.filename
+                    if not os.path.exists(tmp_path):
+                        os.makedirs(tmp_path)
+                    file_path = os.path.join(tmp_path, file_name)
+                    file_paths[_file_key] = file_path
+
+                    f = open(file_path, 'wb')
+                    while True:
+                        # fileの読み込み
+                        buf = _file_data.stream.read(1000000)
+                        if len(buf) == 0:
+                            break
+                        # yield buf
+                        # fileの書き込み
+                        f.write(buf)
+                    f.close()
+
+        else:
+            return False, [], file_paths
+
+        # check parameters
+        if len(parameters) == 0:
+            return False, [], file_paths
+
+    return True, parameters, file_paths

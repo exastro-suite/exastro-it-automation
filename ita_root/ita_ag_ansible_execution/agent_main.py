@@ -28,27 +28,46 @@ from libs.util import *
 
 
 def agent_main(organization_id, workspace_id, loop_count, interval):
-    count = 1
-    max = int(loop_count)
 
     # 環境変数の取得
     baseUrl = os.environ["EXASTRO_URL"]
+    username = os.environ.get("EXASTRO_USERNAME")
+    password = os.environ.get("EXASTRO_PASSWORD")
     refresh_token = os.environ['EXASTRO_REFRESH_TOKEN']
     agent_name = os.environ['AGENT_NAME']
 
     # ITAのAPI呼び出しモジュール
     exastro_api = Exastro_API(
         base_url=baseUrl,
+        username=username,
+        password=password,
         refresh_token=refresh_token
     )
-    exastro_api.get_access_token(organization_id, refresh_token)
 
-    # バージョン通知API実行
-    status_code, response = post_agent_version(organization_id, workspace_id, exastro_api)
-    if not status_code == 200:
-        # g.applogger.info(f"バージョン通知に失敗しました。")
-        g.applogger.info(g.appmsg.get_log_message("MSG-10981"))
-        g.applogger.info(f"post_agent_version: {status_code=} {response=}")
+    # バージョン通知API実行(バージョン違いの場合、6回ループで処理終了)
+    count = 1
+    max = 6
+    while True:
+        status_code, response = post_agent_version(organization_id, workspace_id, exastro_api)
+        if not status_code == 200:
+            # g.applogger.info(f"バージョン通知に失敗しました。")
+            g.applogger.info(g.appmsg.get_log_message("MSG-10981"))
+            g.applogger.info(f"post_agent_version: {status_code=} {response=}")
+
+        target_data = response["data"] if isinstance(response["data"], dict) else {}
+        # バージョンが同じならループ抜ける
+        if target_data["version_diff"] is True:
+            break
+
+        # インターバルを置いて、max数までループする
+        time.sleep(interval)
+        if count >= max:
+            return
+        else:
+            count = count + 1
+
+    count = 1
+    max = int(loop_count)
 
     while True:
         print("")
@@ -183,26 +202,8 @@ def child_process_exist_check(organization_id, workspace_id, execution_no, drive
         # ステータスファイルがあるか確認
         # status_file_path = "/storage/" + organization_id + "/" + workspace_id + "/ag_ansible_execution/status/" + execution_no
         status_file_path = f"/storage/{organization_id}/{workspace_id}/ag_ansible_execution/status/{driver_id}/{execution_no}"
-        if os.path.isfile(status_file_path):
-            # ステータスファイルに書き込まれている再起動回数取得
-            obj = storage_read()
-            obj.open(status_file_path)
-            reboot_cnt = obj.read()
-            obj.close()
-
-            # 再起動回数が10回を超える場合、再起動しない
-            if int(reboot_cnt) <= 10:
-                # ステータスファイルに再起動回数書き込み
-                obj = storage_write()
-                obj.open(status_file_path, 'w')
-                obj.write(str(int(reboot_cnt) + 1))
-                obj.close()
-
-                # 子プロ再起動
-                command = ["python3", "agent_child.py", organization_id, workspace_id, execution_no, driver_id]
-                cp = subprocess.Popen(command)  # noqa: F841
-            else:
-                g.applogger.info(g.appmsg.get_log_message("MSG-10056", [execution_no, workspace_id]))
+        if not os.path.isfile(status_file_path):
+            g.applogger.info(g.appmsg.get_log_message("MSG-10056", [execution_no, workspace_id]))
 
         return False
 

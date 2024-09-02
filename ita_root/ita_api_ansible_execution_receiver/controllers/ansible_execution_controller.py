@@ -115,8 +115,8 @@ def get_populated_data(organization_id, workspace_id, execution_no, driver_id): 
         objdbca.db_disconnect()
     return result_data,
 
-@api_filter_download_file
-def update_result_data(organization_id, workspace_id, execution_no, body):  # noqa: E501
+@api_filter
+def update_result_data(organization_id, workspace_id, execution_no, body=None, **kwargs):  # noqa: E501
     """update_result_data
 
     結果データ更新 # noqa: E501
@@ -134,16 +134,13 @@ def update_result_data(organization_id, workspace_id, execution_no, body):  # no
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
     try:
-        # bodyのjson形式チェック
-        check_request_body()
+        # 各Driverパス
+        tmp_path = "/tmp/" + organization_id + "/" + workspace_id
 
-        if connexion.request.is_json:
-            body = dict(connexion.request.get_json())
-            check_request_body_key(body, 'driver_id')  # keyが無かったら400-00002エラー
-            check_request_body_key(body, 'status')
+        retBool, parameters, file_paths = create_file_path(connexion.request, tmp_path, execution_no)
 
         # 作業実行関連のメニューの基本情報および項目情報の取得
-        result_data = update_result_data(organization_id, workspace_id, execution_no, body)
+        result_data = update_result(organization_id, workspace_id, execution_no, parameters, file_paths)
         # result_data.setdefault("menu_info", tmp_data[0]["data"])
     except Exception as e:
         raise e

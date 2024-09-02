@@ -31,16 +31,12 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
 
     # 環境変数の取得
     baseUrl = os.environ["EXASTRO_URL"]
-    username = os.environ.get("EXASTRO_USERNAME")
-    password = os.environ.get("EXASTRO_PASSWORD")
     refresh_token = os.environ['EXASTRO_REFRESH_TOKEN']
     agent_name = os.environ['AGENT_NAME']
 
     # ITAのAPI呼び出しモジュール
     exastro_api = Exastro_API(
         base_url=baseUrl,
-        username=username,
-        password=password,
         refresh_token=refresh_token
     )
 

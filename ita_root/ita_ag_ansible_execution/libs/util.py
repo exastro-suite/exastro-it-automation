@@ -29,6 +29,7 @@ import mimetypes
 
 from common_libs.common.exception import AppException
 from common_libs.common.util import arrange_stacktrace_format
+from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 
 
 def get_agent_id(organization_id, workspace_id, agent_name):
@@ -284,3 +285,78 @@ def post_upload_execution_files(organization_id, workspace_id, exastro_api, exec
     finally:
         pass
     return status_code, response
+
+def arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, status):
+    """
+        作業状態通知(ファイル): 結果データ受け取り・更新 : agent_child_main
+    Args:
+        driver_id : ドライバーID
+        execution_no: 作業番号
+        status: ステータス
+    Returns:
+        out_gztar_path: outディレクトリtarファイルパス
+        parameters_gztar_path: parametersディレクトリtarファイルパス
+        parameters_file_gztar_path: parameters_fileディレクトリtarファイルパス
+        conductor_gztar_path: conductor_fileディレクトリtarファイルパス
+    """
+
+    # outディレクトリパス
+    out_dir_path = "/exastro/share_volume_dir/" + driver_id + "/" + execution_no + "/out"
+    # inディレクトリパス
+    in_dir_path = "/exastro/project_dir/" + driver_id + "/" + execution_no + "/project"
+    # conductorディレクトリパス
+    conductor_dir_path = "/exastro/share_volume_dir/" + driver_id + "/" + execution_no + "/conductor"
+    # 作業用ディレクトリパス
+    tmp_dir_path = "/tmp/" +  organization_id + "/" + workspace_id + "/driver/ansible/" + driver_id + "/" + execution_no
+
+    # ステータスが実行中、実行中(遅延)の場合
+    if status == AnscConst.PROCESSING or status == AnscConst.PROCESS_DELAYED:
+        out_tar_dir_path = tmp_dir_path + "/out"
+        out_gztar_path = out_tar_dir_path + ".tar.gz"
+        if os.path.exists(out_tar_dir_path):
+            os.mkdir(out_tar_dir_path)
+
+        # ログファイルをtarファイルにまとめる
+        shutil.move(out_dir_path + "/exec.log", out_tar_dir_path)
+        shutil.move(out_dir_path + "/error.log", out_tar_dir_path)
+        with tarfile.open(out_gztar_path, "w:gz") as tar:
+            tar.add(out_tar_dir_path, arcname="")
+
+    # ステータスが完了、完了(異常)の場合
+    elif status == AnscConst.COMPLETE or status == AnscConst.FAILURE:
+        out_tar_dir_path = tmp_dir_path + "/out"
+        out_gztar_path = out_tar_dir_path + ".tar.gz"
+        parameters_tar_dir_path = tmp_dir_path + "/parameter"
+        parameters_gztar_path = parameters_tar_dir_path + ".tar.gz"
+        parameters_file_tar_dir_path = tmp_dir_path + "/parameters_file"
+        parameters_file_gztar_path = parameters_file_tar_dir_path + "/parameter"
+        if os.path.exists(out_tar_dir_path):
+            os.mkdir(out_tar_dir_path)
+        if os.path.exists(parameters_tar_dir_path):
+            os.mkdir(parameters_tar_dir_path)
+        if os.path.exists(parameters_file_gztar_path):
+            os.mkdir(parameters_file_gztar_path)
+
+        # outディレクトリをtarファイルにまとめる
+        shutil.move(out_dir_path, tmp_dir_path)
+        with tarfile.open(out_gztar_path, "w:gz") as tar:
+            tar.add(out_tar_dir_path, arcname="")
+
+        # parameters・parameters_fileをtarファイルにまとめる
+        shutil.move(in_dir_path + "/parameter", parameters_tar_dir_path)
+        shutil.move(in_dir_path + "/parameters_file", parameters_file_tar_dir_path)
+        with tarfile.open(parameters_gztar_path, "w:gz") as tar:
+            tar.add(parameters_tar_dir_path, arcname="")
+        with tarfile.open(parameters_file_gztar_path + ".tar.gz", "w:gz") as tar:
+            tar.add(parameters_file_tar_dir_path, arcname="")
+
+        # conductorディレクトリをtarファイルにまとめる
+        conductor_tar_dir_path = tmp_dir_path + "/conductor"
+        conductor_gztar_path = conductor_tar_dir_path + ".tar.gz"
+        if os.path.exists(conductor_tar_dir_path):
+            os.remove(conductor_tar_dir_path)
+        shutil.move(conductor_dir_path, conductor_tar_dir_path)
+        with tarfile.open(conductor_gztar_path, "w:gz") as tar:
+            tar.add(conductor_tar_dir_path, arcname="")
+
+    return out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path

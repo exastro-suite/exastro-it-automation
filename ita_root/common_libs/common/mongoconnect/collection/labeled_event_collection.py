@@ -121,17 +121,17 @@ class LabeledEventCollection(CollectionBase):
             try:
                 # ["ObjectId('xxxxxxxxxxxxxxxxxxxxxxxx')"] の場合OK
                 if re.match(re.compile(r'''^\["ObjectId\('[a-zA-Z0-9-_]{24}[a-zA-Z0-9-_\[\]"'\(\) ,]*'\)"\]$'''), value):
-                    tmp_value = json.loads(value)
+                    tmp_value_list = json.loads(value)
                 # "ObjectId('xxxxxxxxxxxxxxxxxxxxxxxx')" の場合OK
                 elif re.match(re.compile(r'''^"ObjectId\('[a-zA-Z0-9-_]{24}[a-zA-Z0-9-_\[\]"'\(\) ,]*'\)"$'''), value):
                     tmp_value = '[{}]'.format(value)
-                    # tmp_value = '[' + value + ']'
-                    tmp_value = json.loads(tmp_value)
+                    tmp_value_list = json.loads(tmp_value)
                 # ObjectId('xxxxxxxxxxxxxxxxxxxxxxxx') の場合OK
-                elif re.match(re.compile(r'''^ObjectId\('[a-zA-Z0-9-_]{24}'\)$'''), value):
-                    tmp_value = '["{}"]'.format(value)
-                    # tmp_value = '["' + value + '"]'
-                    tmp_value = json.loads(tmp_value)
+                elif re.match(re.compile(r'''^ObjectId\('[a-zA-Z0-9-_]{24}[a-zA-Z0-9-_\[\]"'\(\) ,]*'\)$'''), value):
+                    value = value.replace(" ", "")
+                    value_list = value.split(',')
+                    for value in value_list:
+                        tmp_value_list.append(value)
                 else:
                     value = value.replace(" ", "")
                     value_list = value.split(',')
@@ -139,12 +139,9 @@ class LabeledEventCollection(CollectionBase):
                         # xxxxxxxxxxxxxxxxxxxxxxxx の場合OK
                         if re.match(re.compile(r"^[a-zA-Z0-9-_]{24}$"), value):
                             tmp_value = "ObjectId('{}')".format(value)
-                            # tmp_value = 'ObjectId(' + "'" + value + "'" + ')'
                             tmp_value_list.append(tmp_value)
                         else:
                             raise Exception
-                    tmp_value_str = json.dumps(tmp_value_list)
-                    tmp_value = json.loads(tmp_value_str)
             except Exception:
                 msg_tmp = {0: {}}
                 # Please search in the format of object ID.
@@ -152,7 +149,7 @@ class LabeledEventCollection(CollectionBase):
                 msg = json.dumps(msg_tmp, ensure_ascii=False)
                 raise AppException("499-00201", [msg], [msg])
 
-            return tmp_value
+            return tmp_value_list
 
         elif collection_item_name in ["labels._exastro_event_collection_settings_id", "labels._exastro_rule_name"]:
             return value

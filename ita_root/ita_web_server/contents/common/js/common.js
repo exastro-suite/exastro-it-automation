@@ -267,7 +267,6 @@ fetch: function( url, token, method = 'GET', data, option = {} ) {
 
             fetch( u, init ).then(function( response ){
                 if ( errorCount === 0 ) {
-
                     if( response.ok ) {
                         // 200の場合
                         response.json().then(function( result ){
@@ -292,9 +291,12 @@ fetch: function( url, token, method = 'GET', data, option = {} ) {
                 }
             }).catch(function( error ){
                 if ( error.name !== 'AbortError') {
+                    console.error( error );
                     if ( errorCount === 0 ) {
                         reject( error );
                     }
+                } else {
+                    resolve();
                 }
             });
         });
@@ -716,7 +718,7 @@ getFile: function( endPoint, method = 'GET', data, option = {} ) {
                         fileName = decodeURIComponent(matches[1].replace(/['"]/g, ''));
                     }
                 }
-                
+
                 /*
                 // データ読込
                 const chunks = [];

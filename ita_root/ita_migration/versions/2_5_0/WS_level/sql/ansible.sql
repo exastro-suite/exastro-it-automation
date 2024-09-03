@@ -348,3 +348,38 @@ CREATE TABLE T_ANSC_BASE_IMAGE_OS_TYPE
     LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
     PRIMARY KEY(ROW_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+-- -------------------------------------------------------
+-- - ▼パラメータシート 実行環境バラメータ定義
+-- -------------------------------------------------------
+CREATE TABLE `T_CMDB_f7a294e8-a7a7-4d03-8a76-e2f910db55d7`
+(
+    ROW_ID                          VARCHAR(40),                                -- ROW_ID
+    DATA_JSON                       LONGTEXT,                                   -- 項目定義JOSN
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(ROW_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+CREATE TABLE `T_CMDB_f7a294e8-a7a7-4d03-8a76-e2f910db55d7_JNL`
+(
+    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
+    JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
+    JOURNAL_ACTION_CLASS            VARCHAR(8),                                 -- 履歴用変更種別
+    ROW_ID                          VARCHAR(40),                                -- ROW_ID
+    DATA_JSON                       LONGTEXT,                                   -- 項目定義JOSN
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(JOURNAL_SEQ_NO)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+-- -------------------------------------------------------
+-- - ▼パラメータシート 実行環境バラメータ定義　INDEX定義
+-- -------------------------------------------------------
+CREATE INDEX `IND_T_CMDB_f7a294e8-a7a7-4d03-8a76-e2f910db55d7_01` ON `T_CMDB_f7a294e8-a7a7-4d03-8a76-e2f910db55d7`(DISUSE_FLAG);
+

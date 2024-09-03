@@ -1,0 +1,6 @@
+collections:
+  - amazon.aws
+  - azure.azcollection
+  - vmware.vmware
+  - cisco.ios
+  - f5networks.f5_bigip

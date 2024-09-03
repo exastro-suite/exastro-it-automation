@@ -719,47 +719,49 @@ getFile: function( endPoint, method = 'GET', data, option = {} ) {
                     }
                 }
 
-                /*
-                // データ読込
-                const chunks = [];
-                let receivedLength = 0;
-                while( true ) {
-                    const { done, value } = await reader.read();
-                    if ( done === true ) {
-                        break;
-                    } else {
-                        chunks.push( value );
-                        receivedLength += value.length;
-                        progressModal.progress( receivedLength, contentLength );
+                // オリジンプライベートファイルシステム（OPFS）が使えるかで処理を分岐する
+                let fileData;
+                if ( navigator.storage !== undefined ) {
+                    // オリジンプライベートファイルシステム
+                    const root = await navigator.storage.getDirectory();
+                    const fileHandle = await root.getFileHandle( fileName, { create: true });
+                    const wstream = await fileHandle.createWritable();
+                    const writer = wstream.getWriter();
+
+                    // データ読込
+                    let receivedLength = 0;
+                    while( true ) {
+                        const { done, value } = await reader.read();
+                        if ( done === true ) {
+                            await writer.close();
+                            break;
+                        } else {
+                            await writer.write( value );
+                            receivedLength += value.length;
+                            progressModal.progress( receivedLength, contentLength );
+                        }
                     }
-                }
-                // ファイルに変換
-                const blob = new Blob( chunks );
-                const fileData = new File([blob], fileName, { type: blob.type });
-                */
 
-                // オリジンプライベートファイルシステム
-                const root = await navigator.storage.getDirectory();
-                const fileHandle = await root.getFileHandle( fileName, { create: true });
-                const wstream = await fileHandle.createWritable();
-                const writer = wstream.getWriter();
-
-                // データ読込
-                let receivedLength = 0;
-                while( true ) {
-                    const { done, value } = await reader.read();
-                    if ( done === true ) {
-                        await writer.close();
-                        break;
-                    } else {
-                        await writer.write( value );
-                        receivedLength += value.length;
-                        progressModal.progress( receivedLength, contentLength );
+                    // ファイル取得
+                    fileData = await fileHandle.getFile();
+                } else {
+                    // データ読込
+                    const chunks = [];
+                    let receivedLength = 0;
+                    while( true ) {
+                        const { done, value } = await reader.read();
+                        if ( done === true ) {
+                            break;
+                        } else {
+                            chunks.push( value );
+                            receivedLength += value.length;
+                            progressModal.progress( receivedLength, contentLength );
+                        }
                     }
+                    // ファイルに変換
+                    const blob = new Blob( chunks );
+                    fileData = new File([blob], fileName, { type: blob.type });
                 }
-
-                // ファイル取得
-                const fileData = await fileHandle.getFile();
 
                 // バーのtransition-duration: .2s;分ずらす
                 setTimeout(function(){

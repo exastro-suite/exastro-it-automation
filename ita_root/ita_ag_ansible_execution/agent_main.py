@@ -39,6 +39,7 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
         base_url=baseUrl,
         refresh_token=refresh_token
     )
+    exastro_api.get_access_token(organization_id, refresh_token)
 
     # バージョン通知API実行(バージョン違いの場合、6回ループで処理終了)
     count = 1
@@ -395,21 +396,58 @@ def get_working_child_process(organization_id, workspace_id):
     return ps_count, working_ps_list, error_ps_list
 
 def update_error_executions(organization_id, workspace_id, exastro_api, error_ps_list):
+    """エラー対象の作業状態通知送信
+        結果ファイル更新＋ステータス更新
+    Args:
+        organization_id (_type_): organization_id
+        workspace_id (_type_): workspace_id
+        exastro_api: Exastro_API()
+        error_ps_list: : { driver_id : []}
+    """
+
+    status_id = AnscConst.FAILURE # 完了(異常)
     for driver_id , del_execution_list in error_ps_list.items():
         for del_execution in del_execution_list:
             status_update = True
             # 作業状態通知送信: 異常時
             # 作業状態通知(ファイル)
-            status_id = AnscConst.FAILURE
+
+            # 各種tar＋ファイルパス取得
+            out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path\
+                = arcive_tar_data(organization_id, workspace_id, driver_id, del_execution, status_id, mode="parent")
+            g.applogger.debug(f"{out_gztar_path=}, {parameters_gztar_path=}, {parameters_file_gztar_path=}, {conductor_gztar_path=}")
+
             body = {
                 "driver_id": driver_id,
                 "status": status_id,
             }
+
             form_data = {
-                "json_parameters": json.dumps(body),
-                #####
-                #####
+                "json_parameters": json.dumps(body)
             }
+
+            # form_dataへのtarデータ追加
+            if os.path.isfile(out_gztar_path):
+                form_data["out_tar_data"] =  (
+                    os.path.basename(out_gztar_path),
+                    open(out_gztar_path, "rb"),
+                    mimetypes.guess_type(out_gztar_path, False)[0])
+            if os.path.isfile(parameters_gztar_path):
+                form_data["parameters_tar_data"] =  (
+                    os.path.basename(parameters_gztar_path),
+                    open(parameters_gztar_path, "rb"),
+                    mimetypes.guess_type(parameters_gztar_path, False)[0])
+            if os.path.isfile(parameters_file_gztar_path):
+                form_data["parameters_file_tar_data"] =  (
+                    os.path.basename(parameters_file_gztar_path),
+                    open(parameters_file_gztar_path, "rb"),
+                    mimetypes.guess_type(parameters_file_gztar_path, False)[0])
+            if os.path.isfile(conductor_gztar_path):
+                form_data["conductor_tar_data"] =  (
+                    os.path.basename(conductor_gztar_path),
+                    open(conductor_gztar_path, "rb"),
+                    mimetypes.guess_type(conductor_gztar_path, False)[0])
+
             status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, del_execution, body, form_data=form_data)
             if not status_code == 200:
                 # g.applogger.info(f"作業状態通知(ファイル)に失敗しました。(execution={del_execution}, {status_id=})")

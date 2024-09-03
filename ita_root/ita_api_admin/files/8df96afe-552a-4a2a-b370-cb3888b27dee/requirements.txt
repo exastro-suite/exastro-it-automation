@@ -1,0 +1,7 @@
+pywinrm
+setuptools
+pexpect
+boto3
+paramiko
+boto
+certifi

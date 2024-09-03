@@ -980,8 +980,8 @@ INSERT INTO T_ANSC_EXECDEV_TEMPLATE_FILE_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIM
 -- ------------------------------------------------------------
 -- - ▲ 実行環境管理　初期登録データ
 -- ------------------------------------------------------------
-INSERT INTO T_ANSC_EXECDEV (ROW_ID,EXECUTION_ENVIRONMENT_NAME,BUILD_TYPE,TAG_NAME,EXECUTION_ENVIRONMENT_ID,TEMPLATE_ID,BASE_IMAGE_OS_TYPE,USER_NAME,PASSWORD,ATTACH_REPOSITORY,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(1,'~[Exastro standard] default','2','dfault','T_CMDB_f7a294e8-a7a7-4d03-8a76-e2f910db55d7,a2bfccfd-0a29-45cb-bc54-b48bf6f51d71','1','2',NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
-INSERT INTO T_ANSC_EXECDEV_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,ROW_ID,EXECUTION_ENVIRONMENT_NAME,BUILD_TYPE,TAG_NAME,EXECUTION_ENVIRONMENT_ID,TEMPLATE_ID,BASE_IMAGE_OS_TYPE,USER_NAME,PASSWORD,ATTACH_REPOSITORY,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(1,_____DATE_____,'INSERT',1,'~[Exastro standard] default','2','dfault','T_CMDB_f7a294e8-a7a7-4d03-8a76-e2f910db55d7,a2bfccfd-0a29-45cb-bc54-b48bf6f51d71','1','2',NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
+INSERT INTO T_ANSC_EXECDEV (ROW_ID,EXECUTION_ENVIRONMENT_NAME,BUILD_TYPE,TAG_NAME,EXECUTION_ENVIRONMENT_ID,TEMPLATE_ID,BASE_IMAGE_OS_TYPE,USER_NAME,PASSWORD,ATTACH_REPOSITORY,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(1,'~[Exastro standard] default','2','default','T_CMDB_f7a294e8-a7a7-4d03-8a76-e2f910db55d7,a2bfccfd-0a29-45cb-bc54-b48bf6f51d71','1','2',NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
+INSERT INTO T_ANSC_EXECDEV_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,ROW_ID,EXECUTION_ENVIRONMENT_NAME,BUILD_TYPE,TAG_NAME,EXECUTION_ENVIRONMENT_ID,TEMPLATE_ID,BASE_IMAGE_OS_TYPE,USER_NAME,PASSWORD,ATTACH_REPOSITORY,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(1,_____DATE_____,'INSERT',1,'~[Exastro standard] default','2','default','T_CMDB_f7a294e8-a7a7-4d03-8a76-e2f910db55d7,a2bfccfd-0a29-45cb-bc54-b48bf6f51d71','1','2',NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
 
 -- ------------------------------------------------------------
 -- - ▲ M017_実行環境構築方法マスタ
@@ -1145,3 +1145,77 @@ INSERT INTO T_MENU_REFERENCE_ITEM (REFERENCE_ID,LINK_ID,DISP_SEQ,COLUMN_CLASS,CO
 INSERT INTO T_MENU_REFERENCE_ITEM_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,REFERENCE_ID,LINK_ID,DISP_SEQ,COLUMN_CLASS,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,SENSITIVE_FLAG,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('6c860fc3-14bf-4fd5-bbc0-ae0243b1f15d',_____DATE_____,'INSERT','fe145954-6f69-4f18-b670-89284e210b36','53e2d4b1-d216-424c-811f-841ca734732b','40','9','bindep_file','bindep_file','bindep_file',NULL,'bindep_file',NULL,'0','0',NULL,NULL,NULL,'0',_____DATE_____,1);
 INSERT INTO T_MENU_REFERENCE_ITEM (REFERENCE_ID,LINK_ID,DISP_SEQ,COLUMN_CLASS,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,SENSITIVE_FLAG,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('b2da93c7-cc8d-47d3-aa32-95f196ff2240','53e2d4b1-d216-424c-811f-841ca734732b','70','9','galaxy_requirements_file','galaxy_requirements_file','galaxy_requirements_file',NULL,'galaxy_requirements_file',NULL,'0','0',NULL,NULL,NULL,'0',_____DATE_____,1);
 INSERT INTO T_MENU_REFERENCE_ITEM_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,REFERENCE_ID,LINK_ID,DISP_SEQ,COLUMN_CLASS,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,SENSITIVE_FLAG,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('98e86a21-6ee3-4c05-bf31-137db9ade7a4',_____DATE_____,'INSERT','b2da93c7-cc8d-47d3-aa32-95f196ff2240','53e2d4b1-d216-424c-811f-841ca734732b','70','9','galaxy_requirements_file','galaxy_requirements_file','galaxy_requirements_file',NULL,'galaxy_requirements_file',NULL,'0','0',NULL,NULL,NULL,'0',_____DATE_____,1);
+
+-- ----------------------------------------------------------
+-- - ▼機器一覧
+-- - 　　認証方式のポップに証明書認証(winrm)の説明追記
+-- ----------------------------------------------------------
+UPDATE SET T_COMN_MENU_COLUMN_LINK DESCRIPTION_JA = '・パスワード認証
+　ログインパスワードの入力が必須です。
+・鍵認証(パスフレーズなし)
+　ssh秘密鍵ファイルのアップロードが必須です。
+・鍵認証(パスフレーズあり)
+　ssh秘密鍵ファイルのアップロードと、パスフレーズの入力が必須です。
+・パスワード認証(winrm)
+　必要に応じてWinRM接続情報を入力します。
+・証明書認証(winrm)
+　winrm公開鍵ファイルとwinrm秘密鍵ファイルのアップロードが必須です。
+尚、パスワード認証(winrm)以外の認証方式の場合、機器側に以下の設定が必要です。
+ログインユーザの sudo 権限を NOPASSWD付で /etc/sudoers に設定する必要があります。',
+DESCRIPTION_EN='Select the authentication method when connecting to the device from Ansible.
+-Password authentication
+ login password is required.
+-Key authentication (no passphrase)
+ Uploading the ssh private key file is required.
+-Key authentication (with passphrase)
+ You must upload the ssh private key file and enter the passphrase.
+-Password authentication (winrm)
+ Enter the WinRM connection information as required.
+-Certificate Authentication (winrm)
+ upload the winrm public key file and the winrm private key file is required.
+For authentication methods other than password authentication (winrm), the following settings are required on the device side.
+The login user sudo privileges must be set to / etc / sudoers with his NOPASSWD.'
+WHERE COLUMN_DEFINITION_ID = '2010110';
+
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_JA = '・パスワード認証
+　ログインパスワードの入力が必須です。
+・鍵認証(パスフレーズなし)
+　ssh秘密鍵ファイルのアップロードが必須です。
+・鍵認証(パスフレーズあり)
+　ssh秘密鍵ファイルのアップロードと、パスフレーズの入力が必須です。
+・パスワード認証(winrm)
+　必要に応じてWinRM接続情報を入力します。
+・証明書認証(winrm)
+　winrm公開鍵ファイルとwinrm秘密鍵ファイルのアップロードが必須です。
+尚、パスワード認証(winrm)以外の認証方式の場合、機器側に以下の設定が必要です。
+ログインユーザの sudo 権限を NOPASSWD付で /etc/sudoers に設定する必要があります。',
+DESCRIPTION_EN='Select the authentication method when connecting to the device from Ansible.
+-Password authentication
+ login password is required.
+-Key authentication (no passphrase)
+ Uploading the ssh private key file is required.
+-Key authentication (with passphrase)
+ You must upload the ssh private key file and enter the passphrase.
+-Password authentication (winrm)
+ Enter the WinRM connection information as required.
+-Certificate Authentication (winrm)
+ upload the winrm public key file and the winrm private key file is required.
+For authentication methods other than password authentication (winrm), the following settings are required on the device side.
+The login user sudo privileges must be set to / etc / sudoers with his NOPASSWD.'
+WHERE COLUMN_DEFINITION_ID = '2010110';
+
+-- ----------------------------------------------------------
+-- - ▼Legcy作業管理
+-- - 　　オペレーションNo.をオペレーションIDに変更
+-- ----------------------------------------------------------
+UPDATE T_COMN_MENU_COLUMN_LINK SET COLUMN_NAME_JA = "ID", COLUMN_NAME_EN = "ID"  WHERE COLUMN_DEFINITION_ID = '2021018';
+-- ----------------------------------------------------------
+-- - ▼Pioneer作業管理
+-- - 　　オペレーションNo.をオペレーションIDに変更
+-- ----------------------------------------------------------
+UPDATE T_COMN_MENU_COLUMN_LINK SET COLUMN_NAME_JA = "ID", COLUMN_NAME_EN = "ID"  WHERE COLUMN_DEFINITION_ID = '2031218';
+-- ----------------------------------------------------------
+-- - ▼Legcy　Role作業管理
+-- - 　　オペレーションNo.をオペレーションIDに変更
+-- ----------------------------------------------------------
+UPDATE T_COMN_MENU_COLUMN_LINK SET COLUMN_NAME_JA = "ID", COLUMN_NAME_EN = "ID"  WHERE COLUMN_DEFINITION_ID = '2041218';

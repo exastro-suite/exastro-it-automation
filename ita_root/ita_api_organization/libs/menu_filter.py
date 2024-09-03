@@ -266,6 +266,7 @@ def check_filter_parameter(parameter):
 
     if parameter:
         accept_option = ["NORMAL", "LIST", "RANGE"]
+        enpty_accept_option = ["NORMAL"]
         str_accept_option = ','.join(accept_option)
         i = 0
         err_msg = ""
@@ -279,9 +280,9 @@ def check_filter_parameter(parameter):
                 # 検索条件の簡易チェック
                 if sc:
                     sc = sc if isinstance(sc, list) or isinstance(sc, dict) else str(sc)
-                    if len(sc) == 0 and sm in accept_option:
+                    if len(sc) == 0 and sm in accept_option and sm not in enpty_accept_option:
                         _base_msg += g.appmsg.get_api_message("MSG-00035", [json.dumps(sc)])
-                elif sm in accept_option:
+                elif sm in accept_option and sm not in enpty_accept_option:
                     _base_msg += g.appmsg.get_api_message("MSG-00035", [json.dumps(sc)])
 
                 # エラーメッセージ設定

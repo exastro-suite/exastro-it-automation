@@ -28,7 +28,7 @@ from common_libs.api import api_filter_admin
 from common_libs.common.dbconnect import *  # noqa: F403
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectOrg, MONGOConnectWs
 from common_libs.common.mongoconnect.const import Const as mongoConst
-from common_libs.common.util import ky_encrypt, ky_decrypt, get_timestamp, url_check, arrange_stacktrace_format, put_uploadfiles, put_uploadfiles_jnl
+from common_libs.common.util import ky_encrypt, ky_decrypt, get_timestamp, url_check, arrange_stacktrace_format, put_uploadfiles
 from common_libs.ansible_driver.classes.gitlab import GitLabAgent
 from common_libs.common.exception import AppException
 
@@ -650,9 +650,7 @@ def organization_update(organization_id, body=None):  # noqa: E501
         mongo_index_flg = True
 
         config_file_list = []
-        config_jnl_file_list = []
         config_file_dict = {}
-        config_jnl_file_dict = {}
         if len(add_drivers) != 0:
             # files配下のconfigファイルを取得する
             src_dir = os.path.join(os.environ.get('PYTHONPATH'), "files")

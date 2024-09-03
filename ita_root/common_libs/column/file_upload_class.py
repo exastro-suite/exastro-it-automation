@@ -95,7 +95,7 @@ class FileUploadColumn(Column):
                     upload_max_size = dict_valid.get('upload_max_size')
 
             # Organization毎のアップロードファイルサイズ上限取得
-            org_upload_file_size_limit = get_org_upload_file_size_limit()
+            org_upload_file_size_limit = get_org_upload_file_size_limit(g.get("ORGANIZATION_ID"))
 
             # 比較するアップロードファイルサイズ上限を設定
             if upload_max_size is None and org_upload_file_size_limit is None:

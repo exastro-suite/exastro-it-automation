@@ -732,7 +732,7 @@ def get_org_execution_limit(limit_key):
     return limit_list
 
 
-def get_org_upload_file_size_limit():
+def get_org_upload_file_size_limit(organization_id):
     """
     Organization毎のアップロードファイルサイズ上限取得
 
@@ -756,7 +756,7 @@ def get_org_upload_file_size_limit():
         }
 
         # API呼出
-        api_url = "http://{}:{}/internal-api/platform/limits".format(host_name, port)
+        api_url = "http://{}:{}/internal-api/{}/platform/limits".format(host_name, port, organization_id)
         request_response = requests.get(api_url, headers=header_para)
 
         response_data = json.loads(request_response.text)
@@ -765,12 +765,7 @@ def get_org_upload_file_size_limit():
             raise AppException('999-00005', [api_url, response_data])
 
         # Organization毎のアップロードファイルサイズ上限取得
-        org_upload_file_size_limit = None
-        for record in response_data['data']:
-            if g.ORGANIZATION_ID in record['organization_id']:
-                if limit_key in record["limits"]:
-                    org_upload_file_size_limit = record["limits"][limit_key]
-                    break
+        org_upload_file_size_limit = response_data["data"][limit_key]
 
         # gに値を設定しておく
         g.ORG_UPLOAD_FILE_SIZE_LIMIT = org_upload_file_size_limit

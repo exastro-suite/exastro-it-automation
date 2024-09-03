@@ -1234,7 +1234,7 @@ def file_upload_maximum_bytes_valid_before(objdbca, objtable, option):
         file_upload_maximum_bytes = option["entry_parameter"]["parameter"]["file_upload_maximum_bytes"]
 
         # Organization毎のアップロードファイルサイズ上限取得
-        org_upload_file_size_limit = get_org_upload_file_size_limit()
+        org_upload_file_size_limit = get_org_upload_file_size_limit(g.get("ORGANIZATION_ID"))
 
         if file_upload_maximum_bytes is not None and org_upload_file_size_limit is not None:
             if int(file_upload_maximum_bytes) > org_upload_file_size_limit:

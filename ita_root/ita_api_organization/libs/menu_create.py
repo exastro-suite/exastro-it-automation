@@ -402,7 +402,7 @@ def _collect_common_menu_create_data(objdbca):
             name_convert_list[column_name_ret] = column_name
 
     # Organization毎のアップロードファイルサイズ上限取得
-    org_upload_file_size_limit = get_org_upload_file_size_limit()
+    org_upload_file_size_limit = get_org_upload_file_size_limit(g.get("ORGANIZATION_ID"))
 
     common_data = {
         "column_class_list": column_class_list,

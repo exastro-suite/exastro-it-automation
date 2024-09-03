@@ -30,7 +30,7 @@ from common_libs.api import api_filter_admin, check_request_body_key
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectOrg, MONGOConnectWs
 from common_libs.common.mongoconnect.const import Const as mongoConst
 from common_libs.common.dbconnect import *  # noqa: F403
-from common_libs.common.util import ky_decrypt, ky_encrypt, get_timestamp, create_dirs, put_uploadfiles, put_uploadfiles_jnl, arrange_stacktrace_format
+from common_libs.common.util import ky_decrypt, ky_encrypt, get_timestamp, create_dirs, put_uploadfiles, arrange_stacktrace_format
 from libs.admin_common import initial_settings_ansible
 from common_libs.common.exception import AppException
 

@@ -39,28 +39,18 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
         base_url=baseUrl,
         refresh_token=refresh_token
     )
+    exastro_api.get_access_token(organization_id, refresh_token)
 
-    # バージョン通知API実行(バージョン違いの場合、6回ループで処理終了)
-    count = 1
-    max = 6
-    while True:
-        status_code, response = post_agent_version(organization_id, workspace_id, exastro_api)
-        if not status_code == 200:
-            # g.applogger.info(f"バージョン通知に失敗しました。")
-            g.applogger.info(g.appmsg.get_log_message("MSG-10981"))
-            g.applogger.info(f"post_agent_version: {status_code=} {response=}")
-
+    main_logic_execute = False
+    # バージョン通知API実行
+    status_code, response = post_agent_version(organization_id, workspace_id, exastro_api)
+    if not status_code == 200:
+        # g.applogger.info(f"バージョン通知に失敗しました。")
+        g.applogger.info(g.appmsg.get_log_message("MSG-10981"))
+        g.applogger.info(f"post_agent_version: {status_code=} {response=}")
+    else:
         target_data = response["data"] if isinstance(response["data"], dict) else {}
-        # バージョンが同じならループ抜ける
-        if target_data["version_diff"] is True:
-            break
-
-        # インターバルを置いて、max数までループする
-        time.sleep(interval)
-        if count >= max:
-            return
-        else:
-            count = count + 1
+        main_logic_execute = target_data.get("version_diff", False)
 
     count = 1
     max = int(loop_count)
@@ -70,7 +60,8 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
         print("")
 
         try:
-            main_logic(organization_id, workspace_id, exastro_api, baseUrl)
+            if main_logic_execute:
+                main_logic(organization_id, workspace_id, exastro_api, baseUrl)
         except AppException as e:  # noqa F405
             app_exception(e)
         except Exception as e:
@@ -168,6 +159,9 @@ def child_process_exist_check(organization_id, workspace_id, execution_no, drive
     time.sleep(0.05)
     child_process_3 = child_process_exist_check_ps()
 
+    # プロセス再起動上限値
+    child_process_retry_limit = int(os.getenv('CHILD_PROCESS_RETRY_LIMIT', 3))
+
     # 子プロ起動確認
     is_running = False
     # command = ["python3", "backyard/backyard_child_init.py", organization_id, workspace_id, execution_no]
@@ -198,8 +192,26 @@ def child_process_exist_check(organization_id, workspace_id, execution_no, drive
         # ステータスファイルがあるか確認
         # status_file_path = "/storage/" + organization_id + "/" + workspace_id + "/ag_ansible_execution/status/" + execution_no
         status_file_path = f"/storage/{organization_id}/{workspace_id}/ag_ansible_execution/status/{driver_id}/{execution_no}"
-        if not os.path.isfile(status_file_path):
-            g.applogger.info(g.appmsg.get_log_message("MSG-10056", [execution_no, workspace_id]))
+        if os.path.isfile(status_file_path):
+            # ステータスファイルに書き込まれている再起動回数取得
+            obj = storage_read()
+            obj.open(status_file_path)
+            reboot_cnt = obj.read()
+            obj.close()
+
+            # 再起動回数が10回を超える場合、再起動しない
+            if int(reboot_cnt) <= child_process_retry_limit:
+                # ステータスファイルに再起動回数書き込み
+                obj = storage_write()
+                obj.open(status_file_path, 'w')
+                obj.write(str(int(reboot_cnt) + 1))
+                obj.close()
+
+                # 子プロ再起動
+                command = ["python3", "agent/agent_child_init.py", organization_id, workspace_id, execution_no, driver_id]
+                cp = subprocess.Popen(command)  # noqa: F841
+            else:
+                g.applogger.info(g.appmsg.get_log_message("MSG-10056", [execution_no, workspace_id]))
 
         return False
 
@@ -361,6 +373,9 @@ def get_working_child_process(organization_id, workspace_id):
     error_ps_list = {}
     status_file_dir = f"/storage/{organization_id}/{workspace_id}/ag_ansible_execution/status/"
 
+    # プロセス再起動上限値
+    child_process_retry_limit = int(os.getenv('CHILD_PROCESS_RETRY_LIMIT', 3))
+
     [working_ps_list.setdefault(_d, []) for _d in driver_id_list]
     [error_ps_list.setdefault(_d, []) for _d in driver_id_list]
 
@@ -380,7 +395,7 @@ def get_working_child_process(organization_id, workspace_id):
             # 子プロ死活監視
             result_child_process = child_process_exist_check(organization_id, workspace_id, execution_no, driver_id, reboot=False)
             g.applogger.debug(f"{driver_id=}, {execution_no=}, {reboot_cnt=}, {result_child_process=}")
-            if result_child_process and int(reboot_cnt) <= 10:
+            if result_child_process and int(reboot_cnt) <= child_process_retry_limit:
                 # 子プロ実行中
                 working_ps_list[driver_id].append(execution_no)
             else:
@@ -395,21 +410,58 @@ def get_working_child_process(organization_id, workspace_id):
     return ps_count, working_ps_list, error_ps_list
 
 def update_error_executions(organization_id, workspace_id, exastro_api, error_ps_list):
+    """エラー対象の作業状態通知送信
+        結果ファイル更新＋ステータス更新
+    Args:
+        organization_id (_type_): organization_id
+        workspace_id (_type_): workspace_id
+        exastro_api: Exastro_API()
+        error_ps_list: : { driver_id : []}
+    """
+
+    status_id = AnscConst.FAILURE # 完了(異常)
     for driver_id , del_execution_list in error_ps_list.items():
         for del_execution in del_execution_list:
             status_update = True
             # 作業状態通知送信: 異常時
             # 作業状態通知(ファイル)
-            status_id = AnscConst.FAILURE
+
+            # 各種tar＋ファイルパス取得
+            out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path\
+                = arcive_tar_data(organization_id, workspace_id, driver_id, del_execution, status_id, mode="parent")
+            g.applogger.debug(f"{out_gztar_path=}, {parameters_gztar_path=}, {parameters_file_gztar_path=}, {conductor_gztar_path=}")
+
             body = {
                 "driver_id": driver_id,
                 "status": status_id,
             }
+
             form_data = {
-                "json_parameters": json.dumps(body),
-                #####
-                #####
+                "json_parameters": json.dumps(body)
             }
+
+            # form_dataへのtarデータ追加
+            if os.path.isfile(out_gztar_path):
+                form_data["out_tar_data"] =  (
+                    os.path.basename(out_gztar_path),
+                    open(out_gztar_path, "rb"),
+                    mimetypes.guess_type(out_gztar_path, False)[0])
+            if os.path.isfile(parameters_gztar_path):
+                form_data["parameters_tar_data"] =  (
+                    os.path.basename(parameters_gztar_path),
+                    open(parameters_gztar_path, "rb"),
+                    mimetypes.guess_type(parameters_gztar_path, False)[0])
+            if os.path.isfile(parameters_file_gztar_path):
+                form_data["parameters_file_tar_data"] =  (
+                    os.path.basename(parameters_file_gztar_path),
+                    open(parameters_file_gztar_path, "rb"),
+                    mimetypes.guess_type(parameters_file_gztar_path, False)[0])
+            if os.path.isfile(conductor_gztar_path):
+                form_data["conductor_tar_data"] =  (
+                    os.path.basename(conductor_gztar_path),
+                    open(conductor_gztar_path, "rb"),
+                    mimetypes.guess_type(conductor_gztar_path, False)[0])
+
             status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, del_execution, body, form_data=form_data)
             if not status_code == 200:
                 # g.applogger.info(f"作業状態通知(ファイル)に失敗しました。(execution={del_execution}, {status_id=})")

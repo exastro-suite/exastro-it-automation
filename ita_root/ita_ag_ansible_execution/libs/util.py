@@ -72,8 +72,9 @@ def delete_status_file(organization_id, workspace_id, driver_id, execution_no):
         ステータスファイルの削除
     """
     status_file = f"/storage/{organization_id}/{workspace_id}/ag_ansible_execution/starus/{driver_id}/{execution_no}"
-    print(status_file)
-    # os.remove(status_file) if os.path.isfile(status_file) else None
+    if os.path.isfile(status_file):
+        os.remove(status_file)
+        g.applogger.info(f"delete_status_file: {status_file=}, {os.path.isfile(status_file)}")
 
 def get_upload_file_info(organization_id, workspace_id, driver_id, execution_no):
     """
@@ -286,28 +287,43 @@ def post_upload_execution_files(organization_id, workspace_id, exastro_api, exec
         pass
     return status_code, response
 
-def arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, status):
+def arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, status, mode="child"):
     """
         作業状態通知(ファイル): 結果データ受け取り・更新 : agent_child_main
     Args:
         driver_id : ドライバーID
         execution_no: 作業番号
         status: ステータス
+        mode: パス指定のモード, Defaults to "child".
+            child: agent_child_main
+            parent: agent_main
     Returns:
         out_gztar_path: outディレクトリtarファイルパス
         parameters_gztar_path: parametersディレクトリtarファイルパス
         parameters_file_gztar_path: parameters_fileディレクトリtarファイルパス
         conductor_gztar_path: conductor_fileディレクトリtarファイルパス
     """
-
-    # outディレクトリパス
-    out_dir_path = "/exastro/share_volume_dir/" + driver_id + "/" + execution_no + "/out"
-    # inディレクトリパス
-    in_dir_path = "/exastro/project_dir/" + driver_id + "/" + execution_no + "/project"
-    # conductorディレクトリパス
-    conductor_dir_path = "/exastro/share_volume_dir/" + driver_id + "/" + execution_no + "/conductor"
-    # 作業用ディレクトリパス
-    tmp_dir_path = "/tmp/" +  organization_id + "/" + workspace_id + "/driver/ansible/" + driver_id + "/" + execution_no
+    if mode == "child":
+        # outディレクトリパス
+        out_dir_path = "/exastro/share_volume_dir/" + driver_id + "/" + execution_no + "/out"
+        # inディレクトリパス
+        in_dir_path = "/exastro/project_dir/" + driver_id + "/" + execution_no + "/project"
+        # conductorディレクトリパス
+        conductor_dir_path = "/exastro/share_volume_dir/" + driver_id + "/" + execution_no + "/conductor"
+        # 作業用ディレクトリパス
+        tmp_dir_path = "/tmp/" +  organization_id + "/" + workspace_id + "/driver/ansible/" + driver_id + "/" + execution_no
+    elif mode == "parent":
+        # /storage/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/
+        _base_path = f"/storage/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}"
+        _tmp_path = _base_path.replace("/storage/", "/tmp/")
+        # outディレクトリパス
+        out_dir_path = f"{_base_path}/out"
+        # inディレクトリパス
+        in_dir_path = f"{_base_path}/in"
+        # conductorディレクトリパス
+        conductor_dir_path = f"{_base_path}/conductor"
+        # 作業用ディレクトリパス
+        tmp_dir_path = _tmp_path
 
     # ステータスが実行中、実行中(遅延)の場合
     if status == AnscConst.PROCESSING or status == AnscConst.PROCESS_DELAYED:

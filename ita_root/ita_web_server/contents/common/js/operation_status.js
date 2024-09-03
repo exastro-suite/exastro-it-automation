@@ -580,6 +580,16 @@ class Status {
             ];
             html += `<div class="commonSubTitle">` + getMessage.FTE05035 + `</div>`
             + op.operationStatusTable( ansibleControllerInfo );
+
+            // Ansibleエージェント利用情報
+            const ansibleAgentInfo = [
+                {
+                    title: getMessage.FTE05040,
+                    type: 'ansible_agent_execution_environment'
+                }
+            ];
+            html += `<div class="commonSubTitle">` + getMessage.FTE05039 + `</div>`
+            + op.operationStatusTable( ansibleAgentInfo );
         } else if ( op.driver === 'terraform_cloud_ep') {
             // Terraform利用情報
             const terraformInfo = [
@@ -716,6 +726,8 @@ class Status {
         08 緊急停止
         09 未実行(予約)
         10 予約取消
+        11 準備完了 Ver2.5
+        12 実行待ち Ver2.5
         */
         const statudId = op.info.status_id;
 
@@ -729,7 +741,7 @@ class Status {
         // 予約取消、緊急停止ボタン
         if ( ['9'].indexOf( statudId ) !== -1 && op.info.execution_list.parameter.scheduled_date_time !== null ) {
             op.$.operation.attr('data-mode', 'standby');
-        } else if ( ['3','4'].indexOf( statudId ) !== -1 ) {
+        } else if ( ['3','4','11','12'].indexOf( statudId ) !== -1 ) {
             op.$.operation.attr('data-mode', 'execute');
         } else {
             op.$.operation.attr('data-mode', '');

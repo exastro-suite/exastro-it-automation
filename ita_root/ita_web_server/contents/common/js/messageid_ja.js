@@ -607,6 +607,8 @@ export function messageid_ja() {
         'FTE05036' : "実行環境",
         'FTE05037' : "予約を取り消してよろしいですか？",
         'FTE05038' : "Terraform利用情報",
+        'FTE05039' : "Ansible Execution Agent利用情報",
+        'FTE05040' : "実行環境",
 
         // 比較実行
         'FTE06001' : "比較設定選択",

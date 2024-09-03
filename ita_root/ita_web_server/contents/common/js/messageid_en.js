@@ -602,6 +602,8 @@ export function messageid_en() {
         'FTE05036' : "Execution environment",
         'FTE05037' : "Cancel a reservation?",
         'FTE05038' : "Terraform dedicated information",
+        'FTE05039' : "Ansible Execution Agent information",
+        'FTE05040' : "Execution environment",
 
         // Compare
         'FTE06001' : "Compare setting selection",

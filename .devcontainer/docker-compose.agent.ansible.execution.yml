@@ -34,6 +34,7 @@ services:
       - ITERATION=${AG_ANSIBLE_ITERATION:-10}
       - EXECUTE_INTERVAL=${AG_ANSIBLE_EXECUTE_INTERVAL:-5}
       - LOG_LEVEL=${AG_ANSIBLE_LOG_LEVEL:-INFO}
+      - CHILD_PROCESS_RETRY_LIMIT=${AG_ANSIBLE_CHILD_PROCESS_RETRY_LIMIT}
     volumes:
       - vol-ita-storage:/storage
     networks:

@@ -207,7 +207,7 @@ mainHtml( id ) {
         Main: [
             { html: { html: er.dateRangeSelectHTML() }},
             { button: { icon: 'cal', text: getMessage.FTE13014, type: 'timeRange', action: 'default'}},
-            { html: { html: rangeSelectHtml }, separate: true, className: 'eventFlowChartRangeItem', display: 'none' },
+            { html: { html: rangeSelectHtml }, separate: true, className: 'eventFlowChartRangeItem', display: 'none'},
             { html: { html: er.patternSelectHTML() }, separate: true }
         ],
         Sub: [
@@ -427,6 +427,14 @@ updateIntervalSelectHTML() {
 //  Canvas
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
+##################################################
+    四捨五入
+##################################################
+*/
+round( num ) {
+    return Math.round( num * 100 ) / 100;
+}
 /*
 ##################################################
     表示データの作成
@@ -657,7 +665,7 @@ createCanvasData() {
 
     // 段数
     const floors = ( floor.length > er.minFloor )? floor.length: er.minFloor;
-    er.lineSpacing = er.h / floors;
+    er.lineSpacing = Math.round( er.h / floors * 100 ) / 100;
 }
 /*
 ##################################################
@@ -796,6 +804,7 @@ updateCanvas( initFlag = false ) {
         end_time: fn.date( er.loadEnd, 'yyyy/MM/dd HH:mm:ss')
     };
     fn.fetch('/oase/event_flow/history/', null, 'POST', postData, { controller: er.controller } ).then(function( history ){
+        if ( history === undefined ) return;
 
         if ( initFlag ) {
             er.$.target.removeClass('nowLoading');
@@ -857,7 +866,7 @@ resumeAutoUpdate() {
     const er = this;
 
     if ( er.checkAutoUpdate() ) {
-        window.console.warn('resumeAutoUpdate() warning.');
+        // window.console.warn('resumeAutoUpdate() warning.');
         return;
     }
 
@@ -968,7 +977,7 @@ getPositionDate( x ) {
 */
 getDatePositionX( date ) {
     const er = this;
-    return ( er.w * er.hRate * ( ( new Date( date ).getTime() - er.start.getTime() ) / er.period ) - er.hPosition );
+    return er.round( er.w * er.hRate * ( ( new Date( date ).getTime() - er.start.getTime() ) / er.period ) - er.hPosition );
 }
 /*
 ##################################################
@@ -977,7 +986,7 @@ getDatePositionX( date ) {
 */
 getDateWidthPositionX( date ) {
     const er = this;
-    return ( er.w * ( ( new Date( date ).getTime() - er.start.getTime() ) / er.period ));
+    return er.round( er.w * ( ( new Date( date ).getTime() - er.start.getTime() ) / er.period ));
 }
 /*
 ##################################################
@@ -986,7 +995,7 @@ getDateWidthPositionX( date ) {
 */
 getFloorPositonY( floor ) {
     const er = this;
-    return floor * er.lineSpacing * er.vRate + ( er.lineSpacing * er.vRate / 2 ) - er.vPosition;
+    return er.round( floor * er.lineSpacing * er.vRate + ( er.lineSpacing * er.vRate / 2 ) - er.vPosition );
 }
 /*
 ##################################################
@@ -1210,13 +1219,13 @@ setEventBlock() {
 
     for ( const event of er.canvasData ) {
         const
-        x1 = event.x1 * er.hRate - er.hPosition,
+        x1 = er.round( event.x1 * er.hRate - er.hPosition ),
         y = er.getFloorPositonY( event.floor );
 
         if ( event.type === 'event') {
             const
-            x2 = event.x2 * er.hRate - er.hPosition,
-            h = ( er.lineSpacing * er.vRate ) - ( er.lineSpacing * er.vRate * .4 );
+            x2 = er.round( event.x2 * er.hRate - er.hPosition ),
+            h = er.round( ( er.lineSpacing * er.vRate ) - ( er.lineSpacing * er.vRate * .4 ) );
 
             ttl.beginPath();
 
@@ -1228,16 +1237,15 @@ setEventBlock() {
             ttl.stroke();
         }
 
-        const blockHeight = er.lineSpacing * er.vRate * .7;
+        const blockHeight = er.round( er.lineSpacing * er.vRate * .7 );
         event.block = {
-            x: x1 - blockHeight / 2,
-            y: y - blockHeight / 2,
+            x: er.round( x1 - blockHeight / 2 ),
+            y: er.round( y - blockHeight / 2 ),
             w: blockHeight,
             h: blockHeight,
             centerX: x1,
             centerY: y
         };
-
         er.eventBlock( ico, event );
     }
 }
@@ -1285,12 +1293,20 @@ setEventLink( targetBlock ) {
 
     const groupData = (function(){
         if ( targetBlock.group ) {
-            return er.groupList.groupData[ targetBlock.group ];
+            if ( er.groupList.groupData[ targetBlock.group ] ) {
+                return er.groupList.groupData[ targetBlock.group ];
+            } else {
+                return [];
+            }
         } else {
             const e = er.groupList.singleData.find(function(event){
                 return event.id === targetBlock.id;
             });
-            return[e]
+            if ( e !== undefined ) {
+                return [ e ]
+            } else {
+                return [];
+            }
         }
     }());
 
@@ -1401,7 +1417,9 @@ roundRect( ctx, p, r, fill = null, stroke = null, lineWidth = 1, rotateFlag = fa
     if ( clearFlag ) ctx.globalCompositeOperation = 'destination-out';
 
     // 菱形にする（45度回転）
+    let rotate = {};
     if ( rotateFlag ) {
+        ctx.save();
         ctx.translate( p.x + p.w / 2, p.y + p.h / 2 );
         ctx.rotate( ( Math.PI / 180 ) * 45 );
         ctx.scale( .85, .85);
@@ -1434,10 +1452,7 @@ roundRect( ctx, p, r, fill = null, stroke = null, lineWidth = 1, rotateFlag = fa
 
     // 回転を戻す
     if ( rotateFlag ) {
-        ctx.translate( p.x + p.w / 2, p.y + p.h / 2 );
-        ctx.scale( 1 / .85, 1 / .85 );
-        ctx.rotate( ( Math.PI / 180 ) * -45 );
-        ctx.translate( - ( p.x + p.w / 2 ), - ( p.y + p.h / 2 ) );
+        ctx.restore();
     }
 
     // 合成方法をデフォルトに戻す
@@ -1902,13 +1917,13 @@ setChartEvents() {
 
     const
     $dateRange = er.$.header.find('.eventFlowDateRangeBlock'),
-    $dataRangeRadio = er.$.header.find('.eventFlowDateRangeRadio'),
     $dateRangeButton = er.$.header.find('.eventFlowDateRangeButton');
 
     // 絞り込みクリア
     $rangeDate.find('.eventFlowChartRangeClear').on('click', function(){
+        const date = er.$.header.find('.eventFlowDateRangeRadio').filter(':checked').val();
         $rangeDate.hide().find('.eventFlowChartRangeDate').text('');
-        er.updateDataRange( $dataRangeRadio.filter(':checked').val(), true );
+        er.updateDataRange( date, true );
         er.flag.rangeSelect = false;
     });
 
@@ -2420,7 +2435,7 @@ setMenuButtonEvent() {
 }
 /*
 ##################################################
-  日時指定
+    日時指定
 ##################################################
 */
 selectDateRange() {
@@ -2437,23 +2452,42 @@ selectDateRange() {
 
     fn.datePickerDialog('fromTo', true, getMessage.FTE13014, date, true ).then(function( date ){
         if ( date !== 'cancel') {
-            const
-            id = Date.now(),
-            value = `${date.from} to ${date.to}`;
-
-            // リスト追加
-            const
-            $list = er.$.header.find('.eventFlowDateRangeLog'),
-            $wrap = $list.closest('.eventFlowDateRangeLogWrap');
-
-            if ( $list.find(`[value="${value}"]`).length === 0 ) {
-                $list.prepend( er.addSelectRange( id, value, value ) );
-                if ( $wrap.is(':hidden') ) $wrap.addClass('setDate');
-            }
-
-            er.$.header.find('.eventFlowDateRangeRadio').val([ value ]).filter(`[value="${value}"]`).change();
+            const value = `${date.from} to ${date.to}`;
+            er.addDateRadioList( value );
         }
     });
+}
+/*
+##################################################
+    範囲追加
+##################################################
+*/
+addDateRadioList( value ) {
+    const er = this;
+    const id = Date.now()
+    // リスト追加
+    const $list = er.$.header.find('.eventFlowDateRangeLog');
+    const $wrap = $list.closest('.eventFlowDateRangeLogWrap');
+
+    if ( $list.find(`[value="${value}"]`).length === 0 ) {
+        $list.prepend( er.addSelectRange( id, value, value ) );
+        if ( $wrap.is(':hidden') ) $wrap.addClass('setDate');
+    }
+
+    er.$.header.find('.eventFlowDateRangeRadio').val([ value ]).filter(`[value="${value}"]`).change();
+}
+/*
+##################################################
+    範囲設定
+##################################################
+*/
+setSelectDateRange() {
+    const er = this;
+
+    const value = $('.eventFlowChartRangeDate').text();
+    er.addDateRadioList( value );
+
+    er.$.header.find('.eventFlowChartRangeClear').click();
 }
 /*
 ##################################################
@@ -2501,13 +2535,13 @@ setScrollBarEvent() {
 
         const updateCanvasPosition = function() {
             if ( barType === 'vertical') {
-                er.vRate = 1 / ( afterWidth / barWidth );
-                er.vPosition = er.h * ( afterPosittion / barWidth ) * er.vRate;
+                er.vRate = Math.round( 1 / ( afterWidth / barWidth ) * 100 ) / 100;
+                er.vPosition = Math.round( er.h * ( afterPosittion / barWidth ) * er.vRate * 100 ) / 100;
 
                 er.setLine();
             } else {
-                er.hRate = 1 / ( afterWidth / barWidth );
-                er.hPosition = er.w * ( afterPosittion / barWidth ) * er.hRate;
+                er.hRate = Math.round( 1 / ( afterWidth / barWidth ) * 100 ) / 100;
+                er.hPosition = Math.round( er.w * ( afterPosittion / barWidth ) * er.hRate * 100 ) / 100;
 
                 er.setTimeScale();
             }

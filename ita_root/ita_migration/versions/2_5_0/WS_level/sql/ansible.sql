@@ -390,7 +390,8 @@ CREATE INDEX `IND_T_CMDB_f7a294e8-a7a7-4d03-8a76-e2f910db55d7_01` ON `T_CMDB_f7a
 CREATE TABLE T_ANSC_EXECUTION_STATUS
 (
     STATUS_ID                       VARCHAR(2),                                 -- UUID
-    STATUS_NAME                     VARCHAR(256),                               -- ステータス名
+    STATUS_NAME_JA                  VARCHAR(256),                               -- ステータス名(ja)
+    STATUS_NAME_EN                  VARCHAR(256),                               -- ステータス名(en)
     DISP_SEQ                        INT,                                        -- 表示順序
     NOTE                            VARCHAR(4000),                              -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ

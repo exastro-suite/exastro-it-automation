@@ -416,7 +416,7 @@ def update_result(organization_id, workspace_id, execution_no, parameters, file_
 
     for file_key, record_file_paths in file_path.items():
         if not os.path.exists(tmp_path + file_key):
-            os.mkdir(tmp_path + file_key)
+            os.makedirs(tmp_path + file_key)
         with tarfile.open(record_file_paths, 'r:gz') as tar:
             tar.extractall(path=tmp_path + file_key)
 
@@ -472,6 +472,8 @@ def get_agent_version(objdbca, body):
         RETRUN:
             statusCode, {}, msg
     """
+    # 言語情報
+    lang = g.LANGUAGE
 
     # エージェント名
     agent_name = body["agent_name"]

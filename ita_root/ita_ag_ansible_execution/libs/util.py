@@ -58,7 +58,7 @@ def get_agent_version():
     Returns:
         agent_version
     """
-    version_file_path = "/exastro/common_libs/ansible_execution/VERSION.txt"
+    version_file_path = "/exastro/VERSION.txt"
     if os.path.isfile(version_file_path):
         with open(version_file_path, mode='r') as f:
             agent_version= f.read()
@@ -183,7 +183,7 @@ def post_agent_version(organization_id, workspace_id, exastro_api, body=None, qu
     endpoint = f"/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/version"
     body = {
         # "agent_id": get_agent_id(organization_id, workspace_id, os.environ["AGENT_NAME"]),
-        "agent_name": os.environ["AGENT_NAME"],
+        "agent_name": "ag3",
         "version": get_agent_version(),
     }
     status_code, response = retry_api_call(exastro_api, endpoint, mode="json", method="POST", body=body, retry=retry)
@@ -330,7 +330,7 @@ def arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, stat
         out_tar_dir_path = tmp_dir_path + "/out"
         out_gztar_path = out_tar_dir_path + ".tar.gz"
         if os.path.exists(out_tar_dir_path):
-            os.mkdir(out_tar_dir_path)
+            os.makedirs(out_tar_dir_path)
 
         # ログファイルをtarファイルにまとめる
         shutil.move(out_dir_path + "/exec.log", out_tar_dir_path)
@@ -347,11 +347,11 @@ def arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, stat
         parameters_file_tar_dir_path = tmp_dir_path + "/parameters_file"
         parameters_file_gztar_path = parameters_file_tar_dir_path + "/parameter"
         if os.path.exists(out_tar_dir_path):
-            os.mkdir(out_tar_dir_path)
+            os.makedirs(out_tar_dir_path)
         if os.path.exists(parameters_tar_dir_path):
-            os.mkdir(parameters_tar_dir_path)
+            os.makedirs(parameters_tar_dir_path)
         if os.path.exists(parameters_file_gztar_path):
-            os.mkdir(parameters_file_gztar_path)
+            os.makedirs(parameters_file_gztar_path)
 
         # outディレクトリをtarファイルにまとめる
         shutil.move(out_dir_path, tmp_dir_path)

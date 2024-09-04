@@ -81,7 +81,7 @@ def agent_child():
     # 実行状態確認用のステータスファイル作成
     status_file_path = "/storage/" + organization_id + "/" + workspace_id + "/ag_ansible_execution/status/" + driver_id
     if not os.path.exists(status_file_path):
-        os.mkdir(status_file_path)
+        os.makedirs(status_file_path)
         os.chmod(status_file_path, 0o777)
     if not os.path.isfile(status_file_path + "/" + execution_no):
         # ファイル名を作業番号で作成
@@ -106,8 +106,7 @@ def agent_child():
     g.applogger.info(g.appmsg.get_log_message("MSG-10954", []))
     status_code, response = get_execution_populated_data(organization_id, workspace_id, exastro_api, execution_no, query=driver_id)
     if not status_code == 200:
-        g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-        raise AppException()
+        raise AppException("MSG-10957", [])
     target_executions = response["data"] if isinstance(response["data"], dict) else {}
     for execution_no, value in target_executions.items():
         dir_path = value["in_out_data"]
@@ -127,10 +126,10 @@ def agent_child():
                         f.flush()
 
             # tarファイルの中身のディレクトリ、ファイル移動
-            decompress_tar_file(organization_id, workspace_id, value["driver_id"], dir_path, conductor_dir_path, "tmp.gz", "conductor_tmp.gz", value["driver_id"], execution_no)
+            decompress_tar_file(organization_id, workspace_id, dir_path, conductor_dir_path, "tmp.gz", "conductor_tmp.gz", value["driver_id"], execution_no)
         else:
             # tarファイルの中身のディレクトリ、ファイル移動
-            decompress_tar_file(organization_id, workspace_id, value["driver_id"], dir_path, conductor_dir_path, "tmp.gz", "", value["driver_id"], execution_no)
+            decompress_tar_file(organization_id, workspace_id, dir_path, conductor_dir_path, "tmp.gz", "", value["driver_id"], execution_no)
 
     response.close()
 
@@ -202,8 +201,7 @@ def agent_child():
                             }
                             status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
                             if not status_code == 200:
-                                g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-                                raise AppException()
+                                raise AppException("MSG-10957", [])
 
                             # 作業状態通知送信
                             body = {
@@ -213,8 +211,7 @@ def agent_child():
                             g.applogger.info(g.appmsg.get_log_message("MSG-10956", []))
                             status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body)
                             if not status_code == 200:
-                                g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-                                raise AppException()
+                                raise AppException("MSG-10957", [])
                             break
                         else:
                             # ログを残す
@@ -240,8 +237,7 @@ def agent_child():
                             }
                             status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
                             if not status_code == 200:
-                                g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-                                raise AppException()
+                                raise AppException("MSG-10957", [])
 
                             # 作業状態通知送信
                             body = {
@@ -251,8 +247,7 @@ def agent_child():
                             g.applogger.info(g.appmsg.get_log_message("MSG-10956", []))
                             status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body)
                             if not status_code == 200:
-                                g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-                                raise AppException()
+                                raise AppException("MSG-10957", [])
                             break
                     else:
                         # rcファイルなし
@@ -279,8 +274,7 @@ def agent_child():
                         }
                         status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
                         if not status_code == 200:
-                            g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-                            raise AppException()
+                            raise AppException("MSG-10957", [])
 
                         # 作業状態通知送信
                         endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/notification/status"
@@ -291,8 +285,7 @@ def agent_child():
                         g.applogger.info(g.appmsg.get_log_message("MSG-10956", []))
                         status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body)
                         if not status_code == 200:
-                            g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-                            raise AppException()
+                            raise AppException("MSG-10957", [])
                         break
             else:
                 # rcファイルの中身を確認する
@@ -319,8 +312,7 @@ def agent_child():
                         }
                         status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
                         if not status_code == 200:
-                            g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-                            raise AppException()
+                            raise AppException("MSG-10957", [])
 
                         # 作業状態通知送信
                         endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/execution/{status}"
@@ -328,8 +320,7 @@ def agent_child():
                         g.applogger.info(g.appmsg.get_log_message("MSG-10956", []))
                         status_code, response = retry_api_call(exastro_api, endpoint, mode="json", method="POST", body=body)
                         if not status_code == 200:
-                            g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-                            raise AppException()
+                            raise AppException("MSG-10957", [])
                         break
                     else:
                         # 結果データ更新
@@ -348,8 +339,7 @@ def agent_child():
                         }
                         status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
                         if not status_code == 200:
-                            g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-                            raise AppException()
+                            raise AppException("MSG-10957", [])
 
                         # 作業状態通知送信
                         endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/notification/status"
@@ -360,8 +350,7 @@ def agent_child():
                         g.applogger.info(g.appmsg.get_log_message("MSG-10956", []))
                         status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body)
                         if not status_code == 200:
-                            g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-                            raise AppException()
+                            raise AppException("MSG-10957", [])
                         break
                 else:
                     # rcファイルなし
@@ -381,8 +370,7 @@ def agent_child():
                     }
                     status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
                     if not status_code == 200:
-                        g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-                        raise AppException()
+                        raise AppException("MSG-10957", [])
 
                     # 作業状態通知送信
                     endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/notification/status"
@@ -393,8 +381,7 @@ def agent_child():
                     g.applogger.info(g.appmsg.get_log_message("MSG-10956", []))
                     status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body)
                     if not status_code == 200:
-                        g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-                        raise AppException()
+                        raise AppException("MSG-10957", [])
                     continue
         else:
             # 作業実行が停止中
@@ -417,8 +404,7 @@ def agent_child():
                 }
                 status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
                 if not status_code == 200:
-                    g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-                    raise AppException()
+                    raise AppException("MSG-10957", [])
 
                 # 作業状態通知送信
                 endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/notification/status"
@@ -429,8 +415,7 @@ def agent_child():
                 g.applogger.info(g.appmsg.get_log_message("MSG-10956", []))
                 status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body)
                 if not status_code == 200:
-                    g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-                    raise AppException()
+                    raise AppException("MSG-10957", [])
                 break
             else:
                 # rcファイルの中身を確認する
@@ -457,8 +442,7 @@ def agent_child():
                         }
                         status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
                         if not status_code == 200:
-                            g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-                            raise AppException()
+                            raise AppException("MSG-10957", [])
 
                         # 作業状態通知送信
                         endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/notification/status"
@@ -469,8 +453,7 @@ def agent_child():
                         g.applogger.info(g.appmsg.get_log_message("MSG-10956", []))
                         status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body)
                         if not status_code == 200:
-                            g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-                            raise AppException()
+                            raise AppException("MSG-10957", [])
                         break
                     else:
                         # 結果データ更新
@@ -489,8 +472,7 @@ def agent_child():
                         }
                         status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
                         if not status_code == 200:
-                            g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-                            raise AppException()
+                            raise AppException("MSG-10957", [])
 
                         # 作業状態通知送信
                         endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/notification/status"
@@ -501,8 +483,7 @@ def agent_child():
                         g.applogger.info(g.appmsg.get_log_message("MSG-10956", []))
                         status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body)
                         if not status_code == 200:
-                            g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-                            raise AppException()
+                            raise AppException("MSG-10957", [])
                         break
                 else:
                     # rcファイルなし
@@ -529,8 +510,7 @@ def agent_child():
                     }
                     status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
                     if not status_code == 200:
-                        g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-                        raise AppException()
+                        raise AppException("MSG-10957", [])
 
                     # 作業状態通知送信
                     body = {
@@ -540,8 +520,7 @@ def agent_child():
                     g.applogger.info(g.appmsg.get_log_message("MSG-10956", []))
                     status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body)
                     if not status_code == 200:
-                        g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-                        raise AppException()
+                        raise AppException("MSG-10957", [])
                     break
 
     # ステータスファイル削除
@@ -550,7 +529,7 @@ def agent_child():
 if __name__ == "__main__":
     agent_child_main()
 
-def decompress_tar_file(organization_id, workspace_id, driver_id, dir_path, conductor_dir_path, file_name, conductor_file_name, driver_id, execution_no):
+def decompress_tar_file(organization_id, workspace_id, dir_path, conductor_dir_path, file_name, conductor_file_name, driver_id, execution_no):
     """
     tarファイルを解凍してagent用のディレクトリに移動する
     ARGS:
@@ -603,7 +582,7 @@ def decompress_tar_file(organization_id, workspace_id, driver_id, dir_path, cond
             move_dir = root_dir_path + "/tmp"
         # 移動先のディレクトリがない場合作成
         if os.path.exists(move_dir):
-            os.mkdir(move_dir)
+            os.makedirs(move_dir)
             os.chmod(move_dir, 0o777)
         join_path = os.path.join(dir_path + "/tmp", dir_name)
         move_path = os.path.join(move_dir, dir_name)
@@ -625,7 +604,7 @@ def decompress_tar_file(organization_id, workspace_id, driver_id, dir_path, cond
         move_dir = root_dir_path + "/conductor"
         # 移動先のディレクトリがない場合作成
         if os.path.exists(move_dir):
-            os.mkdir(move_dir)
+            os.makedirs(move_dir)
             os.chmod(move_dir, 0o777)
         join_path = os.path.join(conductor_dir_path + "/tmp", dir_name)
         move_path = os.path.join(move_dir, dir_name)

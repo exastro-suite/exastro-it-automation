@@ -183,7 +183,7 @@ def post_agent_version(organization_id, workspace_id, exastro_api, body=None, qu
     endpoint = f"/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/version"
     body = {
         # "agent_id": get_agent_id(organization_id, workspace_id, os.environ["AGENT_NAME"]),
-        "agent_name": "ag3",
+        "agent_name": os.environ["AGENT_NAME"],
         "version": get_agent_version(),
     }
     status_code, response = retry_api_call(exastro_api, endpoint, mode="json", method="POST", body=body, retry=retry)

@@ -51,11 +51,10 @@ class AnsibleExexutionVersion:
 
         # ITAの対応するバージョンと比較
         if agent_version in AnsibleExexutionVersion.VERSION_MATRIX.keys():
-            if agent_version in AnsibleExexutionVersion.VERSION_MATRIX[agent_version]:
-                for ita_version in AnsibleExexutionVersion.VERSION_MATRIX[agent_version]:
-                    # エージェントのバージョンは対応しているが最新ではない
-                    if agent_version < ita_version:
-                        return AnsibleExexutionVersion.COMPATIBLE
+            if ita_version in AnsibleExexutionVersion.VERSION_MATRIX[agent_version]:
+                # エージェントのバージョンは対応しているが最新ではない
+                if agent_version < ita_version:
+                    return AnsibleExexutionVersion.COMPATIBLE
 
                 return AnsibleExexutionVersion.COMPATIBLE_NEWEST
             else:

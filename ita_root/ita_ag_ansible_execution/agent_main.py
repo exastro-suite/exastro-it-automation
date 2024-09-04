@@ -34,6 +34,15 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
     refresh_token = os.environ['EXASTRO_REFRESH_TOKEN']
     agent_name = os.environ['AGENT_NAME']
 
+    # 作業実行可能ステータス
+    #   1: Not compatible (old)→古い: 作業実行不可
+    #   2: Compatible (newest)→最新:  作業実行可
+    #   3: Compatible→最新ではない:   作業実行可
+    execute_status_list = [
+        "2",
+        "3"
+    ]
+
     # ITAのAPI呼び出しモジュール
     exastro_api = Exastro_API(
         base_url=baseUrl,
@@ -42,6 +51,7 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
     exastro_api.get_access_token(organization_id, refresh_token)
 
     main_logic_execute = False
+    version_diff = None
     # バージョン通知API実行
     status_code, response = post_agent_version(organization_id, workspace_id, exastro_api)
     if not status_code == 200:
@@ -50,7 +60,10 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
         g.applogger.info(f"post_agent_version: {status_code=} {response=}")
     else:
         target_data = response["data"] if isinstance(response["data"], dict) else {}
-        main_logic_execute = target_data.get("version_diff", False)
+        version_diff = target_data.get("version_diff")
+        # 作業実行可否
+        main_logic_execute = True if version_diff and str(version_diff) in execute_status_list else False
+    g.applogger.info(f"{'Execute main_logic' if main_logic_execute else 'Skip main_logic'}({main_logic_execute=} {version_diff=})")
 
     count = 1
     max = int(loop_count)

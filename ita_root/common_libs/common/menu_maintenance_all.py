@@ -33,6 +33,7 @@ def rest_maintenance_all(objdbca, menu, parameters, file_paths={}):
     """
 
     result = {}
+    result_uuid_list = []
 
     objmenu = load_table.loadTable(objdbca, menu)  # noqa: F405
     if objmenu.get_objtable() is False:
@@ -55,6 +56,11 @@ def rest_maintenance_all(objdbca, menu, parameters, file_paths={}):
             log_msg_args = [msg]
             api_msg_args = [msg]
         raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
+    else:
+        # 追加・更新データのuuidを返却する #2521
+        data_list = objmenu.get_exec_result()
+        result_uuid_list = [data['uuid'] for data in data_list if 'uuid' in data]
+        result["IdList"] = result_uuid_list
 
     return result
 

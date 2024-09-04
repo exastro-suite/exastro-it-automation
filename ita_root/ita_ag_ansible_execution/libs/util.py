@@ -330,7 +330,7 @@ def arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, stat
         out_tar_dir_path = tmp_dir_path + "/out"
         out_gztar_path = out_tar_dir_path + ".tar.gz"
         if os.path.exists(out_tar_dir_path):
-            os.mkdir(out_tar_dir_path)
+            os.makedirs(out_tar_dir_path)
 
         # ログファイルをtarファイルにまとめる
         shutil.move(out_dir_path + "/exec.log", out_tar_dir_path)
@@ -347,11 +347,11 @@ def arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, stat
         parameters_file_tar_dir_path = tmp_dir_path + "/parameters_file"
         parameters_file_gztar_path = parameters_file_tar_dir_path + "/parameter"
         if os.path.exists(out_tar_dir_path):
-            os.mkdir(out_tar_dir_path)
+            os.makedirs(out_tar_dir_path)
         if os.path.exists(parameters_tar_dir_path):
-            os.mkdir(parameters_tar_dir_path)
+            os.makedirs(parameters_tar_dir_path)
         if os.path.exists(parameters_file_gztar_path):
-            os.mkdir(parameters_file_gztar_path)
+            os.makedirs(parameters_file_gztar_path)
 
         # outディレクトリをtarファイルにまとめる
         shutil.move(out_dir_path, tmp_dir_path)

@@ -103,6 +103,7 @@ CREATE TABLE T_ANSC_AGENT
     ROW_ID                          VARCHAR(40),                                -- 項番
     AGENT_NAME                      VARCHAR(255),                               -- エージェント名
     VERSION                         VARCHAR(40),                                -- バージョン
+    STATUS_ID                       VARCHAR(2),                                 -- ステータス
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
@@ -383,3 +384,21 @@ CREATE TABLE `T_CMDB_f7a294e8-a7a7-4d03-8a76-e2f910db55d7_JNL`
 -- -------------------------------------------------------
 CREATE INDEX `IND_T_CMDB_f7a294e8-a7a7-4d03-8a76-e2f910db55d7_01` ON `T_CMDB_f7a294e8-a7a7-4d03-8a76-e2f910db55d7`(DISUSE_FLAG);
 
+-- -------------------------------------------------------
+-- - ▼ M019_AnsibleExecutionステータスマスタ
+-- -------------------------------------------------------
+CREATE TABLE T_ANSC_EXECUTION_STATUS
+(
+    STATUS_ID                       VARCHAR(2),                                 -- UUID
+    STATUS_NAME_JA                  VARCHAR(256),                               -- ステータス名(ja)
+    STATUS_NAME_EN                  VARCHAR(256),                               -- ステータス名(en)
+    DISP_SEQ                        INT,                                        -- 表示順序
+    NOTE                            VARCHAR(4000),                              -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(STATUS_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+-- -------------------------------------------------------
+-- - ▲ M019_AnsibleExecutionステータスマスタ
+-- -------------------------------------------------------

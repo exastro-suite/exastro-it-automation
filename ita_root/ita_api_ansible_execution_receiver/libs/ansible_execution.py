@@ -472,8 +472,6 @@ def get_agent_version(objdbca, body):
         RETRUN:
             statusCode, {}, msg
     """
-    # 言語情報
-    lang = g.LANGUAGE
 
     # エージェント名
     agent_name = body["agent_name"]

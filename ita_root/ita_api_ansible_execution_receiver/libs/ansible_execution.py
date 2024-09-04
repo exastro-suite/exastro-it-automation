@@ -480,23 +480,14 @@ def get_agent_version(objdbca, body):
     # トランザクション開始
     objdbca.db_transaction_start()
 
-    where = "WHERE AGENT_NAME = %s AND DISUSE_FLAG = '0'"
-    ret = objdbca.table_select("T_ANSC_AGENT", where, [agent_name])
-
     # ITAの対応するバージョンと比較
     result = {"version_diff": ""}
-    if version in AnsibleExexutionVersion.VERSION_LIST:
-        for ita_version in AnsibleExexutionVersion.VERSION_LIST:
-            # エージェントのバージョンが最新ではない
-            if version < ita_version:
-                result["version_diff"] = AnsibleExexutionVersion.COMPATIBLE
+    version_list = AnsibleExexutionVersion()
 
-        # エージェントは最新
-        if result["version_diff"] == "":
-            result["version_diff"] = AnsibleExexutionVersion.COMPATIBLE_NEWEST
-    else:
-        # エージェントは古い
-        result["version_diff"] = AnsibleExexutionVersion.NOT_COMPATIBLE_OLD
+    result["version_diff"] = version_list.check_diff_version(version)
+
+    where = "WHERE AGENT_NAME = %s AND DISUSE_FLAG = '0'"
+    ret = objdbca.table_select("T_ANSC_AGENT", where, [agent_name])
 
     if len(ret) == 0:
         # エージェント管理へ登録

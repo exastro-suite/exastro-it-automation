@@ -58,7 +58,7 @@ def get_agent_version():
     Returns:
         agent_version
     """
-    version_file_path = "/exastro/VERSION.txt"
+    version_file_path = "/exastro/common_libs/ansible_execution/VERSION.txt"
     if os.path.isfile(version_file_path):
         with open(version_file_path, mode='r') as f:
             agent_version= f.read()

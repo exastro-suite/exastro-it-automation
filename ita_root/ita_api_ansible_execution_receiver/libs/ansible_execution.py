@@ -22,6 +22,7 @@ from common_libs.common import *  # noqa: F403
 from common_libs.ag.util import ky_decrypt, app_exception, exception
 from common_libs.common import storage_access
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
+from common_libs.ansible_execution.version import AnsibleExexutionVersion
 
 def unexecuted_instance(objdbca):
     """
@@ -40,7 +41,7 @@ def unexecuted_instance(objdbca):
     t_ansc_execdev = "T_ANSC_EXECDEV"
     t_ansc_info = "T_ANSC_IF_INFO"
 
-    # Legacy_role
+    # Legacy
     # 準備完了の作業インスタンス取得
     where = 'WHERE  DISUSE_FLAG=%s AND STATUS_ID = %s'
     parameter = ['0', '11']
@@ -53,6 +54,33 @@ def unexecuted_instance(objdbca):
         result[execution_no] = {
             "driver_id": "legacy"
         }
+
+        # 実行環境構築方法取得
+        where = 'WHERE  DISUSE_FLAG=%s'
+        parameter = ['0']
+        ret = objdbca.table_select(t_ansc_execdev, where, parameter)
+
+        for record in ret:
+            build_type = record['BUILD_TYPE']
+            user_name = record['USER_NAME']
+            password = record['PASSWORD']
+            base_image = record['BASE_IMAGE_OS_TYPE']
+            attach_repository = record['ATTACH_REPOSITORY']
+            password = ky_decrypt(password)
+
+        # 実行時データ削除フラグ取得
+        where = 'WHERE  DISUSE_FLAG=%s'
+        parameter = ['0']
+        ret = objdbca.table_select(t_ansc_info, where, parameter)
+        for record in ret:
+            anstwr_del_runtime_data = record['ANSTWR_DEL_RUNTIME_DATA']
+
+        result[execution_no]["build_type"] = build_type
+        result[execution_no]["user_name"] = user_name
+        result[execution_no]["password"] = password
+        result[execution_no]["base_image"] = base_image
+        result[execution_no]["attach_repository"] = attach_repository
+        result[execution_no]["anstwr_del_runtime_data"] = anstwr_del_runtime_data
 
     # pioneer
     # 準備完了の作業インスタンス取得
@@ -67,6 +95,33 @@ def unexecuted_instance(objdbca):
             "driver_id": "pioneer"
         }
 
+        # 実行環境構築方法取得
+        where = 'WHERE  DISUSE_FLAG=%s'
+        parameter = ['0']
+        ret = objdbca.table_select(t_ansc_execdev, where, parameter)
+
+        for record in ret:
+            build_type = record['BUILD_TYPE']
+            user_name = record['USER_NAME']
+            password = record['PASSWORD']
+            base_image = record['BASE_IMAGE_OS_TYPE']
+            attach_repository = record['ATTACH_REPOSITORY']
+            password = ky_decrypt(password)
+
+        # 実行時データ削除フラグ取得
+        where = 'WHERE  DISUSE_FLAG=%s'
+        parameter = ['0']
+        ret = objdbca.table_select(t_ansc_info, where, parameter)
+        for record in ret:
+            anstwr_del_runtime_data = record['ANSTWR_DEL_RUNTIME_DATA']
+
+        result[execution_no]["build_type"] = build_type
+        result[execution_no]["user_name"] = user_name
+        result[execution_no]["password"] = password
+        result[execution_no]["base_image"] = base_image
+        result[execution_no]["attach_repository"] = attach_repository
+        result[execution_no]["anstwr_del_runtime_data"] = anstwr_del_runtime_data
+
     # role
     # 準備完了の作業インスタンス取得
     where = 'WHERE  DISUSE_FLAG=%s AND STATUS_ID = %s'
@@ -80,32 +135,32 @@ def unexecuted_instance(objdbca):
             "driver_id": "legacy_role"
         }
 
-    # 実行環境構築方法取得
-    where = 'WHERE  DISUSE_FLAG=%s'
-    parameter = ['0']
-    ret = objdbca.table_select(t_ansc_execdev, where, parameter)
+        # 実行環境構築方法取得
+        where = 'WHERE  DISUSE_FLAG=%s'
+        parameter = ['0']
+        ret = objdbca.table_select(t_ansc_execdev, where, parameter)
 
-    for record in ret:
-        build_type = record['BUILD_TYPE']
-        user_name = record['USER_NAME']
-        password = record['PASSWORD']
-        base_image = record['BASE_IMAGE_OS_TYPE']
-        attach_repository = record['ATTACH_REPOSITORY']
-        password = ky_decrypt(password)
+        for record in ret:
+            build_type = record['BUILD_TYPE']
+            user_name = record['USER_NAME']
+            password = record['PASSWORD']
+            base_image = record['BASE_IMAGE_OS_TYPE']
+            attach_repository = record['ATTACH_REPOSITORY']
+            password = ky_decrypt(password)
 
-    # 実行時データ削除フラグ取得
-    where = 'WHERE  DISUSE_FLAG=%s'
-    parameter = ['0']
-    ret = objdbca.table_select(t_ansc_info, where, parameter)
-    for record in ret:
-        anstwr_del_runtime_data = record['ANSTWR_DEL_RUNTIME_DATA']
+        # 実行時データ削除フラグ取得
+        where = 'WHERE  DISUSE_FLAG=%s'
+        parameter = ['0']
+        ret = objdbca.table_select(t_ansc_info, where, parameter)
+        for record in ret:
+            anstwr_del_runtime_data = record['ANSTWR_DEL_RUNTIME_DATA']
 
-    result[execution_no]["build_type"] = build_type
-    result[execution_no]["user_name"] = user_name
-    result[execution_no]["password"] = password
-    result[execution_no]["base_image"] = base_image
-    result[execution_no]["attach_repository"] = attach_repository
-    result[execution_no]["anstwr_del_runtime_data"] = anstwr_del_runtime_data
+        result[execution_no]["build_type"] = build_type
+        result[execution_no]["user_name"] = user_name
+        result[execution_no]["password"] = password
+        result[execution_no]["base_image"] = base_image
+        result[execution_no]["attach_repository"] = attach_repository
+        result[execution_no]["anstwr_del_runtime_data"] = anstwr_del_runtime_data
 
     objdbca.db_commit()
 
@@ -425,14 +480,30 @@ def get_agent_version(objdbca, body):
     # トランザクション開始
     objdbca.db_transaction_start()
 
-    where = "AGENT_NAME = %s AND DISUSE_FLAG = '0'"
+    where = "WHERE AGENT_NAME = %s AND DISUSE_FLAG = '0'"
     ret = objdbca.table_select("T_ANSC_AGENT", where, [agent_name])
+
+    # ITAの対応するバージョンと比較
+    result = {"version_diff": ""}
+    if version in AnsibleExexutionVersion.VERSION_LIST:
+        for ita_version in AnsibleExexutionVersion.VERSION_LIST:
+            # エージェントのバージョンが最新ではない
+            if version < ita_version:
+                result["version_diff"] = AnsibleExexutionVersion.COMPATIBLE
+
+        # エージェントは最新
+        if result["version_diff"] == "":
+            result["version_diff"] = AnsibleExexutionVersion.COMPATIBLE_NEWEST
+    else:
+        # エージェントは古い
+        result["version_diff"] = AnsibleExexutionVersion.NOT_COMPATIBLE_OLD
 
     if len(ret) == 0:
         # エージェント管理へ登録
         data_list = {
             "AGENT_NAME": agent_name,
             "VERSION": version,
+            "STATUS_ID": result["version_diff"],
             "DISUSE_FLAG": "0"
         }
         ret = objdbca.table_insert("T_ANSC_AGENT", data_list, "ROW_ID", False)
@@ -443,29 +514,13 @@ def get_agent_version(objdbca, body):
         data_list = {
             "AGENT_NAME": agent_name,
             "VERSION": version,
+            "STATUS_ID": result["version_diff"]
         }
-        ret = objdbca.table_insert("T_ANSC_AGENT", data_list, "AGENT_NAME")
+        ret = objdbca.table_update("T_ANSC_AGENT", data_list, "AGENT_NAME", False)
         if ret is False:
             return False
 
     objdbca.db_commit()
-
-    # ITA側のバージョン情報をファイルから取得
-    file_path = "/exastro/common_libs/ansible_execution/VERSION.txt"
-    if os.path.exists(file_path):
-        obj = storage_access.storage_read()
-        obj.open(file_path)
-        ita_version = obj.read()
-        obj.close()
-    else:
-        ita_version = ""
-
-    result = {}
-    # ITAとエージェントのバージョン比較
-    if ita_version == version:
-        result["version_diff"] = True
-    else:
-        result["version_diff"] = False
 
     return result
 

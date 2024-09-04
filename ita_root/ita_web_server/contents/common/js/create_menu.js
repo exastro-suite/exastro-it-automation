@@ -1802,24 +1802,31 @@ $menuEditor.find('.menu-editor-menu-button').on('click', function() {
                 } catch ( e ) {
                     console.error( e );
                     alert( getMessage.FTE01157 );
-
-                    // 表示をリセットする
-                    $menuTable.empty();
-                    emptyCheck();
-                    previewTable();
-                    $('#unique-constraint-list').text('').attr('data-unique-list', '');
-                    uniquechangecount = 0;
-                    uniquedeletecount = 0;
-
-                    menuIdList = [];
-                    itemCounter = 1;
-                    groupCounter = 1;
+                    clearTable();
                 }
+            }).catch(function( e ){
+                if ( e === 'cancel') return;
+                console.error( e );
+                alert( e );
+                clearTable();                
             });
-
             break;
     }
 });
+
+// 表示クリア
+const clearTable = function() {
+    $menuTable.empty();
+    emptyCheck();
+    previewTable();
+    $('#unique-constraint-list').text('').attr('data-unique-list', '');
+    uniquechangecount = 0;
+    uniquedeletecount = 0;
+
+    menuIdList = [];
+    itemCounter = 1;
+    groupCounter = 1;
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //

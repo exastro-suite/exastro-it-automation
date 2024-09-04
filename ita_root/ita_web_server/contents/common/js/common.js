@@ -724,7 +724,8 @@ getFile: function( endPoint, method = 'GET', data, option = {} ) {
                 if ( navigator.storage !== undefined ) {
                     // オリジンプライベートファイルシステム
                     const root = await navigator.storage.getDirectory();
-                    const fileHandle = await root.getFileHandle( fileName, { create: true });
+                    const temp = await root.getDirectoryHandle('download_temp', { create: true });
+                    const fileHandle = await temp.getFileHandle( fileName, { create: true });
                     const wstream = await fileHandle.createWritable();
                     const writer = wstream.getWriter();
 
@@ -798,6 +799,18 @@ getFile: function( endPoint, method = 'GET', data, option = {} ) {
             }
         }
     });
+},
+/*
+##################################################
+   OPFSに保存したファイルを削除
+##################################################
+*/
+removeDownloadTemp: async function() {
+    if ( navigator.storage !== undefined ) {
+        const root = await navigator.storage.getDirectory();
+        const temp = await root.getDirectoryHandle('download_temp', { create: true });
+        await temp.remove({ recursive: true });
+    }
 },
 /*
 ##################################################
@@ -940,6 +953,7 @@ download: async function( type, data, fileName = 'noname') {
     a.click();
 
     if ( type !== 'base64') URL.revokeObjectURL( url );
+    if ( type === 'file') cmn.removeDownloadTemp();
 },
 /*
 ##################################################
@@ -4302,6 +4316,7 @@ fileEditor: function( fileData, fileName, mode = 'edit', option = {} ) {
                     modal.$.dbody.find('.editorFileName').val( fileName );
                 }
                 modal.$.dbody.find('.editorBody').text( text );
+                cmn.removeDownloadTemp();
 
                 // Ace editor
                 const storageTheme = fn.storage.get('editorTheme', 'local', false ),
@@ -4441,6 +4456,7 @@ fileEditor: function( fileData, fileName, mode = 'edit', option = {} ) {
                     src = `data:image/${mime};base64,${base64}`;
 
                     modal.$.dbody.find('.editorImage').attr('src', src );
+                    cmn.removeDownloadTemp();
                 }
             });
         } else {

@@ -71,7 +71,7 @@ def delete_status_file(organization_id, workspace_id, driver_id, execution_no):
     """
         ステータスファイルの削除
     """
-    status_file = f"/storage/{organization_id}/{workspace_id}/ag_ansible_execution/starus/{driver_id}/{execution_no}"
+    status_file = f"/storage/{organization_id}/{workspace_id}/ag_ansible_execution/status/{driver_id}/{execution_no}"
     if os.path.isfile(status_file):
         os.remove(status_file)
         g.applogger.info(f"delete_status_file: {status_file=}, {os.path.isfile(status_file)}")
@@ -240,7 +240,7 @@ def get_execution_populated_data(organization_id, workspace_id, exastro_api, exe
         response:
     """
     endpoint = f"/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/populated_data"
-    status_code, response = retry_api_call(exastro_api, endpoint, mode="stream", method="POST", query=query, retry=retry)
+    status_code, response = retry_api_call(exastro_api, endpoint, mode="stream", method="GET", query=query, retry=retry)
     return status_code, response
 
 def post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body=None, query=None, retry=3):

@@ -89,6 +89,10 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
             count = count + 1
 
 def main_logic(organization_id, workspace_id, exastro_api, baseUrl):
+
+    # 起動した未実行インスタンス
+    start_up_list = []
+
     # 未実行インスタンス取得
     status_code, response = get_unexecuted_instance(organization_id, workspace_id, exastro_api)
     if status_code == 200:
@@ -96,17 +100,19 @@ def main_logic(organization_id, workspace_id, exastro_api, baseUrl):
         for execution_no, value in target_executions.items():
             g.applogger.debug(f"{execution_no=}: \n {json.dumps(value, indent=4) if value else {}}")
             # 子プロ起動
-            command = ["python3", "agent/agent_child_init.py", organization_id, workspace_id, execution_no, value["driver_id"], value["build_type"], value["user_name"], value["password"]]
+            command = ["python3", "agent/agent_child_init.py", organization_id, workspace_id, execution_no, value["driver_id"], value["build_type"], str(value["user_name"]), str(value["password"])]
             cp = subprocess.Popen(command)  # noqa: F841
 
             # 子プロ死活監視
             child_process_exist_check(organization_id, workspace_id, execution_no, value["driver_id"], value["build_type"], value["user_name"], value["password"])
 
+            # 起動した未実行インスタンスを保存
+            start_up_list.append(execution_no)
     else:
         g.applogger.info(g.appmsg.get_log_message("MSG-10955", [status_code, response]))
 
-    # 実行中インスタンス取得
-    ps_count, working_ps_list, error_ps_list = get_working_child_process(organization_id, workspace_id)
+    # 実行中インスタンス取得: 起動した未実行インスタンスは除く
+    ps_count, working_ps_list, error_ps_list = get_working_child_process(organization_id, workspace_id, start_up_list)
 
     # 作業中通知
     if ps_count != 0:
@@ -221,7 +227,7 @@ def child_process_exist_check(organization_id, workspace_id, execution_no, drive
                 obj.close()
 
                 # 子プロ再起動
-                command = ["python3", "agent/agent_child_init.py", organization_id, workspace_id, execution_no, driver_id]
+                command = ["python3", "agent/agent_child_init.py", organization_id, workspace_id, execution_no, driver_id, str(user_name), str(password)]
                 cp = subprocess.Popen(command)  # noqa: F841
             else:
                 g.applogger.info(g.appmsg.get_log_message("MSG-10056", [execution_no, workspace_id]))
@@ -366,11 +372,12 @@ def check_child_process(execution_no):
 
     """
 
-def get_working_child_process(organization_id, workspace_id):
+def get_working_child_process(organization_id, workspace_id, start_up_list):
     """ステータスファイルから作業一覧取得
     Args:
         organization_id (_type_): organization_id
         workspace_id (_type_): workspace_id
+        start_up_list: execution_no started in main_logic. [execution_no,]
 
     Returns:
         working_ps_list: { driver_id : []}
@@ -404,6 +411,10 @@ def get_working_child_process(organization_id, workspace_id):
             obj.close()
             reboot_cnt = int(reboot_cnt) if len(reboot_cnt) != 0 else 0
             execution_no = os.path.basename(_file)
+
+            # 起動した未実行インスタンスは除く
+            if execution_no in start_up_list:
+                continue
 
             # 子プロ死活監視
             result_child_process = child_process_exist_check(organization_id, workspace_id, execution_no, driver_id, reboot=False)
@@ -440,8 +451,9 @@ def update_error_executions(organization_id, workspace_id, exastro_api, error_ps
             # 作業状態通知(ファイル)
 
             # 各種tar＋ファイルパス取得
-            out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path\
-                = arcive_tar_data(organization_id, workspace_id, driver_id, del_execution, status_id, mode="parent")
+            # out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path\
+            #     = arcive_tar_data(organization_id, workspace_id, driver_id, del_execution, status_id, mode="parent")
+            out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path = ("","","","")
             g.applogger.debug(f"{out_gztar_path=}, {parameters_gztar_path=}, {parameters_file_gztar_path=}, {conductor_gztar_path=}")
 
             body = {
@@ -475,11 +487,11 @@ def update_error_executions(organization_id, workspace_id, exastro_api, error_ps
                     open(conductor_gztar_path, "rb"),
                     mimetypes.guess_type(conductor_gztar_path, False)[0])
 
-            status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, del_execution, body, form_data=form_data)
-            if not status_code == 200:
-                # g.applogger.info(f"作業状態通知(ファイル)に失敗しました。(execution={del_execution}, {status_id=})")
-                g.applogger.info(g.appmsg.get_log_message("MSG-10983", [del_execution, f"{status_id=}"]))
-                status_update = False
+            # status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, del_execution, body, form_data=form_data)
+            # if not status_code == 200:
+            #     # g.applogger.info(f"作業状態通知(ファイル)に失敗しました。(execution={del_execution}, {status_id=})")
+            #     g.applogger.info(g.appmsg.get_log_message("MSG-10983", [del_execution, f"{status_id=}"]))
+            #     status_update = False
 
             # 作業状態通知
             if status_update:

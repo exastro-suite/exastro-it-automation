@@ -168,6 +168,22 @@ def insert_execution_list(objdbca, run_mode, driver_id, operation_row, movement_
         # ゴミになるので実行エンジンがAnsibleAutomationControllerの場合のみ設定
         ExecStsInstTableConfig[RestNameConfig["I_EXECUTION_ENVIRONMENT_NAME"]] = movement_row["ANS_EXECUTION_ENVIRONMENT_NAME"]
 
+    if ExecMode == objAnsc.DF_EXEC_MODE_AG:
+        # Movement/AnsibleExecutionAgent利用情報/実行環境
+        movement_row["AG_EXECUTION_ENVIRONMENT_NAME"]
+        sql = "SELECT * FROM T_ANSC_EXECDEV WHERE ROW_ID = %s AND DISUSE_FLAG = '0'"
+        rows = objdbca.sql_execute(sql, [movement_row["AG_EXECUTION_ENVIRONMENT_NAME"]])
+        if len(rows) == 0:
+            execution_environment_name = g.appmsg.get_api_message('MSG-00001', [movement_row["AG_EXECUTION_ENVIRONMENT_NAME"]])
+        else:
+            row = rows[0]
+            execution_environment_name = row["EXECUTION_ENVIRONMENT_NAME"]
+        # 255文字以上はカット
+        ExecStsInstTableConfig[RestNameConfig["I_AG_EXECUTION_ENVIRONMENT_NAME"]] = execution_environment_name[0:255]
+
+        # Movement/AnsibleExecutionAgent利用情報/ansible-builder パラメータ
+        ExecStsInstTableConfig[RestNameConfig["I_AG_BUILDER_OPTIONS"]] = movement_row["AG_BUILDER_OPTIONS"]
+
     # Movement/ansible.cfg
     uploadfiles = {}
     AnsibleCfgFile = movement_row["ANS_ANSIBLE_CONFIG_FILE"]

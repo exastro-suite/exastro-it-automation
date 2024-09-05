@@ -210,11 +210,14 @@ def CreateAG_ITABuilderShellFiles(objDBCA, AnscObj, out_dir, execution_no, movem
         if column_row['COLUMN_CLASS'] in ('1', '2', '3'): # SingleTextColumn, MultiTextColumn NumColumn
             pass
         elif column_row['COLUMN_CLASS'] in ('9'): # FileUploadColumn
-            path = getFileupLoadColumnPath(strage_menu_id, column_row['COLUMN_NAME_REST'])
-            src_upload_file = "{}/{}/{}".format(path, uploadfiledir_uuid, item_array[column_row['COLUMN_NAME_REST']])
-            dest_uoload_file = "{}/{}_{}".format(out_dir, column_row['COLUMN_NAME_REST'], item_array[column_row['COLUMN_NAME_REST']])
-            shutil.copy(src_upload_file, dest_uoload_file)
-            j2_item_array[column_row['COLUMN_NAME_JA']] = os.path.basename(dest_uoload_file)
+            if item_array[column_row['COLUMN_NAME_REST']]:
+                path = getFileupLoadColumnPath(strage_menu_id, column_row['COLUMN_NAME_REST'])
+                src_upload_file = "{}/{}/{}".format(path, uploadfiledir_uuid, item_array[column_row['COLUMN_NAME_REST']])
+                dest_uoload_file = "{}/{}_{}".format(out_dir, column_row['COLUMN_NAME_REST'], item_array[column_row['COLUMN_NAME_REST']])
+                shutil.copy(src_upload_file, dest_uoload_file)
+                j2_item_array[column_row['COLUMN_NAME_JA']] = os.path.basename(dest_uoload_file)
+            else:
+                j2_item_array[column_row['COLUMN_NAME_JA']] = ""
         else:
             msgstr = g.appmsg.get_api_message("MSG-10965", [column_row['COLUMN_CLASS']])
             return False, msgstr

@@ -301,7 +301,7 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id, rerun_mode, workspace
 
     check_interval = 3
     # 10分間 ansibe agent起動確認ファイルの更新が無かった場合、想定外エラーにする
-    # enomoto 　環境変数から取得
+    # 環境変数から取得
     get_time = int(os.environ.get("ANSIBLE_AGENT_NON_COMMUNICATION_DETECTION_TIME",0))
     if get_time < 60 or get_time > 600:
         g.applogger.info(g.appmsg.get_log_message("MSG-10977", []))
@@ -1483,7 +1483,7 @@ def ag_execute_statuscheck(ansdrv, wsDb, ansc_const, execution_no, Timeout_Inter
     now_unix_time = time.time()
     # ansibe agent作業状態通知受信ファイルの更新がTimeout_Interval以上更新されなかったら、想定外エラーにする。
     if((ag_status_file_unix_time + Timeout_Interval) < now_unix_time):
-        # enomoto
+
         err_msg = g.appmsg.get_log_message("MSG-10969", [str(Timeout_Interval),execution_no])
         log_dir = getAnsibleExecutDirPath(ansc_const, execution_no) + "/out"
         ansdrv.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),

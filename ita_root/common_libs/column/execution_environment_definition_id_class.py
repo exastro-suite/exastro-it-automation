@@ -317,7 +317,8 @@ class ExecutionEnvironmentDefinitionIDColumn(IDColumn):
         for table_row in table_rows:
             sheet_cols = json.loads(table_row['DATA_JSON'])
             if "execution_environment_name" in sheet_cols:
-                conv_value = "{},{}".format(table_name, table_row["ROW_ID"])
+                if sheet_cols["execution_environment_name"] == execution_environment_name:
+                    conv_value = "{},{}".format(table_name, table_row["ROW_ID"])
             else:
                 g.applogger.info(g.appmsg.get_api_message("MSG-10974", [table_name, str(sheet_cols)]))
         if not conv_value:
@@ -355,6 +356,3 @@ class ExecutionEnvironmentDefinitionIDColumn(IDColumn):
 
         return retBool, msg,
 
-#    def get_values_by_value(self, where_equal=[], where_like=""):
-#        # 不要
-#        pass

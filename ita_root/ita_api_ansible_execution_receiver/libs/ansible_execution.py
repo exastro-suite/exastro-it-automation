@@ -191,12 +191,12 @@ def get_execution_status(objdbca, execution_no, body):
 
     # ステータス更新、緊急停止状態取得
     result = {}
-    data_list = {"EXECUTION_NO": execution_no, "STATUS": status}
+    data_list = {"EXECUTION_NO": execution_no, "STATUS_ID": status}
     if driver_id == "legacy":
         ret = objdbca.table_select(t_ansl_exec_sts_inst, 'WHERE  EXECUTION_NO=%s', [execution_no])
         for record in ret:
-            current_status = record.get["STATUS"]
-            result["SCRAM_STATUS"] = record.get["ABORT_EXECUTE_FLAG"]
+            current_status = record.get("STATUS_ID")
+            result["SCRAM_STATUS"] = record.get("ABORT_EXECUTE_FLAG")
         # ステータス更新制御
         # 実行中(遅延)→実行中にならないように
         if current_status == AnscConst.PROCESS_DELAYED and status == AnscConst.PROCESSING:
@@ -218,7 +218,7 @@ def get_execution_status(objdbca, execution_no, body):
     elif driver_id == "pioneer":
         ret = objdbca.table_select(t_ansp_exec_sts_inst, 'WHERE  EXECUTION_NO=%s', [execution_no])
         for record in ret:
-            result["SCRAM_STATUS"] = record.get["ABORT_EXECUTE_FLAG"]
+            result["SCRAM_STATUS"] = record.get("ABORT_EXECUTE_FLAG")
         # ステータス更新制御
         # 実行中(遅延)→実行中にならないように
         if current_status == AnscConst.PROCESS_DELAYED and status == AnscConst.PROCESSING:
@@ -240,7 +240,7 @@ def get_execution_status(objdbca, execution_no, body):
     elif driver_id == "legacy_role":
         ret = objdbca.table_select(t_ansr_exec_sts_inst, 'WHERE  EXECUTION_NO=%s', [execution_no])
         for record in ret:
-            result["SCRAM_STATUS"] = record.get["ABORT_EXECUTE_FLAG"]
+            result["SCRAM_STATUS"] = record.get("ABORT_EXECUTE_FLAG")
         # ステータス更新制御
         # 実行中(遅延)→実行中にならないように
         if current_status == AnscConst.PROCESS_DELAYED and status == AnscConst.PROCESSING:

@@ -1,4 +1,4 @@
-#   Copyright 2022 NEC Corporation
+#   Copyright 2024 NEC Corporation
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ ENV LANGUAGE=en
 ENV STORAGEPATH=/storage/
 
 ENV SERVICE_NAME=ita-ag-ansible-execution
+ENV USER_ID=ita-ag-ansible-execution
 
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
     dnf install -y \

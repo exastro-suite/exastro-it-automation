@@ -44,13 +44,16 @@ constructor( tableId, mode, info, params, option = {}) {
     tb.info = info;
     tb.params = params;
 
-    // 選択データ
+    // 選択データ（ID）
     tb.select = {
         view: [],
         edit: [],
         select: [],
         execute: []
     };
+
+    // 選択データ
+    tb.selectedData = {};
 
     // 特殊表示用データ
     tb.option = option;
@@ -214,11 +217,13 @@ setHeaderHierarchy() {
     const specialHeadColumn = [ tb.idNameRest, 'discard'],
           specialFootColumn = ['last_update_date_time', 'last_updated_user'],
           specialHeadColumnKeys = [],
-          specialFootColumnKeys = [];
+          specialFootColumnKeys = [],
+          fileColumns = ['FileUploadColumn'];
 
     tb.data.hierarchy = [];
     tb.data.columnKeys = [];
     tb.data.restNames = {};
+    tb.data.fileRestNames = [];
 
     // 参照用フィルター
     const referenceFilterColumn = ['host_name', 'base_datetime'];
@@ -235,18 +240,20 @@ setHeaderHierarchy() {
                 tb.data.hierarchy[ row ].push( columnKey );
                 hierarchy( tb.structural.column_group_info[ columnKey ], row + 1 );
             } else if ( type === 'c') {
-                const culumnRest =  tb.info.column_info[ columnKey ].column_name_rest;
-                tb.data.restNames[ culumnRest ] = tb.info.column_info[ columnKey ].column_name;
-                if ( culumnRest === tb.idNameRest ) tb.idName = tb.info.column_info[ columnKey ].column_name;
-                if ( specialHeadColumn.indexOf( culumnRest ) !== -1 ) {
-                    specialHeadColumnKeys[ specialHeadColumn.indexOf( culumnRest ) ] = columnKey;
-                } else if ( specialFootColumn.indexOf( culumnRest ) !== -1 ) {
-                    specialFootColumnKeys[ specialFootColumn.indexOf( culumnRest ) ] = columnKey;
+                const columnRest = tb.info.column_info[ columnKey ].column_name_rest;
+                const columnType = tb.info.column_info[ columnKey ].column_type;
+                tb.data.restNames[ columnRest ] = tb.info.column_info[ columnKey ].column_name;
+                if ( fileColumns.indexOf( columnType ) !== -1 ) tb.data.fileRestNames.push( columnRest );
+                if ( columnRest === tb.idNameRest ) tb.idName = tb.info.column_info[ columnKey ].column_name;
+                if ( specialHeadColumn.indexOf( columnRest ) !== -1 ) {
+                    specialHeadColumnKeys[ specialHeadColumn.indexOf( columnRest ) ] = columnKey;
+                } else if ( specialFootColumn.indexOf( columnRest ) !== -1 ) {
+                    specialFootColumnKeys[ specialFootColumn.indexOf( columnRest ) ] = columnKey;
                 } else {
-                    restOrder.push( culumnRest );
+                    restOrder.push( columnRest );
                     tb.data.hierarchy[ row ].push( columnKey );
                     tb.data.columnKeys.push( columnKey );
-                    if ( referenceFilterColumn.indexOf( culumnRest ) !== -1 ) {
+                    if ( referenceFilterColumn.indexOf( columnRest ) !== -1 ) {
                         tb.data.referenceFilterKeys.push( columnKey );
                     }
                 }
@@ -367,6 +374,9 @@ setup() {
     // テーブルデータ
     tb.data = {};
     tb.data.count = 0;
+
+    // 複製用ファイル
+    tb.data.tempFile = {};
 
     // テーブル表示モード "input" or "view"
     // カラム（column_input or colum_view）
@@ -1710,6 +1720,13 @@ setTableEvents() {
 
                 tb.select.view = [ itemId ];
 
+                const findData = tb.data.body.find(function( data ){
+                    return String( data.parameter[ tb.idNameRest ] ) === String( itemId );
+                });
+                if ( findData ) {
+                    tb.selectedData[ itemId ] = findData;
+                }
+
                 switch ( type ) {
                     case 'rowEdit':
                         tb.changeEdtiMode.call( tb );
@@ -2300,11 +2317,20 @@ setTableEvents() {
                     }
                 } else {
                     if ( checked ) {
+                        const findData = tb.data.body.find(function( data ){
+                            return String( data.parameter[ tb.idNameRest ] ) === String( id );
+                        });
+                        if ( findData ) {
+                            tb.selectedData[ id ] = findData;
+                        }
                         tb.select[ checkMode ].push( id );
                     } else {
                         const index = tb.select[ checkMode ].indexOf( id );
                         if ( index !== -1 ) {
                             tb.select[ checkMode ].splice( index, 1 );
+                        }
+                        if ( id in tb.selectedData === true ) {
+                            delete tb.selectedData[ id ];
                         }
                     }
                 }
@@ -3069,7 +3095,7 @@ clearFilter() {
    > Workerにmessageを送信
 ##################################################
 */
-workerPost( type, data ) {
+async workerPost( type, data ) {
     const tb = this;
 
     const post = {
@@ -3107,13 +3133,29 @@ workerPost( type, data ) {
             post.add = data;
         break;
         case 'dup':
-            post.select = data.select;
-            post.addId = data.id;
-            post.input = data.input;
+            try {
+                await tb.duplicatFileCheck( data.select, data.input );
+                post.select = data.select;
+                post.addId = data.id;
+                post.input = data.input;
+                post.tempFile = tb.data.tempFile;
+            } catch( error ) {
+                tb.workEnd();
+                tb.resetTable();
+                return;
+            }
         break;
         case 'changeEditDup':
-            post.select = data.target;
-            post.addId = data.id;
+            try {
+                await tb.duplicatFileCheck( data.target, {});
+                post.select = data.target;
+                post.addId = data.id;
+                post.tempFile = tb.data.tempFile;
+            } catch( error ) {
+                tb.workEnd();
+                tb.resetTable();
+                return;
+            }
         break;
         case 'del':
             post.select = data;
@@ -3142,6 +3184,64 @@ workerPost( type, data ) {
         break;
     }
     tb.worker.postMessage( post );
+}
+/*
+##################################################
+   複製時のファイル確認
+   入力済みデータが無ければデータを取得する
+##################################################
+*/
+duplicatFileCheck( selectId, inputData ) {
+    const tb = this;
+    return new Promise(async function( resolve, reject ){
+        // 読込データにファイルが存在するか？
+        for ( const id of selectId ) {
+            if ( id in tb.selectedData === true ) {
+                const data = tb.selectedData[ id ];
+                for ( const fileColumn of tb.data.fileRestNames ) {
+                    if (
+                        fileColumn in data.parameter === true &&
+                        data.parameter[ fileColumn ] !== null &&
+                        data.parameter[ fileColumn ] !== ''
+                    ) {
+                        console.log( inputData );
+                        // 入力済みのデータがある場合
+                        if (
+                            id in inputData === true &&
+                            fileColumn in inputData[ id ].after.parameter === true &&
+                            inputData[ id ].after.parameter[ fileColumn ] !== null &&
+                            inputData[ id ].after.parameter[ fileColumn ] !== '' &&
+                            fileColumn in inputData[ id ].after.file === true &&
+                            inputData[ id ].after.file[ fileColumn ] !== null
+                        ) {
+                            continue;
+                        }
+                        // すでに取得済みの場合
+                        if ( id in tb.data.tempFile === true && fileColumn in tb.data.tempFile[ id ] === true ) {
+                            continue;
+                        }
+                        
+                        // ファイル読込
+                        try {
+                            const file = await fn.getFile(`/menu/${tb.params.menuNameRest}/${id}/${fileColumn}/file/`, 'GET', null, {
+                                type: 'duplicat',
+                                uuid: id,
+                                columnNameRest: fileColumn
+                            });
+                            if ( id in tb.data.tempFile === false ) tb.data.tempFile[ id ] = {};
+                            tb.data.tempFile[ id ][ fileColumn ] = file;
+                        } catch ( error ) {
+                            if ( error !== 'break') {
+                                console.error( error );
+                            }
+                            reject( error );
+                        }
+                    }
+                }
+            }
+        }
+        resolve();
+    });
 }
 /*
 ##################################################
@@ -3975,13 +4075,23 @@ editCellHtml( item, columnKey ) {
     // 入力済みのデータがある？
     const inputData = tb.edit.input[ rowId ];
     if ( inputData !== undefined ) {
-        const afterParameter = tb.edit.input[ rowId ]['after'].parameter[ columnName ];
+        const afterParameter = tb.edit.input[ rowId ].after.parameter[ columnName ];
         if ( afterParameter !== undefined ) {
             value = setValue( afterParameter );
 
-            const beforeParameter = tb.edit.input[ rowId ]['before'].parameter[ columnName ];
+            const beforeParameter = tb.edit.input[ rowId ].before.parameter[ columnName ];
             if ( afterParameter !== beforeParameter ) {
                 inputClassName.push('tableEditChange');
+            } else {
+                if ( tb.data.fileRestNames.indexOf( columnName ) !== -1 ) {
+                    // 同名ファイルの場合は変更後のファイルの存在で変更したか判断する
+                    if (
+                        columnName in tb.edit.input[ rowId ].after.file &&
+                        tb.edit.input[ rowId ].after.file[ columnName ] !== null
+                    ) {
+                        inputClassName.push('tableEditChange');
+                    }
+                }
             }
         }
     }
@@ -4475,8 +4585,12 @@ setPagingEvent() {
    changeEditMode
 ##################################################
 */
-changeEdtiMode( changeMode ) {
+async changeEdtiMode( changeMode ) {
     const tb = this;
+
+    // Tempデータの削除
+    fn.removeDownloadTemp('duplicat_temp');
+    tb.data.tempFile = {};
 
     // テーブルモードの変更
     tb.tableMode = 'input';
@@ -4593,9 +4707,12 @@ changeEdtiMode( changeMode ) {
                     tb.addRowInputData( addId );
                     tb.workerPost('changeEditRegi', tb.edit.blank );
                 } break;
-                case 'changeEditDup':
-                    tb.workerPost('changeEditDup', { target: tb.select.view, id: tb.edit.addId-- });
-                break;
+                case 'changeEditDup': {
+                    const addId = String( tb.edit.addId-- );
+                    const targetId = tb.select.edit[0];
+                    tb.select.edit = [ addId ];
+                    tb.workerPost('changeEditDup', { target: [ targetId ], id: addId });
+                } break;
             }
         } else {
             tb.setTable('edit');
@@ -4648,6 +4765,10 @@ pulldownSort( a, b ) {
 */
 changeViewMode() {
     const tb = this;
+
+    // Tempデータの削除
+    fn.removeDownloadTemp('duplicat_temp');
+    tb.data.tempFile = {};
 
     // テーブルモードの変更
     tb.tableMode = 'view';

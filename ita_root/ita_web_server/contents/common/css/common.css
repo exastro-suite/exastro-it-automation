@@ -625,7 +625,7 @@ position: relative;
 z-index: 0;
 width: 100%; min-width: 120px;
 height: 32px;
-padding: 0 38px 0 8px;
+padding: 0 32px 0 8px;
 background-color: var(--white100);
 border: 1px solid var(--black40);
 border-radius: 4px;

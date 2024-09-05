@@ -671,6 +671,7 @@ getFile: function( endPoint, method = 'GET', data, option = {} ) {
             // 閉じたときに処理を中断する
             progressModal.btnFn = {
                 headerClose: function(){
+                    $( window ).trigger('getFile_close');
                     getFileController.abort();
                     progressModal.close();
                     progressModal = null;
@@ -721,13 +722,28 @@ getFile: function( endPoint, method = 'GET', data, option = {} ) {
 
                 // オリジンプライベートファイルシステム（OPFS）が使えるかで処理を分岐する
                 let fileData;
-                if ( navigator.storage !== undefined ) {
+                if ('storage' in navigator === true ) {
                     // オリジンプライベートファイルシステム
                     const root = await navigator.storage.getDirectory();
-                    const temp = await root.getDirectoryHandle('download_temp', { create: true });
-                    const fileHandle = await temp.getFileHandle( fileName, { create: true });
+                    const dirName = ( option.type === 'duplicat')? 'duplicat_temp': 'download_temp';
+                    const temp = await root.getDirectoryHandle( dirName, { create: true });
+
+                    let fileHandle;
+                    if ( 'uuid' in option && 'columnNameRest' in option ) {
+                        const uuidDir = await temp.getDirectoryHandle( option.uuid, { create: true });
+                        const nameDir = await uuidDir.getDirectoryHandle( option.columnNameRest, { create: true });
+                        fileHandle = await nameDir.getFileHandle( fileName, { create: true });
+                    } else {
+                        fileHandle = await temp.getFileHandle( fileName, { create: true });
+                    }
                     const wstream = await fileHandle.createWritable();
                     const writer = wstream.getWriter();
+
+                    // キャンセルした場合
+                    $( window ).one('getFile_close', async function(){
+                        await writer.close();
+                        cmn.removeDownloadTemp( dirName );
+                    });
 
                     // データ読込
                     let receivedLength = 0;
@@ -735,6 +751,7 @@ getFile: function( endPoint, method = 'GET', data, option = {} ) {
                         const { done, value } = await reader.read();
                         if ( done === true ) {
                             await writer.close();
+                            $( window ).off('getFile_close');
                             break;
                         } else {
                             await writer.write( value );
@@ -805,11 +822,15 @@ getFile: function( endPoint, method = 'GET', data, option = {} ) {
    OPFSに保存したファイルを削除
 ##################################################
 */
-removeDownloadTemp: async function() {
-    if ( navigator.storage !== undefined ) {
-        const root = await navigator.storage.getDirectory();
-        const temp = await root.getDirectoryHandle('download_temp', { create: true });
-        await temp.remove({ recursive: true });
+removeDownloadTemp: async function( target = 'download_temp') {
+    if ('storage' in navigator === true ) {
+        try {
+            const root = await navigator.storage.getDirectory();
+            const temp = await root.getDirectoryHandle( target, { create: true });
+            await temp.remove({ recursive: true });
+        } catch ( error ) {
+            console.error( error )
+        }
     }
 },
 /*

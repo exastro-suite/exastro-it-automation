@@ -285,99 +285,66 @@ def get_populated_data_path(objdbca, organization_id, workspace_id, execution_no
     pioneer_dir_path = "/driver/ansible/pioneer"
     role_dir_path = "/driver/ansible/legacy_role"
 
+    if driver_id == "legacy":
+        t_exec_sts_inst = t_ansl_exec_sts_inst
+    elif driver_id == "pioneer":
+        t_exec_sts_inst = t_ansp_exec_sts_inst
+    elif driver_id == "legacy_role":
+        t_exec_sts_inst = t_ansr_exec_sts_inst
+
+    # パス
+    dir_path = f"/storage/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}"
+    tmp_basse_path = f"/tmp/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/"
+    tmp_path = f"/tmp/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/{execution_no}"
+    conductor_dir_path = f"/storage/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/conductor"
+    tmp_c_path = f"/tmp/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/conductor"
+    gztar_path = f"{tmp_path}/{execution_no}.tar.gz"
+
+    try:
+        # tmp_pathの初期化
+        shutil.rmtree(tmp_basse_path) if os.path.exists(tmp_basse_path) else None
+
+        # execution_no/*
+        # dir_path -> tmp_path に移動
+        if os.path.exists(dir_path):
+            if not os.path.isdir(tmp_path):
+                shutil.copytree(dir_path, tmp_path)
+                g.applogger.debug(f"shutil.copytree({dir_path}, {tmp_path})")
+
+        # conductor/*
+        # conductor_dir_path -> tmp_c_path に移動: conductor_dir_path無ければ作成
+        if not os.path.exists(conductor_dir_path):
+            os.makedirs(conductor_dir_path)
+            os.chmod(conductor_dir_path, 0o777)
+
+        if not os.path.isdir(tmp_c_path):
+            shutil.copytree(conductor_dir_path, tmp_c_path)
+            g.applogger.debug(f"shutil.copytree({conductor_dir_path}, {tmp_c_path})")
+
+        # tar.gz
+        with tarfile.open(gztar_path, "w:gz") as tar:
+            tar.add(tmp_basse_path, arcname="")
+        g.applogger.debug(f"tarfile.open({gztar_path}, 'w:gz'):  tar.add({tmp_basse_path})")
+
+    finally:
+        # clear tmp_path
+        if os.path.isdir(tmp_path):
+            for _tp in glob.glob(f"{tmp_path}/*", recursive=True):
+                if os.path.isdir(_tp):
+                    shutil.rmtree(_tp)
+                    g.applogger.debug(f"shutil.rmtree({_tp})")
+
+        with tarfile.open(gztar_path, 'r:gz') as tar:
+            g.applogger.debug(f"{tar.getmembers()=}")
+
     # トランザクション開始
     objdbca.db_transaction_start()
 
-    if driver_id == "legacy":
-        # in,outディレクトリ相当のパス
-        dir_path = "/storage/" + organization_id + "/" + workspace_id + legacy_dir_path + "/" + execution_no
-        tmp_path = "/tmp/" + organization_id + "/" + workspace_id + legacy_dir_path
-        if os.path.exists(dir_path):
-            # 一時フォルダに移動
-            if not os.path.exists(tmp_path):
-                os.makedirs(tmp_path)
-                os.chmod(tmp_path, 0o777)
-            shutil.move(dir_path, tmp_path)
+    # ステータスを実行待ちに変更
+    data_list = {"STATUS_ID": "12", "EXECUTION_NO": execution_no}
+    objdbca.table_update(t_exec_sts_inst, data_list, "EXECUTION_NO")
 
-        # conductorディレクトリ相当のパス
-        conductor_dir_path = "/storage/" + organization_id + "/" + workspace_id + legacy_dir_path + "/" + execution_no + "/conductor"
-        if os.path.exists(conductor_dir_path):
-            # 一時フォルダに移動
-            if not os.path.exists(tmp_path):
-                os.makedirs(tmp_path)
-                os.chmod(tmp_path, 0o777)
-            shutil.move(dir_path, tmp_path)
-
-        gztar_path = tmp_path + "/" + execution_no + ".tar.gz"
-        with tarfile.open(gztar_path, "w:gz") as tar:
-            tar.add(tmp_path, arcname="")
-
-        # ステータスを実行待ちに変更
-        data_list = {"STATUS_ID": "12", "EXECUTION_NO": execution_no}
-        objdbca.table_update(t_ansl_exec_sts_inst, data_list, "EXECUTION_NO")
-
-        objdbca.db_commit()
-
-    # pioneer
-    if driver_id == "pioneer":
-        # in,outディレクトリ相当のパス
-        dir_path = "/storage/" + organization_id + "/" + workspace_id + pioneer_dir_path + "/" + execution_no
-        tmp_path = "/tmp/" + organization_id + "/" + workspace_id + pioneer_dir_path
-        if os.path.exists(dir_path):
-            # 一時フォルダに移動
-            if not os.path.exists(tmp_path):
-                os.makedirs(tmp_path)
-                os.chmod(tmp_path, 0o777)
-            shutil.move(dir_path, tmp_path)
-
-        # conductorディレクトリ相当のパス
-        conductor_dir_path = "/storage/" + organization_id + "/" + workspace_id + pioneer_dir_path + "/" + execution_no + "/conductor"
-        if os.path.exists(conductor_dir_path):
-            # 一時フォルダに移動
-            if not os.path.exists(tmp_path):
-                os.makedirs(tmp_path)
-                os.chmod(tmp_path, 0o777)
-            shutil.move(dir_path, tmp_path)
-
-        gztar_path = tmp_path + "/" + execution_no + ".tar.gz"
-        with tarfile.open(gztar_path, "w:gz") as tar:
-            tar.add(tmp_path, arcname="")
-
-        # ステータスを実行待ちに変更
-        data_list = {"STATUS_ID": "12", "EXECUTION_NO": execution_no}
-        objdbca.table_update(t_ansp_exec_sts_inst, data_list, "EXECUTION_NO")
-
-        objdbca.db_commit()
-
-    # role
-    if driver_id == "pioneer":
-        # in,outディレクトリ相当のパス
-        dir_path = "/storage/" + organization_id + "/" + workspace_id + role_dir_path + "/" + execution_no
-        tmp_path = "/tmp/" + organization_id + "/" + workspace_id + role_dir_path
-        if os.path.exists(dir_path):
-            # 一時フォルダに移動
-            if not os.path.exists(tmp_path):
-                os.makedirs(tmp_path)
-                os.chmod(tmp_path, 0o777)
-            shutil.move(dir_path, tmp_path)
-
-        # conductorディレクトリ相当のパス
-        conductor_dir_path = "/storage/" + organization_id + "/" + workspace_id + role_dir_path + "/" + execution_no + "/conductor"
-        # 一時フォルダに移動
-        if not os.path.exists(tmp_path):
-            os.makedirs(tmp_path)
-            os.chmod(tmp_path, 0o777)
-        shutil.move(dir_path, tmp_path)
-
-        gztar_path = tmp_path + "/" + execution_no + ".tar.gz"
-        with tarfile.open(gztar_path, "w:gz") as tar:
-            tar.add(tmp_path, arcname="")
-
-        # ステータスを実行待ちに変更
-        data_list = {"STATUS_ID": "12", "EXECUTION_NO": execution_no}
-        objdbca.table_update(t_ansr_exec_sts_inst, data_list, "EXECUTION_NO")
-
-        objdbca.db_commit()
+    objdbca.db_commit()
 
     return gztar_path
 

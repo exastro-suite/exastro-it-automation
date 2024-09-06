@@ -448,6 +448,17 @@ def update_error_executions(organization_id, workspace_id, exastro_api, error_ps
         for del_execution in del_execution_list:
             status_update = True
             # 作業状態通知送信: 異常時
+
+            # ステータスファイル有りで、作業中の実行プロセス停止時、エラーログに追記して通知
+            _base_dir = f"/storage/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{del_execution}"
+            [os.makedirs(f"{_base_dir}/{_c}") for _c in ["out", "in", "conductor"] if not os.path.isdir(f"{_base_dir}/{_c}")]
+            ag_parent_error_log =f"{_base_dir}/ag_parent_error.log"
+            obj = storage_write()
+            obj.open(ag_parent_error_log, 'w')
+            # Ansible実行エージェントで作業中の実行プロセスの停止が停止した為、終了します。(Execution no:{})
+            obj.write(g.appmsg.get_api_message('MSG-10985', [del_execution]))
+            obj.close()
+
             # 作業状態通知(ファイル)
 
             # 各種tar＋ファイルパス取得

@@ -16,7 +16,7 @@ import connexion
 
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectWs
-from common_libs.api import api_filter, api_filter_download_file, check_request_body, check_request_body_key
+from common_libs.api import api_filter, api_filter_download_temporary_file, check_request_body, check_request_body_key
 from libs.ansible_execution import * # noqa: F403
 from flask import g
 
@@ -86,7 +86,7 @@ def execution_status_notification(organization_id, workspace_id, execution_no, b
     return result_data,
 
 
-@api_filter_download_file
+@api_filter_download_temporary_file
 def get_populated_data(organization_id, workspace_id, execution_no, driver_id):  # noqa: E501
     """get_populated_data
 

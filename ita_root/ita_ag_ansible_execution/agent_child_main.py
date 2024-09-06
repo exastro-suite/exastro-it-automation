@@ -104,7 +104,8 @@ def agent_child():
     # 投入資材取得
     _chunk_size=1024*1024
     g.applogger.info(g.appmsg.get_log_message("MSG-10954", []))
-    status_code, response = get_execution_populated_data(organization_id, workspace_id, exastro_api, execution_no, query=driver_id)
+    query= {"driver_id": driver_id}
+    status_code, response = get_execution_populated_data(organization_id, workspace_id, exastro_api, execution_no, query=query)
     if not status_code == 200:
         raise AppException("MSG-10957", [])
     target_executions = response["data"] if isinstance(response["data"], dict) else {}
@@ -126,10 +127,24 @@ def agent_child():
                         f.flush()
 
             # tarファイルの中身のディレクトリ、ファイル移動
-            decompress_tar_file(organization_id, workspace_id, dir_path, conductor_dir_path, "tmp.gz", "conductor_tmp.gz", value["driver_id"], execution_no)
+            decompress_tar_file(organization_id, workspace_id, value["driver_id"], dir_path, conductor_dir_path, "tmp.gz", "conductor_tmp.gz", execution_no)
         else:
             # tarファイルの中身のディレクトリ、ファイル移動
-            decompress_tar_file(organization_id, workspace_id, dir_path, conductor_dir_path, "tmp.gz", "", value["driver_id"], execution_no)
+            decompress_tar_file(organization_id, workspace_id, value["driver_id"], dir_path, conductor_dir_path, "tmp.gz", "", execution_no)
+
+    ##### 投入資材取得→配置→展開→移動
+    base_dir = f"/tmp/{execution_no}"
+    shutil.rmtree(base_dir) if os.path.isdir(base_dir) else None
+    os.makedirs(base_dir)
+    dir_path = f"{base_dir}/{execution_no}.tar.gz"
+    with open(dir_path, 'wb') as f:
+        for chunk in response.iter_content(chunk_size=_chunk_size):
+            if chunk:
+                f.write(chunk)
+                f.flush()
+
+    print(dir_path, os.path.isfile(dir_path), os.path.getsize(dir_path))
+
 
     response.close()
 
@@ -139,14 +154,15 @@ def agent_child():
         ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
         if ret.returncode != 0:
             msg = g.appmsg.get_api_message('MSG-10948', [])
-            raise app_exception(msg)
+            raise AppException("MSG-10948", [])
 
     # start.sh実行
     cmd = root_in_dir_path + "/runner_executable_files/start.sh"
     ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
     if ret.returncode != 0:
         msg = g.appmsg.get_api_message('MSG-10949', [])
-        raise app_exception(msg)
+        # raise app_exception(msg)
+        raise AppException("MSG-10949", [])
 
     while True:
         # 各種ファイルをtarファイルにまとめる

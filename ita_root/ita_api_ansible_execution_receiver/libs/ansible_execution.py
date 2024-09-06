@@ -280,11 +280,6 @@ def get_populated_data_path(objdbca, organization_id, workspace_id, execution_no
     t_ansp_exec_sts_inst = "T_ANSP_EXEC_STS_INST"
     t_ansr_exec_sts_inst = "T_ANSR_EXEC_STS_INST"
 
-    # 各Driverパス
-    legacy_dir_path = "/driver/ansible/legacy"
-    pioneer_dir_path = "/driver/ansible/pioneer"
-    role_dir_path = "/driver/ansible/legacy_role"
-
     if driver_id == "legacy":
         t_exec_sts_inst = t_ansl_exec_sts_inst
     elif driver_id == "pioneer":
@@ -292,11 +287,21 @@ def get_populated_data_path(objdbca, organization_id, workspace_id, execution_no
     elif driver_id == "legacy_role":
         t_exec_sts_inst = t_ansr_exec_sts_inst
 
+
+    conductor_instance_no = None
+
+    # 作業インスタンス取得
+    where = 'WHERE  DISUSE_FLAG = %s AND EXECUTION_NO = %s'
+    parameter = ['0', execution_no]
+    ret = objdbca.table_select(t_ansl_exec_sts_inst, where, parameter)
+    if ret:
+        conductor_instance_no = ret[0].get("CONDUCTOR_INSTANCE_NO", None) if len(ret) == 1 else None
+
     # パス
     dir_path = f"/storage/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}"
     tmp_basse_path = f"/tmp/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/"
     tmp_path = f"/tmp/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/{execution_no}"
-    conductor_dir_path = f"/storage/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/conductor"
+    conductor_dir_path = f"/storage/{organization_id}/{workspace_id}/driver/conductor/{conductor_instance_no}"
     tmp_c_path = f"/tmp/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/conductor"
     gztar_path = f"{tmp_path}/{execution_no}.tar.gz"
 
@@ -311,15 +316,23 @@ def get_populated_data_path(objdbca, organization_id, workspace_id, execution_no
                 shutil.copytree(dir_path, tmp_path)
                 g.applogger.debug(f"shutil.copytree({dir_path}, {tmp_path})")
 
-        # conductor/*
-        # conductor_dir_path -> tmp_c_path に移動: conductor_dir_path無ければ作成
-        if not os.path.exists(conductor_dir_path):
-            os.makedirs(conductor_dir_path)
-            os.chmod(conductor_dir_path, 0o777)
+        # __conductor_workflowdir__/*
+        if conductor_instance_no:
+            # conductor_dir_path -> tmp_c_path に移動: conductor_dir_path無ければ作成
+            if not os.path.exists(conductor_dir_path):
+                os.makedirs(conductor_dir_path)
+                os.chmod(conductor_dir_path, 0o777)
+                g.applogger.debug(f"os.makedirs, os.chmod, ({conductor_dir_path})")
 
-        if not os.path.isdir(tmp_c_path):
-            shutil.copytree(conductor_dir_path, tmp_c_path)
-            g.applogger.debug(f"shutil.copytree({conductor_dir_path}, {tmp_c_path})")
+            if os.path.isdir(conductor_dir_path):
+                shutil.copytree(conductor_dir_path, tmp_c_path)
+                g.applogger.debug(f"shutil.copytree({conductor_dir_path}, {tmp_c_path})")
+        else:
+            # tmp_c_pathをdummyで空作成
+            if not os.path.exists(tmp_c_path):
+                os.makedirs(tmp_c_path)
+                os.chmod(tmp_c_path, 0o777)
+                g.applogger.debug(f"os.makedirs, os.chmod, ({tmp_c_path})")
 
         # tar.gz
         with tarfile.open(gztar_path, "w:gz") as tar:

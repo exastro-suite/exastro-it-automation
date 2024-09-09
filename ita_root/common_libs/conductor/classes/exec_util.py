@@ -3790,7 +3790,12 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
                     n_status_id = node_options.get('instance_info_data').get('dict').get('node_status').get('3')
                     # 3:実行中->3:実行中
                     c_status_id = node_options.get('instance_info_data').get('dict').get('conductor_status').get('3')
-
+                elif mv_status_id in ['11', '12']:
+                    # Ansible実行エージェント追加ステータス #89
+                    # 11:準備完了, 12:実行待->3:実行中
+                    n_status_id = node_options.get('instance_info_data').get('dict').get('node_status').get('3')
+                    # 3:実行中->3:実行中
+                    c_status_id = node_options.get('instance_info_data').get('dict').get('conductor_status').get('3')
                 elif mv_status_id in ['4']:
                     # 4:実行中(遅延)->4:実行中(遅延)
                     c_status_id = node_options.get('instance_info_data').get('dict').get('conductor_status').get('4')

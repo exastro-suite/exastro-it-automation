@@ -1211,6 +1211,7 @@
     "MSG-10982": "-",
     "MSG-10983": "-",
     "MSG-10984": "-",
+    "MSG-10985": "-",
     "MSG-10938": "Out of the input range. (Minimum value: {}, Maximum value: {}, Input value: {})\nMaximum value can be changed in the Management console/System management.",
     "MSG-20001": "Main menu",
     "MSG-20002": "[Main Menu] can not be set.",

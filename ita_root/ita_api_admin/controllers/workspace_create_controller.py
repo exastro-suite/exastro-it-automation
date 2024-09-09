@@ -60,7 +60,8 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
     ws_connect_info = org_db.get_wsdb_connect_info(workspace_id)
     if ws_connect_info:
         org_db.db_disconnect()
-        return '', "ALREADY EXISTS", "499-00001", 499
+        # Already exists.(target{}: {})
+        return '', g.appmsg.get_api_message("490-02008", ["workspace_id", workspace_id]), "490-02008", 490
 
     inistial_data_ansible_if = org_db.get_inistial_data_ansible_if()
     # get no install driver list
@@ -78,7 +79,8 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         g.applogger.info("made workspace_dir")
     else:
         org_db.db_disconnect()
-        return '', "ALREADY EXISTS", "499-00001", 499
+        # Already exists.(target{}: {})
+        return '', g.appmsg.get_api_message("490-02008", ["workspace_dir", workspace_dir]), "490-02008", 490
 
     try:
         # make workspace-db connect infomation
@@ -108,7 +110,8 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
                 # OASEが有効かつ、環境変数「MONGO_HOST」と「MONGO_CONNECTION_STRING」両方に値が無い場合は、workspace作成をできないようにする。
                 org_db.db_disconnect()
                 org_root_db.db_disconnect()
-                return "", "The OASE driver cannot be added because the MongoDB host is not set in the environment variables.", "499-00006", 499
+                # The OASE driver cannot be added because the MongoDB host is not set in the environment variables.
+                return '', g.appmsg.get_api_message("490-02015", []), "490-02015", 490
 
             # make workspace-mongo connect infomation
             org_mongo = MONGOConnectOrg(org_db)
@@ -377,7 +380,8 @@ def workspace_delete(organization_id, workspace_id):  # noqa: E501
     connect_info = org_db.get_wsdb_connect_info(workspace_id)
     if connect_info is False:
         org_db.db_disconnect()
-        return '', "ALREADY DELETED", "499-00002", 499
+        # Already deleted.(target{}: {})
+        return '', g.appmsg.get_api_message("490-02009", ["workspace_id", workspace_id]), "490-02009", 490
 
     # get no install driver list
     no_install_driver_tmp = org_db.get_no_install_driver()

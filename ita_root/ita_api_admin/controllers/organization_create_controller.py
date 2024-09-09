@@ -66,7 +66,8 @@ def organization_create(body, organization_id):
         if drivers is not None:
             for driver_name, driver_bool in drivers.items():
                 if driver_name not in driver_list:
-                    return '', "Value of key[drivers] is invalid.", "499-00004", 499
+                    # Value of key[{}] is invalid.
+                    return '', g.appmsg.get_api_message("490-02005", ["drivers"]), "490-02005", 490
 
                 if driver_bool is False:
                     additional_drivers[driver_name] = False
@@ -83,7 +84,8 @@ def organization_create(body, organization_id):
     if additional_drivers["oase"] is True:
         if is_exists_mongo_info is False:
             # 必要な接続情報が足りない
-            return "", "body paramater 'services.document_store' is required", "499-00008", 499
+            # Body paramater '{}' is required.
+            return '', g.appmsg.get_api_message("490-02006", ["services.document_store"]), "490-02006", 490
         mongodb_info = body['services']['document_store']
 
         mongo_host = os.environ.get('MONGO_HOST', '')
@@ -91,9 +93,9 @@ def organization_create(body, organization_id):
         mongo_connection_string = mongodb_info.get('connection_string', '')
         if mongo_connection_string:
             # 接続文字列の不正チェック
-            url_check_bool, url_check_msg = mongo_url_check(mongo_connection_string)
+            url_check_bool, url_check_msg, message_num = mongo_url_check(mongo_connection_string)
             if url_check_bool is False:
-                return "", url_check_msg, "499-00009", 499
+                return "", url_check_msg, message_num, 490
 
         # pattern
         # 1. mongo_owner=True   mongo_connection_string=""    WS単位でユーザを作成し、ＤＢと紐づける。内部コンテナを利用。
@@ -101,7 +103,8 @@ def organization_create(body, organization_id):
         # 3. mongo_owner=True   mongo_connection_string="xxx"   WS単位でユーザを作成し、ＤＢと紐づける。外部のmongoを利用。未実装
         if (mongo_owner is True and not mongo_host) or (mongo_owner is False and not mongo_connection_string):
             # どちらのpatternの接続情報もなく、OASEドライバを追加できない。
-            return "", "The OASE driver cannot be added because the connection infomation of mongo is not set", "499-00006", 499
+            # The OASE driver cannot be added because the connection infomation of mongo is not set.
+            return '', g.appmsg.get_api_message("490-02007", []), "490-02007", 490
 
         # v2.4ではmongo_owner=Trueは、内部コンテナしか許さないので、pattern1に流す
         if mongo_owner is True:
@@ -125,7 +128,8 @@ def organization_create(body, organization_id):
     common_db = DBConnectCommon()  # noqa: F405
     connect_info = common_db.get_orgdb_connect_info(organization_id)
     if connect_info:
-        return '', "ALREADY EXISTS", "499-00001", 499
+        # Already exists.(target{}: {})
+        return '', g.appmsg.get_api_message("490-02008", ["organization_id", organization_id]), "490-02008", 490
 
     # make storage directory for organization
     strage_path = os.environ.get('STORAGEPATH')
@@ -134,7 +138,8 @@ def organization_create(body, organization_id):
         os.makedirs(organization_dir)
         g.applogger.info("made organization_dir")
     else:
-        return '', "ALREADY EXISTS", "499-00001", 499
+        # Already exists.(target{}: {})
+        return '', g.appmsg.get_api_message("490-02008", ["organization_dir", organization_dir]), "490-02008", 490
 
     try:
         # make organization-db connect infomation
@@ -255,7 +260,8 @@ def organization_delete(organization_id):  # noqa: E501
     common_db = DBConnectCommon()  # noqa: F405
     connect_info = common_db.get_orgdb_connect_info(organization_id)
     if connect_info is False:
-        return '', "ALREADY DELETED", "499-00002", 499
+        # Already deleted.(target{}: {})
+        return '', g.appmsg.get_api_message("490-02009", ["organization_id", organization_id]), "490-02009", 490
 
     g.db_connect_info = {}
     g.db_connect_info["ORGDB_HOST"] = connect_info["DB_HOST"]
@@ -400,7 +406,8 @@ def organization_info(organization_id):  # noqa: E501
         common_db = DBConnectCommon()  # noqa: F405
         connect_info = common_db.get_orgdb_connect_info(organization_id)
         if connect_info is False:
-            return '', "Organization does not exist", "499-00005", 499
+            # Organization does not exist.
+            return '', g.appmsg.get_api_message("490-02010", []), "490-02010", 490
 
         # ドライバのインストール状態を取得する
         drivers = {
@@ -427,9 +434,9 @@ def organization_info(organization_id):  # noqa: E501
             mask_mongo_connection_string = ""
             if encrypt_mongo_connection_string:
                 mongo_connection_string = ky_decrypt(encrypt_mongo_connection_string)
-                url_check_bool, url_parse_obj = mongo_url_check(mongo_connection_string)
+                url_check_bool, url_parse_obj, message_num = mongo_url_check(mongo_connection_string)
                 if url_check_bool is False:
-                    return "", url_parse_obj, "499-00009", 499
+                    return "", url_parse_obj, message_num, 490
 
                 mask_mongo_connection_string = mongo_connection_string.replace(url_parse_obj.password, '***')
 
@@ -495,10 +502,12 @@ def organization_update(organization_id, body=None):  # noqa: E501
             for driver_name, driver_bool in drivers.items():
                 # bodyのdriversに指定のドライバ名以外のkeyがある際にエラーとする。
                 if driver_name not in driver_list:
-                    return '', "Value of key[drivers] is invalid.", "499-00004", 499
+                    # Value of key[{}] is invalid.
+                    return '', g.appmsg.get_api_message("490-02005", ["drivers"]), "490-02005", 490
         else:
             # body内でdriverが指定されていないためエラーとする。
-            return '', "Body paramater 'drivers' is required.", "499-00004", 499
+            # Body paramater '{}' is required.
+            return '', g.appmsg.get_api_message("490-02006", ["drivers"]), "490-02006", 490
 
         # 追加するドライバの対象が、no_install_driverに含まれていない（すでにインストール済み）場合は追加対象から除外する
         # 削除するドライバの対象が、no_install_driverに含まれている場合は削除対象から除外する
@@ -573,7 +582,8 @@ def organization_update(organization_id, body=None):  # noqa: E501
         if "oase" in add_drivers or ("oase" not in no_install_driver and is_exists_mongo_info is True):
             if is_exists_mongo_info is False:
                 # 必要な接続情報が足りない
-                return "", "body paramater 'document_store' is required", "499-00008", 499
+                # Body paramater '{}' is required.
+                return '', g.appmsg.get_api_message("490-02006", ["document_store"]), "490-02006", 490
             mongodb_info = body['services']['document_store']
 
             mongo_host = os.environ.get('MONGO_HOST', '')
@@ -581,9 +591,9 @@ def organization_update(organization_id, body=None):  # noqa: E501
             mongo_connection_string = mongodb_info.get('connection_string', '')
             if mongo_connection_string:
                 # 接続文字列の不正チェック
-                url_check_bool, url_check_msg = mongo_url_check(mongo_connection_string)
+                url_check_bool, url_check_msg, message_num = mongo_url_check(mongo_connection_string)
                 if url_check_bool is False:
-                    return "", url_check_msg, "499-00009", 499
+                    return "", url_check_msg, message_num, 490
 
             # pattern
             # 1. mongo_owner=True   mongo_connection_string=""    WS単位でユーザを作成し、ＤＢと紐づける。内部コンテナを利用。
@@ -591,17 +601,20 @@ def organization_update(organization_id, body=None):  # noqa: E501
             # 3. mongo_owner=True   mongo_connection_string="xxx"   WS単位でユーザを作成し、ＤＢと紐づける。外部のmongoを利用。未実装
             if (mongo_owner is True and not mongo_host) or (mongo_owner is False and not mongo_connection_string):
                 # どちらのpatternの接続情報もなく、OASEドライバを追加できない。
-                return "", "The OASE driver cannot be added because the connection infomation of mongo is not set", "499-00006", 499
+                # The OASE driver cannot be added because the connection infomation of mongo is not set.
+                return '', g.appmsg.get_api_message("490-02007", []), "490-02007", 490
 
             if "oase" not in no_install_driver:
             # インストール済みの場合（接続情報のみを変更する）
                 g.applogger.info("oase is already installed. Connection infocation of mongo will be updated.(oase update pattern 2)")
                 # v2.4ではpattern2→pattern2しか許さない
                 if mongo_owner is True or not mongo_connection_string or bool(org_connect_info['MONGO_OWNER']) is True or not org_connect_info['MONGO_CONNECTION_STRING']:
-                    return "", "This change of mongo connection infomation is not allowed", "499-00010", 499
+                    # This change of mongo connection infomation is not allowed.
+                    return '', g.appmsg.get_api_message("490-02011", []), "490-02011", 490
                 # 同じ文字列の送信は許さない
                 if mongo_connection_string == ky_decrypt(org_connect_info.get('MONGO_CONNECTION_STRING')):
-                    return "", "this mongo connection infomation is already changed", "499-00011", 499
+                    # This mongo connection infomation is already changed.
+                    return '', g.appmsg.get_api_message("490-02012", []), "490-02012", 490
 
             # v2.4ではmongo_owner=Trueは、内部コンテナしか許さないので、pattern1に流す
             if mongo_owner is True:
@@ -968,9 +981,11 @@ def mongo_url_check(mongo_connection_string):
     # 接続文字列の不正チェック
     url_check_bool, url_parse_obj = url_check(mongo_connection_string, username=True, password=True, port=True)
     if url_check_bool is False:
-        return False, "body paramater 'services.document_store.connection_string' is invalid. ({})".format(url_parse_obj)
+        # Body paramater '{}' is invalid. ({})
+        return False, g.appmsg.get_api_message("490-02013", ["services.document_store.connection_string", url_parse_obj]), "490-02013"
 
     if url_parse_obj.scheme not in ['mongodb', 'mongodb+srv']:
-        return False, "URI must begin with 'mongodb://' or 'mongodb+srv://'"
+        # URI must begin with 'mongodb://' or 'mongodb+srv://'.
+        return False, g.appmsg.get_api_message("490-02014", []), "490-02014"
 
-    return True, url_parse_obj
+    return True, url_parse_obj, None

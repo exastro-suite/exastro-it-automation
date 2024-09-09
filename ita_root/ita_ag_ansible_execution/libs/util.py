@@ -313,8 +313,8 @@ def arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, stat
         # 作業用ディレクトリパス
         tmp_dir_path = "/tmp/" +  organization_id + "/" + workspace_id + "/driver/ansible/" + driver_id + "/" + execution_no
     elif mode == "parent":
-        # /storage/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/
-        _base_path = f"/storage/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}"
+        # /storage/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{execution_no}/
+        _base_path = f"/storage/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{execution_no}"
         _tmp_path = _base_path.replace("/storage/", "/tmp/")
         # outディレクトリパス
         out_dir_path = f"{_base_path}/out"
@@ -353,7 +353,7 @@ def arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, stat
         parameters_tar_dir_path = tmp_dir_path + "/parameter"
         parameters_gztar_path = parameters_tar_dir_path + ".tar.gz"
         parameters_file_tar_dir_path = tmp_dir_path + "/parameters_file"
-        parameters_file_gztar_path = parameters_file_tar_dir_path + "/parameter"
+        parameters_file_gztar_path = parameters_file_tar_dir_path + ".tar.gz"
         conductor_tar_dir_path = tmp_dir_path + "/conductor"
         conductor_gztar_path = conductor_tar_dir_path + ".tar.gz"
 
@@ -367,19 +367,23 @@ def arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, stat
 
         os.makedirs(out_tar_dir_path)
         os.makedirs(parameters_tar_dir_path)
-        os.makedirs(parameters_file_gztar_path)
+        os.makedirs(parameters_file_tar_dir_path)
 
         # outディレクトリをtarファイルにまとめる
         shutil.copytree(out_dir_path, tmp_dir_path, dirs_exist_ok=True)
         with tarfile.open(out_gztar_path, "w:gz") as tar:
             tar.add(out_tar_dir_path, arcname="")
 
+        # parameters・parameters_file無ければ空で作成しておく
+        os.makedirs(in_dir_path + "/parameter") if not os.path.exists(in_dir_path + "/parameter") else None
+        os.makedirs(in_dir_path + "/parameters_file") if not os.path.exists(in_dir_path + "/parameters_file") else None
+
         # parameters・parameters_fileをtarファイルにまとめる
         shutil.copytree(in_dir_path + "/parameter", parameters_tar_dir_path, dirs_exist_ok=True)
         shutil.copytree(in_dir_path + "/parameters_file", parameters_file_tar_dir_path, dirs_exist_ok=True)
         with tarfile.open(parameters_gztar_path, "w:gz") as tar:
             tar.add(parameters_tar_dir_path, arcname="")
-        with tarfile.open(parameters_file_gztar_path + ".tar.gz", "w:gz") as tar:
+        with tarfile.open(parameters_file_gztar_path, "w:gz") as tar:
             tar.add(parameters_file_tar_dir_path, arcname="")
 
         # conductorディレクトリをtarファイルにまとめる

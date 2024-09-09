@@ -181,6 +181,21 @@ def get_execution_status(objdbca, execution_no, body):
     t_ansp_exec_sts_inst = "T_ANSP_EXEC_STS_INST"
     t_ansr_exec_sts_inst = "T_ANSR_EXEC_STS_INST"
 
+    status_list = [
+        AnscConst.NOT_YET,          # 未実行
+        AnscConst.PREPARE,          # 準備中
+        AnscConst.PROCESSING,       # 実行中
+        AnscConst.PROCESS_DELAYED,  # 実行中(遅延)
+        AnscConst.COMPLETE,         # 完了
+        AnscConst.FAILURE,          # 完了(異常)
+        AnscConst.EXCEPTION,        # 想定外エラー
+        AnscConst.SCRAM,            # 緊急停止
+        AnscConst.RESERVE,          # 未実行(予約中)
+        AnscConst.RESERVE_CANCEL,   # 予約取消
+        AnscConst.PREPARE_COMPLETE, # 準備完了
+        AnscConst.PROCESSING_WAIT,  # 実行待ち
+    ]
+
     # トランザクション開始
     objdbca.db_transaction_start()
 
@@ -189,76 +204,62 @@ def get_execution_status(objdbca, execution_no, body):
     # ステータス
     status = body["status"]
 
+    if driver_id == "legacy":
+        t_exec_sts_inst = t_ansl_exec_sts_inst
+    elif driver_id == "pioneer":
+        t_exec_sts_inst = t_ansp_exec_sts_inst
+    elif driver_id == "legacy_role":
+        t_exec_sts_inst = t_ansr_exec_sts_inst
+    else:
+        g.applogger.info(f"Not found {driver_id=}")
+        return {}
+
+    if status not in status_list:
+        g.applogger.info(f"Not found {status=}")
+        return {}
+
     # ステータス更新、緊急停止状態取得
     result = {}
-    data_list = {"EXECUTION_NO": execution_no, "STATUS_ID": status}
-    if driver_id == "legacy":
-        ret = objdbca.table_select(t_ansl_exec_sts_inst, 'WHERE  EXECUTION_NO=%s', [execution_no])
-        for record in ret:
-            current_status = record.get("STATUS_ID")
-            result["SCRAM_STATUS"] = record.get("ABORT_EXECUTE_FLAG")
-        # ステータス更新制御
-        # 実行中(遅延)→実行中にならないように
-        if current_status == AnscConst.PROCESS_DELAYED and status == AnscConst.PROCESSING:
-            return result
-        # 完了→実行中、実行中(遅延)、完了(異常)、想定外エラー、緊急停止にならないように
-        if current_status == AnscConst.COMPLETE and status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED, AnscConst.FAILURE, AnscConst.EXCEPTION, AnscConst.SCRAM]:
-            return result
-        # 完了(異常)→実行中、実行中(遅延)、完了、想定外エラー、緊急停止にならないように
-        if current_status == AnscConst.FAILURE and status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED, AnscConst.COMPLETE, AnscConst.EXCEPTION, AnscConst.SCRAM]:
-            return result
-        # 想定外エラー→実行中、実行中(遅延)、完了、完了(異常)、緊急停止にならないように
-        if current_status == AnscConst.EXCEPTION and status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED, AnscConst.COMPLETE, AnscConst.FAILURE, AnscConst.SCRAM]:
-            return result
-        # 緊急停止→実行中、実行中(遅延)、完了、完了(異常)、想定外エラーにならないように
-        if current_status == AnscConst.SCRAM and status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED, AnscConst.COMPLETE, AnscConst.FAILURE, AnscConst.EXCEPTION]:
-            return result
+    ret = objdbca.table_select(t_exec_sts_inst, 'WHERE  EXECUTION_NO=%s', [execution_no])
+    for record in ret:
+        current_status = record.get("STATUS_ID")
+        result["SCRAM_STATUS"] = record.get("ABORT_EXECUTE_FLAG")
+
+    # ステータス更新制御
+    # 完了→実行中、実行中(遅延)、完了(異常)、想定外エラー、緊急停止にならないように
+    if current_status == AnscConst.COMPLETE and status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED, AnscConst.FAILURE, AnscConst.EXCEPTION, AnscConst.SCRAM]:
+        return result
+    # 完了(異常)→実行中、実行中(遅延)、完了、想定外エラー、緊急停止にならないように
+    if current_status == AnscConst.FAILURE and status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED, AnscConst.COMPLETE, AnscConst.EXCEPTION, AnscConst.SCRAM]:
+        return result
+    # 想定外エラー→実行中、実行中(遅延)、完了、完了(異常)、緊急停止にならないように
+    if current_status == AnscConst.EXCEPTION and status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED, AnscConst.COMPLETE, AnscConst.FAILURE, AnscConst.SCRAM]:
+        return result
+    # 緊急停止→実行中、実行中(遅延)、完了、完了(異常)、想定外エラーにならないように
+    if current_status == AnscConst.SCRAM and status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED, AnscConst.COMPLETE, AnscConst.FAILURE, AnscConst.EXCEPTION]:
+        return result
+
+    update_status_flg = False
+    # パラメータのステータスが、実行中, 実行中(遅延)の場合 / 他
+    if status == [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED]:
+        # ステータス更新: 実行中->実行中(遅延)に変更する場合のみ
+        if current_status == AnscConst.PROCESSING and status == AnscConst.PROCESS_DELAYED:
+            update_status_flg = True
+        else:
+            # 最終更新日時のみ：実行中->実行中, 実行中(遅延)->実行中 , 実行中(遅延)->実行中(遅延)
+            update_status_flg = False
+    else:
+        # ステータス更新: 完了、完了(異常)、想定外エラー,緊急停止
+        update_status_flg = True
+
+    if update_status_flg:
         # ステータス更新
-        objdbca.table_update(t_ansl_exec_sts_inst, data_list, "EXECUTION_NO")
-    elif driver_id == "pioneer":
-        ret = objdbca.table_select(t_ansp_exec_sts_inst, 'WHERE  EXECUTION_NO=%s', [execution_no])
-        for record in ret:
-            result["SCRAM_STATUS"] = record.get("ABORT_EXECUTE_FLAG")
-        # ステータス更新制御
-        # 実行中(遅延)→実行中にならないように
-        if current_status == AnscConst.PROCESS_DELAYED and status == AnscConst.PROCESSING:
-            return result
-        # 完了→実行中、実行中(遅延)、完了(異常)、想定外エラー、緊急停止にならないように
-        if current_status == AnscConst.COMPLETE and status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED, AnscConst.FAILURE, AnscConst.EXCEPTION, AnscConst.SCRAM]:
-            return result
-        # 完了(異常)→実行中、実行中(遅延)、完了、想定外エラー、緊急停止にならないように
-        if current_status == AnscConst.FAILURE and status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED, AnscConst.COMPLETE, AnscConst.EXCEPTION, AnscConst.SCRAM]:
-            return result
-        # 想定外エラー→実行中、実行中(遅延)、完了、完了(異常)、緊急停止にならないように
-        if current_status == AnscConst.EXCEPTION and status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED, AnscConst.COMPLETE, AnscConst.FAILURE, AnscConst.SCRAM]:
-            return result
-        # 緊急停止→実行中、実行中(遅延)、完了、完了(異常)、想定外エラーにならないように
-        if current_status == AnscConst.SCRAM and status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED, AnscConst.COMPLETE, AnscConst.FAILURE, AnscConst.EXCEPTION]:
-            return result
-        # ステータス更新
-        objdbca.table_update(t_ansp_exec_sts_inst, data_list, "EXECUTION_NO")
-    elif driver_id == "legacy_role":
-        ret = objdbca.table_select(t_ansr_exec_sts_inst, 'WHERE  EXECUTION_NO=%s', [execution_no])
-        for record in ret:
-            result["SCRAM_STATUS"] = record.get("ABORT_EXECUTE_FLAG")
-        # ステータス更新制御
-        # 実行中(遅延)→実行中にならないように
-        if current_status == AnscConst.PROCESS_DELAYED and status == AnscConst.PROCESSING:
-            return result
-        # 完了→実行中、実行中(遅延)、完了(異常)、想定外エラー、緊急停止にならないように
-        if current_status == AnscConst.COMPLETE and status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED, AnscConst.FAILURE, AnscConst.EXCEPTION, AnscConst.SCRAM]:
-            return result
-        # 完了(異常)→実行中、実行中(遅延)、完了、想定外エラー、緊急停止にならないように
-        if current_status == AnscConst.FAILURE and status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED, AnscConst.COMPLETE, AnscConst.EXCEPTION, AnscConst.SCRAM]:
-            return result
-        # 想定外エラー→実行中、実行中(遅延)、完了、完了(異常)、緊急停止にならないように
-        if current_status == AnscConst.EXCEPTION and status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED, AnscConst.COMPLETE, AnscConst.FAILURE, AnscConst.SCRAM]:
-            return result
-        # 緊急停止→実行中、実行中(遅延)、完了、完了(異常)、想定外エラーにならないように
-        if current_status == AnscConst.SCRAM and status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED, AnscConst.COMPLETE, AnscConst.FAILURE, AnscConst.EXCEPTION]:
-            return result
-        # ステータス更新
-        objdbca.table_update(t_ansr_exec_sts_inst, data_list, "EXECUTION_NO")
+        data_list = {"EXECUTION_NO": execution_no, "STATUS_ID": status}
+        objdbca.table_update(t_exec_sts_inst, data_list, "EXECUTION_NO")
+    else:
+        # 最終更新日時のみ更新: 履歴なし
+        data_list = {"EXECUTION_NO": execution_no}
+        objdbca.table_update(t_exec_sts_inst, data_list, "EXECUTION_NO", is_register_history=False, last_timestamp=True)
 
     objdbca.db_commit()
 
@@ -293,7 +294,7 @@ def get_populated_data_path(objdbca, organization_id, workspace_id, execution_no
     # 作業インスタンス取得
     where = 'WHERE  DISUSE_FLAG = %s AND EXECUTION_NO = %s'
     parameter = ['0', execution_no]
-    ret = objdbca.table_select(t_ansl_exec_sts_inst, where, parameter)
+    ret = objdbca.table_select(t_exec_sts_inst, where, parameter)
     if ret:
         conductor_instance_no = ret[0].get("CONDUCTOR_INSTANCE_NO", None) if len(ret) == 1 else None
 
@@ -362,7 +363,7 @@ def get_populated_data_path(objdbca, organization_id, workspace_id, execution_no
     return gztar_path
 
 
-def update_result(organization_id, workspace_id, execution_no, parameters, file_path):
+def update_result(objdbca, organization_id, workspace_id, execution_no, parameters, file_path):
     """
         通知されたファイルの更新
         ARGS:
@@ -372,6 +373,37 @@ def update_result(organization_id, workspace_id, execution_no, parameters, file_
         RETRUN:
             statusCode, {}, msg
     """
+
+    # 各テーブル
+    t_ansl_exec_sts_inst = "T_ANSL_EXEC_STS_INST"
+    t_ansp_exec_sts_inst = "T_ANSP_EXEC_STS_INST"
+    t_ansr_exec_sts_inst = "T_ANSR_EXEC_STS_INST"
+
+    if driver_id == "legacy":
+        t_exec_sts_inst = t_ansl_exec_sts_inst
+    elif driver_id == "pioneer":
+        t_exec_sts_inst = t_ansp_exec_sts_inst
+    elif driver_id == "legacy_role":
+        t_exec_sts_inst = t_ansr_exec_sts_inst
+
+    current_status_id = None
+    allowed_update_status = [
+        AnscConst.PROCESSING,       # 実行中
+        AnscConst.PROCESS_DELAYED,  # 実行中(遅延)
+        AnscConst.PREPARE_COMPLETE, # 準備完了
+        AnscConst.PROCESSING_WAIT,  # 実行待ち
+    ]
+
+    # 作業インスタンス取得
+    where = 'WHERE DISUSE_FLAG = %s AND EXECUTION_NO = %s'
+    parameter = ['0', execution_no]
+    ret = objdbca.table_select(t_exec_sts_inst, where, parameter)
+    if ret:
+        current_status_id = ret[0].get("STATUS_ID", None) if len(ret) == 1 else None
+
+    # 準備完了～実行中ステータスの場合以外、ファイルの更新はさせない
+    if current_status_id and current_status_id not in allowed_update_status:
+        return {}
 
     # ドライバーID
     driver_id = parameters["driver_id"]
@@ -442,6 +474,8 @@ def update_result(organization_id, workspace_id, execution_no, parameters, file_
                 for file_path in file_list:
                     # 通知されたファイルで上書き
                     shutil.move(file_path, conductor_directory_path + "/" + os.path.basename(file_path))
+
+    return {}
 
 def get_agent_version(objdbca, body):
     """

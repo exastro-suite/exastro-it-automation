@@ -241,9 +241,12 @@ def get_execution_status(objdbca, execution_no, body):
 
     update_status_flg = False
     # パラメータのステータスが、実行中, 実行中(遅延)の場合 / 他
-    if status == [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED]:
+    if status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED]:
         # ステータス更新: 実行中->実行中(遅延)に変更する場合のみ
         if current_status == AnscConst.PROCESSING and status == AnscConst.PROCESS_DELAYED:
+            update_status_flg = True
+        # ステータス更新: 実行待ち->実行中に変更する場合のみ
+        elif current_status == AnscConst.PROCESSING_WAIT and status == AnscConst.PROCESSING:
             update_status_flg = True
         else:
             # 最終更新日時のみ：実行中->実行中, 実行中(遅延)->実行中 , 実行中(遅延)->実行中(遅延)
@@ -379,6 +382,11 @@ def update_result(objdbca, organization_id, workspace_id, execution_no, paramete
     t_ansp_exec_sts_inst = "T_ANSP_EXEC_STS_INST"
     t_ansr_exec_sts_inst = "T_ANSR_EXEC_STS_INST"
 
+    # ドライバーID
+    driver_id = parameters["driver_id"]
+    # ステータス
+    status = parameters["status"]
+
     if driver_id == "legacy":
         t_exec_sts_inst = t_ansl_exec_sts_inst
     elif driver_id == "pioneer":
@@ -404,11 +412,6 @@ def update_result(objdbca, organization_id, workspace_id, execution_no, paramete
     # 準備完了～実行中ステータスの場合以外、ファイルの更新はさせない
     if current_status_id and current_status_id not in allowed_update_status:
         return {}
-
-    # ドライバーID
-    driver_id = parameters["driver_id"]
-    # ステータス
-    status = parameters["status"]
 
     if driver_id == "legacy":
         out_directory_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "/out"

@@ -160,7 +160,7 @@ def update_result_data(organization_id, workspace_id, execution_no, body=None, *
         retBool, parameters, file_paths = create_file_path(connexion.request, tmp_path, execution_no)
 
         # 作業実行関連のメニューの基本情報および項目情報の取得
-        result_data = update_result(organization_id, workspace_id, execution_no, parameters, file_paths)
+        result_data = update_result(objdbca, organization_id, workspace_id, execution_no, parameters, file_paths)
         # result_data.setdefault("menu_info", tmp_data[0]["data"])
     except Exception as e:
         raise e

@@ -498,11 +498,11 @@ def update_error_executions(organization_id, workspace_id, exastro_api, error_ps
                     open(conductor_gztar_path, "rb"),
                     mimetypes.guess_type(conductor_gztar_path, False)[0])
 
-            # status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, del_execution, body, form_data=form_data)
-            # if not status_code == 200:
-            #     # g.applogger.info(f"作業状態通知(ファイル)に失敗しました。(execution={del_execution}, {status_id=})")
-            #     g.applogger.info(g.appmsg.get_log_message("MSG-10983", [del_execution, f"{status_id=}"]))
-            #     status_update = False
+            status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, del_execution, body, form_data=form_data)
+            if not status_code == 200:
+                # g.applogger.info(f"作業状態通知(ファイル)に失敗しました。(execution={del_execution}, {status_id=})")
+                g.applogger.info(g.appmsg.get_log_message("MSG-10983", [del_execution, f"{status_id=}"]))
+                status_update = False
 
             # 作業状態通知
             if status_update:

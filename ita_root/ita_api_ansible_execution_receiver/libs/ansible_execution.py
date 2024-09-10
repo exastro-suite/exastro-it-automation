@@ -43,6 +43,9 @@ def unexecuted_instance(objdbca):
     t_ansc_execdev = "T_ANSC_EXECDEV"
     t_ansc_info = "T_ANSC_IF_INFO"
 
+    # t_xxxx_exec_sts_instのPrimary key
+    exec_sts_inst_pkey = "EXECUTION_NO"
+
     # 各ドライバ
     driver_ids = [
         "legacy",
@@ -68,9 +71,6 @@ def unexecuted_instance(objdbca):
         # トランザクション開始
         objdbca.db_transaction_start()
 
-        # 各作業実行関連テーブルのロック
-        objdbca.table_lock([t_ansl_exec_sts_inst, t_ansp_exec_sts_inst, t_ansr_exec_sts_inst])
-
         result = {}
         pass_phrase = g.ORGANIZATION_ID + " " + g.WORKSPACE_ID
 
@@ -85,9 +85,17 @@ def unexecuted_instance(objdbca):
                 t_exec_sts_inst = t_ansr_exec_sts_inst
 
             # 準備完了の作業インスタンス取得
-            where = 'WHERE  DISUSE_FLAG=%s AND STATUS_ID = %s'
+            where = 'WHERE DISUSE_FLAG=%s AND STATUS_ID = %s'
             parameter = ['0', '11']
             ret = objdbca.table_select(t_exec_sts_inst, where, parameter)
+
+            # 各作業実行関連テーブルの行ロック
+            execution_no_list = [_r.get(exec_sts_inst_pkey) for _r in ret if _r.get(exec_sts_inst_pkey)]
+            if len(execution_no_list) != 0:
+                sql_str = f"SELECT `{exec_sts_inst_pkey}` FROM `{t_exec_sts_inst}` WHERE `{exec_sts_inst_pkey}` IN (%s) FOR UPDATE"
+                objdbca.sql_execute(sql_str, [",".join(execution_no_list)])
+                g.applogger.debug(f"SELECT FOR UPDATE :{exec_sts_inst_pkey}, [{execution_no_list}]")
+
             for record in ret:
                 # 実行環境名
                 ag_execution_env_name = record.get("I_AG_EXECUTION_ENVIRONMENT_NAME")

@@ -168,9 +168,9 @@ def child_process_exist_check(organization_id, workspace_id, execution_no, drive
     Returns:
         bool
     """
-    # psコマンドでbackyard_child_init.pyの起動プロセスリストを作成
+    # psコマンドでagent/agent_child_init.pyの起動プロセスリストを作成
     # psコマンドがマレに起動プロセスリストを取りこぼすことがあるので3回分を作成
-    # command = ["python3", "backyard/backyard_child_init.py", organization_id, workspace_id, execution_no, driver_id]
+    # command = ["python3", "agent/agent_child_init.py", organization_id, workspace_id, execution_no, driver_id]
 
     child_process_1 = child_process_exist_check_ps()
     time.sleep(0.05)
@@ -183,8 +183,8 @@ def child_process_exist_check(organization_id, workspace_id, execution_no, drive
 
     # 子プロ起動確認
     is_running = False
-    # command = ["python3", "backyard/backyard_child_init.py", organization_id, workspace_id, execution_no]
-    command_args = "{} {} {} {}".format('backyard/backyard_child_init.py', organization_id, workspace_id, execution_no)
+    # command = ["python3", "agent/agent_child_init.py", organization_id, workspace_id, execution_no]
+    command_args = "{} {} {} {}".format('agent/agent_child_init.py', organization_id, workspace_id, execution_no)
 
     child_process_arr = child_process_1.split('\n')
     for r_child_process in child_process_arr:
@@ -244,7 +244,7 @@ def child_process_exist_check_ps():
     Returns:
         stdout row
     """
-    # ps -efw | grep backyard/backyard_child_init.py | grep -v grep
+    # ps -efw | grep agent/agent_child_init.py | grep -v grep
     cp1 = subprocess.run(
         ["ps", "-efw"],
         capture_output=True,
@@ -254,7 +254,7 @@ def child_process_exist_check_ps():
         cp1.check_returncode()
 
     cp2 = subprocess.run(
-        ["grep", "agent_child.py"],
+        ["grep", "agent/agent_child_init.py"],
         capture_output=True,
         text=True,
         input=cp1.stdout
@@ -462,9 +462,9 @@ def update_error_executions(organization_id, workspace_id, exastro_api, error_ps
             # 作業状態通知(ファイル)
 
             # 各種tar＋ファイルパス取得
-            # out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path\
-            #     = arcive_tar_data(organization_id, workspace_id, driver_id, del_execution, status_id, mode="parent")
-            out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path = ("","","","")
+            out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path\
+                = arcive_tar_data(organization_id, workspace_id, driver_id, del_execution, status_id, mode="parent")
+
             g.applogger.debug(f"{out_gztar_path=}, {parameters_gztar_path=}, {parameters_file_gztar_path=}, {conductor_gztar_path=}")
 
             body = {

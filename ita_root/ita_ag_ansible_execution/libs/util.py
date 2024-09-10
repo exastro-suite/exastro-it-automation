@@ -325,6 +325,16 @@ def arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, stat
         # 作業用ディレクトリパス
         tmp_dir_path = _tmp_path
 
+    # 作業ディレクトリがなければ作成しておく
+    os.makedirs(tmp_dir_path) if not os.path.exists(tmp_dir_path) else None
+    # /out無ければ空で作成しておく
+    os.makedirs(out_dir_path) if not os.path.exists(out_dir_path) else None
+    # parameters・parameters_file無ければ空で作成しておく
+    os.makedirs(in_dir_path + "/parameter") if not os.path.exists(in_dir_path + "/parameter") else None
+    os.makedirs(in_dir_path + "/parameters_file") if not os.path.exists(in_dir_path + "/parameters_file") else None
+    # /conductor無ければ空で作成しておく
+    os.makedirs(conductor_dir_path) if not os.path.exists(conductor_dir_path) else None
+
     out_tar_dir_path = tmp_dir_path + "/out"
     out_gztar_path = out_tar_dir_path + ".tar.gz"
     parameters_tar_dir_path = ""
@@ -374,9 +384,6 @@ def arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, stat
         with tarfile.open(out_gztar_path, "w:gz") as tar:
             tar.add(out_tar_dir_path, arcname="")
 
-        # parameters・parameters_file無ければ空で作成しておく
-        os.makedirs(in_dir_path + "/parameter") if not os.path.exists(in_dir_path + "/parameter") else None
-        os.makedirs(in_dir_path + "/parameters_file") if not os.path.exists(in_dir_path + "/parameters_file") else None
 
         # parameters・parameters_fileをtarファイルにまとめる
         shutil.copytree(in_dir_path + "/parameter", parameters_tar_dir_path, dirs_exist_ok=True)

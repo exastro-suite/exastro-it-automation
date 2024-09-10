@@ -1614,7 +1614,7 @@
     "AGT-10045": "Request data failed due to type error. Check the parameter settings.",
     "AGT-10046": "Failed because the response was not in JSON format",
     "BKY-90000": "Process {}",
-    "BKY-90001": "Rull matching process {}",
+    "BKY-90001": "Rule matching process {}",
     "BKY-90002": "The action notification and logic event registration {}",
     "BKY-90003": "The rule matching process failed",
     "BKY-90004": "No events to process",

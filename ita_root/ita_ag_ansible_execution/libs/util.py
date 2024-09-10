@@ -305,11 +305,11 @@ def arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, stat
     """
     if mode == "child":
         # outディレクトリパス
-        out_dir_path = "/exastro/share_volume_dir/" + driver_id + "/" + execution_no + "/out"
+        out_dir_path = f"/storage/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{execution_no}/out"
         # inディレクトリパス
-        in_dir_path = "/exastro/project_dir/" + driver_id + "/" + execution_no + "/project"
+        in_dir_path = f"/storage/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{execution_no}/project"
         # conductorディレクトリパス
-        conductor_dir_path = "/exastro/share_volume_dir/" + driver_id + "/" + execution_no + "/conductor"
+        conductor_dir_path = f"/storage/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{execution_no}/conductor"
         # 作業用ディレクトリパス
         tmp_dir_path = "/tmp/" +  organization_id + "/" + workspace_id + "/driver/ansible/" + driver_id + "/" + execution_no
     elif mode == "parent":
@@ -380,7 +380,7 @@ def arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, stat
         os.makedirs(parameters_file_tar_dir_path)
 
         # outディレクトリをtarファイルにまとめる
-        shutil.copytree(out_dir_path, tmp_dir_path, dirs_exist_ok=True)
+        shutil.copytree(out_dir_path, out_tar_dir_path, dirs_exist_ok=True)
         with tarfile.open(out_gztar_path, "w:gz") as tar:
             tar.add(out_tar_dir_path, arcname="")
 
@@ -394,10 +394,11 @@ def arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, stat
             tar.add(parameters_file_tar_dir_path, arcname="")
 
         # conductorディレクトリをtarファイルにまとめる
-        if not os.path.exists(conductor_tar_dir_path):
-            os.makedirs(conductor_tar_dir_path)
-        shutil.copytree(conductor_dir_path, conductor_tar_dir_path, dirs_exist_ok=True)
-        with tarfile.open(conductor_gztar_path, "w:gz") as tar:
-            tar.add(conductor_tar_dir_path, arcname="")
+        if os.path.exists(conductor_dir_path):
+            if not os.path.exists(conductor_tar_dir_path):
+                os.makedirs(conductor_tar_dir_path)
+            shutil.copytree(conductor_dir_path, conductor_tar_dir_path, dirs_exist_ok=True)
+            with tarfile.open(conductor_gztar_path, "w:gz") as tar:
+                tar.add(conductor_tar_dir_path, arcname="")
 
     return out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path

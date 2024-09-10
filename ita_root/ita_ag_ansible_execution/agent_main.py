@@ -104,11 +104,11 @@ def main_logic(organization_id, workspace_id, exastro_api, baseUrl):
             password = value["password"] if value["password"] else ""
 
             # 子プロ起動
-            command = ["python3", "agent/agent_child_init.py", organization_id, workspace_id, execution_no, value["driver_id"], value["build_type"], user_name, password]
+            command = ["python3", "agent/agent_child_init.py", organization_id, workspace_id, execution_no, value["driver_id"], value["build_type"], user_name, password, value["base_image"]]
             cp = subprocess.Popen(command)  # noqa: F841
 
             # 子プロ死活監視
-            child_process_exist_check(organization_id, workspace_id, execution_no, value["driver_id"], value["build_type"], user_name, password)
+            child_process_exist_check(organization_id, workspace_id, execution_no, value["driver_id"], value["build_type"], user_name, password, value["base_image"])
 
             # 起動した未実行インスタンスを保存
             start_up_list.append(execution_no)
@@ -165,7 +165,7 @@ def conductor_decode_tar_file(base_64data, dir_path):
         raise AppException('MSG-10947', [])
 
 
-def child_process_exist_check(organization_id, workspace_id, execution_no, driver_id, build_type=None, user_name="", password="", reboot=True):
+def child_process_exist_check(organization_id, workspace_id, execution_no, driver_id, build_type=None, user_name="", password="", base_image=None ,reboot=True):
     """
     実行中の子プロの起動確認
 
@@ -231,7 +231,7 @@ def child_process_exist_check(organization_id, workspace_id, execution_no, drive
                 obj.close()
 
                 # 子プロ再起動
-                command = ["python3", "agent/agent_child_init.py", organization_id, workspace_id, execution_no, driver_id, user_name, password]
+                command = ["python3", "agent/agent_child_init.py", organization_id, workspace_id, execution_no, driver_id, user_name, password, base_image]
                 cp = subprocess.Popen(command)  # noqa: F841
             else:
                 g.applogger.info(g.appmsg.get_log_message("MSG-10056", [execution_no, workspace_id]))

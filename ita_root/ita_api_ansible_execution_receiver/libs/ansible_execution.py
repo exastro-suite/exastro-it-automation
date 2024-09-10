@@ -23,6 +23,8 @@ from common_libs.ag.util import ky_decrypt, app_exception, exception
 from common_libs.common import storage_access
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_execution.version import AnsibleExexutionVersion
+from common_libs.ansible_execution.encrypt import agent_encrypt
+
 
 def unexecuted_instance(objdbca):
     """
@@ -41,128 +43,102 @@ def unexecuted_instance(objdbca):
     t_ansc_execdev = "T_ANSC_EXECDEV"
     t_ansc_info = "T_ANSC_IF_INFO"
 
-    # Legacy
-    # 準備完了の作業インスタンス取得
-    where = 'WHERE  DISUSE_FLAG=%s AND STATUS_ID = %s'
-    parameter = ['0', '11']
-    ret = objdbca.table_select(t_ansl_exec_sts_inst, where, parameter)
+    # t_xxxx_exec_sts_instのPrimary key
+    exec_sts_inst_pkey = "EXECUTION_NO"
 
-    result = {}
+    # 各ドライバ
+    driver_ids = [
+        "legacy",
+        "pioneer",
+        "legacy_role"
+    ]
+
+    # 実行時データ削除フラグ取得
+    where = 'WHERE DISUSE_FLAG=%s'
+    parameter = ['0']
+    ret = objdbca.table_select(t_ansc_info, where, parameter)
     for record in ret:
-        execution_no = record.get("EXECUTION_NO") # 作業番号
+        anstwr_del_runtime_data = record['ANSTWR_DEL_RUNTIME_DATA']
 
-        result[execution_no] = {
-            "driver_id": "legacy"
-        }
+    # 実行環境構築方法取得
+    where = 'WHERE DISUSE_FLAG=%s'
+    parameter = ['0']
+    ret = objdbca.table_select(t_ansc_execdev, where, parameter)
+    execdev_data = {_r.get("EXECUTION_ENVIRONMENT_NAME"): _r for _r in ret \
+        if _r.get("EXECUTION_ENVIRONMENT_NAME") is not None} if ret else {}
 
-        # 実行環境構築方法取得
-        where = 'WHERE  DISUSE_FLAG=%s'
-        parameter = ['0']
-        ret = objdbca.table_select(t_ansc_execdev, where, parameter)
+    try:
+        # トランザクション開始
+        objdbca.db_transaction_start()
 
-        for record in ret:
-            build_type = record['BUILD_TYPE']
-            user_name = record['USER_NAME']
-            password = record['PASSWORD']
-            base_image = record['BASE_IMAGE_OS_TYPE']
-            attach_repository = record['ATTACH_REPOSITORY']
-            password = ky_decrypt(password)
+        result = {}
+        pass_phrase = g.ORGANIZATION_ID + " " + g.WORKSPACE_ID
 
-        # 実行時データ削除フラグ取得
-        where = 'WHERE  DISUSE_FLAG=%s'
-        parameter = ['0']
-        ret = objdbca.table_select(t_ansc_info, where, parameter)
-        for record in ret:
-            anstwr_del_runtime_data = record['ANSTWR_DEL_RUNTIME_DATA']
+        # 各driver
+        for driver_id in driver_ids:
+            # 各driverのテーブル
+            if driver_id == "legacy":
+                t_exec_sts_inst = t_ansl_exec_sts_inst
+            elif driver_id == "pioneer":
+                t_exec_sts_inst = t_ansp_exec_sts_inst
+            elif driver_id == "legacy_role":
+                t_exec_sts_inst = t_ansr_exec_sts_inst
 
-        result[execution_no]["build_type"] = build_type
-        result[execution_no]["user_name"] = user_name
-        result[execution_no]["password"] = password
-        result[execution_no]["base_image"] = base_image
-        result[execution_no]["attach_repository"] = attach_repository
-        result[execution_no]["anstwr_del_runtime_data"] = anstwr_del_runtime_data
+            # 準備完了の作業インスタンス取得
+            where = 'WHERE DISUSE_FLAG=%s AND STATUS_ID = %s'
+            parameter = ['0', '11']
+            ret = objdbca.table_select(t_exec_sts_inst, where, parameter)
 
-    # pioneer
-    # 準備完了の作業インスタンス取得
-    where = 'WHERE  DISUSE_FLAG=%s AND STATUS_ID = %s'
-    parameter = ['0', '11']
-    ret = objdbca.table_select(t_ansp_exec_sts_inst, where, parameter)
+            # 各作業実行関連テーブルの行ロック
+            execution_no_list = [_r.get(exec_sts_inst_pkey) for _r in ret if _r.get(exec_sts_inst_pkey)]
+            if len(execution_no_list) != 0:
+                sql_str = f"SELECT `{exec_sts_inst_pkey}` FROM `{t_exec_sts_inst}` WHERE `{exec_sts_inst_pkey}` IN (%s) FOR UPDATE"
+                objdbca.sql_execute(sql_str, [",".join(execution_no_list)])
+                g.applogger.debug(f"SELECT FOR UPDATE :{exec_sts_inst_pkey}, [{execution_no_list}]")
 
-    for record in ret:
-        execution_no = record.get("EXECUTION_NO") # 作業番号
+            for record in ret:
+                # 実行環境名
+                ag_execution_env_name = record.get("I_AG_EXECUTION_ENVIRONMENT_NAME")
+                # 実行環境情報
+                execdev_record = execdev_data[ag_execution_env_name] \
+                    if ag_execution_env_name in execdev_data else {}
+                # 作業番号
+                execution_no = record.get("EXECUTION_NO")
 
-        result[execution_no] = {
-            "driver_id": "pioneer"
-        }
+                # 複合化→暗号化（エージェント用）
+                password = execdev_record.get('PASSWORD')
+                password = ky_decrypt(password)
+                password = agent_encrypt(execdev_record.get('PASSWORD'), pass_phrase)\
+                    if execdev_record.get('PASSWORD') else execdev_record.get('PASSWORD')
 
-        # 実行環境構築方法取得
-        where = 'WHERE  DISUSE_FLAG=%s'
-        parameter = ['0']
-        ret = objdbca.table_select(t_ansc_execdev, where, parameter)
+                # set result[execution_no]
+                result[execution_no] = {
+                    "driver_id": driver_id
+                }
+                result[execution_no]["build_type"] = execdev_record.get('BUILD_TYPE')
+                result[execution_no]["user_name"] = execdev_record.get('USER_NAME')
+                result[execution_no]["password"] = password
+                result[execution_no]["base_image"] = execdev_record.get('BASE_IMAGE_OS_TYPE')
+                result[execution_no]["attach_repository"] = execdev_record.get('ATTACH_REPOSITORY')
+                result[execution_no]["anstwr_del_runtime_data"] = anstwr_del_runtime_data
 
-        for record in ret:
-            build_type = record['BUILD_TYPE']
-            user_name = record['USER_NAME']
-            password = record['PASSWORD']
-            base_image = record['BASE_IMAGE_OS_TYPE']
-            attach_repository = record['ATTACH_REPOSITORY']
-            password = ky_decrypt(password)
+                # ステータスを実行待ちに変更
+                data_list = {
+                    "STATUS_ID": AnscConst.PROCESSING_WAIT,
+                    "EXECUTION_NO": execution_no
+                }
+                objdbca.table_update(t_exec_sts_inst, data_list, "EXECUTION_NO")
 
-        # 実行時データ削除フラグ取得
-        where = 'WHERE  DISUSE_FLAG=%s'
-        parameter = ['0']
-        ret = objdbca.table_select(t_ansc_info, where, parameter)
-        for record in ret:
-            anstwr_del_runtime_data = record['ANSTWR_DEL_RUNTIME_DATA']
+        # コミット/トランザクション終了
+        objdbca.db_transaction_end(True)
+    except Exception as e:
+        result = {}
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
 
-        result[execution_no]["build_type"] = build_type
-        result[execution_no]["user_name"] = user_name
-        result[execution_no]["password"] = password
-        result[execution_no]["base_image"] = base_image
-        result[execution_no]["attach_repository"] = attach_repository
-        result[execution_no]["anstwr_del_runtime_data"] = anstwr_del_runtime_data
-
-    # role
-    # 準備完了の作業インスタンス取得
-    where = 'WHERE  DISUSE_FLAG=%s AND STATUS_ID = %s'
-    parameter = ['0', '11']
-    ret = objdbca.table_select(t_ansr_exec_sts_inst, where, parameter)
-
-    for record in ret:
-        execution_no = record.get("EXECUTION_NO") # 作業番号
-
-        result[execution_no] = {
-            "driver_id": "legacy_role"
-        }
-
-        # 実行環境構築方法取得
-        where = 'WHERE  DISUSE_FLAG=%s'
-        parameter = ['0']
-        ret = objdbca.table_select(t_ansc_execdev, where, parameter)
-
-        for record in ret:
-            build_type = record['BUILD_TYPE']
-            user_name = record['USER_NAME']
-            password = record['PASSWORD']
-            base_image = record['BASE_IMAGE_OS_TYPE']
-            attach_repository = record['ATTACH_REPOSITORY']
-            password = ky_decrypt(password)
-
-        # 実行時データ削除フラグ取得
-        where = 'WHERE  DISUSE_FLAG=%s'
-        parameter = ['0']
-        ret = objdbca.table_select(t_ansc_info, where, parameter)
-        for record in ret:
-            anstwr_del_runtime_data = record['ANSTWR_DEL_RUNTIME_DATA']
-
-        result[execution_no]["build_type"] = build_type
-        result[execution_no]["user_name"] = user_name
-        result[execution_no]["password"] = password
-        result[execution_no]["base_image"] = base_image
-        result[execution_no]["attach_repository"] = attach_repository
-        result[execution_no]["anstwr_del_runtime_data"] = anstwr_del_runtime_data
-
-    objdbca.db_commit()
+        if objdbca._is_transaction is True:
+            # ロールバック/トランザクション終了
+            objdbca.db_transaction_end(False)
 
     return result
 
@@ -195,9 +171,6 @@ def get_execution_status(objdbca, execution_no, body):
         AnscConst.PREPARE_COMPLETE, # 準備完了
         AnscConst.PROCESSING_WAIT,  # 実行待ち
     ]
-
-    # トランザクション開始
-    objdbca.db_transaction_start()
 
     # ドライバーID
     driver_id = body["driver_id"]
@@ -255,6 +228,9 @@ def get_execution_status(objdbca, execution_no, body):
         # ステータス更新: 完了、完了(異常)、想定外エラー,緊急停止
         update_status_flg = True
 
+    # トランザクション開始
+    objdbca.db_transaction_start()
+
     if update_status_flg:
         # ステータス更新
         data_list = {"EXECUTION_NO": execution_no, "STATUS_ID": status}
@@ -264,7 +240,8 @@ def get_execution_status(objdbca, execution_no, body):
         data_list = {"EXECUTION_NO": execution_no}
         objdbca.table_update(t_exec_sts_inst, data_list, "EXECUTION_NO", is_register_history=False, last_timestamp=True)
 
-    objdbca.db_commit()
+    # コミット/トランザクション終了
+    objdbca.db_transaction_end(True)
 
     return result
 
@@ -354,14 +331,6 @@ def get_populated_data_path(objdbca, organization_id, workspace_id, execution_no
         with tarfile.open(gztar_path, 'r:gz') as tar:
             g.applogger.debug(f"{tar.getmembers()=}")
 
-    # トランザクション開始
-    objdbca.db_transaction_start()
-
-    # ステータスを実行待ちに変更
-    data_list = {"STATUS_ID": "12", "EXECUTION_NO": execution_no}
-    objdbca.table_update(t_exec_sts_inst, data_list, "EXECUTION_NO")
-
-    objdbca.db_commit()
 
     return gztar_path
 
@@ -528,7 +497,8 @@ def get_agent_version(objdbca, body):
         if ret is False:
             return False
 
-    objdbca.db_commit()
+    # コミット/トランザクション終了
+    objdbca.db_transaction_end(True)
 
     return result
 

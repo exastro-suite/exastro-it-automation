@@ -62,6 +62,7 @@ def agent_child_main():
         if not status_code == 200:
             g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
     except Exception as e:
+        exception(e)
         # 異常時の共通処理
         # 結果データ更新+作業状態通知送信
         status = AnscConst.FAILURE
@@ -71,7 +72,6 @@ def agent_child_main():
         )
         if not status_code == 200:
             g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-        exception(e)
     finally:
         # /tmpをゴミ掃除
         # rmAnsibleCreateFiles()

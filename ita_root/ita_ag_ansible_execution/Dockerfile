@@ -37,7 +37,7 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
     wget \
     zip \
     unzip \
-    sqlite \
+
 &&  pip3.9 install poetry==1.6.0 \
 &&  poetry config virtualenvs.create false \
 &&  groupadd $GROUPNAME \

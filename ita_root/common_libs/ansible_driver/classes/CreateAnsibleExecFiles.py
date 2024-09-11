@@ -778,7 +778,6 @@ class CreateAnsibleExecFiles():
             if os.path.isdir(c_dirwk) is False:
                 os.mkdir(c_dirwk)
             os.chmod(c_dirwk, 0o777)
-
             self.setAnsible_in_runner_files_Dir(c_dirwk)
 
         # グローバル変数管理からグローバル変数の情報を取得

@@ -250,8 +250,6 @@ def CreateAG_ITABuilderShellFiles(objDBCA, AnscObj, out_dir, execution_no, movem
     item = {}
     item["PROJECT_BASE_DIR"] = "{}/project/builder_executable_files".format(get_AGAnsibleExecutDirPath(AnscObj, execution_no))
 
-    print("PROJECT_BASE_DIR:" + item["PROJECT_BASE_DIR"])
-
     item['optional_parameters'] = movemrnt_row['AG_BUILDER_OPTIONS']
     item['tag_name'] = execdev_row['TAG_NAME']
     # None対応

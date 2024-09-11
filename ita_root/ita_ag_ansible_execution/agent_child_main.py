@@ -34,7 +34,10 @@ def agent_child_main():
     """
     # コマンドラインから引数を受け取る["自身のファイル名", "organization_id", "workspace_id", …, …]
     args = sys.argv
+    organization_id = args[1]
+    workspace_id = args[2]
     execution_no = args[3]
+    driver_id = args[4]
 
     global ansc_const
     global driver_error_log_file
@@ -46,18 +49,37 @@ def agent_child_main():
     g.AnsibleCreateFilesPath = "{}/Ansible_{}".format(get_OSTmpPath(), execution_no) #####
 
     try:
-        # ステータスファイル作成は？ ####
         agent_child()
-        # 正常終了 / 以外 #####
-        # ステータスファイル削除 ####
     except AppException as e:
-        # ステータスファイル削除 ####
         app_exception(e)
+        # 異常時の共通処理
+        # 結果データ更新+作業状態通知送信
+        status = AnscConst.FAILURE
+        status_code, response = post_upload_file_and_status(
+            None, organization_id, workspace_id,
+            execution_no, status, driver_id
+        )
+        if not status_code == 200:
+            g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
     except Exception as e:
+        # 異常時の共通処理
+        # 結果データ更新+作業状態通知送信
+        status = AnscConst.FAILURE
+        status_code, response = post_upload_file_and_status(
+            None, organization_id, workspace_id,
+            execution_no, status, driver_id
+        )
+        if not status_code == 200:
+            g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
         exception(e)
     finally:
         # /tmpをゴミ掃除
         # rmAnsibleCreateFiles()
+        # 作業ディレクトリ削除
+        clear_execution_tmpdir(organization_id, workspace_id, driver_id, execution_no)
+
+        # ステータスファイルの削除
+        clear_execution_status_file(organization_id, workspace_id, driver_id, execution_no)
         pass
     return 0
 
@@ -97,14 +119,14 @@ def agent_child():
     runner_error_log_pass = f"/storage/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/artifacts/{execution_no}/stderr"
 
     # 実行状態確認用のステータスファイル作成
-    status_file_path = "/storage/" + organization_id + "/" + workspace_id + "/ag_ansible_execution/status/" + driver_id
-    if not os.path.exists(status_file_path):
-        os.makedirs(status_file_path)
-        os.chmod(status_file_path, 0o777)
-    if not os.path.isfile(status_file_path + "/" + execution_no):
+    status_file_dir_path, status_file_path = get_status_file_path(organization_id, workspace_id, driver_id, execution_no)
+    if not os.path.exists(status_file_dir_path):
+        os.makedirs(status_file_dir_path)
+        os.chmod(status_file_dir_path, 0o777)
+    if not os.path.isfile(status_file_path):
         # ファイル名を作業番号で作成
         obj = storage_write()
-        obj.open(status_file_path + "/" + execution_no, 'w')
+        obj.open(status_file_path, 'w')
         obj.write("0")
         obj.close()
 
@@ -125,7 +147,7 @@ def agent_child():
     query= {"driver_id": driver_id}
     status_code, response = get_execution_populated_data(organization_id, workspace_id, exastro_api, execution_no, query=query)
     if not status_code == 200:
-        g.applogger.info(g.appmsg.get_log_message("MSG-10955", [status_code, response]))
+        raise AppException("MSG-10955", [status_code, response], [status_code, response])
 
     # tarファイル解凍
     dir_path = f"/tmp/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/{execution_no}/"
@@ -138,8 +160,8 @@ def agent_child():
                 f.write(chunk)
                 f.flush()
 
-            # tarファイルの中身のディレクトリ、ファイル移動
-            decompress_tar_file(organization_id, workspace_id, driver_id, dir_path, file_name, execution_no)
+        # tarファイルの中身のディレクトリ、ファイル移動
+        decompress_tar_file(organization_id, workspace_id, driver_id, dir_path, file_name, execution_no)
 
     response.close()
 
@@ -190,35 +212,12 @@ def agent_child():
                 # ログ更新
                 status = AnscConst.FAILURE
                 log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
-                # 各種ファイルをtarファイルにまとめる
-                out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path = arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, status)
-                endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/result_data"
-                body = {
-                    "driver_id": driver_id,
-                    "status": status
-                }
-                form_data = {
-                    "json_parameters": json.dumps(body),
-                    "out_tar_data" : (os.path.basename(out_gztar_path), open(out_gztar_path, "rb"), mimetypes.guess_type(out_gztar_path, False)[0]),
-                    "parameters_tar_data" : (os.path.basename(parameters_gztar_path), open(parameters_gztar_path, "rb"), mimetypes.guess_type(parameters_gztar_path, False)[0]),
-                    "parameters_file_tar_data" : (os.path.basename(parameters_file_gztar_path), open(parameters_file_gztar_path, "rb"), mimetypes.guess_type(parameters_file_gztar_path, False)[0]),
-                    "conductor_tar_data" : (os.path.basename(conductor_gztar_path), open(conductor_gztar_path, "rb"), mimetypes.guess_type(conductor_gztar_path, False)[0]),
-                }
-                status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
-                if not status_code == 200:
-                    g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
 
-                # 作業状態通知送信
-                body = {
-                    "driver_id": driver_id,
-                    "status": status
-                }
-                # ステータスファイル削除
-                os.remove(status_file_path + "/" + execution_no)
-
-                status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body)
-                if not status_code == 200:
-                    g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
+                # agent_child_mainのAppExceptionで異常時の共通処理
+                # ansible-builderの実行に失敗しました。(builder_executable_files/builder.sh)
+                status_code = "MSG-10986"
+                msg_args = ["ansible-builder", "builder_executable_files/builder.sh"]
+                raise AppException(status_code, msg_args, msg_args)
 
     # start.sh実行
     try:
@@ -237,35 +236,12 @@ def agent_child():
             # ログ更新
             status = AnscConst.FAILURE
             log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
-            # 各種ファイルをtarファイルにまとめる
-            out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path = arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, status)
-            endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/result_data"
-            body = {
-                "driver_id": driver_id,
-                "status": status
-            }
-            form_data = {
-                "json_parameters": json.dumps(body),
-                "out_tar_data" : (os.path.basename(out_gztar_path), open(out_gztar_path, "rb"), mimetypes.guess_type(out_gztar_path, False)[0]),
-                "parameters_tar_data" : (os.path.basename(parameters_gztar_path), open(parameters_gztar_path, "rb"), mimetypes.guess_type(parameters_gztar_path, False)[0]),
-                "parameters_file_tar_data" : (os.path.basename(parameters_file_gztar_path), open(parameters_file_gztar_path, "rb"), mimetypes.guess_type(parameters_file_gztar_path, False)[0]),
-                "conductor_tar_data" : (os.path.basename(conductor_gztar_path), open(conductor_gztar_path, "rb"), mimetypes.guess_type(conductor_gztar_path, False)[0]),
-            }
-            status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
-            if not status_code == 200:
-                g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
 
-            # 作業状態通知送信
-            body = {
-                "driver_id": driver_id,
-                "status": status
-            }
-            # ステータスファイル削除
-            os.remove(status_file_path + "/" + execution_no)
-
-            status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body)
-            if not status_code == 200:
-                g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
+            # agent_child_mainのAppExceptionで異常時の共通処理
+            # ansible-runnerの実行に失敗しました。(runner_executable_files/start.sh)
+            status_code = "MSG-10986"
+            msg_args = ["ansible-runner", "runner_executable_files/start.sh"]
+            raise AppException(status_code, msg_args, msg_args)
 
     artifact_path = f"/tmp/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/artifacts"
     runner_exec_log_pass = f"{artifact_path}/{execution_no}/stdout"
@@ -313,33 +289,12 @@ def agent_child():
                         # stop.shの実行に失敗した場合完了(異常)
                         status = AnscConst.FAILURE
                         log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
-                        # 各種ファイルをtarファイルにまとめる
-                        out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path = arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, status)
-                        endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/result_data"
-                        body = {
-                            "driver_id": driver_id,
-                            "status": status
-                        }
-                        form_data = {
-                            "json_parameters": json.dumps(body),
-                            "out_tar_data" : (os.path.basename(out_gztar_path), open(out_gztar_path, "rb"), mimetypes.guess_type(out_gztar_path, False)[0]),
-                            "parameters_tar_data" : (os.path.basename(parameters_gztar_path), open(parameters_gztar_path, "rb"), mimetypes.guess_type(parameters_gztar_path, False)[0]),
-                            "parameters_file_tar_data" : (os.path.basename(parameters_file_gztar_path), open(parameters_file_gztar_path, "rb"), mimetypes.guess_type(parameters_file_gztar_path, False)[0]),
-                            "conductor_tar_data" : (os.path.basename(conductor_gztar_path), open(conductor_gztar_path, "rb"), mimetypes.guess_type(conductor_gztar_path, False)[0]),
-                        }
-                        status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
-                        if not status_code == 200:
-                            g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
 
-                        # 作業状態通知送信
-                        body = {
-                            "driver_id": driver_id,
-                            "status": status
-                        }
-
-                        status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body)
-                        if not status_code == 200:
-                            g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
+                        # agent_child_mainのAppExceptionで異常時の共通処理
+                        # 緊急停止の実行に失敗しました。(runner_executable_files/stop.sh)
+                        status_code = "MSG-10986"
+                        msg_args = ["Emergency stop", "runner_executable_files/stop.sh"]
+                        raise AppException(status_code, msg_args, msg_args)
 
                 if stop_result is True:
                     # forced_exec作成
@@ -359,30 +314,39 @@ def agent_child():
                             # 結果データ更新
                             status = AnscConst.COMPLETE
                             log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
-                            # 各種ファイルをtarファイルにまとめる
-                            out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path = arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, status)
-                            endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/result_data"
-                            body = {
-                                "driver_id": driver_id,
-                                "status": status
-                            }
-                            form_data = {
-                                "json_parameters": json.dumps(body),
-                                "out_tar_data" : (os.path.basename(out_gztar_path), open(out_gztar_path, "rb"), mimetypes.guess_type(out_gztar_path, False)[0]),
-                                "parameters_tar_data" : (os.path.basename(parameters_gztar_path), open(parameters_gztar_path, "rb"), mimetypes.guess_type(parameters_gztar_path, False)[0]),
-                                "parameters_file_tar_data" : (os.path.basename(parameters_file_gztar_path), open(parameters_file_gztar_path, "rb"), mimetypes.guess_type(parameters_file_gztar_path, False)[0]),
-                                "conductor_tar_data" : (os.path.basename(conductor_gztar_path), open(conductor_gztar_path, "rb"), mimetypes.guess_type(conductor_gztar_path, False)[0]),
-                            }
-                            status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
-                            if not status_code == 200:
-                                g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
+                            # # 各種ファイルをtarファイルにまとめる
+                            # out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path = arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, status)
+                            # endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/result_data"
+                            # body = {
+                            #     "driver_id": driver_id,
+                            #     "status": status
+                            # }
+                            # form_data = {
+                            #     "json_parameters": json.dumps(body),
+                            #     "out_tar_data" : (os.path.basename(out_gztar_path), open(out_gztar_path, "rb"), mimetypes.guess_type(out_gztar_path, False)[0]),
+                            #     "parameters_tar_data" : (os.path.basename(parameters_gztar_path), open(parameters_gztar_path, "rb"), mimetypes.guess_type(parameters_gztar_path, False)[0]),
+                            #     "parameters_file_tar_data" : (os.path.basename(parameters_file_gztar_path), open(parameters_file_gztar_path, "rb"), mimetypes.guess_type(parameters_file_gztar_path, False)[0]),
+                            #     "conductor_tar_data" : (os.path.basename(conductor_gztar_path), open(conductor_gztar_path, "rb"), mimetypes.guess_type(conductor_gztar_path, False)[0]),
+                            # }
+                            # status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
+                            # if not status_code == 200:
+                            #     g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
 
-                            # 作業状態通知送信
-                            body = {
-                                "driver_id": driver_id,
-                                "status": status
-                            }
-                            status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body)
+                            # # 作業状態通知送信
+                            # body = {
+                            #     "driver_id": driver_id,
+                            #     "status": status
+                            # }
+                            # status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body)
+                            # if not status_code == 200:
+                            #     g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
+                            # break
+
+                            # 結果データ更新->作業状態通知送信
+                            status_code, response = post_upload_file_and_status(
+                                exastro_api, organization_id, workspace_id,
+                                execution_no, status, driver_id
+                            )
                             if not status_code == 200:
                                 g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
                             break
@@ -397,34 +361,12 @@ def agent_child():
                             # 結果データ更新
                             status = AnscConst.FAILURE
                             log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
-                            # 各種ファイルをtarファイルにまとめる
-                            out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path = arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, status)
-                            endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/result_data"
-                            body = {
-                                "driver_id": driver_id,
-                                "status": status
-                            }
-                            form_data = {
-                                "json_parameters": json.dumps(body),
-                                "out_tar_data" : (os.path.basename(out_gztar_path), open(out_gztar_path, "rb"), mimetypes.guess_type(out_gztar_path, False)[0]),
-                                "parameters_tar_data" : (os.path.basename(parameters_gztar_path), open(parameters_gztar_path, "rb"), mimetypes.guess_type(parameters_gztar_path, False)[0]),
-                                "parameters_file_tar_data" : (os.path.basename(parameters_file_gztar_path), open(parameters_file_gztar_path, "rb"), mimetypes.guess_type(parameters_file_gztar_path, False)[0]),
-                                "conductor_tar_data" : (os.path.basename(conductor_gztar_path), open(conductor_gztar_path, "rb"), mimetypes.guess_type(conductor_gztar_path, False)[0]),
-                            }
-                            status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
-                            if not status_code == 200:
-                                g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
 
-                            # 作業状態通知送信
-                            body = {
-                                "driver_id": driver_id,
-                                "status": status
-                            }
+                            # agent_child_mainのAppExceptionで異常時の共通処理
+                            status_code = "MSG-10953"
+                            msg_args = []
+                            raise AppException(status_code, msg_args, msg_args)
 
-                            status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body)
-                            if not status_code == 200:
-                                g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-                            break
                     else:
                         # rcファイルなし
                         # ログを残す
@@ -437,35 +379,11 @@ def agent_child():
                         # 結果データ更新
                         status = AnscConst.FAILURE
                         log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
-                        # 各種ファイルをtarファイルにまとめる
-                        out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path = arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, status)
-                        endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/result_data"
-                        body = {
-                            "driver_id": driver_id,
-                            "status": status
-                        }
-                        form_data = {
-                            "json_parameters": json.dumps(body),
-                            "out_tar_data" : (os.path.basename(out_gztar_path), open(out_gztar_path, "rb"), mimetypes.guess_type(out_gztar_path, False)[0]),
-                            "parameters_tar_data" : (os.path.basename(parameters_gztar_path), open(parameters_gztar_path, "rb"), mimetypes.guess_type(parameters_gztar_path, False)[0]),
-                            "parameters_file_tar_data" : (os.path.basename(parameters_file_gztar_path), open(parameters_file_gztar_path, "rb"), mimetypes.guess_type(parameters_file_gztar_path, False)[0]),
-                            "conductor_tar_data" : (os.path.basename(conductor_gztar_path), open(conductor_gztar_path, "rb"), mimetypes.guess_type(conductor_gztar_path, False)[0]),
-                        }
-                        status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
-                        if not status_code == 200:
-                            g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
 
-                        # 作業状態通知送信
-                        endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/notification/status"
-                        body = {
-                            "driver_id": driver_id,
-                            "status": status
-                        }
-
-                        status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body)
-                        if not status_code == 200:
-                            g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-                        break
+                        # agent_child_mainのAppExceptionで異常時の共通処理
+                        status_code = "MSG-10953"
+                        msg_args = []
+                        raise AppException(status_code, msg_args, msg_args)
             else:
                 # rcファイルの中身を確認する
                 file_path = root_dir_path + "/artifacts/" + execution_no + "/rc"
@@ -477,66 +395,51 @@ def agent_child():
                     if rc_data == "0":
                         # 結果データ更新
                         status = AnscConst.COMPLETE
-                        # 各種ファイルをtarファイルにまとめる
                         log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
-                        out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path = arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, status)
-                        endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/result_data"
-                        body = {
-                            "driver_id": driver_id,
-                            "status": status
-                        }
-                        form_data = {
-                            "json_parameters": json.dumps(body),
-                            "out_tar_data" : (os.path.basename(out_gztar_path), open(out_gztar_path, "rb"), mimetypes.guess_type(out_gztar_path, False)[0]),
-                            "parameters_tar_data" : (os.path.basename(parameters_gztar_path), open(parameters_gztar_path, "rb"), mimetypes.guess_type(parameters_gztar_path, False)[0]),
-                            "parameters_file_tar_data" : (os.path.basename(parameters_file_gztar_path), open(parameters_file_gztar_path, "rb"), mimetypes.guess_type(parameters_file_gztar_path, False)[0]),
-                            "conductor_tar_data" : (os.path.basename(conductor_gztar_path), open(conductor_gztar_path, "rb"), mimetypes.guess_type(conductor_gztar_path, False)[0]),
-                        }
-                        status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
-                        if not status_code == 200:
-                            g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
+                        # # 各種ファイルをtarファイルにまとめる
+                        # out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path = arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, status)
+                        # endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/result_data"
+                        # body = {
+                        #     "driver_id": driver_id,
+                        #     "status": status
+                        # }
+                        # form_data = {
+                        #     "json_parameters": json.dumps(body),
+                        #     "out_tar_data" : (os.path.basename(out_gztar_path), open(out_gztar_path, "rb"), mimetypes.guess_type(out_gztar_path, False)[0]),
+                        #     "parameters_tar_data" : (os.path.basename(parameters_gztar_path), open(parameters_gztar_path, "rb"), mimetypes.guess_type(parameters_gztar_path, False)[0]),
+                        #     "parameters_file_tar_data" : (os.path.basename(parameters_file_gztar_path), open(parameters_file_gztar_path, "rb"), mimetypes.guess_type(parameters_file_gztar_path, False)[0]),
+                        #     "conductor_tar_data" : (os.path.basename(conductor_gztar_path), open(conductor_gztar_path, "rb"), mimetypes.guess_type(conductor_gztar_path, False)[0]),
+                        # }
+                        # status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
+                        # if not status_code == 200:
+                        #     g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
 
-                        # 作業状態通知送信
-                        endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/execution/{status}"
-                        body = {}
+                        # # 作業状態通知送信
+                        # endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/execution/{status}"
+                        # body = {}
 
-                        status_code, response = retry_api_call(exastro_api, endpoint, mode="json", method="POST", body=body)
+                        # status_code, response = retry_api_call(exastro_api, endpoint, mode="json", method="POST", body=body)
+                        # if not status_code == 200:
+                        #     g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
+                        # break
+
+                        # 結果データ更新->作業状態通知送信
+                        status_code, response = post_upload_file_and_status(
+                            exastro_api, organization_id, workspace_id,
+                            execution_no, status, driver_id
+                        )
                         if not status_code == 200:
                             g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
                         break
                     else:
                         # 結果データ更新
                         status = AnscConst.FAILURE
-                        # 各種ファイルをtarファイルにまとめる
-                        log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
-                        out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path = arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, status)
-                        endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/result_data"
-                        body = {
-                            "driver_id": driver_id,
-                            "status": status
-                        }
-                        form_data = {
-                            "json_parameters": json.dumps(body),
-                            "out_tar_data" : (os.path.basename(out_gztar_path), open(out_gztar_path, "rb"), mimetypes.guess_type(out_gztar_path, False)[0]),
-                            "parameters_tar_data" : (os.path.basename(parameters_gztar_path), open(parameters_gztar_path, "rb"), mimetypes.guess_type(parameters_gztar_path, False)[0]),
-                            "parameters_file_tar_data" : (os.path.basename(parameters_file_gztar_path), open(parameters_file_gztar_path, "rb"), mimetypes.guess_type(parameters_file_gztar_path, False)[0]),
-                            "conductor_tar_data" : (os.path.basename(conductor_gztar_path), open(conductor_gztar_path, "rb"), mimetypes.guess_type(conductor_gztar_path, False)[0]),
-                        }
-                        status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
-                        if not status_code == 200:
-                            g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
 
-                        # 作業状態通知送信
-                        endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/notification/status"
-                        body = {
-                            "driver_id": driver_id,
-                            "status": status
-                        }
-
-                        status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body)
-                        if not status_code == 200:
-                            g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-                        break
+                        # agent_child_mainのAppExceptionで異常時の共通処理
+                        # RCファイルの値が0ではありません。(X)
+                        status_code = "MSG-10987"
+                        msg_args = [rc_data]
+                        raise AppException(status_code, msg_args, msg_args)
                 else:
                     # rcファイルなし
                     # 結果データ更新
@@ -544,30 +447,39 @@ def agent_child():
                     # ログ更新
                     log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
                     # 各種ファイルをtarファイルにまとめる
-                    out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path = arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, status)
-                    endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/result_data"
-                    body = {
-                        "driver_id": driver_id,
-                        "status": status
-                    }
-                    form_data = {
-                        "json_parameters": json.dumps(body),
-                        "out_tar_data" : (os.path.basename(out_gztar_path), open(out_gztar_path, "rb"), mimetypes.guess_type(out_gztar_path, False)[0]),
-                    }
-                    status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
-                    if not status_code == 200:
-                        g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
+                    # out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path = arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, status)
+                    # endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/result_data"
+                    # body = {
+                    #     "driver_id": driver_id,
+                    #     "status": status
+                    # }
+                    # form_data = {
+                    #     "json_parameters": json.dumps(body),
+                    #     "out_tar_data" : (os.path.basename(out_gztar_path), open(out_gztar_path, "rb"), mimetypes.guess_type(out_gztar_path, False)[0]),
+                    # }
+                    # status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
+                    # if not status_code == 200:
+                    #     g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
 
-                    # 作業状態通知送信
-                    endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/notification/status"
-                    body = {
-                        "driver_id": driver_id,
-                        "status": status
-                    }
+                    # # 作業状態通知送信
+                    # endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/notification/status"
+                    # body = {
+                    #     "driver_id": driver_id,
+                    #     "status": status
+                    # }
 
-                    status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body)
+                    # status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body)
+                    # if not status_code == 200:
+                    #     g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
+                    # continue
+
+                    # 結果データ更新->作業状態通知送信
+                    status_code, response = post_upload_file_and_status(
+                        exastro_api, organization_id, workspace_id,
+                        execution_no, status, driver_id
+                    )
                     if not status_code == 200:
-                        g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
+                        raise AppException("MSG-10957", [status_code, response], [status_code, response])
                     continue
         else:
             # 作業実行が停止中
@@ -577,32 +489,41 @@ def agent_child():
                 # 結果データ更新
                 status = AnscConst.SCRAM
                 log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
-                # 各種ファイルをtarファイルにまとめる
-                out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path = arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, status)
-                endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/result_data"
-                body = {
-                    "driver_id": driver_id,
-                    "status": status
-                }
-                form_data = {
-                    "json_parameters": json.dumps(body),
-                    "out_tar_data" : (os.path.basename(out_gztar_path), open(out_gztar_path, "rb"), mimetypes.guess_type(out_gztar_path, False)[0]),
-                    "parameters_tar_data" : (os.path.basename(parameters_gztar_path), open(parameters_gztar_path, "rb"), mimetypes.guess_type(parameters_gztar_path, False)[0]),
-                    "parameters_file_tar_data" : (os.path.basename(parameters_file_gztar_path), open(parameters_file_gztar_path, "rb"), mimetypes.guess_type(parameters_file_gztar_path, False)[0]),
-                    "conductor_tar_data" : (os.path.basename(conductor_gztar_path), open(conductor_gztar_path, "rb"), mimetypes.guess_type(conductor_gztar_path, False)[0]),
-                }
-                status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
-                if not status_code == 200:
-                    g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
+                # # 各種ファイルをtarファイルにまとめる
+                # out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path = arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, status)
+                # endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/result_data"
+                # body = {
+                #     "driver_id": driver_id,
+                #     "status": status
+                # }
+                # form_data = {
+                #     "json_parameters": json.dumps(body),
+                #     "out_tar_data" : (os.path.basename(out_gztar_path), open(out_gztar_path, "rb"), mimetypes.guess_type(out_gztar_path, False)[0]),
+                #     "parameters_tar_data" : (os.path.basename(parameters_gztar_path), open(parameters_gztar_path, "rb"), mimetypes.guess_type(parameters_gztar_path, False)[0]),
+                #     "parameters_file_tar_data" : (os.path.basename(parameters_file_gztar_path), open(parameters_file_gztar_path, "rb"), mimetypes.guess_type(parameters_file_gztar_path, False)[0]),
+                #     "conductor_tar_data" : (os.path.basename(conductor_gztar_path), open(conductor_gztar_path, "rb"), mimetypes.guess_type(conductor_gztar_path, False)[0]),
+                # }
+                # status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
+                # if not status_code == 200:
+                #     g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
 
-                # 作業状態通知送信
-                endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/notification/status"
-                body = {
-                    "driver_id": driver_id,
-                    "status": status
-                }
+                # # 作業状態通知送信
+                # endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/notification/status"
+                # body = {
+                #     "driver_id": driver_id,
+                #     "status": status
+                # }
 
-                status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body)
+                # status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body)
+                # if not status_code == 200:
+                #     g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
+                # break
+
+                # 結果データ更新->作業状態通知送信
+                status_code, response = post_upload_file_and_status(
+                    exastro_api, organization_id, workspace_id,
+                    execution_no, status, driver_id
+                )
                 if not status_code == 200:
                     g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
                 break
@@ -618,32 +539,41 @@ def agent_child():
                         # 結果データ更新
                         status = AnscConst.COMPLETE
                         log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
-                        # 各種ファイルをtarファイルにまとめる
-                        out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path = arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, status)
-                        endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/result_data"
-                        body = {
-                            "driver_id": driver_id,
-                            "status": status
-                        }
-                        form_data = {
-                            "json_parameters": json.dumps(body),
-                            "out_tar_data" : (os.path.basename(out_gztar_path), open(out_gztar_path, "rb"), mimetypes.guess_type(out_gztar_path, False)[0]),
-                            "parameters_tar_data" : (os.path.basename(parameters_gztar_path), open(parameters_gztar_path, "rb"), mimetypes.guess_type(parameters_gztar_path, False)[0]),
-                            "parameters_file_tar_data" : (os.path.basename(parameters_file_gztar_path), open(parameters_file_gztar_path, "rb"), mimetypes.guess_type(parameters_file_gztar_path, False)[0]),
-                            "conductor_tar_data" : (os.path.basename(conductor_gztar_path), open(conductor_gztar_path, "rb"), mimetypes.guess_type(conductor_gztar_path, False)[0]),
-                        }
-                        status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
-                        if not status_code == 200:
-                            g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
+                        # # 各種ファイルをtarファイルにまとめる
+                        # out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path = arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, status)
+                        # endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/result_data"
+                        # body = {
+                        #     "driver_id": driver_id,
+                        #     "status": status
+                        # }
+                        # form_data = {
+                        #     "json_parameters": json.dumps(body),
+                        #     "out_tar_data" : (os.path.basename(out_gztar_path), open(out_gztar_path, "rb"), mimetypes.guess_type(out_gztar_path, False)[0]),
+                        #     "parameters_tar_data" : (os.path.basename(parameters_gztar_path), open(parameters_gztar_path, "rb"), mimetypes.guess_type(parameters_gztar_path, False)[0]),
+                        #     "parameters_file_tar_data" : (os.path.basename(parameters_file_gztar_path), open(parameters_file_gztar_path, "rb"), mimetypes.guess_type(parameters_file_gztar_path, False)[0]),
+                        #     "conductor_tar_data" : (os.path.basename(conductor_gztar_path), open(conductor_gztar_path, "rb"), mimetypes.guess_type(conductor_gztar_path, False)[0]),
+                        # }
+                        # status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
+                        # if not status_code == 200:
+                        #     g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
 
-                        # 作業状態通知送信
-                        endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/notification/status"
-                        body = {
-                            "driver_id": driver_id,
-                            "status": status
-                        }
+                        # # 作業状態通知送信
+                        # endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/notification/status"
+                        # body = {
+                        #     "driver_id": driver_id,
+                        #     "status": status
+                        # }
 
-                        status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body)
+                        # status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body)
+                        # if not status_code == 200:
+                        #     g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
+                        # break
+
+                        # 結果データ更新->作業状態通知送信
+                        status_code, response = post_upload_file_and_status(
+                            exastro_api, organization_id, workspace_id,
+                            execution_no, status, driver_id
+                        )
                         if not status_code == 200:
                             g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
                         break
@@ -651,35 +581,13 @@ def agent_child():
                         # 結果データ更新
                         status = AnscConst.FAILURE
                         log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
-                        # 各種ファイルをtarファイルにまとめる
-                        out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path = arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, status)
-                        endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/result_data"
-                        body = {
-                            "driver_id": driver_id,
-                            "status": status
-                        }
-                        form_data = {
-                            "json_parameters": json.dumps(body),
-                            "out_tar_data" : (os.path.basename(out_gztar_path), open(out_gztar_path, "rb"), mimetypes.guess_type(out_gztar_path, False)[0]),
-                            "parameters_tar_data" : (os.path.basename(parameters_gztar_path), open(parameters_gztar_path, "rb"), mimetypes.guess_type(parameters_gztar_path, False)[0]),
-                            "parameters_file_tar_data" : (os.path.basename(parameters_file_gztar_path), open(parameters_file_gztar_path, "rb"), mimetypes.guess_type(parameters_file_gztar_path, False)[0]),
-                            "conductor_tar_data" : (os.path.basename(conductor_gztar_path), open(conductor_gztar_path, "rb"), mimetypes.guess_type(conductor_gztar_path, False)[0]),
-                        }
-                        status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
-                        if not status_code == 200:
-                            g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
 
-                        # 作業状態通知送信
-                        endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/notification/status"
-                        body = {
-                            "driver_id": driver_id,
-                            "status": status
-                        }
+                        # agent_child_mainのAppExceptionで異常時の共通処理
+                        # RCファイルの値が0ではありません。(X)
+                        status_code = "MSG-10987"
+                        msg_args = [rc_data]
+                        raise AppException(status_code, msg_args, msg_args)
 
-                        status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body)
-                        if not status_code == 200:
-                            g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-                        break
                 else:
                     # rcファイルなし
                     # ログを残す
@@ -692,37 +600,14 @@ def agent_child():
                     # 結果データ更新
                     status = AnscConst.FAILURE
                     log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
-                    # 各種ファイルをtarファイルにまとめる
-                    out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path = arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, status)
-                    endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/result_data"
-                    body = {
-                        "driver_id": driver_id,
-                        "status": status
-                    }
-                    form_data = {
-                        "json_parameters": json.dumps(body),
-                        "out_tar_data" : (os.path.basename(out_gztar_path), open(out_gztar_path, "rb"), mimetypes.guess_type(out_gztar_path, False)[0]),
-                        "parameters_tar_data" : (os.path.basename(parameters_gztar_path), open(parameters_gztar_path, "rb"), mimetypes.guess_type(parameters_gztar_path, False)[0]),
-                        "parameters_file_tar_data" : (os.path.basename(parameters_file_gztar_path), open(parameters_file_gztar_path, "rb"), mimetypes.guess_type(parameters_file_gztar_path, False)[0]),
-                        "conductor_tar_data" : (os.path.basename(conductor_gztar_path), open(conductor_gztar_path, "rb"), mimetypes.guess_type(conductor_gztar_path, False)[0]),
-                    }
-                    status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
-                    if not status_code == 200:
-                        g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
 
-                    # 作業状態通知送信
-                    body = {
-                        "driver_id": driver_id,
-                        "status": status
-                    }
-
-                    status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body)
-                    if not status_code == 200:
-                        g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-                    break
+                    # agent_child_mainのAppExceptionで異常時の共通処理
+                    status_code = "MSG-10953"
+                    msg_args = []
+                    raise AppException(status_code, msg_args, msg_args)
 
     # ステータスファイル削除
-    os.remove(status_file_path + "/" + execution_no)
+    clear_execution_status_file(organization_id, workspace_id, driver_id, execution_no)
 
 if __name__ == "__main__":
     agent_child_main()
@@ -785,7 +670,7 @@ def decompress_tar_file(organization_id, workspace_id, driver_id, dir_path, file
             shutil.move(join_path, root_dir_path)
 
     # 作業ディレクトリ削除
-    shutil.rmtree(f"/tmp/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}")
+    clear_execution_tmpdir(organization_id, workspace_id, driver_id, execution_no)
 
 def log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id):
     """
@@ -898,3 +783,94 @@ def log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_l
         obj.open(exec_log_pass, "w")
         obj.write(log_data)
         obj.close()
+
+def clear_execution_tmpdir(organization_id, workspace_id, driver_id, execution_no):
+    _path = f"/tmp/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}"
+    if os.path.isdir(_path):
+        shutil.rmtree(_path)
+        g.applogger.info(f"clear_execution_tmpdir: ({_path})")
+
+def clear_execution_status_file(organization_id, workspace_id, driver_id, execution_no):
+    _x, _path = get_status_file_path(organization_id, workspace_id, driver_id, execution_no)
+    if os.path.isfile(_path):
+        os.remove(_path)
+        g.applogger.info(f"clear_execution_status_file: ({_path})")
+
+def get_status_file_path(organization_id, workspace_id, driver_id, execution_no):
+    status_file_dir_path = f"/storage/{organization_id}/{workspace_id}/ag_ansible_execution/status/{driver_id}"
+    status_file_path = f"{status_file_dir_path}/{execution_no}"
+    return status_file_dir_path, status_file_path,
+
+def post_upload_file_and_status(exastro_api, organization_id, workspace_id, execution_no, status, driver_id):
+
+    status_code, response = (000, {})
+
+    # 各種ファイルをtarファイルにまとめる
+    out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_dir_path = \
+        arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, status)
+
+    if exastro_api is None:
+        # 環境変数の取得
+        baseUrl = os.environ["EXASTRO_URL"]
+        refresh_token = os.environ['EXASTRO_REFRESH_TOKEN']
+
+        # ITAのAPI呼び出しモジュール
+        exastro_api = Exastro_API(
+            base_url=baseUrl,
+            refresh_token=refresh_token
+        )
+        exastro_api.get_access_token(organization_id, refresh_token)
+
+    # パラメータ
+    body = {
+        "driver_id": driver_id,
+        "status": status
+    }
+    form_data = {
+        "json_parameters": json.dumps(body)
+    }
+
+    # form_dataへのtarデータ追加
+    if os.path.isfile(out_gztar_path):
+        form_data["out_tar_data"] =  (
+            os.path.basename(out_gztar_path),
+            open(out_gztar_path, "rb"),
+            mimetypes.guess_type(out_gztar_path, False)[0])
+    if os.path.isfile(parameters_gztar_path):
+        form_data["parameters_tar_data"] =  (
+            os.path.basename(parameters_gztar_path),
+            open(parameters_gztar_path, "rb"),
+            mimetypes.guess_type(parameters_gztar_path, False)[0])
+    if os.path.isfile(parameters_file_gztar_path):
+        form_data["parameters_file_tar_data"] =  (
+            os.path.basename(parameters_file_gztar_path),
+            open(parameters_file_gztar_path, "rb"),
+            mimetypes.guess_type(parameters_file_gztar_path, False)[0])
+    if os.path.isfile(conductor_dir_path):
+        form_data["conductor_tar_data"] =  (
+            os.path.basename(conductor_dir_path),
+            open(conductor_dir_path, "rb"),
+            mimetypes.guess_type(conductor_dir_path, False)[0])
+
+    # 実行中の場合はjson_parameters、out_tar_data以外除外
+    if status == AnscConst.PROCESSING:
+        accept_key = [
+            "json_parameters",
+            "out_tar_data"
+        ]
+        for k, v in form_data.keys():
+            if k not in accept_key:
+                del form_data[k]
+
+    # 結果データ更新
+    status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
+    if not status_code == 200:
+        return status_code, response
+
+    # 作業状態通知送信
+    g.applogger.info(g.appmsg.get_log_message("MSG-10956", []))
+    status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body)
+    if not status_code == 200:
+        return status_code, response
+
+    return status_code, response

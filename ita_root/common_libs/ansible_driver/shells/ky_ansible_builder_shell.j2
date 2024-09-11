@@ -30,7 +30,7 @@
 ######################################################################
 #  registry.redhat.ioへのログイン有無判定
 if [ $1 == "Yes" ]; then
-    exprot USER=$2
+    export USER=$2
     export PASSWORD=$3
     expect /exastro/common_libs/ansible_driver/shells/ky_ansible_redhat_login.exp.exp 1>/dev/null 2>>/dev/stderr
     EXIT_CODE=$?

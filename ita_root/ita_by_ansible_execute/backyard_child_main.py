@@ -80,6 +80,12 @@ def backyard_child_main(organization_id, workspace_id):
 
     # db instance
     wsDb = DBConnectWs()
+    # 作業インスタンステーブルを複数回参照するので、TRANSACTION ISOLATIONがREPEATABLE READだと
+    # トランザクション中で一度SELECTを発行したテーブルに関しては、外部のテーブルで変更されたとしても同じ結果が得られるので
+    # TRANSACTION ISOLATIONをREAD COMMITTEDにする
+    sql = "SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;"
+    rows = wsDb.sql_execute(sql, bind_value_list=[])
+
     # /tmpに作成したファイル・ディレクトリパスを保存するファイル名
     g.AnsibleCreateFilesPath = "{}/Ansible_{}".format(get_OSTmpPath(), execution_no)
 

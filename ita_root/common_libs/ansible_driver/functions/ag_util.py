@@ -41,6 +41,7 @@ def getExecDevTemplateUploadDirPath():
         作業管理結果データディレクトリバス
     """
     return getDataRelayStorageDir() + "/uploadfiles/20110/template_file"
+
 def getAG_AGOutDirPath(ansConstObj, execution_no):
     """
       ansible-runnerのansible agent側の結果データ(out)パスを取得
@@ -50,7 +51,7 @@ def getAG_AGOutDirPath(ansConstObj, execution_no):
       Returns:
         ansible-runnerのansible agent側の結果データ(out)パス
     """
-    return "{}/{}/{}".format(getDataRelayStorageDir(), ansConstObj.vg_OrchestratorSubId_dir,execution_no)
+    return get_AGAnsibleExecutDirPath(ansConstObj, execution_no)
 
 def getAG_AGProjectPath(ansConstObj, execution_no):
     """
@@ -61,7 +62,7 @@ def getAG_AGProjectPath(ansConstObj, execution_no):
       Returns:
         ansible-runnerのprojectパス
     """
-    return "{}/{}/{}".format(getDataRelayStorageDir(), ansConstObj.vg_OrchestratorSubId_dir,execution_no)
+    return get_AGAnsibleExecutDirPath(ansConstObj, execution_no)
 
 def getAG_ITARunnerShellPath(ansConstObj, execution_no):
     """
@@ -247,7 +248,8 @@ def CreateAG_ITABuilderShellFiles(objDBCA, AnscObj, out_dir, execution_no, movem
     # builder.sh生成
     template_file = "ky_ansible_builder_shell.j2"
     item = {}
-    item["PROJECT_BASE_DIR"] = "{}/project/builder_executable_files".format(getAG_AGProjectPath(AnscObj, execution_no))
+    item["PROJECT_BASE_DIR"] = "{}/project/builder_executable_files".format(get_AGAnsibleExecutDirPath(AnscObj, execution_no))
+
     item['optional_parameters'] = movemrnt_row['AG_BUILDER_OPTIONS']
     item['tag_name'] = execdev_row['TAG_NAME']
     # None対応
@@ -358,3 +360,13 @@ def get_AGChildProcessRestartCountFilepath(ansConstObj, execute_no):
     """
     return "{}/tmp/Child_Process_restart_count.txt".format(getAnsibleExecutDirPath(ansConstObj, execute_no))
 
+def get_AGAnsibleExecutDirPath(ansConstObj, execute_no):
+    """
+      ansibe作業実行ディレクトリパス取得
+      Arguments:
+        ansConstObj: ansible共通定数オブジェクト
+        execute_no: 作業番号
+      Returns:
+        ansibe作業実行ディレクトリパスを取得
+    """
+    return getDataRelayStorageDir() + "/driver/ag_ansible_execution/{}/{}".format(ansConstObj.vg_OrchestratorSubId_dir, execute_no)

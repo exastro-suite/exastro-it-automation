@@ -910,6 +910,12 @@ download: async function( type, data, fileName = 'noname') {
         switch ( type ) {
             // ファイル
             case 'file': {
+                // ファイルタイプが空の場合は application/octet-stream を指定する
+                if ( data.type === '') {
+                    data = new Blob([ data ], {
+                        type: 'application/octet-stream',
+                    });
+                }
                 url = URL.createObjectURL( data );
             } break;
 

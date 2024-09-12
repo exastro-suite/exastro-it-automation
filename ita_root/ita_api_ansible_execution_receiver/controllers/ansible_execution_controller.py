@@ -22,7 +22,7 @@ from flask import g
 
 
 @api_filter
-def get_unexecuted_instance(organization_id, workspace_id):  # noqa: E501
+def post_unexecuted_instance(organization_id, workspace_id, body):  # noqa: E501
     """get_unexecuted_instance
 
     未実行インスタンス確認 # noqa: E501
@@ -44,9 +44,16 @@ def get_unexecuted_instance(organization_id, workspace_id):  # noqa: E501
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
     try:
+        # bodyのjson形式チェック
+        check_request_body()
+
+        if connexion.request.is_json:
+            body = dict(connexion.request.get_json())
+        else:
+            body = {}
 
         # 作業実行関連のメニューの基本情報および項目情報の取得
-        result_data = unexecuted_instance(objdbca)
+        result_data = unexecuted_instance(objdbca, body)
         # result_data.setdefault("menu_info", tmp_data[0]["data"])
     except Exception as e:
         raise e

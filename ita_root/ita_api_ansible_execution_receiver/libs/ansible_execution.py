@@ -26,7 +26,7 @@ from common_libs.ansible_execution.version import AnsibleExexutionVersion
 from common_libs.ansible_execution.encrypt import agent_encrypt
 
 
-def unexecuted_instance(objdbca):
+def unexecuted_instance(objdbca, body={}):
     """
         未実行インスタンス取得
         ARGS:
@@ -67,6 +67,10 @@ def unexecuted_instance(objdbca):
     execdev_data = {_r.get("EXECUTION_ENVIRONMENT_NAME"): _r for _r in ret \
         if _r.get("EXECUTION_ENVIRONMENT_NAME") is not None} if ret else {}
 
+    # bodyから対象実行環境名のリスト取得
+    _eens = body["execution_environment_names"] if body and "execution_environment_names" in body else None
+    execution_environment_names = _eens if _eens and len(_eens) != 0 else None
+
     try:
         # トランザクション開始
         objdbca.db_transaction_start()
@@ -87,6 +91,13 @@ def unexecuted_instance(objdbca):
             # 準備完了の作業インスタンス取得
             where = 'WHERE DISUSE_FLAG=%s AND STATUS_ID = %s'
             parameter = ['0', '11']
+
+            # 実行環境名の指定がある場合に条件追加
+            if execution_environment_names:
+                prepared_list = ','.join(['%s']*len(execution_environment_names))
+                where +=  f" AND I_AG_EXECUTION_ENVIRONMENT_NAME IN ({prepared_list})"
+                parameter.extend(execution_environment_names)
+
             ret = objdbca.table_select(t_exec_sts_inst, where, parameter)
 
             # 各作業実行関連テーブルの行ロック

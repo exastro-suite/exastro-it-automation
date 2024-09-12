@@ -190,7 +190,7 @@ def post_agent_version(organization_id, workspace_id, exastro_api, body=None, qu
     # response["data"] = {"version_diff": boolean}
     return status_code, response
 
-def get_unexecuted_instance(organization_id, workspace_id, exastro_api, body=None, query=None, retry=3):
+def post_unexecuted_instance(organization_id, workspace_id, exastro_api, body=None, query=None, retry=3):
     """
         未実行インスタンス取得: agent_main
     Args:
@@ -203,7 +203,7 @@ def get_unexecuted_instance(organization_id, workspace_id, exastro_api, body=Non
         response:
     """
     endpoint = f"/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/instance/unexecuted"
-    status_code, response = retry_api_call(exastro_api, endpoint, mode="json", method="GET", retry=retry)
+    status_code, response = retry_api_call(exastro_api, endpoint, mode="json", method="POST", body=body, retry=retry)
     return status_code, response
 
 def post_notification_execution(organization_id, workspace_id, exastro_api, body=None, query=None, retry=3):

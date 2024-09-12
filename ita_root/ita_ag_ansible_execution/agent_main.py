@@ -94,7 +94,14 @@ def main_logic(organization_id, workspace_id, exastro_api, baseUrl):
     start_up_list = []
 
     # 未実行インスタンス取得
-    status_code, response = get_unexecuted_instance(organization_id, workspace_id, exastro_api)
+    body = {}
+    str_een = os.getenv('EXECUTION_ENVIRONMENT_NAMES', None)
+    if str_een:
+        execution_environment_names = str_een.split(',')
+        body = {
+            "execution_environment_names": execution_environment_names
+        }
+    status_code, response = post_unexecuted_instance(organization_id, workspace_id, exastro_api, body=body)
     if status_code == 200:
         target_executions = response["data"] if isinstance(response["data"], dict) else {}
         for execution_no, value in target_executions.items():

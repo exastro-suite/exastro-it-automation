@@ -34,11 +34,11 @@ tags:
 
 paths:
   /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/instance/unexecuted:
-    get:
+    post:
       tags:
         - Ansible Execution
       description: 未実行インスタンス取得
-      operationId: getUnexecutedInstance
+      operationId: postUnexecutedInstance
       x-openapi-router-controller: controllers.ansible_execution_controller
       parameters:
         - name: organization_id
@@ -53,6 +53,20 @@ paths:
           required: true
           schema:
             type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                execution_environment_names:
+                  type: array
+                  description: 指定が無ければ対象全件取得。Ansible共通-実行環境管理-実行環境名から利用可能。
+                  items:
+                    type: string
+                  example:
+                    - 実行環境名1
+                    - 実行環境名X
+
       responses:
         '200':
           description: Success

@@ -172,7 +172,7 @@ def initial_settings_ansible(ws_db, body):
     # execution_engine_listの設定がある場合
     if 'execution_engine_list' in body.keys():
         # 実行エンジンの有効/無効を設定
-        update_settings = [[], []]
+        update_settings = [[], [], []]
         if 'Ansible-Core' in body.get('execution_engine_list'):
             update_settings[0] = ['0', '1']
         else:
@@ -181,6 +181,10 @@ def initial_settings_ansible(ws_db, body):
             update_settings[1] = ['0', '2']
         else:
             update_settings[1] = ['1', '2']
+        if 'Ansible Execution Agent' in body.get('execution_engine_list'):
+            update_settings[2] = ['0', '3']
+        else:
+            update_settings[2] = ['1', '3']
 
         sql = "UPDATE T_ANSC_EXEC_ENGINE SET DISUSE_FLAG=%s WHERE ID=%s"
         for update_setting in update_settings:

@@ -32,7 +32,7 @@ content-type: application/json
 {
   "input_limit_setting": false,
   "execution_engine_list": [
-    "Ansible Automation Controller","Ansible-Core"
+    "Ansible Automation Controller", "Ansible-Core", "Ansible Execution Agent"
   ],
   "initial_data": {
     "ansible_automation_controller_host_list": [

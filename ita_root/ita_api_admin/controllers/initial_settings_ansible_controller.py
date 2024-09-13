@@ -128,7 +128,7 @@ def post_initial_setting_ansible(organization_id, body=None):  # noqa: E501
                 return '', g.appmsg.get_api_message("490-02003", ["execution_engine_list"]), "490-02003", 490
 
             for execution_engine in execution_engine_list:
-                if execution_engine not in ['Ansible-Core', 'Ansible Automation Controller']:
+                if execution_engine not in ['Ansible-Core', 'Ansible Automation Controller', 'Ansible Execution Agent']:
                     # Key[{}] is invalid. Set 'Ansible-Core' or 'Ansible Automation Controller' or both.
                     return '', g.appmsg.get_api_message("490-02003", ["execution_engine_list"]), "490-02003", 490
 

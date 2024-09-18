@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "ita-api-ansible-receiver"
+name = "ita-api-ansible-execution-receiver"
 version = "0.1.0"
 description = ""
 authors = ["Your Name <you@example.com>"]
@@ -7,6 +7,15 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.9"
+python-dotenv = ">=0.0.0"
+setuptools = ">=0.0.0"
+connexion = {version = "^2.0.0", extras = ["swagger-ui", "uvicorn"]}
+requests = ">=0.0.0"
+pytz = ">=0.0.0"
+pymysql = ">=0.0.0"
+flask = "^2.0.0"
+pycryptodome = ">=0.0.0"
+cryptography = ">=0.0.0"
 
 
 [tool.poetry.group.first_install.dependencies]
@@ -14,15 +23,9 @@ certifi = ">=0.0.0"
 
 
 [tool.poetry.group.develop_build.dependencies]
-python-dotenv = ">=0.0.0"
-flask = "^2.0.0"
-requests = ">=0.0.0"
-autopep8 = ">=0.0.0"
 debugpy = ">=0.0.0"
-pytz = ">=0.0.0"
-pycryptodome = ">=0.0.0"
-pymysql = ">=0.0.0"
-connexion = {version = "^2.0.0", extras = ["swagger-ui", "uvicorn"]}
+flake8 = ">=0.0.0"
+autopep8 = ">=0.0.0"
 
 [build-system]
 requires = ["poetry-core"]

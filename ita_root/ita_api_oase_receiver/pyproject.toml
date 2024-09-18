@@ -7,6 +7,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.9"
+python-dotenv = ">=0.0.0"
 setuptools = ">=0.0.0"
 connexion = {version = "^2.0.0", extras = ["swagger-ui", "uvicorn"]}
 requests = ">=0.0.0"
@@ -16,7 +17,6 @@ dictdiffer = ">=0.0.0"
 flask = "^2.0.0"
 six = ">=0.0.0"
 pyyaml = ">=0.0.0"
-python-dotenv = ">=0.0.0"
 chardet = ">=0.0.0"
 pycryptodome = ">=0.0.0"
 cryptography = ">=0.0.0"

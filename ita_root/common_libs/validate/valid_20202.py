@@ -50,8 +50,15 @@ def external_valid_menu_after(objDBCA, objtable, option):
 
         playbook_path = None
         if cmd_type in ["Register", "Update"]:
-            playbook_path = option.get('entry_parameter', {}).get('file_path', {}).get('playbook_file', '')
-
+            if "playbook_file" not in option.get("entry_parameter", {}).get("parameter", {}):
+                # Excelで更新の場合は処理をスキップ
+                pass
+            else:
+                tmp_playbook_path = os.path.dirname(option.get('entry_parameter', {}).get('file_path', {}).get('playbook_file', ''))
+                if cmd_type == "Update":
+                    tmp_playbook_path = os.path.dirname(option.get('current_parameter', {}).get('file_path', {}).get('playbook_file', ''))
+                playbook_filename = option.get('entry_parameter', {}).get('parameter', {}).get('playbook_file', '')
+                playbook_path = tmp_playbook_path + "/" + playbook_filename
         # 廃止/復活時の場合、関連レコードを廃止/復活
         if cmd_type in ["Discard", "Restore"]:
             ret, msg_tmp = CommnVarsUsedListDisuseSet(objDBCA, option, pkey, '1')

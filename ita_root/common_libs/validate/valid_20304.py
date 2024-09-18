@@ -48,7 +48,15 @@ def external_valid_menu_after(objDBCA, objtable, option):
 
         dialog_path = None
         if cmd_type in ["Register", "Update"]:
-            dialog_path = option.get('entry_parameter', {}).get('file_path', {}).get('dialog_file', '')
+            if "dialog_file" not in option.get("entry_parameter", {}).get("parameter", {}):
+                # Excelで更新の場合は処理をスキップ
+                pass
+            else:
+                tmp_dialog_path = os.path.dirname(option.get('entry_parameter', {}).get('file_path', {}).get('dialog_file', ''))
+                if cmd_type == "Update":
+                    tmp_dialog_path = os.path.dirname(option.get('current_parameter', {}).get('file_path', {}).get('dialog_file', ''))
+                dialog_filename = option.get('entry_parameter', {}).get('parameter', {}).get('dialog_file', '')
+                dialog_path = tmp_dialog_path + "/" + dialog_filename
 
         # 廃止/復活時の場合、関連レコードを廃止/復活
         if cmd_type in ["Discard", "Restore"]:

@@ -3220,7 +3220,7 @@ duplicatFileCheck( selectId, inputData ) {
                         if ( id in tb.data.tempFile === true && fileColumn in tb.data.tempFile[ id ] === true ) {
                             continue;
                         }
-                        
+
                         // ファイル読込
                         try {
                             const file = await fn.getFile(`/menu/${tb.params.menuNameRest}/${id}/${fileColumn}/file/`, 'GET', null, {
@@ -5091,25 +5091,33 @@ editOk() {
         // アップロードの間はSession Timeoutしないように設定
         CommonAuth.tokenRefreshPermanently( true );
 
-        fn.xhr( tb.rest.maintenance, formData )
-            .then(function( result ){
-                resolve( result );
-            })
-            .catch(function( result ){
-                if ( fn.typeof( result ) === 'object') {
-                    if ( result.result && result.result.match(/^498/) ) {
-                        if ( fn.typeof( result.message ) === 'string') alert( result.message );
-                        reject( null );
+        // トークンを強制リフレッシュ
+        CommonAuth.refreshTokenForce().then(function(){
+            fn.xhr( tb.rest.maintenance, formData )
+                .then(function( result ){
+                    resolve( result );
+                })
+                .catch(function( result ){
+                    if ( fn.typeof( result ) === 'object') {
+                        if ( result.result && result.result.match(/^498/) ) {
+                            if ( fn.typeof( result.message ) === 'string') alert( result.message );
+                            reject( null );
+                        } else {
+                            result.data = editData;
+                            reject( result );
+                            //バリデーションエラー
+                            alert(getMessage.FTE00068);
+                        }
                     } else {
-                        result.data = editData;
-                        reject( result );
-                        //バリデーションエラー
-                        alert(getMessage.FTE00068);
+                        reject( null );
                     }
-                } else {
-                    reject( null );
-                }
-            });
+                });
+
+        }).catch(function( error ){
+            window.console.error( error );
+            if ( error.message ) alert( error.message );
+            reject( null );
+        });
     });
 }
 /*

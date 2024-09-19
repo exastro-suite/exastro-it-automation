@@ -31,6 +31,8 @@ servers:
 tags:
   - name: Ansible Execution
     description: Ansibleの情報を取得
+  - name: InternalHealthCheckService
+    description: ヘルスチェックに関する操作(内部用)
 
 paths:
   /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/instance/unexecuted:
@@ -431,6 +433,66 @@ paths:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /internal-api/health-check/liveness:
+    get:
+      tags:
+        - InternalHealthCheckService
+      summary: Internal health check liveness
+      x-openapi-router-controller: controllers.internal_health_check_service_controller
+      operationId: internal_health_check_liveness
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: string
+                    example: ""
+                  message:
+                    type: string
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /internal-api/health-check/readiness:
+    get:
+      tags:
+        - InternalHealthCheckService
+      summary: Internal health check readiness
+      x-openapi-router-controller: controllers.internal_health_check_service_controller
+      operationId: internal_health_check_readiness
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: string
+                    example: ""
+                  message:
+                    type: string
+        default:
+          description: An unexpected error response.
           content:
             application/json:
               schema:

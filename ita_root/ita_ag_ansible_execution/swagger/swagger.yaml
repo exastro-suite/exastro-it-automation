@@ -1,0 +1,113 @@
+openapi: 3.0.3
+info:
+  title: Exastro ITA Ansible Execution API
+  description: Exastro ITA Ansible Execution API
+  version: "2.5"
+servers:
+- url: "https://{host}"
+  description: API endpoint
+  variables:
+    host:
+      default: localhost
+- url: "http://{host}"
+  description: API endpoint
+  variables:
+    host:
+      default: localhost
+- url: "{protocol}://{host}:{port}"
+  description: API endpoint (Development)
+  variables:
+    protocol:
+      default: https
+      enum:
+      - http
+      - https
+    host:
+      default: localhost
+    port:
+      default: "30080"
+tags:
+- name: InternalHealthCheckService
+  description: ヘルスチェックに関する操作(内部用)
+paths:
+  /internal-api/health-check/liveness:
+    get:
+      tags:
+      - InternalHealthCheckService
+      summary: Internal health check liveness
+      operationId: internal_health_check_liveness
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.internal_health_check_service_controller
+  /internal-api/health-check/readiness:
+    get:
+      tags:
+      - InternalHealthCheckService
+      summary: Internal health check readiness
+      operationId: internal_health_check_readiness
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.internal_health_check_service_controller
+components:
+  schemas:
+    ERROR_TEMPLATE:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 001-002
+        message:
+          type: string
+    inline_response_200:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          type: string
+          example: ""
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data: ""
+        message: message
+  responses:
+    UnauthorizedError:
+      description: Access token is missing or invalid
+  securitySchemes:
+    BearerAuth:
+      type: http
+      description: Credentials or access token for API
+      scheme: bearer
+      bearerFormat: JWT
+      x-bearerInfoFunc: swagger_server.controllers.authorization_controller.check_BearerAuth
+    BasicAuth:
+      type: http
+      description: Value converted from ID/Password in base64
+      scheme: basic
+      x-basicInfoFunc: swagger_server.controllers.authorization_controller.check_BasicAuth
+

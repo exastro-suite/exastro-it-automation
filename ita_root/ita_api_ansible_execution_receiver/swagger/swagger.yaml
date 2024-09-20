@@ -228,12 +228,9 @@ paths:
           type: string
       requestBody:
         content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/execution_no_result_data_body'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/execution_no_result_data_body_1'
+              $ref: '#/components/schemas/execution_no_result_data_body'
       responses:
         "200":
           description: Success
@@ -489,15 +486,6 @@ components:
           type: string
           example: base64 encode file
     execution_no_result_data_body:
-      properties:
-        driver_id:
-          type: string
-        status:
-          type: string
-        file:
-          $ref: '#/components/schemas/apiorganization_idworkspacesworkspace_idansible_execution_agentexecution_noresult_data_file'
-      description: ドライバーID、ステータス、各種tarファイルを指定
-    execution_no_result_data_body_1:
       type: object
       properties:
         driver_id:

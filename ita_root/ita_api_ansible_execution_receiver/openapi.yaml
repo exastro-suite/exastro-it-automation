@@ -253,20 +253,6 @@ paths:
             type: string
       requestBody:
         content:
-          application/json:
-            schema:
-              description: ドライバーID、ステータス、各種tarファイルを指定
-              properties:
-                driver_id:
-                  type: string
-                status:
-                  type: string
-                file:
-                  type: object
-                  properties:
-                    file_name:
-                      type: string
-                      example: base64 encode file
           multipart/form-data:
             schema:
               description: ドライバーID、ステータス、各種tarファイルを指定

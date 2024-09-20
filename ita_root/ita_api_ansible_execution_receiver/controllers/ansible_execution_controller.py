@@ -23,7 +23,7 @@ from flask import g
 
 @api_filter
 def post_unexecuted_instance(organization_id, workspace_id, body):  # noqa: E501
-    """get_unexecuted_instance
+    """post_unexecuted_instance
 
     未実行インスタンス確認 # noqa: E501
 
@@ -31,8 +31,10 @@ def post_unexecuted_instance(organization_id, workspace_id, body):  # noqa: E501
     :type organization_id: str
     :param workspace_id: WorkspaceID
     :type workspace_id: str
+    :param body:
+    :type body: dict | bytes
 
-    :rtype: InlineResponse2006
+    :rtype: InlineResponse200
     """
 
     # メンテナンスモードのチェック
@@ -64,7 +66,7 @@ def post_unexecuted_instance(organization_id, workspace_id, body):  # noqa: E501
 
 @api_filter
 def execution_status_notification(organization_id, workspace_id, execution_no, body):  # noqa: E501
-    """get_unexecuted_instance
+    """execution_status_notification
 
     作業状態通知 # noqa: E501
 
@@ -72,8 +74,12 @@ def execution_status_notification(organization_id, workspace_id, execution_no, b
     :type organization_id: str
     :param workspace_id: WorkspaceID
     :type workspace_id: str
+    :param execution_no: 作業番号
+    :type execution_no: str
+    :param body:
+    :type body: dict | bytes
 
-    :rtype: InlineResponse2006
+    :rtype: InlineResponse2001
     """
 
     # メンテナンスモードのチェック
@@ -115,8 +121,10 @@ def get_populated_data(organization_id, workspace_id, execution_no, driver_id): 
     :type workspace_id: str
     :param execution_no: 作業番号
     :type execution_no: str
+    :param driver_id: ドライバーID
+    :type driver_id: str
 
-    :rtype: InlineResponse2006
+    :rtype: InlineResponse2002
     """
 
     # メンテナンスモードのチェック
@@ -141,15 +149,22 @@ def get_populated_data(organization_id, workspace_id, execution_no, driver_id): 
 def update_result_data(organization_id, workspace_id, execution_no, body=None, **kwargs):  # noqa: E501
     """update_result_data
 
-    結果データ更新 # noqa: E501
+    結果データ受け取り・更新 # noqa: E501
 
     :param organization_id: OrganizationID
     :type organization_id: str
     :param workspace_id: WorkspaceID
     :type workspace_id: str
     :param execution_no: 作業番号
+    :type execution_no: str
+    :param driver_id:
+    :type driver_id: str
+    :param status:
+    :type status: str
+    :param file:
+    :type file: dict | bytes
 
-    :rtype: InlineResponse2006
+    :rtype: InlineResponse2003
     """
 
     # メンテナンスモードのチェック
@@ -178,7 +193,7 @@ def update_result_data(organization_id, workspace_id, execution_no, body=None, *
 
 @api_filter
 def agent_version(organization_id, workspace_id, body):  # noqa: E501
-    """update_result_data
+    """agent_version
 
     バージョン通知 # noqa: E501
 
@@ -186,8 +201,10 @@ def agent_version(organization_id, workspace_id, body):  # noqa: E501
     :type organization_id: str
     :param workspace_id: WorkspaceID
     :type workspace_id: str
+    :param body:
+    :type body: dict | bytes
 
-    :rtype: InlineResponse2006
+    :rtype: InlineResponse2004
     """
 
     # メンテナンスモードのチェック
@@ -225,8 +242,10 @@ def execution_notification(organization_id, workspace_id, body):  # noqa: E501
     :type organization_id: str
     :param workspace_id: WorkspaceID
     :type workspace_id: str
+    :param body:
+    :type body: dict | bytes
 
-    :rtype: InlineResponse2006
+    :rtype: InlineResponse2003
     """
 
     # メンテナンスモードのチェック

@@ -73,8 +73,6 @@ class Migration:
         """
         migrate db
         """
-        g.applogger.info(f"[Trace] work_dir_path:{self._work_dir_path}")
-
         # DBパッチ
         sql_dir = os.path.join(self._resource_dir_path, "sql")
         if os.path.isdir(sql_dir):

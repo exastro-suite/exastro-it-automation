@@ -314,8 +314,6 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             try:
                 # db.labeled_event_collection.createIndex({"labels._exastro_fetched_time":1,"labels._exastro_end_time":1,"_id":1}, {"name": "default_sort"})
                 ws_mongo.collection(mongoConst.LABELED_EVENT_COLLECTION).create_index([("labels._exastro_fetched_time", ASCENDING), ("labels._exastro_end_time", ASCENDING), ("_id", ASCENDING)], name="default_sort")
-                # # 元イベントデータの保持期限 90日
-                # ws_mongo.collection(mongoConst.EVENT_COLLECTION).create_index([("exastro_created_at", ASCENDING)], expireAfterSeconds=7776000)
                 # # イベントデータの保持期限 90日
                 # ws_mongo.collection(mongoConst.LABELED_EVENT_COLLECTION).create_index([("exastro_created_at", ASCENDING)], expireAfterSeconds=7776000)
                 g.applogger.info("Index of mongo is made")

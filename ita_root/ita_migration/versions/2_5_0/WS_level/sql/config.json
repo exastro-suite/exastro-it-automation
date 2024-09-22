@@ -1,5 +1,4 @@
 [
-    ["organization.sql", ""],
     ["", "workspace_master.sql"],
     ["", "conductor_master.sql"],
     ["ansible.sql", "ansible_master.sql"],

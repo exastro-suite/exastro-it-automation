@@ -13,14 +13,17 @@
 #   limitations under the License.
 
 from flask import g
+import json
+
 from common_libs.common.dbconnect import *  # noqa: F403
+from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
 
 
-def main(work_dir_path, db_conn):
+def main(work_dir_path, wsdb):
     # ###########################################################
-    # # workspace単位のINFOテーブルに必要であればドライバ情報を追加
+    # # 【OASE】元データを保管するコレクションevent_collectionを削除 #2557
     # ###########################################################
-    g.applogger.info("[Trace] Begin Add driver information if necessary to the info table for each workspace")
+    g.applogger.info("[Trace] drop the collection of mongodb 'event_collection'")
     common_db = DBConnectCommon()  # noqa: F405
 
     organization_id = g.ORGANIZATION_ID
@@ -28,19 +31,13 @@ def main(work_dir_path, db_conn):
 
     # organization単位のドライバ情報を取得する
     org_no_install_driver = common_db.table_select("T_COMN_ORGANIZATION_DB_INFO", "WHERE ORGANIZATION_ID = '{}' AND DISUSE_FLAG = {}".format(organization_id, 0))[0]["NO_INSTALL_DRIVER"]
+    # oaseインストール済みの場合しか対応しない
+    org_no_install_driver = json.loads(org_no_install_driver) if org_no_install_driver is not None else {}
+    if 'oase' in org_no_install_driver:
+        return
 
-    # workspace単位のドライバ情報の更新が必要な場合のみ処理を行う
-    if org_no_install_driver is not None:
-        org_db = DBConnectOrg(organization_id)  # noqa: F405
-        primary_key = org_db.table_select("T_COMN_WORKSPACE_DB_INFO", "WHERE WORKSPACE_ID = '{}' AND DISUSE_FLAG = {}".format(workspace_id, 0))[0]['PRIMARY_KEY']
-
-        # t_comn_workspace_db_infoテーブルのNO_INSTALL_DRIVERを更新する
-        org_db.db_transaction_start()
-        data = {
-            'PRIMARY_KEY': primary_key,
-            'NO_INSTALL_DRIVER': org_no_install_driver,
-        }
-        org_db.table_update('T_COMN_WORKSPACE_DB_INFO', data, 'PRIMARY_KEY')
-        org_db.db_commit()
+    ws_mong = MONGOConnectWs()
+    ws_mong.collection("event_collection").drop()
 
     return 0
+

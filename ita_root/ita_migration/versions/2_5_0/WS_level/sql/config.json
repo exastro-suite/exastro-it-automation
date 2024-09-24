@@ -1,5 +1,5 @@
 [
-    ["", "workspace_master.sql"],
+    ["workspace.sql", "workspace_master.sql"],
     ["", "conductor_master.sql"],
     ["ansible.sql", "ansible_master.sql"],
     ["", "terraform_cli_master.sql"],

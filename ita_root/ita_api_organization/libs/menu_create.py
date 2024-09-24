@@ -1757,7 +1757,10 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
 
                 # カラムクラス「プルダウン選択」用のパラメータを追加
                 if column_class == "IDColumn":
-                    parameter["pulldown_selection"] = update_pulldown_selection  # プルダウン選択 メニューグループ:メニュー:項目
+                    if type_name == "initialize":
+                        parameter["pulldown_selection"] = column_data.get('pulldown_selection') # プルダウン選択 メニューグループ:メニュー:項目
+                    else:
+                        parameter["pulldown_selection"] = update_pulldown_selection  # プルダウン選択 メニューグループ:メニュー:項目
                     parameter["pulldown_selection_default_value"] = column_data.get('pulldown_selection_default_value')  # プルダウン選択 初期値
                     reference_item = column_data.get('reference_item')
                     if reference_item:
@@ -1781,7 +1784,10 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
 
                 # カラムクラス「パラメータシート参照」用のパラメータを追加
                 if column_class == "ParameterSheetReference":
-                    parameter["parameter_sheet_reference"] = update_parameter_sheet_reference  # パラメータシート参照
+                    if type_name == "initialize":
+                        parameter["parameter_sheet_reference"] = column_data.get('parameter_sheet_reference') # パラメータシート参照
+                    else:
+                        parameter["parameter_sheet_reference"] = update_parameter_sheet_reference  # パラメータシート参照
 
                 parameters = {
                     "parameter": parameter,

@@ -248,7 +248,7 @@ def CreateAG_ITABuilderShellFiles(objDBCA, AnscObj, out_dir, execution_no, movem
     # builder.sh生成
     template_file = "ky_ansible_builder_shell.j2"
     item = {}
-    item["PROJECT_BASE_DIR"] = "{}/project/builder_executable_files".format(get_AGAnsibleExecutDirPath(AnscObj, execution_no))
+    # item["PROJECT_BASE_DIR"] = "${PROJECT_BASE_DIR}/project/builder_executable_files"
 
     item['optional_parameters'] = movemrnt_row['AG_BUILDER_OPTIONS']
     item['tag_name'] = execdev_row['TAG_NAME']
@@ -290,10 +290,10 @@ def CreateAG_ITARunnerShellFiles(objDBCA, AnscObj, out_dir, execution_no, movemr
 
     project_path = getAG_AGProjectPath(AnscObj, execution_no)
     item = {}
-    item["PROJECT_DIR"] = project_path
     item["EXECUTION_NO"] = execution_no
     item["TAG_NAME"] = ee_tag
-    item['OUT_DIR'] = getAG_AGOutDirPath(AnscObj, execution_no) + "/"
+    # item["PROJECT_BASE_DIR"] = "${PROJECT_BASE_DIR}"
+    # item['OUT_DIR'] = "${PROJECT_BASE_DIR}" + "/"
     template_file_path = get_AnsibleDriverShellPath()
 
     # start.sh生成

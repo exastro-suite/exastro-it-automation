@@ -16,12 +16,12 @@
 #   ansible-runnerで実行したplaybookの実行状態を確認する。
 #   テンプレートファイル
 #   <<変数>>
-#     PROJECT_DIR:  プロジェクトディレクトリ
+#     PROJECT_BASE_DIR:  プロジェクトディレクトリ
 #     EXECUTION_NO: 作業番号
 #   <<exit code>>
 #     0:   実行中
 #     他:  未実行
 ######################################################################
 ansible-runner is-alive \
-{{ PROJECT_DIR }} \
+${PROJECT_BASE_DIR} \
 -i {{ EXECUTION_NO}}

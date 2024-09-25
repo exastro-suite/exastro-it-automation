@@ -221,7 +221,7 @@ def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, 
             # カラムクラスが「5: DateTimeColumn」かつ初期値が設定されている場合、初期値の値(日時)をフォーマット
             if str(column_class) == "5" and initial_value:
                 initial_value = datetime.datetime.strptime(initial_value, '%Y-%m-%d %H:%M:%S')
-                initial_value = initial_value.strftime('%Y/%m/%d')
+                initial_value = initial_value.strftime('%Y-%m-%d %H:%M:%S')
 
             # カラムクラスが「6: DateTColumn」かつ初期値が設定されている場合、初期値の値(日付)をフォーマット
             if str(column_class) == "6" and initial_value:

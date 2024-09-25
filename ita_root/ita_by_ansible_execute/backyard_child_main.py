@@ -453,14 +453,14 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
             vault_password = AnscConst.DF_ANSIBLE_VAULT_PASSWORD
         else:
             vault_password = ky_decrypt(ans_if_info['ANSIBLE_VAULT_PASSWORD'])
-        ansible_vauld_password_file = "{}/.vault-password-file".format(ansdrv.getAnsible_tmp_Dir())
+        ansible_vauld_password_file = "{}/.vault-password-file".format(ansdrv.getAnsible_in_Dir())
 
         fd = open(ansible_vauld_password_file, "w")
         fd.write(vault_password)
         fd.close()
 
         # nsible Agentの場合、Ansible Vault用 のパスワードファイルを追加する
-        option_parameter += " --vault-password-file /outdir/tmp/.vault-password-file"
+        option_parameter += " --vault-password-file .vault-password-file "
 
     else:
         file_path = "{}/{}".format(zip_data_source_dir, "AnsibleExecOption.txt")
@@ -1357,7 +1357,7 @@ def createTmpZipFile(execution_no, zip_data_source_dir, zip_type, zip_file_pfx):
         addAnsibleCreateFilesPath(zip_temp_save_path)
         addAnsibleCreateFilesPath(tmp_zip_data_source_dir)
 
-        tmp_str_command = "cd " + shlex.quote(tmp_zip_data_source_dir) + " && zip -r " + shlex.quote(zip_temp_save_dir + "/" + zip_file_name) + " . -x ssh_key_files/* -x winrm_ca_files/*  1> /dev/null"  # noqa: E501
+        tmp_str_command = "cd " + shlex.quote(tmp_zip_data_source_dir) + " && zip -r " + shlex.quote(zip_temp_save_dir + "/" + zip_file_name) + " . -x ssh_key_files/* -x winrm_ca_files/*  -x .vault-password-file 1> /dev/null"  # noqa: E501
 
         ret = subprocess.run(tmp_str_command, check=True, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 

@@ -460,7 +460,7 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
         fd.close()
 
         # nsible Agentの場合、Ansible Vault用 のパスワードファイルを追加する
-        option_parameter += "--vault-password-file /outdir/tmp/.vault-password-file"
+        option_parameter += " --vault-password-file /outdir/tmp/.vault-password-file"
 
     else:
         file_path = "{}/{}".format(zip_data_source_dir, "AnsibleExecOption.txt")

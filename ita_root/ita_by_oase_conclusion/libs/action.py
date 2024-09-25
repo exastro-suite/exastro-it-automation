@@ -128,7 +128,7 @@ class Action():
         action_log_row = {
             "RULE_ID": rule_id,
             "RULE_NAME": ruleInfo.get("RULE_NAME"),
-            "STATUS_ID": oaseConst.OSTS_Rule_Match, # 1:判定済み
+            "STATUS_ID": oaseConst.OSTS_Rule_Match,  # 1:判定済み
             "ACTION_ID": action_id,
             "ACTION_NAME": action_name,
             "CONDUCTOR_INSTANCE_ID": conductor_class_id,
@@ -190,8 +190,8 @@ class Action():
             # 通知先が設定されている場合、通知処理(事前通知)を実行する
             if ruleInfo.get('BEFORE_NOTIFICATION_DESTINATION'):
                 # 2.3の時点では、イベントの情報は空にしておく
-                notification_data = Notification_data(self.wsDb, self.EventObj)
-                before_Action_Event_List = notification_data.getBeforeActionEventList(UseEventIdList, action_log_row,ruleInfo, ret_action)
+                notification_data = Notification_data(self.wsDb)
+                before_Action_Event_List = notification_data.getBeforeActionEventList(UseEventIdList, action_log_row, ruleInfo, ret_action[0])
 
                 tmp_msg = g.appmsg.get_log_message("BKY-90008", ['Advance notice'])
                 g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405

@@ -19,9 +19,9 @@ from jinja2 import Template
 from typing import Optional, Dict, List
 import re
 
-# notification
-from common_libs.notification.sub_classes.oase import OASENotificationType
 # oase
+from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
+from common_libs.common.mongoconnect.const import Const as mongoConst
 from common_libs.oase.const import oaseConst
 from libs.common_functions import addline_msg
 
@@ -89,15 +89,14 @@ class Notification_data():
         '0' : [ '未発令', 'not issued']
     }
 
-    def __init__(self, wsDb, EventObj):
+    def __init__(self, wsDb):
         """コンストラクタ
 
         Args:
             wsDb (database): DBコネクション
-            EventObj (ManageEvents): イベント・マネージャー
         """
         self.wsDb = wsDb
-        self.EventObj = EventObj
+        self.wsMongo = MONGOConnectWs()
 
     def getBeforeActionEventList(self, UseEventIdList: List, action_log_entity: Dict, rule_entiry: Dict, action_entity: Optional[Dict]):
         """事前通知に適用するデータを生成する。
@@ -127,7 +126,7 @@ class Notification_data():
         action_log = {}
         if action_log_entity and any(action_log_entity):
             action_log = self.geActionLog(action_log_entity)
-        if  any(action_log):
+        if any(action_log):
             before_action['action_log'] = action_log
         else:
             before_action['action_log'] = self.getDefaultForActionLog()
@@ -253,11 +252,14 @@ class Notification_data():
             dict: イベント情報
         """
         events = []
+        where_str = {}
+        labeled_event_collection = self.wsMongo.collection(mongoConst.LABELED_EVENT_COLLECTION)
         # イベント
         if len(eventIdList) > 0:
             for id in eventIdList:
-                ret, event_row = self.EventObj.get_events( id )
-                if ret:
+                where_str["_id"] = id
+                labeled_events = labeled_event_collection.find(where_str)
+                for event_row in labeled_events:
                     event = {}
                     if 'event' in event_row:
                         event['_exastro_events'] = event_row['event']
@@ -266,11 +268,9 @@ class Notification_data():
                             event['_exastro_events'][key] = value or ""
                     if 'labels' in event_row:
                         event['labels'] = event_row['labels']
+                        event['labels']['_id'] = str(event_row['_id'])
                         event['labels']['_exastro_fetched_time'] = self.formatDateTime(event['labels']['_exastro_fetched_time'])
                         event['labels']['_exastro_end_time'] = self.formatDateTime(event['labels']['_exastro_end_time'])
-
-                        if event_row['event'] and event_row['event']['_id']:
-                            event['labels']['_id'] = str(event_row['event']['_id']) or ""
 
                         # イベント収集設定名
                         event['labels']['_exastro_event_collection_settings_name'] = ''

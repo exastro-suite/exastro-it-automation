@@ -190,7 +190,7 @@ class Action():
             # 通知先が設定されている場合、通知処理(事前通知)を実行する
             if ruleInfo.get('BEFORE_NOTIFICATION_DESTINATION'):
                 # 2.3の時点では、イベントの情報は空にしておく
-                notification_data = Notification_data(self.wsDb)
+                notification_data = Notification_data(self.wsDb, self.EventObj)
                 before_Action_Event_List = notification_data.getBeforeActionEventList(UseEventIdList, action_log_row, ruleInfo, ret_action[0])
 
                 tmp_msg = g.appmsg.get_log_message("BKY-90008", ['Advance notice'])

@@ -144,9 +144,10 @@ def main():
             wsDb = DBConnectWs(test_const.WORKSPACE_ID)  # noqa: F405
             # イベント操作クラス
             judgetime = int(test_const.JUDGETIME)
+            EventObj = ManageEvents(wsMongo, judgetime)
 
             # 通知データクラス生成【テスト対象】
-            notification_data = Notification_data(wsDb)
+            notification_data = Notification_data(wsDb, EventObj)
 
             # 事前用セットアップ
             (UseEventIdList, action_log_row, ruleInfo, ret_action) = setupBefore(wsDb, wsMongo, judgetime)

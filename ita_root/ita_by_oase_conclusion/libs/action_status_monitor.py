@@ -158,7 +158,7 @@ class ActionStatusMonitor():
             # 通知先が設定されている場合、通知処理(事後通知)を実行する
             if action_log_row_info.get('AFTER_NOTIFICATION_DESTINATION'):
 
-                notification_data = Notification_data(self.wsDb)
+                notification_data = Notification_data(self.wsDb, self.EventObj)
                 after_Action_Event_List = notification_data.getAfterActionEventList(action_log_row_info)
 
                 tmp_msg = g.appmsg.get_log_message("BKY-90008", ['Post-event notification'])

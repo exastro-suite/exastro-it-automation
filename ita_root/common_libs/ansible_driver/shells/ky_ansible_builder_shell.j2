@@ -39,5 +39,5 @@ if [ $1 == "Yes" ]; then
         exit ${EXIT_CODE}
     fi
 fi
-cd ${PROJECT_BASE_DIR}/project/builder_executable_files
+cd ${PROJECT_BASE_DIR}/builder_executable_files
 ansible-builder build {{ optional_parameters }} --tag {{ tag_name }}

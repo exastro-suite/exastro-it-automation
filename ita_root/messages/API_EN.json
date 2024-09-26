@@ -192,6 +192,7 @@
     "499-01823": "If you select the usage parameter sheet name, host/event linkage or host/host name settings are required.",
     "499-01824": "Only exact match search is possible for object ID. (Input value:{})",
     "499-01825": "Please search in the format of object ID.",
+    "499-01826": "-",
     "499-01901": "No Conductor Class name is specified. (conductor_class_id:{})",
     "499-01902": "The parameter information type is invalid.(menu:{}, type:{})",
     "499-01903": "A required item(type, parameter)is not filled in.(menu:{})",

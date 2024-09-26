@@ -47,11 +47,12 @@ def external_valid_menu_before(objdbca, objtable, option):
         filter_b = entry_parameter.get('filter_b')
         filter_operator = entry_parameter.get('filter_operator')
         before_notice = entry_parameter.get('before_notification')  # 通知
-        before_notice_dest = entry_parameter.get('before_notification_destination') # 通知先
-        after_notice = entry_parameter.get('after_notification') # 通知
-        after_notice_dest = entry_parameter.get('after_notification_destination') # 通知先
+        before_notice_dest = entry_parameter.get('before_notification_destination')  # 通知先
+        action_id = entry_parameter.get('action_id')  # アクションID
+        after_notice = entry_parameter.get('after_notification')  # 通知
+        after_notice_dest = entry_parameter.get('after_notification_destination')  # 通知先
         before_rule_label_name = entry_parameter.get('rule_label_name')  # 変更後　ルールラベル名
-        after_rule_label_name = current_parameter.get('rule_label_name') # 変更前　ルールラベル名
+        after_rule_label_name = current_parameter.get('rule_label_name')  # 変更前　ルールラベル名
 
     # 「復活」の場合、currrent_parameterから各値を取得
     elif cmd_type == 'Restore':
@@ -60,6 +61,7 @@ def external_valid_menu_before(objdbca, objtable, option):
         filter_operator = current_parameter.get('filter_operator')
         before_notice = current_parameter.get('before_notification')
         before_notice_dest = current_parameter.get('before_notification_destination')
+        action_id = current_parameter.get('action_id')  # アクションID
         after_notice = current_parameter.get('after_notification')
         after_notice_dest = current_parameter.get('after_notification_destination')
 
@@ -85,10 +87,20 @@ def external_valid_menu_before(objdbca, objtable, option):
         retBool = False
         msg = g.appmsg.get_api_message("499-01811")
         return retBool, msg, option,
+    # 事前通知の通知先が選択されていて、アクションIDが未選択の場合
+    if before_notice_dest and not action_id:
+        retBool = False
+        msg = g.appmsg.get_api_message("499-01826")
+        return retBool, msg, option,
     # 事後通知の通知先が選択されていて、通知が未選択の場合
     if after_notice_dest and not after_notice:
         retBool = False
         msg = g.appmsg.get_api_message("499-01812")
+        return retBool, msg, option,
+    # 事後通知の通知先が選択されていて、アクションIDが未選択の場合
+    if after_notice_dest and not action_id:
+        retBool = False
+        msg = g.appmsg.get_api_message("499-01826")
         return retBool, msg, option,
 
     # 更新の場合、ルールラベル名が変更されていない事を確認

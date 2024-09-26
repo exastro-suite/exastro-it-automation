@@ -176,19 +176,30 @@ class ActionStatusMonitor():
         sql = """
             SELECT
                 TAB_A.*,
-                TAB_B.CONDUCTOR_INSTANCE_ID       AS JOIN_CONDUCTOR_INSTANCE_ID,
-                TAB_B.STATUS_ID                   AS CONDUCTOR_STATUS_ID,
-                TAB_B.DISUSE_FLAG                 AS TAB_B_DISUSE_FLAG,
-                TAB_C.RULE_ID                     AS JOIN_RULE_ID,
-                TAB_C.RULE_NAME                   AS RULE_NAME,
-                TAB_C.CONCLUSION_LABEL_SETTINGS   AS CONCLUSION_LABEL_SETTINGS,
-                TAB_C.RULE_LABEL_NAME             AS RULE_LABEL_NAME,
-                TAB_C.EVENT_ID_LIST               AS EVENT_ID_LIST,
-                TAB_C.TTL                         AS TTL,
-                TAB_C.AFTER_APPROVAL_PENDING      AS AFTER_APPROVAL_PENDING,
-                TAB_C.AFTER_NOTIFICATION          AS AFTER_NOTIFICATION,
-                TAB_C.AVAILABLE_FLAG              AS RULE_AVAILABLE_FLAG,
-                TAB_C.DISUSE_FLAG                 AS TAB_C_DISUSE_FLAG
+                TAB_B.CONDUCTOR_INSTANCE_ID            AS JOIN_CONDUCTOR_INSTANCE_ID,
+                TAB_B.STATUS_ID                        AS CONDUCTOR_STATUS_ID,
+                TAB_B.DISUSE_FLAG                      AS TAB_B_DISUSE_FLAG,
+                TAB_C.RULE_ID                          AS JOIN_RULE_ID,
+                TAB_C.RULE_NAME                        AS RULE_NAME,
+                TAB_C.RULE_PRIORITY                    AS RULE_PRIORITY,
+                TAB_C.FILTER_A                         AS FILTER_A,
+                TAB_C.FILTER_OPERATOR                  AS FILTER_OPERATOR,
+                TAB_C.FILTER_B                         AS FILTER_B,
+                TAB_C.BEFORE_NOTIFICATION              AS BEFORE_NOTIFICATION,
+                TAB_C.BEFORE_APPROVAL_PENDING          AS BEFORE_APPROVAL_PENDING,
+                TAB_C.BEFORE_NOTIFICATION_DESTINATION  AS BEFORE_NOTIFICATION_DESTINATION,
+                TAB_C.ACTION_ID                        AS ACTION_ID,
+                TAB_C.ACTION_LABEL_INHERITANCE_FLAG    AS ACTION_LABEL_INHERITANCE_FLAG,
+                TAB_C.EVENT_LABEL_INHERITANCE_FLAG     AS EVENT_LABEL_INHERITANCE_FLAG,
+                TAB_C.CONCLUSION_LABEL_SETTINGS        AS CONCLUSION_LABEL_SETTINGS,
+                TAB_C.RULE_LABEL_NAME                  AS RULE_LABEL_NAME,
+                TAB_C.EVENT_ID_LIST                    AS EVENT_ID_LIST,
+                TAB_C.TTL                              AS TTL,
+                TAB_C.AFTER_APPROVAL_PENDING           AS AFTER_APPROVAL_PENDING,
+                TAB_C.AFTER_NOTIFICATION               AS AFTER_NOTIFICATION,
+                TAB_C.AFTER_NOTIFICATION_DESTINATION   AS AFTER_NOTIFICATION_DESTINATION,
+                TAB_C.AVAILABLE_FLAG                   AS RULE_AVAILABLE_FLAG,
+                TAB_C.DISUSE_FLAG                      AS TAB_C_DISUSE_FLAG
             FROM
                 T_OASE_ACTION_LOG                       TAB_A
                 LEFT JOIN T_COMN_CONDUCTOR_INSTANCE     TAB_B ON (TAB_A.CONDUCTOR_INSTANCE_ID = TAB_B.CONDUCTOR_INSTANCE_ID)

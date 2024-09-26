@@ -19,9 +19,9 @@ from jinja2 import Template
 from typing import Optional, Dict, List
 import re
 
-# notification
-from common_libs.notification.sub_classes.oase import OASENotificationType
 # oase
+from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
+from common_libs.common.mongoconnect.const import Const as mongoConst
 from common_libs.oase.const import oaseConst
 from libs.common_functions import addline_msg
 
@@ -127,7 +127,7 @@ class Notification_data():
         action_log = {}
         if action_log_entity and any(action_log_entity):
             action_log = self.geActionLog(action_log_entity)
-        if  any(action_log):
+        if any(action_log):
             before_action['action_log'] = action_log
         else:
             before_action['action_log'] = self.getDefaultForActionLog()
@@ -253,41 +253,41 @@ class Notification_data():
             dict: イベント情報
         """
         events = []
-        # イベント
+        where_str = {}
         if len(eventIdList) > 0:
-            for id in eventIdList:
-                ret, event_row = self.EventObj.get_events( id )
-                if ret:
-                    event = {}
-                    if 'event' in event_row:
-                        event['_exastro_events'] = event_row['event']
-                        # Noneを空文字に置換
-                        for key, value in event['_exastro_events'].items():
-                            event['_exastro_events'][key] = value or ""
-                    if 'labels' in event_row:
-                        event['labels'] = event_row['labels']
-                        event['labels']['_exastro_fetched_time'] = self.formatDateTime(event['labels']['_exastro_fetched_time'])
-                        event['labels']['_exastro_end_time'] = self.formatDateTime(event['labels']['_exastro_end_time'])
+            where_str["_id"] = {"$in": eventIdList}
+            labeled_events = self.EventObj.labeled_event_collection.find(where_str)
 
-                        if event_row['event'] and event_row['event']['_id']:
-                            event['labels']['_id'] = str(event_row['event']['_id']) or ""
+            # イベント
+            for event_row in labeled_events:
+                event = {}
+                if 'event' in event_row:
+                    event['_exastro_events'] = event_row['event']
+                    # Noneを空文字に置換
+                    for key, value in event['_exastro_events'].items():
+                        event['_exastro_events'][key] = value or ""
+                if 'labels' in event_row:
+                    event['labels'] = event_row['labels']
+                    event['labels']['_id'] = str(event_row['_id'])
+                    event['labels']['_exastro_fetched_time'] = self.formatDateTime(event['labels']['_exastro_fetched_time'])
+                    event['labels']['_exastro_end_time'] = self.formatDateTime(event['labels']['_exastro_end_time'])
 
-                        # イベント収集設定名
-                        event['labels']['_exastro_event_collection_settings_name'] = ''
-                        event_collection_settings_id = event['labels']['_exastro_event_collection_settings_id']
-                        _settingList = self.wsDb.table_select(oaseConst.T_OASE_EVENT_COLLECTION_SETTINGS, 'WHERE DISUSE_FLAG = %s AND EVENT_COLLECTION_SETTINGS_ID = %s', [0, event_collection_settings_id])
-                        if not _settingList:
-                            tmp_msg = g.appmsg.get_log_message("BKY-90009", [oaseConst.T_OASE_FILTER])
-                            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-                        else:
-                            event['labels']['_exastro_event_collection_settings_name'] = _settingList[0]['EVENT_COLLECTION_SETTINGS_NAME']
+                    # イベント収集設定名
+                    event['labels']['_exastro_event_collection_settings_name'] = ''
+                    event_collection_settings_id = event['labels']['_exastro_event_collection_settings_id']
+                    _settingList = self.wsDb.table_select(oaseConst.T_OASE_EVENT_COLLECTION_SETTINGS, 'WHERE DISUSE_FLAG = %s AND EVENT_COLLECTION_SETTINGS_ID = %s', [0, event_collection_settings_id])
+                    if not _settingList:
+                        tmp_msg = g.appmsg.get_log_message("BKY-90009", [oaseConst.T_OASE_FILTER])
+                        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                    else:
+                        event['labels']['_exastro_event_collection_settings_name'] = _settingList[0]['EVENT_COLLECTION_SETTINGS_NAME']
 
-                        # Noneを空文字に置換
-                        for key, value in event['labels'].items():
-                            event['labels'][key] = value or ""
+                    # Noneを空文字に置換
+                    for key, value in event['labels'].items():
+                        event['labels'][key] = value or ""
 
-                    if any(event):
-                        events.append(event)
+                if any(event):
+                    events.append(event)
 
         return events
 

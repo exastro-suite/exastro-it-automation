@@ -7,7 +7,7 @@
     ["oase.sql", "oase_master.sql"],
     ["", "cicd_master.sql"],
     ["", "compare_master.sql"],
-    ["", "export_import_master.sql"],
+    ["export_import.sql", "export_import_master.sql"],
     ["", "hostgroup_master.sql"],
     ["", "menu_create_master.sql"]
 ]

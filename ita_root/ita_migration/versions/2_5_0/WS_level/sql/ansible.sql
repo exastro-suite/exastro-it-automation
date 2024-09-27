@@ -237,7 +237,7 @@ WHERE
 
 -- ------------------------------------------------------------
 -- - ▲ pioneer 作業管理
-        削除
+-- -    削除
 -- -    ABORT_EXECUTE_FLAG:              緊急停止フラグ　追加
 -- -    I_AG_EXECUTION_ENVIRONMENT_NAME  実行環境                    追加
 -- -    I_AG_BUILDER_OPTIONS             ansible-builder パラメータ  追加
@@ -307,7 +307,7 @@ WHERE
 
 -- ------------------------------------------------------------
 -- - ▲ Legacy-role 作業管理
-        削除
+-- -    削除
 -- -    ABORT_EXECUTE_FLAG:              緊急停止フラグ　追加
 -- -    I_AG_EXECUTION_ENVIRONMENT_NAME  実行環境                    追加
 -- -    I_AG_BUILDER_OPTIONS             ansible-builder パラメータ  追加

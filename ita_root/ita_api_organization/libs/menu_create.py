@@ -1508,14 +1508,14 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
                     # カラムクラス「整数」の場合のバリデーションチェック
                     if column_class == "NumColumn":
                         current_integer_minimum_value = None if not target_record.get('NUM_MIN') else int(target_record.get('NUM_MIN'))
-                        update_integer_minimum_value = None if not column_data.get('integer_minimum_value') else int(column_data.get('integer_minimum_value'))  # noqa: E501
+                        update_integer_minimum_value = None if not column_data.get('integer_minimum_value') else float(column_data.get('integer_minimum_value'))  # noqa: E501
                         # 最小値が既存の値よりも上回っている場合エラー判定
                         if current_integer_minimum_value and update_integer_minimum_value:
                             if current_integer_minimum_value < update_integer_minimum_value:
                                 raise AppException("499-00708", [item_name, "integer_minimum_value"])  # 「編集」の際は既存項目の対象の値が上回る変更はできません。(項目: {}, 対象: {})
 
                         current_integer_maximum_value = None if not target_record.get('NUM_MAX') else int(target_record.get('NUM_MAX'))
-                        update_integer_maximum_value = None if not column_data.get('integer_maximum_value') else int(column_data.get('integer_maximum_value'))  # noqa: E501
+                        update_integer_maximum_value = None if not column_data.get('integer_maximum_value') else float(column_data.get('integer_maximum_value'))  # noqa: E501
                         # 最大値が既存の値よりも下回っている場合エラー判定
                         if current_integer_maximum_value and update_integer_maximum_value:
                             if current_integer_maximum_value > update_integer_maximum_value:
@@ -1523,15 +1523,15 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
 
                     # カラムクラス「小数」の場合のバリデーションチェック
                     if column_class == "FloatColumn":
-                        current_decimal_minimum_value = None if not target_record.get('FLOAT_MIN') else int(target_record.get('FLOAT_MIN'))
-                        update_decimal_minimum_value = None if not column_data.get('decimal_minimum_value') else int(column_data.get('decimal_minimum_value'))  # noqa: E501
+                        current_decimal_minimum_value = None if not target_record.get('FLOAT_MIN') else float(target_record.get('FLOAT_MIN'))
+                        update_decimal_minimum_value = None if not column_data.get('decimal_minimum_value') else float(column_data.get('decimal_minimum_value'))  # noqa: E501
                         # 最小値が既存の値よりも上回っている場合エラー判定
                         if current_decimal_minimum_value and update_decimal_minimum_value:
                             if current_decimal_minimum_value < update_decimal_minimum_value:
                                 raise AppException("499-00708", [item_name, "decimal_minimum_value"])  # 「編集」の際は既存項目の対象の値が上回る変更はできません。(項目: {}, 対象: {})
 
-                        current_decimal_maximum_value = None if not target_record.get('FLOAT_MAX') else int(target_record.get('FLOAT_MAX'))
-                        update_decimal_maximum_value = None if not column_data.get('decimal_maximum_value') else int(column_data.get('decimal_maximum_value'))  # noqa: E501
+                        current_decimal_maximum_value = None if not target_record.get('FLOAT_MAX') else float(target_record.get('FLOAT_MAX'))
+                        update_decimal_maximum_value = None if not column_data.get('decimal_maximum_value') else float(column_data.get('decimal_maximum_value'))  # noqa: E501
                         # 最大値が既存の値よりも下回っている場合エラー判定
                         if current_decimal_maximum_value and update_decimal_maximum_value:
                             if current_decimal_maximum_value > update_decimal_maximum_value:

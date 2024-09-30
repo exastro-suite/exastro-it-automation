@@ -322,7 +322,7 @@ def menu_column_valid(objdbca, objtable, option):
         if retBool and integer_maximum_value is None:
             integer_maximum_value = 2147483648
         # 最大値<最小値になっている場合、エラー
-        if retBool and int(integer_minimum_value) > int(integer_maximum_value):
+        if retBool and float(integer_minimum_value) > float(integer_maximum_value):
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20068", [integer_minimum_value, integer_maximum_value])
         # 小数最小値が設定されている場合、エラー

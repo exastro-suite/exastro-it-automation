@@ -147,7 +147,6 @@ def create_maintenance_parameters(connexion_request, tmp_path):
                             file_size_str = f"{int(file_size):,} byte(s)"
                             msg = g.appmsg.get_api_message("499-00222", [file_size_str])
                             args_dict.setdefault(str(files_count), {check_msg: [msg]})
-                            print(args_dict)
                             args = json.dumps(args_dict)
                             status_code = "499-00201"
                             raise AppException(status_code, [args], [args])

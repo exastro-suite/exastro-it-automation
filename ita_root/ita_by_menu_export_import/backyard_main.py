@@ -1014,7 +1014,7 @@ def _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_
     _json_f_data = []
     pk_name = None
     delete_ids = []
-    chk_pk_sql = " SELECT * FROM `" + table_name
+    chk_pk_sql = f" SELECT * FROM `{table_name}`"
     chk_pk_record = objdbca.sql_execute(chk_pk_sql, [])
     for json_record in json_sql_data:
         file_param = json_record['file']
@@ -3239,8 +3239,10 @@ def get_file_path_info_base_menus(execution_no_path, menu_list):
     for menu_name_rest in menu_list:
         # DATAファイル確認
         if os.path.isfile(execution_no_path + '/' + menu_name_rest) is False:
-            # 対象ファイルなし
-            raise AppException("MSG-140003", [menu_name_rest], [menu_name_rest])
+            # _DATAファイルのみ
+            g.applogger.info(f"_DATA file only")
+            continue
+
         # DATAファイル読み込み
         sql_data = file_open_read_close(execution_no_path + '/' + menu_name_rest)
         json_sql_data = json.loads(sql_data)

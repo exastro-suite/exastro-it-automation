@@ -338,6 +338,8 @@ def backyard_main(organization_id, workspace_id):
 
                     if len(aryRetBody) > 0:
                         for name, ct in aryRetBody.items():
+                            if not isinstance(ct, int) or name == "IdList":
+                                continue
                             msg += msg_result[idx] + ":    " + str(ct) + strErrCountExplainTail + "\n"
                             idx += 1
 
@@ -382,7 +384,8 @@ def backyard_main(organization_id, workspace_id):
 
     except Exception as e:
         # エラーログ出力
-        print_exception_msg(e)
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
 
         # 一時ディレクトリ削除
         if os.path.exists(EXPORT_PATH + "/" + taskId):

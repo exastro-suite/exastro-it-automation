@@ -41,19 +41,19 @@ UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_JA = '[元データ]
 基本コンソール/オペレーション一覧/オペレーション名', DESCRIPTION_EN = '[Original data]
 Basic Console/Operation list/operation name', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010803';
 
-UPDATE T_COMN_MENU_COLUMN_LINK SET DESCRIPTION_JA = '[元データ]
+UPDATE T_COMN_MENU_COLUMN_LINK SET COLUMN_NAME_EN = 'Host', DESCRIPTION_JA = '[元データ]
 Ansible共通/機器一覧/ホスト名', DESCRIPTION_EN = '[Original data]
 Ansible Common/Device list/Host name', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010810';
-UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_JA = '[元データ]
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET COLUMN_NAME_EN = 'Host', DESCRIPTION_JA = '[元データ]
 Ansible共通/機器一覧/ホスト名', DESCRIPTION_EN = '[Original data]
 Ansible Common/Device list/Host name', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010810';
 
-UPDATE T_COMN_MENU_COLUMN_LINK SET DESCRIPTION_JA = '[元データ]
+UPDATE T_COMN_MENU_COLUMN_LINK SET COLUMN_NAME_EN = 'Parameter Sheet', DESCRIPTION_JA = '[元データ]
 パラメータシート(入力用)/パラメータシート名(ja)', DESCRIPTION_EN = '[Original data]
-Parameter sheet(Input)/Parameter sheet name (ja)', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010811';
-UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_JA = '[元データ]
+Parameter sheet(Input)/Parameter sheet name (en)', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010811';
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET COLUMN_NAME_EN = 'Parameter Sheet', DESCRIPTION_JA = '[元データ]
 パラメータシート(入力用)/パラメータシート名(ja)', DESCRIPTION_EN = '[Original data]
-Parameter sheet(Input)/Parameter sheet name (ja)', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010811';
+Parameter sheet(Input)/Parameter sheet name (en)', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010811';
 
 UPDATE T_COMN_MENU_COLUMN_LINK SET DESCRIPTION_JA = '[元データ]
 パラメータシート(入力用)/パラメータシート名(rest)', DESCRIPTION_EN = '[Original data]
@@ -75,17 +75,17 @@ Enter any name you want to set in the "_exastro_rule_name" label to permanently 
 * Unable to edit', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010904';
 
 UPDATE T_COMN_MENU_COLUMN_LINK SET DESCRIPTION_JA = '[元データ]
-OASE/ルール/フィルター/フィルタID', DESCRIPTION_EN = '[Original data]
+OASE/ルール/フィルター/フィルターID', DESCRIPTION_EN = '[Original data]
 OASE/Rule/Filter/Filter Id', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010906';
 UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_JA = '[元データ]
-OASE/ルール/フィルター/フィルタID', DESCRIPTION_EN = '[Original data]
+OASE/ルール/フィルター/フィルターID', DESCRIPTION_EN = '[Original data]
 OASE/Rule/Filter/Filter Id', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010906';
 
 UPDATE T_COMN_MENU_COLUMN_LINK SET DESCRIPTION_JA = '[元データ]
-OASE/ルール/フィルター/フィルタID', DESCRIPTION_EN = '[Original data]
+OASE/ルール/フィルター/フィルターID', DESCRIPTION_EN = '[Original data]
 OASE/Rule/Filter/Filter Id', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010908';
 UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_JA = '[元データ]
-OASE/ルール/フィルター/フィルタID', DESCRIPTION_EN = '[Original data]
+OASE/ルール/フィルター/フィルターID', DESCRIPTION_EN = '[Original data]
 OASE/Rule/Filter/Filter Id', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010908';
 
 UPDATE T_COMN_MENU_COLUMN_LINK SET COLUMN_NAME_JA = 'アクション名', COLUMN_NAME_EN = 'Action Name', DESCRIPTION_JA = '[元データ]
@@ -174,10 +174,10 @@ Parameter sheet definition list/UUID', LAST_UPDATE_TIMESTAMP = _____DATE_____ WH
 
 UPDATE T_COMN_MENU_COLUMN_LINK SET DESCRIPTION_JA = '[元データ]
 パラメータシート定義一覧/パラメータシート名(ja)', DESCRIPTION_EN = '[Original data]
-Parameter sheet definition list/Parameter sheet name (ja)', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11011022';
+Parameter sheet definition list/Parameter sheet name (en)', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11011022';
 UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_JA = '[元データ]
 パラメータシート定義一覧/パラメータシート名(ja)', DESCRIPTION_EN = '[Original data]
-Parameter sheet definition list/Parameter sheet name (ja)', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11011022';
+Parameter sheet definition list/Parameter sheet name (en)', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11011022';
 
 UPDATE T_COMN_MENU_COLUMN_LINK SET DESCRIPTION_JA = '[元データ]
 パラメータシート定義一覧/パラメータシート名(rest)', DESCRIPTION_EN = '[Original data]

@@ -41,6 +41,7 @@ def getExecDevTemplateUploadDirPath():
         作業管理結果データディレクトリバス
     """
     return getDataRelayStorageDir() + "/uploadfiles/20110/template_file"
+
 def getAG_AGOutDirPath(ansConstObj, execution_no):
     """
       ansible-runnerのansible agent側の結果データ(out)パスを取得
@@ -50,7 +51,7 @@ def getAG_AGOutDirPath(ansConstObj, execution_no):
       Returns:
         ansible-runnerのansible agent側の結果データ(out)パス
     """
-    return "{}/{}/{}".format(getDataRelayStorageDir(), ansConstObj.vg_OrchestratorSubId_dir,execution_no)
+    return get_AGAnsibleExecutDirPath(ansConstObj, execution_no)
 
 def getAG_AGProjectPath(ansConstObj, execution_no):
     """
@@ -61,7 +62,7 @@ def getAG_AGProjectPath(ansConstObj, execution_no):
       Returns:
         ansible-runnerのprojectパス
     """
-    return "{}/{}/{}".format(getDataRelayStorageDir(), ansConstObj.vg_OrchestratorSubId_dir,execution_no)
+    return get_AGAnsibleExecutDirPath(ansConstObj, execution_no)
 
 def getAG_ITARunnerShellPath(ansConstObj, execution_no):
     """
@@ -210,11 +211,14 @@ def CreateAG_ITABuilderShellFiles(objDBCA, AnscObj, out_dir, execution_no, movem
         if column_row['COLUMN_CLASS'] in ('1', '2', '3'): # SingleTextColumn, MultiTextColumn NumColumn
             pass
         elif column_row['COLUMN_CLASS'] in ('9'): # FileUploadColumn
-            path = getFileupLoadColumnPath(strage_menu_id, column_row['COLUMN_NAME_REST'])
-            src_upload_file = "{}/{}/{}".format(path, uploadfiledir_uuid, item_array[column_row['COLUMN_NAME_REST']])
-            dest_uoload_file = "{}/{}_{}".format(out_dir, column_row['COLUMN_NAME_REST'], item_array[column_row['COLUMN_NAME_REST']])
-            shutil.copy(src_upload_file, dest_uoload_file)
-            j2_item_array[column_row['COLUMN_NAME_JA']] = os.path.basename(dest_uoload_file)
+            if item_array[column_row['COLUMN_NAME_REST']]:
+                path = getFileupLoadColumnPath(strage_menu_id, column_row['COLUMN_NAME_REST'])
+                src_upload_file = "{}/{}/{}".format(path, uploadfiledir_uuid, item_array[column_row['COLUMN_NAME_REST']])
+                dest_uoload_file = "{}/{}_{}".format(out_dir, column_row['COLUMN_NAME_REST'], item_array[column_row['COLUMN_NAME_REST']])
+                shutil.copy(src_upload_file, dest_uoload_file)
+                j2_item_array[column_row['COLUMN_NAME_JA']] = os.path.basename(dest_uoload_file)
+            else:
+                j2_item_array[column_row['COLUMN_NAME_JA']] = ""
         else:
             msgstr = g.appmsg.get_api_message("MSG-10965", [column_row['COLUMN_CLASS']])
             return False, msgstr
@@ -244,7 +248,8 @@ def CreateAG_ITABuilderShellFiles(objDBCA, AnscObj, out_dir, execution_no, movem
     # builder.sh生成
     template_file = "ky_ansible_builder_shell.j2"
     item = {}
-    item["PROJECT_BASE_DIR"] = "{}/project/builder_executable_files".format(getAG_AGProjectPath(AnscObj, execution_no))
+    # item["PROJECT_BASE_DIR"] = "${PROJECT_BASE_DIR}/project/builder_executable_files"
+
     item['optional_parameters'] = movemrnt_row['AG_BUILDER_OPTIONS']
     item['tag_name'] = execdev_row['TAG_NAME']
     # None対応
@@ -285,10 +290,10 @@ def CreateAG_ITARunnerShellFiles(objDBCA, AnscObj, out_dir, execution_no, movemr
 
     project_path = getAG_AGProjectPath(AnscObj, execution_no)
     item = {}
-    item["PROJECT_DIR"] = project_path
     item["EXECUTION_NO"] = execution_no
     item["TAG_NAME"] = ee_tag
-    item['OUT_DIR'] = getAG_AGOutDirPath(AnscObj, execution_no) + "/"
+    # item["PROJECT_BASE_DIR"] = "${PROJECT_BASE_DIR}"
+    # item['OUT_DIR'] = "${PROJECT_BASE_DIR}" + "/"
     template_file_path = get_AnsibleDriverShellPath()
 
     # start.sh生成
@@ -355,3 +360,13 @@ def get_AGChildProcessRestartCountFilepath(ansConstObj, execute_no):
     """
     return "{}/tmp/Child_Process_restart_count.txt".format(getAnsibleExecutDirPath(ansConstObj, execute_no))
 
+def get_AGAnsibleExecutDirPath(ansConstObj, execute_no):
+    """
+      ansibe作業実行ディレクトリパス取得
+      Arguments:
+        ansConstObj: ansible共通定数オブジェクト
+        execute_no: 作業番号
+      Returns:
+        ansibe作業実行ディレクトリパスを取得
+    """
+    return getDataRelayStorageDir() + "/driver/ag_ansible_execution/{}/{}".format(ansConstObj.vg_OrchestratorSubId_dir, execute_no)

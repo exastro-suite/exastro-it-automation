@@ -16,14 +16,14 @@ import connexion
 
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectWs
-from common_libs.api import api_filter, api_filter_download_file, check_request_body, check_request_body_key
+from common_libs.api import api_filter, api_filter_download_temporary_file, check_request_body, check_request_body_key
 from libs.ansible_execution import * # noqa: F403
 from flask import g
 
 
 @api_filter
-def get_unexecuted_instance(organization_id, workspace_id):  # noqa: E501
-    """get_unexecuted_instance
+def post_unexecuted_instance(organization_id, workspace_id, body):  # noqa: E501
+    """post_unexecuted_instance
 
     未実行インスタンス確認 # noqa: E501
 
@@ -31,17 +31,31 @@ def get_unexecuted_instance(organization_id, workspace_id):  # noqa: E501
     :type organization_id: str
     :param workspace_id: WorkspaceID
     :type workspace_id: str
+    :param body:
+    :type body: dict | bytes
 
-    :rtype: InlineResponse2006
+    :rtype: InlineResponse200
     """
+
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('data_update_stop') == '1':
+        status_code = "498-00004"
+        raise AppException(status_code, [], [])  # noqa: F405
 
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
     try:
+        # bodyのjson形式チェック
+        check_request_body()
+
+        if connexion.request.is_json:
+            body = dict(connexion.request.get_json())
+        else:
+            body = {}
 
         # 作業実行関連のメニューの基本情報および項目情報の取得
-        result_data = unexecuted_instance(objdbca)
+        result_data = unexecuted_instance(objdbca, body)
         # result_data.setdefault("menu_info", tmp_data[0]["data"])
     except Exception as e:
         raise e
@@ -52,7 +66,7 @@ def get_unexecuted_instance(organization_id, workspace_id):  # noqa: E501
 
 @api_filter
 def execution_status_notification(organization_id, workspace_id, execution_no, body):  # noqa: E501
-    """get_unexecuted_instance
+    """execution_status_notification
 
     作業状態通知 # noqa: E501
 
@@ -60,9 +74,18 @@ def execution_status_notification(organization_id, workspace_id, execution_no, b
     :type organization_id: str
     :param workspace_id: WorkspaceID
     :type workspace_id: str
+    :param execution_no: 作業番号
+    :type execution_no: str
+    :param body:
+    :type body: dict | bytes
 
-    :rtype: InlineResponse2006
+    :rtype: InlineResponse2001
     """
+
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('data_update_stop') == '1':
+        status_code = "498-00004"
+        raise AppException(status_code, [], [])  # noqa: F405
 
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
@@ -86,7 +109,7 @@ def execution_status_notification(organization_id, workspace_id, execution_no, b
     return result_data,
 
 
-@api_filter_download_file
+@api_filter_download_temporary_file
 def get_populated_data(organization_id, workspace_id, execution_no, driver_id):  # noqa: E501
     """get_populated_data
 
@@ -98,9 +121,16 @@ def get_populated_data(organization_id, workspace_id, execution_no, driver_id): 
     :type workspace_id: str
     :param execution_no: 作業番号
     :type execution_no: str
+    :param driver_id: ドライバーID
+    :type driver_id: str
 
-    :rtype: InlineResponse2006
+    :rtype: InlineResponse2002
     """
+
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('data_update_stop') == '1':
+        status_code = "498-00004"
+        raise AppException(status_code, [], [])  # noqa: F405
 
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
@@ -119,16 +149,28 @@ def get_populated_data(organization_id, workspace_id, execution_no, driver_id): 
 def update_result_data(organization_id, workspace_id, execution_no, body=None, **kwargs):  # noqa: E501
     """update_result_data
 
-    結果データ更新 # noqa: E501
+    結果データ受け取り・更新 # noqa: E501
 
     :param organization_id: OrganizationID
     :type organization_id: str
     :param workspace_id: WorkspaceID
     :type workspace_id: str
     :param execution_no: 作業番号
+    :type execution_no: str
+    :param driver_id:
+    :type driver_id: str
+    :param status:
+    :type status: str
+    :param file:
+    :type file: dict | bytes
 
-    :rtype: InlineResponse2006
+    :rtype: InlineResponse2003
     """
+
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('data_update_stop') == '1':
+        status_code = "498-00004"
+        raise AppException(status_code, [], [])  # noqa: F405
 
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
@@ -140,7 +182,7 @@ def update_result_data(organization_id, workspace_id, execution_no, body=None, *
         retBool, parameters, file_paths = create_file_path(connexion.request, tmp_path, execution_no)
 
         # 作業実行関連のメニューの基本情報および項目情報の取得
-        result_data = update_result(organization_id, workspace_id, execution_no, parameters, file_paths)
+        result_data = update_result(objdbca, organization_id, workspace_id, execution_no, parameters, file_paths)
         # result_data.setdefault("menu_info", tmp_data[0]["data"])
     except Exception as e:
         raise e
@@ -151,7 +193,7 @@ def update_result_data(organization_id, workspace_id, execution_no, body=None, *
 
 @api_filter
 def agent_version(organization_id, workspace_id, body):  # noqa: E501
-    """update_result_data
+    """agent_version
 
     バージョン通知 # noqa: E501
 
@@ -159,12 +201,16 @@ def agent_version(organization_id, workspace_id, body):  # noqa: E501
     :type organization_id: str
     :param workspace_id: WorkspaceID
     :type workspace_id: str
+    :param body:
+    :type body: dict | bytes
 
-    :rtype: InlineResponse2006
+    :rtype: InlineResponse2004
     """
 
-    # DB接続
-    objdbca = DBConnectWs(workspace_id)  # noqa: F405
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('data_update_stop') == '1':
+        status_code = "498-00004"
+        raise AppException(status_code, [], [])  # noqa: F405
 
     try:
         # DB接続
@@ -196,9 +242,16 @@ def execution_notification(organization_id, workspace_id, body):  # noqa: E501
     :type organization_id: str
     :param workspace_id: WorkspaceID
     :type workspace_id: str
+    :param body:
+    :type body: dict | bytes
 
-    :rtype: InlineResponse2006
+    :rtype: InlineResponse2003
     """
+
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('data_update_stop') == '1':
+        status_code = "498-00004"
+        raise AppException(status_code, [], [])  # noqa: F405
 
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405

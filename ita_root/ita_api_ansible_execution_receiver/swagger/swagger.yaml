@@ -29,13 +29,15 @@ servers:
 tags:
 - name: Ansible Execution
   description: Ansibleの情報を取得
+- name: InternalHealthCheckService
+  description: ヘルスチェックに関する操作(内部用)
 paths:
   /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/instance/unexecuted:
-    get:
+    post:
       tags:
       - Ansible Execution
       description: 未実行インスタンス取得
-      operationId: get_unexecuted_instance
+      operationId: post_unexecuted_instance
       parameters:
       - name: organization_id
         in: path
@@ -53,6 +55,11 @@ paths:
         explode: false
         schema:
           type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/instance_unexecuted_body'
       responses:
         "200":
           description: Success
@@ -221,12 +228,9 @@ paths:
           type: string
       requestBody:
         content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/execution_no_result_data_body'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/execution_no_result_data_body_1'
+              $ref: '#/components/schemas/execution_no_result_data_body'
       responses:
         "200":
           description: Success
@@ -343,6 +347,46 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.ansible_execution_controller
+  /internal-api/health-check/liveness:
+    get:
+      tags:
+      - InternalHealthCheckService
+      summary: Internal health check liveness
+      operationId: internal_health_check_liveness
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_5'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.internal_health_check_service_controller
+  /internal-api/health-check/readiness:
+    get:
+      tags:
+      - InternalHealthCheckService
+      summary: Internal health check readiness
+      operationId: internal_health_check_readiness
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_5'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.internal_health_check_service_controller
 components:
   schemas:
     ERROR_TEMPLATE:
@@ -353,6 +397,16 @@ components:
           example: 001-002
         message:
           type: string
+    instance_unexecuted_body:
+      properties:
+        execution_environment_names:
+          type: array
+          description: 指定が無ければ対象全件取得。Ansible共通-実行環境管理-実行環境名から利用可能。
+          example:
+          - 実行環境名1
+          - 実行環境名X
+          items:
+            type: string
     inline_response_200:
       type: object
       properties:
@@ -432,15 +486,6 @@ components:
           type: string
           example: base64 encode file
     execution_no_result_data_body:
-      properties:
-        driver_id:
-          type: string
-        status:
-          type: string
-        file:
-          $ref: '#/components/schemas/apiorganization_idworkspacesworkspace_idansible_execution_agentexecution_noresult_data_file'
-      description: ドライバーID、ステータス、各種tarファイルを指定
-    execution_no_result_data_body_1:
       type: object
       properties:
         driver_id:
@@ -507,6 +552,21 @@ components:
           items:
             type: string
       description: 作業実行中の作業番号を指定する
+    inline_response_200_5:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          type: string
+          example: ""
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data: ""
+        message: message
   responses:
     UnauthorizedError:
       description: Access token is missing or invalid

@@ -14,6 +14,7 @@
 from flask import Flask, g
 from dotenv import load_dotenv  # python-dotenv
 import os
+import json
 
 from common_libs.common.dbconnect import *  # noqa: F403
 from common_libs.common.logger import AppLog
@@ -115,8 +116,9 @@ def __migration_main(version):
     org_list = util.get_organization_ids()
     for organization_data in org_list:
         organization_id = organization_data[0]
-        no_install_driver = organization_data[1]
+        no_install_driver = json.loads(organization_data[1]) if organization_data[1] is not None else {}
         g.ORGANIZATION_ID = organization_id
+        g.applogger.set_env_message()
 
         # ORG level の処理
         resource_dir_path = os.path.join(version_dir_path, "ORG_level")
@@ -132,6 +134,7 @@ def __migration_main(version):
         ws_id_list = util.get_workspace_ids(organization_id)
         for workspace_id in ws_id_list:
             g.WORKSPACE_ID = workspace_id
+            g.applogger.set_env_message()
             # WS level の処理
             resource_dir_path = os.path.join(version_dir_path, "WS_level")
             if os.path.isdir(resource_dir_path):
@@ -142,6 +145,11 @@ def __migration_main(version):
                 g.applogger.info("[Trace] Begin WS migrate.")
                 ws_worker.migrate()
                 g.applogger.info("[Trace] End WS migrate.")
+
+            del g.WORKSPACE_ID
+            g.applogger.set_env_message()
+        del g.ORGANIZATION_ID
+        g.applogger.set_env_message()
 
     # - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +
     # 終了処理

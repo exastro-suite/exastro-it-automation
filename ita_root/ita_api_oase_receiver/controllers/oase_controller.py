@@ -218,15 +218,6 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
             msg_code = "499-01802"
             raise AppException(msg_code)
 
-        # そのままのイベントデータをMongoDBに保存する
-        try:
-            event_collection = wsMongo.collection(mongoConst.EVENT_COLLECTION)
-            event_collection.insert_many(events)
-        except Exception as e:
-            g.applogger.error(stacktrace())
-            err_code = "499-01803"
-            raise AppException(err_code, [e], [e])
-
         # ラベリングしてMongoDBに保存
         label_event(wsDb, wsMongo, events)  # noqa: F841
 

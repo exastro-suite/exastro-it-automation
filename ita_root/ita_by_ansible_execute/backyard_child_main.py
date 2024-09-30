@@ -51,6 +51,7 @@ from common_libs.driver.functions import operation_LAST_EXECUTE_TIMESTAMP_update
 from common_libs.ci.util import app_exception_driver_log, exception_driver_log, validation_exception_driver_log, validation_exception
 from common_libs.ansible_driver.classes.ansibletowerlibs.RestApiCaller import setAACRestAPITimoutVaule
 from common_libs.common.storage_access import storage_write, storage_base
+from common_libs.common.util import ky_decrypt
 
 from libs import common_functions as cm
 
@@ -80,6 +81,12 @@ def backyard_child_main(organization_id, workspace_id):
 
     # db instance
     wsDb = DBConnectWs()
+    # 作業インスタンステーブルを複数回参照するので、TRANSACTION ISOLATIONがREPEATABLE READだと
+    # トランザクション中で一度SELECTを発行したテーブルに関しては、外部のテーブルで変更されたとしても同じ結果が得られるので
+    # TRANSACTION ISOLATIONをREAD COMMITTEDにする
+    sql = "SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;"
+    rows = wsDb.sql_execute(sql, bind_value_list=[])
+
     # /tmpに作成したファイル・ディレクトリパスを保存するファイル名
     g.AnsibleCreateFilesPath = "{}/Ansible_{}".format(get_OSTmpPath(), execution_no)
 
@@ -301,7 +308,7 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id, rerun_mode, workspace
 
     check_interval = 3
     # 10分間 ansibe agent起動確認ファイルの更新が無かった場合、想定外エラーにする
-    # enomoto 　環境変数から取得
+    # 環境変数から取得
     get_time = int(os.environ.get("ANSIBLE_AGENT_NON_COMMUNICATION_DETECTION_TIME",0))
     if get_time < 60 or get_time > 600:
         g.applogger.info(g.appmsg.get_log_message("MSG-10977", []))
@@ -441,6 +448,20 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
     # 実行エンジンがAnsible Agentの場合、オプションパラメータをinventory配下に配置する
     if ans_exec_mode == ansc_const.DF_EXEC_MODE_AG:
         file_path = "{}/{}".format(ansdrv.getAnsible_in_env_Dir(), "cmdline")
+        # ansible vault用パスワードファイル作成
+        if not ans_if_info['ANSIBLE_VAULT_PASSWORD']:
+            vault_password = AnscConst.DF_ANSIBLE_VAULT_PASSWORD
+        else:
+            vault_password = ky_decrypt(ans_if_info['ANSIBLE_VAULT_PASSWORD'])
+        ansible_vauld_password_file = "{}/.vault-password-file".format(ansdrv.getAnsible_in_Dir())
+
+        fd = open(ansible_vauld_password_file, "w")
+        fd.write(vault_password)
+        fd.close()
+
+        # nsible Agentの場合、Ansible Vault用 のパスワードファイルを追加する
+        option_parameter += " --vault-password-file .vault-password-file "
+
     else:
         file_path = "{}/{}".format(zip_data_source_dir, "AnsibleExecOption.txt")
     # ansible-playbookコマンド実行時のオプションパラメータを共有ディレクトリのファイルに出力
@@ -1336,7 +1357,7 @@ def createTmpZipFile(execution_no, zip_data_source_dir, zip_type, zip_file_pfx):
         addAnsibleCreateFilesPath(zip_temp_save_path)
         addAnsibleCreateFilesPath(tmp_zip_data_source_dir)
 
-        tmp_str_command = "cd " + shlex.quote(tmp_zip_data_source_dir) + " && zip -r " + shlex.quote(zip_temp_save_dir + "/" + zip_file_name) + " . -x ssh_key_files/* -x winrm_ca_files/*  1> /dev/null"  # noqa: E501
+        tmp_str_command = "cd " + shlex.quote(tmp_zip_data_source_dir) + " && zip -r " + shlex.quote(zip_temp_save_dir + "/" + zip_file_name) + " . -x ssh_key_files/* -x winrm_ca_files/*  -x .vault-password-file 1> /dev/null"  # noqa: E501
 
         ret = subprocess.run(tmp_str_command, check=True, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
@@ -1483,7 +1504,7 @@ def ag_execute_statuscheck(ansdrv, wsDb, ansc_const, execution_no, Timeout_Inter
     now_unix_time = time.time()
     # ansibe agent作業状態通知受信ファイルの更新がTimeout_Interval以上更新されなかったら、想定外エラーにする。
     if((ag_status_file_unix_time + Timeout_Interval) < now_unix_time):
-        # enomoto
+
         err_msg = g.appmsg.get_log_message("MSG-10969", [str(Timeout_Interval),execution_no])
         log_dir = getAnsibleExecutDirPath(ansc_const, execution_no) + "/out"
         ansdrv.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),

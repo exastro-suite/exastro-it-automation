@@ -16,12 +16,12 @@
 #   ansible-runnerで実行したplaybookを停止する。
 #   テンプレートファイル
 #   <<変数>>
-#     PROJECT_DIR:  プロジェクトディレクトリ
+#     PROJECT_BASE_DIR:  プロジェクトディレクトリ
 #     EXECUTION_NO: 作業番号
 #   <<exit code>>
 #     0:   停止成功
 #     他:  停止失敗
 ######################################################################
 ansible-runner stop \
-{{ PROJECT_DIR }} \
--i {{ EXECUTION_NO}} 
+${PROJECT_BASE_DIR} \
+-i {{ EXECUTION_NO}}

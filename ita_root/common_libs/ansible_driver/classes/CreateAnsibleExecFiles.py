@@ -778,7 +778,6 @@ class CreateAnsibleExecFiles():
             if os.path.isdir(c_dirwk) is False:
                 os.mkdir(c_dirwk)
             os.chmod(c_dirwk, 0o777)
-
             self.setAnsible_in_runner_files_Dir(c_dirwk)
 
         # グローバル変数管理からグローバル変数の情報を取得
@@ -7703,7 +7702,6 @@ class CreateAnsibleExecFiles():
                 if self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_AG:
                     include_vars_path = Replace_HostVrasFilepath("tmp", include_vars_path, "outdir/tmp")
 
-                # enomot 修正
                 playbookwrite.append("      include_vars: " + include_vars_path)
                 for var_name, fileinfo in in_tpf_path.items():
                     src_template_path = in_tpf_path[var_name]['src']

@@ -16,7 +16,7 @@
 #   ansible-runnerでplaybookを実行する。
 #   テンプレートファイル
 #   <<変数>>
-#     PROJECT_DIR:  プロジェクトディレクトリ
+#     PROJECT_BASE_DIR:  プロジェクトディレクトリ
 #     EXECUTION_NO: 作業番号
 #     TAG_NAME:     実行環境のコンテナ名
 #   <<exit code>>
@@ -25,8 +25,8 @@
 #     /exastro/share_volume_dir/legacy/execution_no/:
 ######################################################################
 
-ansible-runner start {{ PROJECT_DIR }} \
+ansible-runner start ${PROJECT_BASE_DIR} \
 -p playbook.yml \
 -i {{ EXECUTION_NO}} \
---container-volume-mount '{{ OUT_DIR }}:/outdir/' \
+--container-volume-mount '${PROJECT_BASE_DIR}/:/outdir/' \
 --container-image {{ TAG_NAME }}

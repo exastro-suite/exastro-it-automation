@@ -14,7 +14,10 @@ dependencies:
     package_pip: {{ ansible_runner }}
   system: {{ bindep_file }}
   python: {{ python_requirements_file }}
-  {{ galaxy_tag }}: {{ galaxy_requirements_file }}
+{% if galaxy_requirements_file == "" %}
+{% else %}
+  galaxy_tag: {{ galaxy_requirements_file }}
+{% endif %}
   python_interpreter:
     package_system: "python39"
     python_path: "/usr/bin/python3.9"

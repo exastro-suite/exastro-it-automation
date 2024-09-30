@@ -284,7 +284,7 @@ def child_process_exist_check(common_db, target_shema, ansibleAg):
     """
     global ansc_const
     # 再起動回数　初期値
-    restart_count_max = 3
+    restart_count_max = int(os.environ.get("CHILD_PROCESS_RETRY_LIMIT",3))
 
     # psコマンドでbackyard_child_init.pyの起動プロセスリストを作成
     # psコマンドがマレに起動プロセスリストを取りこぼすことがあるので3回分を作成
@@ -401,24 +401,30 @@ def child_process_exist_check(common_db, target_shema, ansibleAg):
                 result = cm.get_execution_process_info(wsDb, ansc_const, execution_no)
                 if result[0] is False:
                     g.applogger.info(g.appmsg.get_log_message(result[1], [execution_no]))
-                    wsDb.db_disconnect()
                     return False
                 execute_data = result[1]
 
                 # 実行中か再確認
                 status_id_list = [ansc_const.PREPARE, ansc_const.PROCESSING, ansc_const.PROCESS_DELAYED, ansc_const.PREPARE_COMPLETE, ansc_const.PROCESSING_WAIT]
                 if execute_data["STATUS_ID"] in status_id_list:
-                    # 更新
-                    g.applogger.info(g.appmsg.get_log_message("MSG-10970", [driver_name, execution_no]))
-                    # 再起動回数判定
-                    ret = chkAGChildProcessRestartCount(ansc_const, driver_name, execution_no, restart_count_max)
-                    if ret is True:
-                        g.applogger.info(g.appmsg.get_log_message("MSG-10971", [driver_name, execution_no]))
-                        # 再起動の上限に達していないので、子プロセス再起動
-                        ret = rerun_child_process(wsDb, ansc_const, execute_data, organization_id, workspace_id)
+                    # DBの登録データ矛盾の場合ディレクトリが作成されないので、ディレクトリの有無を判断しない場合はリトライしないで処理終了
+                    db_sts_update = False
+                    file_path = get_AGChildProcessRestartCountFilepath(ansc_const, execution_no)
+                    file_path = os.path.dirname(file_path)
+                    if os.path.isdir(file_path) is False:
+                        g.applogger.info(g.appmsg.get_log_message("MSG-10056", [driver_name, execution_no]))
+                        db_sts_update = True
                     else:
-                        g.applogger.info(g.appmsg.get_log_message("MSG-10972", [driver_name, execution_no, restart_count_max]))
-                        # 再起動の上限に達した
+                        # 再起動回数判定
+                        ret = chkAGChildProcessRestartCount(ansc_const, driver_name, execution_no, restart_count_max)
+                        if ret is True:
+                            g.applogger.info(g.appmsg.get_log_message("MSG-10970", [driver_name, execution_no]))
+                            # 再起動の上限に達していないので、子プロセス再起動
+                            ret = rerun_child_process(wsDb, ansc_const, execute_data, organization_id, workspace_id)
+                        else:
+                            g.applogger.info(g.appmsg.get_log_message("MSG-10972", [driver_name, execution_no, restart_count_max]))
+                            db_sts_update = True
+                    if db_sts_update is True:
                         wsDb.db_transaction_start()
                         time_stamp = get_timestamp()
                         data = {

@@ -1979,13 +1979,13 @@ def create_upload_parameters(connexion_request, key_name, organization_id, works
         # get files & set parameter['file'][rest_name]
         # ファイルが保存できる容量があるか確認
         file_size = connexion_request.headers.get("Content-Length")
-        file_size_mb = f"{int(file_size)/(1024*1024):,.6f} MB"
+        file_size_str = f"{int(file_size):,} byte(s)"
         storage = storage_base()
         can_save, free_space = storage.validate_disk_space(file_size)
         if can_save is False:
             status_code = "499-00222"
-            log_msg_args = [file_size_mb]
-            api_msg_args = [file_size_mb]
+            log_msg_args = [file_size_str]
+            api_msg_args = [file_size_str]
             raise AppException(status_code, log_msg_args, api_msg_args)
 
         for _file_key in connexion_request.files:

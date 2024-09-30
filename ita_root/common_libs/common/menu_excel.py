@@ -1776,7 +1776,7 @@ def create_upload_parameters(connexion_request, organization_id, workspace_id):
 
         # ファイルが保存できる容量があるか確認
         file_size = connexion_request.headers.get("Content-Length")
-        file_size_mb = f"{int(file_size)/(1024*1024):,.6f} MB"
+        file_size_mb = f"{int(file_size):,} byte(s)"
         storage = storage_base()
         can_save, free_space = storage.validate_disk_space(file_size)
         if can_save is False:

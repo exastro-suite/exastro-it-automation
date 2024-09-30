@@ -748,6 +748,9 @@ def backyard_main(organization_id, workspace_id):
 
                                                         if upload_filepath:
                                                             tmp_param['file'][col_name] = upload_filepath
+                                                            # パス指定時、ファイル名で、parameterを上書き
+                                                            # parameter /xxxx/filename -> filename
+                                                            tmp_param['parameter'][col_name] = os.path.basename(upload_filepath)
 
                                                     # バンドル使用のメニュー名を保持
                                                     if vertical_flag and menu_name not in bandle_menus:

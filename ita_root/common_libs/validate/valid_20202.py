@@ -51,7 +51,7 @@ def external_valid_menu_after(objDBCA, objtable, option):
         playbook_path = None
         if cmd_type in ["Register", "Update"]:
             playbook_path = option.get('entry_parameter', {}).get('file_path', {}).get('playbook_file', '')
-                
+
         # 廃止/復活時の場合、関連レコードを廃止/復活
         if cmd_type in ["Discard", "Restore"]:
             ret, msg_tmp = CommnVarsUsedListDisuseSet(objDBCA, option, pkey, '1')

@@ -46,7 +46,7 @@ def external_valid_menu_after(objDBCA, objtable, option):
         elif cmd_type == "Register" and "uuid" in option:
             pkey = option["uuid"]
 
-        dialog_path = None        
+        dialog_path = None
         if cmd_type in ["Register", "Update"]:
             dialog_path = option.get('entry_parameter', {}).get('file_path', {}).get('dialog_file', '')
 

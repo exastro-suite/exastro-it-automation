@@ -115,16 +115,11 @@ def create_maintenance_parameters(connexion_request, tmp_path):
 
             # set parameter['file'][rest_name]
             if connexion_request.files:
-                # ファイルが保存できる容量があるか確認
-                file_size = connexion_request.headers.get("Content-Length")
-                file_size_mb = f"{int(file_size)/(1024*1024):,.6f} MB"
-                storage = storage_base()
-                can_save, free_space = storage.validate_disk_space(file_size)
-                if can_save is False:
-                    status_code = "499-00222"
-                    log_msg_args = [file_size_mb]
-                    api_msg_args = [file_size_mb]
-                    raise AppException(status_code, log_msg_args, api_msg_args)
+
+                # ファイルサイズ確認用変数
+                files_count = 0
+                args_dict = {}
+                check_msg = g.appmsg.get_api_message("MSG-00004", [])
 
                 for _file_key in connexion_request.files:
                     # x.rest_key_name -> x , rest_key_name
@@ -141,6 +136,20 @@ def create_maintenance_parameters(connexion_request, tmp_path):
                         os.makedirs(tmp_file_path)
                         file_path = os.path.join(tmp_file_path, file_name)
                         file_paths[_list_num][_list_key] = file_path
+
+                        # ファイルを保存できる容量があるかどうか確認
+                        _file_data.seek(0,2)
+                        file_size = _file_data.tell()
+                        _file_data.seek(0)
+                        storage = storage_base()
+                        can_save, free_space = storage.validate_disk_space(file_size)
+                        if can_save is False:
+                            file_size_str = f"{int(file_size):,} byte(s)"
+                            msg = g.appmsg.get_api_message("499-00222", [file_size_str])
+                            args_dict.setdefault(str(files_count), {check_msg: [msg]})
+                            args = json.dumps(args_dict)
+                            status_code = "499-00201"
+                            raise AppException(status_code, [args], [args])
 
                         f = open(file_path, 'wb')
                         while True:

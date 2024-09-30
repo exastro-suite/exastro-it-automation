@@ -85,137 +85,144 @@ def backyard_main(organization_id, workspace_id):
         g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         return
 
-    strage_path = os.environ.get('STORAGEPATH')
-    workspace_path = strage_path + "/".join([organization_id, workspace_id])
-    tmp_workspace_path = "/tmp/" + "/".join([organization_id, workspace_id])
-    export_menu_dir = workspace_path + "/tmp/driver/export_menu"
-    import_menu_dir = workspace_path + "/tmp/driver/import_menu"
-    uploadfiles_dir = workspace_path + "/uploadfiles"
-    uploadfiles_60103_dir = workspace_path + "/uploadfiles/60103"
-    if not os.path.isdir(uploadfiles_60103_dir):
-        os.makedirs(uploadfiles_60103_dir)
-        g.applogger.debug("made uploadfiles/60103")
+    try:
+        strage_path = os.environ.get('STORAGEPATH')
+        workspace_path = strage_path + "/".join([organization_id, workspace_id])
+        tmp_workspace_path = "/tmp/" + "/".join([organization_id, workspace_id])
+        export_menu_dir = workspace_path + "/tmp/driver/export_menu"
+        import_menu_dir = workspace_path + "/tmp/driver/import_menu"
+        uploadfiles_dir = workspace_path + "/uploadfiles"
+        uploadfiles_60103_dir = workspace_path + "/uploadfiles/60103"
+        if not os.path.isdir(uploadfiles_60103_dir):
+            os.makedirs(uploadfiles_60103_dir)
+            g.applogger.debug("made uploadfiles/60103")
 
-    # 一時使用領域(/tmp/<organization_id>/<workspace_id>配下)の初期化
-    if os.path.isdir(tmp_workspace_path):
-        g.applogger.debug(f"clear {tmp_workspace_path}")
-        shutil.rmtree(tmp_workspace_path)
-        os.makedirs(tmp_workspace_path)
+        # 一時使用領域(/tmp/<organization_id>/<workspace_id>配下)の初期化
+        if os.path.isdir(tmp_workspace_path):
+            g.applogger.debug(f"clear {tmp_workspace_path}")
+            shutil.rmtree(tmp_workspace_path)
+            os.makedirs(tmp_workspace_path)
 
-    # テーブル名
-    t_menu_export_import = 'T_MENU_EXPORT_IMPORT'  # メニューエクスポート・インポート管理
+        # テーブル名
+        t_menu_export_import = 'T_MENU_EXPORT_IMPORT'  # メニューエクスポート・インポート管理
 
-    # 「メニューエクスポート・インポート管理」から「実行中(ID:2)」のレコードを取得
-    ret = objdbca.table_select(t_menu_export_import, 'WHERE STATUS = %s AND DISUSE_FLAG = %s ORDER BY LAST_UPDATE_TIMESTAMP ASC', [2, 0])
+        # 「メニューエクスポート・インポート管理」から「実行中(ID:2)」のレコードを取得
+        ret = objdbca.table_select(t_menu_export_import, 'WHERE STATUS = %s AND DISUSE_FLAG = %s ORDER BY LAST_UPDATE_TIMESTAMP ASC', [2, 0])
 
-    # ステータス「実行中」の対象がある場合、なんらかの原因で「実行中」のまま止まってしまった対象であるため、「4:完了(異常)」に更新する。
-    for record in ret:
-        execution_no = str(record.get('EXECUTION_NO'))
-        execution_type = str(record.get('EXECUTION_TYPE'))
+        # ステータス「実行中」の対象がある場合、なんらかの原因で「実行中」のまま止まってしまった対象であるため、「4:完了(異常)」に更新する。
+        for record in ret:
+            execution_no = str(record.get('EXECUTION_NO'))
+            execution_type = str(record.get('EXECUTION_TYPE'))
 
-        # バックアップファイルが存在する場合はリストア処理を実行する
-        restoreTables(objdbca, workspace_path)
-        restoreFiles(workspace_path, uploadfiles_dir)
-
-        # 「メニューエクスポート・インポート管理」ステータスを「4:完了(異常)」に更新
-        objdbca.db_transaction_start()
-
-        status_id = "4"
-        user_language = record.get('LANGUAGE')
-        execute_log = record.get('EXECUTE_LOG')
-        if not execute_log:
-            log_prefix = "export" if execution_type == "1" else "import"
-            execute_log = f"{log_prefix}_{execution_no}.log"
-            g.appmsg.set_lang(user_language)
-            type_name = "Export" if execution_type == "1" else "Import"
-            msg = g.appmsg.get_api_message("MSG-140011", [type_name])
-            g.appmsg.set_lang(g.LANGUAGE)
-        result, msg = _update_t_menu_export_import(objdbca, execution_no, status_id, user_language, execute_log, msg)
-        if not result:
-            # エラーログ出力
-            g.applogger.error(msg)
-            continue
-        objdbca.db_transaction_end(True)
-
-    # backyard_execute_stopの値が"1"の場合、メンテナンス中のためreturnする。
-    if str(maintenance_mode['backyard_execute_stop']) == "1":
-        g.applogger.debug(g.appmsg.get_log_message("BKY-00006", []))
-        return
-
-    # 「メニューエクスポート・インポート管理」から「未実行(ID:1)」のレコードを取得(最終更新日時の古い順から処理)
-    ret = objdbca.table_select(t_menu_export_import, 'WHERE STATUS = %s AND DISUSE_FLAG = %s ORDER BY LAST_UPDATE_TIMESTAMP ASC', [1, 0])
-
-    # 0件なら処理を終了
-    if not ret:
-        debug_msg = g.appmsg.get_log_message("BKY-20003", [])
-        g.applogger.debug(debug_msg)
-
-        debug_msg = g.appmsg.get_log_message("BKY-20002", [])
-        g.applogger.debug(debug_msg)
-        return
-
-    for record in ret:
-        execution_no = str(record.get('EXECUTION_NO'))
-        execution_type = str(record.get('EXECUTION_TYPE'))
-
-        # 「メニューエクスポート・インポート管理」ステータスを「2:実行中」に更新
-        objdbca.db_transaction_start()
-        status = "2"
-        result, msg = _update_t_menu_export_import(objdbca, execution_no, status)
-        if not result:
-            # エラーログ出力
-            g.applogger.error(msg)
-            continue
-        objdbca.db_transaction_end(True)
-
-        # execution_typeに応じたエクスポート/インポート処理を実行(メイン処理)
-        if execution_type == "1":  # 1: エクスポート
-            g.applogger.info("menu_export_exec START")
-            main_func_result, msg, trace_msg = menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles_dir)
-            g.applogger.info("menu_export_exec END")
-        elif execution_type == "2":  # 2: インポート
-            g.applogger.info("menu_import_exec START")
-            main_func_result, msg, trace_msg = menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_dir, uploadfiles_60103_dir)
-            g.applogger.info("menu_import_exec END")
-
-        db_reconnention(objdbca, True) if objdbca else None
-        # メイン処理がFalseの場合、異常系処理
-        if not main_func_result:
-            # エラーログ出力
-            g.applogger.error(msg)
+            # バックアップファイルが存在する場合はリストア処理を実行する
+            restoreTables(objdbca, workspace_path)
+            restoreFiles(workspace_path, uploadfiles_dir)
 
             # 「メニューエクスポート・インポート管理」ステータスを「4:完了(異常)」に更新
             objdbca.db_transaction_start()
-            status = 4
+
+            status_id = "4"
             user_language = record.get('LANGUAGE')
             execute_log = record.get('EXECUTE_LOG')
             if not execute_log:
                 log_prefix = "export" if execution_type == "1" else "import"
                 execute_log = f"{log_prefix}_{execution_no}.log"
-            result, msg = _update_t_menu_export_import(objdbca, execution_no, status, user_language, execute_log, msg, trace_msg)
+                g.appmsg.set_lang(user_language)
+                type_name = "Export" if execution_type == "1" else "Import"
+                msg = g.appmsg.get_api_message("MSG-140011", [type_name])
+                g.appmsg.set_lang(g.LANGUAGE)
+            result, msg = _update_t_menu_export_import(objdbca, execution_no, status_id, user_language, execute_log, msg)
             if not result:
                 # エラーログ出力
                 g.applogger.error(msg)
                 continue
             objdbca.db_transaction_end(True)
 
-            continue
+        # backyard_execute_stopの値が"1"の場合、メンテナンス中のためreturnする。
+        if str(maintenance_mode['backyard_execute_stop']) == "1":
+            g.applogger.debug(g.appmsg.get_log_message("BKY-00006", []))
+            return
 
-        # 「メニューエクスポート・インポート管理」ステータスを「3:完了」に更新
-        objdbca.db_transaction_start()
-        status = 3
-        result, msg = _update_t_menu_export_import(objdbca, execution_no, status)
-        if not result:
-            # エラーログ出力
-            g.applogger.error(msg)
-            continue
-        objdbca.db_transaction_end(True)
+        # 「メニューエクスポート・インポート管理」から「未実行(ID:1)」のレコードを取得(最終更新日時の古い順から処理)
+        ret = objdbca.table_select(t_menu_export_import, 'WHERE STATUS = %s AND DISUSE_FLAG = %s ORDER BY LAST_UPDATE_TIMESTAMP ASC', [1, 0])
 
-    # 一時使用領域(/tmp/<organization_id>/<workspace_id>配下)の初期化
-    if os.path.isdir(tmp_workspace_path):
-        g.applogger.debug(f"clear {tmp_workspace_path}")
-        shutil.rmtree(tmp_workspace_path)
-        os.makedirs(tmp_workspace_path)
+        # 0件なら処理を終了
+        if not ret:
+            debug_msg = g.appmsg.get_log_message("BKY-20003", [])
+            g.applogger.debug(debug_msg)
+
+            debug_msg = g.appmsg.get_log_message("BKY-20002", [])
+            g.applogger.debug(debug_msg)
+            return
+
+        for record in ret:
+            execution_no = str(record.get('EXECUTION_NO'))
+            execution_type = str(record.get('EXECUTION_TYPE'))
+
+            # 「メニューエクスポート・インポート管理」ステータスを「2:実行中」に更新
+            objdbca.db_transaction_start()
+            status = "2"
+            result, msg = _update_t_menu_export_import(objdbca, execution_no, status)
+            if not result:
+                # エラーログ出力
+                g.applogger.error(msg)
+                continue
+            objdbca.db_transaction_end(True)
+
+            # execution_typeに応じたエクスポート/インポート処理を実行(メイン処理)
+            if execution_type == "1":  # 1: エクスポート
+                g.applogger.info("menu_export_exec START")
+                main_func_result, msg, trace_msg = menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles_dir)
+                g.applogger.info("menu_export_exec END")
+            elif execution_type == "2":  # 2: インポート
+                g.applogger.info("menu_import_exec START")
+                main_func_result, msg, trace_msg = menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_dir, uploadfiles_60103_dir)
+                g.applogger.info("menu_import_exec END")
+
+            db_reconnention(objdbca, True) if objdbca else None
+            # メイン処理がFalseの場合、異常系処理
+            if not main_func_result:
+                # エラーログ出力
+                g.applogger.error(msg)
+
+                # 「メニューエクスポート・インポート管理」ステータスを「4:完了(異常)」に更新
+                objdbca.db_transaction_start()
+                status = 4
+                user_language = record.get('LANGUAGE')
+                execute_log = record.get('EXECUTE_LOG')
+                if not execute_log:
+                    log_prefix = "export" if execution_type == "1" else "import"
+                    execute_log = f"{log_prefix}_{execution_no}.log"
+                result, msg = _update_t_menu_export_import(objdbca, execution_no, status, user_language, execute_log, msg, trace_msg)
+                if not result:
+                    # エラーログ出力
+                    g.applogger.error(msg)
+                    continue
+                objdbca.db_transaction_end(True)
+
+                continue
+
+            # 「メニューエクスポート・インポート管理」ステータスを「3:完了」に更新
+            objdbca.db_transaction_start()
+            status = 3
+            result, msg = _update_t_menu_export_import(objdbca, execution_no, status)
+            if not result:
+                # エラーログ出力
+                g.applogger.error(msg)
+                continue
+            objdbca.db_transaction_end(True)
+
+    except Exception as e:
+        trace_msg = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(trace_msg)))
+        raise e
+    finally:
+        tmp_workspace_path = "/tmp/" + "/".join([organization_id, workspace_id])
+        # 一時使用領域(/tmp/<organization_id>/<workspace_id>配下)の初期化
+        if os.path.isdir(tmp_workspace_path):
+            g.applogger.debug(f"clear {tmp_workspace_path}")
+            shutil.rmtree(tmp_workspace_path)
+            os.makedirs(tmp_workspace_path)
 
     # メイン処理終了
     debug_msg = g.appmsg.get_log_message("BKY-20002", [])

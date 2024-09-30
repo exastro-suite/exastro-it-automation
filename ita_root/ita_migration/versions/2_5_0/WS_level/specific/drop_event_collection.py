@@ -14,11 +14,9 @@
 
 from flask import g
 import json
-import traceback
 
 from common_libs.common.dbconnect import *  # noqa: F403
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
-from common_libs.common.util import arrange_stacktrace_format
 
 
 def main(work_dir_path, wsdb):
@@ -39,13 +37,8 @@ def main(work_dir_path, wsdb):
         return
 
     ws_mong = MONGOConnectWs()
-    try:
-        ws_mong.collection("event_collection").drop()
-    except Exception:
-        t = traceback.format_exc()
-        g.applogger.info(arrange_stacktrace_format(t))
-    finally:
-        ws_mong.disconnect()
+    ws_mong.collection("event_collection").drop()
+    ws_mong.disconnect()
 
     return 0
 

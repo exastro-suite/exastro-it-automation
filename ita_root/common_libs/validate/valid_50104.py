@@ -392,7 +392,7 @@ def menu_column_valid(objdbca, objtable, option):
         # 初期値(整数) 最大数、最小数をチェック
         if retBool and integer_default_value:
             if isinstance(integer_default_value, int):
-                if int(integer_maximum_value) < int(integer_default_value) or int(integer_default_value) < int(integer_minimum_value):
+                if float(integer_maximum_value) < float(integer_default_value) or float(integer_default_value) < float(integer_minimum_value):
                     retBool = False
                     msg = g.appmsg.get_api_message("MSG-20085", [])
 

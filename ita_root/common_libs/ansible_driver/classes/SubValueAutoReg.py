@@ -901,6 +901,7 @@ class SubValueAutoReg():
                 # 次のテーブルへ
                 continue
 
+            tmp_ary_data = {}
             index = 0
             for row in data_list:
                 # 代入値紐付メニューに登録されているオペレーションIDを確認
@@ -1075,25 +1076,6 @@ class SubValueAutoReg():
                             if exec_flag == 1:
                                 # 同一登録データがある場合はスキップ
                                 skip_flag = False
-                                for ina_vars_ass_list_value in ina_vars_ass_list.values():
-                                    if len(ina_vars_ass_list_value) > 0 \
-                                        and operation_id == ina_vars_ass_list_value['OPERATION_ID'] \
-                                            and host_id == ina_vars_ass_list_value['SYSTEM_ID'] \
-                                                and col_data['MOVEMENT_ID'] == ina_vars_ass_list_value['MOVEMENT_ID'] \
-                                                    and col_data['MVMT_VAR_LINK_ID'] == ina_vars_ass_list_value['MVMT_VAR_LINK_ID'] \
-                                                        and col_data['COL_SEQ_COMBINATION_ID'] == ina_vars_ass_list_value['COL_SEQ_COMBINATION_ID'] \
-                                                            and col_data['ASSIGN_SEQ'] == ina_vars_ass_list_value['ASSIGN_SEQ']:
-                                                                skip_flag = True
-
-                                for ina_array_vars_ass_list_value in ina_array_vars_ass_list.values():
-                                    if len(ina_array_vars_ass_list_value) > 0 \
-                                        and operation_id == ina_array_vars_ass_list_value['OPERATION_ID'] \
-                                            and host_id == ina_array_vars_ass_list_value['SYSTEM_ID'] \
-                                                and col_data['MOVEMENT_ID'] == ina_array_vars_ass_list_value['MOVEMENT_ID'] \
-                                                    and col_data['MVMT_VAR_LINK_ID'] == ina_array_vars_ass_list_value['MVMT_VAR_LINK_ID'] \
-                                                        and col_data['COL_SEQ_COMBINATION_ID'] == ina_array_vars_ass_list_value['COL_SEQ_COMBINATION_ID'] \
-                                                            and col_data['ASSIGN_SEQ'] == ina_array_vars_ass_list_value['ASSIGN_SEQ']:
-                                                                skip_flag = True
 
                                 if skip_flag == 0:
                                     ret = self.makeVarsAssignData(table_name,
@@ -1482,17 +1464,20 @@ class SubValueAutoReg():
                                 # 既に登録されている
                                 dup_info = ina_vars_ass_chk_list[in_operation_id][in_patten_id][in_host_id][in_vars_link_id][in_vars_assign_seq]
                                 chk_flg = False
-
                                 msgstr = g.appmsg.get_api_message("MSG-10369", [dup_info['COLUMN_ID'], in_column_id, in_column_id, in_operation_id, in_host_id, keyValueType])
                                 frame = inspect.currentframe().f_back
                                 g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
             if chk_flg == 1:
                 chk_status = True
                 # オペ+作業+ホスト+変数+メンバ変数の組合せの代入順序退避
-                ina_vars_ass_chk_list[in_operation_id] = {}
-                ina_vars_ass_chk_list[in_operation_id][in_patten_id] = {}
-                ina_vars_ass_chk_list[in_operation_id][in_patten_id][in_host_id] = {}
-                ina_vars_ass_chk_list[in_operation_id][in_patten_id][in_host_id][in_vars_link_id] = {}
+                if in_operation_id not in ina_vars_ass_chk_list:
+                    ina_vars_ass_chk_list[in_operation_id] = {}
+                if in_patten_id not in ina_vars_ass_chk_list[in_operation_id]:
+                    ina_vars_ass_chk_list[in_operation_id][in_patten_id] = {}
+                if in_host_id not in ina_vars_ass_chk_list[in_operation_id][in_patten_id]:
+                    ina_vars_ass_chk_list[in_operation_id][in_patten_id][in_host_id] = {}
+                if in_vars_link_id not in ina_vars_ass_chk_list[in_operation_id][in_patten_id][in_host_id]:
+                    ina_vars_ass_chk_list[in_operation_id][in_patten_id][in_host_id][in_vars_link_id] = {}
                 ina_vars_ass_chk_list[in_operation_id][in_patten_id][in_host_id][in_vars_link_id][in_vars_assign_seq] = {'COLUMN_ID': in_column_id}
 
             # if in_col_class == "FileUploadColumn" and keyValueType == "Key":
@@ -1535,11 +1520,17 @@ class SubValueAutoReg():
             if chk_flg == 1:
                 chk_status = True
                 # オペ+作業+ホスト+変数+メンバ変数の組合せの代入順序退避
-                ina_array_vars_ass_chk_list[in_operation_id] = {}
-                ina_array_vars_ass_chk_list[in_operation_id][in_patten_id] = {}
-                ina_array_vars_ass_chk_list[in_operation_id][in_patten_id][in_host_id] = {}
-                ina_array_vars_ass_chk_list[in_operation_id][in_patten_id][in_host_id][in_vars_link_id] = {}
-                ina_array_vars_ass_chk_list[in_operation_id][in_patten_id][in_host_id][in_vars_link_id][in_vars_assign_seq] = {'COLUMN_ID': in_column_id}
+                if in_operation_id not in ina_array_vars_ass_chk_list:
+                    ina_array_vars_ass_chk_list[in_operation_id] = {}
+                if in_patten_id not in ina_array_vars_ass_chk_list[in_operation_id]:
+                    ina_array_vars_ass_chk_list[in_operation_id][in_patten_id] = {}
+                if in_host_id not in ina_array_vars_ass_chk_list[in_operation_id][in_patten_id]:
+                    ina_array_vars_ass_chk_list[in_operation_id][in_patten_id][in_host_id] = {}
+                if in_vars_link_id not in ina_array_vars_ass_chk_list[in_operation_id][in_patten_id][in_host_id]:
+                    ina_array_vars_ass_chk_list[in_operation_id][in_patten_id][in_host_id][in_vars_link_id] = {}
+                if in_col_seq_combination_id not in ina_array_vars_ass_chk_list[in_operation_id][in_patten_id][in_host_id][in_vars_link_id]:
+                    ina_array_vars_ass_chk_list[in_operation_id][in_patten_id][in_host_id][in_vars_link_id][in_col_seq_combination_id] = {}
+                ina_array_vars_ass_chk_list[in_operation_id][in_patten_id][in_host_id][in_vars_link_id][in_col_seq_combination_id][in_vars_assign_seq] = {'COLUMN_ID': in_column_id}
 
             # if in_col_class == "FileUploadColumn" and keyValueType == "Key":
             #     in_col_file_md5 = ""

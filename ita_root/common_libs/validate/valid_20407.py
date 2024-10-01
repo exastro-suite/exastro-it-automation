@@ -431,14 +431,12 @@ def external_valid_menu_after(objdbca, objtable, option):
                    + " T_ANSR_VALUE_AUTOREG" \
                    + " WHERE" \
                    + " COLUMN_ID <> %s AND" \
-                   + " MENU_ID = %s AND " \
                    + " MOVEMENT_ID = %s AND" \
                    + " DISUSE_FLAG = '0'" \
                    + " AND("
 
         aryForBind = {}
         aryForBind['COLUMN_ID'] = columnId
-        aryForBind['MENU_ID'] = rg_menu_id
         aryForBind['MOVEMENT_ID'] = rg_pattern_id
 
         # Key変数が必須の場合
@@ -458,7 +456,7 @@ def external_valid_menu_after(objdbca, objtable, option):
         strQuery += " )"
         aryForBind['MVMT_VAR_LINK_ID'] = rg_vars_link_id
         strQuery += " )"
-        retArray = objdbca.sql_execute(strQuery, bind_value_list=[aryForBind['COLUMN_ID'], aryForBind['MENU_ID'], aryForBind['MOVEMENT_ID']])
+        retArray = objdbca.sql_execute(strQuery, bind_value_list=[aryForBind['COLUMN_ID'], aryForBind['MOVEMENT_ID']])
         if retArray:
             dupnostr = ""
             for row in retArray:

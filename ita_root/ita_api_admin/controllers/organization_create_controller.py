@@ -888,7 +888,7 @@ def organization_update(organization_id, body=None):  # noqa: E501
                     ws_mongo_password = None
 
                 # get workspace-db connect infomation
-                where_str = "WHERE `WORKSPACE_ID` = '{}'".format(workspace_id)
+                where_str = "WHERE `WORKSPACE_ID` = '{}' AND `DISUSE_FLAG` = {}".format(workspace_id, 0)
                 ret = org_db.table_select("T_COMN_WORKSPACE_DB_INFO", where_str)
                 ws_info_primary_key = ret[0].get(("PRIMARY_KEY"))
 

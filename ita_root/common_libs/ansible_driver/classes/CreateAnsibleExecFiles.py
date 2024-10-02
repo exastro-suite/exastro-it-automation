@@ -3841,16 +3841,51 @@ class CreateAnsibleExecFiles():
         Returns:
             mt_var_path_array
         """
-        # [3].array1.array2[0].array2_2[0].array2_2_2[0].array2_2_2_2
-        # []を取り除く
-        in_var_name_str = in_var_name_str.replace("[", ".")
-        in_var_name_str = in_var_name_str.replace("]", "")
+        # 列順序を文字列ソート対応
+        # exp1
+        # VAR_sp_array1:
+        #   - array1_list: []
+        #     array1_std:
+        #     array1_array:
+        #       - array1_array_list: []
+        #         array1_array_std:
+        # 入力 [0].array1_array[0].array1_array_std
+        # 出力 .0000000000.array1_array.0000000000.array1_array_std
+        # exp2
+        # VAR_sp_array2:
+        #   array:
+        #     - array2_list: []
+        #       array2_std:
+        #       array2_array:
+        # 入力 array[0].array2_list
+        # 出力 array.0000000000.array2_list
+        # 列順次([0-9])を10桁の0埋文字列に置換
+        # in_var_name_str = in_var_name_str.replace("[", ".")
+        # in_var_name_str = in_var_name_str.replace("]", "")
+        in_var_name_str = self.strtozfill(in_var_name_str)
         # 先頭が配列の場合の . を取り除く
         # .array1.array2.0.array2_2.0.array2_2_2.0.array2_2_2_2
         in_var_name_str = re.sub(r'^\.', '', in_var_name_str)
         mt_var_path_array = in_var_name_str.split('.')
 
         return mt_var_path_array
+
+    def strtozfill(slef, in_var_name_str):
+        out_var_name_str = ""
+        add_list = []
+        in_var_name_str = in_var_name_str.replace("[", ".-")
+        in_var_name_str = in_var_name_str.replace("]", "-")
+        str_list = in_var_name_str.split('.')
+        for str in str_list:
+            mc = "\-[0-9]*\-"
+            ret = re.match(mc, str)
+            if ret is not None:
+                str = str.replace("-", "")
+                str = str.replace("-", "")
+                str = str.zfill(10)
+            add_list.append(str)
+        out_var_name_str = ".".join(add_list)
+        return out_var_name_str
 
     def makeHostVarsArray(self, in_key_array, in_idx, mt_out_array, in_var_type, in_var_val, in_ass_no):
         """

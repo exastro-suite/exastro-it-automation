@@ -944,7 +944,8 @@ def put_uploadfiles_jnl(_db_conn, config_file_path, src_dir, dest_dir):
                     continue
 
                 # 履歴テーブル内で、通常テーブル内primaryキーの値が一致する中で変更日時が最新のレコードを取得する
-                latest_last_update_record_jnl = _db_conn.table_select(table_name_jnl, "WHERE {} = '{}' ORDER BY `JOURNAL_REG_DATETIME` DESC LIMIT 1".format(primary_key_name, primary_key_value))[0]
+                latest_last_update_record_jnl = _db_conn.table_select(table_name_jnl, "WHERE {} = '{}' AND `DISUSE_FLAG` = {} ORDER BY `JOURNAL_REG_DATETIME` DESC LIMIT 1".format(primary_key_name, primary_key_value, 0))[0]  # noqa: E501
+                print(latest_last_update_record_jnl)
                 # 取得したレコードから最終更新者を取得
                 latest_last_update_user = latest_last_update_record_jnl["LAST_UPDATE_USER"]
 

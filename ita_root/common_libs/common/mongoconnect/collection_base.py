@@ -64,12 +64,12 @@ class CollectionBase():
             event_name_lang = "EVENT_NAME" + "_EN"
             column_name_lang = "COLUMN_NAME" + "_EN"
 
-        event_status_list = objdbca.table_select("T_OASE_EVENT_STATUS")
+        event_status_list = objdbca.table_select("T_OASE_EVENT_STATUS", "WHERE DISUSE_FLAG = %s", [0])
         for event_status in event_status_list:
             event_status_dict[event_status["EVENT_STATUS_ID"]] = event_status[event_status_name_lang]
             event_status_list_search.append(event_status[event_status_name_lang])
 
-        event_name_list = objdbca.table_select("T_OASE_EVENT")
+        event_name_list = objdbca.table_select("T_OASE_EVENT", "WHERE DISUSE_FLAG = %s", [0])
         for event_name in event_name_list:
             event_name_dict[event_name["EVENT_ID"]] = event_name[event_name_lang]
             event_name_list_search.append(event_name[event_name_lang])
@@ -79,7 +79,7 @@ class CollectionBase():
 
         # 検索の際のバリデーション用に言語設定に合わせてカラム名を取得
         # 11010401: オブジェクトID, 11010403: イベント収集日時, 11010404: イベント有効日時, 11010409: 利用イベント
-        column_name_list = objdbca.table_select("T_COMN_MENU_COLUMN_LINK", "WHERE COLUMN_DEFINITION_ID IN ('{}', '{}', '{}', '{}')".format("11010401", "11010403", "11010404", "11010409"))
+        column_name_list = objdbca.table_select("T_COMN_MENU_COLUMN_LINK", "WHERE COLUMN_DEFINITION_ID IN ('{}', '{}', '{}', '{}') AND `DISUSE_FLAG` = {}".format("11010401", "11010403", "11010404", "11010409", 0))  # noqa: E501
         for column_name in column_name_list:
             column_name_dict[column_name['COLUMN_DEFINITION_ID']] = column_name[column_name_lang]
 
@@ -249,11 +249,11 @@ class CollectionBase():
             event_status_name_lang = "EVENT_STATUS_NAME" + "_EN"
             event_name_lang = "EVENT_NAME" + "_EN"
 
-        event_status_list = objdbca.table_select("T_OASE_EVENT_STATUS")
+        event_status_list = objdbca.table_select("T_OASE_EVENT_STATUS", "WHERE DISUSE_FLAG = %s", [0])
         for event_status in event_status_list:
             event_status_dict[event_status["EVENT_STATUS_ID"]] = event_status[event_status_name_lang]
 
-        event_name_list = objdbca.table_select("T_OASE_EVENT")
+        event_name_list = objdbca.table_select("T_OASE_EVENT", "WHERE DISUSE_FLAG = %s", [0])
         for event_name in event_name_list:
             event_name_dict[event_name["EVENT_ID"]] = event_name[event_name_lang]
 

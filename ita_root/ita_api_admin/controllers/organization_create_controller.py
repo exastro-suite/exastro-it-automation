@@ -685,8 +685,7 @@ def organization_update(organization_id, body=None):  # noqa: E501
 
             # Workspace DB connect
             ws_db = DBConnectWs(workspace_id, organization_id)  # noqa: F405
-            ws_info = org_db.table_select("T_COMN_WORKSPACE_DB_INFO", "WHERE WORKSPACE_ID = '{}' AND DISUSE_FLAG = {}".format(workspace_id, 0))
-            ws_no_install_driver = ws_info[0]["NO_INSTALL_DRIVER"]
+            ws_no_install_driver = workspace_data["NO_INSTALL_DRIVER"]
             if ws_no_install_driver is None:
                 ws_no_install_driver = []
             else:
@@ -888,9 +887,7 @@ def organization_update(organization_id, body=None):  # noqa: E501
                     ws_mongo_password = None
 
                 # get workspace-db connect infomation
-                where_str = "WHERE `WORKSPACE_ID` = '{}'".format(workspace_id)
-                ret = org_db.table_select("T_COMN_WORKSPACE_DB_INFO", where_str)
-                ws_info_primary_key = ret[0].get(("PRIMARY_KEY"))
+                ws_info_primary_key = workspace_data["PRIMARY_KEY"]
 
                 # update workspace-db connect infomation
                 update_data = {

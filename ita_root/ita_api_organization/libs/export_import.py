@@ -1252,6 +1252,13 @@ def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body, 
     # upload_idの作成
     upload_id = path_data["upload_id"]
 
+    storage_path = os.environ.get('STORAGEPATH')
+
+    # 展開済みのファイル等削除
+    clear_work_dirs = [
+        f"{storage_path}{organization_id}/{workspace_id}/tmp/driver/import_menu/import"
+    ]
+    clear_files(clear_work_dirs, "all")
 
     # パスの設定
     upload_dir_name = path_data["upload_dir_name"]
@@ -1262,10 +1269,18 @@ def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body, 
         os.makedirs(upload_dir_name)
         g.applogger.debug("made import_dir")
 
+    #  パスの設定:作業用
+    _tmp_upload_dir_name = upload_dir_name.replace(storage_path, "/tmp/")
+    _tmp_upload_id_path = upload_id_path.replace(storage_path, "/tmp/")
+    _tmp_import_id_path = import_id_path.replace(storage_path, "/tmp/")
+    _tmp_file_path = file_path.replace(storage_path, "/tmp/")
+    if not os.path.isdir(_tmp_upload_dir_name):
+        os.makedirs(_tmp_upload_dir_name)
+        g.applogger.debug("made import_dir")
+
     clear_file_list = [
         upload_dir_name,
         upload_id_path,
-        import_id_path,
         file_path
     ]
 
@@ -1280,11 +1295,12 @@ def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body, 
         objcolumn = FileUploadColumn(objdbca, objmenu.objtable, "file_name", '')
 
         try:
-            # アップロードファイルbase64変換処理
-
+            # 作業用にコピー
+            g.applogger.debug(f"shutil.copyfile({file_path}, {_tmp_upload_dir_name})")
+            shutil.copy(file_path, _tmp_upload_dir_name)
             # zip解凍
-            with tarfile.open(file_path, 'r:gz') as tar:
-                tar.extractall(path=upload_id_path)
+            with tarfile.open(_tmp_file_path, 'r:gz') as tar:
+                tar.extractall(path=_tmp_upload_id_path)
         except Exception as e:
             # アップロードファイルのbase64変換～zip解凍時
             trace_msg = traceback.format_exc()
@@ -1298,14 +1314,14 @@ def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body, 
 
         # インストールドライバと、kymのドライバ確認
         # DRIVERSファイル読み込み
-        if os.path.isfile(import_id_path + '/DRIVERS') is False:
+        if os.path.isfile(_tmp_import_id_path + '/DRIVERS') is False:
             log_msg_args = ["DRIVERS", path_data['file_name']]
             api_msg_args = ["DRIVERS", path_data['file_name']]
             # 対象ファイルなし
             raise AppException("499-01504", log_msg_args, api_msg_args)  # noqa: F405
 
         file_read = storage_access.storage_read()
-        file_read.open(import_id_path + '/DRIVERS')
+        file_read.open(_tmp_import_id_path + '/DRIVERS')
         kym_drivers = json.loads(file_read.read())
         file_read.close()
 
@@ -1332,20 +1348,20 @@ def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body, 
             raise AppException("499-01505",log_msg_args, api_msg_args)  # noqa: F405
 
         # MENU_GROUPSファイル読み込み
-        if os.path.isfile(import_id_path + '/MENU_GROUPS') is False:
+        if os.path.isfile(_tmp_import_id_path + '/MENU_GROUPS') is False:
             # 対象ファイルなし
             raise AppException("499-00905", [], [])
         file_read = storage_access.storage_read()
-        file_read.open(import_id_path + '/MENU_GROUPS')
+        file_read.open(_tmp_import_id_path + '/MENU_GROUPS')
         menu_group_info = json.loads(file_read.read())
         file_read.close()
 
         # PARENT_MENU_GROUPSファイル読み込み
-        if os.path.isfile(import_id_path + '/PARENT_MENU_GROUPS') is False:
+        if os.path.isfile(_tmp_import_id_path + '/PARENT_MENU_GROUPS') is False:
             # 対象ファイルなし
             raise AppException("499-00905", [], [])
         file_read = storage_access.storage_read()
-        file_read.open(import_id_path + '/PARENT_MENU_GROUPS')
+        file_read.open(_tmp_import_id_path + '/PARENT_MENU_GROUPS')
         parent_menu_group_info = json.loads(file_read.read())
         file_read.close()
 
@@ -1378,13 +1394,13 @@ def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body, 
 
                         menu_groups.append(parent_menu_group)
 
-        if os.path.isfile(import_id_path + '/DP_INFO') is False:
+        if os.path.isfile(_tmp_import_id_path + '/DP_INFO') is False:
             # 対象ファイルなし
             raise AppException("499-00905", [], [])
 
         # DP_INFOファイル読み込み
         file_read = storage_access.storage_read()
-        file_read.open(import_id_path + '/DP_INFO')
+        file_read.open(_tmp_import_id_path + '/DP_INFO')
         dp_info_file = json.loads(file_read.read())
         file_read.close()
         dp_mode = dp_info_file['DP_MODE']
@@ -1407,6 +1423,7 @@ def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body, 
         trace_msg = traceback.format_exc()
         g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(trace_msg)))
         # 展開したファイル等削除
+        clear_file_list.append(import_id_path)
         clear_file_list.append(
             upload_dir_name.replace("/driver/import_menu/upload", "/driver/import_menu/import")
         )
@@ -1445,22 +1462,25 @@ def execute_menu_import(objdbca, organization_id, workspace_id, menu, body):
         import_path + '_ita_data.tar.gz'
     ]
 
+    storage_path = os.environ.get('STORAGEPATH')
+    _tmp_import_path = import_path.replace(storage_path, "/tmp/")
+
     import_list = ",".join(menu_name_rest_list)
 
     try:
-        if os.path.isfile(import_path + '/DP_INFO') is False:
+        if os.path.isfile(_tmp_import_path + '/DP_INFO') is False:
             # 対象ファイルなし
             raise AppException("499-00905", [], [])
 
         # DP_INFOファイル読み込み
         file_read = storage_access.storage_read()
-        file_read.open(import_path + '/DP_INFO')
+        file_read.open(_tmp_import_path + '/DP_INFO')
         dp_info_file = json.loads(file_read.read())
         file_read.close()
 
         dp_info = _check_dp_info(objdbca, menu, dp_info_file)
 
-        result_data = _menu_import_execution_from_rest(objdbca, menu, dp_info, import_path, file_name, import_list)
+        result_data = _menu_import_execution_from_rest(objdbca, menu, dp_info, _tmp_import_path, file_name, import_list)
 
     except Exception as e:
         trace_msg = traceback.format_exc()
@@ -1712,8 +1732,8 @@ def _check_zip_file(upload_id, organization_id, workspace_id):
             upload_id: アップロードID
     """
     fileName = upload_id + '_ita_data.tar.gz'
-    uploadPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/driver/import_menu/upload/"
-    importPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/driver/import_menu/import/"
+    uploadPath = "/tmp/" + "/".join([organization_id, workspace_id]) + "/tmp/driver/import_menu/upload/"
+    importPath = "/tmp/" + "/".join([organization_id, workspace_id]) + "/tmp/driver/import_menu/import/"
 
     # /storage配下のファイルアクセスを/tmp経由で行うモジュール
     file_read_text = storage_access.storage_read_text()

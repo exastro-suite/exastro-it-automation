@@ -7,44 +7,17 @@ set -ue
 #########################################
 
 ### Set enviroment parameters
-# DEPLOY_FLG="a"
-# REMOVE_FLG=""
 REQUIRED_MEM_TOTAL=4000000
 REQUIRED_FREE_FOR_CONTAINER_IMAGE=25600
 REQUIRED_FREE_FOR_EXASTRO_DATA=1024
-# DOCKER_COMPOSE_VER="v2.20.3"
-# PROJECT_DIR="${HOME}/exastro-docker-compose"
-# COMPOSE_FILE="${PROJECT_DIR}/docker-compose.yml"
 LOG_FILE="${HOME}/exastro-installation.log"
-# ENV_FILE="${PROJECT_DIR}/.env"
-# COMPOSE_PROFILES="base"
 EXASTRO_UNAME=$(id -u -n)
-# EXASTRO_UID=$(id -u)
-# EXASTRO_GID=1000
-# ENCRYPT_KEY='Q2hhbmdlTWUxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ='
-# SERVICE_TIMEOUT_SEC=1800
-# GITLAB_PROTOCOL=http
-# GITLAB_PORT=http
-# GITLAB_ROOT_PASSWORD='Ch@ngeMeGL'
-# GITLAB_ROOT_TOKEN='change-this-token'
-# MONGO_INITDB_ROOT_PASSWORD=Ch@ngeMeDBAdm
-# MONGO_HOST=mongo
-# MONGO_ADMIN_PASSWORD=Ch@ngeMeDBAdm
-
-# is_use_oase=true
-# is_use_gitlab_container=false
-# is_set_exastro_external_url=false
-# is_set_exastro_mng_external_url=false
-# is_set_gitlab_external_url=false
-# if [ -f ${ENV_FILE} ]; then
-#     . ${ENV_FILE}
-# fi
 
 SETUP_VERSION=""
 EXECUTE_PATH=""
 WORK_DIR=""
 ENV_TMP_PATH=""
-INSTALL_ID=`date +%Y%m%d%H%M%S%3N`
+SERVICE_ID=`date +%Y%m%d%H%M%S%3N`
 INSTALL_TYPE=1
 
 SOURCE_REPOSITORY="https://github.com/exastro-suite/exastro-it-automation.git"
@@ -188,6 +161,7 @@ additional_env_keys=(
 # interactive list
 declare -A interactive_llist=(
     # msg
+    # install
     ["INSTALL_TYPE_MSG0"]="実施する処理を選択してください。"
     ["INSTALL_TYPE_MSG1"]="    1: ENVの作成 + インストール(dnf, pip, ソース配置) + サービスの登録"
     ["INSTALL_TYPE_MSG2"]="    2: ENVの作成 + サービスの登録"
@@ -204,14 +178,23 @@ declare -A interactive_llist=(
     ["INVALID_SETUP_VERSION"]="指定したバージョンが不正です。"
     ["SERVICE_MSG_START"]="エージェントのサービスを開始しますか? (y/n)"
     ["INVALID_VALUE_F_ENV"]=".envファイルが存在しません。パスを確認してください。"
+    # uninstall
+    ["UNINSTALL_TYPE_MSG0"]="実施する処理を選択してください。"
+    ["UNINSTALL_TYPE_MSG1"]="    1: サービスの削除＋データの削除"
+    ["UNINSTALL_TYPE_MSG2"]="    2: サービスの削除"
+    ["UNINSTALL_TYPE_MSG3"]="    3: データの削除"
+    ["UNINSTALL_TYPE_MSGq"]="    q: アンインストール終了"
+    ["UNINSTALL_TYPE_MSGr"]="select value: (1, 2, 3, q)  :"
+    ["SERVICE_ID"]="SERVICE_IDを入力してください。"
+    ["STORAGE_PATH"]="STORAGE_PATHを入力してください。"
 
     # 環境情報
-    ["AGENT_SERVICE_NAME_YN"]="エージェントのサービス名は、${INSTALL_ID}です。個別に指定する場合は、「n」を選択して指定ください。(y/n) "
+    ["AGENT_SERVICE_NAME_YN"]="エージェントのサービス名は、${SERVICE_ID}です。個別に指定する場合は、「n」を選択して指定ください。(y/n) "
     ["AGENT_SERVICE_NAME"]="エージェントのサービス名を入力してください。"
     ["AGENT_VERSION"]="エージェントバージョンを入力してください。タグ指定: X.Y.Z, ブランチ指定: X.Y [default: 未入力+Enter(最新のリリースバージョン)]"
     ["INSTALLPATH"]="インストール先をフルパスで指定してください。"
     ["DATAPATH"]="データ保存先をフルパスで指定してください。"
-    ["ANSIBLE_SUPPORT"]="利用するAnsible-builder, Ansible-runnerを選択してください。(1, 2) [1=OSS 2=Enterprise] "
+    ["ANSIBLE_SUPPORT"]="利用するAnsible-builder, Ansible-runnerを選択してください。(1, 2) [1=Ansible 2=Red Hat Ansible Automation Platform] "
     ["EXASTRO_URL"]="ITAへの接続先URLを入力してください。"
     ["EXASTRO_ORGANIZATION_ID"]="ORGANIZATION_IDを入力してください。"
     ["EXASTRO_WORKSPACE_ID"]="WORKSPACE_IDを入力してください。"
@@ -499,8 +482,10 @@ Commands:
         1: Create .env & Install & Service Register, Start
         2: Create .env & Service Register, Start
         3: Create .env & Service Register, Start
-#   uninstall   Uninstall Ansible Execution Agent
-
+  uninstall   Uninstall Ansible Execution Agent
+        1: Uninstall Service & Delete Data
+        2: Uninstall Service
+        3: Delete Data
 _EOF_
         exit 2
     fi
@@ -643,7 +628,6 @@ inquiry_env(){
             if [ "$tmp_value" = "" ]; then
                 if [ -n "${default_env_values[${env_key}]}" ]; then
                     if [ "${default_env_values[${env_key}]}" != "" ]; then
-                        echo ""
                         break
                     fi
                 else
@@ -677,7 +661,7 @@ inquiry_env(){
                         continue
                     fi
                 elif [ ${env_key} = "AGENT_SERVICE_NAME_YN" ]; then
-                    if echo $tmp_value | grep -q -e "[yY]" -e "[yY][eE][sS]"; then
+                    if echo $tmp_value | grep -q -e "[yYnN]"; then
                         default_env_values[$env_key]=$tmp_value
                         break
                     else
@@ -700,19 +684,20 @@ inquiry_env(){
     done
 
     if [ "${default_env_values['AGENT_SERVICE_NAME']}" = "" ];then
-        default_env_values['AGENT_SERVICE_NAME']="${INSTALL_ID}"
+        default_env_values['AGENT_SERVICE_NAME']="${SERVICE_ID}"
     fi
 
-    #
+    # PATH関連
     default_env_values["APP_PATH"]=${default_env_values["INSTALLPATH"]}
     default_env_values["PYTHONPATH"]=${default_env_values["INSTALLPATH"]}/ita_ag_ansible_execution/
     default_env_values["AGENT_NAME"]="agent-ansible-execution-${default_env_values['AGENT_SERVICE_NAME']}"
     default_env_values["USER_ID"]="ita-ag-ansible-execution-${default_env_values['AGENT_SERVICE_NAME']}"
     default_env_values["SERVICE_NAME"]="ita-ag-ansible-execution"
-    #
+
+    # entrypoint.sh
     default_env_values["ENTRYPOINT"]="${default_env_values['INSTALLPATH']}/ita_ag_ansible_execution/agent/entrypoint.sh"
 
-    #
+    # DATAPATH
     if [ "${default_env_values["DATAPATH"]}" = "${HOME}${BASE_DIR}" ]; then
         default_env_values["STORAGEPATH"]="${HOME}${BASE_DIR}/${default_env_values['AGENT_SERVICE_NAME']}${STORAG_DIR}"
     else
@@ -883,7 +868,7 @@ install_agent_service_rhel8(){
     info "create ${SERVICE_PATH}"
     cat << _EOF_ >${SERVICE_PATH}
 [Unit]
-Description=Ansible Execution agent for Exastro IT Automation
+Description=Ansible Execution agent for Exastro IT Automation (${SERVICE_ID})
 
 [Service]
 WorkingDirectory=${PYTHONPATH}
@@ -901,9 +886,9 @@ _EOF_
     # EnvironmentFile=-${ENV_PATH}
 
     #*****
-    # info "cp -p ${SERVICE_PATH} /usr/lib/systemd/system/"
-    # cat "${SERVICE_PATH}"
-    # sudo cp -p ${SERVICE_PATH} /usr/lib/systemd/system/
+    info "cp -p ${SERVICE_PATH} /usr/lib/systemd/system/"
+    cat "${SERVICE_PATH}"
+    sudo cp -p ${SERVICE_PATH} /usr/lib/systemd/system/
     # info "sudo systemctl daemon-reload"
     # sudo systemctl daemon-reload
     # info "systemctl enable ${default_env_values['AGENT_NAME']}"
@@ -1073,6 +1058,100 @@ install_source(){
     # 作業領域の削除
     clean_workdir
 }
+
+uninstall_type(){
+    while true; do
+        echo "${interactive_llist['UNINSTALL_TYPE_MSG0']}"
+        echo "${interactive_llist['UNINSTALL_TYPE_MSG1']}"
+        echo "${interactive_llist['UNINSTALL_TYPE_MSG2']}"
+        echo "${interactive_llist['UNINSTALL_TYPE_MSG3']}"
+        echo "${interactive_llist['UNINSTALL_TYPE_MSGq']}"
+        read -r -p  "${interactive_llist['UNINSTALL_TYPE_MSGr']}" confirm
+
+        if echo $confirm | grep -q -e "[123]"; then
+            INSTALL_TYPE=$confirm
+            break
+        elif echo $confirm | grep -q -e "[q]"; then
+            exit 0
+        else
+            echo "${interactive_llist['INVALID_VALUE_IT']}"
+            continue
+        fi
+    done
+
+    UNINSTALL_TYPE=$confirm
+    SERVICE_ID=""
+    STORAGE_PATH=""
+    additional_uninstall_keys=(
+        "SERVICE_ID"
+        "STORAGE_PATH"
+    )
+    interactive_llist["SERVICE_ID"]="SERVICE_IDを入力してください。"
+    interactive_llist["STORAGE_PATH"]="STORAGE_PATHを入力してください。"
+    for env_key in "${additional_uninstall_keys[@]}"; do
+        while true; do
+            read -r -p "${interactive_llist[${env_key}]}: " tmp_value
+            echo ""
+            if [ "$tmp_value" = "" ]; then
+                echo "Invalid value!!"
+                continue
+            else
+                if [ ${env_key} = "STORAGE_PATH" ]; then
+                    if [ ! -d $tmp_value ]; then
+                        echo "not found storage path: ${tmp_value}"
+                        continue
+                    fi
+                elif [ ${env_key} = "SERVICE_ID" ]; then
+                    chk_service=`ls /usr/lib/systemd/system/ | grep "agent-ansible-execution-" | grep ${tmp_value} | wc -l`
+                    if [ ${chk_service} -eq 0 ]; then
+                        echo "not found service id: ${tmp_value}"
+                        continue
+                    fi
+                fi
+                default_env_values[$env_key]=$tmp_value
+                break
+            fi
+        done
+    done
+}
+
+uninstall(){
+    case "${UNINSTALL_TYPE}" in
+        1 )
+            uninstall_service
+            uninstall_data
+            ;;
+        2 )
+            uninstall_service
+            ;;
+        3 )
+            uninstall_data
+            ;;
+        * )
+            info "no install type ${INSTALL_TYPE}"
+            ;;
+    esac
+}
+
+uninstall_service(){
+    SERVICE_ID="${default_env_values['SERVICE_ID']}"
+    SERVICE_NAME="agent-ansible-execution-${SERVICE_ID}"
+    info "sudo systemctl stop ${SERVICE_NAME}"
+    # sudo systemctl stop ${SERVICE_NAME}
+    info "sudo systemctl disable ${SERVICE_NAME}"
+    # sudo systemctl disable ${SERVICE_NAME}
+    info "sudo rm /usr/lib/systemd/system/${SERVICE_NAME}"
+    # sudo rm /usr/lib/systemd/system/${SERVICE_NAME}
+    info "sudo systemctl daemon-reload"
+    # sudo systemctl daemon-reload
+}
+
+uninstall_data(){
+    SERVICE_NAME="agent-ansible-execution-${SERVICE_ID}"
+    STORAGE_PATH="/home/almalinux/exastro/${SERVICE_ID}/storage/"
+    info "sudo rm -rfd ${STORAGE_PATH}"
+    # sudo rm -rfd  ${STORAGE_PATH}
+}
 #########################################
 # Main functions
 #########################################
@@ -1098,11 +1177,12 @@ main() {
             install "$@"
             break
             ;;
-        # uninstall)
-        #     shift
-        #     uninstall "$@"
-        #     break
-        #     ;;
+        uninstall)
+            shift
+            uninstall_type
+            uninstall "$@"
+            break
+            ;;
         *)
             exit 2
             ;;

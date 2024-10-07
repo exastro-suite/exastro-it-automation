@@ -893,7 +893,7 @@ def backyard_main(organization_id, workspace_id):
 
                         # logを一時ファイルに書き込み
                         tmp_log_dir = f"/tmp/{execNo}"
-                        os.mkdir(tmp_log_dir)
+                        os.makedirs(tmp_log_dir, exist_ok=True)
                         tmp_log_path = f"{tmp_log_dir}/{tmpCollectlogfile}"
                         log_lines = collection_log.splitlines()
                         with open(tmp_log_path, "w") as f:

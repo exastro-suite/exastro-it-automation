@@ -31,10 +31,11 @@ def main(work_dir_path, wsdb):
 
     # organization単位のドライバ情報を取得する
     org_no_install_driver = common_db.table_select("T_COMN_ORGANIZATION_DB_INFO", "WHERE ORGANIZATION_ID = '{}' AND DISUSE_FLAG = {}".format(organization_id, 0))[0]["NO_INSTALL_DRIVER"]
+    common_db.db_disconnect()
     # oaseインストール済みの場合しか対応しない
     org_no_install_driver = json.loads(org_no_install_driver) if org_no_install_driver is not None else {}
     if 'oase' in org_no_install_driver:
-        return
+        return 0
 
     ws_mong = MONGOConnectWs()
     ws_mong.collection("event_collection").drop()

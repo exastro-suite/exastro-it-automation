@@ -28,6 +28,7 @@ def main(work_dir_path, db_conn):
 
     # organization単位のドライバ情報を取得する
     org_no_install_driver = common_db.table_select("T_COMN_ORGANIZATION_DB_INFO", "WHERE ORGANIZATION_ID = '{}' AND DISUSE_FLAG = {}".format(organization_id, 0))[0]["NO_INSTALL_DRIVER"]
+    common_db.db_disconnect()
 
     # workspace単位のドライバ情報の更新が必要な場合のみ処理を行う
     if org_no_install_driver is not None:
@@ -42,5 +43,6 @@ def main(work_dir_path, db_conn):
         }
         org_db.table_update('T_COMN_WORKSPACE_DB_INFO', data, 'PRIMARY_KEY')
         org_db.db_commit()
+        org_db.db_disconnect()
 
     return 0

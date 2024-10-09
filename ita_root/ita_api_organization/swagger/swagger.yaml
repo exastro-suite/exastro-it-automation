@@ -26,6 +26,7 @@ servers:
       default: localhost
     port:
       default: "30080"
+
 tags:
 - name: Menu Info
   description: メニュー情報の取得
@@ -3671,7 +3672,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200'
+                $ref: '#/components/schemas/inline_response_200_23'
         "401":
           description: Unauthorized
           content:
@@ -3719,7 +3720,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200'
+                $ref: '#/components/schemas/inline_response_200_24'
         "401":
           description: Unauthorized
           content:
@@ -3760,7 +3761,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/import_upload_body'
+              type: object
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/MENU_UPLOAD_FORM'
@@ -3770,7 +3771,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200'
+                $ref: '#/components/schemas/inline_response_200_25'
         "401":
           description: Unauthorized
           content:
@@ -3818,7 +3819,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200'
+                $ref: '#/components/schemas/inline_response_200_24'
         "401":
           description: Unauthorized
           content:
@@ -4110,7 +4111,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_23'
+                $ref: '#/components/schemas/inline_response_200_26'
         "401":
           description: Unauthorized
           content:
@@ -4353,7 +4354,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_24'
+                $ref: '#/components/schemas/inline_response_200_27'
         "401":
           description: Unauthorized
           content:
@@ -5602,7 +5603,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_25'
+                $ref: '#/components/schemas/inline_response_200_28'
         "401":
           description: Unauthorized
           content:
@@ -5676,7 +5677,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_26'
+                $ref: '#/components/schemas/inline_response_200_29'
         default:
           description: An unexpected error response.
           content:
@@ -5696,7 +5697,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_26'
+                $ref: '#/components/schemas/inline_response_200_29'
         default:
           description: An unexpected error response.
           content:
@@ -6441,7 +6442,7 @@ components:
           type: string
       example:
         result: 000-00000
-        data: 0.8008281904610115
+        data: 0.80082819046101150206595775671303272247314453125
         message: message
     filter_count_body:
       properties:
@@ -7110,21 +7111,148 @@ components:
         rest_key_name:
           $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
       description: 検索条件を設定
+    inline_response_200_23:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          $ref: '#/components/schemas/inline_response_200_23_data'
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
+          menu_groups:
+          - disp_seq: "10"
+            id: "101"
+            menu_group_name: 管理コンソール
+            menus:
+              items:
+                disp_seq: 10
+                id: "10101"
+                menu_name: システム設定
+                menu_name_rest: system_settings
+          - disp_seq: "10"
+            id: "101"
+            menu_group_name: 管理コンソール
+            menus:
+              items:
+                disp_seq: 10
+                id: "10101"
+                menu_name: システム設定
+                menu_name_rest: system_settings
+        message: message
     export_execute_body:
+      type: object
       properties:
-        rest_key_name:
-          $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
-      description: 検索条件を設定
-    import_upload_body:
+        mode:
+          type: string
+          example: "1: 環境移行 / 2: 時刻指定"
+        specified_timestamp:
+          type: string
+          example: YYYY/MM/DD hh:mm
+        abolished_type:
+          type: string
+          example: "1: 廃止を含む / 2: 廃止を除く"
+        journal_type:
+          type: string
+          example: "1: 履歴あり / 2: 履歴なし"
+        menu:
+          type: array
+          example:
+          - system_settings
+          - menu_group_list
+          - menu_list
+          - <menu_name_rest 1>
+          - <menu_name_rest 2>
+          items: {}
+    inline_response_200_24:
+      type: object
       properties:
-        rest_key_name:
-          $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
-      description: 検索条件を設定
+        result:
+          type: string
+          example: 000-00000
+        data:
+          $ref: '#/components/schemas/inline_response_200_24_data'
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
+          execution_no: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+        message: message
+    inline_response_200_25:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          $ref: '#/components/schemas/inline_response_200_25_data'
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
+          mode: "1: 環境移行 / 2: 時刻指定"
+          upload_id: xxxxxxxxxxxxxxxxxxxxxxxx
+          import_list:
+            menu_groups:
+            - disp_seq: 10
+              id: "101"
+              menu_group_name: 管理コンソール
+              menu_group_name_en: Management Console
+              menu_group_name_ja: 管理コンソール
+              menus:
+                items:
+                  type: object
+                  example:
+                    disp_seq: 10
+                    id: "10101"
+                    menu_name: システム設定
+                    menu_name_en: System settings
+                    menu_name_ja: システム設定
+                    menu_name_rest: system_settings
+            - disp_seq: 10
+              id: "101"
+              menu_group_name: 管理コンソール
+              menu_group_name_en: Management Console
+              menu_group_name_ja: 管理コンソール
+              menus:
+                items:
+                  type: object
+                  example:
+                    disp_seq: 10
+                    id: "10101"
+                    menu_name: システム設定
+                    menu_name_en: System settings
+                    menu_name_ja: システム設定
+                    menu_name_rest: system_settings
+          file_name: ita_exportdata_yyyymmddhhiiss.kym
+          specified_time: YYYY/MM/DD hh:mm
+          abolished_type: "1: 廃止を含む / 2: 廃止を除く"
+          journal_type: "1: 履歴あり / 2: 履歴なし"
+        message: message
     import_execute_body:
+      type: object
       properties:
-        rest_key_name:
-          $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
-      description: 検索条件を設定
+        upload_id:
+          type: string
+          example: xxxxxxxxxxxxxxxxxxxxxxxx
+        file_name:
+          type: string
+          example: ita_exportdata_yyyymmddhhiiss.kym
+        menu:
+          type: array
+          example:
+          - system_settings
+          - menu_group_list
+          - menu_list
+          - <menu_name_rest 1>
+          - <menu_name_rest 2>
+          items: {}
     export_execute_body_1:
       properties:
         rest_key_name:
@@ -7140,14 +7268,14 @@ components:
         rest_key_name:
           $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
       description: 検索条件を設定
-    inline_response_200_23:
+    inline_response_200_26:
       type: object
       properties:
         result:
           type: string
           example: 000-00000
         data:
-          $ref: '#/components/schemas/inline_response_200_23_data'
+          $ref: '#/components/schemas/inline_response_200_26_data'
         message:
           type: string
       example:
@@ -7258,14 +7386,14 @@ components:
           items:
             example: host_name
       description: 比較条件を設定
-    inline_response_200_24:
+    inline_response_200_27:
       type: object
       properties:
         result:
           type: string
           example: 000-00000
         data:
-          $ref: '#/components/schemas/inline_response_200_24_data'
+          $ref: '#/components/schemas/inline_response_200_27_data'
         message:
           type: string
       example:
@@ -7351,7 +7479,7 @@ components:
           type: boolean
           example: false
       description: 検索条件を指定
-    inline_response_200_25:
+    inline_response_200_28:
       type: object
       properties:
         result:
@@ -7361,7 +7489,7 @@ components:
           type: array
           example: []
           items:
-            $ref: '#/components/schemas/inline_response_200_25_data'
+            $ref: '#/components/schemas/inline_response_200_28_data'
         message:
           type: string
       example:
@@ -7388,7 +7516,7 @@ components:
           - $ref: '#/components/schemas/ApplyParameterTypeC'
           - $ref: '#/components/schemas/ApplyParameterTypeD'
       description: 適用するパラメータ情報および作業実行するConductorの構成情報
-    inline_response_200_26:
+    inline_response_200_29:
       type: object
       properties:
         result:
@@ -8019,6 +8147,167 @@ components:
     inline_response_200_23_data:
       type: object
       properties:
+        menu_groups:
+          type: array
+          items:
+            type: object
+            example:
+              disp_seq: "10"
+              id: "101"
+              menu_group_name: 管理コンソール
+              menus:
+                items:
+                  disp_seq: 10
+                  id: "10101"
+                  menu_name: システム設定
+                  menu_name_rest: system_settings
+      example:
+        menu_groups:
+        - disp_seq: "10"
+          id: "101"
+          menu_group_name: 管理コンソール
+          menus:
+            items:
+              disp_seq: 10
+              id: "10101"
+              menu_name: システム設定
+              menu_name_rest: system_settings
+        - disp_seq: "10"
+          id: "101"
+          menu_group_name: 管理コンソール
+          menus:
+            items:
+              disp_seq: 10
+              id: "10101"
+              menu_name: システム設定
+              menu_name_rest: system_settings
+    inline_response_200_24_data:
+      type: object
+      properties:
+        execution_no:
+          type: string
+          example: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+      example:
+        execution_no: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    inline_response_200_25_data_import_list:
+      properties:
+        menu_groups:
+          type: array
+          items:
+            type: object
+            example:
+              disp_seq: 10
+              id: "101"
+              menu_group_name: 管理コンソール
+              menu_group_name_en: Management Console
+              menu_group_name_ja: 管理コンソール
+              menus:
+                items:
+                  type: object
+                  example:
+                    disp_seq: 10
+                    id: "10101"
+                    menu_name: システム設定
+                    menu_name_en: System settings
+                    menu_name_ja: システム設定
+                    menu_name_rest: system_settings
+      example:
+        menu_groups:
+        - disp_seq: 10
+          id: "101"
+          menu_group_name: 管理コンソール
+          menu_group_name_en: Management Console
+          menu_group_name_ja: 管理コンソール
+          menus:
+            items:
+              type: object
+              example:
+                disp_seq: 10
+                id: "10101"
+                menu_name: システム設定
+                menu_name_en: System settings
+                menu_name_ja: システム設定
+                menu_name_rest: system_settings
+        - disp_seq: 10
+          id: "101"
+          menu_group_name: 管理コンソール
+          menu_group_name_en: Management Console
+          menu_group_name_ja: 管理コンソール
+          menus:
+            items:
+              type: object
+              example:
+                disp_seq: 10
+                id: "10101"
+                menu_name: システム設定
+                menu_name_en: System settings
+                menu_name_ja: システム設定
+                menu_name_rest: system_settings
+    inline_response_200_25_data:
+      type: object
+      properties:
+        upload_id:
+          type: string
+          example: xxxxxxxxxxxxxxxxxxxxxxxx
+        file_name:
+          type: string
+          example: ita_exportdata_yyyymmddhhiiss.kym
+        mode:
+          type: string
+          example: "1: 環境移行 / 2: 時刻指定"
+        specified_time:
+          type: string
+          example: YYYY/MM/DD hh:mm
+        abolished_type:
+          type: string
+          example: "1: 廃止を含む / 2: 廃止を除く"
+        journal_type:
+          type: string
+          example: "1: 履歴あり / 2: 履歴なし"
+        import_list:
+          $ref: '#/components/schemas/inline_response_200_25_data_import_list'
+      example:
+        mode: "1: 環境移行 / 2: 時刻指定"
+        upload_id: xxxxxxxxxxxxxxxxxxxxxxxx
+        import_list:
+          menu_groups:
+          - disp_seq: 10
+            id: "101"
+            menu_group_name: 管理コンソール
+            menu_group_name_en: Management Console
+            menu_group_name_ja: 管理コンソール
+            menus:
+              items:
+                type: object
+                example:
+                  disp_seq: 10
+                  id: "10101"
+                  menu_name: システム設定
+                  menu_name_en: System settings
+                  menu_name_ja: システム設定
+                  menu_name_rest: system_settings
+          - disp_seq: 10
+            id: "101"
+            menu_group_name: 管理コンソール
+            menu_group_name_en: Management Console
+            menu_group_name_ja: 管理コンソール
+            menus:
+              items:
+                type: object
+                example:
+                  disp_seq: 10
+                  id: "10101"
+                  menu_name: システム設定
+                  menu_name_en: System settings
+                  menu_name_ja: システム設定
+                  menu_name_rest: system_settings
+        file_name: ita_exportdata_yyyymmddhhiiss.kym
+        specified_time: YYYY/MM/DD hh:mm
+        abolished_type: "1: 廃止を含む / 2: 廃止を除く"
+        journal_type: "1: 履歴あり / 2: 履歴なし"
+    inline_response_200_26_data:
+      type: object
+      properties:
         compare_list:
           $ref: '#/components/schemas/inline_response_200_data'
         device_list:
@@ -8091,7 +8380,7 @@ components:
               column_type: 0
               column_group_name: column_group_name
               ref_sort_conditions: ref_sort_conditions
-    inline_response_200_24_data:
+    inline_response_200_27_data:
       type: object
       properties:
         file_name:
@@ -8103,7 +8392,7 @@ components:
       example:
         file_name: "{compare_name}_YYYY/MMDDhhmmss.xlsx"
         file_data: Compare result base64 string
-    inline_response_200_25_data:
+    inline_response_200_28_data:
       type: object
       properties:
         datetime:

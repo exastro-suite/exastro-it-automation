@@ -1573,8 +1573,9 @@ setTableEvents() {
 
             $button.prop('disabled', true );
             try {
-                const file = await fn.getFile( url, 'POST', tb.filterParams, { title: getMessage.FTE00185 });
-                fn.download('file', file, fileName );
+                const file = await fn.getFile( url, 'POST', tb.filterParams, { title: getMessage.FTE00185, fileType: type });
+                if ( type !== 'json') type = 'file';
+                fn.download( type, file, fileName );
             } catch ( error ) {
                 if ( error !== 'break') {
                     fn.gotoErrPage( error.message );

@@ -1407,8 +1407,9 @@ defaultMenu( sheetType, dataType = 'n', fileFlag = true ) {
             const downloadFile = async function( type, url, fileName ){
                 $button.prop('disabled', true );
                 try {
-                    const file = await fn.getFile( url, 'GET', null, { title: getMessage.FTE00185 });
-                    fn.download('file', file, fileName );
+                    const file = await fn.getFile( url, 'GET', null, { title: getMessage.FTE00185, fileType: type });
+                    if ( type !== 'json') type = 'file';
+                    fn.download( type, file, fileName );
                 } catch ( error ) {
                     if ( error !== 'break') {
                         fn.gotoErrPage( error.message );

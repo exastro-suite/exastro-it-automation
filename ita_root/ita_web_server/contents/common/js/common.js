@@ -781,6 +781,13 @@ getFile: function( endPoint, method = 'GET', data, option = {} ) {
                     fileData = new File([blob], fileName, { type: blob.type });
                 }
 
+                // option.fileType === json の場合はレスポンスのdata部分のみをjsonで返す
+                if ( option.fileType === 'json') {
+                    const jsonText = await cmn.fileToText( fileData );
+                    const json = cmn.jsonParse( jsonText );
+                    fileData = json.data;
+                }
+
                 // バーのtransition-duration: .2s;分ずらす
                 setTimeout(function(){
                     if ( progressModal !== null ) {
@@ -905,6 +912,7 @@ xhr: function( url, formData ) {
 */
 download: async function( type, data, fileName = 'noname') {
     let url;
+    if ( fileName === null ) fileName = 'noname';
     try {
         // URL形式に変換
         switch ( type ) {
@@ -942,7 +950,7 @@ download: async function( type, data, fileName = 'noname') {
             // JSON
             case 'json': {
                 const blob = new Blob([ JSON.stringify( data, null, '\t') ], {'type': 'application/json'});
-                fileName += '.json';
+                if ( cmn.typeof( fileName ) === 'string' && !fileName.match(/\.json$/) ) fileName += '.json';
                 url = URL.createObjectURL( blob );
             } break;
 

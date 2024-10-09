@@ -29,6 +29,7 @@ import shutil
 # from pprint import pprint  # noqa: F401
 import datetime
 import zipfile
+import time
 
 from common_libs.common import *  # noqa: F403
 from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format
@@ -51,6 +52,7 @@ from common_libs.common import storage_access
 bool_master_true = 'True'
 bool_master_false = 'False'
 
+retry_delay_time = 0.1
 
 class ConductorExecuteLibs():
     """
@@ -2918,23 +2920,34 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
         result.setdefault('status_file_path', None)
         result.setdefault('str_row', None)
         result.setdefault('status_file_value', None)
-        try:
-            status_file_val = None
-            tmp_f_str_line = None
-            if os.path.isfile(status_file_path) is True:  # noqa: F405
-                obj = storage_access.storage_read()
-                obj.open(status_file_path)
-                tmp_f_str = obj.read()
-                obj.close()
-                tmp_f_str_line = tmp_f_str.splitlines()
-                status_file_val = tmp_f_str_line[0]
-                result['status_file_path'] = status_file_path
-                result['str_row'] = tmp_f_str
-                result['status_file_value'] = status_file_val
-        except Exception:
-            t = traceback.format_exc()
-            g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
-            retBool = False
+        i = 0
+        while True:
+            i = i + 1
+            try:
+                status_file_val = None
+                tmp_f_str_line = None
+                retBool = True
+                g.applogger.info(f"{status_file_path} {os.path.isfile(status_file_path)}")
+                if os.path.isfile(status_file_path) is True:  # noqa: F405
+                    obj = storage_access.storage_read()
+                    obj.open(status_file_path)
+                    tmp_f_str = obj.read()
+                    obj.close()
+                    tmp_f_str_line = tmp_f_str.splitlines()
+                    status_file_val = tmp_f_str_line[0]
+                    result['status_file_path'] = status_file_path
+                    result['str_row'] = tmp_f_str
+                    result['status_file_value'] = status_file_val
+                    break
+            except Exception:
+                t = traceback.format_exc()
+                g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
+                retBool = False
+            g.applogger.info(f"{status_file_path}: wait:{retry_delay_time} (retry:{i=})")
+            time.sleep(retry_delay_time)
+            if i == 3:
+                break
+
         return retBool, result,
 
     def get_conditional_node_info(self, node_options, in_node_status_id):
@@ -3817,7 +3830,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
                     c_status_id = node_options.get('instance_info_data').get('dict').get('conductor_status').get('8')
 
                 # ステータスファイル取得
-                if status_file_path is not None:
+                if status_file_path is not None and mv_status_id in ['5']:
                     status_file_info = self.get_status_file(status_file_path)
                     if status_file_info[0] is True:
                         node_filter_data['parameter']['status_file'] = status_file_info[1].get('status_file_value')

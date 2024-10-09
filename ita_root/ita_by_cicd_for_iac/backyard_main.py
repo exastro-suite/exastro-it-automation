@@ -1993,7 +1993,7 @@ class CICD_ChildWorkflow():
         return True, MatlListRecodes
 
     def MatlListDisuseUpdate(self, row, Disuse):
-
+        where_disuse_flag = '1' if Disuse == '0' else '0'
         table_name = "T_CICD_MATL_LIST"
         cols = self.DBobj.table_columns_get(table_name)
         cols = (',').join(cols[0])
@@ -2001,8 +2001,8 @@ class CICD_ChildWorkflow():
             "SELECT %s "
             "FROM %s "
             "WHERE MATL_ROW_ID=%%s "
-            "AND DISUSE_FLAG='0' "
-        ) % (cols, table_name)
+            "AND DISUSE_FLAG='%s' "
+        ) % (cols, table_name, where_disuse_flag)
         arrayBind = [row['MATL_ROW_ID'], ]
 
         objQuery = self.DBobj.sql_execute(sql, arrayBind)

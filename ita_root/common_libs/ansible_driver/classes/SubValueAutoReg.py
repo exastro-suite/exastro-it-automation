@@ -190,7 +190,9 @@ class SubValueAutoReg():
             if not varsAssRecord['STATUS'] == 'skip':
                 ret = self.addStg1StdListVarsAssign(varsAssRecord, execution_no, subst_value_tpl_row.copy(), subst_value_list_table, subst_value_list_menu_id, var_extractor, self.ws_db)
                 if ret is False:
-                    raise ValidationException("MSG-10466")
+                    msgstr = g.appmsg.get_api_message("MSG-10466")
+                    g.applogger.info(os.path.basename(__file__) + " " + msgstr + " " + varsAssRecord)
+                    continue
 
             # 作業対象ホストに登録が必要な情報を退避
             if varsAssRecord['OPERATION_ID'] not in lv_phoLinkList:
@@ -218,7 +220,9 @@ class SubValueAutoReg():
             if not varsAssRecord['STATUS'] == 'skip':
                 ret = self.addStg1ArrayVarsAssign(varsAssRecord, execution_no, subst_value_tpl_row.copy(), subst_value_list_table, subst_value_list_menu_id, var_extractor, self.ws_db)
                 if ret is False:
-                    raise ValidationException("MSG-10441")
+                    msgstr = g.appmsg.get_api_message("MSG-10441")
+                    g.applogger.info(os.path.basename(__file__) + " " + msgstr + " " + varsAssRecord)
+                    continue
 
             # 作業対象ホストに登録が必要な情報を退避
             if varsAssRecord['OPERATION_ID'] not in lv_phoLinkList:
@@ -1673,33 +1677,38 @@ class SubValueAutoReg():
             # SHEET_TYPEが1(ホスト・オペレーション)で廃止レコードでないかを判定
             if data['ANSIBLE_TARGET_TABLE'] != '0':
                 msgstr = g.appmsg.get_api_message("MSG-10437", [data['COLUMN_ID']])
+                g.applogger.info(os.path.basename(__file__) + " " + msgstr)
                 # 次のカラムへ
-                raise ValidationException("MSG-10437", [data['COLUMN_ID']])
+                continue
 
             # 作業パターン詳細に作業パターンが未登録
             if data['PATTERN_CNT'] == '0':
                 msgstr = g.appmsg.get_api_message("MSG-10336", [data['COLUMN_ID']])
+                g.applogger.info(os.path.basename(__file__) + " " + msgstr)
                 # 次のカラムへ
-                raise ValidationException("MSG-10336", [data['COLUMN_ID']])
+                continue
 
             # CMDB代入値紐付メニューが登録されているか判定
             if data['TABLE_NAME'] is None or len(data['TABLE_NAME']) == 0:
                 msgstr = g.appmsg.get_api_message("MSG-10338", [data['COLUMN_ID']])
+                g.applogger.info(os.path.basename(__file__) + " " + msgstr)
                 # 次のカラムへ
-                raise ValidationException("MSG-10338", [data['COLUMN_ID']])
+                continue
 
             # CMDB代入値紐付メニューのカラムが未登録か判定
             if data['COL_NAME'] is None or len(data['COL_NAME']) == 0:
                 msgstr = g.appmsg.get_api_message("MSG-10340", [data['COLUMN_ID']])
+                g.applogger.info(os.path.basename(__file__) + " " + msgstr)
                 # 次のカラムへ
-                raise ValidationException("MSG-10340", [data['COLUMN_ID']])
+                continue
 
             type_chk = [AnscConst.DF_COL_TYPE_VAL, AnscConst.DF_COL_TYPE_KEY]
             col_type = data['COL_TYPE']
             if col_type not in type_chk:
-                msgstr = g.appmsg.get_api_message("MSG-10341", [data['COLUMN_ID']])
+                msgstr = g.appmsg.get_api_message("MSG-10342", [data['COLUMN_ID']])
+                g.applogger.info(os.path.basename(__file__) + " " + msgstr)
                 # 次のカラムへ
-                raise ValidationException("MSG-10341", [data['COLUMN_ID']])
+                continue
 
             # Value型変数の変数タイプ
             val_vars_attr = ""

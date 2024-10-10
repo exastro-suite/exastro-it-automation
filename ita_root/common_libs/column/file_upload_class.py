@@ -580,12 +580,19 @@ class FileUploadColumn(Column):
                 column_list, primary_key_list = self.objdbca.table_columns_get(self.get_table_name())
                 self.set_column_list(column_list)
                 self.set_primary_key(primary_key_list[0])
-                query_str = textwrap.dedent("""
-                    SELECT * FROM `{table_name}`
-                    WHERE `{primary_key}` = %s
-                    AND `DISUSE_FLAG` = 0
-                    ORDER BY `JOURNAL_REG_DATETIME` DESC
-                """).format(table_name=f"{self.get_table_name()}_JNL", primary_key=self.get_primary_key()).strip()
+                if journal_type == "1":
+                    query_str = textwrap.dedent("""
+                        SELECT * FROM `{table_name}`
+                        WHERE `{primary_key}` = %s
+                        AND `DISUSE_FLAG` = 0
+                        ORDER BY `JOURNAL_REG_DATETIME` DESC
+                    """).format(table_name=f"{self.get_table_name()}_JNL", primary_key=self.get_primary_key()).strip()
+                else:
+                    query_str = textwrap.dedent("""
+                        SELECT * FROM `{table_name}`
+                        WHERE `{primary_key}` = %s
+                        ORDER BY `JOURNAL_REG_DATETIME` DESC
+                    """).format(table_name=f"{self.get_table_name()}_JNL", primary_key=self.get_primary_key()).strip()
                 query_result = self.objdbca.sql_execute(query_str, [target_uuid])
                 target_uuid_jnls = [ _row["JOURNAL_SEQ_NO"] for _row in query_result] if isinstance(query_result, list) else []
                 for _tuj in target_uuid_jnls:

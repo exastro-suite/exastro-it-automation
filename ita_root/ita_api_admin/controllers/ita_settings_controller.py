@@ -22,8 +22,6 @@ import os
 
 from common_libs.api import api_filter_admin
 from common_libs.common.dbconnect import *  # noqa: F403
-# from common_libs.common.exception import AppException
-# from common_libs.api import app_exception_response, exception_response
 
 
 @api_filter_admin

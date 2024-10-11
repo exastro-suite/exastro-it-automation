@@ -27,9 +27,10 @@ class storage_base:
     def make_temp_path(self, file_path):
         # ルートパスを/tmpに置き換える
         tmp_dir_path = re.sub(os.environ.get('STORAGEPATH'), "/tmp/", os.path.dirname(file_path))
-        # ディレクトリが無いことを確認
+        # なければディレクトリの作成
         if os.path.isdir(tmp_dir_path) is False:
-            os.makedirs(tmp_dir_path)
+            # exist_ok=Trueのoptionは、issue2432対策。azureストレージの初回アクセス対策
+            os.makedirs(tmp_dir_path, exist_ok=True)
         tmp_file_path = "{}/{}".format(tmp_dir_path, os.path.basename(file_path))
         return tmp_file_path
 
@@ -40,6 +41,22 @@ class storage_base:
             return True
         else:
             return False
+
+    def get_disk_usage(self):
+        usage = shutil.disk_usage(os.environ.get('STORAGEPATH'))
+        disk_stats = {
+            "total_space": usage.total,
+            "used_space": usage.used,
+            "free_space": usage.free
+        }
+        return disk_stats
+
+    def validate_disk_space(self, file_size):
+        usage = self.get_disk_usage()
+        free_space = usage["free_space"]
+        # 保存できる容量があるか判定
+        can_save = int(free_space) >= int(file_size)
+        return can_save, free_space
 
 class storage_read(storage_base):
     def __init__(self):
@@ -71,6 +88,10 @@ class storage_read(storage_base):
     def read(self):
         # read
         return self.fd.read()
+
+    def chunk_read(self, chunk):
+        # read by chunk
+        return self.fd.read(chunk)
 
     def close(self, file_del = True):
         # close

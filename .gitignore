@@ -138,3 +138,6 @@ __pycache__/
 
 # snyc
 .dccache
+
+# ita_by_menu_export_import: mount ita_migration/version.list
+ita_root/ita_by_menu_export_import/version.list

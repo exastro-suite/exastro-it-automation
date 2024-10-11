@@ -80,6 +80,6 @@ def extract_variable_for_execute(mov_vars_dict, tpl_vars_dict, ws_db):
                 mov_vars_dict[movement_id] |= tpl_vars_dict[tpl_var_name]
             else:
                 debug_msg = g.appmsg.get_log_message("MSG-10531", [tpl_var_name])
-                g.applogger.debug(debug_msg)
+                g.applogger.info(debug_msg)
 
     return mov_vars_dict

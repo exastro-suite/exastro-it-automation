@@ -12,16 +12,18 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from flask import g
 import textwrap
 import datetime
 import json
 import zipfile
+
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectWs
+from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
+from common_libs.api import get_api_timestamp
 from common_libs.loadtable import *  # noqa: F403
 from common_libs.column import *  # noqa: F403
-from flask import g
-from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
 
 
 def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, privilege='1'):  # noqa: C901
@@ -173,7 +175,9 @@ def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, 
     if ret:
         for count, record in enumerate(ret, 1):
 
-            if record.get('INPUT_ITEM') in ['2'] and record.get('VIEW_ITEM') in ['0']:
+            if ((record.get('INPUT_ITEM') in ['2'] and record.get('VIEW_ITEM') in ['0']) or
+               # issue 2477 INPUT_ITEM:2 and VIEW_ITEM: 2の場合
+               (record.get('INPUT_ITEM') in ['2'] and record.get('VIEW_ITEM') in ['2'])):
                 continue
 
             # json形式のレコードは改行を削除
@@ -216,19 +220,13 @@ def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, 
 
             # カラムクラスが「5: DateTimeColumn」かつ初期値が設定されている場合、初期値の値(日時)をフォーマット
             if str(column_class) == "5" and initial_value:
-                try:
-                    initial_value = datetime.datetime.strptime(initial_value, '%Y-%m-%d %H:%M:%S')
-                    initial_value = initial_value.strftime('%Y/%m/%d %H:%M:%S')
-                except Exception:
-                    initial_value = None
+                initial_value = datetime.datetime.strptime(initial_value, '%Y-%m-%d %H:%M:%S')
+                initial_value = initial_value.strftime('%Y/%m/%d %H:%M:%S')
 
             # カラムクラスが「6: DateTColumn」かつ初期値が設定されている場合、初期値の値(日付)をフォーマット
             if str(column_class) == "6" and initial_value:
-                try:
-                    initial_value = datetime.datetime.strptime(initial_value, '%Y-%m-%d %H:%M:%S')
-                    initial_value = initial_value.strftime('%Y/%m/%d')
-                except Exception:
-                    initial_value = None
+                initial_value = datetime.datetime.strptime(initial_value, '%Y-%m-%d %H:%M:%S')
+                initial_value = initial_value.strftime('%Y/%m/%d')
 
             detail = {
                 'column_id': record.get('COLUMN_DEFINITION_ID'),
@@ -634,8 +632,8 @@ def collect_pulldown_list(objdbca, menu, menu_record):
     ret = objdbca.table_select(t_common_menu_column_link, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_id, 0])
 
     pulldown_list = {}
-    # 7(IDColumn), 11(LinkIDColumn), 18(RoleIDColumn), 21(JsonIDColumn), 22(EnvironmentIDColumn), 28(NotificationIDColumn), 30(FilterConditionDialogColumn), 31(RuleConditionDialogColumn)
-    id_column_list = ["7", "11", "18", "21", "22", "27", "28", "30", "31"]
+    # 7(IDColumn), 11(LinkIDColumn), 18(RoleIDColumn), 21(JsonIDColumn), 22(EnvironmentIDColumn), 28(NotificationIDColumn), 30(FilterConditionDialogColumn), 31(RuleConditionDialogColumn), 32(ExecutionEnvironmentDefinitionIDColumn)
+    id_column_list = ["7", "11", "18", "21", "22", "27", "28", "30", "31", "32"]
     for record in ret:
         column_class_id = str(record.get('COLUMN_CLASS'))
 
@@ -726,8 +724,8 @@ def collect_search_candidates(objdbca, menu, column, menu_record={}, menu_table_
         return []
 
     search_candidates = []
-    # 7(IDColumn), 11(LinkIDColumn), 14(LastUpdateUserColumn), 18(RoleIDColumn), 21(JsonIDColumn), 22(EnvironmentIDColumn), 28(NotificationIDColumn), 30(FilterConditionDialogColumn), 31(RuleConditionDialogColumn)
-    id_column_list = ["7", "11", "14", "18", "21", "22", "28", "30", "31"]
+    # 7(IDColumn), 11(LinkIDColumn), 14(LastUpdateUserColumn), 18(RoleIDColumn), 21(JsonIDColumn), 22(EnvironmentIDColumn), 28(NotificationIDColumn), 30(FilterConditionDialogColumn), 31(RuleConditionDialogColumn), 32(ExecutionEnvironmentDefinitionIDColumn)
+    id_column_list = ["7", "11", "14", "18", "21", "22", "28", "30", "31", "32"]
     # 28(NotificationIDColumn), , 30(FilterConditionDialogColumn), 31(RuleConditionDialogColumn)
     # の場合のプルダウンの一覧に合致するデータ抽出
     if column_class_id in ["28", "30", "31"]:
@@ -740,21 +738,31 @@ def collect_search_candidates(objdbca, menu, column, menu_record={}, menu_table_
         for record in ret:
             search_candidates = objcolumn.json_key_to_keyname_convart(record.get(col_name), search_candidates, column_pulldown_list)
 
+    elif column_class_id in ["32"]:
+        # プルダウンの一覧を取得
+        objmenu = load_table.loadTable(objdbca, menu)  # noqa: F405
+        objcolumn = objmenu.get_columnclass(column)
+        column_pulldown_list = objcolumn.get_values_by_key()
+
+        search_candidates = []
+        for record in ret:
+            search_candidates = objcolumn.csv_key_to_keyname_convart(record.get(col_name), search_candidates, column_pulldown_list)
+
     elif save_type == "JSON":
+        if column_class_id in id_column_list:
+            # プルダウンの一覧を取得
+            objmenu = load_table.loadTable(objdbca, menu)  # noqa: F405
+            objcolumn = objmenu.get_columnclass(column)
+            column_pulldown_list = objcolumn.get_values_by_key()
+
         for record in ret:
             target = record.get(col_name)
-            try:
-                json_rows = json.loads(target)
-            except Exception:
-                json_rows = None
+            json_rows = None if target is None else json.loads(target)
+
             if json_rows:
                 for jsonkey, jsonval in json_rows.items():
                     if jsonkey == column_name_rest:
                         if column_class_id in id_column_list:
-                            # プルダウンの一覧を取得
-                            objmenu = load_table.loadTable(objdbca, menu)  # noqa: F405
-                            objcolumn = objmenu.get_columnclass(column)
-                            column_pulldown_list = objcolumn.get_values_by_key()
                             # レコードの中からIDに合致するデータを取得
                             conv_jsonval = column_pulldown_list.get(jsonval)
                             search_candidates.append(conv_jsonval)
@@ -767,9 +775,9 @@ def collect_search_candidates(objdbca, menu, column, menu_record={}, menu_table_
             objcolumn = objmenu.get_columnclass(column)
             column_pulldown_list = objcolumn.get_values_by_key()
 
-            # 28(NotificationIDColumn), , 30(FilterConditionDialogColumn), 31(RuleConditionDialogColumn)
+            # 28(NotificationIDColumn), , 30(FilterConditionDialogColumn), 31(RuleConditionDialogColumn), 32(ExecutionEnvironmentDefinitionIDColumn)
             # の場合だけプルダウンの一覧に合致するデータを抽出方法を変更
-            if column_class_id in ["28", "30", "31"]:
+            if column_class_id in ["28", "30", "31", "32"]:
                 search_candidates = []
                 for record in ret:
                     search_candidates = objcolumn.csvkey_to_keyname_convart(record.get(col_name), search_candidates, column_pulldown_list)
@@ -791,7 +799,7 @@ def collect_search_candidates(objdbca, menu, column, menu_record={}, menu_table_
     return search_candidates
 
 
-def collect_search_candidates_from_mongodb(wsMongo: MONGOConnectWs, column, menu_record, menu_table_link_record):
+def collect_search_candidates_from_mongodb(wsMongo: MONGOConnectWs, column, menu_record, menu_table_link_record, objdbca):
     """
     Args:
         wsMongo (MONGOConnectWs): DB接続クラス  MONGOConnectWs()
@@ -815,7 +823,7 @@ def collect_search_candidates_from_mongodb(wsMongo: MONGOConnectWs, column, menu
     tmp_result = (wsMongo.collection(mondodb_collection_name)
                   .find()
                   .sort(sort_key))
-    result_list = collection.create_result(tmp_result)
+    result_list = collection.create_result(tmp_result, objdbca)
 
     search_candidates = []
     for item in result_list:
@@ -853,17 +861,10 @@ def collect_search_candidates_from_mongodb(wsMongo: MONGOConnectWs, column, menu
                     if tmp_str not in result:
                         result.append(tmp_str)
             elif isinstance(item, list):
-                item = list(item)
-                for value in item:
-                    if value not in result:
-                        # 一旦入れ子のdictやlistの値は取得せず、単純に文字列に変換する実装とする
-                        # 入れ子の値も分解してプルダウンの項目にする場合は要追加実装
-                        if isinstance(value, dict):
-                            result.append(json.dumps(value))
-                        elif isinstance(value, list):
-                            result.append(json.dumps(value))
-                        else:
-                            result.append(value)
+                if item not in result:
+                    # 一旦入れ子のdictやlistの値は取得せず、単純に文字列に変換する実装とする
+                    # 入れ子の値も分解してプルダウンの項目にする場合は要追加実装
+                    result.append(json.dumps(item))
         else:
             if item not in result:
                 result.append(item)
@@ -989,7 +990,10 @@ def unzip_file(file_path, uploadPath):
                     info.filename = info.filename.replace(os.sep, "/")
                 z.extract(info, path=uploadPath)
 
-    except Exception as e:
+    except Exception:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(get_api_timestamp(), arrange_stacktrace_format(t)))
+
         return False
 
     return True

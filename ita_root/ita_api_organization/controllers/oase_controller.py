@@ -54,6 +54,8 @@ def get_oase_filter(organization_id, workspace_id, menu):  # noqa: E501
 
         filter_parameter = {}
         result_data = oase.rest_filter(objdbca, menu, filter_parameter)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -97,6 +99,8 @@ def post_oase_filter(organization_id, workspace_id, menu, body=None):  # noqa: E
             filter_parameter = body
 
         result_data = oase.rest_filter(objdbca, menu, filter_parameter)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -131,8 +135,6 @@ def post_oase_history(organization_id, workspace_id, body=None):  # noqa: E501
 
         history_data = oase.create_history_list(event_history, action_history)
     except Exception as e:
-        wsDb.db_disconnect()
-        wsMongo.disconnect()
         raise e
     finally:
         wsDb.db_disconnect()

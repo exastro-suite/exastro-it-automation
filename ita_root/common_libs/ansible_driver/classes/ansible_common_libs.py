@@ -24,7 +24,6 @@ import re
 
 from flask import g
 from pathlib import Path
-from pprint import pprint
 
 from common_libs.common import *
 from common_libs.loadtable import *
@@ -495,6 +494,7 @@ class AnsibleCommonLibs():
                 # #2079 function未使用 対象外
                 Path(path).write_text(json_encode, encoding="utf-8")
             except Exception:
+                # #2199 function未使用 ログ出力不要
                 bool_ret = False
                 str_err_msg = g.appmsg.get_api_message('MSG-10570', [])
 

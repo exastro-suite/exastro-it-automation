@@ -12,11 +12,13 @@
 # limitations under the License.
 #
 # from flask import g
-from common_libs.common.exception import AppException
+
 import json
 import re
 import copy
 
+from common_libs.common.util import print_exception_msg
+from common_libs.common.exception import AppException
 
 # Typeの情報を取得する
 def get_type_info(wsDb, TFConst, type_id):
@@ -55,7 +57,8 @@ def decode_hcl(hcl_data):
 
     try:
         res = json.loads(res)
-    except Exception:
+    except Exception as e:
+        print_exception_msg("err_msg:{}, hcl_data:{}".format(e, hcl_data))
         return res
 
     return res

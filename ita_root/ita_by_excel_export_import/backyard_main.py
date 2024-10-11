@@ -18,12 +18,14 @@ import time
 import pathlib
 import shutil
 import ast
+import traceback
 from flask import g
 
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common import menu_excel
 from common_libs.common import storage_access
+from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format, print_exception_msg
 import util
 
 
@@ -53,7 +55,7 @@ def backyard_main(organization_id, workspace_id):
     try:
         # DB接続
         objdbca = DBConnectWs(workspace_id)  # noqa: F405
-        
+
         # インポート実行用のアップロードID
         upload_id = ""
 
@@ -70,6 +72,9 @@ def backyard_main(organization_id, workspace_id):
                 g.applogger.debug(g.appmsg.get_log_message("BKY-00006", []))
                 return
         except Exception:
+            # スタックトレース出力
+            t = traceback.format_exc()
+            g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
             # エラーログ出力
             g.applogger.error(g.appmsg.get_log_message("BKY-00008", []))
             return
@@ -199,7 +204,7 @@ def backyard_main(organization_id, workspace_id):
 
                 # ファイル一覧をJSONに変換
                 tmpExportPath = EXPORT_PATH + "/" + taskId + "/tmp_zip"
-                
+
                 # MENU_LIST作成
                 file_write = storage_access.storage_write()
                 file_write.open(tmpExportPath + "/MENU_LIST.txt", mode="w")
@@ -247,7 +252,7 @@ def backyard_main(organization_id, workspace_id):
                         import_menu_list.append(menu_id)
 
                 targetImportPath = IMPORT_PATH + "/import/" + upload_id
-                
+
                 # tmp配下で読み取り
                 file_read = storage_access.storage_read()
                 file_read.open(targetImportPath + "/MENU_LIST.txt")
@@ -289,7 +294,7 @@ def backyard_main(organization_id, workspace_id):
                     elif os.path.exists(chk_path2):
                         targetImportPath = chk_path2
 
-                    excel_data = util.file_encode(targetImportPath)
+                    excel_data = targetImportPath
 
                     # メニューの存在確認
                     menu_record = util.check_menu_info(menuNameRest, objdbca)
@@ -333,6 +338,8 @@ def backyard_main(organization_id, workspace_id):
 
                     if len(aryRetBody) > 0:
                         for name, ct in aryRetBody.items():
+                            if not isinstance(ct, int) or name == "IdList":
+                                continue
                             msg += msg_result[idx] + ":    " + str(ct) + strErrCountExplainTail + "\n"
                             idx += 1
 
@@ -376,6 +383,11 @@ def backyard_main(organization_id, workspace_id):
                 os.chmod(IMPORT_PATH + "/import", 0o777)
 
     except Exception as e:
+        # エラーログ出力
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
+
+        # 一時ディレクトリ削除
         if os.path.exists(EXPORT_PATH + "/" + taskId):
             shutil.rmtree(EXPORT_PATH + "/" + taskId)
         if os.path.exists(IMPORT_PATH + "/import/" + upload_id):

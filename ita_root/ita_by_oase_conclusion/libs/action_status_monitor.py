@@ -17,6 +17,7 @@ from flask import g
 from common_libs.oase.const import oaseConst
 from common_libs.notification.sub_classes.oase import OASE, OASENotificationType
 from libs.common_functions import addline_msg, InsertConclusionEvent, getLabelGroup
+from libs.notification_data import Notification_data
 
 class ActionStatusMonitor():
     def __init__(self, wsDb, EventObj):
@@ -156,8 +157,9 @@ class ActionStatusMonitor():
 
             # 通知先が設定されている場合、通知処理(事後通知)を実行する
             if action_log_row_info.get('AFTER_NOTIFICATION_DESTINATION'):
-                # 2.3の時点では、イベントの情報は空にしておく
-                after_Action_Event_List = [{}]
+
+                notification_data = Notification_data(self.wsDb, self.EventObj)
+                after_Action_Event_List = notification_data.getAfterActionEventList(action_log_row_info)
 
                 tmp_msg = g.appmsg.get_log_message("BKY-90008", ['Post-event notification'])
                 g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -174,19 +176,30 @@ class ActionStatusMonitor():
         sql = """
             SELECT
                 TAB_A.*,
-                TAB_B.CONDUCTOR_INSTANCE_ID       AS JOIN_CONDUCTOR_INSTANCE_ID,
-                TAB_B.STATUS_ID                   AS CONDUCTOR_STATUS_ID,
-                TAB_B.DISUSE_FLAG                 AS TAB_B_DISUSE_FLAG,
-                TAB_C.RULE_ID                     AS JOIN_RULE_ID,
-                TAB_C.RULE_NAME                   AS RULE_NAME,
-                TAB_C.CONCLUSION_LABEL_SETTINGS   AS CONCLUSION_LABEL_SETTINGS,
-                TAB_C.RULE_LABEL_NAME             AS RULE_LABEL_NAME,
-                TAB_C.EVENT_ID_LIST               AS EVENT_ID_LIST,
-                TAB_C.TTL                         AS TTL,
-                TAB_C.AFTER_APPROVAL_PENDING      AS AFTER_APPROVAL_PENDING,
-                TAB_C.AFTER_NOTIFICATION          AS AFTER_NOTIFICATION,
-                TAB_C.AVAILABLE_FLAG              AS RULE_AVAILABLE_FLAG,
-                TAB_C.DISUSE_FLAG                 AS TAB_C_DISUSE_FLAG
+                TAB_B.CONDUCTOR_INSTANCE_ID            AS JOIN_CONDUCTOR_INSTANCE_ID,
+                TAB_B.STATUS_ID                        AS CONDUCTOR_STATUS_ID,
+                TAB_B.DISUSE_FLAG                      AS TAB_B_DISUSE_FLAG,
+                TAB_C.RULE_ID                          AS JOIN_RULE_ID,
+                TAB_C.RULE_NAME                        AS RULE_NAME,
+                TAB_C.RULE_PRIORITY                    AS RULE_PRIORITY,
+                TAB_C.FILTER_A                         AS FILTER_A,
+                TAB_C.FILTER_OPERATOR                  AS FILTER_OPERATOR,
+                TAB_C.FILTER_B                         AS FILTER_B,
+                TAB_C.BEFORE_NOTIFICATION              AS BEFORE_NOTIFICATION,
+                TAB_C.BEFORE_APPROVAL_PENDING          AS BEFORE_APPROVAL_PENDING,
+                TAB_C.BEFORE_NOTIFICATION_DESTINATION  AS BEFORE_NOTIFICATION_DESTINATION,
+                TAB_C.ACTION_ID                        AS ACTION_ID,
+                TAB_C.ACTION_LABEL_INHERITANCE_FLAG    AS ACTION_LABEL_INHERITANCE_FLAG,
+                TAB_C.EVENT_LABEL_INHERITANCE_FLAG     AS EVENT_LABEL_INHERITANCE_FLAG,
+                TAB_C.CONCLUSION_LABEL_SETTINGS        AS CONCLUSION_LABEL_SETTINGS,
+                TAB_C.RULE_LABEL_NAME                  AS RULE_LABEL_NAME,
+                TAB_C.EVENT_ID_LIST                    AS EVENT_ID_LIST,
+                TAB_C.TTL                              AS TTL,
+                TAB_C.AFTER_APPROVAL_PENDING           AS AFTER_APPROVAL_PENDING,
+                TAB_C.AFTER_NOTIFICATION               AS AFTER_NOTIFICATION,
+                TAB_C.AFTER_NOTIFICATION_DESTINATION   AS AFTER_NOTIFICATION_DESTINATION,
+                TAB_C.AVAILABLE_FLAG                   AS RULE_AVAILABLE_FLAG,
+                TAB_C.DISUSE_FLAG                      AS TAB_C_DISUSE_FLAG
             FROM
                 T_OASE_ACTION_LOG                       TAB_A
                 LEFT JOIN T_COMN_CONDUCTOR_INSTANCE     TAB_B ON (TAB_A.CONDUCTOR_INSTANCE_ID = TAB_B.CONDUCTOR_INSTANCE_ID)

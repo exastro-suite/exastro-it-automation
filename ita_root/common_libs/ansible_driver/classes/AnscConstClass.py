@@ -60,6 +60,14 @@ class AnscConst:
     DF_GITREPO_SYMPHONY_PATH = "GITREPO_SYMPHONY_PATH"
     DF_GITREPO_CONDUCTOR_PATH = "GITREPO_CONDUCTOR_PATH"
 
+    # Ansible Egent 実行環境構築方法
+    DF_AG_BUILD_TYPE_MANUAL = '1'
+    DF_AG_BUILD_TYPE_ITA = '2'
+
+    # Ansible Egent ベースイメージOS種別
+    DF_AG_BASE_IMAGE_TYPE_REDHAT = '1'
+    DF_AG_BASE_IMAGE_TYPE_OTHOR = '2'
+
     # AnsibleTower処理区分
     DF_EXECUTION_FUNCTION = '1'
     DF_CHECKCONDITION_FUNCTION = '2'
@@ -97,6 +105,7 @@ class AnscConst:
     # 実行エンジン
     DF_EXEC_MODE_ANSIBLE = '1'    # Ansibleで実行
     DF_EXEC_MODE_AAC = '2'        # ansible automation controllerで実行
+    DF_EXEC_MODE_AG = '3'        # Ansible Execution Agentで実行
 
     # 機器一覧 AACホスト一覧  認証方式(LOGIN_AUTH_TYPE)
     DF_LOGIN_AUTH_TYPE_KEY = '1'         # 鍵認証(パスフレーズなし)
@@ -104,6 +113,7 @@ class AnscConst:
     DF_LOGIN_AUTH_TYPE_KEY_EXCH = '3'    # 認証方式:鍵認証(鍵交換済み)
     DF_LOGIN_AUTH_TYPE_KEY_PP_USE = '4'  # 認証方式:鍵認証(パスフレーズあり)
     DF_LOGIN_AUTH_TYPE_PW_WINRM = '5'    # 認証方式:パスワード認証(winrm)
+    DF_LOGIN_AUTH_TYPE_KEY_WINRM = '6'   # 認証方式:証明書認証(winrm)
 
     # カラムタイプ
     DF_COL_TYPE_VAL = '1'    # Value型
@@ -164,16 +174,18 @@ class AnscConst:
     LC_RUN_MODE_VARFILE = "1"  # 変数定義ファイルの構造チェック
 
     # ステータス定義(DBの値と同期させること)
-    NOT_YET = '1'          # 未実行
-    PREPARE = '2'          # 準備中
-    PROCESSING = '3'       # 実行中
-    PROCESS_DELAYED = '4'  # 実行中(遅延)
-    COMPLETE = '5'         # 完了
-    FAILURE = '6'          # 完了(異常)
-    EXCEPTION = '7'        # 想定外エラー
-    SCRAM = '8'            # 緊急停止
-    RESERVE = '9'          # 未実行(予約中)
-    RESERVE_CANCEL = '10'  # 予約取消
+    NOT_YET = '1'           # 未実行
+    PREPARE = '2'           # 準備中
+    PROCESSING = '3'        # 実行中
+    PROCESS_DELAYED = '4'   # 実行中(遅延)
+    COMPLETE = '5'          # 完了
+    FAILURE = '6'           # 完了(異常)
+    EXCEPTION = '7'         # 想定外エラー
+    SCRAM = '8'             # 緊急停止
+    RESERVE = '9'           # 未実行(予約中)
+    RESERVE_CANCEL = '10'   # 予約取消
+    PREPARE_COMPLETE = "11" # 準備完了
+    PROCESSING_WAIT = "12"  # 実行待ち
 
     DRY_RUN = '2'  # 実行モード(ドライラン=チェック)
     CHK_PARA = '3'  # 実行モード(パラメータ確認)
@@ -182,7 +194,7 @@ class AnscConst:
     LC_WINRM_PORT = 5985
 
     # ITA独自変数名
-    # ITA独自変数が追加になったらUnmanaged_ITA_sp_varlistとCannotValueAssign_ITA_sp_varlistに追加する
+    # ITA独自変数が追加になったらUnmanaged_ITA_sp_varlistとCannotValueAssign_ITA_sp_varlistとnotHaveSpecificValues_ITA_sp_varlistを追加する
     ITA_SP_VAR_ANS_PROTOCOL_VAR_NAME = "__loginprotocol__"
     ITA_SP_VAR_ANS_USERNAME_VAR_NAME = "__loginuser__"
     ITA_SP_VAR_ANS_PASSWD_VAR_NAME = "__loginpassword__"
@@ -198,7 +210,9 @@ class AnscConst:
     ITA_SP_VAR_CONDUCTOR_ID = "__conductor_id__"
     ITA_SP_VAR_ANS_DNSHOSTNAME_VAR_NAME = "__dnshostname__"
     ITA_SP_VAR_ANS_IPADDRESS_VAR_NAME = "__ipaddress__"
-    # pioneerモジュール実行時のホスト名として使用
+    ITA_SP_VAR_ANS_MOVEMENT_ID = "__movement_id__"
+    ITA_SP_VAR_ANS_EXECUTION_NO = "__execution_no__"
+    # pioneerモジュール実行時のホスト名として内部使用
     ITA_SP_VAR_TARGETHOSTNAME_VAR_NAME = "__logintarget__"
     ITA_SP_VAR_CPF_VAR_NAME = "CPF_[0-9a-zA-Z_]*"
     ITA_SP_VAR_TPF_VAR_NAME = "TPF_[0-9a-zA-Z_]*"
@@ -220,10 +234,13 @@ class AnscConst:
                                 ITA_SP_VAR_OUT_PARAM_FILE_DIR,
                                 ITA_SP_VAR_MOVEMENT_STS_FILE,
                                 ITA_SP_VAR_CONDUCTOR_ID,
+                                ITA_SP_VAR_ANS_MOVEMENT_ID,
+                                ITA_SP_VAR_ANS_EXECUTION_NO,
                                 ITA_SP_VAR_CPF_VAR_NAME,
                                 ITA_SP_VAR_TPF_VAR_NAME,
                                 ITA_SP_VAR_GBL_VAR_NAME]
 
+    # Unmanaged_ITA_sp_varlistからTPF/CPF/GBLを省いたITA独自変数リスト
     CannotValueAssign_ITA_sp_varlist = [ITA_SP_VAR_ANS_PROTOCOL_VAR_NAME,
                                         ITA_SP_VAR_ANS_USERNAME_VAR_NAME,
                                         ITA_SP_VAR_ANS_DNSHOSTNAME_VAR_NAME,
@@ -238,4 +255,17 @@ class AnscConst:
                                         ITA_SP_VAR_OUT_PARAM_DIR,
                                         ITA_SP_VAR_OUT_PARAM_FILE_DIR,
                                         ITA_SP_VAR_MOVEMENT_STS_FILE,
-                                        ITA_SP_VAR_CONDUCTOR_ID]
+                                        ITA_SP_VAR_CONDUCTOR_ID,
+                                        ITA_SP_VAR_ANS_MOVEMENT_ID,
+                                        ITA_SP_VAR_ANS_EXECUTION_NO]
+
+    # 具体値がない可能性があるITA独自変数リスト
+    notHaveSpecificValues_ITA_sp_varlist = [ITA_SP_VAR_ANS_PROTOCOL_VAR_NAME,
+                                            ITA_SP_VAR_ANS_USERNAME_VAR_NAME,
+                                            ITA_SP_VAR_ANS_PASSWD_VAR_NAME,
+                                            ITA_SP_VAR_ANS_DNSHOSTNAME_VAR_NAME,
+                                            ITA_SP_VAR_ANS_IPADDRESS_VAR_NAME,
+                                            ITA_SP_VAR_CONDUCTOR_ID]
+
+
+

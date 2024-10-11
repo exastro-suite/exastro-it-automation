@@ -46,9 +46,17 @@ def external_valid_menu_after(objDBCA, objtable, option):
         elif cmd_type == "Register" and "uuid" in option:
             pkey = option["uuid"]
 
-        dialog_data = None
+        dialog_path = None
         if cmd_type in ["Register", "Update"]:
-            dialog_data = option.get('entry_parameter', {}).get('file', {}).get('dialog_file', '')
+            if "dialog_file" not in option.get("entry_parameter", {}).get("parameter", {}):
+                # Excelで更新の場合は処理をスキップ
+                pass
+            else:
+                tmp_dialog_path = os.path.dirname(option.get('entry_parameter', {}).get('file_path', {}).get('dialog_file', ''))
+                if cmd_type == "Update":
+                    tmp_dialog_path = os.path.dirname(option.get('current_parameter', {}).get('file_path', {}).get('dialog_file', ''))
+                dialog_filename = option.get('entry_parameter', {}).get('parameter', {}).get('dialog_file', '')
+                dialog_path = tmp_dialog_path + "/" + dialog_filename
 
         # 廃止/復活時の場合、関連レコードを廃止/復活
         if cmd_type in ["Discard", "Restore"]:
@@ -57,22 +65,16 @@ def external_valid_menu_after(objDBCA, objtable, option):
                 retBool = False
                 msg = msg_tmp if len(msg) <= 0 else '%s\n%s' % (msg, msg_tmp)
 
-        # 登録/更新時の場合、dialogの正常性チェック
-        elif cmd_type in ["Register", "Update"] and dialog_data is not None:
-            dialog_data_binary = base64.b64decode(dialog_data)
+        elif cmd_type in ["Register", "Update"] and dialog_path is not None:
+            # 文字コードをチェック バイナリファイルの場合、encode['encoding']はNone
+            with open(dialog_path, 'rb') as f:  # バイナリファイルとしてファイルをオープン
+                dialog_data_binary = f.read()
             # 文字コードがUTF-8以外もありうるので'ignore'を付ける
             dialog_data_decoded = dialog_data_binary.decode('utf-8', 'ignore')
-            filepath_tmp = "%s/20304_dialog_file_%s.yml" % (get_OSTmpPath(), os.getpid())
-            # /tmpに作成したファイルはゴミ掃除リストに追加
-            addAnsibleCreateFilesPath(filepath_tmp)
-            #  #2079 /storage配下ではないので対象外
-            with open(filepath_tmp, "w") as fd:
-                fd.write(dialog_data_decoded)
 
             # YAML形式であることをチェック
             obj = YamlParse()
-            ret = obj.Parse(filepath_tmp)
-            os.remove(filepath_tmp)
+            ret = obj.Parse(dialog_path)
             if ret is False:
                 retBool = False
                 error_detail = obj.GetLastError()

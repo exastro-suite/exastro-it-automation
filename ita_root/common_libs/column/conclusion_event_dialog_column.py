@@ -14,7 +14,9 @@
 
 import json
 from flask import g
+import traceback
 from common_libs.common import *
+from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format, print_exception_msg
 
 # import column_class
 from .individual_dialog_column_class import IndividualDialogColumn  # noqa: F401
@@ -115,12 +117,12 @@ class ConclusionEventSettingColumn(IndividualDialogColumn):
             if type(json_val) is not list:
                 exp_args = "Not in JSON list format data(%s)" % (str(val))
                 raise Exception(exp_args)
-        except Exception:
+        except Exception as e:
             # エラーでリターンの処理がないのでException
+            print_exception_msg(e)
             status_code = '499-01708'
             msg_args = [str(val)]
-            msg = g.appmsg.get_api_message(status_code, msg_args)
-            raise Exception(status_code, msg)
+            raise AppException(status_code, msg_args)
 
         search_candidates = []
         if isinstance(json_val, list):
@@ -154,13 +156,9 @@ class ConclusionEventSettingColumn(IndividualDialogColumn):
         retBool = True
         val_decode = None
         if valnames:
-            try:
-                val_decode = self.is_json_format(valnames)
-                if val_decode is False:
-                    raise Exception("JSON format is abnormal")
-
-            except Exception as e:
-                # dodo エラーコード見直し
+            val_decode = self.is_json_format(valnames)
+            if val_decode is False:
+                print_exception_msg("JSON format is abnormal")
                 retBool = False
                 status_code = '499-01704'
                 msg_args = []
@@ -228,6 +226,8 @@ class ConclusionEventSettingColumn(IndividualDialogColumn):
             if len(val_decode) == 0:
                 return True, '', None,
         except Exception:
+            t = traceback.format_exc()
+            g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
             retBool = False
             status_code = '499-01704'
             msg_args = []

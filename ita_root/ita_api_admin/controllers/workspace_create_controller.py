@@ -24,15 +24,15 @@ import shutil
 import time
 from pathlib import Path
 from pymongo import ASCENDING
+import traceback
 
 from common_libs.api import api_filter_admin, check_request_body_key
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectOrg, MONGOConnectWs
 from common_libs.common.mongoconnect.const import Const as mongoConst
 from common_libs.common.dbconnect import *  # noqa: F403
-from common_libs.common.util import ky_encrypt, get_timestamp, create_dirs, put_uploadfiles
+from common_libs.common.util import ky_decrypt, ky_encrypt, get_timestamp, create_dirs, put_uploadfiles, arrange_stacktrace_format
 from libs.admin_common import initial_settings_ansible
 from common_libs.common.exception import AppException
-from common_libs.api import app_exception_response, exception_response
 
 
 @api_filter_admin
@@ -60,7 +60,8 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
     ws_connect_info = org_db.get_wsdb_connect_info(workspace_id)
     if ws_connect_info:
         org_db.db_disconnect()
-        return '', "ALREADY EXISTS", "499-00001", 499
+        # Already exists.(target{}: {})
+        return '', g.appmsg.get_api_message("490-02008", ["workspace_id", workspace_id]), "490-02008", 490
 
     inistial_data_ansible_if = org_db.get_inistial_data_ansible_if()
     # get no install driver list
@@ -75,24 +76,13 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
     workspace_dir = strage_path + "/".join([organization_id, workspace_id]) + "/"
     if not os.path.isdir(workspace_dir):
         os.makedirs(workspace_dir)
-        g.applogger.debug("made workspace_dir")
+        g.applogger.info("made workspace_dir")
     else:
         org_db.db_disconnect()
-        return '', "ALREADY EXISTS", "499-00001", 499
+        # Already exists.(target{}: {})
+        return '', g.appmsg.get_api_message("490-02008", ["workspace_dir", workspace_dir]), "490-02008", 490
 
     try:
-        # make storage directory for workspace job
-        create_dir_list = os.path.join(os.environ.get('PYTHONPATH'), "config", "create_dir_list.txt")
-        create_dirs(create_dir_list, workspace_dir)
-        g.applogger.debug("make storage directory for workspace job")
-
-        # set initial material
-        src_dir = os.path.join(os.environ.get('PYTHONPATH'), "files")
-        dest_dir = os.path.join(workspace_dir, "uploadfiles")
-        config_file_path = os.path.join(src_dir, "config.json")
-        put_uploadfiles(config_file_path, src_dir, dest_dir)
-        g.applogger.debug("set initial material")
-
         # make workspace-db connect infomation
         ws_db_name, db_username, db_user_password = org_db.userinfo_generate("ITA_WS")
 
@@ -104,7 +94,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         # create workspace-user and grant user privileges
         org_root_db.user_create(db_username, db_user_password, ws_db_name)
         # print(db_username, db_user_password)
-        g.applogger.debug("created db and db-user")
+        g.applogger.info("created db and db-user")
 
         # OrganizationにてOASEがインストールされている場合のMongo接続情報
         mongo_host = None
@@ -115,26 +105,33 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         if 'oase' not in no_install_driver:
             mongo_host = mongo_host = os.environ.get('MONGO_HOST', '')
             mongo_owner = bool(orgdb_connect_info['MONGO_OWNER'])
-            mongo_connection_string = orgdb_connect_info['MONGO_CONNECTION_STRING']
+            mongo_connection_string = ky_decrypt(orgdb_connect_info['MONGO_CONNECTION_STRING'])
             if not mongo_host and not mongo_connection_string:
                 # OASEが有効かつ、環境変数「MONGO_HOST」と「MONGO_CONNECTION_STRING」両方に値が無い場合は、workspace作成をできないようにする。
                 org_db.db_disconnect()
                 org_root_db.db_disconnect()
-                return "", "The OASE driver cannot be added because the MongoDB host is not set in the environment variables.", "499-00006", 499
+                # The OASE driver cannot be added because the MongoDB host is not set in the environment variables.
+                return '', g.appmsg.get_api_message("490-02015", []), "490-02015", 490
 
             # make workspace-mongo connect infomation
             org_mongo = MONGOConnectOrg(org_db)
             ws_mongo_name, ws_mongo_user, ws_mongo_password = org_mongo.userinfo_generate("ITA_WS")
+            g.applogger.info("mongo-db-name is decided")
 
             # pattern1 pattern3
             if mongo_owner is True:
-                # create workspace-mongodb-user
-                org_mongo.create_user(
-                    ws_mongo_user,
-                    ws_mongo_password,
-                    ws_mongo_name
-                )
-                g.applogger.debug("created mongo-db-user")
+                try:
+                    # create workspace-mongodb-user
+                    org_mongo.create_user(
+                        ws_mongo_user,
+                        ws_mongo_password,
+                        ws_mongo_name
+                    )
+                    g.applogger.info("created mongo-db-user")
+                except Exception as e:
+                    t = traceback.format_exc()
+                    g.applogger.error(arrange_stacktrace_format(t))
+                    raise AppException("490-00002", [e], [])
             # pattern2
             else:
                 ws_mongo_user = None
@@ -147,10 +144,11 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             'DB_USER': db_username,
             'DB_PASSWORD': ky_encrypt(db_user_password),
             'DB_DATABASE': ws_db_name,
-            'MONGO_CONNECTION_STRING': mongo_connection_string,
+            'MONGO_CONNECTION_STRING': ky_encrypt(mongo_connection_string),
             'MONGO_DATABASE': ws_mongo_name,
             'MONGO_USER': ws_mongo_user,
             'MONGO_PASSWORD': ky_encrypt(ws_mongo_password),
+            'NO_INSTALL_DRIVER': no_install_driver_tmp,
             'DISUSE_FLAG': 0,
             'LAST_UPDATE_USER': g.get('USER_ID')
         }
@@ -199,7 +197,6 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         last_update_timestamp = str(get_timestamp())
 
         for sql_files in sql_list:
-
             ddl_file = os.environ.get('PYTHONPATH') + "sql/" + sql_files[0]
             dml_file = os.environ.get('PYTHONPATH') + "sql/" + sql_files[1]
 
@@ -212,12 +209,13 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
                 continue
 
             # create table of workspace-db
+            g.applogger.info("execute " + ddl_file)
             ws_db.sqlfile_execute(ddl_file)
-            g.applogger.debug("executed " + ddl_file)
 
             # insert initial data of workspace-db
             ws_db.db_transaction_start()
             # #2079 /storage配下ではないので対象外
+            g.applogger.info("execute " + dml_file)
             with open(dml_file, "r") as f:
                 sql_list = f.read().split(";\n")
                 for sql in sql_list:
@@ -235,8 +233,34 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
                         # print(prepared_list)
 
                     ws_db.sql_execute(sql, prepared_list)
-            g.applogger.debug("executed " + dml_file)
             ws_db.db_commit()
+
+        # make storage directory for workspace job
+        create_dir_list = os.path.join(os.environ.get('PYTHONPATH'), "config", "create_dir_list.txt")
+        create_dirs(create_dir_list, workspace_dir)
+        g.applogger.info("make storage directory for workspace job")
+
+        # set initial material files
+        src_dir = os.path.join(os.environ.get('PYTHONPATH'), "files")
+        g.applogger.info(f"[Trace] src_dir={src_dir}")
+        if os.path.isdir(src_dir):
+            config_file_list = [f for f in os.listdir(src_dir) if os.path.isfile(os.path.join(src_dir, f))]
+            g.applogger.info(f"[Trace] config_file_list={config_file_list}")
+
+            for config_file_name in config_file_list:
+                if config_file_name != "config.json":
+                    # 対象のconfigファイルがインストール必要なドライバのものか判断
+                    driver_name = config_file_name.replace('_config.json', '')
+                    if driver_name in no_install_driver:
+                        g.applogger.info(f"[Trace] SKIP CONFIG FILE NAME=[{config_file_name}] BECAUSE {driver_name} IS NOT INSTALLED.")
+                        continue
+
+                dest_dir = os.path.join(workspace_dir, "uploadfiles")
+                config_file_path = os.path.join(src_dir, config_file_name)
+                g.applogger.info(f"[Trace] dest_dir={dest_dir}")
+                g.applogger.info(f"[Trace] config_file_path={config_file_path}")
+                put_uploadfiles(config_file_path, src_dir, dest_dir)
+        g.applogger.info("set initial material files")
 
         # 初期データ設定(ansible)
         if (inistial_data_ansible_if is not None) and (len(inistial_data_ansible_if) != 0):
@@ -244,6 +268,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             g.WORKSPACE_ID = workspace_id
             initial_settings_ansible(ws_db, json.loads(inistial_data_ansible_if))
             ws_db.db_commit()
+            g.applogger.info("def'initial_settings_ansible' is executed")
 
         # 同時実行数制御用のVIEW作成
         ws_db.db_transaction_start()
@@ -266,6 +291,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         view_sql += "WHERE DISUSE_FLAG = %s "
         ws_db.sql_execute(view_sql, [organization_id, workspace_id, ws_db_name, 0])
         ws_db.db_commit()
+        g.applogger.info("sql of ansible-execute is executed")
 
         # 権限付与
         view_sql = "GRANT SELECT ,UPDATE ON TABLE `{ws_db_name}`.`V_ANSL_EXEC_STS_INST2` TO '{db_user}'@'%'".format(ws_db_name=ws_db_name, db_user=os.getenv("DB_USER"))
@@ -274,21 +300,27 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         org_root_db.sql_execute(view_sql, [])
         view_sql = "GRANT SELECT ,UPDATE ON TABLE `{ws_db_name}`.`V_ANSR_EXEC_STS_INST2` TO '{db_user}'@'%'".format(ws_db_name=ws_db_name, db_user=os.getenv("DB_USER"))
         org_root_db.sql_execute(view_sql, [])
-
-
-        if 'oase' not in no_install_driver:
-        # OASEのmongo設定（インデックスなど）
-            ws_mongo = MONGOConnectWs()
-            ws_mongo.collection(mongoConst.LABELED_EVENT_COLLECTION).create_index([("labels._exastro_fetched_time", ASCENDING), ("labels._exastro_end_time", ASCENDING), ("_id", ASCENDING)], name="default_sort")
-            # # 元イベントデータの保持期限 90日
-            # ws_mongo.collection(mongoConst.EVENT_COLLECTION).create_index([("exastro_created_at", ASCENDING)], expireAfterSeconds=7776000)
-            # # イベントデータの保持期限 90日
-            # ws_mongo.collection(mongoConst.LABELED_EVENT_COLLECTION).create_index([("exastro_created_at", ASCENDING)], expireAfterSeconds=7776000)
+        g.applogger.info("view of ansible-execute is granted")
 
         # register workspace-db connect infomation
         org_db.db_transaction_start()
         org_db.table_insert("T_COMN_WORKSPACE_DB_INFO", data, "PRIMARY_KEY")
         org_db.db_commit()
+        g.applogger.info("The data of workspace infomation is made")
+
+        if 'oase' not in no_install_driver:
+        # OASEのmongo設定（インデックスなど）
+            ws_mongo = MONGOConnectWs()
+            try:
+                # db.labeled_event_collection.createIndex({"labels._exastro_fetched_time":1,"labels._exastro_end_time":1,"_id":1}, {"name": "default_sort"})
+                ws_mongo.collection(mongoConst.LABELED_EVENT_COLLECTION).create_index([("labels._exastro_fetched_time", ASCENDING), ("labels._exastro_end_time", ASCENDING), ("_id", ASCENDING)], name="default_sort")
+                # # イベントデータの保持期限 90日
+                # ws_mongo.collection(mongoConst.LABELED_EVENT_COLLECTION).create_index([("exastro_created_at", ASCENDING)], expireAfterSeconds=7776000)
+                g.applogger.info("Index of mongo is made")
+            except Exception as e:
+                t = traceback.format_exc()
+                g.applogger.error(arrange_stacktrace_format(t))
+                raise AppException("490-01002", [e], [e])
 
     except Exception as e:
         shutil.rmtree(workspace_dir)
@@ -306,7 +338,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             if mongo_owner is True:
                 org_mongo.drop_user(ws_mongo_user, ws_mongo_name)
 
-        raise Exception(e)
+        raise e
     finally:
         if 'org_root_db' in locals():
             org_root_db.db_disconnect()
@@ -346,7 +378,8 @@ def workspace_delete(organization_id, workspace_id):  # noqa: E501
     connect_info = org_db.get_wsdb_connect_info(workspace_id)
     if connect_info is False:
         org_db.db_disconnect()
-        return '', "ALREADY DELETED", "499-00002", 499
+        # Already deleted.(target{}: {})
+        return '', g.appmsg.get_api_message("490-02009", ["workspace_id", workspace_id]), "490-02009", 490
 
     # get no install driver list
     no_install_driver_tmp = org_db.get_no_install_driver()
@@ -366,6 +399,7 @@ def workspace_delete(organization_id, workspace_id):  # noqa: E501
     org_db.db_transaction_start()
     org_db.table_update("T_COMN_WORKSPACE_DB_INFO", data, "PRIMARY_KEY")
     org_db.db_commit()
+    g.applogger.info("Workspace is disused")
 
     try:
         strage_path = os.environ.get('STORAGEPATH')
@@ -384,12 +418,15 @@ def workspace_delete(organization_id, workspace_id):  # noqa: E501
         org_root_db.database_drop(connect_info['DB_DATABASE'])
         org_root_db.user_drop(connect_info['DB_USER'])
         org_root_db.db_disconnect()
+        g.applogger.info("Workspace DB and DB_USER is cleaned")
 
-        if 'oase' not in no_install_driver:
+        if 'oase' not in no_install_driver and connect_info.get('MONGO_DATABASE'):
             org_mongo = MONGOConnectOrg(org_db)
             org_mongo.drop_database(connect_info['MONGO_DATABASE'])
+            g.applogger.info("Workspace MongoDB is cleaned")
             if bool(org_connect_info['MONGO_OWNER']) is True:
                 org_mongo.drop_user(connect_info['MONGO_USER'], connect_info['MONGO_DATABASE'])
+                g.applogger.info("Workspace MongoDB_USER is cleaned")
 
         # delete storage directory for workspace
         while os.path.isdir(workspace_dir):
@@ -400,25 +437,22 @@ def workspace_delete(organization_id, workspace_id):  # noqa: E501
                 # 削除時にFileNotFoundErrorが出る場合があるので、その場合は再度削除を行う
                 time.sleep(1)
                 continue
+        g.applogger.info("Storage is cleaned")
 
     except AppException as e:
         # スキップファイルが存在する場合は削除する
         if os.path.exists(workspace_dir + '/skip_all_service_for_ws_del'):
             os.remove(workspace_dir + '/skip_all_service_for_ws_del')
-        # 廃止されているとapp_exceptionはログを抑止するので、ここでログだけ出力
-        exception_flg = True
-        exception_log_need = True
-        result_list = app_exception_response(e, exception_log_need)
 
+        exception_flg = True
+        raise AppException(e)
     except Exception as e:
         # スキップファイルが存在する場合は削除する
         if os.path.exists(workspace_dir + '/skip_all_service_for_ws_del'):
             os.remove(workspace_dir + '/skip_all_service_for_ws_del')
-        # 廃止されているとexceptionはログを抑止するので、ここでログだけ出力
-        exception_flg = True
-        exception_log_need = True
-        result_list = exception_response(e, exception_log_need)
 
+        exception_flg = True
+        raise e
     finally:
         if exception_flg is True:
             # 廃止を復活
@@ -429,10 +463,8 @@ def workspace_delete(organization_id, workspace_id):  # noqa: E501
             org_db.db_transaction_start()
             org_db.table_update("T_COMN_WORKSPACE_DB_INFO", data, "PRIMARY_KEY")
             org_db.db_commit()
-            org_db.db_disconnect()
+            g.applogger.info("Workspace is reused")
 
-            return '', result_list[0]['message'], result_list[0]['result'], result_list[1]
-        else:
-            org_db.db_disconnect()
+        org_db.db_disconnect()
 
     return '',

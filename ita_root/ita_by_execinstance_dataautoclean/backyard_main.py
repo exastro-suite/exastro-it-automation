@@ -182,7 +182,7 @@ class MainFunctions():
             if len(MenuTblLinkLists) == 0:
                 # メニュー・テーブル紐付にメニューが未登録です。 (メニュー:{})
                 FREE_LOG = g.appmsg.get_api_message("MSG-100019", [DelList["MENU_NAME"]])
-                g.applogger.debug(FREE_LOG)
+                g.applogger.info(FREE_LOG)
                 self.warning_flag = True
                 continue
 
@@ -196,7 +196,7 @@ class MainFunctions():
             if self.operation_id_column_name not in table_columns[0]:
                 # メニュー・テーブル紐付にメニューが未登録です。 (メニュー:{})
                 FREE_LOG = g.appmsg.get_api_message("MSG-100014", [DelList["MENU_NAME"]])
-                g.applogger.debug(FREE_LOG)
+                g.applogger.info(FREE_LOG)
                 self.warning_flag = True
                 continue
 
@@ -212,7 +212,7 @@ class MainFunctions():
             if len(MenuColLinkLists) == 0:
                 # メニュー・カラム紐付にカラム情報が未登録です。(メニュー:{})
                 FREE_LOG = g.appmsg.get_api_message("MSG-100018", [DelList["MENU_NAME"]])
-                g.applogger.debug(FREE_LOG)
+                g.applogger.info(FREE_LOG)
                 self.warning_flag = True
                 continue
 
@@ -230,7 +230,7 @@ class MainFunctions():
             if MenuTblLinkList['PK_COLUMN_NAME_REST'] not in RestNameConfig:
                 # メニュー・カラム紐付にカラム情報が未登録です。(メニュー:{})
                 FREE_LOG = g.appmsg.get_api_message("MSG-100018", [DelList["MENU_NAME"]])
-                g.applogger.debug(FREE_LOG)
+                g.applogger.info(FREE_LOG)
                 self.warning_flag = True
                 continue
 
@@ -240,7 +240,7 @@ class MainFunctions():
             if self.is_int(tbl_info['LG_DAYS']) is False:
                 # オペレーション削除管理の項番[{}]：論理削除日数[{}]が妥当ではありません。
                 FREE_LOG = g.appmsg.get_api_message("MSG-100012", [DelList["ROW_ID"], DelList["LG_DAYS"]])
-                g.applogger.debug(FREE_LOG)
+                g.applogger.info(FREE_LOG)
                 self.warning_flag = True
                 continue
 
@@ -250,7 +250,7 @@ class MainFunctions():
             if self.is_int(tbl_info['PH_DAYS']) is False:
                 # オペレーション削除管理の項番[{}]：物理削除日数[{}]が妥当ではありません。
                 FREE_LOG = g.appmsg.get_api_message("MSG-100013", [DelList["ROW_ID"], DelList["PH_DAYS"]])
-                g.applogger.debug(FREE_LOG)
+                g.applogger.info(FREE_LOG)
                 self.warning_flag = True
                 continue
 

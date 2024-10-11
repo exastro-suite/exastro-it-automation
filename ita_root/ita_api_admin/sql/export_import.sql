@@ -6,6 +6,7 @@ CREATE TABLE T_MENU_EXPORT_IMPORT
     EXECUTION_TYPE                  VARCHAR(40),                                -- 処理種別
     MODE                            VARCHAR(40),                                -- モード
     ABOLISHED_TYPE                  VARCHAR(40),                                -- 廃止情報
+    JOURNAL_TYPE                    VARCHAR(40),                                -- 履歴情報
     SPECIFIED_TIME                  DATETIME(6)  ,                              -- 指定時刻
     FILE_NAME                       VARCHAR(255),                               -- ファイル名
     EXECUTION_USER                  VARCHAR(255),                               -- 実行ユーザ
@@ -28,6 +29,7 @@ CREATE TABLE T_MENU_EXPORT_IMPORT_JNL
     EXECUTION_TYPE                  VARCHAR(40),                                -- 処理種別
     MODE                            VARCHAR(40),                                -- モード
     ABOLISHED_TYPE                  VARCHAR(40),                                -- 廃止情報
+    JOURNAL_TYPE                    VARCHAR(40),                                -- 履歴情報
     SPECIFIED_TIME                  DATETIME(6)  ,                              -- 指定時刻
     FILE_NAME                       VARCHAR(255),                               -- ファイル名
     EXECUTION_USER                  VARCHAR(255),                               -- 実行ユーザ
@@ -150,6 +152,23 @@ CREATE TABLE T_DP_ABOLISHED_TYPE
     ROW_ID                          VARCHAR(2),                                 -- 主キー
     ABOLISHED_TYPE_NAME_JA          VARCHAR(255),                               -- 形式名(ja)
     ABOLISHED_TYPE_NAME_EN          VARCHAR(255),                               -- 形式名(en)
+    DISP_SEQ                        INT,                                        -- 表示順序
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(ROW_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
+
+-- 履歴情報マスタ
+CREATE TABLE T_DP_JOURNAL_TYPE
+(
+    ROW_ID                          VARCHAR(2),                                 -- 主キー
+    JOURNAL_TYPE_NAME_JA            VARCHAR(255),                               -- 形式名(ja)
+    JOURNAL_TYPE_NAME_EN            VARCHAR(255),                               -- 形式名(en)
     DISP_SEQ                        INT,                                        -- 表示順序
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ

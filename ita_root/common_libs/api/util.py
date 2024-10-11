@@ -14,8 +14,11 @@
 """
 common_libs api common function module
 """
-from flask import g, request
+import os
+from flask import g, request, Response
 import traceback
+import re
+from urllib.parse import quote
 
 from common_libs.common.exception import AppException
 from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format
@@ -60,10 +63,62 @@ def make_response(data=None, msg="", result_code="000-00000", status_code=200, t
 
     log_status = "SUCCESS" if result_code == "000-00000" else "FAILURE"
 
-    g.applogger.debug("[ts={}]response={}".format(api_timestamp, (res_body, status_code)))
-    g.applogger.info("[ts={}][api-end][{}][status_code={}]".format(api_timestamp, log_status, status_code))
+    # ヘルスチェック用のURLの場合はログを出さない
+    ret = re.search("/internal-api/health-check/liveness$|/internal-api/health-check/readiness$", request.url)
+    if ret is None:
+        g.applogger.debug("[ts={}]response={}".format(api_timestamp, (res_body, status_code)))
+        g.applogger.info("[ts={}][api-end][{}][status_code={}]".format(api_timestamp, log_status, status_code))
 
     return res_body, status_code
+
+
+def make_response_file_download(data=None, msg="", result_code="000-00000", status_code=200, ts=None, remove_file=False):
+    """
+    make http response(file download)
+
+    Argument:
+        data: data
+        msg: message
+        result_code: xxx-xxxxx
+        status_code: http status code
+    Returns:
+        (flask)response
+    """
+    if result_code == "000-00000" and not msg:
+        msg = "SUCCESS"
+
+    response_chank_byte = 10000
+
+    if data is None or os.path.isfile(data) is False:
+        resp = Response()
+        resp.content_length = 0
+        resp.content_type = "application/octet-stream"
+    else:
+        def __make_response():
+            with open(data, 'rb') as fp:
+                while True:
+                    buf = fp.read(response_chank_byte)
+                    if len(buf) == 0:
+                        break
+                    yield buf
+
+        resp = Response(__make_response())
+        resp.content_length = os.path.getsize(data)
+        resp.content_type = "application/octet-stream"
+        file_name = quote(os.path.basename(data))
+        resp.headers["Content-Disposition"] = f"attachment; filename={file_name}"
+
+
+        if remove_file:
+            @resp.call_on_close
+            def exec_remove():
+                remove_temporary_file(data)
+
+
+    log_status = "SUCCESS" if result_code == "000-00000" else "FAILURE"
+    g.applogger.info("[ts={}][api-end][{}][status_code={}]".format(api_timestamp, log_status, status_code))
+
+    return resp, status_code
 
 
 def app_exception_response(e, exception_log_need=False):
@@ -142,6 +197,20 @@ def exception_response(e, exception_log_need=False):
     return make_response(None, api_msg, "999-99999", 500)
 
 
+def remove_temporary_file(file_path):
+
+    tmp_path = "/tmp"
+    storage_path = os.environ.get('STORAGEPATH')
+
+    try:
+        if file_path.startswith(tmp_path) or file_path.startswith(storage_path):
+            os.remove(file_path)
+            directory_name = os.path.dirname(file_path)
+            os.rmdir(directory_name)
+    except Exception as e:
+        raise e
+
+
 def api_filter(func):
     '''
     wrap api controller
@@ -168,6 +237,77 @@ def api_filter(func):
             controller_res = func(*args, **kwargs)
 
             return make_response(*controller_res)
+        except AppException as e:
+            # catch - raise AppException("xxx-xxxxx", log_format, msg_format)
+            return app_exception_response(e)
+        except Exception as e:
+            # catch - other all error
+            return exception_response(e)
+
+    return wrapper
+
+
+def api_filter_download_file(func):
+    '''
+    wrap api controller
+
+    Argument:
+        func: controller(def)
+    Returns:
+        controller wrapper
+    '''
+
+    def wrapper(*args, **kwargs):
+        '''
+        controller wrapper
+
+        Argument:
+            *args, **kwargs: controller args
+        Returns:
+            (flask)response
+        '''
+        try:
+            g.applogger.debug("[ts={}] controller start -> {}".format(api_timestamp, kwargs))
+
+            # controller execute and make response
+            controller_res = func(*args, **kwargs)
+
+            return make_response_file_download(*controller_res)
+        except AppException as e:
+            # catch - raise AppException("xxx-xxxxx", log_format, msg_format)
+            return app_exception_response(e)
+        except Exception as e:
+            # catch - other all error
+            return exception_response(e)
+
+    return wrapper
+
+
+def api_filter_download_temporary_file(func):
+    '''
+    wrap api controller
+
+    Argument:
+        func: controller(def)
+    Returns:
+        controller wrapper
+    '''
+    def wrapper(*args, **kwargs):
+        '''
+        controller wrapper
+
+        Argument:
+            *args, **kwargs: controller args
+        Returns:
+            (flask)response
+        '''
+        try:
+            g.applogger.debug("[ts={}] controller start -> {}".format(api_timestamp, kwargs))
+
+            # controller execute and make response
+            controller_res = func(*args, **kwargs)
+
+            return make_response_file_download(*controller_res, remove_file=True)
         except AppException as e:
             # catch - raise AppException("xxx-xxxxx", log_format, msg_format)
             return app_exception_response(e)
@@ -206,9 +346,13 @@ def api_filter_admin(func):
             return make_response(*controller_res)
         except AppException as e:
             # catch - raise AppException("xxx-xxxxx", log_format, msg_format)
+
+            # DBが廃止されているとapp_exceptionはログを抑止するので、ここでログだけ出力
             return app_exception_response(e, True)
         except Exception as e:
             # catch - other all error
+
+            # DBが廃止されているとexceptionはログを抑止するので、ここでログだけ出力
             return exception_response(e, True)
 
     return wrapper
@@ -223,7 +367,7 @@ def check_request_body():
         if request_content_type == "application/json":
             try:
                 request.get_json()
-            except Exception:
+            except Exception as e:
                 raise AppException("400-00002", ["json_format"], ["json_format"])
         elif "application/x-www-form-urlencoded" == request_content_type:
             if request.form:

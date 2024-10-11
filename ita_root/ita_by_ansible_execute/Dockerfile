@@ -27,8 +27,11 @@ ENV STORAGEPATH=/storage/
 ENV CONTAINER_BASE=docker
 ENV DEFAULT_LOCAL_TMP=/tmp
 ENV SERVICE_NAME=ita-by-ansible-execute
+ENV ANSIBLE_AGENT_NON_COMMUNICATION_DETECTION_TIME=600
+ENV CHILD_PROCESS_RETRY_LIMIT=3
 
-RUN dnf install -y \
+RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+    dnf install -y \
     gcc \
     python39 \
     python39-devel \
@@ -39,7 +42,7 @@ RUN dnf install -y \
     unzip \
     openssh-clients \
     git \
-&&  curl -kL https://storage.googleapis.com/kubernetes-release/release/v1.24.3/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
+&&  curl -L https://storage.googleapis.com/kubernetes-release/release/v1.24.3/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
 &&  chmod +x /usr/local/bin/kubectl \
 &&  pip3.9 install poetry==1.6.0 \
 &&  poetry config virtualenvs.create false \
@@ -49,12 +52,16 @@ RUN dnf install -y \
 WORKDIR $APP_PATH
 
 COPY ./ita_root/ita_by_ansible_execute/pyproject.toml ./ita_root/ita_by_ansible_execute/poetry.lock $APP_PATH/
-RUN poetry install --only first_install
-RUN poetry install --without develop_build
+RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+    poetry install --only first_install
+
+RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+    poetry install --without develop_build
 
 COPY ./ita_root/ita_by_ansible_execute/config/centos8.repo /etc/yum.repos.d/centos8.repo
 
-RUN dnf install -y --enablerepo=baseos expect
+RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+    dnf install -y --enablerepo=baseos expect
 
 #
 # Build for development
@@ -65,19 +72,21 @@ ARG USERNAME
 ARG GROUPNAME
 ARG APP_PATH
 
-RUN dnf install -y \
+RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+    dnf install -y \
     sudo \
     vim \
     diffutils \
     bind-utils \
     iputils \
 &&  curl -fsSL https://get.docker.com/builds/Linux/x86_64/docker-17.05.0-ce.tgz | tar -xzC /usr/local/bin --strip=1 docker/docker \
-&&  curl -kL https://github.com/docker/compose/releases/download/v2.5.0/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose \
+&&  curl -L https://github.com/docker/compose/releases/download/v2.5.0/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose \
 &&  chmod +x /usr/local/bin/docker-compose \
 &&  usermod -G wheel $USERNAME \
 &&  echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
-RUN poetry install --with develop_build
+RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+    poetry install --with develop_build
 
 USER $USERNAME
 

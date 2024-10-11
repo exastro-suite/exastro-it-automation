@@ -16,6 +16,10 @@ from dictknife import deepmerge
 import re
 import json
 import uuid
+import traceback
+
+from common_libs.common.exception import AppException
+from common_libs.common.util import print_exception_msg, get_iso_datetime, arrange_stacktrace_format
 
 
 def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_member_vars_list):  # noqa: C901
@@ -54,7 +58,7 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
         else:
             # メンバー変数レコードの作成において、Module-変数紐付のレコード取得に失敗しました。
             msg = g.appmsg.get_log_message("BKY-50108", [])
-            raise Exception(msg)
+            raise AppException(msg)
 
         g.applogger.debug(g.appmsg.get_log_message("BKY-50006"))
         # データの整形(配列の作成ローカル番号)
@@ -77,7 +81,7 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
                         if not res:
                             # 変数ネスト管理へのレコード登録に失敗
                             msg = g.appmsg.get_log_message("BKY-50109", [])
-                            raise Exception(msg)
+                            raise AppException(msg)
                     else:
                         # 登録済みの場合、登録状況によって処理を分岐
                         # 登録済みの最大繰り返し数と取得した要素数に差があるかつ最終更新者がシステムの場合、最大繰り返し数を更新。
@@ -86,7 +90,7 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
                             if not res:
                                 # 変数ネスト管理のレコード更新に失敗
                                 msg = g.appmsg.get_log_message("BKY-50110", [])
-                                raise Exception(msg)
+                                raise AppException(msg)
 
                         # 最終更新者がバックヤードユーザかつ廃止状態の場合、最大繰り返し数を更新するとともに活性化(復活)。
                         elif str(registered_max_col_data.get('DISUSE_FLAG')) == "1" and registered_max_col_data.get('is_system') is True:
@@ -94,7 +98,7 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
                             if not res:
                                 # 変数ネスト管理のレコード更新に失敗
                                 msg = g.appmsg.get_log_message("BKY-50110", [])
-                                raise Exception(msg)
+                                raise AppException(msg)
 
                         # 最大更新者がバックヤードユーザ以外の場合、temp_member_data_listのデータを書き換える
                         elif registered_max_col_data.get('is_system') is False:
@@ -109,7 +113,7 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
                         if not res:
                             # 変数ネスト管理のレコード廃止に失敗
                             msg = g.appmsg.get_log_message("BKY-50111", [])
-                            raise Exception(msg)
+                            raise AppException(msg)
 
         # 再度一時格納データの変数をセット
         # temp_member_data_list = []
@@ -165,7 +169,7 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
             if not ret_data:
                 # メンバー変数管理へのレコード登録に失敗
                 msg = g.appmsg.get_log_message("BKY-50112", [])
-                raise Exception(msg)
+                raise AppException(msg)
 
             # typeが変数ネスト管理の対象である場合
             if int(r_member_data.get('MAX_COL_SEQ')) > 0:
@@ -180,7 +184,7 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
                     if not res:
                         # 変数ネスト管理のレコード更新に失敗
                         msg = g.appmsg.get_log_message("BKY-50110", [])
-                        raise Exception(msg)
+                        raise AppException(msg)
 
                 # 変数ネスト管理のレコードが廃止済みかつ最終更新者がバックヤードシステムの場合は、tf_max_col_seqで変数ネスト管理の値を更新(復活)
                 elif registed_max_member_col_data.get('is_regist') is True and str(registed_max_member_col_data.get('DISUSE_FLAG')) == "1" and registed_max_member_col_data.get('is_system') is True:  # noqa: E501
@@ -188,7 +192,7 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
                     if not res:
                         # 変数ネスト管理のレコード更新に失敗
                         msg = g.appmsg.get_log_message("BKY-50110", [])
-                        raise Exception(msg)
+                        raise AppException(msg)
 
                 # 変数ネスト管理のレコードが廃止済みかつ最終更新者がユーザのの場合は、registed_max_col_seqで変数ネスト管理の値を更新(復活)
                 elif registed_max_member_col_data.get('is_regist') is True and str(registed_max_member_col_data.get('DISUSE_FLAG')) == "1" and registed_max_member_col_data.get('is_system') is False:  # noqa: E501
@@ -196,7 +200,7 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
                     if not res:
                         # 変数ネスト管理のレコード更新に失敗
                         msg = g.appmsg.get_log_message("BKY-50110", [])
-                        raise Exception(msg)
+                        raise AppException(msg)
 
                 # 未登録の場合、最大繰り返し数の登録
                 if registed_max_member_col_data.get('is_regist') is False:
@@ -204,7 +208,7 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
                     if not res:
                         # 変数ネスト管理へのレコード登録に失敗
                         msg = g.appmsg.get_log_message("BKY-50109", [])
-                        raise Exception(msg)
+                        raise AppException(msg)
 
         # 更新対象をループ
         g.applogger.debug(g.appmsg.get_log_message("BKY-50008"))
@@ -216,7 +220,7 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
             if not ret_data:
                 # メンバー変数管理のレコード更新に失敗
                 msg = g.appmsg.get_log_message("BKY-50113", [])
-                raise Exception(msg)
+                raise AppException(msg)
 
             # typeが変数ネスト管理の対象である場合
             if int(r_member_data.get('MAX_COL_SEQ')) > 0:
@@ -232,7 +236,7 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
                     if not res:
                         # 変数ネスト管理のレコード更新に失敗
                         msg = g.appmsg.get_log_message("BKY-50110", [])
-                        raise Exception(msg)
+                        raise AppException(msg)
 
         # 復活対象をループ
         g.applogger.debug(g.appmsg.get_log_message("BKY-50009"))
@@ -244,7 +248,7 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
             if not ret_data:
                 # メンバー変数管理のレコード更新に失敗
                 msg = g.appmsg.get_log_message("BKY-50113", [])
-                raise Exception(msg)
+                raise AppException(msg)
 
             # typeが変数ネスト管理の対象である場合
             if int(r_member_data.get('MAX_COL_SEQ')) > 0:
@@ -260,14 +264,14 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
                     if not res:
                         # 変数ネスト管理のレコード更新に失敗
                         msg = g.appmsg.get_log_message("BKY-50110", [])
-                        raise Exception(msg)
+                        raise AppException(msg)
                 else:
                     # is_registがTrueでないなら登録を実行する
                     res = regist_max_col(objdbca, TFConst, r_member_data.get('PARENT_VARS_ID'), r_member_data.get('CHILD_MEMBER_VARS_ID'), r_member_data.get('MAX_COL_SEQ'))  # noqa: E501
                     if not res:
                         # 変数ネスト管理へのレコード登録に失敗
                         msg = g.appmsg.get_log_message("BKY-50109", [])
-                        raise Exception(msg)
+                        raise AppException(msg)
 
         # スキップ対象をループ。スキップは変数ネスト管理の更新のみ。
         g.applogger.debug(g.appmsg.get_log_message("BKY-50010"))
@@ -285,7 +289,7 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
                     if not res:
                         # 変数ネスト管理のレコード更新に失敗
                         msg = g.appmsg.get_log_message("BKY-50110", [])
-                        raise Exception(msg)
+                        raise AppException(msg)
 
                 # 変数ネスト管理のレコードが廃止済みかつ最終更新者がバックヤードシステムの場合は、tf_max_col_seqで変数ネスト管理の値を更新(復活)
                 elif registed_max_member_col_data.get('is_regist') is True and str(registed_max_member_col_data.get('DISUSE_FLAG')) == "1" and registed_max_member_col_data.get('is_system') is True:  # noqa: E501
@@ -293,7 +297,7 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
                     if not res:
                         # 変数ネスト管理のレコード更新に失敗
                         msg = g.appmsg.get_log_message("BKY-50110", [])
-                        raise Exception(msg)
+                        raise AppException(msg)
 
                 # 変数ネスト管理のレコードが廃止済みかつ最終更新者がユーザのの場合は、registed_max_col_seqで変数ネスト管理の値を更新(復活)
                 elif registed_max_member_col_data.get('is_regist') is True and str(registed_max_member_col_data.get('DISUSE_FLAG')) == "1" and registed_max_member_col_data.get('is_system') is False:  # noqa: E501
@@ -301,10 +305,15 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
                     if not res:
                         # 変数ネスト管理のレコード更新に失敗
                         msg = g.appmsg.get_log_message("BKY-50110", [])
-                        raise Exception(msg)
+                        raise AppException(msg)
 
-    except Exception as e:
-        msg = e
+    except AppException as e:
+        msg, arg1, arg2 = e.args
+        print_exception_msg(msg)
+        result = False
+    except Exception:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
         result = False
 
     return result, msg, exist_member_vars_list
@@ -386,8 +395,8 @@ def set_movement_var_member_link(objdbca, TFConst):
                         ret_data = objdbca.table_update(TFConst.T_MOVEMENT_VAR_MEMBER, data_list, primary_key_name)
                         if not ret_data:
                             # Movement-メンバー変数紐付のレコード更新に失敗
-                            msg = g.appmsg.get_log_message("6", [])
-                            raise Exception(msg)
+                            msg = g.appmsg.get_log_message("BKY-50116", [])
+                            raise AppException(msg)
 
                         # 対象を廃止しないためにactive_record_listに追加
                         active_record_list.append(exist_record_id)
@@ -409,7 +418,7 @@ def set_movement_var_member_link(objdbca, TFConst):
                     if not ret_data:
                         # Movement-メンバー変数紐付へのレコード登録に失敗
                         msg = g.appmsg.get_log_message("BKY-50115", [])
-                        raise Exception(msg)
+                        raise AppException(msg)
 
         # Module-変数紐付テーブルから不要レコードを廃止する)
         g.applogger.debug(g.appmsg.get_log_message("BKY-50015"))
@@ -428,17 +437,24 @@ def set_movement_var_member_link(objdbca, TFConst):
                 if not ret_data:
                     # Movement-メンバー変数紐付の不要レコード廃止に失敗
                     msg = g.appmsg.get_log_message("BKY-50117", [])
-                    raise Exception(msg)
+                    raise AppException(msg)
 
         # トランザクション終了(正常)
         objdbca.db_transaction_end(True)
 
-    except Exception as e:
-        msg = e
+    except AppException as e:
+        msg, arg1, arg2 = e.args
+        print_exception_msg(msg)
         result = False
 
         # トランザクション終了(異常)
         objdbca.db_transaction_end(False)
+
+    except Exception as e:
+        # トランザクション終了(異常)
+        objdbca.db_transaction_end(False)
+
+        raise e
 
     return result, msg
 
@@ -485,7 +501,7 @@ def discard_member_vars(objdbca, TFConst, exist_member_vars_list):
                 if not ret_data:
                     # メンバー変数管理の不要レコードの廃止に失敗
                     msg = g.appmsg.get_log_message("BKY-50114", [])
-                    raise Exception(msg)
+                    raise AppException(msg)
 
             # 変数ネスト管理テーブルから廃止対象を検索し、廃止する。
             g.applogger.debug(g.appmsg.get_log_message("BKY-50013"))
@@ -503,7 +519,7 @@ def discard_member_vars(objdbca, TFConst, exist_member_vars_list):
                 if not ret_data:
                     # 変数ネスト管理の不要レコードの廃止に失敗
                     msg = g.appmsg.get_log_message("BKY-50111", [])
-                    raise Exception(msg)
+                    raise AppException(msg)
 
         # 不要なメンバー変数レコード削除処理スタート
         # メンバー変数管理でアクティブなレコードをすべて取得
@@ -530,7 +546,7 @@ def discard_member_vars(objdbca, TFConst, exist_member_vars_list):
                 if not ret_data:
                     # メンバー変数管理の不要レコードの廃止に失敗
                     msg = g.appmsg.get_log_message("BKY-50114", [])
-                    raise Exception(msg)
+                    raise AppException(msg)
 
                 # 変数ネスト管理に廃止した対象のIDを持つレコードがあれば、こちらも廃止する
                 g.applogger.debug(g.appmsg.get_log_message("BKY-50013"))
@@ -547,10 +563,11 @@ def discard_member_vars(objdbca, TFConst, exist_member_vars_list):
                     if not ret_data:
                         # 変数ネスト管理の不要レコードの廃止に失敗
                         msg = g.appmsg.get_log_message("BKY-50111", [])
-                        raise Exception(msg)
+                        raise AppException(msg)
 
-    except Exception as e:
-        msg = e
+    except AppException as e:
+        msg, arg1, arg2 = e.args
+        print_exception_msg(msg)
         result = False
 
     return result, msg
@@ -1586,7 +1603,9 @@ def generate_member_vars_type_data(objdbca, TFConst, member_vars_data, trg_max_c
         # 仮配列と返却用配列をマージ
         try:
             return_data = deepmerge(temp_dict, member_vars_data)
-        except Exception:
+        except Exception as e:
+            print_exception_msg(e)
+            g.applogger.error("temp_dict:{}, member_vars_data:{}".format(temp_dict, member_vars_data))
             return_data = temp_dict
 
     return return_data

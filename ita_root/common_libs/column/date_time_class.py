@@ -17,6 +17,7 @@ import datetime
 from .column_class import Column
 from flask import g
 from common_libs.common.exception import AppException
+from common_libs.common.util import print_exception_msg
 import json
 
 
@@ -128,10 +129,11 @@ class DateTimeColumn(Column):
             RETRUN:
                 retBool, msg, val
         """
+
         retBool = True
         msg = ''
 
-        if val is not None and len(str(val)) > 0:
+        if val is not None and type(val) is str and len(val) > 0:
             val = val[0:19]
 
         return retBool, msg, val

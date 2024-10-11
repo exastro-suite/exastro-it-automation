@@ -48,10 +48,17 @@ def external_valid_menu_after(objDBCA, objtable, option):
         elif cmd_type == "Register" and "uuid" in option:
             pkey = option["uuid"]
 
-        playbook_data = None
+        playbook_path = None
         if cmd_type in ["Register", "Update"]:
-            playbook_data = option.get('entry_parameter', {}).get('file', {}).get('playbook_file', '')
-
+            if "playbook_file" not in option.get("entry_parameter", {}).get("parameter", {}):
+                # Excelで更新の場合は処理をスキップ
+                pass
+            else:
+                tmp_playbook_path = os.path.dirname(option.get('entry_parameter', {}).get('file_path', {}).get('playbook_file', ''))
+                if cmd_type == "Update":
+                    tmp_playbook_path = os.path.dirname(option.get('current_parameter', {}).get('file_path', {}).get('playbook_file', ''))
+                playbook_filename = option.get('entry_parameter', {}).get('parameter', {}).get('playbook_file', '')
+                playbook_path = tmp_playbook_path + "/" + playbook_filename
         # 廃止/復活時の場合、関連レコードを廃止/復活
         if cmd_type in ["Discard", "Restore"]:
             ret, msg_tmp = CommnVarsUsedListDisuseSet(objDBCA, option, pkey, '1')
@@ -60,22 +67,17 @@ def external_valid_menu_after(objDBCA, objtable, option):
                 msg = msg_tmp if len(msg) <= 0 else '%s\n%s' % (msg, msg_tmp)
 
         # 登録/更新時の場合、Playbookの正常性チェック
-        elif cmd_type in ["Register", "Update"] and playbook_data is not None:
-            playbook_data_binary = base64.b64decode(playbook_data)
+        elif cmd_type in ["Register", "Update"] and playbook_path is not None:
+            # 文字コードをチェック バイナリファイルの場合、encode['encoding']はNone
+            with open(playbook_path, 'rb') as f:  # バイナリファイルとしてファイルをオープン
+                playbook_data_binary = f.read()
             # 文字コードがUTF-8以外もありうるので'ignore'を付ける
             playbook_data_decoded = playbook_data_binary.decode('utf-8', 'ignore')
-            filepath_tmp = "%s/20202_playbook_file_%s.yml" % (get_OSTmpPath(), os.getpid())
-            # /tmpに作成したファイルはゴミ掃除リストに追加
-            addAnsibleCreateFilesPath(filepath_tmp)
-            # #2079 /storage配下ではないので対象外
-            with open(filepath_tmp, "w") as fd:
-                fd.write(playbook_data_decoded)
 
             # YAML形式であることをチェック
             obj = YamlParse()
-            ret = obj.Parse(filepath_tmp)
+            ret = obj.Parse(playbook_path)
 
-            os.remove(filepath_tmp)
             if ret is False:
                 retBool = False
                 error_detail = obj.GetLastError()

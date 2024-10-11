@@ -96,7 +96,7 @@ def extract_variable_for_execute(mov_vars_dict, tpl_vars_dict, device_vars_dict,
                 mov_vars_dict[movement_id] |= tpl_vars_dict[tpl_var_name]
             else:
                 debug_msg = g.appmsg.get_log_message("MSG-10531", [tpl_var_name])
-                g.applogger.debug(debug_msg)
+                g.applogger.info(debug_msg)
 
     for movement_id, ope_host_dict in host_list.items():
         for _, system_dict in ope_host_dict.items():

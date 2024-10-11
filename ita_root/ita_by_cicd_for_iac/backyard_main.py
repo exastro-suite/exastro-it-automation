@@ -39,6 +39,8 @@ from common_libs.terraform_driver.common.Execute import insert_execution_list as
 from common_libs.cicd.classes.cicd_definition import TD_SYNC_STATUS_NAME_DEFINE, TD_B_CICD_MATERIAL_FILE_TYPE_NAME, TD_B_CICD_MATERIAL_TYPE_NAME, TD_C_PATTERN_PER_ORCH, TD_B_CICD_GIT_PROTOCOL_TYPE_NAME, TD_B_CICD_GIT_REPOSITORY_TYPE_NAME, TD_B_CICD_MATERIAL_LINK_LIST
 from common_libs.cicd.functions.local_functions import MatlLinkColumnValidator2, MatlLinkColumnValidator3, MatlLinkColumnValidator5
 from common_libs.common import storage_access
+import traceback
+from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format
 
 
 ################################################################
@@ -93,11 +95,13 @@ class CICDMakeParamBase():
         data['last_update_date_time'] = kwargs['last_update_date_time'] if 'last_update_date_time' in kwargs else ''
         data['last_updated_user'] = g.USER_ID
 
-    def diff_file(self, filedata, cur_filedata, *args, **kwargs):
-        
+    def diff_file(self, tgt_data, cur_filedata, *args, **kwargs):
         # /storage配下のファイルアクセスを/tmp経由で行うモジュール
-        file_read = storage_access.storage_read()
-        file_read_bytes = storage_access.storage_read_bytes()
+        file_read1 = storage_access.storage_read()
+        file_read2 = storage_access.storage_read()
+
+        file_read_bytes1 = storage_access.storage_read_bytes()
+        file_read_bytes2 = storage_access.storage_read_bytes()
 
         if cur_filedata is None:
             func = None
@@ -111,30 +115,35 @@ class CICDMakeParamBase():
             if not func and not subpath:
                 return True
 
-            filepath = (func() if func else '') + subpath
-            if os.path.exists(filepath) is False:
+            cur_filepath = (func() if func else '') + subpath
+            if os.path.exists(cur_filepath) is False:
                 return True
 
+            tgt_filepath = tgt_data["path"]
             o_mode = "r"
             if 'o_mode' in kwargs:
                 o_mode = kwargs['o_mode']
 
             cur_filedata = ""
+            file_read1.open(tgt_filepath)
+            file_read2.open(cur_filepath)
             if o_mode == "r":
-                file_read.open(filepath)
-                cur_filedata = file_read.read()
-                file_read.close()
+                chunk_size = 10000
+                while True:
+                    tgt_chunk = file_read1.chunk_read(chunk_size)
+                    cur_chunk = file_read2.chunk_read(chunk_size)
+                    if tgt_chunk != cur_chunk:
+                        return True
+                    if not tgt_chunk:
+                        return False
             else:
-                cur_filedata = file_read_bytes.read_bytes(filepath)
+                tgt_filedata = file_read_bytes1.read_bytes(tgt_filepath)
+                cur_filedata = file_read_bytes2.read_bytes(cur_filepath)
+                if tgt_filedata == cur_filedata:
+                    return False
 
-            if isinstance(cur_filedata, str) is True:
-                cur_filedata = cur_filedata.encode()
-
-            cur_filedata = base64.b64encode(cur_filedata).decode()
-
-        if filedata == cur_filedata:
-            return False
-
+            file_read1.close()
+            file_read2.close()
         return True
 
     def get_record(self, DBobj, **kwargs):
@@ -179,7 +188,7 @@ class CICDMakeParamLegacy(CICDMakeParamBase):
 
         return param
 
-    def make_rest_param(self, editType, linkname, filename, filedata, **kwargs):
+    def make_rest_param(self, editType, linkname, filename, **kwargs):
 
         data = {}
         data['item_no'] = kwargs['PLAYBOOK_MATTER_ID'] if editType != load_table.CMD_REGISTER else ''
@@ -192,8 +201,6 @@ class CICDMakeParamLegacy(CICDMakeParamBase):
 
         param = {}
         param['type'] = editType
-        param['file'] = {}
-        param['file']['playbook_file'] = filedata
         param['parameter'] = data
 
         return param
@@ -224,7 +231,7 @@ class CICDMakeParamPioneer(CICDMakeParamBase):
 
         return param
 
-    def make_rest_param(self, editType, linkname, filename, filedata, **kwargs):
+    def make_rest_param(self, editType, linkname, filename, **kwargs):
 
         data = {}
         data['item_no'] = kwargs['DIALOG_MATTER_ID'] if editType != load_table.CMD_REGISTER else ''
@@ -238,8 +245,6 @@ class CICDMakeParamPioneer(CICDMakeParamBase):
 
         param = {}
         param['type'] = editType
-        param['file'] = {}
-        param['file']['dialog_file'] = filedata
         param['parameter'] = data
 
         return param
@@ -269,7 +274,7 @@ class CICDMakeParamRole(CICDMakeParamBase):
 
         return param
 
-    def make_rest_param(self, editType, linkname, filename, filedata, **kwargs):
+    def make_rest_param(self, editType, linkname, filename, **kwargs):
 
         data = {}
         data['item_no'] = kwargs['ROLE_PACKAGE_ID'] if editType != load_table.CMD_REGISTER else ''
@@ -283,8 +288,6 @@ class CICDMakeParamRole(CICDMakeParamBase):
 
         param = {}
         param['type'] = editType
-        param['file'] = {}
-        param['file']['zip_format_role_package_file'] = filedata
         param['parameter'] = data
 
         return param
@@ -314,7 +317,7 @@ class CICDMakeParamContent(CICDMakeParamBase):
 
         return param
 
-    def make_rest_param(self, editType, linkname, filename, filedata, **kwargs):
+    def make_rest_param(self, editType, linkname, filename, **kwargs):
 
         data = {}
         data['file_id'] = kwargs['CONTENTS_FILE_ID'] if editType != load_table.CMD_REGISTER else ''
@@ -327,8 +330,6 @@ class CICDMakeParamContent(CICDMakeParamBase):
 
         param = {}
         param['type'] = editType
-        param['file'] = {}
-        param['file']['files'] = filedata
         param['parameter'] = data
 
         return param
@@ -361,7 +362,7 @@ class CICDMakeParamTemplate(CICDMakeParamBase):
 
         return param
 
-    def make_rest_param(self, editType, linkname, filename, filedata, **kwargs):
+    def make_rest_param(self, editType, linkname, filename, **kwargs):
 
         data = {}
         data['template_id'] = kwargs['ANS_TEMPLATE_ID'] if editType != load_table.CMD_REGISTER else ''
@@ -375,8 +376,6 @@ class CICDMakeParamTemplate(CICDMakeParamBase):
 
         param = {}
         param['type'] = editType
-        param['file'] = {}
-        param['file']['template_files'] = filedata
         param['parameter'] = data
 
         return param
@@ -406,7 +405,7 @@ class CICDMakeParamModule(CICDMakeParamBase):
 
         return param
 
-    def make_rest_param(self, editType, linkname, filename, filedata, **kwargs):
+    def make_rest_param(self, editType, linkname, filename, **kwargs):
 
         data = {}
         data['item_no'] = kwargs['MODULE_MATTER_ID'] if editType != load_table.CMD_REGISTER else ''
@@ -419,8 +418,6 @@ class CICDMakeParamModule(CICDMakeParamBase):
 
         param = {}
         param['type'] = editType
-        param['file'] = {}
-        param['file']['module_file'] = filedata
         param['parameter'] = data
 
         return param
@@ -446,7 +443,7 @@ class CICDMakeParamPolicy(CICDMakeParamBase):
 
         return param
 
-    def make_rest_param(self, editType, linkname, filename, filedata, **kwargs):
+    def make_rest_param(self, editType, linkname, filename, **kwargs):
 
         data = {}
         data['item_no'] = kwargs['POLICY_ID'] if editType != load_table.CMD_REGISTER else ''
@@ -459,8 +456,6 @@ class CICDMakeParamPolicy(CICDMakeParamBase):
 
         param = {}
         param['type'] = editType
-        param['file'] = {}
-        param['file']['policy_file'] = filedata
         param['parameter'] = data
 
         return param
@@ -486,7 +481,7 @@ class CICDMakeParamModuleCLI(CICDMakeParamBase):
 
         return param
 
-    def make_rest_param(self, editType, linkname, filename, filedata, **kwargs):
+    def make_rest_param(self, editType, linkname, filename, **kwargs):
 
         data = {}
         data['item_no'] = kwargs['MODULE_MATTER_ID'] if editType != load_table.CMD_REGISTER else ''
@@ -499,8 +494,6 @@ class CICDMakeParamModuleCLI(CICDMakeParamBase):
 
         param = {}
         param['type'] = editType
-        param['file'] = {}
-        param['file']['module_file'] = filedata
         param['parameter'] = data
 
         return param
@@ -547,8 +540,8 @@ class ControlGit():
 
         try:
             return int(d[k])
-
-        except Exception:
+        except Exception as e:
+            # 未設定の場合に初期値を設定しているので例外メッセージを出力する必要なし
             return default_val
 
     def SetGitCommandLastErrorMsg(self, errorDetail):
@@ -1062,14 +1055,6 @@ class CICD_GrandChildWorkflow():
         zipFileNameBase = os.path.basename(inRolesDir)
         zipFileName = "%s.zip" % (zipFileNameBase)
 
-        """
-        try:
-            shutil.make_archive("%s/%s" % (outRolesDir, zipFileNameBase), 'zip', inRolesDir)
-
-        except Exception as e:
-            return str(e), outRolesDir, zipFileName
-        """
-
         cmd = "cd %s && zip -r %s/%s *" % (inRolesDir, outRolesDir, zipFileName)
         ret = subprocess.run(cmd, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         if ret.returncode != 0:
@@ -1166,7 +1151,7 @@ class CICD_GrandChildWorkflow():
 
         return True, tgtMatlLinkRow
 
-    def materialsRestAccess(self, row, tgtFilePath, base64file, NoUpdateFlg):
+    def materialsRestAccess(self, row, tgtFilePath, tgt_o_mode, NoUpdateFlg):
 
         NoUpdateFlg = False
         materialType = row['MATL_TYPE_ROW_ID']
@@ -1179,35 +1164,43 @@ class CICD_GrandChildWorkflow():
         if materialType == TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_LEGACY:
             filter_dict = {'PLAYBOOK_MATTER_NAME': linkname}
             obj_make_param = CICDMakeParamLegacy('T_ANSL_MATL_COLL', 'PLAYBOOK_MATTER_ID', 'PLAYBOOK_MATTER_FILE', 'playbook_files')
+            file_paths = {"playbook_file": tgtFilePath}
 
         elif materialType == TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_PIONEER:
             filter_dict = {'DIALOG_TYPE_ID': row['M_DIALOG_TYPE_ID'], 'OS_TYPE_ID': row['M_OS_TYPE_ID']}
             linkname = {'DIALOG_TYPE_ID': row['M_DIALOG_TYPE_NAME'], 'OS_TYPE_ID': row['M_OS_TYPE_NAME']}
             obj_make_param = CICDMakeParamPioneer('T_ANSP_MATL_COLL', 'DIALOG_MATTER_ID', 'DIALOG_MATTER_FILE', 'dialog_files')
+            file_paths = {"dialog_files": tgtFilePath}
 
         elif materialType == TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_ROLE:
             filter_dict = {'ROLE_PACKAGE_NAME': linkname}
             obj_make_param = CICDMakeParamRole('T_ANSR_MATL_COLL', 'ROLE_PACKAGE_ID', 'ROLE_PACKAGE_FILE', 'role_package_list')
+            file_paths = {"role_package_list": tgtFilePath}
 
         elif materialType == TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_CONTENT:
             filter_dict = {'CONTENTS_FILE_VARS_NAME': linkname}
             obj_make_param = CICDMakeParamContent('T_ANSC_CONTENTS_FILE', 'CONTENTS_FILE_ID', 'CONTENTS_FILE', 'file_list')
+            file_paths = {"file_list": tgtFilePath}
 
         elif materialType == TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_TEMPLATE:
             filter_dict = {'ANS_TEMPLATE_VARS_NAME': linkname}
             obj_make_param = CICDMakeParamTemplate('T_ANSC_TEMPLATE_FILE', 'ANS_TEMPLATE_ID', 'ANS_TEMPLATE_FILE', 'template_list')
+            file_paths = {"template_list": tgtFilePath}
 
         elif materialType == TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_MODULE:
             filter_dict = {'MODULE_MATTER_NAME': linkname}
             obj_make_param = CICDMakeParamModule('T_TERE_MODULE', 'MODULE_MATTER_ID', 'MODULE_MATTER_FILE', 'module_files_terraform_cloud_ep')
+            file_paths = {"module_files_terraform_cloud_ep": tgtFilePath}
 
         elif materialType == TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_POLICY:
             filter_dict = {'POLICY_NAME': linkname}
             obj_make_param = CICDMakeParamPolicy('T_TERE_POLICY', 'POLICY_ID', 'POLICY_MATTER_FILE', 'policy_list_terraform_cloud_ep')
+            file_paths = {"policy_list_terraform_cloud_ep": tgtFilePath}
 
         elif materialType == TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_MODULE_CLI:
             filter_dict = {'MODULE_MATTER_NAME': linkname}
             obj_make_param = CICDMakeParamModuleCLI('T_TERC_MODULE', 'MODULE_MATTER_ID', 'MODULE_MATTER_FILE', 'module_files_terraform_cli')
+            file_paths = {"module_files_terraform_cli": tgtFilePath}
 
         if obj_make_param is None:
             return True, True
@@ -1233,9 +1226,13 @@ class CICD_GrandChildWorkflow():
                 targetNum = len(rset) - 1
 
             rset = rset[targetNum]
+            tgt_data = {
+                "path": tgtFilePath,
+                "o_mode": tgt_o_mode
+            }
 
             # 素材ファイルに差分がある場合は「更新」
-            diff_flg = obj_make_param.diff_file(rset[obj_make_param.primary_key], rset[obj_make_param.file_col_name], base64file)
+            diff_flg = obj_make_param.diff_file(rset[obj_make_param.primary_key], rset[obj_make_param.file_col_name], tgt_data)
             if diff_flg is True:
                 editType_list.append(load_table.CMD_UPDATE)
 
@@ -1258,9 +1255,9 @@ class CICD_GrandChildWorkflow():
         # 素材ファイルのアップ、および、レコードの操作
         for editType in editType_list:
             uuid = rset[obj_make_param.primary_key] if obj_make_param.primary_key in rset else ''
-            req_param = obj_make_param.make_rest_param(editType, linkname, filename, base64file, **rset)
+            req_param = obj_make_param.make_rest_param(editType, linkname, filename, **rset)
             objmenu = load_table.loadTable(self.DBobj, obj_make_param.menu_name)
-            result = objmenu.exec_maintenance(req_param, uuid, editType, pk_use_flg=False, auth_check=False)
+            result = objmenu.exec_maintenance(req_param, uuid, editType, pk_use_flg=False, auth_check=False, record_file_paths=file_paths)
             if result[0] is False:
                 return result, NoUpdateFlg
 
@@ -1324,7 +1321,7 @@ class CICD_GrandChildWorkflow():
         return True, result['execution_no']
 
     def MailLinkExecute(self):
-        
+
         # /storage配下のファイルアクセスを/tmp経由で行うモジュール
         file_read = storage_access.storage_read()
         file_read_bytes = storage_access.storage_read_bytes()
@@ -1480,14 +1477,9 @@ class CICD_GrandChildWorkflow():
         if isinstance(tgtFileData, str) is True:
             tgtFileData = tgtFileData.encode()
 
-        tgtFileBase64enc = base64.b64encode(tgtFileData).decode()
-
-        if outRolesDir:
-            subprocess.run(["/bin/rm", "-rf", outRolesDir], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-
         # 資材更新
         NoUpdateFlg = True
-        ret, NoUpdateFlg = self.materialsRestAccess(row, tgtFileName, tgtFileBase64enc, NoUpdateFlg)
+        ret, NoUpdateFlg = self.materialsRestAccess(row, tgtFileName, o_mode, NoUpdateFlg)
         if ret is True:
             if NoUpdateFlg is True:
                 if row['SYNC_STATUS_ROW_ID'] == TD_SYNC_STATUS_NAME_DEFINE.STS_NORMAL:
@@ -2001,7 +1993,7 @@ class CICD_ChildWorkflow():
         return True, MatlListRecodes
 
     def MatlListDisuseUpdate(self, row, Disuse):
-
+        where_disuse_flag = '1' if Disuse == '0' else '0'
         table_name = "T_CICD_MATL_LIST"
         cols = self.DBobj.table_columns_get(table_name)
         cols = (',').join(cols[0])
@@ -2009,8 +2001,8 @@ class CICD_ChildWorkflow():
             "SELECT %s "
             "FROM %s "
             "WHERE MATL_ROW_ID=%%s "
-            "AND DISUSE_FLAG='0' "
-        ) % (cols, table_name)
+            "AND DISUSE_FLAG='%s' "
+        ) % (cols, table_name, where_disuse_flag)
         arrayBind = [row['MATL_ROW_ID'], ]
 
         objQuery = self.DBobj.sql_execute(sql, arrayBind)
@@ -2544,11 +2536,13 @@ class CICD_ChildWorkflow():
 
         except CICDException as e:
             self.DBobj.db_transaction_end(False)
-            FREE_LOG = str(e)
+            t = traceback.format_exc()
+            g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
 
         except Exception as e:
             self.DBobj.db_transaction_end(False)
-            FREE_LOG = str(e)
+            t = traceback.format_exc()
+            g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
 
         if RepoListSyncStatusUpdate_Flg is False:
             if len(self.UIDisplayMsg) <= 0:
@@ -2566,7 +2560,7 @@ class CICD_ChildWorkflow():
                 # データベースの更新に失敗しました
                 logstr = g.appmsg.get_api_message("MSG-90079", [self.RepoId, ])
                 FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, ret)
-                g.applogger.debug(FREE_LOG)
+                g.applogger.info(FREE_LOG)
 
             self.DBobj.db_transaction_end(True)
 
@@ -2647,9 +2641,9 @@ def backyard_main(organization_id, workspace_id):
                 child_obj = CICD_ChildWorkflow(organization_id, workspace_id, DBobj, RepoId, ExecMode, row)
                 child_obj.main()
 
-    except Exception:
+    except Exception as e:
         error_flag = 1
-        raise
+        raise Exception(e)
 
     # 結果出力
     FREE_LOG = ""

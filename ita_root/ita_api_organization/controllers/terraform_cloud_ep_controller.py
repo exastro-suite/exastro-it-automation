@@ -15,7 +15,7 @@
 import connexion
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectWs
-from common_libs.api import api_filter
+from common_libs.api import api_filter, api_filter_download_temporary_file
 from libs.organization_common import check_menu_info, check_auth_menu, check_sheet_type
 from libs import terraform_cloud_ep
 
@@ -51,6 +51,8 @@ def check_terraform_organization(organization_id, workspace_id, tf_organization_
         check_auth_menu(menu, objdbca)
 
         data, msg = terraform_cloud_ep.check_organization(objdbca, tf_organization_name)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return data, msg
@@ -89,6 +91,8 @@ def check_terraform_workspace(organization_id, workspace_id, tf_organization_nam
         check_auth_menu(menu, objdbca)
 
         data, msg = terraform_cloud_ep.check_workspace(objdbca, tf_organization_name, tf_workspace_name)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return data, msg
@@ -130,6 +134,8 @@ def create_terraform_organization(organization_id, workspace_id, body=None):  # 
             parameters = body
 
         data = terraform_cloud_ep.create_organization(objdbca, parameters)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -173,6 +179,8 @@ def create_terraform_workspace(organization_id, workspace_id, tf_organization_na
             parameters = body
 
         data = terraform_cloud_ep.create_workspace(objdbca, tf_organization_name, parameters)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -209,6 +217,8 @@ def delete_terraform_organization(organization_id, workspace_id, tf_organization
         check_auth_menu(menu, objdbca)
 
         data = terraform_cloud_ep.delete_organization(objdbca, tf_organization_name)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -248,6 +258,8 @@ def delete_terraform_policy(organization_id, workspace_id, tf_organization_name,
 
         # 連携先TerraformからPolicyを削除
         data = terraform_cloud_ep.delete_policy(objdbca, tf_organization_name, policy_name)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -287,6 +299,8 @@ def delete_terraform_policy_set(organization_id, workspace_id, tf_organization_n
 
         # 連携先TerraformからPolicyを削除
         data = terraform_cloud_ep.delete_policy_set(objdbca, tf_organization_name, policy_set_name)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -328,6 +342,8 @@ def delete_terraform_policy_set_relationship_policy(organization_id, workspace_i
 
         # PolicySetからPolicyの紐付け削除
         data = terraform_cloud_ep.policy_set_remove_policy(objdbca, tf_organization_name, policy_set_name, policy_name)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -369,6 +385,8 @@ def delete_terraform_policy_set_relationship_workspace(organization_id, workspac
 
         # PolicySetからWorkspaceの紐付け削除
         data = terraform_cloud_ep.policy_set_remove_workspace(objdbca, tf_organization_name, policy_set_name, tf_workspace_name)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -407,6 +425,8 @@ def delete_terraform_workspace(organization_id, workspace_id, tf_organization_na
         check_auth_menu(menu, objdbca)
 
         data = terraform_cloud_ep.delete_workspace(objdbca, tf_organization_name, tf_workspace_name)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -442,12 +462,14 @@ def get_terraform_organization_list(organization_id, workspace_id):  # noqa: E50
 
         # Organization一覧の取得
         data = terraform_cloud_ep.get_organization_list(objdbca)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return data,
 
 
-@api_filter
+@api_filter_download_temporary_file
 def get_terraform_policy_file(organization_id, workspace_id, tf_organization_name, policy_name, body=None):  # noqa: E501
     """get_terraform_policy_file
 
@@ -488,6 +510,8 @@ def get_terraform_policy_file(organization_id, workspace_id, tf_organization_nam
 
         # Policyコードの取得
         data = terraform_cloud_ep.get_policy_file(objdbca, tf_organization_name, policy_name, parameters)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -523,6 +547,8 @@ def get_terraform_policy_list(organization_id, workspace_id):  # noqa: E501
 
         # Policy一覧の取得
         data = terraform_cloud_ep.get_policy_list(objdbca)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -558,6 +584,8 @@ def get_terraform_policy_set_list(organization_id, workspace_id):  # noqa: E501
 
         # PolicySet一覧の取得
         data = terraform_cloud_ep.get_policy_set_list(objdbca)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -593,6 +621,8 @@ def get_terraform_workspace_list(organization_id, workspace_id):  # noqa: E501
 
         # Workspace一覧の取得
         data = terraform_cloud_ep.get_workspace_list(objdbca)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -636,6 +666,8 @@ def update_terraform_organization(organization_id, workspace_id, tf_organization
             parameters = body
 
         data = terraform_cloud_ep.update_organization(objdbca, tf_organization_name, parameters)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -681,6 +713,8 @@ def update_terraform_workspace(organization_id, workspace_id, tf_organization_na
             parameters = body
 
         data = terraform_cloud_ep.update_workspace(objdbca, tf_organization_name, tf_workspace_name, parameters)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return data,

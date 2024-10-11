@@ -390,6 +390,8 @@ CREATE TABLE T_COMN_MOVEMENT
     ANS_WINRM_ID                    VARCHAR(2),                                 -- WinRM接続
     ANS_PLAYBOOK_HED_DEF            TEXT,                                       -- ヘッダーセクション
     ANS_EXEC_OPTIONS                TEXT,                                       -- オプションパラメータ
+    AG_EXECUTION_ENVIRONMENT_NAME   VARCHAR(255),                               -- 実行環境
+    AG_BUILDER_OPTIONS              TEXT,                                       -- ansible-builder パラメータ
     ANS_EXECUTION_ENVIRONMENT_NAME  VARCHAR(255),                               -- 実行環境
     ANS_ANSIBLE_CONFIG_FILE         VARCHAR(255),                               -- Ansible.cfg
     TERE_WORKSPACE_ID               VARCHAR(40),                                -- Terraform Cloud/EP Workspace
@@ -415,6 +417,8 @@ CREATE TABLE T_COMN_MOVEMENT_JNL
     ANS_WINRM_ID                    VARCHAR(2),                                 -- WinRM接続
     ANS_PLAYBOOK_HED_DEF            TEXT,                                       -- ヘッダーセクション
     ANS_EXEC_OPTIONS                TEXT,                                       -- オプションパラメータ
+    AG_EXECUTION_ENVIRONMENT_NAME   VARCHAR(255),                               -- 実行環境
+    AG_BUILDER_OPTIONS              TEXT,                                       -- ansible-builder パラメータ
     ANS_EXECUTION_ENVIRONMENT_NAME  VARCHAR(255),                               -- 実行環境
     ANS_ANSIBLE_CONFIG_FILE         VARCHAR(255),                               -- Ansible.cfg
     TERE_WORKSPACE_ID               VARCHAR(40),                                -- Terraform Cloud/EP Workspace

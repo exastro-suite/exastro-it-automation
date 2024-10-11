@@ -30,17 +30,17 @@ class ExportImport {
 */
 constructor( menu, type ) {
     const ex = this;
-    
+
     ex.menu = menu;
-    ex.type = type;    
+    ex.type = type;
 }
 
 setup() {
     const ex = this;
-    
+
     ex.$ = {};
     ex.$.content = $('#content').find('.sectionBody');
-    
+
     switch ( ex.type ) {
         case 'menuExport':
         case 'excelExport':
@@ -51,7 +51,7 @@ setup() {
             ex.import();
         break;
     }
-    
+
 }
 /*
 ##################################################
@@ -61,13 +61,13 @@ setup() {
 createMenuGroupList( list ) {
     const ex = this;
 
-    // メニューグループリストの作成    
+    // メニューグループリストの作成
     const menuGroupList = [],
           childs = [];
-    
+
     // 配列のディープコピー
     const tempMenuGroups = $.extend( true, [], list );
-    
+
     // 親と子を分ける
     const unknownParents = [];
     for ( const menuGroup of tempMenuGroups ) {
@@ -82,7 +82,7 @@ createMenuGroupList( list ) {
             if ( !parent ) unknownParents.push( menuGroup.parent_id );
         }
     }
-    
+
     // 親が見つからない場合は不明の親を追加する
     for ( const id of unknownParents ) {
         menuGroupList.push({
@@ -94,7 +94,7 @@ createMenuGroupList( list ) {
             unknown: true
         });
     }
-    
+
     // 親に子を追加
     for ( const parent of menuGroupList ) {
         for ( const child of childs ) {
@@ -119,7 +119,7 @@ createMenuGroupList( list ) {
             }
         }
     }
-    
+
     return menuGroupList;
 }
 /*
@@ -154,7 +154,7 @@ dispSeqSort( data ) {
 */
 menuGroupHtml( menuGroupList ) {
     const ex = this;
-    
+
     let html = ''
     + '<ul class="exportImportList">'
         + '<li class="exportImportItem exportImportAllMenu">'
@@ -162,19 +162,19 @@ menuGroupHtml( menuGroupList ) {
                 + fn.html.checkboxText('exportImportCheck exportImportCheckAll', 'selectAll', 'selectAll', 'selectAll', {checked: 'checked'}, getMessage.FTE07001 )
             + '</div>'
             + '<ul class="exportImportList exportImportAllMenuList">';
-    
+
     const menuGroup = function( item, className ) {
         const value = item.id,
               id = `menuGroup${item.id}`,
               text = ( !item.error_count )? fn.cv( item.menu_group_name, '', true ):
                       `${fn.cv( item.menu_group_name, '', true )}<span class="exportImportErrorMessage">${fn.html.icon('attention')}${getMessage.FTE07035}</span>`;
-        
-        
+
+
         const openFlag = ( item.unknown || item.error_count )? true: false,
               unknownClass = ( item.unknown )? ' exportImportMenuGroupNameUnkown': '',
               buttonIcon = ( openFlag )? 'minus': 'plus',
               display = ( openFlag )? 'block': 'hidden';
-        
+
         html += ''
         + `<li class="exportImportItem ${className}">`
             + `<div class="exportImportName ${className}Name${unknownClass}">`
@@ -184,13 +184,13 @@ menuGroupHtml( menuGroupList ) {
                 + '</div>'
             + '</div>'
             + `<ul class="exportImportList ${className}List" style="display:${display}">`;
-        
+
         menuList( item.menus, value );
-        
+
         html += '</ul>'
         + '</li>';
     };
-    
+
     const menuList = function( list, menuGroupId ) {
         for ( const item of list ) {
             if ( !item.parent_id ) {
@@ -198,11 +198,11 @@ menuGroupHtml( menuGroupList ) {
                       id = `menuItem${item.id}`,
                       text = ( ex.type !== 'excelImport')? fn.cv( item.menu_name, '', true ):
                           `${fn.cv( item.menu_name, '', true )}<span class="exportImportMenuFileName">${fn.cv( item.file_name, '', true )}</span>`;
-                
+
                 html += ''
                 + '<li class="exportImportItem exportImportMenu">'
                     + '<div class="exportImportName exportImportMenuName">';
-                
+
                 if ( ex.type === 'excelImport' && item.error !== null ) {
                     html += `<div class="exportImportError">${text} <div class="exportImportErrorMessage">${fn.html.icon('cross')}${fn.escape( item.error )}</div></div>`;
                 } else {
@@ -221,7 +221,7 @@ menuGroupHtml( menuGroupList ) {
         menuGroup( item, 'exportImportMenuGroup');
     }
     html += '</ul></li></ul>';
-    
+
     return html;
 }
 /*
@@ -231,7 +231,7 @@ menuGroupHtml( menuGroupList ) {
 */
 commonEvents() {
     const ex = this;
-    
+
     // 親兄弟子要素の状態をチェック
     const parentCheck = function( $check ) {
         if ( !$check.is('.exportImportCheckAll') ) {
@@ -244,7 +244,7 @@ commonEvents() {
                 const $eachCheck = $( this );
                 if ( $eachCheck.prop('checked') ) checkNum++;
                 if ( $eachCheck.closest('.checkboxTextWrap').is('.checkboxTextOneOrMore') ) oneOrMoreNum++;
-                
+
             });
 
             // 親要素のチェック
@@ -265,11 +265,11 @@ commonEvents() {
         }
     };
     ex.$.content.find('.exportImportCheck').on('change', function() {
-        
+
         const $check = $( this );
-        
+
         parentCheck( $check );
-        
+
         // 子要素のチェックを全て変更する
         if ( $check.is('.exportImportCheckList, .exportImportCheckAll') ) {
             const $wrap = $check.closest('.checkboxTextWrap'),
@@ -278,22 +278,22 @@ commonEvents() {
             $wrap.add( $parent.find('.checkboxTextOneOrMore') ).removeClass('checkboxTextOneOrMore');
             $parent.find('.exportImportCheck').prop('checked', checked );
         }
-        
+
         // ボタン活性化
         if ( ex.type === 'menuExport' || ex.type === 'excelExport') {
             ex.exportButtonCheck();
         } else {
             ex.importButtonCheck();
         }
-        
+
     });
-    
+
     // 詳細ボタン
     ex.$.content.find('.menuGroupToggle').on('click', function(){
         const $button = $( this ),
               $icon = $button.find('.iconButtonIcon'),
               $list = $button.closest('.exportImportName').next('.exportImportList');
-        
+
         if ( $list.is(':visible') ) {
             $list.slideUp( 200 );
             $icon.removeClass('icon-minus');
@@ -303,7 +303,7 @@ commonEvents() {
             $icon.removeClass('icon-plus');
             $icon.addClass('icon-minus');
         }
-        
+
     });
 }
 /*
@@ -332,6 +332,19 @@ exportDiscardText( discard ) {
 }
 /*
 ##################################################
+   エクスポート設定　履歴情報
+##################################################
+*/
+exportJournalText( journal_type ) {
+    if ( journal_type === '1') {
+        return getMessage.FTE07039;
+    } else {
+        return getMessage.FTE07040;
+    }
+}
+
+/*
+##################################################
    エクスポート Excel設定　廃止情報
 ##################################################
 */
@@ -352,9 +365,9 @@ exportExcelDiscardText( discard ) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 export() {
     const ex = this;
-    
+
     fn.contentLoadingStart();
-    
+
     // エクスポートリスト取得
     const rest = ( ex.type === 'menuExport')? '/menu/export/info/': '/excel/bulk/export/info/';
     fn.fetch( rest ).then(function( result ){
@@ -377,12 +390,12 @@ export() {
 */
 exportEvents() {
     const ex = this;
-    
+
     // 時刻指定
     const $modeTimeInput = ex.$.content.find('.exportModeTime'),
           $modeTimeButton = ex.$.content.find('.inputDateCalendarButton');
     fn.setDatePickerEvent( $modeTimeInput, getMessage.FTE07003 );
-    
+
     // エクスポートモード
     ex.$.content.find('.exportMode').on('change', function(){
         const mode = $( this ).val();
@@ -394,12 +407,12 @@ exportEvents() {
             $modeTimeButton.prop('disabled', true );
         }
     });
-    
+
     // エクスポートボタン
     ex.$.content.find('.operationMenu').find('.operationMenuButton').on('click', function(){
         const $button = $( this ),
               exportData = ex.getExportData();
-        
+
         // 確認HTML
         const html = '<div class="commonSection">'
             + `<div class="commonTitle">${getMessage.FTE07004}</div>`
@@ -421,11 +434,17 @@ exportEvents() {
                             + `<th class="commonTh">${getMessage.FTE07009}</th>`
                             + `<td class="commonTd">${( ex.type === 'menuExport')? ex.exportDiscardText( exportData.abolished_type ): ex.exportExcelDiscardText( exportData.abolished_type )}</td>`
                         + '</tr>'
+                        + `${( ex.type === 'menuExport')?
+                            `<tr class="commonTr">`
+                                + `<th class="commonTh">${getMessage.FTE07038}</th>`
+                                + `<td class="commonTd">${ex.exportJournalText( exportData.journal_type )}</td>`
+                            + `</tr>`: ``}`
+                        + '</tr>'
                     + '</tbody>'
                 + '</table>'
             + '</div>'
         + '</div>';
-        
+
         // エクスポート確認
         fn.alert( getMessage.FTE07010, html, 'common', {
             ok: { text: getMessage.FTE07011, action: 'default', style: 'width:160px', className: 'dialogPositive'},
@@ -434,7 +453,7 @@ exportEvents() {
             if ( flag ) {
                 const rest = ( ex.type === 'menuExport')? '/menu/bulk/export/execute/': '/excel/bulk/export/execute/',
                       manage = ( ex.type === 'menuExport')? 'menu_export_import_list': 'bulk_excel_export_import_list';
-                
+
                 // 読み込み中
                 let process = fn.processingModal( getMessage.FTE07013 );
                 fn.fetch( rest, null, 'POST', exportData ).then(function( result ){
@@ -449,7 +468,7 @@ exportEvents() {
                     process.close();
                     process = null;
                 });
-            }        
+            }
         });
     });
 }
@@ -458,7 +477,7 @@ exportEvents() {
    Export HTML
 ##################################################
 */
-exportHtml( menuGroupList ) {    
+exportHtml( menuGroupList ) {
     const ex = this;
 
     const menu = {
@@ -467,7 +486,7 @@ exportHtml( menuGroupList ) {
         ],
         Sub: []
     };
-    
+
     return '<div class="exportImportContainer">'
     + '<div class="exportImportHeader">'
       + fn.html.operationMenu( menu )
@@ -489,7 +508,7 @@ exportHtml( menuGroupList ) {
 */
 exportSettingHtml() {
     const ex = this;
-    
+
     if ( ex.type === 'menuExport') {
         return '<div class="exportImportSetting">'
             + '<div class="commonTitle">'
@@ -510,7 +529,14 @@ exportSettingHtml() {
                 + fn.html.radioText('exportDiscard', '1', 'exportDiscard', 'exportDiscardInclude', {checked: 'checked'}, getMessage.FTE07017 )
                 + fn.html.radioText('exportDiscard', '2', 'exportDiscard', 'exportDiscardNot', null, getMessage.FTE07018 )
             + '</div>'
-        + '</div>';
+            + '<div class="commonSubTitle">'
+                + getMessage.FTE07037
+            + '</div>'
+            + '<div class="commonBody commonWrap">'
+                + fn.html.radioText('exportJournal', '1', 'exportJournal', 'exportJournalInclude', {checked: 'checked'}, getMessage.FTE07039 )
+                + fn.html.radioText('exportJournal', '2', 'exportJournal', 'exportJournalNot', null, getMessage.FTE07040 )
+        + '</div>'
+            + '</div>';
     } else {
         return '<div class="exportImportSetting">'
             + '<div class="commonTitle">'
@@ -523,7 +549,7 @@ exportSettingHtml() {
                 + fn.html.radioText('exportDiscard', '1', 'exportDiscard', 'exportDiscardAll', {checked: 'checked'}, getMessage.FTE07019 )
                 + fn.html.radioText('exportDiscard', '2', 'exportDiscard', 'exportDiscardNot', null, getMessage.FTE07018 )
                 + fn.html.radioText('exportDiscard', '3', 'exportDiscard', 'exportDiscardOnly', null, getMessage.FTE07020 )
-            + '</div>'
+                + '</div>'
         + '</div>';
     }
 }
@@ -534,8 +560,8 @@ exportSettingHtml() {
 */
 exportButtonCheck() {
     const ex = this;
-    
-    const flag = ex.$.content.find('.exportImportCheckItem:checked').length? false: true;    
+
+    const flag = ex.$.content.find('.exportImportCheckItem:checked').length? false: true;
     ex.$.content.find('.operationMenu').find('.operationMenuButton').prop('disabled', flag );
 }
 /*
@@ -545,16 +571,16 @@ exportButtonCheck() {
 */
 getExportData() {
     const ex = this;
-    
+
     const data = {};
-    
+
     const $setting = ex.$.content.find('.exportImportSetting');
-          
+
     data.menu = [];
     ex.$.content.find('.exportImportCheckItem:checked').each(function(){
         data.menu.push( $( this ).val() );
     });
-    
+
     if ( ex.type === 'menuExport') {
         const $mode = $setting.find('.exportMode:checked');
         data.mode = $mode.val();
@@ -564,7 +590,16 @@ getExportData() {
     }
     const $discard = $setting.find('.exportDiscard:checked');
     data.abolished_type = $discard.val();
-    
+
+    if ( ex.type === 'menuExport') {
+        const $isjnl = $setting.find('.exportJournal:checked').length? true: false;
+        if ( $isjnl ){
+            data.journal_type = $setting.find('.exportJournal:checked').val();
+        } else {
+            data.journal_type = '1'
+        }
+    }
+
     return data;
 }
 
@@ -575,10 +610,10 @@ getExportData() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 import() {
     const ex = this;
-    
+
     ex.$.content.html( ex.importHtml() );
     ex.$.importBody = ex.$.content.find('.exportImportBody');
-    
+
     ex.importEvents();
     fn.contentLoadingEnd();
 }
@@ -589,12 +624,12 @@ import() {
 */
 importEvents() {
     const ex = this;
-    
+
     // インポートメニューボタン
     ex.$.content.find('.operationMenu').find('.operationMenuButton').on('click', function(){
         const $button = $( this ),
               type = $button.attr('data-type');
-        
+
         $button.prop('disabled', true );
         switch ( type ) {
             case 'fileSelect':
@@ -608,7 +643,7 @@ importEvents() {
                 });
             break;
         }
-        
+
     });
 }
 /*
@@ -618,23 +653,23 @@ importEvents() {
 */
 fileSelect() {
     const ex = this;
-    
+
     return new Promise(function( resolve ){
         const fileExt = ( ex.type === 'excelImport')? '.zip': '.kym',
             fileRest = ( ex.type === 'excelImport')? '/excel/bulk/upload/': `/menu/import/upload/`;
-        
-        
+
+
         fn.fileSelect('file', null, fileExt ).then(function( selectFile ){
 
             const postData = new FormData();
             postData.append( selectFile.name, selectFile );
-            
+
             let process = fn.processingModal( getMessage. FTE07036 );
             fn.fetch( fileRest, null, 'POST', postData, { multipart: true }).then(function( result ){
-                            
+
                 // インポートデータ
                 ex.importData = result;
-                
+
                 let listHtml = '';
                 if ( ex.type === 'excelImport') {
                     const importList = ex.createMenuGroupList( ex.changeExcelImportList( ex.importData.import_list, ex.importData.umimport_list ) );
@@ -643,7 +678,7 @@ fileSelect() {
                     const importList = ex.createMenuGroupList( ex.importData.import_list.menu_groups );
                     listHtml += ex.menuGroupHtml( importList );
                 }
-                
+
                 ex.$.importBody.html(
                     ex.importSettingHtml()
                     + '<div class="exportImportSelect">'
@@ -652,8 +687,8 @@ fileSelect() {
                         + '</div>'
                         + listHtml
                     +  '</div>');
-                
-                ex.commonEvents();            
+
+                ex.commonEvents();
             }).catch(function( error ){
                 window.console.error( error );
                 if ( error.message ) {
@@ -665,7 +700,7 @@ fileSelect() {
             }).then(function(){
                 process.close();
                 process = null;
-                
+
                 ex.importButtonCheck();
                 resolve();
             });
@@ -679,7 +714,7 @@ fileSelect() {
    Import HTML
 ##################################################
 */
-importHtml() {    
+importHtml() {
     const ex = this;
 
     const menu = {
@@ -689,7 +724,7 @@ importHtml() {
         ],
         Sub: []
     };
-    
+
     return '<div class="exportImportContainer">'
     + '<div class="exportImportHeader">'
       + fn.html.operationMenu( menu )
@@ -718,9 +753,9 @@ initBodyHtml() {
 */
 importSettingHtml() {
     const ex = this;
-    
+
     const fileName = ( ex.type === 'menuImport')? ex.importData.file_name: ex.importData.data_portability_upload_file_name;
-    
+
     let html = ''
     + '<div class="exportImportSetting">'
         + '<div class="commonTitle">'
@@ -733,7 +768,7 @@ importSettingHtml() {
                     + fn.cv( fileName, '', true )
                 + '</dd>'
             + '</dl>';
-    
+
     if ( ex.type === 'menuImport') {
         html += ''
             + '<dl class="commonStatus">'
@@ -758,10 +793,17 @@ importSettingHtml() {
                     + ex.exportDiscardText( ex.importData.abolished_type )
                 + '</dd>'
             + '</dl>';
+        html += ''
+            + '<dl class="commonStatus">'
+                + `<dt class="commonStatusKey">${getMessage.FTE07037}</dt>`
+                + '<dd class="commonStatusValue">'
+                    + ex.exportJournalText( ex.importData.journal_type )
+            + '</dd>'
+        + '</dl>';
     }
     html += '</div>'
     + '</div>';
-    
+
     return html;
 }
 /*
@@ -771,8 +813,8 @@ importSettingHtml() {
 */
 importButtonCheck() {
     const ex = this;
-    
-    const flag = ex.$.importBody.find('.exportImportCheckItem:checked').length? false: true;    
+
+    const flag = ex.$.importBody.find('.exportImportCheckItem:checked').length? false: true;
     ex.$.content.find('.operationMenu').find('.operationMenuButton[data-type="import"]').prop('disabled', flag );
 }
 /*
@@ -782,14 +824,14 @@ importButtonCheck() {
 */
 importModal() {
     const ex = this;
-    
+
     return new Promise(function( resolve ){
         // Importリスト作成
         const restData = {};
-        
+
         let fileName = '',
             menuCount = 0;
-        
+
         if ( ex.type === 'excelImport') {
             // Excel インポート
             const menu = {};
@@ -797,7 +839,7 @@ importModal() {
                 const $item = $( this ),
                     value = $item.val(),
                     group = $item.attr('data-menuGroup');
-                
+
                 if ( !menu[ group ] ) menu[ group ] = [];
                 menu[ group ].push( value );
                 menuCount++;
@@ -818,7 +860,7 @@ importModal() {
             restData.file_name = ex.importData.file_name;
             fileName = ex.importData.file_name;
         }
-        
+
         // 確認HTML
         let html = ``
         + `<div class="commonSection">`
@@ -836,15 +878,23 @@ importModal() {
                             + `<td class="commonTd">${menuCount}</td>`
                         + `</tr>`;
         if ( ex.type === 'menuImport') {
+            const specifiedTimeTr = ( ex.importData.mode === '2')?
+            `<tr class="commonTr"><th class="commonTh">${getMessage.FTE07008}</th>`
+            + `<td class="commonTd">${fn.cv( ex.importData.specified_time, '', true )}</td></tr>`:
+            ``;
             html += ``
                         + `<tr class="commonTr">`
                             + `<th class="commonTh">${getMessage.FTE07007}</th>`
                             + `<td class="commonTd">${ex.exportModeText( ex.importData.mode )}</td>`
                         + `</tr>`
-                        + `${( ex.importData.mode === '2')? `<tr class="commonTr"><th class="commonTh">${getMessage.FTE07008}</th><td class="commonTd"></td></tr>`: ``}`
+                        + specifiedTimeTr
                         + `<tr class="commonTr">`
                             + `<th class="commonTh">${getMessage.FTE07009}</th>`
                             + `<td class="commonTd">${ex.exportDiscardText( ex.importData.abolished_type )}</td>`
+                        + `</tr>`
+                        + `<tr class="commonTr">`
+                            + `<th class="commonTh">${getMessage.FTE07038}</th>`
+                            + `<td class="commonTd">${ex.exportJournalText( ex.importData.journal_type )}</td>`
                         + `</tr>`;
         }
         html += ``
@@ -852,7 +902,7 @@ importModal() {
                 + `</table>`
             + `</div>`
         + `</div>`;
-        
+
         // インポート確認
         fn.alert( getMessage.FTE07030, html, 'common', {
             ok: { text: getMessage.FTE07031, action: 'default', style: 'width:160px', className: 'dialogPositive'},
@@ -881,7 +931,7 @@ importModal() {
                 });
             } else {
                 resolve();
-            }  
+            }
         });
     });
 }
@@ -892,16 +942,16 @@ importModal() {
 */
 changeExcelImportList( importList, unImportList ) {
     const afterList = [];
-    
+
     // 二つのリストを結合する
     const unImporOnlyKeys = [],
           importKeys = Object.keys( importList ),
           unImportKeys = Object.keys( unImportList );
-    
+
     for ( const key of unImportKeys ) {
         if ( importKeys.indexOf( key ) === -1 ) unImporOnlyKeys.push( key );
     }
-    
+
     for ( const key in importList ) {
         if ( unImportList[ key ] ) {
             for ( const num in unImportList[ key ].menu ) {
@@ -910,10 +960,10 @@ changeExcelImportList( importList, unImportList ) {
             }
         }
     }
-    
+
     for ( const key of unImporOnlyKeys ) {
         importList[ key ] = unImportList[ key ];
-    }    
+    }
 
     for ( const key in importList ) {
         const menus = [];
@@ -922,7 +972,7 @@ changeExcelImportList( importList, unImportList ) {
             for ( const menu in importList[ key ].menu ) {
                 const data = importList[ key ].menu[ menu ],
                       error = fn.cv( data.error, null );
-                
+
                 if ( error !== null ) errorCount++;
                 menus.push({
                     disp_seq: fn.cv( data.disp_seq, null ),
@@ -942,7 +992,7 @@ changeExcelImportList( importList, unImportList ) {
             error_count: errorCount
         });
     }
-    
+
     return afterList;
 }
 

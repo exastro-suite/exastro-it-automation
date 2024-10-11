@@ -85,7 +85,8 @@ init() {
 
             if ( ui.storageLang && ui.storageMenuGroups && ui.storagePanel && ui.storageUser ) {
                 ui.lang = ui.storageLang;
-                import(`/_/ita/js/messageid_${ui.lang}.js`).then(function( module ){
+                const uiVersion = fn.getUiVersion();
+                import(`/_/ita/js/messageid_${ui.lang}.js?v=${uiVersion}`).then(function( module ){
                     if ( ui.lang === 'ja') {
                         getMessage = module.messageid_ja();
                     } else {
@@ -143,7 +144,8 @@ setUi() {
         ui.lang = tmpLang;
 
         if ( $lang.length ) $('#lang').remove();
-        import(`/_/ita/js/messageid_${ui.lang}.js`).then(function( module ){
+        const uiVersion = fn.getUiVersion();
+        import(`/_/ita/js/messageid_${ui.lang}.js?v=${uiVersion}`).then(function( module ){
             if ( ui.lang === 'ja') {
                 getMessage = module.messageid_ja();
             } else {
@@ -1402,16 +1404,18 @@ defaultMenu( sheetType, dataType = 'n', fileFlag = true ) {
                 fileName += mn.title + '_';
             }
 
-            const downloadFile = function( type, url, fileName ){
+            const downloadFile = async function( type, url, fileName ){
                 $button.prop('disabled', true );
-
-                fn.fetch( url ).then(function( result ){
-                    fn.download( type, result, fileName );
-                }).catch(function( error ){
-                    fn.gotoErrPage( error.message );
-                }).then(function(){
-                    fn.disabledTimer( $button, false, 1000 );
-                });
+                try {
+                    const file = await fn.getFile( url, 'GET', null, { title: getMessage.FTE00185, fileType: type });
+                    if ( type !== 'json') type = 'file';
+                    fn.download( type, file, fileName );
+                } catch ( error ) {
+                    if ( error !== 'break') {
+                        fn.gotoErrPage( error.message );
+                    }
+                }
+                fn.disabledTimer( $button, false, 1000 );
             };
 
             switch ( type ) {
@@ -1423,7 +1427,7 @@ defaultMenu( sheetType, dataType = 'n', fileFlag = true ) {
                         if ( limit && mn.info.menu_info.xls_print_limit < result ) {
                             alert( getMessage.FTE00085( result, limit) );
                         } else {
-                            downloadFile('excel', `/menu/${mn.params.menuNameRest}/excel/`, fileName + 'all');
+                            downloadFile('excel', `/menu/${mn.params.menuNameRest}/excel/`, fileName + 'all.xlsx');
                         }
                     }).catch(function( error ){
                         fn.gotoErrPage( error.message );
@@ -1432,10 +1436,15 @@ defaultMenu( sheetType, dataType = 'n', fileFlag = true ) {
                     });
                 } break;
                 case 'allDwonloadJson':
-                    downloadFile('json', `/menu/${mn.params.menuNameRest}/filter/`, fileName + 'all');
+                    if ( window.confirm( getMessage.FTE00181 ) ) {
+                        downloadFile('json', `/menu/${mn.params.menuNameRest}/filter/`, fileName + 'all.json');
+                    }
+                break;
+                case 'allDwonloadJsonNoFile':
+                    downloadFile('json', `/menu/${mn.params.menuNameRest}/filter/?file=no`, fileName + 'all.json');
                 break;
                 case 'newDwonloadExcel':
-                    downloadFile('excel', `/menu/${mn.params.menuNameRest}/excel/format/`, fileName + 'format');
+                    downloadFile('excel', `/menu/${mn.params.menuNameRest}/excel/format/`, fileName + 'format.xlsx');
                 break;
                 case 'excelUpload':
                     mn.fileRegister( $button, 'excel');
@@ -1444,7 +1453,7 @@ defaultMenu( sheetType, dataType = 'n', fileFlag = true ) {
                     mn.fileRegister( $button, 'json');
                 break;
                 case 'allHistoryDwonloadExcel':
-                    downloadFile('excel', `/menu/${mn.params.menuNameRest}/excel/journal/`, fileName + 'journal');
+                    downloadFile('excel', `/menu/${mn.params.menuNameRest}/excel/journal/`, fileName + 'journal.xlsx');
                 break;
             }
         });
@@ -1463,7 +1472,8 @@ dataDownload() {
 
     const list = [
         { title: getMessage.FTE10011, description: getMessage.FTE10012, type: 'allDwonloadExcel'},
-        { title: getMessage.FTE10013, description: getMessage.FTE10014, type: 'allDwonloadJson'}
+        { title: getMessage.FTE10013, description: getMessage.FTE10014, type: 'allDwonloadJson'},
+        { title: getMessage.FTE00182, description: getMessage.FTE10014, type: 'allDwonloadJsonNoFile'}
     ];
 
     if ( mn.flag.insert ) {

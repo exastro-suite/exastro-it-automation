@@ -43,8 +43,12 @@ def external_valid_menu_before(objdbca, objtable, option):
 
     # 対象のメニューは更新の操作のみ実施可能なため「cmd_type」はチェックしない
 
-    template_data = option.get('entry_parameter', {}).get('file', {}).get('template_file', '')
-    template_data_binary = base64.b64decode(template_data)
+    file_path = option.get('entry_parameter', {}).get('file_path', {}).get('template_file')
+    if file_path is None:
+        return retBool, msg, option,
+
+    with open(file_path, 'rb') as f:  # バイナリファイルとしてファイルをオープン
+        template_data_binary = f.read()
 
     # 文字コードをチェック バイナリファイルの場合、encode['encoding']はNone
     if validator.is_binary_file(template_data_binary):

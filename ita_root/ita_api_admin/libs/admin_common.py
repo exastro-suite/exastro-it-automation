@@ -20,7 +20,9 @@ import base64
 import re
 import json
 import copy
+import traceback
 
+from common_libs.common.util import arrange_stacktrace_format
 from common_libs.common.dbconnect import *  # noqa: F403
 from common_libs.common.exception import AppException
 from common_libs.common.logger import AppLog
@@ -46,8 +48,7 @@ def before_request_handler():
 
         # request-header check
         # ヘルスチェック用のURLの場合にUser-IdとRolesを確認しない
-        url = request.url
-        ret = re.search("/internal-api/health-check/liveness$|/internal-api/health-check/readiness$", url)
+        ret = re.search("/internal-api/health-check/liveness$|/internal-api/health-check/readiness$", request.url)
         if ret is None:
             user_id = request.headers.get("User-Id")
             roles_org = request.headers.get("Roles")
@@ -171,7 +172,7 @@ def initial_settings_ansible(ws_db, body):
     # execution_engine_listの設定がある場合
     if 'execution_engine_list' in body.keys():
         # 実行エンジンの有効/無効を設定
-        update_settings = [[], []]
+        update_settings = [[], [], []]
         if 'Ansible-Core' in body.get('execution_engine_list'):
             update_settings[0] = ['0', '1']
         else:
@@ -180,6 +181,10 @@ def initial_settings_ansible(ws_db, body):
             update_settings[1] = ['0', '2']
         else:
             update_settings[1] = ['1', '2']
+        if 'Ansible Execution Agent' in body.get('execution_engine_list'):
+            update_settings[2] = ['0', '3']
+        else:
+            update_settings[2] = ['1', '3']
 
         sql = "UPDATE T_ANSC_EXEC_ENGINE SET DISUSE_FLAG=%s WHERE ID=%s"
         for update_setting in update_settings:
@@ -430,6 +435,10 @@ def loglevel_settings_container(common_db, parameter):
     except Exception:
         # transaction end:rollback
         common_db.db_transaction_end(False)
+
+        t = traceback.format_exc()
+        g.applogger.error("[ts={}] {}".format(get_api_timestamp(), arrange_stacktrace_format(t)))
+
         msg_args = [service_name, log_level]
         raise AppException("499-01401", msg_args, msg_args)
 

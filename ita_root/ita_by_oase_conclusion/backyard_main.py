@@ -18,7 +18,7 @@ import datetime
 import traceback
 
 from common_libs.common.dbconnect import *  # noqa: F403
-from common_libs.common.util import arrange_stacktrace_format
+from common_libs.common.util import arrange_stacktrace_format, get_iso_datetime
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
 
 from common_libs.oase.const import oaseConst
@@ -50,14 +50,14 @@ def backyard_main(organization_id, workspace_id):
     # connect MariaDB
     wsDb = DBConnectWs(workspace_id)  # noqa: F405
 
-    # 処理時間
-    judgeTime = int(datetime.datetime.now().timestamp())
-    # イベント操作クラス
-    EventObj = ManageEvents(wsMongo, judgeTime)
-    # アクション　クラス生成
-    actionObj = Action(wsDb, EventObj)
-
     try:
+        # 処理時間
+        judgeTime = int(datetime.datetime.now().timestamp())
+        # イベント操作クラス
+        EventObj = ManageEvents(wsMongo, judgeTime)
+        # アクション　クラス生成
+        actionObj = Action(wsDb, EventObj)
+
         # ルール判定
         tmp_msg = g.appmsg.get_log_message("BKY-90001", ['Started'])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -86,10 +86,14 @@ def backyard_main(organization_id, workspace_id):
         tmp_msg = g.appmsg.get_log_message("BKY-90002", ['Ended'])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
     except Exception as e:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         tmp_msg = g.appmsg.get_log_message("BKY-90003", [])
         g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        t = traceback.format_exc()
-        print(arrange_stacktrace_format(t))
+    finally:
+        wsDb.db_transaction_end(False)
+        wsDb.db_disconnect()
+        wsMongo.disconnect()
 
     # メイン処理終了
     tmp_msg = g.appmsg.get_log_message("BKY-90000", ['Ended'])
@@ -131,7 +135,7 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
                 timeout_notification_list.append(EventRow)
 
         if len(timeout_notification_list) > 0:
-            tmp_msg = g.appmsg.get_log_message("BKY-90008", ['Known (timeout)'])
+            tmp_msg = g.appmsg.get_log_message("BKY-90008", ['Known(timeout)'])
             g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             OASE.send(wsDb, timeout_notification_list, {"notification_type": OASENotificationType.TIMEOUT})
 

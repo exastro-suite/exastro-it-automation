@@ -14,9 +14,8 @@
 
 import json
 
-from bson.objectid import ObjectId
+from flask import g
 from common_libs.common.exception import AppException
-
 from .const import Const
 
 
@@ -33,7 +32,7 @@ class CollectionBase():
     # RANGEによる検索を許可するMongoDBの項目名を保持するリスト
     RANGE_LIST = []
 
-    def create_where(self, parameter: dict) -> dict:
+    def create_where(self, parameter: dict, objdbca) -> dict:
         """
         コレクションの検索条件を作成する。
         Arguments:
@@ -45,13 +44,52 @@ class CollectionBase():
         Returns:
             dict:MongoDBの検索で使用可能な状態のDict
         """
+
+        event_status_dict = {}
+        event_name_dict = {}
+        event_data_dict = {}
+        event_status_list_search = []
+        event_name_list_search = []
+        column_name_dict = {}
+        result_list = []
+
+        # イベント履歴用のイベント状態, イベント種別, カラム名を取得（言語対応）
+        lang = g.LANGUAGE
+        if lang == "ja":
+            event_status_name_lang = "EVENT_STATUS_NAME" + "_JA"
+            event_name_lang = "EVENT_NAME" + "_JA"
+            column_name_lang = "COLUMN_NAME" + "_JA"
+        else:
+            event_status_name_lang = "EVENT_STATUS_NAME" + "_EN"
+            event_name_lang = "EVENT_NAME" + "_EN"
+            column_name_lang = "COLUMN_NAME" + "_EN"
+
+        event_status_list = objdbca.table_select("T_OASE_EVENT_STATUS", "WHERE DISUSE_FLAG = %s", [0])
+        for event_status in event_status_list:
+            event_status_dict[event_status["EVENT_STATUS_ID"]] = event_status[event_status_name_lang]
+            event_status_list_search.append(event_status[event_status_name_lang])
+
+        event_name_list = objdbca.table_select("T_OASE_EVENT", "WHERE DISUSE_FLAG = %s", [0])
+        for event_name in event_name_list:
+            event_name_dict[event_name["EVENT_ID"]] = event_name[event_name_lang]
+            event_name_list_search.append(event_name[event_name_lang])
+
+        event_data_dict["event_status"] = event_status_dict
+        event_data_dict["event_name"] = event_name_dict
+
+        # 検索の際のバリデーション用に言語設定に合わせてカラム名を取得
+        # 11010401: オブジェクトID, 11010403: イベント収集日時, 11010404: イベント有効日時, 11010409: 利用イベント
+        column_name_list = objdbca.table_select("T_COMN_MENU_COLUMN_LINK", "WHERE COLUMN_DEFINITION_ID IN ('{}', '{}', '{}', '{}') AND `DISUSE_FLAG` = {}".format("11010401", "11010403", "11010404", "11010409", 0))  # noqa: E501
+        for column_name in column_name_list:
+            column_name_dict[column_name['COLUMN_DEFINITION_ID']] = column_name[column_name_lang]
+
         result = {}
         for rest_key_name, setting in parameter.items():
             for type, value in setting.items():
 
                 # 特殊な流れで処理が必要な場合の分岐
                 if self._is_separated_supported_item(rest_key_name, type):
-                    result.update(self._create_separated_supported_search_value(rest_key_name, type, value))
+                    result.update(self._create_separated_supported_search_value(rest_key_name, type, value, event_data_dict))
 
                 else:
                     # 通常の流れで処理できる場合の分岐
@@ -59,15 +97,40 @@ class CollectionBase():
 
                     # 1つの条件で複数のカラムに条件指定が必要な場合を考慮してループで処理する。
                     for item_name in collection_item_name:
+                        event_status_exectute_flag = False
                         if type == "NORMAL":
-                            result[item_name] = self._create_search_value(item_name, value)
+                            if rest_key_name == "_exastro_event_status":
+                                for event_status in event_status_list_search:
+                                    if event_status_exectute_flag:
+                                        continue
+                                    if value in event_status:
+                                        result[item_name] = self._create_search_value(item_name, value, event_data_dict)
+                                        event_status_exectute_flag = True
+                            elif rest_key_name == "_exastro_type":
+                                for event_name in event_name_list_search:
+                                    if value in event_name:
+                                        value = event_name
+                                        result_tmp = self._create_search_value(item_name, value, event_data_dict)
+                                        result_list.append(result_tmp)
+                                    result[item_name] = {"$in": result_list}
+                            elif rest_key_name == "_id":
+                                result[item_name] = self._create_search_value(item_name, value, event_data_dict, column_name_dict)
+                            elif rest_key_name == "_exastro_events":
+                                tmp_list = self._create_search_value(item_name, value, event_data_dict, column_name_dict)
+                                for tmp in tmp_list:
+                                    result = {item_name: {"$in": [tmp]}}
+                                    result_list.append(result)
+                                result = {"$and": result_list}
+                            else:
+                                tmp_list = self._create_search_value(item_name, value, event_data_dict)
+                                result[item_name] = {"$regex": tmp_list}
 
                         elif type == "LIST":
                             tmp_list = []
                             for item in value:
-                                tmp_list.append(self._create_search_value(item_name, item))
+                                tmp_list.append(self._create_search_value_list(item_name, item, event_data_dict, column_name_dict))
 
-                            result[item_name] = {"$in": tmp_list}
+                                result[item_name] = {"$in": tmp_list}
 
                         elif type == "RANGE":
                             # RANGEに対応していない項目の場合例外として処理する。
@@ -85,9 +148,12 @@ class CollectionBase():
 
                             tmp_dict = {}
                             for kind, item in dict(value).items():
-                                tmp_dict[kind_map[kind]] = self._create_search_value(item_name, item)
-
+                                tmp_dict[kind_map[kind]] = self._create_search_value(item_name, item, event_data_dict, column_name_dict)
                             result[item_name] = tmp_dict
+
+                # イベント状態カラムかイベント種別カラムが検索条件にヒットしない場合はダミーの値を渡す
+                if (rest_key_name == "_exastro_event_status" or rest_key_name == "_exastro_type") and result == {}:
+                    result = json.loads('{"labels._exastro_timeout": "2", "labels._exastro_evaluated": "2", "labels._exastro_undetected": "2"}')
 
         return result
 
@@ -101,23 +167,23 @@ class CollectionBase():
 
         return [rest_key_name]
 
-    def _create_search_value(self, collection_item_name, value):
-        """
-        受け取った値をMongoDBで検索する際に適した値に変換する。
-        共通的に処理できるのは_idのみ。
-        クラス独自の変換処理を実装する場合はオーバーライドすること。
-        Args:
-            rest_key_name: RESTAPIで返却する際のKEY
-            value: パラメータから受け取った値
+    # def _create_search_value(self, collection_item_name, value):
+    #     """
+    #     受け取った値をMongoDBで検索する際に適した値に変換する。
+    #     共通的に処理できるのは_idのみ。
+    #     クラス独自の変換処理を実装する場合はオーバーライドすること。
+    #     Args:
+    #         rest_key_name: RESTAPIで返却する際のKEY
+    #         value: パラメータから受け取った値
 
-        Returns:
-            変換が必要な場合は変換後の値。変換が不要な場合は引数valueの値をそのまま返却する。
-        """
+    #     Returns:
+    #         変換が必要な場合は変換後の値。変換が不要な場合は引数valueの値をそのまま返却する。
+    #     """
 
-        if collection_item_name == "_id":
-            return ObjectId(value)
+    #     if collection_item_name == "_id":
+    #         return ObjectId(value)
 
-        return value
+    #     return value
 
     def _is_separated_supported_item(self, rest_key_name, type):
         """
@@ -157,7 +223,7 @@ class CollectionBase():
 
         return rest_key_name in self.RANGE_LIST
 
-    def create_result(self, result: list[dict]) -> dict:
+    def create_result(self, result: list[dict], objdbca) -> dict:
         """
         MongoDBから取得したデータを返却するために整形する。
         実際の値の整形は__format_result_valueで行い、ここでは流れのみを定義する。
@@ -170,8 +236,32 @@ class CollectionBase():
         """
 
         format_result = []
+        event_status_dict = {}
+        event_name_dict = {}
+        event_data_dict = {}
+
+        # イベント履歴用のイベント状態, イベント種別を取得（言語対応）
+        lang = g.LANGUAGE
+        if lang == "ja":
+            event_status_name_lang = "EVENT_STATUS_NAME" + "_JA"
+            event_name_lang = "EVENT_NAME" + "_JA"
+        else:
+            event_status_name_lang = "EVENT_STATUS_NAME" + "_EN"
+            event_name_lang = "EVENT_NAME" + "_EN"
+
+        event_status_list = objdbca.table_select("T_OASE_EVENT_STATUS", "WHERE DISUSE_FLAG = %s", [0])
+        for event_status in event_status_list:
+            event_status_dict[event_status["EVENT_STATUS_ID"]] = event_status[event_status_name_lang]
+
+        event_name_list = objdbca.table_select("T_OASE_EVENT", "WHERE DISUSE_FLAG = %s", [0])
+        for event_name in event_name_list:
+            event_name_dict[event_name["EVENT_ID"]] = event_name[event_name_lang]
+
+        event_data_dict["event_status"] = event_status_dict
+        event_data_dict["event_name"] = event_name_dict
+
         for item in result:
-            tmp = self._format_result_value(item)
+            tmp = self._format_result_value(item, event_data_dict)
             if tmp is not None:
                 format_result.append(
                     {

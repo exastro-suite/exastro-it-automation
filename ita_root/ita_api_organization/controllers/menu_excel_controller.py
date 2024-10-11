@@ -17,11 +17,11 @@ import connexion
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common import menu_excel
-from common_libs.api import api_filter, check_request_body
+from common_libs.api import api_filter, check_request_body, api_filter_download_temporary_file
 from libs.organization_common import check_menu_info, check_auth_menu, check_sheet_type
 
 
-@api_filter
+@api_filter_download_temporary_file
 def get_excel_filter(organization_id, workspace_id, menu, body=None):  # noqa: E501
     """get_excel_filter
 
@@ -55,12 +55,14 @@ def get_excel_filter(organization_id, workspace_id, menu, body=None):  # noqa: E
 
         filter_parameter = {'discard': {'NORMAL': ''}}
         result_data = menu_excel.collect_excel_filter(objdbca, organization_id, workspace_id, menu, menu_record, menu_table_link_record, filter_parameter)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
 
 
-@api_filter
+@api_filter_download_temporary_file
 def get_excel_format(organization_id, workspace_id, menu):  # noqa: E501
     """get_excel_format
 
@@ -93,12 +95,14 @@ def get_excel_format(organization_id, workspace_id, menu):  # noqa: E501
         check_auth_menu(menu, objdbca)
 
         result_data = menu_excel.collect_excel_filter(objdbca, organization_id, workspace_id, menu, menu_record, menu_table_link_record)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
 
 
-@api_filter
+@api_filter_download_temporary_file
 def get_excel_journal(organization_id, workspace_id, menu):  # noqa: E501
     """get_excel_journal
 
@@ -131,12 +135,14 @@ def get_excel_journal(organization_id, workspace_id, menu):  # noqa: E501
         check_auth_menu(menu, objdbca)
 
         result_data = menu_excel.collect_excel_journal(objdbca, organization_id, workspace_id, menu, menu_record, menu_table_link_record)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
 
 
-@api_filter
+@api_filter_download_temporary_file
 def post_excel_filter(organization_id, workspace_id, menu, body=None):  # noqa: E501
     """post_excel_filter
 
@@ -177,6 +183,8 @@ def post_excel_filter(organization_id, workspace_id, menu, body=None):  # noqa: 
 
         # メニューのカラム情報を取得
         result_data = menu_excel.collect_excel_filter(objdbca, organization_id, workspace_id, menu, menu_record, menu_table_link_record, filter_parameter)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -229,7 +237,7 @@ def post_excel_maintenance(organization_id, workspace_id, menu, body=None, **kwa
         check_request_body()
 
         excel_data = {}
-        retBool, excel_data = menu_excel.create_upload_parameters(connexion.request)
+        retBool, excel_data = menu_excel.create_upload_parameters(connexion.request, organization_id, workspace_id)
         if retBool is False:
             status_code = "400-00003"
             request_content_type = connexion.request.content_type.lower()
@@ -239,6 +247,8 @@ def post_excel_maintenance(organization_id, workspace_id, menu, body=None, **kwa
 
         # メニューのカラム情報を取得
         result_data = menu_excel.execute_excel_maintenance(objdbca, organization_id, workspace_id, menu, menu_record, excel_data)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,

@@ -214,6 +214,13 @@ export function messageid_en() {
         'FTE00176' : "Preview",
         'FTE00177' : "Blank",
         'FTE00178' : "Item menu",
+        'FTE00179' : "Failed to get file.",
+        'FTE00180' : "Loading file",
+        'FTE00181' : "WARNING: Downloading JSON file.\nLarge file within the records may overload the memory, leading to possible system failure.\nWould you like to continue?",
+        'FTE00182' : "Download all (JSON:No File)",
+        'FTE00183' : "JSON download (No File)",
+        'FTE00184' : "Editing reflected",
+        'FTE00185' : "Download",
 
         // Create parameter sheet
         'FTE01001' : "Item",
@@ -334,7 +341,7 @@ export function messageid_en() {
         'FTE01116' : "Enter the upper limit of the total digit for whole number + fraction part.\nFor editing, it is possible to increase it from the original valu.\n\nExample: 0.123 has 4 digits (whole number 1 digit, fraction part 3 digits)\n 11.1111 has 6 digits (whole number 2 digit2, fraction part 3 digits)\nInteger value from 1 to 14 can be entered.",
         'FTE01117' : "Select the item to be referenced in the pulldown menu from the pull-down menu.\n※Items that satisfy the following conditions are displayed in the pull-down menu .\Parameter sheet: 「Basic Console: Device List」 and parameter sheet created with this function\nItem: String, required and unique constraint item.",
         'FTE01118' : "You can refer to other items based on the parameter sheet item you selected in \"Pulldown Selection\".",
-        'FTE01119' : "Enter the maximum number of bytes for the file to upload.\nFor editing, it is possible to increase it from the original value.\nThe maximum size is 104857600 bytes.",
+        'FTE01119' : function(size){ return `Enter the maximum number of bytes for the file to upload.\nFor editing, it is possible to increase it from the original value.\nThe maximum size is ${size} bytes.`},
         'FTE01120' : "Select the item to be referenced from the parameter sheet items created in the Creation target \"Parameter Sheet(Operation)\".\nRefers to the value of the same operation from the selected items.",
         'FTE01121' : "When registering from the created parameter sheet, set the value to be entered in the input field by default.\nYou cannot set a value that exceeds the \"Maximum number of bytes\" or a value that does not match the \"Regular expression\".",
         'FTE01122' : "When registering from the created parameter sheet, set the value to be entered in the input field by default.\nYou cannot set a Values outside the range of \"Maximum value\" and \"Minimum value\".",
@@ -370,11 +377,14 @@ export function messageid_en() {
         'FTE01152' : "There are no items available for reference.",
         'FTE01153' : "Create as hostgroup",
         'FTE01154' : "If the &quot;use&quot; checkbox is checked, a &quot;Host name/Host Group name&quot; parameter sheet will be created in the &quot;Input&quot; Menu group.\nIf the &quot;use &quot; checkbox is unchecked, a &quot;host name&quot; parameter sheet will be created.",
+        'FTE01155' : function(id){ return `Duplicate ID（${id}）.`;},
+        'FTE01156' : function(id){ return `ID（${id}） specified in columns was not found.`;},
+        'FTE01157': 'Failed to load JSON.',
 
         // Conductor
         'FTE02001' : "Conductor instance id is not yet set.",
         'FTE02002' : "Enter the Conductor instance ID and click the Work Confirm button, or",
-        'FTE02003' : "Conductor list",
+        'FTE02003' : "Conductor history",
         'FTE02004' : " click the Details button on the page.",
         'FTE02005' : "Select",
         'FTE02006' : "Register",
@@ -592,6 +602,8 @@ export function messageid_en() {
         'FTE05036' : "Execution environment",
         'FTE05037' : "Cancel a reservation?",
         'FTE05038' : "Terraform dedicated information",
+        'FTE05039' : "Ansible Execution Agent information",
+        'FTE05040' : "Execution environment",
 
         // Compare
         'FTE06001' : "Compare setting selection",
@@ -666,6 +678,10 @@ export function messageid_en() {
         'FTE07034' : "Unknown menu group",
         'FTE07035' : "Contains menus that cannot be imported.",
         'FTE07036' : "Loading import file",
+        'FTE07037' : "History",
+        'FTE07038' : "History",
+        'FTE07039' : "History available",
+        'FTE07040' : "No history",
 
         // DashBoard
         'FTE08001' : "Menu group",

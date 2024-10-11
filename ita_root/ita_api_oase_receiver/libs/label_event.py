@@ -121,11 +121,20 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
         del exastro_labeled_event["event"]["_exastro_fetched_time"]
         del exastro_labeled_event["event"]["_exastro_end_time"]
         del exastro_labeled_event["event"]["_exastro_created_at"]
+        # （エージェントで無理矢理、取り込んだ）利用できないイベントのフラグ
+        if "_exastro_not_available" in single_event:
+            exastro_labeled_event["labels"]["_exastro_not_available"] = single_event["_exastro_not_available"]
+            del exastro_labeled_event["event"]["_exastro_not_available"]
         labeled_events.append(exastro_labeled_event)
     events = []
 
     # exastro用ラベルを貼った後のデータをイベント単位でループ
     for labeled_event in labeled_events:
+        # 利用できないイベントは、あらかじめ未知に流す
+        if "_exastro_not_available" in labeled_event["labels"]:
+            labeled_event["labels"]["_exastro_undetected"] = "1"
+            continue
+
         labeled_event["exastro_labeling_settings"] = {}
         labeled_event["exastro_label_key_inputs"] = {}
 
@@ -161,7 +170,7 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
                 query = create_jmespath_query(setting["SEARCH_KEY_NAME"])
                 try:
                     is_key_exists = get_value_from_jsonpath(query, labeled_event_location)
-                except Exception as e:  # noqa: E722
+                except Exception:  # noqa: E722
                     is_key_exists = False
 
                 # "event"もしくは"labels"配下にラベル付与設定のsearch_key_nameが存在しない場合

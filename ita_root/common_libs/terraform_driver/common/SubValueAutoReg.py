@@ -58,13 +58,13 @@ class SubValueAutoReg():
             result, msg = self.set_if_null_data_handling_flag()
             if not result:
                 # 想定外エラーのためraise
-                raise Exception(msg)
+                raise AppException(msg)
 
             # 代入値自動登録設定のレコードから、代入値管理に登録するレコードのデータを生成する
             result, msg, var_assign_data_list = self.create_val_assign_data()
             if not result:
                 # 想定外エラーのためraise
-                raise Exception(msg)
+                raise AppException(msg)
 
             # トランザクション開始
             self.ws_db.db_transaction_start()
@@ -84,12 +84,20 @@ class SubValueAutoReg():
             # トランザクション終了
             self.ws_db.db_transaction_end(True)
 
-        except Exception as e:
+        except AppException as e:
             # Exceptionの処理なのでログレベルはerrorにする
-            g.applogger.error(str(e))
-            result = False
-            msg = e
+            msg, arg1, arg2 = e.args
+            print_exception_msg(msg)
 
+            result = False
+            # トランザクション終了(異常)
+            self.ws_db.db_transaction_end(False)
+
+        except Exception as e:
+            t = traceback.format_exc()
+            g.applogger.info("[timestamp={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
+
+            result = False
             # トランザクション終了(異常)
             self.ws_db.db_transaction_end(False)
 
@@ -187,9 +195,10 @@ class SubValueAutoReg():
 
                     var_assign_data_list.append(insert_data)
 
-        except Exception as e:
+        except AppException as e:
+            msg, arg1, arg2 = e.args
+            print_exception_msg(msg)
             result = False
-            msg = e
 
         return result, msg, var_assign_data_list
 
@@ -201,24 +210,20 @@ class SubValueAutoReg():
         result = True
         msg = ''
 
-        try:
-            # インターフェース情報からレコードを取得
-            where_str = 'WHERE DISUSE_FLAG = %s'
-            t_if_info_records = self.ws_db.table_select(self.TFConst.T_IF_INFO, where_str, [0])
+        # インターフェース情報からレコードを取得
+        where_str = 'WHERE DISUSE_FLAG = %s'
+        t_if_info_records = self.ws_db.table_select(self.TFConst.T_IF_INFO, where_str, [0])
 
-            # 「インターフェース情報」レコードが1つではない場合エラー
-            if not len(t_if_info_records) == 1:
-                log_msg = g.appmsg.get_log_message("MSG-81001", [])
-                g.applogger.info(log_msg)
-                msg = g.appmsg.get_api_message("MSG-81001", [])
-                result = False
-            else:
-                # 「インターフェース情報」のレコードをセット
-                self.if_null_data_handling_flg = t_if_info_records[0].get('NULL_DATA_HANDLING_FLG')
+        # 「インターフェース情報」レコードが1つではない場合エラー
+        if not len(t_if_info_records) == 1:
+            log_msg = g.appmsg.get_log_message("MSG-81001", [])
+            print_exception_msg(log_msg)
 
-        except Exception as e:
+            msg = g.appmsg.get_api_message("MSG-81001", [])
             result = False
-            msg = e
+        else:
+            # 「インターフェース情報」のレコードをセット
+            self.if_null_data_handling_flg = t_if_info_records[0].get('NULL_DATA_HANDLING_FLG')
 
         return result, msg
 
@@ -230,20 +235,15 @@ class SubValueAutoReg():
         result = True
         column_data = None
 
-        try:
-            # パラメータシート(オペレーションあり)の項目一覧VIEWから、対象のメニューIDを特定する
-            where_str = 'WHERE COLUMN_DEFINITION_ID = %s AND DISUSE_FLAG = %s'
-            v_terf_column_list_record = self.ws_db.table_select(self.TFConst.V_COLUMN_LIST, where_str, [column_list_id, 0])
-            if not v_terf_column_list_record:
-                # 対象のレコードが存在しない場合はFalseを設定
-                result = False
-            else:
-                column_data = v_terf_column_list_record[0]
-
-        except Exception as e:
-            # Exceptionの処理なのでログレベルはerrorにする
-            g.applogger.error(str(e))
+        # パラメータシート(オペレーションあり)の項目一覧VIEWから、対象のメニューIDを特定する
+        where_str = 'WHERE COLUMN_DEFINITION_ID = %s AND DISUSE_FLAG = %s'
+        v_terf_column_list_record = self.ws_db.table_select(self.TFConst.V_COLUMN_LIST, where_str, [column_list_id, 0])
+        if not v_terf_column_list_record:
+            print_exception_msg("get_column_list_data failed")
+            # 対象のレコードが存在しない場合はFalseを設定
             result = False
+        else:
+            column_data = v_terf_column_list_record[0]
 
         return result, column_data
 
@@ -255,65 +255,58 @@ class SubValueAutoReg():
         result = True
         vars_entry = None
         register_flag = False
-        try:
-            menu_id = column_data.get('MENU_ID')
-            column_name_rest = column_data.get('COLUMN_NAME_REST')
 
-            # 対象のメニューIDをもとに「メニュー-テーブル紐付管理」から対象のテーブルを取得する
-            where_str = 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s'
-            t_comn_menu_table_link_record = self.ws_db.table_select('T_COMN_MENU_TABLE_LINK', where_str, [menu_id, 0])
-            if not t_comn_menu_table_link_record:
-                # 対象のメニュー-テーブル紐付管理のレコードが存在しない場合終了(正常)
-                return result, vars_entry, register_flag
+        menu_id = column_data.get('MENU_ID')
+        column_name_rest = column_data.get('COLUMN_NAME_REST')
 
-            # テーブル名を取得
-            cmdb_table_name = t_comn_menu_table_link_record[0].get('TABLE_NAME')
+        # 対象のメニューIDをもとに「メニュー-テーブル紐付管理」から対象のテーブルを取得する
+        where_str = 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s'
+        t_comn_menu_table_link_record = self.ws_db.table_select('T_COMN_MENU_TABLE_LINK', where_str, [menu_id, 0])
+        if not t_comn_menu_table_link_record:
+            # 対象のメニュー-テーブル紐付管理のレコードが存在しない場合終了(正常)
+            return result, vars_entry, register_flag
 
-            # バンドルが有効かどうかを取得
-            vertical_flag = True if str(t_comn_menu_table_link_record[0].get('VERTICAL')) == '1' else False
+        # テーブル名を取得
+        cmdb_table_name = t_comn_menu_table_link_record[0].get('TABLE_NAME')
 
-            # 対象のテーブルからOPERATION_IDが一致しているレコードを取得
-            if vertical_flag:
-                # 代入順序とオペレーションIDの一致を取得する
-                column_assign_seq = value_autoreg_record.get('COLUMN_ASSIGN_SEQ')
-                where_str = 'WHERE OPERATION_ID = %s AND INPUT_ORDER = %s AND DISUSE_FLAG = %s'
-                t_cmdb_record = self.ws_db.table_select(cmdb_table_name, where_str, [self.operation_id, column_assign_seq, 0])
-            else:
-                # オペレーションIDの一致を取得する
-                where_str = 'WHERE OPERATION_ID = %s AND DISUSE_FLAG = %s'
-                t_cmdb_record = self.ws_db.table_select(cmdb_table_name, where_str, [self.operation_id, 0])
+        # バンドルが有効かどうかを取得
+        vertical_flag = True if str(t_comn_menu_table_link_record[0].get('VERTICAL')) == '1' else False
 
-            if not t_cmdb_record:
-                # 対象のレコードが存在しない場合はreturn(正常)
-                return result, vars_entry, register_flag
+        # 対象のテーブルからOPERATION_IDが一致しているレコードを取得
+        if vertical_flag:
+            # 代入順序とオペレーションIDの一致を取得する
+            column_assign_seq = value_autoreg_record.get('COLUMN_ASSIGN_SEQ')
+            where_str = 'WHERE OPERATION_ID = %s AND INPUT_ORDER = %s AND DISUSE_FLAG = %s'
+            t_cmdb_record = self.ws_db.table_select(cmdb_table_name, where_str, [self.operation_id, column_assign_seq, 0])
+        else:
+            # オペレーションIDの一致を取得する
+            where_str = 'WHERE OPERATION_ID = %s AND DISUSE_FLAG = %s'
+            t_cmdb_record = self.ws_db.table_select(cmdb_table_name, where_str, [self.operation_id, 0])
 
-            # DATA_JSONカラムからcolumn_name_restがkeyとなっている値を取得し、vars_entryとして設定する
-            data_json = t_cmdb_record[0].get('DATA_JSON')
-            data_dict = json.loads(data_json)
-            vars_entry = data_dict.get(column_name_rest)
+        if not t_cmdb_record:
+            # 対象のレコードが存在しない場合はreturn(正常)
+            return result, vars_entry, register_flag
 
-            # NULL連携の設定値を取得する
-            null_data_handling_flg = value_autoreg_record.get('NULL_DATA_HANDLING_FLG')
-            if not null_data_handling_flg:
-                # 代入値自動登録設定のNULL連携の値が空の場合、インターフェース情報の設定値を採用する
-                null_data_handling_flg = self.if_null_data_handling_flg
+        # DATA_JSONカラムからcolumn_name_restがkeyとなっている値を取得し、vars_entryとして設定する
+        data_json = t_cmdb_record[0].get('DATA_JSON')
+        data_dict = json.loads(data_json)
+        vars_entry = data_dict.get(column_name_rest)
 
-            # 登録フラグ判定
-            if vars_entry:
-                # vars_entryに値がある場合はregister_flagをTrueにする
-                register_flag = True
-            elif str(null_data_handling_flg) == '1':
-                # vars_entryが空(None)でもNULL連携が有効(1)の場合はregister_flagをTrueにする
-                register_flag = True
-            else:
-                # vars_entryに値がない場合や、NULL連携が有効(1)ではない場合はregister_flagをFalseにする
-                register_flag = False
+        # NULL連携の設定値を取得する
+        null_data_handling_flg = value_autoreg_record.get('NULL_DATA_HANDLING_FLG')
+        if not null_data_handling_flg:
+            # 代入値自動登録設定のNULL連携の値が空の場合、インターフェース情報の設定値を採用する
+            null_data_handling_flg = self.if_null_data_handling_flg
 
-        except Exception as e:
-            # Exceptionの処理なのでログレベルはerrorにする
-            g.applogger.error(str(e))
-            result = False
-            vars_entry = None
+        # 登録フラグ判定
+        if vars_entry:
+            # vars_entryに値がある場合はregister_flagをTrueにする
+            register_flag = True
+        elif str(null_data_handling_flg) == '1':
+            # vars_entryが空(None)でもNULL連携が有効(1)の場合はregister_flagをTrueにする
+            register_flag = True
+        else:
+            # vars_entryに値がない場合や、NULL連携が有効(1)ではない場合はregister_flagをFalseにする
             register_flag = False
 
         return result, vars_entry, register_flag
@@ -326,37 +319,30 @@ class SubValueAutoReg():
         result = True
         vars_entry = None
         register_flag = True
-        try:
-            if g.LANGUAGE == 'ja':
-                col_name = column_data['COLUMN_NAME_JA']
-            else:
-                col_name = column_data['COLUMN_NAME_EN']
 
-            # 項目名を具体値に設定
-            vars_entry = col_name
+        if g.LANGUAGE == 'ja':
+            col_name = column_data['COLUMN_NAME_JA']
+        else:
+            col_name = column_data['COLUMN_NAME_EN']
 
-            # NULL連携の設定値を取得する
-            null_data_handling_flg = value_autoreg_record.get('NULL_DATA_HANDLING_FLG')
-            if not null_data_handling_flg:
-                # 代入値自動登録設定のNULL連携の値が空の場合、インターフェース情報の設定値を採用する
-                null_data_handling_flg = self.if_null_data_handling_flg
+        # 項目名を具体値に設定
+        vars_entry = col_name
 
-            # 登録フラグ判定(key型の場合、項目名が空になるケースは基本的に起こりえないため、register_flagはTrueになるケースしか通らない)
-            if vars_entry:
-                # vars_entryに値がある場合はregister_flagをTrueにする
-                register_flag = True
-            elif str(null_data_handling_flg) == '1':
-                # vars_entryが空(None)でもNULL連携が有効(1)の場合はregister_flagをTrueにする
-                register_flag = True
-            else:
-                # vars_entryに値がない場合や、NULL連携が有効(1)ではない場合はregister_flagをFalseにする
-                register_flag = False
+        # NULL連携の設定値を取得する
+        null_data_handling_flg = value_autoreg_record.get('NULL_DATA_HANDLING_FLG')
+        if not null_data_handling_flg:
+            # 代入値自動登録設定のNULL連携の値が空の場合、インターフェース情報の設定値を採用する
+            null_data_handling_flg = self.if_null_data_handling_flg
 
-        except Exception as e:
-            # Exceptionの処理なのでログレベルはerrorにする
-            g.applogger.error(str(e))
-            result = False
-            vars_entry = None
+        # 登録フラグ判定(key型の場合、項目名が空になるケースは基本的に起こりえないため、register_flagはTrueになるケースしか通らない)
+        if vars_entry:
+            # vars_entryに値がある場合はregister_flagをTrueにする
+            register_flag = True
+        elif str(null_data_handling_flg) == '1':
+            # vars_entryが空(None)でもNULL連携が有効(1)の場合はregister_flagをTrueにする
+            register_flag = True
+        else:
+            # vars_entryに値がない場合や、NULL連携が有効(1)ではない場合はregister_flagをFalseにする
             register_flag = False
 
         return result, vars_entry, register_flag

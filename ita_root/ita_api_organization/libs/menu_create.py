@@ -15,11 +15,13 @@
 import json
 import ast
 import datetime
+import traceback
 from flask import g
 from common_libs.common import *  # noqa: F403
 from common_libs.common.exception import AppException
 from common_libs.loadtable import *  # noqa: F403
 from common_libs.api import check_request_body_key
+from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format, print_exception_msg
 from libs.organization_common import check_auth_menu  # noqa: F401
 
 
@@ -126,8 +128,8 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
         "menu_name": ret[0].get('MENU_NAME_' + lang.upper()),
         "menu_name_rest": ret[0].get('MENU_NAME_REST'),
         "sheet_type_id": sheet_type_id,
-        "sheet_type_name": sheet_type_name,
-        "disp_seq": ret[0].get('DISP_SEQ'),
+        "sheet_type": sheet_type_name,
+        "display_order": ret[0].get('DISP_SEQ'),
         "vertical": vertical,
         "hostgroup": hostgroup,
         "menu_group_for_input_id": menu_group_for_input_id,
@@ -136,7 +138,7 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
         "menu_group_for_input": menu_group_for_input,
         "menu_group_for_subst": menu_group_for_subst,
         "menu_group_for_ref": menu_group_for_ref,
-        "selected_role_id": selected_role_list,
+        "role_list": selected_role_list,
         "description": ret[0].get('DESCRIPTION_' + lang.upper()),
         "remarks": ret[0].get('NOTE'),
         "menu_create_done_status_id": ret[0].get('MENU_CREATE_DONE_STATUS'),
@@ -145,10 +147,10 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
     }
 
     # 「一意制約(複数項目)作成情報」から対象のレコードを取得
-    menu['unique_constraint_current'] = None
+    menu['unique_constraint'] = None
     ret = objdbca.table_select(t_menu_unique_constraint, 'WHERE MENU_CREATE_ID = %s AND DISUSE_FLAG = %s', [menu_create_id, 0])
     if ret:
-        menu['unique_constraint_current'] = ast.literal_eval(ret[0].get('UNIQUE_CONSTRAINT_ITEM'))
+        menu['unique_constraint'] = ast.literal_eval(ret[0].get('UNIQUE_CONSTRAINT_ITEM'))
 
     # メニュー情報を格納
     menu_info['menu'] = menu
@@ -159,8 +161,8 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
     col_group_record_count = len(ret)  # 「カラムグループ作成情報」のレコード数を格納
     for record in ret:
         add_data = {
-            "column_group_id": record.get('CREATE_COL_GROUP_ID'),
-            "column_group_name": record.get('COL_GROUP_NAME_' + lang.upper()),
+            "group_id": record.get('CREATE_COL_GROUP_ID'),
+            "group_name": record.get('COL_GROUP_NAME_' + lang.upper()),
             "full_column_group_name": record.get('FULL_COL_GROUP_NAME_' + lang.upper()),
             "parent_column_group_id": record.get('PA_COL_GROUP_ID')
         }
@@ -187,7 +189,7 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
                 "required": record.get('REQUIRED'),
                 "uniqued": record.get('UNIQUED'),
                 "column_class_id": "",
-                "column_class_name": "",
+                "column_class": "",
                 "description": record.get('DESCRIPTION_' + lang.upper()),
                 "remarks": record.get('NOTE'),
                 "last_update_date_time": last_update_date_time
@@ -195,20 +197,17 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
 
             # フルカラムグループ名を格納
             column_group_id = record.get('CREATE_COL_GROUP_ID')
-            col_detail['column_group_id'] = column_group_id
-            col_detail['column_group_name'] = None
+            col_detail['group_id'] = column_group_id
+            col_detail['group_name'] = None
             if column_group_id:
                 target_data = column_group_list.get(column_group_id)
                 if target_data:
-                    col_detail['column_group_name'] = target_data.get('full_column_group_name')
+                    col_detail['group_name'] = target_data.get('full_column_group_name')
 
             # カラムクラス情報を格納
             column_class_id = record.get('COLUMN_CLASS')
             column_class_name = format_column_class_list.get(column_class_id).get('column_class_name')
-            column_class_disp_name = format_column_class_list.get(column_class_id).get('column_class_disp_name')
             col_detail['column_class_id'] = column_class_id
-            col_detail['column_class_name'] = column_class_name
-            col_detail['column_class_disp_name'] = column_class_disp_name
 
             # カラムクラスに応じて必要な値を格納
             # カラムクラス「文字列(単一行)」用のパラメータを追加
@@ -256,7 +255,11 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
 
             # カラムクラス「プルダウン選択」用のパラメータを追加
             if column_class_name == "IDColumn":
-                col_detail["pulldown_selection"] = record.get('OTHER_MENU_LINK_ID')  # プルダウン選択 メニューグループ:メニュー:項目
+                col_detail["pulldown_selection_id"] = record.get('OTHER_MENU_LINK_ID')  # プルダウン選択 選択項目ID
+                # IDから名称を取得
+                other_menu_link_list = objdbca.table_select('V_MENU_OTHER_LINK', 'WHERE LINK_ID = %s AND DISUSE_FLAG = %s', [col_detail["pulldown_selection_id"], 0])
+                for other_menu_link_list_record in other_menu_link_list:
+                    col_detail["pulldown_selection"] = other_menu_link_list_record.get('LINK_PULLDOWN_' + lang.upper()) # プルダウン選択 メニューグループ:メニュー:項目
                 col_detail["pulldown_selection_default_value"] = record.get('OTHER_MENU_LINK_DEFAULT_VALUE')  # プルダウン選択 初期値
                 reference_item = record.get('REFERENCE_ITEM')
                 if reference_item:
@@ -279,7 +282,11 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
 
             # カラムクラス「パラメータシート参照」用のパラメータを追加
             if column_class_name == "ParameterSheetReference":
-                col_detail["parameter_sheet_reference"] = record.get('PARAM_SHEET_LINK_ID')  # パラメータシート参照
+                col_detail["parameter_sheet_reference_id"] = record.get('PARAM_SHEET_LINK_ID')  # パラメータシート参照 選択項目ID
+                # IDから名称を取得
+                parameter_sheet_reference_list = objdbca.table_select('V_MENU_PARAMETER_SHEET_REFERENCE_ITEM', 'WHERE COLUMN_DEFINITION_ID = %s AND DISUSE_FLAG = %s', [col_detail["parameter_sheet_reference_id"], 0])
+                for parameter_sheet_reference_list_record in parameter_sheet_reference_list:
+                    col_detail["parameter_sheet_reference"] = parameter_sheet_reference_list_record.get('SELECT_FULL_NAME_' + lang.upper()) # パラメータシート参照 選択項目名称
 
             col_num = 'c{}'.format(count)
             column_info_data[col_num] = col_detail
@@ -293,10 +300,6 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
 
         # 大元のカラムの並び順を作成し格納
         menu_info['menu']['columns'] = collect_parent_sord_order(column_info_data, column_group_parent_of_child, key_to_id)
-
-    # カラム情報およびカラムグループ情報の個数を取得し、menu_info['menu']に格納
-    menu_info['menu']['number_item'] = len(column_info_data)
-    menu_info['menu']['number_group'] = len(column_group_info_data)
 
     # カラム情報を格納
     menu_info['column'] = column_info_data
@@ -398,6 +401,9 @@ def _collect_common_menu_create_data(objdbca):
         else:
             name_convert_list[column_name_ret] = column_name
 
+    # Organization毎のアップロードファイルサイズ上限取得
+    org_upload_file_size_limit = get_org_upload_file_size_limit(g.get("ORGANIZATION_ID"))
+
     common_data = {
         "column_class_list": column_class_list,
         "target_menu_group_list": target_menu_group_list,
@@ -405,7 +411,8 @@ def _collect_common_menu_create_data(objdbca):
         "pulldown_item_list": pulldown_item_list,
         "parameter_sheet_reference_list": parameter_sheet_reference_list,
         "role_list": role_list,
-        "name_convert_list": name_convert_list
+        "name_convert_list": name_convert_list,
+        "org_upload_file_size_limit": org_upload_file_size_limit
     }
 
     return common_data
@@ -460,6 +467,8 @@ def collect_pulldown_initial_value(objdbca, menu_name_rest, column_name_rest):
                 initial_value_dict[key] = value
 
     except AppException:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         initial_value_dict = {}
 
     return initial_value_dict
@@ -504,6 +513,8 @@ def collect_pulldown_reference_item(objdbca, menu_name_rest, column_name_rest):
                 reference_item_list.append(add_dict)
 
     except AppException:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         reference_item_list = []
 
     return reference_item_list
@@ -857,12 +868,16 @@ def _insert_t_menu_define(objdbca, menu_data):
 
         # バンドルのkeyが無い場合はFalseを指定
         vertical = menu_data.get('vertical')
-        if not vertical:
+        if vertical == '1' or vertical == 'True':
+            vertical = "True"
+        else:
             vertical = "False"
 
         # ホストグループ利用のkeyが無い場合はFalseを指定
         hostgroup = menu_data.get('hostgroup')
-        if not hostgroup:
+        if hostgroup == '1' or hostgroup == 'True':
+            hostgroup = "True"
+        else:
             hostgroup = "False"
 
         # 登録用パラメータを作成
@@ -942,11 +957,15 @@ def _update_t_menu_define(objdbca, current_t_menu_define, menu_data, type_name):
         hostgroup = menu_data.get('hostgroup')
 
         # バンドル有無のkeyが無い場合はFalseを指定
-        if not vertical:
+        if vertical == '1' or vertical == 'True':
+            vertical = "True"
+        else:
             vertical = "False"
 
         # ホストグループ利用有無のkeyが無い場合はFalseを指定
-        if not hostgroup:
+        if hostgroup == '1' or hostgroup == 'True':
+            hostgroup = "True"
+        else:
             hostgroup = "False"
 
         # 「初期化」「編集」の場合のみチェックするバリデーション
@@ -1067,8 +1086,8 @@ def _insert_t_menu_column_group(objdbca, group_data_list):
         # 「カラムグループ作成情報」登録処理のループスタート
         for num, group_data in group_data_list.items():
             # 登録用パラメータを作成
-            col_group_name_ja = group_data.get('col_group_name')
-            col_group_name_en = group_data.get('col_group_name')
+            col_group_name_ja = group_data.get('group_name')
+            col_group_name_en = group_data.get('group_name')
             parent_full_col_group_name = group_data.get('parent_full_col_group_name')
 
             # 親カラムグループがあれば、対象の「フルカラムグループ名」を取得
@@ -1150,8 +1169,24 @@ def _insert_t_menu_column(objdbca, menu_data, column_data_list):
         # menu_dataから登録用のメニュー名を取得
         menu_name = menu_data.get('menu_name')
 
+        # 変数定義
+        lang = g.get('LANGUAGE')
+
         # 「パラメータシート項目作成情報」登録処理のループスタート
         for column_data in column_data_list.values():
+            # 0,1を文字列のTrue,Falseに変換
+            required = column_data.get('required')
+            if required == '1' or required == 'True':
+                required = 'True'
+            else:
+                required = 'False'
+
+            uniqued = column_data.get('uniqued')
+            if uniqued == '1' or uniqued == 'True':
+                uniqued = 'True'
+            else:
+                uniqued = 'False'
+
             # create_column_idが空(null)のもののみ対象とする
             create_column_id = column_data.get('create_column_id')
             if not create_column_id:
@@ -1166,8 +1201,8 @@ def _insert_t_menu_column(objdbca, menu_data, column_data_list):
                     "description_en": column_data.get('description'),  # 説明(en)
                     "column_class": column_class,  # カラムクラス
                     "display_order": column_data.get('display_order'),  # 表示順序
-                    "required": column_data.get('required'),  # 必須
-                    "uniqued": column_data.get('uniqued'),  # 一意制約
+                    "required": required,  # 必須
+                    "uniqued": uniqued,  # 一意制約
                     "remarks": column_data.get('remarks'),  # 備考
                 }
 
@@ -1220,7 +1255,41 @@ def _insert_t_menu_column(objdbca, menu_data, column_data_list):
 
                 # カラムクラス「プルダウン選択」用のパラメータを追加
                 if column_class == "IDColumn":
-                    parameter["pulldown_selection"] = column_data.get('pulldown_selection')  # プルダウン選択 メニューグループ:メニュー:項目
+                    parameter["pulldown_selection"] = None
+                    pulldown_selection_id = column_data.get('pulldown_selection_id') # 選択項目ID
+                    pulldown_selection_name = column_data.get('pulldown_selection') # 選択項目名称
+
+                    if not pulldown_selection_id == '' and not pulldown_selection_id is None:
+                        # IDが指定されている場合、IDから名称を取得
+                        tmp_other_menu_link_list = objdbca.table_select('V_MENU_OTHER_LINK', 'WHERE LINK_ID = %s AND DISUSE_FLAG = %s', [pulldown_selection_id, 0])
+                        if len(tmp_other_menu_link_list) > 0:
+                            for record in tmp_other_menu_link_list:
+                                parameter["pulldown_selection"] = record.get('LINK_PULLDOWN_' + lang.upper())
+                        else:
+                            # IDが存在しない場合はバリデーションエラー
+                            msg = g.appmsg.get_api_message('MSG-20263', [pulldown_selection_id])
+                            log_msg_args = [msg]
+                            api_msg_args = [msg]
+                            raise AppException("499-00201", log_msg_args, api_msg_args)
+                    elif not pulldown_selection_name == '' and not pulldown_selection_name is None:
+                        # IDの指定がなく名称が指定されている場合、名称で処理実行
+                        tmp_other_menu_link_list = objdbca.table_select('V_MENU_OTHER_LINK', 'WHERE LINK_PULLDOWN_' + lang.upper() + ' = %s AND DISUSE_FLAG = %s', [pulldown_selection_name, 0])
+                        if len(tmp_other_menu_link_list) > 0:
+                            for record in tmp_other_menu_link_list:
+                                parameter["pulldown_selection"] = record.get('LINK_PULLDOWN_' + lang.upper())
+                        else:
+                            # IDが存在しない場合はバリデーションエラー
+                            msg = g.appmsg.get_api_message('MSG-20264', [pulldown_selection_name])
+                            log_msg_args = [msg]
+                            api_msg_args = [msg]
+                            raise AppException("499-00201", log_msg_args, api_msg_args)
+                    else:
+                        # IDも名称も指定されていない場合
+                        msg = g.appmsg.get_api_message('MSG-20267', [])
+                        log_msg_args = [msg]
+                        api_msg_args = [msg]
+                        raise AppException("499-00201", log_msg_args, api_msg_args)
+
                     parameter["pulldown_selection_default_value"] = column_data.get('pulldown_selection_default_value')  # プルダウン選択 初期値
                     reference_item = column_data.get('reference_item')
                     if reference_item:
@@ -1247,7 +1316,39 @@ def _insert_t_menu_column(objdbca, menu_data, column_data_list):
 
                 # カラムクラス「パラメータシート参照」用のパラメータを追加
                 if column_class == "ParameterSheetReference":
-                    parameter["parameter_sheet_reference"] = column_data.get('parameter_sheet_reference')  # パラメータシート参照
+                    parameter_sheet_reference_id = column_data.get('parameter_sheet_reference_id') # 選択項目ID
+                    parameter_sheet_reference_name = column_data.get('parameter_sheet_reference') # 選択項目名称
+
+                    if not parameter_sheet_reference_id == '' and not parameter_sheet_reference_id is None:
+                        # IDが指定されている場合、IDから名称を取得
+                        tmp_parameter_sheet_reference_list = objdbca.table_select('V_MENU_PARAMETER_SHEET_REFERENCE_ITEM', 'WHERE COLUMN_DEFINITION_ID = %s AND DISUSE_FLAG = %s', [parameter_sheet_reference_id, 0])
+                        if len(tmp_parameter_sheet_reference_list) > 0:
+                            for record in tmp_parameter_sheet_reference_list:
+                                parameter["parameter_sheet_reference"] = record.get('SELECT_FULL_NAME_' + lang.upper())
+                        else:
+                            # IDが存在しない場合はバリデーションエラー
+                            msg = g.appmsg.get_api_message('MSG-20265', [parameter_sheet_reference_id])
+                            log_msg_args = [msg]
+                            api_msg_args = [msg]
+                            raise AppException("499-00201", log_msg_args, api_msg_args)
+                    elif not parameter_sheet_reference_name == '' and not parameter_sheet_reference_name is None:
+                        # IDの指定がなく名称が指定されている場合、名称で処理実行
+                        tmp_parameter_sheet_reference_list = objdbca.table_select('V_MENU_PARAMETER_SHEET_REFERENCE_ITEM', 'WHERE SELECT_FULL_NAME_' + lang.upper() + ' = %s AND DISUSE_FLAG = %s', [parameter_sheet_reference_name, 0])
+                        if len(tmp_parameter_sheet_reference_list) > 0:
+                            for record in tmp_parameter_sheet_reference_list:
+                                parameter["parameter_sheet_reference"] = record.get('SELECT_FULL_NAME_' + lang.upper())
+                        else:
+                            # IDが存在しない場合はバリデーションエラー
+                            msg = g.appmsg.get_api_message('MSG-20266', [parameter_sheet_reference_name])
+                            log_msg_args = [msg]
+                            api_msg_args = [msg]
+                            raise AppException("499-00201", log_msg_args, api_msg_args)
+                    else:
+                        # IDも名称も指定されていない場合
+                        msg = g.appmsg.get_api_message('MSG-20268', [])
+                        log_msg_args = [msg]
+                        api_msg_args = [msg]
+                        raise AppException("499-00201", log_msg_args, api_msg_args)
                 parameters = {
                     "parameter": parameter,
                     "type": "Register"
@@ -1320,6 +1421,10 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
         # menu_dataから登録用のメニュー名を取得
         menu_name = menu_data.get('menu_name')
 
+        # プルダウン選択、パラメータシート参照の選択項目
+        update_pulldown_selection = None
+        update_parameter_sheet_reference = None
+
         # 「パラメータシート項目作成情報」更新処理のループスタート
         for column_data in column_data_list.values():
             # 更新対象のuuidを取得
@@ -1332,6 +1437,19 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
                 # 対象のカラムクラスを取得
                 column_class = column_data.get('column_class')
                 item_name = column_data.get('item_name')
+
+                # 0,1を文字列のTrue,Falseに変換
+                required = column_data.get('required')
+                if required == '1' or required == 'True':
+                    required = 'True'
+                else:
+                    required = 'False'
+
+                uniqued = column_data.get('uniqued')
+                if uniqued == '1' or uniqued == 'True':
+                    uniqued = 'True'
+                else:
+                    uniqued = 'False'
 
                 # 「編集」の場合、登録済みレコードとの差分によるバリデーションチェックを行う
                 if type_name == 'edit':
@@ -1353,14 +1471,22 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
 
                     # 「必須」が変更されている場合エラー判定
                     current_required_id = str(target_record.get('REQUIRED'))
-                    update_required_id = "1" if column_data.get('required') == "True" else "0"
-                    if not current_required_id == update_required_id:
+                    # 0,1を文字列のTrue,Falseに変換
+                    if current_required_id == '1' or current_required_id == 'True':
+                        current_required_id = 'True'
+                    else:
+                        current_required_id = 'False'
+                    if not current_required_id == required:
                         raise AppException("499-00706", [item_name, "required"])  # 「編集」の際は既存項目の対象の設定を変更できません。(項目: {}, 対象: {})
 
                     # 「一意制約」が変更されている場合エラー判定
                     current_uniqued_id = str(target_record.get('UNIQUED'))
-                    update_uniqued_id = "1" if column_data.get('uniqued') == "True" else "0"
-                    if not current_uniqued_id == update_uniqued_id:
+                    # 0,1を文字列のTrue,Falseに変換
+                    if current_uniqued_id == '1' or current_uniqued_id == 'True':
+                        current_uniqued_id = 'True'
+                    else:
+                        current_uniqued_id = 'False'
+                    if not current_uniqued_id == uniqued:
                         raise AppException("499-00706", [item_name, "uniqued"])  # 「編集」の際は既存項目の対象の設定を変更できません。(項目: {}, 対象: {})
 
                     # カラムクラス「文字列(単一行)」の場合のバリデーションチェック
@@ -1382,14 +1508,14 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
                     # カラムクラス「整数」の場合のバリデーションチェック
                     if column_class == "NumColumn":
                         current_integer_minimum_value = None if not target_record.get('NUM_MIN') else int(target_record.get('NUM_MIN'))
-                        update_integer_minimum_value = None if not column_data.get('integer_minimum_value') else int(column_data.get('integer_minimum_value'))  # noqa: E501
+                        update_integer_minimum_value = None if not column_data.get('integer_minimum_value') else float(column_data.get('integer_minimum_value'))  # noqa: E501
                         # 最小値が既存の値よりも上回っている場合エラー判定
                         if current_integer_minimum_value and update_integer_minimum_value:
                             if current_integer_minimum_value < update_integer_minimum_value:
                                 raise AppException("499-00708", [item_name, "integer_minimum_value"])  # 「編集」の際は既存項目の対象の値が上回る変更はできません。(項目: {}, 対象: {})
 
                         current_integer_maximum_value = None if not target_record.get('NUM_MAX') else int(target_record.get('NUM_MAX'))
-                        update_integer_maximum_value = None if not column_data.get('integer_maximum_value') else int(column_data.get('integer_maximum_value'))  # noqa: E501
+                        update_integer_maximum_value = None if not column_data.get('integer_maximum_value') else float(column_data.get('integer_maximum_value'))  # noqa: E501
                         # 最大値が既存の値よりも下回っている場合エラー判定
                         if current_integer_maximum_value and update_integer_maximum_value:
                             if current_integer_maximum_value > update_integer_maximum_value:
@@ -1397,15 +1523,15 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
 
                     # カラムクラス「小数」の場合のバリデーションチェック
                     if column_class == "FloatColumn":
-                        current_decimal_minimum_value = None if not target_record.get('FLOAT_MIN') else int(target_record.get('FLOAT_MIN'))
-                        update_decimal_minimum_value = None if not column_data.get('decimal_minimum_value') else int(column_data.get('decimal_minimum_value'))  # noqa: E501
+                        current_decimal_minimum_value = None if not target_record.get('FLOAT_MIN') else float(target_record.get('FLOAT_MIN'))
+                        update_decimal_minimum_value = None if not column_data.get('decimal_minimum_value') else float(column_data.get('decimal_minimum_value'))  # noqa: E501
                         # 最小値が既存の値よりも上回っている場合エラー判定
                         if current_decimal_minimum_value and update_decimal_minimum_value:
                             if current_decimal_minimum_value < update_decimal_minimum_value:
                                 raise AppException("499-00708", [item_name, "decimal_minimum_value"])  # 「編集」の際は既存項目の対象の値が上回る変更はできません。(項目: {}, 対象: {})
 
-                        current_decimal_maximum_value = None if not target_record.get('FLOAT_MAX') else int(target_record.get('FLOAT_MAX'))
-                        update_decimal_maximum_value = None if not column_data.get('decimal_maximum_value') else int(column_data.get('decimal_maximum_value'))  # noqa: E501
+                        current_decimal_maximum_value = None if not target_record.get('FLOAT_MAX') else float(target_record.get('FLOAT_MAX'))
+                        update_decimal_maximum_value = None if not column_data.get('decimal_maximum_value') else float(column_data.get('decimal_maximum_value'))  # noqa: E501
                         # 最大値が既存の値よりも下回っている場合エラー判定
                         if current_decimal_maximum_value and update_decimal_maximum_value:
                             if current_decimal_maximum_value > update_decimal_maximum_value:
@@ -1420,9 +1546,41 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
 
                     # カラムクラス「プルダウン選択」の場合のバリデーションチェック
                     if column_class == "IDColumn":
-                        update_pulldown_selection = column_data.get('pulldown_selection')
+                        update_pulldown_selection_id = column_data.get('pulldown_selection_id') # 選択項目ID
+                        update_pulldown_selection_name = column_data.get('pulldown_selection') # 選択項目名称
 
-                        # 現在設定されているIDのlink_pulldownを取得
+                        if not update_pulldown_selection_id == '' and not update_pulldown_selection_id is None:
+                            # IDが指定されている場合、IDから名称を取得
+                            tmp_other_menu_link_list = objdbca.table_select('V_MENU_OTHER_LINK', 'WHERE LINK_ID = %s AND DISUSE_FLAG = %s', [update_pulldown_selection_id, 0])
+                            if len(tmp_other_menu_link_list) > 0:
+                                for record in tmp_other_menu_link_list:
+                                    update_pulldown_selection = record.get('LINK_PULLDOWN_' + lang.upper())
+                            else:
+                                # IDが存在しない場合はバリデーションエラー
+                                msg = g.appmsg.get_api_message('MSG-20263', [update_pulldown_selection_id])
+                                log_msg_args = [msg]
+                                api_msg_args = [msg]
+                                raise AppException("499-00201", log_msg_args, api_msg_args)
+                        elif not update_pulldown_selection_name == '' and not update_pulldown_selection_name is None:
+                            # IDの指定がなく名称が指定されている場合、名称で処理実行
+                            tmp_other_menu_link_list = objdbca.table_select('V_MENU_OTHER_LINK', 'WHERE LINK_PULLDOWN_' + lang.upper() + ' = %s AND DISUSE_FLAG = %s', [update_pulldown_selection_name, 0])
+                            if len(tmp_other_menu_link_list) > 0:
+                                for record in tmp_other_menu_link_list:
+                                    update_pulldown_selection = record.get('LINK_PULLDOWN_' + lang.upper())
+                            else:
+                                # IDが存在しない場合はバリデーションエラー
+                                msg = g.appmsg.get_api_message('MSG-20264', [update_pulldown_selection_name])
+                                log_msg_args = [msg]
+                                api_msg_args = [msg]
+                                raise AppException("499-00201", log_msg_args, api_msg_args)
+                        else:
+                            # IDも名称も指定されていない場合
+                            msg = g.appmsg.get_api_message('MSG-20267', [])
+                            log_msg_args = [msg]
+                            api_msg_args = [msg]
+                            raise AppException("499-00201", log_msg_args, api_msg_args)
+
+                        # 現在設定されているlink_pulldownを取得
                         current_other_menu_link_id = target_record.get('OTHER_MENU_LINK_ID')
                         current_other_menu_link_data = format_other_menu_link_list.get(current_other_menu_link_id)
                         current_pulldown_selection = current_other_menu_link_data.get('link_pulldown_' + lang.lower())
@@ -1470,9 +1628,41 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
 
                     # カラムクラス「パラメータシート参照」の場合のバリデーションチェック
                     if column_class == "ParameterSheetReference":
-                        update_parameter_sheet_reference = column_data.get('parameter_sheet_reference')
+                        update_parameter_sheet_reference_id = column_data.get('parameter_sheet_reference_id') # 選択項目ID
+                        update_parameter_sheet_reference_name = column_data.get('parameter_sheet_reference') # 選択項目名称
 
-                        # 現在設定されているIDのparameter_sheet_referenceを取得
+                        if not update_parameter_sheet_reference_id == '' and not update_parameter_sheet_reference_id is None:
+                            # IDが指定されている場合、IDから名称を取得
+                            tmp_parameter_sheet_reference_list = objdbca.table_select('V_MENU_PARAMETER_SHEET_REFERENCE_ITEM', 'WHERE COLUMN_DEFINITION_ID = %s AND DISUSE_FLAG = %s', [update_parameter_sheet_reference_id, 0])
+                            if len(tmp_parameter_sheet_reference_list) > 0:
+                                for record in tmp_parameter_sheet_reference_list:
+                                    update_parameter_sheet_reference = record.get('SELECT_FULL_NAME_' + lang.upper())
+                            else:
+                                # IDが存在しない場合はバリデーションエラー
+                                msg = g.appmsg.get_api_message('MSG-20265', [update_parameter_sheet_reference_id])
+                                log_msg_args = [msg]
+                                api_msg_args = [msg]
+                                raise AppException("499-00201", log_msg_args, api_msg_args)
+                        elif not update_parameter_sheet_reference_name == '' and not update_parameter_sheet_reference_name is None:
+                            # IDの指定がなく名称が指定されている場合、名称で処理実行
+                            tmp_parameter_sheet_reference_list = objdbca.table_select('V_MENU_PARAMETER_SHEET_REFERENCE_ITEM', 'WHERE SELECT_FULL_NAME_' + lang.upper() + ' = %s AND DISUSE_FLAG = %s', [update_parameter_sheet_reference_name, 0])
+                            if len(tmp_parameter_sheet_reference_list) > 0:
+                                for record in tmp_parameter_sheet_reference_list:
+                                    update_parameter_sheet_reference = record.get('SELECT_FULL_NAME_' + lang.upper())
+                            else:
+                                # IDが存在しない場合はバリデーションエラー
+                                msg = g.appmsg.get_api_message('MSG-20266', [update_pulldown_selection_name])
+                                log_msg_args = [msg]
+                                api_msg_args = [msg]
+                                raise AppException("499-00201", log_msg_args, api_msg_args)
+                        else:
+                            # IDも名称も指定されていない場合
+                            msg = g.appmsg.get_api_message('MSG-20268', [])
+                            log_msg_args = [msg]
+                            api_msg_args = [msg]
+                            raise AppException("499-00201", log_msg_args, api_msg_args)
+
+                        # 現在設定されているparameter_sheet_referenceを取得
                         current_parameter_sheet_reference_id = target_record.get('PARAM_SHEET_LINK_ID')
                         current_parameter_sheet_reference_data = format_parameter_sheet_reference_list.get(current_parameter_sheet_reference_id)
                         current_parameter_sheet_reference = current_parameter_sheet_reference_data.get('select_full_name_' + lang.lower())
@@ -1491,8 +1681,8 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
                     "description_en": column_data.get('description'),  # 説明(en)
                     "column_class": column_class,  # カラムクラス
                     "display_order": column_data.get('display_order'),  # 表示順序
-                    "required": column_data.get('required'),  # 必須
-                    "uniqued": column_data.get('uniqued'),  # 一意制約
+                    "required": required,  # 必須
+                    "uniqued": uniqued,  # 一意制約
                     "remarks": column_data.get('remarks'),  # 備考
                     "last_update_date_time": last_update_date_time  # 最終更新日時
                 }
@@ -1567,7 +1757,10 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
 
                 # カラムクラス「プルダウン選択」用のパラメータを追加
                 if column_class == "IDColumn":
-                    parameter["pulldown_selection"] = column_data.get('pulldown_selection')  # プルダウン選択 メニューグループ:メニュー:項目
+                    if type_name == "initialize":
+                        parameter["pulldown_selection"] = column_data.get('pulldown_selection') # プルダウン選択 メニューグループ:メニュー:項目
+                    else:
+                        parameter["pulldown_selection"] = update_pulldown_selection  # プルダウン選択 メニューグループ:メニュー:項目
                     parameter["pulldown_selection_default_value"] = column_data.get('pulldown_selection_default_value')  # プルダウン選択 初期値
                     reference_item = column_data.get('reference_item')
                     if reference_item:
@@ -1591,7 +1784,10 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
 
                 # カラムクラス「パラメータシート参照」用のパラメータを追加
                 if column_class == "ParameterSheetReference":
-                    parameter["parameter_sheet_reference"] = column_data.get('parameter_sheet_reference')  # パラメータシート参照
+                    if type_name == "initialize":
+                        parameter["parameter_sheet_reference"] = column_data.get('parameter_sheet_reference') # パラメータシート参照
+                    else:
+                        parameter["parameter_sheet_reference"] = update_parameter_sheet_reference  # パラメータシート参照
 
                 parameters = {
                     "parameter": parameter,
@@ -1962,11 +2158,11 @@ def _check_before_registar_validate(objdbca, menu_data, column_data_list):
             raise AppException("499-00714", [])  # シートタイプが「パラメータシート（オペレーションあり）」の場合、項目数が0件のメニューを作成できません。
 
         # 「バンドル」有効かつ、登録する項目が無い場合エラー判定
-        if vertical == "True" and not column_data_list:
+        if vertical is True and not column_data_list:
             raise AppException("499-00712", [])  # 「バンドル」が有効の場合、項目数が0件のメニューを作成できません。
 
         # シートタイプが「2: データシート」かつ、ホストグループ利用の場合エラー判定
-        if sheet_id == "2" and hostgroup == "True":
+        if sheet_id == "2" and hostgroup is True:
             raise AppException("499-00713", [])
 
         # シートタイプが「1: パラメータシート（ホスト/オペレーションあり）」以外で「パラメータシート参照」項目を利用している場合
@@ -2058,7 +2254,7 @@ def add_tmp_column_group(column_group_list, col_group_record_count, column_group
     max_loop = int(col_group_record_count) ** 2  # 「カラムグループ作成情報」のレコード数の二乗がループ回数の上限
     while not end_flag:
         for target in column_group_list.values():
-            if target.get('column_group_id') == target_column_group_id:
+            if target.get('group_id') == target_column_group_id:
                 parent_column_group_id = target.get('parent_column_group_id')
                 if not parent_column_group_id:
                     end_flag = True
@@ -2109,17 +2305,18 @@ def collect_column_group_sort_order(column_group_list, tmp_column_group, column_
                 columns.append(col)
 
         add_data['columns'] = columns
-        add_data['column_group_id'] = group_id
-        add_data['column_group_name'] = None
+        add_data['group_id'] = group_id
+        add_data['group_name'] = None
         add_data['parent_column_group_id'] = None
-        add_data['parent_column_group_name'] = None
+        add_data['parent_full_col_group_name'] = None
         target_data = column_group_list.get(group_id)
         if target_data:
-            add_data['column_group_name'] = target_data.get('column_group_name')
+            add_data['group_name'] = target_data.get('group_name')
             parent_id = target_data.get('parent_column_group_id')
-            if parent_id:
+            parent_column_group_name = target_data.get('parent_full_col_group_name')
+            if parent_column_group_name:
                 add_data['parent_column_group_id'] = parent_id
-                add_data['parent_column_group_name'] = column_group_list.get(parent_id).get('column_group_name')
+                add_data['parent_column_group_name'] = parent_column_group_name
 
         column_group_info_data[key_to_id[group_id]] = add_data
 
@@ -2138,7 +2335,7 @@ def collect_parent_sord_order(column_info_data, column_group_parent_of_child, ke
     """
     columns = []
     for col_num, col_data in column_info_data.items():
-        column_group_id = col_data['column_group_id']
+        column_group_id = col_data['group_id']
         if not column_group_id:
             # カラムグループが無い場合はcol_num(c1, c2, c3...)を格納
             columns.append(col_num)

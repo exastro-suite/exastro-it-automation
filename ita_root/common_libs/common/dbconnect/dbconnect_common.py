@@ -75,7 +75,8 @@ class DBConnectCommon:
                 database=self._db,
                 charset='utf8mb4',
                 collation='utf8mb4_general_ci',
-                cursorclass=pymysql.cursors.DictCursor
+                cursorclass=pymysql.cursors.DictCursor,
+                local_infile = True,
             )
         except pymysql.Error as e:
             raise AppException("999-00002", [self._db, e])
@@ -319,7 +320,7 @@ class DBConnectCommon:
 
             # make sql statement
             column_list = list(data.keys())
-            prepared_list = list(map(lambda a: "%s", column_list))
+            prepared_list = ["%s"]*len(column_list)
             value_list = list(data.values())
 
             sql = "INSERT INTO `{}` ({}) VALUES ({})".format(table_name, ','.join(column_list), ','.join(prepared_list))
@@ -341,7 +342,7 @@ class DBConnectCommon:
 
             # make sql statement
             column_list = list(history_data.keys())
-            prepared_list = list(map(lambda a: "%s", column_list))
+            prepared_list = ["%s"]*len(column_list)
             value_list = list(history_data.values())
 
             sql = "INSERT INTO `{}` ({}) VALUES ({})".format(history_table_name, ','.join(column_list), ','.join(prepared_list))
@@ -410,7 +411,7 @@ class DBConnectCommon:
 
             # make sql statement
             column_list = list(history_data.keys())
-            prepared_list = list(map(lambda a: "%s", column_list))
+            prepared_list = ["%s"]*len(column_list)
             value_list = list(history_data.values())
 
             sql = "INSERT INTO `{}` ({}) VALUES ({})".format(history_table_name, ','.join(column_list), ','.join(prepared_list))
@@ -436,10 +437,9 @@ class DBConnectCommon:
         if isinstance(table_name_list, str):
             table_name_list = [table_name_list]
 
-        prepared_list = list(map(lambda t: "%s", table_name_list))
+        prepared_list = ['%s']*len(table_name_list)
 
         sql = "SELECT `TABLE_NAME` FROM `T_COMN_RECODE_LOCK_TABLE` WHERE `TABLE_NAME` IN ({}) FOR UPDATE".format(",".join(prepared_list))
-
         res = self.sql_execute(sql, table_name_list)
 
         res_table_name_list = [ _r.get("TABLE_NAME") for _r in res]
@@ -447,13 +447,12 @@ class DBConnectCommon:
         if len(res) != len(table_name_list):
             # create insert sql and sql_execute
             target_table_name = [_tn for _tn in table_name_list if _tn not in res_table_name_list] if res_table_name_list else table_name_list
-            prepared_list = list(map(lambda t: "%s", target_table_name))
-            sql_values = ["({})".format(_prepared) for _prepared in prepared_list]
-            sql = "INSERT INTO `T_COMN_RECODE_LOCK_TABLE` (`TABLE_NAME`) VALUES " + "{};".format(",".join(sql_values))
+            prepared_list = ['(%s)']*len(target_table_name)
+            sql = "INSERT INTO `T_COMN_RECODE_LOCK_TABLE` (`TABLE_NAME`) VALUES " + "{};".format(",".join(prepared_list))
             res = self.sql_execute(sql, target_table_name)
 
             # retry select for update
-            prepared_list = list(map(lambda t: "%s", target_table_name))
+            prepared_list = ['%s']*len(target_table_name)
             sql = "SELECT `TABLE_NAME` FROM `T_COMN_RECODE_LOCK_TABLE` WHERE `TABLE_NAME` IN ({}) FOR UPDATE".format(",".join(prepared_list))
             res = self.sql_execute(sql, target_table_name)
         return res
@@ -635,7 +634,7 @@ class DBConnectCommonRoot(DBConnectCommon):
                 collation='utf8mb4_general_ci',
                 cursorclass=pymysql.cursors.DictCursor
             )
-        except Exception as e:
+        except pymysql.Error as e:
             raise AppException("999-00002", [f"{self._host}:{self._port}", e])
 
         return True

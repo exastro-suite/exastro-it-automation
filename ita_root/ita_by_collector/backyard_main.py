@@ -18,6 +18,7 @@ import datetime
 import base64
 import json
 import subprocess
+import shutil
 
 from flask import g
 
@@ -28,6 +29,10 @@ from common_libs.ansible_driver.classes.YamlParseClass import YamlParse
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_driver.classes.CreateAnsibleExecFiles import CreateAnsibleExecFiles
 from common_libs.ansible_driver.functions.util import getAnsibleConst, getDataRelayStorageDir
+import traceback
+from common_libs.common.util import arrange_stacktrace_format
+from common_libs.common.util import get_iso_datetime
+from common_libs.common.util import print_exception_msg
 
 
 def addFuncionsPerOrchestrator(varOrchestratorId, strRPathFromOrcLibRoot):
@@ -163,6 +168,7 @@ def yamlParseAnalysis(strTargetfile):
                             for key4, value4 in php_array(value3['VAR_VALUE']):
                                 if is_num(key4) and type(value4) not in (list, dict):
                                     keyname = '%s[%s]' % (value3['VAR_NAME_PATH'], key4)
+                                    arrVarsList.setdefault(key1, {})
                                     arrVarsList[key1][keyname] = value4
 
     return arrVarsList
@@ -730,7 +736,7 @@ def backyard_main(organization_id, workspace_id):
                                                             tmp_param['file'][col_name] = ''
 
                                                         # ファイルアップロード対象リストのファイルデータをセット
-                                                        upload_filepath = None
+                                                        upload_filepath = {}
                                                         if hostname in arrTargetUploadLists and varmembermembervalue in arrTargetUploadLists[hostname]:
                                                             upload_filepath = arrTargetUploadLists[hostname][varmembermembervalue]
 
@@ -741,9 +747,10 @@ def backyard_main(organization_id, workspace_id):
                                                                     break
 
                                                         if upload_filepath:
-                                                            filedata = file_encode(upload_filepath)
-                                                            if filedata is not False:
-                                                                tmp_param['file'][col_name] = filedata
+                                                            tmp_param['file'][col_name] = upload_filepath
+                                                            # パス指定時、ファイル名で、parameterを上書き
+                                                            # parameter /xxxx/filename -> filename
+                                                            tmp_param['parameter'][col_name] = os.path.basename(upload_filepath)
 
                                                     # バンドル使用のメニュー名を保持
                                                     if vertical_flag and menu_name not in bandle_menus:
@@ -765,6 +772,8 @@ def backyard_main(organization_id, workspace_id):
                                             output_flag = True
                                             for input_order, tmparr3 in bdl_array(tmparr):
                                                 filename = tmparr3.pop('input_file')
+                                                uploadFiles = tmparr3["file"]
+                                                del tmparr3["file"]
                                                 if output_flag is True:
                                                     FREE_LOG1 = g.appmsg.get_api_message("MSG-10849", [hostname, filename])
                                                     collection_log = '%s\n%s' % (collection_log, FREE_LOG1) if collection_log else FREE_LOG1
@@ -842,7 +851,7 @@ def backyard_main(organization_id, workspace_id):
                                                         RESTEXEC_FLG = 1
                                                         rec_cnt = rec_cnt + 1
 
-                                                        ret = objmenu.exec_maintenance(tmparr3, tmparr3['parameter']['uuid'], tmparr3['type'], pk_use_flg=False, auth_check=False)
+                                                        ret = objmenu.exec_maintenance(tmparr3, tmparr3['parameter']['uuid'], tmparr3['type'], pk_use_flg=False, auth_check=False, record_file_paths=uploadFiles)
                                                         if ret[0] is True:
                                                             dbAccess.db_commit()
 
@@ -852,7 +861,11 @@ def backyard_main(organization_id, workspace_id):
                                                             if len(ret) >= 3:
                                                                 g.applogger.debug(ret[2])
                                                                 collection_log = '%s\n%s' % (collection_log, ret[2]) if collection_log else ret[2]
-                                                    except Exception:
+                                                    except Exception as e:
+                                                        t = traceback.format_exc()
+                                                        g.applogger.info("[ts={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
+                                                        print_exception_msg(e)
+
                                                         # 言語設定を変更:デフォルトへ戻す
                                                         setattr(g, 'LANGUAGE', 'en')
                                                         raise Exception()
@@ -878,6 +891,16 @@ def backyard_main(organization_id, workspace_id):
 
                         NOTICE_FLG = str(NOTICE_FLG)
 
+                        # logを一時ファイルに書き込み
+                        tmp_log_dir = f"/tmp/{execNo}"
+                        os.makedirs(tmp_log_dir, exist_ok=True)
+                        tmp_log_path = f"{tmp_log_dir}/{tmpCollectlogfile}"
+                        log_lines = collection_log.splitlines()
+                        with open(tmp_log_path, "w") as f:
+                            for line in log_lines:
+                                f.write(line + "\n")
+                        uploadFiles = {'collection_log': tmp_log_path}
+
                         request_param = {}
                         request_param['type'] = load_table.CMD_UPDATE
                         request_param['file'] = {}
@@ -886,10 +909,13 @@ def backyard_main(organization_id, workspace_id):
                         request_param['parameter']['collection_status'] = collect_sts_info[NOTICE_FLG] if NOTICE_FLG in collect_sts_info else ''
                         request_param['parameter']['last_update_date_time'] = last_update_timestamp
                         if len(collection_log) > 0:
-                            request_param['file']['collection_log'] = base64.b64encode(collection_log.encode()).decode()
                             request_param['parameter']['collection_log'] = tmpCollectlogfile
 
-                        ret = objmenu_orch.exec_maintenance(request_param, request_param['parameter']['execution_no'], load_table.CMD_UPDATE, pk_use_flg=False, auth_check=False)
+                        ret = objmenu_orch.exec_maintenance(request_param, request_param['parameter']['execution_no'], load_table.CMD_UPDATE, pk_use_flg=False, auth_check=False, record_file_paths=uploadFiles)
+
+                        # 一時ファイルを削除
+                        shutil.rmtree(tmp_log_dir)
+
                         if ret[0] is False:
                             dbAccess.db_rollback()
                             if len(ret) >= 3:
@@ -899,10 +925,14 @@ def backyard_main(organization_id, workspace_id):
 
             except Exception as e:
                 dbAccess.db_rollback()
-                g.applogger.debug(e)
+                t = traceback.format_exc()
+                g.applogger.info("[ts={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
+                print_exception_msg(e)
 
     except Exception as e:
-        g.applogger.debug(e)
+        t = traceback.format_exc()
+        g.applogger.info("[ts={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
+        print_exception_msg(e)
 
     ################################
     # 結果出力

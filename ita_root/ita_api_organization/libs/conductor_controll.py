@@ -20,8 +20,10 @@ from common_libs.loadtable import *  # noqa: F403
 
 from common_libs.conductor.classes.util import ConductorCommonLibs  # noqa: F401
 from common_libs.conductor.classes.exec_util import *  # noqa: F403
+from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format
 
 import uuid  # noqa: F401
+import traceback
 
 
 def conductor_maintenance(objdbca, menu, conductor_data, target_uuid=''):
@@ -83,6 +85,8 @@ def conductor_maintenance(objdbca, menu, conductor_data, target_uuid=''):
             parameter.setdefault('type', 'Update')
 
     except Exception:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         # 499-00801
         status_code = "499-00801"
         log_msg_args = []
@@ -105,6 +109,8 @@ def conductor_maintenance(objdbca, menu, conductor_data, target_uuid=''):
             "objcclass": objcclass
         }
     except Exception:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         status_code = "401-00003"
         log_msg_args = [menu]
         api_msg_args = [menu]
@@ -121,11 +127,11 @@ def conductor_maintenance(objdbca, menu, conductor_data, target_uuid=''):
             # 集約エラーメッセージ(JSON化)
             status_code, msg = objcclass.get_error_message_str()
             msg = objCexec.maintenance_error_message_format(msg)
-            raise Exception()
+            raise AppException(msg)
 
         objdbca.db_transaction_end(True)
 
-    except Exception:
+    except AppException as msg:
         # ロールバック トランザクション終了
         objdbca.db_transaction_end(False)
         # status_code = '499-00201'
@@ -157,26 +163,22 @@ def get_conductor_data(objdbca, menu, conductor_class_id):
         api_msg_args = [menu]
         raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
-    try:
-        mode = "nomal"
-        filter_parameter = {"conductor_class_id": {"LIST": [conductor_class_id]}}
-        status_code, tmp_result, msg = objmenu.rest_filter(filter_parameter, mode)
+    mode = "nomal"
+    filter_parameter = {"conductor_class_id": {"LIST": [conductor_class_id]}}
+    status_code, tmp_result, msg = objmenu.rest_filter(filter_parameter, mode)
 
-        if len(tmp_result) == 1:
-            tmp_data = tmp_result[0].get('parameter')
-            tmp_conductor_class_id = tmp_data.get('conductor_class_id')
-            tmp_remarks = tmp_data.get('remarks')
-            tmp_last_update_date_time = tmp_data.get('last_update_date_time')
+    if len(tmp_result) == 1:
+        tmp_data = tmp_result[0].get('parameter')
+        tmp_conductor_class_id = tmp_data.get('conductor_class_id')
+        tmp_remarks = tmp_data.get('remarks')
+        tmp_last_update_date_time = tmp_data.get('last_update_date_time')
 
-            result = tmp_data.get('setting')
-            result['conductor']['id'] = tmp_conductor_class_id
-            result['conductor']['note'] = tmp_remarks
-            result['conductor']['last_update_date_time'] = tmp_last_update_date_time
+        result = tmp_data.get('setting')
+        result['conductor']['id'] = tmp_conductor_class_id
+        result['conductor']['note'] = tmp_remarks
+        result['conductor']['last_update_date_time'] = tmp_last_update_date_time
 
-        elif len(tmp_result) == 0:
-            raise Exception()
-
-    except Exception:
+    elif len(tmp_result) == 0:
         status_code = "499-00802"
         log_msg_args = [conductor_class_id]
         api_msg_args = [conductor_class_id]
@@ -204,26 +206,22 @@ def get_conductor_data_execute(objdbca, menu, conductor_class_id):
         api_msg_args = [menu]
         raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
-    try:
-        mode = "nomal"
-        filter_parameter = {"conductor_class_id": {"LIST": [conductor_class_id]}}
-        status_code, tmp_result, msg = objmenu.rest_filter(filter_parameter, mode)
+    mode = "nomal"
+    filter_parameter = {"conductor_class_id": {"LIST": [conductor_class_id]}}
+    status_code, tmp_result, msg = objmenu.rest_filter(filter_parameter, mode)
 
-        if len(tmp_result) == 1:
-            tmp_data = tmp_result[0].get('parameter')
-            tmp_conductor_class_id = tmp_data.get('conductor_class_id')
-            tmp_remarks = tmp_data.get('remarks')
-            tmp_last_update_date_time = tmp_data.get('last_update_date_time')
+    if len(tmp_result) == 1:
+        tmp_data = tmp_result[0].get('parameter')
+        tmp_conductor_class_id = tmp_data.get('conductor_class_id')
+        tmp_remarks = tmp_data.get('remarks')
+        tmp_last_update_date_time = tmp_data.get('last_update_date_time')
 
-            result = tmp_data.get('setting')
-            result['conductor']['id'] = tmp_conductor_class_id
-            result['conductor']['note'] = tmp_remarks
-            result['conductor']['last_update_date_time'] = tmp_last_update_date_time
+        result = tmp_data.get('setting')
+        result['conductor']['id'] = tmp_conductor_class_id
+        result['conductor']['note'] = tmp_remarks
+        result['conductor']['last_update_date_time'] = tmp_last_update_date_time
 
-        elif len(tmp_result) == 0:
-            raise Exception()
-
-    except Exception:
+    elif len(tmp_result) == 0:
         status_code = "499-00802"
         log_msg_args = [conductor_class_id]
         api_msg_args = [conductor_class_id]
@@ -253,6 +251,8 @@ def get_conductor_execute_class_info(objdbca, menu):
     try:
         result = get_conductor_class_info_data(objdbca)
     except Exception:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         status_code = "499-00803"
         log_msg_args = []
         api_msg_args = []
@@ -281,6 +281,8 @@ def get_conductor_class_info(objdbca, menu):
     try:
         result = get_conductor_class_info_data(objdbca)
     except Exception:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         status_code = "499-00803"
         log_msg_args = []
         api_msg_args = []
@@ -298,38 +300,31 @@ def get_conductor_class_info_data(objdbca, mode=""):
         RETRUN:
             statusCode, {}, msg
     """
-    try:
-        # 対象メニューのload_table生成(conductor_instance_list,conductor_node_instance_list,movement_list)
-        c_menu = 'conductor_instance_list'
-        cc_menu = 'conductor_class_edit'
-        n_menu = 'conductor_node_instance_list'
-        m_menu = 'movement_list'
-        objconductor = load_table.loadTable(objdbca, c_menu)  # noqa: F405
-        objnode = load_table.loadTable(objdbca, n_menu)  # noqa: F405
-        objmovement = load_table.loadTable(objdbca, m_menu)  # noqa: F405
-        objcclass = load_table.loadTable(objdbca, cc_menu)  # noqa: F405
+    # 対象メニューのload_table生成(conductor_instance_list,conductor_node_instance_list,movement_list)
+    c_menu = 'conductor_instance_list'
+    cc_menu = 'conductor_class_edit'
+    n_menu = 'conductor_node_instance_list'
+    m_menu = 'movement_list'
+    objconductor = load_table.loadTable(objdbca, c_menu)  # noqa: F405
+    objnode = load_table.loadTable(objdbca, n_menu)  # noqa: F405
+    objmovement = load_table.loadTable(objdbca, m_menu)  # noqa: F405
+    objcclass = load_table.loadTable(objdbca, cc_menu)  # noqa: F405
 
-        if (objconductor.get_objtable() is False or
-                objnode.get_objtable() is False or
-                objmovement.get_objtable() is False or
-                objcclass.get_objtable() is False):
-            raise Exception()
+    if (objconductor.get_objtable() is False or
+            objnode.get_objtable() is False or
+            objmovement.get_objtable() is False or
+            objcclass.get_objtable() is False):
+        raise Exception()
 
-        objmenus = {
-            "objconductor": objconductor,
-            "objnode": objnode,
-            "objmovement": objmovement,
-            "objcclass": objcclass
-        }
+    objmenus = {
+        "objconductor": objconductor,
+        "objnode": objnode,
+        "objmovement": objmovement,
+        "objcclass": objcclass
+    }
 
-        objCexec = ConductorExecuteLibs(objdbca, '', objmenus)  # noqa: F405
-        result = objCexec.get_class_info_data(mode)
-
-    except Exception:
-        status_code = "499-00803"
-        log_msg_args = []
-        api_msg_args = []
-        raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
+    objCexec = ConductorExecuteLibs(objdbca, '', objmenus)  # noqa: F405
+    result = objCexec.get_class_info_data(mode)
 
     return result
 
@@ -377,6 +372,8 @@ def conductor_execute(objdbca, menu, parameter):
             "objcnotice": objcnotice
         }
     except Exception:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         status_code = "499-00804"
         log_msg_args = [conductor_class_name, operation_name, schedule_date]
         api_msg_args = [conductor_class_name, operation_name, schedule_date]
@@ -432,6 +429,8 @@ def conductor_execute(objdbca, menu, parameter):
         objdbca.db_transaction_end(True)
 
     except Exception:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         # ロールバック トランザクション終了
         objdbca.db_transaction_end(False)
         status_code = "499-00804"
@@ -491,6 +490,8 @@ def get_conductor_info(objdbca, menu, conductor_instance_id):
         result = objCexec.get_instance_info_data(conductor_instance_id)
 
     except Exception:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         status_code = "499-00805"
         log_msg_args = [conductor_instance_id]
         api_msg_args = [conductor_instance_id]
@@ -538,6 +539,8 @@ def get_conductor_instance_data(objdbca, menu, conductor_instance_id):
         result = objCexec.get_instance_data(conductor_instance_id)
 
     except Exception:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         status_code = "499-00806"
         log_msg_args = [conductor_instance_id]
         api_msg_args = [conductor_instance_id]
@@ -579,6 +582,8 @@ def conductor_execute_action(objdbca, menu, mode='', conductor_instance_id='', n
         }
         objCexec = ConductorExecuteLibs(objdbca, '', objmenus, 'Update', conductor_instance_id)  # noqa: F405
     except Exception:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         status_code = "499-00807"
         log_msg_args = [mode, conductor_instance_id, node_instance_id]
         api_msg_args = [mode, conductor_instance_id, node_instance_id]
@@ -615,6 +620,8 @@ def conductor_execute_action(objdbca, menu, mode='', conductor_instance_id='', n
         msg = g.appmsg.get_api_message(msg_code, [conductor_instance_id, node_instance_id])
 
     except Exception:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         # ロールバック トランザクション終了
         objdbca.db_transaction_end(False)
         log_msg_args = msg_args
@@ -668,7 +675,10 @@ def create_movement_zip(objdbca, menu, data_type, conductor_instance_id):
 
         tmp_result = objCexec.create_movement_zip(conductor_instance_id, data_type)
         result = tmp_result[1]
+
     except Exception:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         status_code = "499-00815"
         log_msg_args = [conductor_instance_id]
         api_msg_args = [conductor_instance_id]

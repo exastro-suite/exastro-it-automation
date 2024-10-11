@@ -159,7 +159,7 @@ def backyard_main(organization_id, workspace_id):
         elif num_of_rows > 1:
             raise Exception("More than one record in if_info.")
 
-        # 実行エンジンがAnsible Towerの場合のみ処理続行
+        # Ansible Tower以外は処理中止
         if ifInfoRows[0]['ANSIBLE_EXEC_MODE'] != AnscConst.DF_EXEC_MODE_AAC:
             return 0
 

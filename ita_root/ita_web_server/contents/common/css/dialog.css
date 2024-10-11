@@ -60,10 +60,6 @@ animation:  dialogOpen .1s forwards;
 .dialogMain > div {
 min-height: 0;
 }
-.dialogHeader {
-flex: 0 0 48px;
-border-bottom: 1px solid #DBDEE0;
-}
 .dialogBody {
 overflow: auto;
 flex: 1 1 auto;
@@ -73,12 +69,17 @@ flex: 0 0 48px;
 background-color: #DBDEE0;
 }
 .dialogHeader {
+display: flex;
+flex: 0 0 48px;
+border-bottom: 1px solid #DBDEE0;
 height: 48px;
 background-color: var(--mainColor100);
 background-image: linear-gradient( rgba( 255,255,255,.1 ), transparent );
 border-bottom: 4px solid var(--accentColor100);
 }
 .dialogHeaderTitle {
+flex: 1 1 auto;
+min-width: 0;
 display: flex;
 align-items: center;
 height: 100%;
@@ -93,6 +94,19 @@ overflow: hidden;
 text-overflow: ellipsis;
 white-space: nowrap;
 }
+.dialogHeaderClose {
+flex: 0 0 44px;
+}
+.dialogHeaderCloseButton {
+width: 44px; height: 44px;
+font-size: 16px;
+color: #FFF;
+}
+.dialogHeaderCloseButton > .inner {
+display: flex;
+justify-content: center;
+align-items: center;
+}
 .dialogFooterMenuList {
 display: flex;
 gap: 16px;
@@ -106,7 +120,8 @@ align-items: center;
 .dialogFooterMenuButton > .inner {
 padding: 0 16px;
 }
-.processingContainer {
+.processingContainer,
+.progressConteinar {
 position: relative;
 z-index: 0;
 height: 100%; min-height: 64px;
@@ -128,6 +143,74 @@ animation: processingBar .5s linear infinite;
 }
 @keyframes processingBar {
 to { background-position: 32px 0; }
+}
+.progressWrap {
+overflow: hidden;
+position: absolute;
+left: 50%; top: calc( 50% - 10px );
+z-index: 2;
+transform: translate(-50%,-50%);
+width: calc( 100% - 32px ); height: 16px;
+background-color: #333;
+background-image: linear-gradient( rgba( 255,255,255,0 ), rgba( 255,255,255,.3 ) );
+box-shadow: 0 0 0 2px var(--mainColor50);
+border-radius: 8px;
+}
+.progressTimer {
+overflow: hidden;
+position: absolute;
+width: calc( 20% - 16px );
+left: 16px; bottom: 12px;
+text-align: left;
+font-size: 10px;
+font-weight: bold;
+opacity: .7;
+}
+.progressText {
+overflow: hidden;
+position: absolute;
+width: calc( 80% - 16px );
+right: 16px; bottom: 12px;
+text-align: right;
+font-size: 10px;
+font-weight: bold;
+opacity: .7;
+}
+.progressBar {
+position: absolute;
+left: 0; top: 0;
+width: 0; height: 100%;
+background-color: var(--mainColor100);
+background-image: linear-gradient( -45deg, transparent 25%, rgba( 255,255,255,.2 ) 25%, rgba( 255,255,255,.2 ) 50%, transparent 50%, transparent 75%, rgba( 255,255,255,.2 ) 75% ),
+linear-gradient( rgba( 255,255,255,.5 ), rgba( 255,255,255,0 ) );
+background-size: 32px 32px;
+box-shadow: 0 0 0 2px var(--mainColor50), 4px 4px 8px rgba( 0,0,0,.3 ), 0 2px 1px rgba(255,255,255,.2) inset, 0 -2px 1px rgba(0,0,0,.2) inset;
+border-radius: 8px;
+animation: processingBar .5s linear infinite;
+transition-duration: .2s;
+}
+.progressPercentage {
+position: absolute;
+z-index: 4;
+left: 50%; top: 50%;
+transform: translate(-50%,-50%);
+padding-top: 2px;
+text-align: center;
+line-height: 1.1;
+text-shadow: 0 0 2px #000;
+font-size: 13px;
+font-weight: bold;
+color: #FFF;
+animation: 1s progressPercentage linear infinite;;
+}
+.progressPercentage > span.progressPercentageUnit {
+margin-left: 4px;
+font-size: 80%;
+}
+@keyframes progressPercentage {
+0% { opacity: 1; }
+50% { opacity: .75; }
+100% { opacity: 1; }
 }
 .dialogContentContainer {
 height: 100%;

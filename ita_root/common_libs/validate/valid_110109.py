@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import base64
 
 from common_libs.notification import validator
@@ -46,11 +47,12 @@ def external_valid_menu_before(objdbca, objtable, option):
         filter_b = entry_parameter.get('filter_b')
         filter_operator = entry_parameter.get('filter_operator')
         before_notice = entry_parameter.get('before_notification')  # 通知
-        before_notice_dest = entry_parameter.get('before_notification_destination') # 通知先
-        after_notice = entry_parameter.get('after_notification') # 通知
-        after_notice_dest = entry_parameter.get('after_notification_destination') # 通知先
+        before_notice_dest = entry_parameter.get('before_notification_destination')  # 通知先
+        action_id = entry_parameter.get('action_id')  # アクションID
+        after_notice = entry_parameter.get('after_notification')  # 通知
+        after_notice_dest = entry_parameter.get('after_notification_destination')  # 通知先
         before_rule_label_name = entry_parameter.get('rule_label_name')  # 変更後　ルールラベル名
-        after_rule_label_name = current_parameter.get('rule_label_name') # 変更前　ルールラベル名
+        after_rule_label_name = current_parameter.get('rule_label_name')  # 変更前　ルールラベル名
 
     # 「復活」の場合、currrent_parameterから各値を取得
     elif cmd_type == 'Restore':
@@ -59,6 +61,7 @@ def external_valid_menu_before(objdbca, objtable, option):
         filter_operator = current_parameter.get('filter_operator')
         before_notice = current_parameter.get('before_notification')
         before_notice_dest = current_parameter.get('before_notification_destination')
+        action_id = current_parameter.get('action_id')  # アクションID
         after_notice = current_parameter.get('after_notification')
         after_notice_dest = current_parameter.get('after_notification_destination')
 
@@ -84,10 +87,20 @@ def external_valid_menu_before(objdbca, objtable, option):
         retBool = False
         msg = g.appmsg.get_api_message("499-01811")
         return retBool, msg, option,
+    # 事前通知の通知先が選択されていて、アクションIDが未選択の場合
+    if before_notice_dest and not action_id:
+        retBool = False
+        msg = g.appmsg.get_api_message("499-01826")
+        return retBool, msg, option,
     # 事後通知の通知先が選択されていて、通知が未選択の場合
     if after_notice_dest and not after_notice:
         retBool = False
         msg = g.appmsg.get_api_message("499-01812")
+        return retBool, msg, option,
+    # 事後通知の通知先が選択されていて、アクションIDが未選択の場合
+    if after_notice_dest and not action_id:
+        retBool = False
+        msg = g.appmsg.get_api_message("499-01826")
         return retBool, msg, option,
 
     # 更新の場合、ルールラベル名が変更されていない事を確認
@@ -104,12 +117,21 @@ def external_valid_menu_before(objdbca, objtable, option):
         file_name = entry_parameter.get('before_notification')
         if file_name:
             # ファイルの中身を取得
-            target["before_notification"] = option.get('entry_parameter', {}).get('file', {}).get('before_notification', '')
+            file_path = option.get('entry_parameter', {}).get('file_path', {}).get('before_notification', '')
+            if file_path is not None and os.path.isfile(file_path):
+                with open(file_path, 'rb') as f:  # バイナリファイルとしてファイルをオープン
+                    template_data_binary = f.read()
+                target["before_notification"] = template_data_binary
+
         # ファイルがUpdadeされているかチェック
         file_name = entry_parameter.get('after_notification')
         if file_name:
             # ファイルの中身を取得
-            target["after_notification"] = option.get('entry_parameter', {}).get('file', {}).get('after_notification', '')
+            file_path = option.get('entry_parameter', {}).get('file', {}).get('after_notification', '')
+            if file_path is not None and os.path.isfile(file_path):
+                with open(file_path, 'rb') as f:  # バイナリファイルとしてファイルをオープン
+                    template_data_binary = f.read()
+                target["after_notification"] = template_data_binary
 
     # テンプレートのアップロードが無い場合は以降のチェックが不要となるためこの時点で返却する
     if len(target) == 0:
@@ -132,7 +154,7 @@ def external_valid_menu_before(objdbca, objtable, option):
         tmp_bool = True
         # 複数メッセージの返却を考慮し、配列で定義し直す。
 
-        template_data_binary = base64.b64decode(value)
+        template_data_binary = value
 
         # 文字コードをチェック バイナリファイルの場合、encode['encoding']はNone
         if validator.is_binary_file(template_data_binary):

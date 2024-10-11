@@ -48,26 +48,18 @@ def external_valid_menu_after(objDBCA, objtable, option):
     role_package_name = ""
     PkeyID = option['uuid']
 
-    zipFileName = "{}/20403_zip_format_role_package_file_{}.zip"
-    if option["cmd_type"] == "Register":
-        zip_data = option["entry_parameter"]["file"]["zip_format_role_package_file"]
+    if option["cmd_type"] in ["Register", "Update"]:
         role_package_name = option["entry_parameter"]["parameter"]["role_package_name"]
+        if "zip_format_role_package_file" not in option["entry_parameter"]["file_path"]:
+            return retBool, retStrBody, option
 
-    if option["cmd_type"] == "Update":
-        zip_data = option["entry_parameter"]["file"]["zip_format_role_package_file"]
+        zip_file_path = option["entry_parameter"]["file_path"]["zip_format_role_package_file"]
+        zip_data = os.path.getsize(zip_file_path)
 
     try:
         # ロールパッケージの変更判定
         if zip_data:
-            # zipファイルを生成
-            # /storageは遅いので/tmpに変更
-            zip_file_path = zipFileName.format(get_OSTmpPath(), os.getpid())
-            # /tmpに作成したファイルはゴミ掃除リストに追加
-            addAnsibleCreateFilesPath(zip_file_path)
-            #  #2079 /storage配下ではないので対象外
-            fd = open(zip_file_path, "wb")
-            fd.write(base64.b64decode(zip_data))
-            fd.close()
+            pass
         else:
             if option["cmd_type"] in ("Register", "Update"):
                 errormsg = g.appmsg.get_api_message("MSG-10256")

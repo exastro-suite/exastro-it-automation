@@ -105,6 +105,9 @@ def insert_execution_list(objdbca, run_mode, driver_id, operation_row, movement_
     row = rows[0]
     ExecStsInstTableConfig[RestNameConfig["STATUS_ID"]] = row["NAME"]
 
+    # 緊急停止フラグをFlaseに設定
+    ExecStsInstTableConfig[RestNameConfig["ABORT_EXECUTE_FLAG"]] = 'False'
+
     # 実行エンジン
     sql = "SELECT NAME FROM T_ANSC_EXEC_ENGINE WHERE ID = %s AND DISUSE_FLAG = '0'"
     ExecMode = inforow['ANSIBLE_EXEC_MODE']
@@ -165,6 +168,22 @@ def insert_execution_list(objdbca, run_mode, driver_id, operation_row, movement_
         # ゴミになるので実行エンジンがAnsibleAutomationControllerの場合のみ設定
         ExecStsInstTableConfig[RestNameConfig["I_EXECUTION_ENVIRONMENT_NAME"]] = movement_row["ANS_EXECUTION_ENVIRONMENT_NAME"]
 
+    if ExecMode == objAnsc.DF_EXEC_MODE_AG:
+        # Movement/AnsibleExecutionAgent利用情報/実行環境
+        movement_row["AG_EXECUTION_ENVIRONMENT_NAME"]
+        sql = "SELECT * FROM T_ANSC_EXECDEV WHERE ROW_ID = %s AND DISUSE_FLAG = '0'"
+        rows = objdbca.sql_execute(sql, [movement_row["AG_EXECUTION_ENVIRONMENT_NAME"]])
+        if len(rows) == 0:
+            execution_environment_name = g.appmsg.get_api_message('MSG-00001', [movement_row["AG_EXECUTION_ENVIRONMENT_NAME"]])
+        else:
+            row = rows[0]
+            execution_environment_name = row["EXECUTION_ENVIRONMENT_NAME"]
+        # 255文字以上はカット
+        ExecStsInstTableConfig[RestNameConfig["I_AG_EXECUTION_ENVIRONMENT_NAME"]] = execution_environment_name[0:255]
+
+        # Movement/AnsibleExecutionAgent利用情報/ansible-builder パラメータ
+        ExecStsInstTableConfig[RestNameConfig["I_AG_BUILDER_OPTIONS"]] = movement_row["AG_BUILDER_OPTIONS"]
+
     # Movement/ansible.cfg
     uploadfiles = {}
     AnsibleCfgFile = movement_row["ANS_ANSIBLE_CONFIG_FILE"]
@@ -175,13 +194,7 @@ def insert_execution_list(objdbca, run_mode, driver_id, operation_row, movement_
         if os.path.isfile(path) is False:
             # 対象ファイルなし
             raise AppException("499-00905", [], [])
-
-        AnsibleCfgData = file_encode(path)
-        if AnsibleCfgData is False:
-            # エンコード失敗
-            raise AppException("499-00909", [], [])
-
-        uploadfiles = {RestNameConfig["I_ANSIBLE_CONFIG_FILE"]: AnsibleCfgData}
+        uploadfiles = {RestNameConfig["I_ANSIBLE_CONFIG_FILE"]: path}
 
     # オペレーション/No.
     ExecStsInstTableConfig[RestNameConfig["OPERATION_ID"]] = operation_row["OPERATION_ID"]
@@ -236,11 +249,10 @@ def insert_execution_list(objdbca, run_mode, driver_id, operation_row, movement_
 
     parameters = {
         "parameter": ExecStsInstTableConfig,
-        "file": uploadfiles,
         "type": "Register"
     }
     objmenu = load_table.loadTable(objdbca, MenuName)
-    retAry = objmenu.exec_maintenance(parameters, "", "", False, False)
+    retAry = objmenu.exec_maintenance(parameters, "", "", False, False, record_file_paths=uploadfiles)
     # (False, '499-00201', {'host_specific_format': [{'status_code': '', 'msg_args': '', 'msg': '..'},,,]})
     result = retAry[0]
     if result is True:
@@ -289,11 +301,12 @@ def execution_scram(objdbca, driver_id, execution_no):
             #  緊急停止できる状態ではない
             raise AppException("499-00904", [row["NAME"]], [row["NAME"]])
 
+        # ansible agentの場合、緊急停止時の処理は緊急停止フラグをTrueに設定のみ
         if execrow["EXEC_MODE"] == AnsrConst.DF_EXEC_MODE_ANSIBLE:
             objAnsCore = AnsibleExecute()
             # Ansible-Core 緊急停止
             objAnsCore.execute_abort(driver_id, execution_no)
-        else:
+        elif execrow["EXEC_MODE"] == AnsrConst.DF_EXEC_MODE_AAC:
             # ansibleインターフェース情報取得
             sql = "SELECT * FROM T_ANSC_IF_INFO WHERE DISUSE_FLAG='0'"
             inforow = objdbca.sql_execute(sql, [])
@@ -335,6 +348,15 @@ def execution_scram(objdbca, driver_id, execution_no):
 
                 # 緊急停止失敗
                 raise AppException("499-00911", [execution_no, errmsg], [execution_no, errmsg])
+        else:
+            # ansible agentの場合、緊急停止時の処理は緊急停止フラグをTrueに設定のみ
+            pass
+        # 緊急停止フラグをTrueに設定
+        item = {}
+        item["ABORT_EXECUTE_FLAG"] = '1'
+        item["EXECUTION_NO"] = execution_no
+        objdbca.table_update(TableName, item, "EXECUTION_NO")
+
         return True
 
 

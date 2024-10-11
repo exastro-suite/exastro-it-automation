@@ -137,7 +137,7 @@ def external_valid_menu_after(objdbca, objtable, option):
                         rg_menu_id = row[0]['MENU_ID']
                         rg_column_list_id = row[0]['COLUMN_DEFINITION_ID']
                         table_name = "T_ANSR_VALUE_AUTOREG"
-                        data_list = [{"COLUMN_ID": columnId, "MENU_ID": rg_menu_id}]
+                        data_list = [{"COLUMN_ID": columnId, "MENU_ID": rg_menu_id, "MENU_NAME_REST": rg_menu_id}]
                         primary_key_name = "COLUMN_ID"
                         objdbca.table_update(table_name, data_list, primary_key_name, False)
                         # 変数の無いパラメーターシートのフラグとして使用
@@ -431,14 +431,12 @@ def external_valid_menu_after(objdbca, objtable, option):
                    + " T_ANSR_VALUE_AUTOREG" \
                    + " WHERE" \
                    + " COLUMN_ID <> %s AND" \
-                   + " MENU_ID = %s AND " \
                    + " MOVEMENT_ID = %s AND" \
                    + " DISUSE_FLAG = '0'" \
                    + " AND("
 
         aryForBind = {}
         aryForBind['COLUMN_ID'] = columnId
-        aryForBind['MENU_ID'] = rg_menu_id
         aryForBind['MOVEMENT_ID'] = rg_pattern_id
 
         # Key変数が必須の場合
@@ -458,7 +456,7 @@ def external_valid_menu_after(objdbca, objtable, option):
         strQuery += " )"
         aryForBind['MVMT_VAR_LINK_ID'] = rg_vars_link_id
         strQuery += " )"
-        retArray = objdbca.sql_execute(strQuery, bind_value_list=[aryForBind['COLUMN_ID'], aryForBind['MENU_ID'], aryForBind['MOVEMENT_ID']])
+        retArray = objdbca.sql_execute(strQuery, bind_value_list=[aryForBind['COLUMN_ID'], aryForBind['MOVEMENT_ID']])
         if retArray:
             dupnostr = ""
             for row in retArray:

@@ -154,8 +154,9 @@ class CheckAnsibleRoleFiles():
             with zipfile.ZipFile(in_zip_path) as zip:
                 zip.extractall(in_dist_path)
 
-        except Exception:
+        except Exception as e:
             msgstr = g.appmsg.get_api_message("MSG-10259")
+            msgstr += " (exception meg:{})".format(str(e))  # 例外メッセージ結合
             self.SetLastError(os.path.basename(inspect.currentframe().f_code.co_filename), inspect.currentframe().f_lineno, msgstr)
             return False
 
@@ -1499,6 +1500,7 @@ class DefaultVarsFileAnalysis():
         try:
             float(s)
         except ValueError:
+            # #2199 数値判定をしているだけなのでログ出力不要
             return False
         else:
             return True
@@ -1881,51 +1883,6 @@ class DefaultVarsFileAnalysis():
                 errmsg = '%s%s' % (errmsg, g.appmsg.get_api_message("MSG-10290", [err_var_name, err_files]))
 
         return errmsg
-
-    def chkDefVarsListPlayBookVarsList(self, ina_play_vars_list, ina_def_vars_list, ina_def_array_vars_list, in_errmsg, ina_system_vars):
-
-        """
-        処理内容
-          ロールパッケージ内のPlaybookで定義されている変数がデェフォルト変数定義
-          ファイルで定義されているか判定
-
-        パラメータ
-          ina_play_vars_list:     ロールパッケージ内のPlaybookで定義している変数リスト
-                                     [role名][変数名]=0
-          ina_def_vars_list:      defalte変数ファイルの変数リスト
-                                     非配列変数  ina_vars_list[ロール名][変数名] = 0;
-                                     配列変数    ina_vars_list[ロール名][変数名] = array(配列変数名, ....)
-
-        戻り値
-          true:   正常
-          false:  異常
-        """
-
-        in_errmsg = ""
-        ret_code = True
-
-        # ロールパッケージ内のPlaybookで定義している変数が無い場合は処理しない
-        if len(ina_play_vars_list) <= 0:
-            return ret_code, in_errmsg
-
-        for role_name, vars_list in self.php_array(ina_play_vars_list):
-            for vars_name, dummy in self.php_array(vars_list):
-                # ITA独自変数はチェック対象外とする
-                if vars_name in ina_system_vars:
-                    continue
-
-                if role_name not in ina_def_vars_list \
-                or vars_name not in ina_def_vars_list[role_name] \
-                or ina_def_vars_list[role_name][vars_name] is None \
-                or (type(ina_def_vars_list[role_name][vars_name]) in (list, dict) and len(ina_def_vars_list[role_name][vars_name]) <= 0):
-                    if role_name not in ina_def_array_vars_list \
-                    or vars_name not in ina_def_array_vars_list[role_name] \
-                    or ina_def_array_vars_list[role_name][vars_name] is None \
-                    or (type(ina_def_array_vars_list[role_name][vars_name] is None) in (list, dict) and len(ina_def_array_vars_list[role_name][vars_name]) <= 0):
-                        in_errmsg = '%s\n%s' % (in_errmsg, g.appmsg.get_api_message("MSG-10294", [role_name, vars_name]))
-                        ret_code = False
-
-        return ret_code, in_errmsg
 
     def margeDefaultVarsList(
         self,
@@ -2617,6 +2574,7 @@ class DefaultVarsFileAnalysis():
             try:
                 result = php_array[str(idx)]
             except KeyError:
+                # #2199 Keyの存在確認をしているだけなのでログ出力不要
                 try:
                     result = php_array[idx]
                 except KeyError:
@@ -4131,13 +4089,12 @@ class VarStructAnalysisFileAccess():
                                 errormsg += g.appmsg.get_api_message("MSG-10581", [parammsg])
 
                             else:
-                                if self.log_level == "DEBUG":
-                                    # グローバル変数管理に変数未登録
-                                    # MSG-10600 = "グローバル変数管理にグローバル変数が登録されていません。このグローバル変数の処理をスキップします。(グローバル>変数:{})"
-                                    if len(errormsg) > 0:
-                                        errormsg = '%s\n' % (errormsg)
+                                # グローバル変数管理に変数未登録
+                                # MSG-10600 = "グローバル変数管理にグローバル変数が登録されていません。このグローバル変数の処理をスキップします。(グローバル>変数:{})"
+                                if len(errormsg) > 0:
+                                    errormsg = '%s\n' % (errormsg)
 
-                                    errormsg += g.appmsg.get_api_message("MSG-10600", [var_name])
+                                errormsg += g.appmsg.get_api_message("MSG-10600", [var_name])
 
                             # 次の変数へ
                             continue
@@ -4202,12 +4159,11 @@ class VarStructAnalysisFileAccess():
                     errormsg += g.appmsg.get_api_message("MSG-10606", [rolename, tpf_var_name])
 
                 else:
-                    if self.log_level == "DEBUG":
-                        # テンプレート管理に変数未登録
-                        if len(errormsg) > 0:
-                            errormsg = '%s\n' % (errormsg)
+                    # テンプレート管理に変数未登録
+                    if len(errormsg) > 0:
+                        errormsg = '%s\n' % (errormsg)
 
-                        errormsg += g.appmsg.get_api_message("MSG-10601", [rolename, tpf_var_name])
+                    errormsg += g.appmsg.get_api_message("MSG-10601", [rolename, tpf_var_name])
 
         return gbl_vars_list, tpf_vars_struct, errormsg
 
@@ -4320,12 +4276,11 @@ class VarStructAnalysisFileAccess():
                             errormsg += g.appmsg.get_api_message("MSG-10605", [var_name])
 
                         else:
-                            if self.log_level == "DEBUG":
-                                # MSG-10600 "グローバル変数管理にグローバル変数が登録されていません。このグローバル変数の処理をスキップします。(グローバル>変数:{})"
-                                if len(errormsg) > 0:
-                                    errormsg = '%s\n' % (errormsg)
+                            # MSG-10600 "グローバル変数管理にグローバル変数が登録されていません。このグローバル変数の処理をスキップします。(グローバル>変数:{})"
+                            if len(errormsg) > 0:
+                                errormsg = '%s\n' % (errormsg)
 
-                                errormsg += g.appmsg.get_api_message("MSG-10600", [var_name])
+                            errormsg += g.appmsg.get_api_message("MSG-10600", [var_name])
 
         return tpf_vars_list, errormsg
 

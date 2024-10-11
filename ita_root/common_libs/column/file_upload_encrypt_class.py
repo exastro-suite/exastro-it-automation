@@ -17,6 +17,8 @@ from flask import g
 
 from .file_upload_class import FileUploadColumn
 from common_libs.common import *  # noqa: F403
+from common_libs.common.util import print_exception_msg, get_iso_datetime, arrange_stacktrace_format
+
 
 
 class FileUploadEncryptColumn(FileUploadColumn):
@@ -76,7 +78,7 @@ class FileUploadEncryptColumn(FileUploadColumn):
 
         if val is not None:
             if len(val) != 0:
-                decode_option = option.get("file_data")
+                tmp_file_path = option.get("file_path")
 
                 uuid = option["uuid"]
                 uuid_jnl = option["uuid_jnl"]
@@ -95,11 +97,8 @@ class FileUploadEncryptColumn(FileUploadColumn):
 
                 # old配下にファイルアップロード
                 if len(old_dir_path) > 0:
-                    try:
-                        result = encrypt_upload_file(old_dir_path, decode_option)  # noqa: F405
-                        if result is False:
-                            raise Exception()
-                    except Exception:
+                    result = encrypt_upload_file(old_dir_path, tmp_file_path=tmp_file_path)# noqa: F405
+                    if result is False:
                         retBool = False
                         msg = g.appmsg.get_api_message('MSG-00033', [val])
                         return retBool, msg
@@ -123,7 +122,8 @@ class FileUploadEncryptColumn(FileUploadColumn):
 
                         try:
                             os.unlink(old_file_path)
-                        except Exception:
+                        except Exception as e:
+                            print_exception_msg(e)
                             retBool = False
                             msg = g.appmsg.get_api_message('MSG-00014', [old_file_path])
                             return retBool, msg
@@ -131,7 +131,7 @@ class FileUploadEncryptColumn(FileUploadColumn):
                 # シンボリックリンク作成
                 try:
                     os.symlink(old_dir_path, dir_path)
-                except Exception:
+                except Exception as e:
                     retBool = False
                     msg = g.appmsg.get_api_message('MSG-00015', [old_dir_path, dir_path])
                     return retBool, msg

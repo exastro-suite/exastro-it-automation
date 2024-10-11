@@ -26,12 +26,14 @@ import datetime
 import tarfile
 import mimetypes
 import secrets
+from packaging import version
 
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectCommon
 from common_libs.loadtable import *  # noqa: F403
 from common_libs.common import storage_access
 from common_libs.column import *  # noqa: F403
+from common_libs.common.util import print_exception_msg, get_ita_version
 
 def get_menu_export_list(objdbca, organization_id, workspace_id):
     """
@@ -262,6 +264,7 @@ def execute_menu_bulk_export(objdbca, menu, body):
     t_dp_execution_type = 'T_DP_EXECUTION_TYPE'
     t_dp_mode = 'T_DP_MODE'
     t_dp_abolished_type = 'T_DP_ABOLISHED_TYPE'
+    t_dp_journal_type = 'T_DP_JOURNAL_TYPE'
 
     try:
         # トランザクション開始
@@ -277,6 +280,7 @@ def execute_menu_bulk_export(objdbca, menu, body):
         body_specified_time = None
         body_mode = body.get('mode')
         body_abolished_type = body.get('abolished_type')
+        body_journal_type = body.get('journal_type') if body.get('journal_type') is not None else "1"
         if body_mode == '2':
             # 日付のフォーマットチェック
             chk_date = body.get('specified_timestamp')
@@ -285,6 +289,12 @@ def execute_menu_bulk_export(objdbca, menu, body):
             except Exception:
                 raise AppException("499-01501")  # noqa: F405
             body_specified_time = body.get('specified_timestamp')
+
+        # journal_type 設定時のチェック
+        if body_journal_type not in ['1', '2']:
+            log_msg_args = "body_journal_type not in ['1', '2']"
+            api_msg_args = "body_journal_type not in ['1', '2']"
+            raise AppException("499-00005", log_msg_args, api_msg_args)  # noqa: F405 ###
 
         # 『ステータスマスタ』テーブルから対象のデータを取得
         # 形式名を取得
@@ -326,6 +336,16 @@ def execute_menu_bulk_export(objdbca, menu, body):
 
         abolished_type = ret_dp_abolished_type[0].get('ABOLISHED_TYPE_NAME_' + lang.upper())
 
+        # 『履歴情報マスタ』テーブルから対象のデータを取得
+        # 形式名を取得
+        ret_dp_journal_type = objdbca.table_select(t_dp_journal_type, 'WHERE ROW_ID = %s AND DISUSE_FLAG = %s', [body_journal_type, 0])
+        if not ret_dp_journal_type:
+            log_msg_args = [menu]
+            api_msg_args = [menu]
+            raise AppException("499-00005", log_msg_args, api_msg_args)  # noqa: F405
+
+        journal_type = ret_dp_journal_type[0].get('JOURNAL_TYPE_NAME_' + lang.upper(), "1")
+
         user_name = util.get_user_name(user_id)
 
         # 登録用パラメータを作成
@@ -336,6 +356,7 @@ def execute_menu_bulk_export(objdbca, menu, body):
                 "mode": mode,
                 "abolished_type": abolished_type,
                 "specified_time": body_specified_time,
+                "journal_type": journal_type,
                 "file_name": None,
                 "execution_user": user_name,
                 "language": lang,
@@ -453,12 +474,13 @@ def execute_excel_bulk_export(objdbca, menu, body):
         if not exec_result[0]:
             result_msg = _format_loadtable_msg(exec_result[2])
             result_msg = json.dumps(result_msg, ensure_ascii=False)
-            raise Exception("499-00701", [result_msg])  # loadTableバリデーションエラー
+            raise AppException("499-00701", [result_msg])  # loadTableバリデーションエラー
 
         # コミット/トランザクション終了
         objdbca.db_transaction_end(True)
 
-    except Exception as e:
+    except AppException as e:
+        print_exception_msg(e)
         # ロールバック トランザクション終了
         objdbca.db_transaction_end(False)
 
@@ -473,7 +495,7 @@ def execute_excel_bulk_export(objdbca, menu, body):
 
     return result_data
 
-def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca):
+def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca, path_data):
     """
         Excel一括インポートのアップロード
         ARGS:
@@ -489,20 +511,15 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca):
 
     body_zipfile = body.get('zipfile')
     # upload_idの作成
-    date = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-    upload_id = date + str(secrets.randbelow(9999999999))
+
+    upload_id = path_data["upload_id"]
 
     fileName = upload_id + '_ita_data.zip'
 
     # ファイル保存
-    uploadFilePath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/upload/" + fileName
-    uploadPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/upload/"
-    importPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/import/"
-    ret = upload_file(uploadFilePath, body_zipfile['base64'])
-
-    if ret == 0:
-        if os.path.exists(uploadPath + fileName):
-            os.remove(uploadPath + fileName)
+    uploadFilePath = path_data["file_path"]
+    uploadPath = path_data["upload_path"]
+    importPath = path_data["import_path"]
 
     # zip解凍
     # 解凍はtmp配下で行う
@@ -644,7 +661,7 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca):
     intResultCode = "000"
 
     arrayResult["upload_id"] = upload_id
-    arrayResult["data_portability_upload_file_name"] = body['zipfile']['name']
+    arrayResult["data_portability_upload_file_name"] = path_data["upload_file_name"]
 
     if intResultCode == "000":
         arrayResult["import_list"] = retImportAry
@@ -733,6 +750,7 @@ def execute_excel_bulk_import(objdbca, menu, body):
         objdbca.db_transaction_end(True)
 
     except Exception as e:
+        print_exception_msg(e)
         # ロールバック トランザクション終了
         objdbca.db_transaction_end(False)
 
@@ -783,6 +801,7 @@ def unzip_file(fileName, tmp_dir_path, upload_id):
                 z.extract(info, path=tmp_dir_path + "/" + upload_id)
 
     except Exception as e:
+        print_exception_msg(e)
         return False
 
     return True
@@ -1219,7 +1238,7 @@ def getParentMenuGroupInfo(menu_group_id, objdbca=None):
 
     return data
 
-def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body):
+def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body, path_data):
     """
         メニューアップロード
         ARGS:
@@ -1231,115 +1250,188 @@ def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body):
     """
     lang = g.get('LANGUAGE')
     # upload_idの作成
-    date = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-    upload_id = date + str(secrets.randbelow(9999999999))
+    upload_id = path_data["upload_id"]
+
+    storage_path = os.environ.get('STORAGEPATH')
+
+    # 展開済みのファイル等削除
+    clear_work_dirs = [
+        f"{storage_path}{organization_id}/{workspace_id}/tmp/driver/import_menu/import"
+    ]
+    clear_files(clear_work_dirs, "all")
 
     # パスの設定
-    strage_path = os.environ.get('STORAGEPATH')
-    import_menu_dir = strage_path + "/".join([organization_id, workspace_id]) + "/tmp/driver/import_menu"
-    upload_dir_name = import_menu_dir + '/' + 'upload'
-    import_dir_name = import_menu_dir + '/' + 'import'
-    upload_id_path = upload_dir_name + '/' + upload_id
-    import_id_path = import_dir_name + '/' + upload_id
-    file_name = upload_id + '_ita_data.tar.gz'
-    file_path = upload_dir_name + '/' + file_name
+    upload_dir_name = path_data["upload_dir_name"]
+    upload_id_path = path_data["upload_path"]
+    import_id_path = path_data["import_path"]
+    file_path = path_data['file_path']
     if not os.path.isdir(upload_dir_name):
         os.makedirs(upload_dir_name)
         g.applogger.debug("made import_dir")
 
-    # loadTableの呼び出し
-    objmenu = load_table.loadTable(objdbca, 'menu_export_import_list')  # noqa: F405
-    if objmenu.get_objtable() is False:
-        log_msg_args = ["not menu or table"]
-        api_msg_args = ["not menu or table"]
-        raise AppException("401-00001", log_msg_args, api_msg_args) # noqa: F405
+    #  パスの設定:作業用
+    _tmp_upload_dir_name = upload_dir_name.replace(storage_path, "/tmp/")
+    _tmp_upload_id_path = upload_id_path.replace(storage_path, "/tmp/")
+    _tmp_import_id_path = import_id_path.replace(storage_path, "/tmp/")
+    _tmp_file_path = file_path.replace(storage_path, "/tmp/")
+    if not os.path.isdir(_tmp_upload_dir_name):
+        os.makedirs(_tmp_upload_dir_name)
+        g.applogger.debug("made import_dir")
 
-    objcolumn = FileUploadColumn(objdbca, objmenu.objtable, "file_name", '')
-    option = {"file_data": ""}
-    valid_result = objcolumn.check_basic_valid(body['name'], option)
-    if valid_result[0] is False:
-        log_msg_args = [valid_result[1]]
-        api_msg_args = [valid_result[1]]
-        raise AppException("499-01502", log_msg_args, api_msg_args)  # noqa: F405
+    clear_file_list = [
+        upload_dir_name,
+        upload_id_path,
+        file_path
+    ]
 
-    # アップロードファイルbase64変換処理
-    _decode_zip_file(file_path, body['base64'])
+    try:
+        # loadTableの呼び出し
+        objmenu = load_table.loadTable(objdbca, 'menu_export_import_list')  # noqa: F405
+        if objmenu.get_objtable() is False:
+            log_msg_args = ["not menu or table"]
+            api_msg_args = ["not menu or table"]
+            raise AppException("401-00001", log_msg_args, api_msg_args) # noqa: F405
 
-    # zip解凍
-    with tarfile.open(file_path, 'r:gz') as tar:
-        tar.extractall(path=upload_id_path)
+        objcolumn = FileUploadColumn(objdbca, objmenu.objtable, "file_name", '')
 
-    # zipファイルの中身を確認する
-    _check_zip_file(upload_id, organization_id, workspace_id)
+        try:
+            # 作業用にコピー
+            g.applogger.debug(f"shutil.copyfile({file_path}, {_tmp_upload_dir_name})")
+            shutil.copy(file_path, _tmp_upload_dir_name)
+            # zip解凍
+            with tarfile.open(_tmp_file_path, 'r:gz') as tar:
+                tar.extractall(path=_tmp_upload_id_path)
+        except Exception as e:
+            # アップロードファイルのbase64変換～zip解凍時
+            trace_msg = traceback.format_exc()
+            g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(trace_msg)))
+            log_msg_args = [path_data['file_name']]
+            api_msg_args = [path_data['file_name']]
+            raise AppException("499-01503", log_msg_args, api_msg_args)  # noqa: F405
 
-    # MENU_GROUPSファイル読み込み
-    if os.path.isfile(import_id_path + '/MENU_GROUPS') is False:
-        # 対象ファイルなし
-        raise AppException("499-00905", [], [])
-    file_read = storage_access.storage_read()
-    file_read.open(import_id_path + '/MENU_GROUPS')
-    menu_group_info = json.loads(file_read.read())
-    file_read.close()
+        # zipファイルの中身を確認する
+        _check_zip_file(upload_id, organization_id, workspace_id)
 
-    # PARENT_MENU_GROUPSファイル読み込み
-    if os.path.isfile(import_id_path + '/PARENT_MENU_GROUPS') is False:
-        # 対象ファイルなし
-        raise AppException("499-00905", [], [])
-    file_read = storage_access.storage_read()
-    file_read.open(import_id_path + '/PARENT_MENU_GROUPS')
-    parent_menu_group_info = json.loads(file_read.read())
-    file_read.close()
+        # インストールドライバと、kymのドライバ確認
+        # DRIVERSファイル読み込み
+        if os.path.isfile(_tmp_import_id_path + '/DRIVERS') is False:
+            log_msg_args = ["DRIVERS", path_data['file_name']]
+            api_msg_args = ["DRIVERS", path_data['file_name']]
+            # 対象ファイルなし
+            raise AppException("499-01504", log_msg_args, api_msg_args)  # noqa: F405
 
-    # ユーザが使用している言語に合わせてメニューグループ名、メニュー名を設定する
-    for menu_groups in menu_group_info.values():
-        for menu_group in menu_groups:
-            menu_group['menu_group_name'] = menu_group['menu_group_name_' + lang.lower()]
-            menus = menu_group['menus']
-            for menu in menus:
-                menu['menu_name'] = menu['menu_name_' + lang.lower()]
+        file_read = storage_access.storage_read()
+        file_read.open(_tmp_import_id_path + '/DRIVERS')
+        kym_drivers = json.loads(file_read.read())
+        file_read.close()
 
-            # 親メニューグループ情報を取得
-            parent_menu_group = {}
-            parent_flg = False
-            parent_id = menu_group['parent_id']
-            if parent_id is not None:
-                for data in menu_groups:
-                    if parent_id == data['id']:
-                        parent_flg = True
+        # インストールドライバを取得
+        common_db = DBConnectCommon()
+        version_data = get_ita_version(common_db)
+        ita_drivers = list(version_data["installed_driver_en"].keys())
+        no_installed_driver = version_data["no_installed_driver"] if "no_installed_driver" in version_data else []
+        [ita_drivers.remove(nid) for nid in no_installed_driver if nid in ita_drivers]
+        default_installed_driver = version_data["default_installed_driver"] if "default_installed_driver" in version_data else []
+        common_db.db_disconnect()
 
-                # 親メニューグループがすでに追加されているか確認
-                if parent_flg is False:
-                    parent_menu_group['parent_id'] = None
-                    parent_menu_group['id'] = parent_id
-                    parent_menu_group['menu_group_name'] = parent_menu_group_info[parent_id]["MENU_GROUP_NAME_" + lang.upper()]
-                    parent_menu_group['menu_group_name_ja'] = parent_menu_group_info[parent_id]["MENU_GROUP_NAME_JA"]
-                    parent_menu_group['menu_group_name_en'] = parent_menu_group_info[parent_id]["MENU_GROUP_NAME_EN"]
-                    parent_menu_group["disp_seq"] = parent_menu_group_info[parent_id]["DISP_SEQ"]
-                    parent_menu_group['menus'] = []
+        # ドライバ確認
+        no_kym_driver = [_d for _d in kym_drivers if _d not in ita_drivers] \
+            if isinstance(kym_drivers, list) and isinstance(ita_drivers, list) else []
 
-                    menu_groups.append(parent_menu_group)
+        # インストールドライバが不足している場合
+        if len(no_kym_driver) != 0:
+            [no_kym_driver.remove(_dd) for _dd in default_installed_driver if _dd in no_kym_driver]
+            no_kym_driver_log = ",".join(no_kym_driver)
+            no_kym_driver_lang = "\n".join([f'・{version_data["installed_driver"].get(ndk)}' for ndk in no_kym_driver])
+            log_msg_args = [no_kym_driver_log]
+            api_msg_args = [no_kym_driver_lang]
+            raise AppException("499-01505",log_msg_args, api_msg_args)  # noqa: F405
 
-    if os.path.isfile(import_id_path + '/DP_INFO') is False:
-        # 対象ファイルなし
-        raise AppException("499-00905", [], [])
+        # MENU_GROUPSファイル読み込み
+        if os.path.isfile(_tmp_import_id_path + '/MENU_GROUPS') is False:
+            # 対象ファイルなし
+            raise AppException("499-00905", [], [])
+        file_read = storage_access.storage_read()
+        file_read.open(_tmp_import_id_path + '/MENU_GROUPS')
+        menu_group_info = json.loads(file_read.read())
+        file_read.close()
 
-    # DP_INFOファイル読み込み
-    file_read = storage_access.storage_read()
-    file_read.open(import_id_path + '/DP_INFO')
-    dp_info_file = json.loads(file_read.read())
-    file_read.close()
-    dp_mode = dp_info_file['DP_MODE']
-    abolished_type = dp_info_file['ABOLISHED_TYPE']
-    specified_time = dp_info_file['SPECIFIED_TIMESTAMP']
+        # PARENT_MENU_GROUPSファイル読み込み
+        if os.path.isfile(_tmp_import_id_path + '/PARENT_MENU_GROUPS') is False:
+            # 対象ファイルなし
+            raise AppException("499-00905", [], [])
+        file_read = storage_access.storage_read()
+        file_read.open(_tmp_import_id_path + '/PARENT_MENU_GROUPS')
+        parent_menu_group_info = json.loads(file_read.read())
+        file_read.close()
 
-    result_data = {
-        'upload_id': upload_id,
-        'file_name': body['name'],
-        'mode': dp_mode,
-        'abolished_type': abolished_type,
-        'specified_time': specified_time,
-        'import_list': menu_group_info
-    }
+        # ユーザが使用している言語に合わせてメニューグループ名、メニュー名を設定する
+        for menu_groups in menu_group_info.values():
+            for menu_group in menu_groups:
+                menu_group['menu_group_name'] = menu_group['menu_group_name_' + lang.lower()]
+                menus = menu_group['menus']
+                for menu in menus:
+                    menu['menu_name'] = menu['menu_name_' + lang.lower()]
+
+                # 親メニューグループ情報を取得
+                parent_menu_group = {}
+                parent_flg = False
+                parent_id = menu_group['parent_id']
+                if parent_id is not None:
+                    for data in menu_groups:
+                        if parent_id == data['id']:
+                            parent_flg = True
+
+                    # 親メニューグループがすでに追加されているか確認
+                    if parent_flg is False:
+                        parent_menu_group['parent_id'] = None
+                        parent_menu_group['id'] = parent_id
+                        parent_menu_group['menu_group_name'] = parent_menu_group_info[parent_id]["MENU_GROUP_NAME_" + lang.upper()]
+                        parent_menu_group['menu_group_name_ja'] = parent_menu_group_info[parent_id]["MENU_GROUP_NAME_JA"]
+                        parent_menu_group['menu_group_name_en'] = parent_menu_group_info[parent_id]["MENU_GROUP_NAME_EN"]
+                        parent_menu_group["disp_seq"] = parent_menu_group_info[parent_id]["DISP_SEQ"]
+                        parent_menu_group['menus'] = []
+
+                        menu_groups.append(parent_menu_group)
+
+        if os.path.isfile(_tmp_import_id_path + '/DP_INFO') is False:
+            # 対象ファイルなし
+            raise AppException("499-00905", [], [])
+
+        # DP_INFOファイル読み込み
+        file_read = storage_access.storage_read()
+        file_read.open(_tmp_import_id_path + '/DP_INFO')
+        dp_info_file = json.loads(file_read.read())
+        file_read.close()
+        dp_mode = dp_info_file['DP_MODE']
+        abolished_type = dp_info_file['ABOLISHED_TYPE']
+        specified_time = dp_info_file['SPECIFIED_TIMESTAMP']
+
+        result_data = {
+            'upload_id': upload_id,
+            'file_name': path_data["upload_file_name"],
+            'mode': dp_mode,
+            'abolished_type': abolished_type,
+            'specified_time': specified_time,
+            'import_list': menu_group_info
+        }
+
+        journal_type = dp_info_file['JOURNAL_TYPE'] if 'JOURNAL_TYPE' in dp_info_file else "1"
+        result_data["journal_type"] = journal_type
+
+    except Exception as e:
+        trace_msg = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(trace_msg)))
+        # 展開したファイル等削除
+        clear_file_list.append(import_id_path)
+        clear_file_list.append(
+            upload_dir_name.replace("/driver/import_menu/upload", "/driver/import_menu/import")
+        )
+        clear_files(clear_file_list, "all")
+        raise e
+    finally:
+        # 展開したファイル等削除
+        clear_files(clear_file_list)
 
     return result_data
 
@@ -1365,21 +1457,38 @@ def execute_menu_import(objdbca, organization_id, workspace_id, menu, body):
     upload_dir_name = upload_id.replace('A_', '')
     import_path = dir_name + '/' + upload_dir_name
 
+    clear_file_list = [
+        import_path,
+        import_path + '_ita_data.tar.gz'
+    ]
+
+    storage_path = os.environ.get('STORAGEPATH')
+    _tmp_import_path = import_path.replace(storage_path, "/tmp/")
+
     import_list = ",".join(menu_name_rest_list)
 
-    if os.path.isfile(import_path + '/DP_INFO') is False:
-        # 対象ファイルなし
-        raise AppException("499-00905", [], [])
+    try:
+        if os.path.isfile(_tmp_import_path + '/DP_INFO') is False:
+            # 対象ファイルなし
+            raise AppException("499-00905", [], [])
 
-    # DP_INFOファイル読み込み
-    file_read = storage_access.storage_read()
-    file_read.open(import_path + '/DP_INFO')
-    dp_info_file = json.loads(file_read.read())
-    file_read.close()
+        # DP_INFOファイル読み込み
+        file_read = storage_access.storage_read()
+        file_read.open(_tmp_import_path + '/DP_INFO')
+        dp_info_file = json.loads(file_read.read())
+        file_read.close()
 
-    dp_info = _check_dp_info(objdbca, menu, dp_info_file)
+        dp_info = _check_dp_info(objdbca, menu, dp_info_file)
 
-    result_data = _menu_import_execution_from_rest(objdbca, menu, dp_info, import_path, file_name, import_list)
+        result_data = _menu_import_execution_from_rest(objdbca, menu, dp_info, _tmp_import_path, file_name, import_list)
+
+    except Exception as e:
+        trace_msg = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(trace_msg)))
+        raise e
+    finally:
+        # 展開したファイル等削除
+        clear_files(clear_file_list, "all")
 
     return result_data
 
@@ -1397,6 +1506,8 @@ def _menu_import_execution_from_rest(objdbca, menu, dp_info, import_path, file_n
     specified_time = dp_info['SPECIFIED_TIMESTAMP']
     dp_mode_name = dp_info['DP_MODE_NAME']
     abolished_type_name = dp_info['ABOLISHED_TYPE_NAME']
+
+    journal_type_name = dp_info['JOURNAL_TYPE_NAME']
 
     try:
         # トランザクション開始
@@ -1432,7 +1543,8 @@ def _menu_import_execution_from_rest(objdbca, menu, dp_info, import_path, file_n
         user_name = util.get_user_name(user_id)
 
         objcolumn = FileUploadColumn(objdbca, objmenu.objtable, "file_name", '')
-        option = {"file_data": file_encode(import_path + '_ita_data.tar.gz')}
+        tar_file_path = import_path + '_ita_data.tar.gz'
+        option = {"file_path": tar_file_path}
         valid_result = objcolumn.check_basic_valid(file_name, option)
         if valid_result[0] is False:
             log_msg_args = [valid_result[1]]
@@ -1441,9 +1553,6 @@ def _menu_import_execution_from_rest(objdbca, menu, dp_info, import_path, file_n
 
         # 登録用パラメータを作成
         parameters = {
-            "file": {
-                "file_name": file_encode(import_path + '_ita_data.tar.gz')
-            },
             "parameter": {
                 "status": status,
                 "execution_type": execution_type,
@@ -1458,9 +1567,12 @@ def _menu_import_execution_from_rest(objdbca, menu, dp_info, import_path, file_n
             },
             "type": "Register"
         }
-
+        parameters["parameter"]["journal_type"] = journal_type_name
+        file_paths = {
+            "file_name": tar_file_path
+        }
         # 登録を実行
-        exec_result = objmenu.exec_maintenance(parameters, "", "", False, False, True)  # noqa: E999
+        exec_result = objmenu.exec_maintenance(parameters, "", "", False, False, True, record_file_paths=file_paths)  # noqa: E999
         if not exec_result[0]:
             result_msg = _format_loadtable_msg(exec_result[2])
             result_msg = json.dumps(result_msg, ensure_ascii=False)
@@ -1474,6 +1586,7 @@ def _menu_import_execution_from_rest(objdbca, menu, dp_info, import_path, file_n
         objdbca.db_transaction_end(False)
         raise e
     except Exception as e:
+        print_exception_msg(e)
         # ロールバック トランザクション終了
         objdbca.db_transaction_end(False)
 
@@ -1486,7 +1599,7 @@ def _menu_import_execution_from_rest(objdbca, menu, dp_info, import_path, file_n
         if os.path.isdir(import_path):
             shutil.rmtree(import_path)
     except Exception as e:
-        g.applogger.debug("Failed to delete: {} ({})".format(e, import_path))
+        g.applogger.info("Failed to delete: {} ({})".format(e, import_path))
 
     # 返却用の値を取得
     execution_no = exec_result[1].get('execution_no')
@@ -1503,9 +1616,11 @@ def _check_dp_info(objdbca, menu, dp_info_file):
     # テーブル名
     t_dp_mode = 'T_DP_MODE'
     t_dp_abolished_type = 'T_DP_ABOLISHED_TYPE'
+    t_dp_journal_type = 'T_DP_JOURNAL_TYPE'
 
     dp_mode = dp_info_file['DP_MODE']
     abolished_type = dp_info_file['ABOLISHED_TYPE']
+    journal_type = dp_info_file['JOURNAL_TYPE'] if 'JOURNAL_TYPE' in dp_info_file else "1"
     specified_time = dp_info_file['SPECIFIED_TIMESTAMP']
 
     # 『モードマスタ』テーブルから対象のデータを取得
@@ -1528,6 +1643,16 @@ def _check_dp_info(objdbca, menu, dp_info_file):
 
     abolished_type_name = ret_dp_abolished_type[0].get('ABOLISHED_TYPE_NAME_' + lang.upper())
 
+    # 『履歴情報マスタ』テーブルから対象のデータを取得
+    # 形式名を取得
+    ret_dp_journal_type = objdbca.table_select(t_dp_journal_type, 'WHERE ROW_ID = %s AND DISUSE_FLAG = %s', [journal_type, 0])
+    if not ret_dp_journal_type:
+        log_msg_args = [menu]
+        api_msg_args = [menu]
+        raise AppException("499-00005", log_msg_args, api_msg_args)  # noqa: F405
+
+    journal_type_name = ret_dp_journal_type[0].get('JOURNAL_TYPE_NAME_' + lang.upper(), "1")
+
     if dp_mode != '2':
         specified_time = None
 
@@ -1538,6 +1663,8 @@ def _check_dp_info(objdbca, menu, dp_info_file):
         'ABOLISHED_TYPE_NAME': abolished_type_name,
         'SPECIFIED_TIMESTAMP': specified_time,
     }
+    result_data["JOURNAL_TYPE"] = journal_type
+    result_data["JOURNAL_TYPE_NAME"] = journal_type_name
 
     return result_data
 
@@ -1605,8 +1732,8 @@ def _check_zip_file(upload_id, organization_id, workspace_id):
             upload_id: アップロードID
     """
     fileName = upload_id + '_ita_data.tar.gz'
-    uploadPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/driver/import_menu/upload/"
-    importPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/driver/import_menu/import/"
+    uploadPath = "/tmp/" + "/".join([organization_id, workspace_id]) + "/tmp/driver/import_menu/upload/"
+    importPath = "/tmp/" + "/".join([organization_id, workspace_id]) + "/tmp/driver/import_menu/import/"
 
     # /storage配下のファイルアクセスを/tmp経由で行うモジュール
     file_read_text = storage_access.storage_read_text()
@@ -1670,14 +1797,20 @@ def _check_zip_file(upload_id, organization_id, workspace_id):
         # エクスポート時のバージョンを取得
         export_version = file_read_text.read_text(uploadPath + upload_id + '/VERSION')
 
-
-    if version_data["version"] != export_version:
-        # エクスポート時のバージョンとインポートする環境のバージョンが違う場合はエラー
+    # バージョン確認
+    ita_version = version_data["version"]
+    kym_version = export_version
+    # 2.5.0以下の場合
+    if not (version.parse("2.5.0") <= version.parse(kym_version)):
         shutil.rmtree(uploadPath + upload_id)
-        msgstr = g.appmsg.get_api_message("MSG-30035")
+        msgstr = g.appmsg.get_api_message("MSG-140012", [kym_version])
         log_msg_args = [msgstr]
         api_msg_args = [msgstr]
         raise AppException("499-00701", log_msg_args, api_msg_args)
+    # KYM > ITAの場合
+    if (version.parse(ita_version) < version.parse(kym_version)):
+        shutil.rmtree(uploadPath + upload_id)
+        raise AppException("499-01506", [kym_version, ita_version], [kym_version, ita_version])
 
     # ファイル移動
     if not os.path.exists(importPath):
@@ -1829,8 +1962,53 @@ def _format_loadtable_msg(loadtable_msg):
 
     return result_msg
 
+def generate_path_data(organization_id, workspace_id, excel=False):
+    """
+    Args:
+        organization_id
+        workspace_id
+        excel
 
-def create_upload_parameters(connexion_request, key_name):
+    Returns:
+        dict
+    """
+    storage_path = os.environ.get('STORAGEPATH')
+    base_path = f"{storage_path}{organization_id}/{workspace_id}"
+    date = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+    upload_id = date + str(secrets.randbelow(9999999999))
+
+
+    if excel:
+        file_name = upload_id + "_ita_data.zip"
+        menu_path = "/tmp/bulk_excel/import"
+        upload_path = base_path + menu_path + "/upload/"
+        import_path = base_path + menu_path + "/import/"
+        file_path = upload_path + file_name
+        upload_dir_name = ""
+        os.makedirs(upload_path, exist_ok=True)
+    else:
+        file_name = upload_id + "_ita_data.tar.gz"
+        menu_path ="/tmp/driver/import_menu"
+        upload_dir_name = base_path + menu_path + "/upload"
+        upload_path = upload_dir_name + "/" + upload_id
+        import_path = base_path + menu_path + "/import" + "/" + upload_id
+        file_path = upload_dir_name + "/" + file_name
+        os.makedirs(upload_dir_name, exist_ok=True)
+
+
+    path_data = {
+        "upload_id": upload_id,
+        "file_path": file_path,
+        "upload_dir_name": upload_dir_name,
+        "upload_path": upload_path,
+        "import_path": import_path,
+        "file_name": file_name
+    }
+
+    return path_data
+
+
+def create_upload_parameters(connexion_request, key_name, organization_id, workspace_id, excel=False):
     """
     create_upload_parameters
         Use connexion.request
@@ -1855,14 +2033,58 @@ def create_upload_parameters(connexion_request, key_name):
         upload_data = dict(connexion_request.get_json())
     elif connexion_request.files:
         # get files & set parameter['file'][rest_name]
+        # ファイルが保存できる容量があるか確認
+        file_size = connexion_request.headers.get("Content-Length")
+        file_size_str = f"{int(file_size):,} byte(s)"
+        storage = storage_base()
+        can_save, free_space = storage.validate_disk_space(file_size)
+        if can_save is False:
+            status_code = "499-00222"
+            log_msg_args = [file_size_str]
+            api_msg_args = [file_size_str]
+            raise AppException(status_code, log_msg_args, api_msg_args)
+
         for _file_key in connexion_request.files:
             # set key_name -> name, base64
             _file_data = connexion_request.files[_file_key]
-            _str_b64_file_data = base64.b64encode(_file_data.stream.read()).decode()
             upload_data.setdefault(key_name, {})
-            upload_data[key_name]["name"] = _file_data.filename
-            upload_data[key_name]["base64"] = _str_b64_file_data
+
+            path_data = generate_path_data(organization_id, workspace_id, excel)
+            path_data["upload_file_name"] = _file_data.filename
+            file_path = path_data["file_path"]
+            f = open(file_path, "wb")
+            while True:
+                # fileの読み込み
+                buf = _file_data.stream.read(1000000)
+                if len(buf) == 0:
+                    break
+                # yield buf
+                # fileの書き込み
+                f.write(buf)
+            f.close()
+
+
     else:
         return False, {},
 
-    return True, upload_data,
+    return True, upload_data, path_data
+
+def clear_files(clear_path_list, mode="tmp_only"):
+    if mode == "tmp_only":
+        clear_path_list = [_path.replace("/storage/", "/tmp/") for _path in clear_path_list]
+    else:
+        # add /storage -> /tmp
+        _clear_path_list = []
+        [_clear_path_list.append(_path.replace("/storage/", "/tmp/")) for _path in clear_path_list]
+        clear_path_list.extend(_clear_path_list)
+
+    for _path in clear_path_list:
+        try:
+            if os.path.isfile(_path):
+                os.remove(_path)
+                g.applogger.debug(f"delete file: {_path}")
+            elif os.path.isdir(_path):
+                shutil.rmtree(_path)
+                g.applogger.debug(f"delete dir: {_path}")
+        except Exception as e:
+            g.applogger.info(f"Failed to delete: {e} ({_path})")

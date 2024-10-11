@@ -31,7 +31,7 @@ class loadCollection():
         self.wsMongo = wsMongo
         self.load_table = load_table
 
-    def rest_filter(self, parameter, mode):
+    def rest_filter(self, parameter, mode, objdbca):
         """
             RESTAPI[filter]:メニューのレコード取得
             ARGS:
@@ -53,7 +53,7 @@ class loadCollection():
             mondodb_collection_name = self.wsMongo.get_collection_name(mariadb_table_name)
             collection = self.wsMongo.create_collection(mondodb_collection_name)
 
-            where_str = collection.create_where(parameter)
+            where_str = collection.create_where(parameter, objdbca)
 
             # MongoDB向けの記法に変換が必要なため、DBから取得した値はそのまま利用しない
             # sort_key = collection.create_sort_key(self.load_table.get_sort_key())
@@ -67,7 +67,7 @@ class loadCollection():
             if mode in ['mongo']:
                 tmp_result = (self.wsMongo.collection(mondodb_collection_name).find(where_str))
 
-                result_list = collection.create_result(tmp_result)
+                result_list = collection.create_result(tmp_result, objdbca)
 
             elif mode in ['mongo_count']:
                 tmp_result = (self.wsMongo.collection(mondodb_collection_name)

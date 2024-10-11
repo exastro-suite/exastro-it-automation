@@ -29,7 +29,7 @@ class OASENotificationType(Enum):
     """
     # 新規
     NEW = 1
-    # 既知（判定済）
+    # 既知（判定済み）
     EVALUATED = 2
     # 既知（時間切れ）
     TIMEOUT = 3
@@ -87,8 +87,8 @@ class OASE(Notification):
 
     DATA_CONVERT_MAP = {
         "_exastro_type": {
-            "event": "イベント",
-            "conclusion": "再評価"
+            "event": "event",
+            "conclusion": "conclusion"
         }
     }
 
@@ -226,25 +226,28 @@ class OASE(Notification):
                 "table": "T_OASE_NOTIFICATION_TEMPLATE_COMMON",
                 "display_column": "NOTIFICATION_TEMPLATE_ID AS UUID, TEMPLATE_FILE",
                 "condition_column": "EVENT_TYPE=%s",
-                "condition_value": ["新規"]
+                "condition_value": ["1"]  # 新規
             },
             OASENotificationType.EVALUATED: {
                 "table": "T_OASE_NOTIFICATION_TEMPLATE_COMMON",
                 "display_column": "NOTIFICATION_TEMPLATE_ID AS UUID, TEMPLATE_FILE",
                 "condition_column": "EVENT_TYPE=%s",
-                "condition_value": ["既知（判定済）"]
+                "condition_value": ["2"]  # 既知（判定済み）
+
             },
             OASENotificationType.TIMEOUT: {
                 "table": "T_OASE_NOTIFICATION_TEMPLATE_COMMON",
                 "display_column": "NOTIFICATION_TEMPLATE_ID AS UUID, TEMPLATE_FILE",
                 "condition_column": "EVENT_TYPE=%s",
-                "condition_value": ["既知（時間切れ）"]
+                "condition_value": ["3"]  # 既知（時間切れ）
+
             },
             OASENotificationType.UNDETECTED: {
                 "table": "T_OASE_NOTIFICATION_TEMPLATE_COMMON",
                 "display_column": "NOTIFICATION_TEMPLATE_ID AS UUID, TEMPLATE_FILE",
                 "condition_column": "EVENT_TYPE=%s",
-                "condition_value": ["未知"]
+                "condition_value": ["4"]  # 未知
+
             },
             OASENotificationType.BEFORE_ACTION: {
                 "table": "T_OASE_RULE",

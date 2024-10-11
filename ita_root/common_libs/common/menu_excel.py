@@ -28,11 +28,11 @@ from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.styles import PatternFill, Border, Side, Alignment
 from openpyxl.utils import get_column_letter
 from openpyxl.utils.cell import absolute_coordinate
+
 from common_libs.common import *  # noqa: F403
-from common_libs.common import menu_maintenance_all, menu_info
+from common_libs.common import menu_maintenance_all, menu_info, storage_access
 from common_libs.loadtable import *  # noqa: F403
 from common_libs.api import check_request_body_key
-from common_libs.common import storage_access
 
 # 「マスタ」シートを作成する
 def make_master_sheet(wb, menu_table_link_record, column_list, pulldown_list):  # noqa: E302
@@ -94,7 +94,7 @@ def make_master_sheet(wb, menu_table_link_record, column_list, pulldown_list):  
     # プルダウンリストをソートする
     sorted_pulldown_list = {}
     for key, value in pulldown_list.items():
-        sorted_value_list = dict(sorted(value.items(), key=lambda x: x[1]))
+        sorted_value_list = dict(sorted(value.items(), key=lambda x: str(x[1])))
         sorted_pulldown_list[key] = sorted_value_list
 
     name_define_list = []
@@ -437,7 +437,8 @@ def create_excel_headerlist(
             view_item = dict_menu_column.get('VIEW_ITEM')
             column_class = dict_menu_column.get('COLUMN_CLASS')
 
-            if input_item == '2' and view_item == '0':
+            # issue 2477 INPUT_ITEM:2 and VIEW_ITEM:2の場合 excelは非表示
+            if input_item == '2' and view_item == '0' or (input_item == '2' and view_item == '2'):
                 # excelに表示しない
                 continue
 
@@ -612,7 +613,8 @@ def create_column_info(
         view_item = dict_menu_column.get('view_item')
         column_num = 0
 
-        if input_item == '2' and view_item == '0':
+        # issue 2477 INPUT_ITEM:2 and VIEW_ITEM:2の場合 excelは非表示
+        if input_item == '2' and view_item == '0' or (input_item == '2' and view_item == '2'):
             # excelに表示しない
             skip_cnt += 1
             continue
@@ -773,7 +775,8 @@ def create_column_info_trace_history(
         view_item = dict_menu_column.get('view_item')
         column_num = 0
 
-        if input_item == '2' and view_item == '0':
+        # issue 2477 INPUT_ITEM:2 and VIEW_ITEM:2の場合 excelは非表示
+        if input_item == '2' and view_item == '0' or (input_item == '2' and view_item == '2'):
             # excelに表示しない
             skip_cnt += 1
             continue
@@ -824,7 +827,8 @@ def create_column_info_trace_history(
         ws.cell(row=startRow, column=column_num).data_type = 's'
 
         # 最後に列をグレーにするために登録不可の行を記憶しておく
-        if auto_input == '1' or input_item == '0':
+        # issue 2477 INPUT_ITEM:2 and VIEW_ITEM:2の場合
+        if auto_input == '1' or input_item == '0' or (input_item == '2' and view_item == '2'):
             gray_column.append(get_column_letter(column_num))
 
     # フィルター設定
@@ -1211,13 +1215,7 @@ def collect_excel_journal(
                 ws.cell(row=startRow + row_j + 2, column=col_i).fill = fill_gr
 
     wb.save(file_path)  # noqa: E303
-
-    # 編集してきたエクセルファイルをエンコードする
-    wbEncode = file_encode(file_path)  # noqa: F405 F841
-    # エンコード後wbは削除する
-    os.remove(file_path)    # noqa: F405
-
-    return wbEncode
+    return file_path
 
 
 def collect_excel_filter(
@@ -1507,15 +1505,7 @@ def collect_excel_filter(
 
     wb.save(file_path)  # noqa: E303
 
-    if backyard_exec == 1:
-        return file_path
-
-    # 編集してきたエクセルファイルをエンコードする
-    wbEncode = file_encode(file_path)  # noqa: F405 F841
-    # エンコード後wbは削除する
-    os.remove(file_path)    # noqa: F405
-
-    return wbEncode
+    return file_path
 
 
 def execute_excel_maintenance(
@@ -1550,13 +1540,6 @@ def execute_excel_maintenance(
     if backyard_exec == 1:
         lang = backyard_lang
 
-    # make storage directory for excel
-    strage_path = os.environ.get('STORAGEPATH')
-    excel_dir = strage_path + \
-        "/".join([organization_id, workspace_id]) + "/tmp/excel"
-    if not os.path.isdir(excel_dir):
-        os.makedirs(excel_dir)
-        g.applogger.debug("made excel_dir")
 
     # 変数定義
     t_common_menu_column_link = 'T_COMN_MENU_COLUMN_LINK'
@@ -1570,14 +1553,9 @@ def execute_excel_maintenance(
         api_msg_args = [msg]
         raise AppException(status_code, log_msg_args, api_msg_args)     # noqa: F405
 
-    wbDecode = base64.b64decode(excel_data.encode('utf-8'))
 
     # 受け取ったデータを編集用として一時的にエクセルファイルに保存
-    file_name = 'post_excel_maintenance_tmp.xlsx'
-    file_path = excel_dir + '/' + file_name
-    file_write.open(file_path, mode="wb")
-    file_write.write(wbDecode)
-    file_write.close()
+    file_path = excel_data
 
     try:
         # ファイルを読み込む
@@ -1628,7 +1606,8 @@ def execute_excel_maintenance(
         view_item = str(recode.get('VIEW_ITEM'))
 
         # 登録更新時に不要な項目
-        if auto_input == '1' or input_item == '0':
+        # issue 2477 INPUT_ITEM:2 and VIEW_ITEM:2の場合
+        if auto_input == '1' or input_item == '0' or (input_item == '2' and view_item == '2'):
             register_list.append(column_name_rest)
 
         # カラムクラスIDがファイルアップロードのものは除外する
@@ -1638,7 +1617,8 @@ def execute_excel_maintenance(
             file_param[column_name_rest] = None
 
         # Excelには表示しない項目
-        if input_item == '2' and view_item == '0':
+        # issue 2477 INPUT_ITEM:2 and VIEW_ITEM:2の場合 excelは非表示
+        if input_item == '2' and view_item == '0' or (input_item == '2' and view_item == '2'):
             continue
 
         # Excelには表示しない項目
@@ -1743,8 +1723,9 @@ def execute_excel_maintenance(
         for msg in err_msgs:
             try:
                 json_msg = json.loads(msg)
-            except Exception:
-                g.applogger.info(e)
+            except Exception as ee:
+                ee_msg = "value:{}, error:{}".format(msg, ee)
+                print_exception_msg(ee_msg)
                 raise e
             for k, v in json_msg.items():
                 for vv in v.values():
@@ -1766,7 +1747,7 @@ def execute_excel_maintenance(
     return result_data
 
 
-def create_upload_parameters(connexion_request):
+def create_upload_parameters(connexion_request, organization_id, workspace_id):
     """
     create_maintenance_parameters
         Use connexion.request
@@ -1785,7 +1766,6 @@ def create_upload_parameters(connexion_request):
         bool, excel_data,
     """
 
-    excel_data = {}
     # if connexion_request:
     if connexion_request.is_json:
         # application/json
@@ -1793,17 +1773,44 @@ def create_upload_parameters(connexion_request):
         excel_data = check_request_body_key(body, 'excel')  # keyが無かったら400-00002エラー
     elif connexion_request.files:
         # get files & set parameter['excel']
+
+        # ファイルが保存できる容量があるか確認
+        file_size = connexion_request.headers.get("Content-Length")
+        file_size_mb = f"{int(file_size):,} byte(s)"
+        storage = storage_base()
+        can_save, free_space = storage.validate_disk_space(file_size)
+        if can_save is False:
+            status_code = "499-00222"
+            log_msg_args = [file_size_mb]
+            api_msg_args = [file_size_mb]
+            raise AppException(status_code, log_msg_args, api_msg_args)
+
+        strage_path = os.environ.get('STORAGEPATH')
+        excel_dir = strage_path + \
+            "/".join([organization_id, workspace_id]) + "/tmp/excel"
+        if not os.path.isdir(excel_dir):
+            os.makedirs(excel_dir)
+        file_path = excel_dir + "/" + 'post_excel_maintenance_tmp.xlsx'
+
         for _file_key in connexion_request.files:
             # set excel str_b64_file_data
             _file_data = connexion_request.files[_file_key]
-            _str_b64_file_data = base64.b64encode(_file_data.stream.read()).decode()
-            excel_data.setdefault('excel', None)
-            excel_data['excel'] = _str_b64_file_data
-        excel_data = check_request_body_key(excel_data, 'excel')  # keyが無かったら400-00002エラー
+            file_name = _file_data.filename
+
+            f = open(file_path, 'wb')
+            while True:
+                # fileの読み込み
+                buf = _file_data.stream.read(1000000)
+                if len(buf) == 0:
+                    break
+                # yield buf
+                # fileの書き込み
+                f.write(buf)
+            f.close()
     else:
         return False, {},
 
-    return True, excel_data,
+    return True, file_path,
 
 
 def analysys_menu_info(menu_info_data):

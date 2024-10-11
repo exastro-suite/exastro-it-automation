@@ -15,8 +15,11 @@ from flask import g
 import hcl2
 import json
 import re
-from common_libs.common import storage_access
+import traceback
 
+from common_libs.common import storage_access
+from common_libs.common.exception import AppException
+from common_libs.common.util import print_exception_msg, get_iso_datetime, arrange_stacktrace_format
 
 class HCL2JSONParse():
     """
@@ -58,14 +61,19 @@ class HCL2JSONParse():
         """
         try:
             result = True
-            
+
             # /storage配下のファイルアクセスを/tmp経由で行うモジュール
             file_read = storage_access.storage_read()
 
             # 対象ファイルの解析を実行
             file_read.open(self.file_path)
-            parse_result = hcl2.loads(file_read.read())
-            result_json = json.dumps(parse_result)
+            try:
+                parse_result = hcl2.loads(file_read.read())
+                result_json = json.dumps(parse_result)
+            except Exception as e:
+                t = traceback.format_exc()
+                g.applogger.info("[timestamp={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
+                raise AppException(e)
             file_read.close()
 
             # typeがnullの場合を考慮し、処理しやすい形に変換
@@ -99,7 +107,7 @@ class HCL2JSONParse():
                         # 変数名が128byte以上の場合はバリデーションエラー
                         if len(block_variable.encode()) > 128:
                             msg = g.appmsg.get_api_message("MSG-80025", [block_variable])
-                            raise Exception(msg)
+                            raise AppException(msg)
 
                     # type_strがNoneではない場合は整形処理を通す
                     if type_str:
@@ -253,8 +261,10 @@ class HCL2JSONParse():
                     # variable_block_listに格納
                     self.variable_block_list.append(convert_block)
 
-        except Exception as e:
-            self.error_msg = e
+        except AppException as e:
+            msg, arg1, arg2 = e.args
+            print_exception_msg(msg)
+            self.error_msg = msg
             result = False
 
         self.res = result

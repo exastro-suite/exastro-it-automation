@@ -65,6 +65,9 @@ def execute_excel_bulk_export(organization_id, workspace_id, body=None):  # noqa
             check_request_body_key(body, 'abolished_type')
 
         result_data = export_import.execute_excel_bulk_export(objdbca, menu, body)
+
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -113,6 +116,8 @@ def execute_excel_bulk_import(organization_id, workspace_id, body=None):  # noqa
             check_request_body_key(body, 'data_portability_upload_file_name')
 
         result_data = export_import.execute_excel_bulk_import(objdbca, menu, body)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -168,6 +173,8 @@ def execute_menu_bulk_export(organization_id, workspace_id, body=None):  # noqa:
                 body_specified_time = check_request_body_key(body, 'specified_timestamp')
 
         result_data = export_import.execute_menu_bulk_export(objdbca, menu, body)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -217,6 +224,8 @@ def execute_menu_import(organization_id, workspace_id, body=None):  # noqa: E501
             check_request_body_key(body, 'file_name')
 
         result_data = export_import.execute_menu_import(objdbca, organization_id, workspace_id, menu, body)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
 
@@ -251,6 +260,8 @@ def get_excel_bulk_export_list(organization_id, workspace_id):  # noqa: E501
         check_auth_menu(menu, objdbca)
 
         result_data = export_import.get_excel_bulk_export_list(objdbca, organization_id, workspace_id)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -293,7 +304,7 @@ def post_excel_bulk_upload(organization_id, workspace_id, body=None, **kwargs): 
         # bodyのjson形式チェック
         check_request_body()
 
-        retBool, body = export_import.create_upload_parameters(connexion.request, 'zipfile')
+        retBool, body, path_data = export_import.create_upload_parameters(connexion.request, 'zipfile', organization_id, workspace_id, excel=True)
         if retBool is False:
             status_code = "400-00003"
             request_content_type = connexion.request.content_type.lower()
@@ -301,7 +312,9 @@ def post_excel_bulk_upload(organization_id, workspace_id, body=None, **kwargs): 
             api_msg_args = [request_content_type]
             raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
-        result_data = export_import.execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca)
+        result_data = export_import.execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca, path_data)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -335,6 +348,8 @@ def get_menu_export_list(organization_id, workspace_id):  # noqa: E501
         check_auth_menu(menu, objdbca)
 
         result_data = export_import.get_menu_export_list(objdbca, organization_id, workspace_id)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -378,7 +393,7 @@ def post_menu_import_upload(organization_id, workspace_id, body=None, **kwargs):
         check_request_body()
 
         body_file = {}
-        retBool, body = export_import.create_upload_parameters(connexion.request, 'file')
+        retBool, body, path_data = export_import.create_upload_parameters(connexion.request, 'file', organization_id, workspace_id)
         if retBool is False:
             status_code = "400-00003"
             request_content_type = connexion.request.content_type.lower()
@@ -387,10 +402,10 @@ def post_menu_import_upload(organization_id, workspace_id, body=None, **kwargs):
             raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
         body_file = check_request_body_key(body, 'file')  # keyが無かったら400-00002エラー
-        check_request_body_key(body_file, 'name')
-        check_request_body_key(body_file, 'base64')
 
-        result_data = export_import.post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body_file)
+        result_data = export_import.post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body_file, path_data)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,

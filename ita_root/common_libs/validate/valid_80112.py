@@ -13,6 +13,78 @@
 from flask import g
 from common_libs.terraform_driver.cloud_ep.Const import Const as TFCloudEPConst
 
+def external_valid_menu_after(objdbca, objtable, option):
+    retBool = True
+    msg = ''
+    cmd_type = option.get('cmd_type')
+    if cmd_type == 'Discard':
+        return retBool, msg, option,
+    current_parameter = option.get('current_parameter', {}).get('parameter')
+    entry_parameter = option.get('entry_parameter', {}).get('parameter')
+    if cmd_type == 'Register' or cmd_type == 'Update':
+        rg_column_list_id = entry_parameter.get('menu_group_menu_item')
+
+    elif cmd_type == 'Restore':
+        rg_column_list_id = current_parameter.get('menu_group_menu_item')
+
+    # 主キーの値を取得する。
+    if option["cmd_type"] == "Update":
+        # 更新処理の場合
+        columnId = option["current_parameter"]["parameter"]["item_no"]
+    else:
+        # 登録処理の場合
+        if "uuid" in option:
+            columnId = option["uuid"]
+        else:
+            columnId = None
+
+    # 紐付け対象メニューに登録されているかの確認。カウントを数えて存在しているかの確認
+    if rg_column_list_id:
+        query = "SELECT" \
+                + " TBL_A.COLUMN_DEFINITION_ID, " \
+                + " TBL_A.MENU_ID," \
+                + " COUNT(*) AS COLUMN_LIST_ID_CNT," \
+                + " (" \
+                + "  SELECT" \
+                + "    COUNT(*)" \
+                + "  FROM" \
+                + "    V_TERF_MENU TBL_B" \
+                + "  WHERE" \
+                + "    TBL_B.COLUMN_DEFINITION_ID = %s AND" \
+                + "    TBL_B.DISUSE_FLAG = '0'" \
+                + " ) AS MENU_CNT " \
+                + " FROM" \
+                + "   V_TERF_COLUMN_LIST TBL_A" \
+                + " WHERE" \
+                + "   TBL_A.COLUMN_DEFINITION_ID = %s AND" \
+                + "   TBL_A.DISUSE_FLAG = '0'"
+
+        aryForBind = {}
+        aryForBind['COLUMN_DEFINITION_ID'] = rg_column_list_id
+        row = objdbca.sql_execute(query, bind_value_list=[aryForBind['COLUMN_DEFINITION_ID'], aryForBind['COLUMN_DEFINITION_ID']])
+        if len(row) == 1:
+            if row[0]['MENU_CNT'] == 1:
+                if row[0]['COLUMN_LIST_ID_CNT'] == 1:
+                    rg_menu_id = row[0]['MENU_ID']
+                    rg_column_list_id = row[0]['COLUMN_DEFINITION_ID']
+                    table_name = "T_TERE_VALUE_AUTOREG"
+                    data_list = [{"VALUE_AUTOREG_ID": columnId, "MENU_NAME_REST": rg_menu_id}]
+                    primary_key_name = "VALUE_AUTOREG_ID"
+                    objdbca.table_update(table_name, data_list, primary_key_name, False)
+                else:
+                    # 紐付対象メニューに項目が未登録です。
+                    msg = g.appmsg.get_api_message("MSG-10379")
+                    retBool = False
+            else:
+                # 紐付対象メニュー一覧にメニューが未登録です。
+                msg = g.appmsg.get_api_message("MSG-10378")
+                retBool = False
+        else:
+            # メニューカラム紐付け管理が不正です。
+            msg = g.appmsg.get_api_message("MSG-10900", [rg_column_list_id])
+            retBool = False
+        del row
+    return retBool, msg, option,
 
 def external_valid_menu_before(objdbca, objtable, option):  # noqa: C901
     retBool = True

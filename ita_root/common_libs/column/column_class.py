@@ -175,10 +175,8 @@ class Column():
             RETRUN:
                 {} or [] ?
         """
-        try:
-            result = self.get_objtable().get('MENUINFO').get('SHEET_TYPE')
-        except Exception:
-            result = 0
+
+        result = self.get_objtable().get('MENUINFO', {}).get('SHEET_TYPE', 0)
         return result
 
     def set_encrypt_name(self, encrypt_name):
@@ -676,7 +674,7 @@ class Column():
                                         tmp_result = self.convert_value_input(val)
                                         if tmp_result[0] is True:
                                             convert_val = tmp_result[2]
-                                        if jsonval == convert_val:
+                                        if str(jsonval) == str(convert_val):
                                             tmp_uuids.append(tmp_rows.get(primary_key_list[0]))
                                             retBool = False
                                     else:
@@ -851,7 +849,7 @@ class Column():
                 for bindvalue in tmp_conf:
                     tmp_result = self.convert_value_input(bindvalue)
                     if tmp_result[0] is True:
-                        bindvalue = json.dumps(tmp_result[2])
+                        bindvalue = json.dumps(tmp_result[2], ensure_ascii=False)
                     if len(str_where) != 0:
                         conjunction = 'or'
                     bindkey = "__{}__{}__".format(self.get_col_name(), listno)

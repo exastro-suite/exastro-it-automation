@@ -12,6 +12,7 @@ CREATE TABLE T_COMN_WORKSPACE_DB_INFO
     MONGO_DATABASE                          VARCHAR(255),                       -- MONGODB名
     MONGO_USER                              VARCHAR(255),                       -- MONGOユーザ
     MONGO_PASSWORD                          VARCHAR(255),                       -- MONGOパスワード
+    NO_INSTALL_DRIVER                       LONGTEXT,                           -- インストールしていないドライバ名
     NOTE                                    TEXT,                               -- 備考
     DISUSE_FLAG                             VARCHAR(1)  ,                       -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP                   DATETIME(6),                        -- 最終更新日時

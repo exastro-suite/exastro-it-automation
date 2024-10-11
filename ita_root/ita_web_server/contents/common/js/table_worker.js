@@ -253,9 +253,10 @@ postSelectPageData() {
 duplicatSelectData() {
     const tw = this;
     
-    const newData = [],
-          exclusion = ['last_update_date_time', 'last_updated_user'], // 複製しない項目
-          exclusionColumn = ['FileUploadEncryptColumn']; // 複製しないカラムタイプ
+    const newData = [];
+    const exclusion = ['last_update_date_time', 'last_updated_user']; // 複製しない項目
+    const exclusionColumn = ['FileUploadEncryptColumn']; // 複製しないカラムタイプ
+    const fileColumns = ['FileUploadColumn'];
 
    tw.result.forEach(function( val ){
         const id = String( val.parameter[ tw.data.idName ] );
@@ -266,42 +267,33 @@ duplicatSelectData() {
                 if ( key === tw.data.idName ) {
                     parameters[ key ] = String( tw.data.addId-- );
                 } else if ( exclusion.indexOf( key ) === -1 ) {
-                    // 複製しないカラムタイプか？
                     const columnType = tw.checkColumnType( key );
+                    // 複製しないカラムタイプか？
                     if ( exclusionColumn.indexOf( columnType ) !== -1 ) continue;
-
                     // 入力済みのデータがあるか
                     if ( tw.data.input && tw.data.input[id] && key in tw.data.input[id].after.parameter ) {
                         parameters[ key ] = tw.data.input[id].after.parameter[ key ];
                     } else {
                         parameters[ key ] = val.parameter[ key ];
                     }
+                    // ファイルカラム
+                    if ( fileColumns.indexOf( columnType ) !== -1 ) {
+                        if ( tw.data.input && tw.data.input[id] && key in tw.data.input[id].after.file && tw.data.input[id].after.file[ key ] !== null ) {
+                            // 入力済みのデータ
+                            files[ key ] = tw.data.input[id].after.file[ key ];
+                        } else if ( key in val.file && val.file[ key ] !== null ) {
+                            // 編集前データ
+                            files[ key ] = val.file[ key ];
+                        } else if ( tw.data.tempFile && id in tw.data.tempFile &&  key in tw.data.tempFile[ id ] ) {
+                            // 一時取得したデータ
+                            files[ key ] = tw.data.tempFile[ id ][ key ];
+                        }
+                    }
                 } else {
                     parameters[ key ] = null;
                 }
             }
-            // ファイル
-            for ( const key in val.file ) {
-                // 複製しないカラムタイプか？
-                const columnType = tw.checkColumnType( key );
-                if ( exclusionColumn.indexOf( columnType ) !== -1 ) continue;
-                
-                files[ key ] = val.file[ key ];
-            }
-            // 入力済みのファイルがあれば上書き
-            if ( tw.data.input && tw.data.input[id] ) {
-                for ( const key in tw.data.input[id].after.file ) {
-                    // 複製しないカラムタイプか？
-                    const columnType = tw.checkColumnType( key );
-                    if ( exclusionColumn.indexOf( columnType ) !== -1 ) continue;
-
-                    if ( tw.data.input[id].after.file[ key ] !== undefined ) {
-                        files[ key ] = tw.data.input[id].after.file[ key ];
-                    } else if ( tw.data.input[id].after.file[ key ] === undefined && key in files ) {
-                        delete files[ key ];
-                    }
-                }
-            }
+            console.log(files);
             newData.unshift({
                 file: files,
                 parameter: parameters

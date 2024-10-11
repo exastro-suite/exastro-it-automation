@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Exastro IT Automation API
   description: Exastro IT Automation API
-  version: "2.4"
+  version: "2.5"
 
 servers:
   - url: "https://{host}"
@@ -578,6 +578,12 @@ paths:
           required: true
           schema:
             type: string
+        - name: file
+          in: query
+          description: ファイルダウンロード指定
+          required: false
+          schema:
+            type: string
       responses:
         '200':
           description: Success
@@ -608,7 +614,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
-  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/{id}/{column}/file/:
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/{uuid}/{column}/file/:
     get:
       tags:
         - Menu Filter
@@ -634,7 +640,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: id
+        - name: uuid
           in: path
           description: UUID
           required: true
@@ -643,6 +649,80 @@ paths:
         - name: column
           in: path
           description: カラムREST名
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    items: {
+                      $ref: '#/components/schemas/FILTER_PARAMETERS',
+                    }
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/{uuid}/{column}/file/journal/{journal_uuid}/:
+    get:
+      tags:
+        - Menu Filter
+      description: 履歴のアップロードファイルをダウンロードする
+      operationId: downloadHistoryFile
+      x-openapi-router-controller: controllers.menu_filter_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+        - name: menu
+          in: path
+          description: メニュー名
+          required: true
+          schema:
+            type: string
+        - name: uuid
+          in: path
+          description: UUID
+          required: true
+          schema:
+            type: string
+        - name: column
+          in: path
+          description: カラムREST名
+          required: true
+          schema:
+            type: string
+        - name: journal_uuid
+          in: path
+          description: 履歴のUUID
           required: true
           schema:
             type: string
@@ -4003,12 +4083,20 @@ paths:
                   data:
                     type: object
                     properties:
-                      column_group_info:
-                        $ref: '#/components/schemas/COLUMN_GROUP_INFO'
-                      column_info:
-                        $ref: '#/components/schemas/COLUMN_INFO'
-                      menu_info:
-                        $ref: '#/components/schemas/MENU_INFO'
+                      menu_groups:
+                        items:
+                          type: object
+                          example:
+                            disp_seq: "10"
+                            id: "101"
+                            menu_group_name: "管理コンソール"
+                            menus:
+                              items:
+                                disp_seq: 10
+                                id: "10101"
+                                menu_name: "システム設定"
+                                menu_name_rest: "system_settings"
+                            parent_id: null
                   message:
                     type: string
         '401':
@@ -4048,10 +4136,27 @@ paths:
         content:
           application/json:
             schema:
-              description: 検索条件を設定
+              type: object
               properties:
-                rest_key_name:
-                  $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+                mode:
+                  type: string
+                  example:
+                    "1: 環境移行 / 2: 時刻指定"
+                specified_timestamp:
+                  type: string
+                  example:
+                    "YYYY/MM/DD hh:mm"
+                abolished_type:
+                  type: string
+                  example:
+                    "1: 廃止を含む / 2: 廃止を除く"
+                journal_type:
+                  type: string
+                  example:
+                    "1: 履歴あり / 2: 履歴なし"
+                menu:
+                  items: {}
+                  example: ["system_settings", "menu_group_list", "menu_list", "<menu_name_rest 1>", "<menu_name_rest 2>"]
       responses:
         '200':
           description: Success
@@ -4066,12 +4171,10 @@ paths:
                   data:
                     type: object
                     properties:
-                      column_group_info:
-                        $ref: '#/components/schemas/COLUMN_GROUP_INFO'
-                      column_info:
-                        $ref: '#/components/schemas/COLUMN_INFO'
-                      menu_info:
-                        $ref: '#/components/schemas/MENU_INFO'
+                      execution_no:
+                       type: string
+                       example:
+                        "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
                   message:
                     type: string
         '401':
@@ -4111,10 +4214,7 @@ paths:
         content:
           application/json:
             schema:
-              description: 検索条件を設定
-              properties:
-                rest_key_name:
-                  $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+              type: object
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/MENU_UPLOAD_FORM'
@@ -4132,12 +4232,51 @@ paths:
                   data:
                     type: object
                     properties:
-                      column_group_info:
-                        $ref: '#/components/schemas/COLUMN_GROUP_INFO'
-                      column_info:
-                        $ref: '#/components/schemas/COLUMN_INFO'
-                      menu_info:
-                        $ref: '#/components/schemas/MENU_INFO'
+                      upload_id:
+                        type: string
+                        example:
+                          "xxxxxxxxxxxxxxxxxxxxxxxx"
+                      file_name:
+                        type: string
+                        example:
+                          "ita_exportdata_yyyymmddhhiiss.kym"
+                      mode:
+                        type: string
+                        example:
+                          "1: 環境移行 / 2: 時刻指定"
+                      specified_time:
+                        type: string
+                        example:
+                          "YYYY/MM/DD hh:mm"
+                      abolished_type:
+                        type: string
+                        example:
+                          "1: 廃止を含む / 2: 廃止を除く"
+                      journal_type:
+                        type: string
+                        example:
+                          "1: 履歴あり / 2: 履歴なし"
+                      import_list:
+                        properties:
+                          menu_groups:
+                            items:
+                              type: object
+                              example:
+                                disp_seq: 10
+                                id: "101"
+                                menu_group_name: "管理コンソール"
+                                menu_group_name_en: "Management Console"
+                                menu_group_name_ja: "管理コンソール"
+                                menus:
+                                  items:
+                                    type: object
+                                    example:
+                                      disp_seq: 10
+                                      id: "10101"
+                                      menu_name: "システム設定"
+                                      menu_name_en: "System settings"
+                                      menu_name_ja: "システム設定"
+                                      menu_name_rest: "system_settings"
                   message:
                     type: string
         '401':
@@ -4177,10 +4316,19 @@ paths:
         content:
           application/json:
             schema:
-              description: 検索条件を設定
+              type: object
               properties:
-                rest_key_name:
-                  $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+                upload_id:
+                  type: string
+                  example:
+                    "xxxxxxxxxxxxxxxxxxxxxxxx"
+                file_name:
+                  type: string
+                  example:
+                    "ita_exportdata_yyyymmddhhiiss.kym"
+                menu:
+                  items: {}
+                  example: ["system_settings", "menu_group_list", "menu_list", "<menu_name_rest 1>", "<menu_name_rest 2>"]
       responses:
         '200':
           description: Success
@@ -4195,12 +4343,10 @@ paths:
                   data:
                     type: object
                     properties:
-                      column_group_info:
-                        $ref: '#/components/schemas/COLUMN_GROUP_INFO'
-                      column_info:
-                        $ref: '#/components/schemas/COLUMN_INFO'
-                      menu_info:
-                        $ref: '#/components/schemas/MENU_INFO'
+                      execution_no:
+                       type: string
+                       example:
+                        "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
                   message:
                     type: string
         '401':
@@ -4906,6 +5052,12 @@ paths:
           in: path
           description: メニュー名
           required: true
+          schema:
+            type: string
+        - name: file
+          in: query
+          description: ファイルダウンロード指定
+          required: false
           schema:
             type: string
       requestBody:

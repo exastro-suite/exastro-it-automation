@@ -113,7 +113,9 @@ color: #CCC;
 z-index: auto;
 padding: 4px;
 }
-.dashboard[data-mode="view"] .widget-grid[data-widget-display="hide"],
+.dashboard[data-mode="view"] .widget-grid[data-widget-display="hide"] {
+visibility: hidden;
+}
 .dashboard[data-mode="view"] .widget-blank-grid {
 opacity: 0;
 }

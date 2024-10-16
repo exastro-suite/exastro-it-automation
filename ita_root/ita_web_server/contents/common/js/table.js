@@ -2559,17 +2559,25 @@ changeDiscard( beforeData, type ) {
         if ( before !== undefined && value !== before.parameter.discard ) changeFlag = true;
 
         // 画面に表示されている分の更新
-        const $discard = tb.$.tbody.find(`.inputSpan[data-key="discard"][data-id="${id}"]`),
-              $tr = $discard.closest('.tBodyTr');
+        const $discard = tb.$.tbody.find(`.inputSpan[data-key="discard"][data-id="${id}"]`);
+        const $tr = $discard.closest('.tBodyTr');
 
         if ( value === '0') {
             $tr.removeClass('tBodyTrDiscard');
-            $tr.find('.input, .button, .tableEditInputSelect').not('[data-key="remarks"]').prop('disabled', false );
-            $tr.find('.tableEditInputSelectValue').removeClass('tableEditInputSelectValueDisabled');
+            if ( changeFlag ) {
+                $tr.find('[data-key="remarks"]').prop('disabled', false );
+            } else {
+                $tr.find('.input, .button, .tableEditInputSelect').prop('disabled', false );
+                $tr.find('.tableEditInputSelectValue, .tableEditInputMultipleSelectValue, .tableEditMultipleColmun').removeClass('tableEditInputSelectValueDisabled');
+            }
         } else {
             $tr.addClass('tBodyTrDiscard');
-            $tr.find('.input, .button, .tableEditInputSelect').not('[data-key="remarks"]').prop('disabled', true );
-            $tr.find('.tableEditInputSelectValue').addClass('tableEditInputSelectValueDisabled');
+            if ( changeFlag ) {
+                $tr.find('.input, .button, .tableEditInputSelect').not('[data-key="remarks"]').prop('disabled', true );
+            } else {
+                $tr.find('.input, .button, .tableEditInputSelect').prop('disabled', true );
+            }
+            $tr.find('.tableEditInputSelectValue, .tableEditInputMultipleSelectValue, .tableEditMultipleColmun').addClass('tableEditInputSelectValueDisabled');
         }
 
         const discardMark = tb.discardMark( value );
@@ -4204,9 +4212,11 @@ editCellHtml( item, columnKey ) {
         case 'IDColumn': case 'LinkIDColumn': case 'RoleIDColumn': case 'UserIDColumn':
         case 'EnvironmentIDColumn': case 'JsonIDColumn': case 'ExecutionEnvironmentDefinitionIDColumn': {
             const displayValue = fn.cv( value, '', true );
+            const pulldownClassName = ['tableEditInputSelectValue'];
+            if ( attr.disabled === 'disabled') pulldownClassName.push('tableEditInputSelectValueDisabled');
             inputClassName.push('tableEditInputSelectContainer');
             return `<div class="${inputClassName.join(' ')}">`
-            + `<div class="tableEditInputSelectValue"><span class="tableEditInputSelectValueInner">${displayValue}</span></div>`
+            + `<div class="${pulldownClassName.join(' ')}"><span class="tableEditInputSelectValueInner">${displayValue}</span></div>`
                 + fn.html.select( fn.cv( tb.data.editSelectLength[ columnName ], []), 'tableEditInputSelect', value, name, attr, { select2: true } )
             + `</div>`;
         }
@@ -4214,11 +4224,13 @@ editCellHtml( item, columnKey ) {
         // 複数選択プルダウン
         case 'NotificationIDColumn':  {
             const displayValue = fn.cv( value, '', true );
+            const pulldownClassName = ['tableEditInputMultipleSelectValue'];
+            if ( attr.disabled === 'disabled') pulldownClassName.push('tableEditInputSelectValueDisabled');
             value = fn.jsonParse( value, 'array');
             attr.multiple = 'multiple';
             inputClassName.push('tableEditInputMultipleSelectContainer');
             return `<div class="${inputClassName.join(' ')}">`
-            + `<div class="tableEditInputMultipleSelectValue"><span class="tableEditInputMultipleSelectValueInner">${displayValue}</span></div>`
+            + `<div class="${pulldownClassName.join(' ')}"><span class="tableEditInputMultipleSelectValueInner">${displayValue}</span></div>`
                 + fn.html.select( fn.cv( tb.data.editSelectLength[ columnName ], []), 'tableEditInputSelect tableEditInputMultipleSelect', value, name, attr, { select2: true } )
             + `</div>`;
         }
@@ -4257,6 +4269,7 @@ editCellHtml( item, columnKey ) {
             inputClassName.push('tableEditMultipleHiddenColmun');
             const viewClassName = ['tableEditFilterCondition', 'tableEditMultipleColmun', 'input'];
             if ( inputClassName.indexOf('tableEditChange') !== -1 ) viewClassName.push('tableEditChange');
+            if ( attr.disabled === 'disabled') viewClassName.push('tableEditInputSelectValueDisabled');
 
             // イベントフロー画面の場合はラベル表示する
             if ( !tb.partsFlag ) {

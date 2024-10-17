@@ -117,8 +117,6 @@ services:
       - vol-ita-storage:/storage
     networks:
       - exastro
-    profiles:
-      - ita-ansible-execution
 
   ita-api-oase-receiver:
     user: 1000:1000
@@ -152,8 +150,6 @@ services:
     #   - vol-ita-storage:/storage
     networks:
       - exastro
-    profiles:
-      - ita-oase
 
   ita-web-server:
     user: 1000:1000

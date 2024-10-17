@@ -21,6 +21,7 @@ class AnsibleExexutionVersion:
     """
 
     # バージョンリスト
+    # エージェントのバージョン: [ITAのバージョンをリスト形式]
     VERSION_MATRIX = {
         "2.5.0": ["2.5.0"]
     }

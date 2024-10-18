@@ -179,7 +179,7 @@ def backyard_main(organization_id, workspace_id):
                 main_func_result, msg, trace_msg = menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_dir, uploadfiles_60103_dir)
                 g.applogger.info("menu_import_exec END")
 
-            db_reconnention(objdbca, True) if objdbca else None
+            db_reconnention(objdbca) if objdbca else None
             # メイン処理がFalseの場合、異常系処理
             if not main_func_result:
                 # エラーログ出力
@@ -1999,6 +1999,9 @@ def import_table_and_data(
     for record in menus_list:
         db_reconnention(objdbca) if objdbca else None
         db_reconnention(ws_db_sb) if ws_db_sb else None
+        db_reconnention(objdbca, True) if objdbca and not objdbca._is_transaction else None
+        db_reconnention(ws_db_sb, True) if ws_db_sb and not ws_db_sb._is_transaction  else None
+
         param = record['parameter']
         # menu_id = param.get('uuid')
         menu_id = param.get('menu_name')
@@ -2096,8 +2099,8 @@ def import_table_and_data(
                 else:
                     if objdbca._is_transaction is False and ita_base_menu_flg is True:
                         # トランザクション開始
-                        db_reconnention(objdbca, True) if objdbca else None
-                        db_reconnention(ws_db_sb, True) if ws_db_sb else None
+                        db_reconnention(objdbca) if objdbca else None
+                        db_reconnention(ws_db_sb) if ws_db_sb else None
                         debug_msg = g.appmsg.get_log_message("BKY-20004", [])
                         g.applogger.info(debug_msg)
                         objdbca.db_transaction_start()
@@ -2190,8 +2193,15 @@ def import_table_and_data(
 
         if objdbca._is_transaction is False and ita_base_menu_flg is False:
             # トランザクション開始
-            db_reconnention(objdbca, True) if objdbca else None
-            db_reconnention(ws_db_sb, True) if ws_db_sb else None
+            db_reconnention(objdbca) if objdbca else None
+            db_reconnention(ws_db_sb) if ws_db_sb else None
+            debug_msg = g.appmsg.get_log_message("BKY-20004", [])
+            g.applogger.info(debug_msg)
+            objdbca.db_transaction_start()
+        elif objdbca._is_transaction is False:
+            # トランザクション開始
+            db_reconnention(objdbca) if objdbca else None
+            db_reconnention(ws_db_sb) if ws_db_sb else None
             debug_msg = g.appmsg.get_log_message("BKY-20004", [])
             g.applogger.info(debug_msg)
             objdbca.db_transaction_start()
@@ -2229,7 +2239,6 @@ def import_table_and_data(
             debug_msg = g.appmsg.get_log_message("BKY-20005", [])
             g.applogger.info(debug_msg)
             objdbca.db_transaction_end(True)
-            objdbca._is_transaction = False
 
         # ファイル配置
         if file_put_flg and objmenu:

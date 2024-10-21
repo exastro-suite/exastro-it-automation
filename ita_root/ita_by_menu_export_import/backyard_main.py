@@ -1485,7 +1485,6 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
         # ファイル名更新用パラメータを作成
         parameters = {
             "file": {
-                "file_name": file_encode(kym_path)
             },
             "parameter": {
                 "file_name": kym_name,
@@ -1494,7 +1493,13 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
             },
             "type": "Update"
         }
-
+        tmp_kym_path = kym_path.replace("/storage/", "/tmp/")
+        tmp_kym_dir_path = tmp_kym_path.replace(os.path.basename(kym_path), "")
+        os.makedirs(tmp_kym_dir_path, exist_ok=True)
+        shutil.move(kym_path, tmp_kym_dir_path)
+        record_file_paths = {
+            "file_name": tmp_kym_path
+        }
         # 「メニューエクスポート・インポート管理」のファイル名を更新
         objmenu = load_table.loadTable(objdbca, 'menu_export_import_list')
 
@@ -1503,7 +1508,7 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
         g.applogger.debug(debug_msg)
         objdbca.db_transaction_start()
 
-        exec_result = objmenu.exec_maintenance(parameters, execution_no, "", False, False, True, False, True)  # noqa: E999
+        exec_result = objmenu.exec_maintenance(parameters, execution_no, "", False, False, True, False, True, record_file_paths=record_file_paths)  # noqa: E999
 
         # コミット/トランザクション終了
         debug_msg = g.appmsg.get_log_message("BKY-20005", [])
@@ -1516,7 +1521,8 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
             raise Exception("499-00701", [result_msg])  # loadTableバリデーションエラー
 
         # 更新が正常に終了したらtmpの作業ファイルを削除する
-        os.remove(kym_path)
+        os.remove(kym_path) if os.path.isfile(kym_path) else None
+        os.remove(tmp_kym_path) if os.path.isfile(tmp_kym_path) else None
 
         # 正常系リターン
         return True, msg, None

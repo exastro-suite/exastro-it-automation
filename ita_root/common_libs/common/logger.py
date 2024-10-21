@@ -48,28 +48,28 @@ class AppLog:
         self.set_env_message()
 
         # is no-container-app or not(bool)
-        isMyapp = True if os.getenv('IS_MYAPP') == "1" else False
+        isNonContainerLog = True if os.getenv('IS_NON_CONTAINER_LOG') == "1" else False
 
         # read config.yml
         #  #2079 /storage配下ではないので対象外
         with open(os.getenv('PYTHONPATH') + 'logging.yml', 'r') as yml:
             dictConfig = yaml.safe_load(yml)
 
-        self.__create_instance(isMyapp, dictConfig)
+        self.__create_instance(isNonContainerLog, dictConfig)
 
-    def __create_instance(self, isMyapp, dictConfig={}):
+    def __create_instance(self, isNonContainerLog, dictConfig={}):
         """
         create Instance of logging-Library and save it
 
         Arguments:
-            isMyapp: (bool) True : no-container-app, False : container-app(Saas)
+            isNonContainerLog: (bool) True : no-container-app, False : container-app(Saas)
             dictConfig: (dict) logging dict-config
         Returns:
 
         """
-        self.__name__ = "fileAppLogger" if isMyapp is True else "stdAppLogger"
+        self.__name__ = "fileAppLogger" if isNonContainerLog is True else "stdAppLogger"
 
-        if isMyapp is False:  # container-app(Saas)
+        if isNonContainerLog is False:  # container-app(Saas)
             del dictConfig['loggers']["fileAppLogger"]
             if "myfile" not in list(dictConfig['loggers']["stdAppLogger"]["handlers"]):
                 del dictConfig['handlers']["myfile"]
@@ -77,6 +77,17 @@ class AppLog:
             del dictConfig['loggers']["stdAppLogger"]
             if "myfile" not in list(dictConfig['loggers']["fileAppLogger"]["handlers"]):
                 del dictConfig['handlers']["myfile"]
+
+            # log file name: use env[priority: AGENT_NAME > SERVICE_NAME]
+            sys_name = os.getenv('AGENT_NAME', os.getenv('SERVICE_NAME', "app"))
+            filename = f"{os.getenv('STORAGEPATH', './')}{sys_name}.log"
+            logging_max_size = os.getenv('LOGGING_MAX_SIZE', None)
+            logging_max_file = os.getenv('LOGGING_MAX_FILE', None)
+            if "myfile" in list(dictConfig['loggers']["fileAppLogger"]["handlers"]):
+                # set filename, maxBytes, backupCount [priority: env > logging.yml]
+                dictConfig['handlers']["myfile"]["filename"] = filename if filename else dictConfig['handlers']["myfile"]["filename"]
+                dictConfig['handlers']["myfile"]["maxBytes"] = logging_max_size if logging_max_size else dictConfig['handlers']["myfile"]["maxBytes"]
+                dictConfig['handlers']["myfile"]["backupCount"] = logging_max_file if logging_max_size else dictConfig['handlers']["myfile"]["backupCount"]
 
         # set config
         self._config = dictConfig

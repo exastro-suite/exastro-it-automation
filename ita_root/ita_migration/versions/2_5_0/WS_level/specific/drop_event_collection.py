@@ -13,9 +13,11 @@
 #   limitations under the License.
 
 from flask import g
+import traceback
 import json
 
 from common_libs.common.dbconnect import *  # noqa: F403
+from common_libs.common.util import arrange_stacktrace_format
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
 
 
@@ -37,9 +39,13 @@ def main(work_dir_path, wsdb):
     if 'oase' in org_no_install_driver:
         return 0
 
-    ws_mong = MONGOConnectWs()
-    ws_mong.collection("event_collection").drop()
-    ws_mong.disconnect()
+    try:
+        ws_mong = MONGOConnectWs()
+        ws_mong.collection("event_collection").drop()
+        ws_mong.disconnect()
+    except Exception:
+        t = traceback.format_exc()
+        g.applogger.error(arrange_stacktrace_format(t))
 
     return 0
 

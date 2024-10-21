@@ -24,9 +24,8 @@
 #     他:  異常
 #     /exastro/share_volume_dir/legacy/execution_no/:
 ######################################################################
-
 ansible-runner start ${PROJECT_BASE_DIR} \
 -p playbook.yml \
 -i {{ EXECUTION_NO}} \
---container-volume-mount '${PROJECT_BASE_DIR}/:/outdir/' \
+--container-volume-mount ${PROJECT_BASE_DIR}/:/outdir/ \
 --container-image {{ TAG_NAME }}

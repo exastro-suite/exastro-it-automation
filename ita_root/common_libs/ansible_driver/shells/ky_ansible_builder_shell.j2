@@ -15,29 +15,11 @@
 ######################################################################
 ######################################################################
 #   ansible-biulderコマンドを実行する
-#   base_imageがredhatの場合、 registry.redhat.ioにログインする
-#   ansible-builderコマンドで実行環境をビルドするsheelの
-#   テンプレートファイル
 #   <<引数>>
-#     builder.sh $1 $2 $3
-#     $1: base_imageがredhatの場合     "Yes"
-#         base_imageがredhat以外の場合 "No"
-#     $2: registry.redhat.ioへのユーザー
-#     $3: registry.redhat.ioへのパスワード
+#     なし
 #   <<exit code>>
 #     0:   正常
 #     他:  異常
 ######################################################################
-#  registry.redhat.ioへのログイン有無判定
-if [ $1 == "Yes" ]; then
-    export USER=$2
-    export PASSWORD=$3
-    expect /exastro/common_libs/ansible_driver/shells/ky_ansible_redhat_login.exp.exp 1>/dev/null 2>>/dev/stderr
-    EXIT_CODE=$?
-    if [ ${EXIT_CODE}  -ne 0 ]; then
-        echo "Login to registry.redhat.io failed user:${USER} password:********" >> /dev/stderr
-        exit ${EXIT_CODE}
-    fi
-fi
 cd ${PROJECT_BASE_DIR}/builder_executable_files
 ansible-builder build {{ optional_parameters }} --tag {{ tag_name }}

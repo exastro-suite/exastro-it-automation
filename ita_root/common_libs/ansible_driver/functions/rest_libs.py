@@ -290,8 +290,8 @@ def execution_scram(objdbca, driver_id, execution_no):
         raise AppException("499-00903", [execution_no], [execution_no])
     else:
         execrow = execrows[0]
-        # ステータスが実行中か実行中(遅延)かを判定
-        if execrow["STATUS_ID"] != AnsrConst.PROCESSING and execrow["STATUS_ID"] != AnsrConst.PROCESS_DELAYED:
+        # ステータスが実行中か実行中(遅延)か準備完了か実行待ちを判定
+        if execrow["STATUS_ID"] != AnsrConst.PROCESSING and execrow["STATUS_ID"] != AnsrConst.PROCESS_DELAYED and execrow["STATUS_ID"] != AnsrConst.PREPARE_COMPLETE and execrow["STATUS_ID"] != AnsrConst.PROCESSING_WAIT:
             if g.LANGUAGE == 'ja':
                 sql = "SELECT EXEC_STATUS_NAME_JA AS NAME FROM T_ANSC_EXEC_STATUS WHERE EXEC_STATUS_ID = %s AND DISUSE_FLAG = '0'"
             else:

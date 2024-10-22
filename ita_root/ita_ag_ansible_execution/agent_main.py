@@ -21,7 +21,6 @@ import glob
 from flask import g
 from common_libs.common import *  # noqa: F403
 from common_libs.ag.util import app_exception, exception
-from common_libs.common.storage_access import storage_read
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from agent.libs.exastro_api import Exastro_API
 from libs.util import *
@@ -53,11 +52,10 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
     main_logic_execute = False
     version_diff = None
     # バージョン通知API実行
+    g.applogger.info(g.appmsg.get_log_message("MSG-10996", [workspace_id]))
     status_code, response = post_agent_version(organization_id, workspace_id, exastro_api)
     if not status_code == 200:
-        # g.applogger.info(f"バージョン通知に失敗しました。")
-        g.applogger.info(g.appmsg.get_log_message("MSG-10981"))
-        g.applogger.info(f"post_agent_version: {status_code=} {response=}")
+        g.applogger.info(g.appmsg.get_log_message("MSG-10997", [workspace_id, status_code, response]))
     else:
         target_data = response["data"] if isinstance(response["data"], dict) else {}
         version_diff = target_data.get("version_diff")
@@ -69,9 +67,6 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
     max = int(loop_count)
 
     while True:
-        print("")
-        print("")
-
         try:
             if main_logic_execute:
                 main_logic(organization_id, workspace_id, exastro_api, baseUrl)
@@ -93,7 +88,6 @@ def main_logic(organization_id, workspace_id, exastro_api, baseUrl):
     # 起動した未実行インスタンス
     start_up_list = []
 
-    # 未実行インスタンス取得
     body = {}
     str_een = os.getenv('EXECUTION_ENVIRONMENT_NAMES', None)
     if str_een:
@@ -101,42 +95,63 @@ def main_logic(organization_id, workspace_id, exastro_api, baseUrl):
         body = {
             "execution_environment_names": execution_environment_names
         }
+    # 未実行インスタンス取得
+    g.applogger.info(g.appmsg.get_log_message("MSG-10988", [workspace_id]))
     status_code, response = post_unexecuted_instance(organization_id, workspace_id, exastro_api, body=body)
     if status_code == 200:
         target_executions = response["data"] if isinstance(response["data"], dict) else {}
         for execution_no, value in target_executions.items():
             g.applogger.debug(f"{execution_no=}: \n {json.dumps(value, indent=4) if value else {}}")
             # 子プロ起動時の引数対応: None -> ""
+            runtime_data_del = value["anstwr_del_runtime_data"] if value["anstwr_del_runtime_data"] else "0"
             user_name = value["user_name"] if value["user_name"] else ""
             password = value["password"] if value["password"] else ""
+            base_image = value["base_image"] if value["base_image"] else ""
 
             # 子プロ起動
-            command = ["python3", "agent/agent_child_init.py", organization_id, workspace_id, execution_no, value["driver_id"], value["build_type"], user_name, password, value["base_image"]]
-            cp = subprocess.Popen(command)  # noqa: F841
+            g.applogger.info(g.appmsg.get_log_message("MSG-11006", [workspace_id, execution_no]))
 
-            # 子プロ死活監視
-            child_process_exist_check(organization_id, workspace_id, execution_no, value["driver_id"], value["build_type"], user_name, password, value["base_image"])
+            command = ["python3", "agent/agent_child_init.py", organization_id, workspace_id, execution_no, value["driver_id"], value["build_type"], user_name, password, base_image, runtime_data_del, "start"]
 
-            # 起動した未実行インスタンスを保存
+            cp = subprocess.Popen(command)  
+
+            # 子プロ起動状態ファイル生成 
+            create_execution_status_file(organization_id, workspace_id, value["driver_id"], execution_no)
+
+            # 子プロ起動パラメータ退避
+            create_execution_parameters_file(organization_id, workspace_id, value["driver_id"], execution_no, value["build_type"], user_name, password, base_image, runtime_data_del)
+
+            # 子プロ再起動状態ファイル生成
+            create_execution_restart_status_file(organization_id, workspace_id, value["driver_id"], execution_no)
+
+            # 起動した子プロの作業番号を退避
+            # なんらかの理由で子プロの起動に失敗した場合の。子プロ死活監視の為
             start_up_list.append(execution_no)
+
     else:
-        g.applogger.info(g.appmsg.get_log_message("MSG-10955", [status_code, response]))
+        g.applogger.info(g.appmsg.get_log_message("MSG-10989", [workspace_id, status_code, response]))
 
-    # 実行中インスタンス取得: 起動した未実行インスタンスは除く
-    ps_count, working_ps_list, error_ps_list = get_working_child_process(organization_id, workspace_id, start_up_list)
 
-    # 作業中通知
-    if ps_count != 0:
+    # 子プロのステータスファイルより子プロの動作状況を判定し、必要に応じて子プロを再起動する
+    g.applogger.debug("Determine the operating status of the child program")
+    ps_exec_count, ps_error_count, working_ps_list, error_ps_list = get_working_child_process(organization_id, workspace_id, start_up_list)
+
+    g.applogger.debug("ps_exec_count:" + str(ps_exec_count) )
+    g.applogger.debug("ps_error_count:" + str(ps_error_count) )
+    g.applogger.debug("working_ps_list: " + str(working_ps_list))
+    g.applogger.debug("error_ps_list: " + str(error_ps_list))
+
+    # 作業中の作業がある場合、作業中通知
+    if ps_exec_count != 0:
+        g.applogger.info(g.appmsg.get_log_message("MSG-10998", [workspace_id, str(working_ps_list)]))
         status_code, response = post_notification_execution(organization_id, workspace_id, exastro_api, working_ps_list)
         if not status_code == 200:
-            # g.applogger.info(f"作業中通知に失敗しました。")
-            g.applogger.info(g.appmsg.get_log_message("MSG-10982"))
-            g.applogger.info(f"post_notification_execution: {status_code=} {response=}")
+            g.applogger.info(g.appmsg.get_log_message("MSG-10999", [workspace_id, str(working_ps_list), status_code, response]))
 
+    # 子プロセスが存在しない作業がある場合、作業中通知
+    if ps_error_count != 0:
         # 指定リトライ回数以上のステータス更新、ステータスファイルファイルの削除
         update_error_executions(organization_id, workspace_id, exastro_api, error_ps_list)
-    else:
-        g.applogger.info(f"get_working_child_process: {ps_count=}")
 
 
 def decode_tar_file(base_64data, dir_path):
@@ -153,7 +168,8 @@ def decode_tar_file(base_64data, dir_path):
     ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
 
     if ret.returncode != 0:
-        raise AppException('MSG-10947', [])
+        # enomoto ログ出力
+        raise AppException('MSG-11000', ["tar file type:out"])
 
 def conductor_decode_tar_file(base_64data, dir_path):
     """
@@ -162,17 +178,17 @@ def conductor_decode_tar_file(base_64data, dir_path):
             file_path:ファイルパス
             workspace_id: WorkspaceID
         RETRUN:
-            statusCode, {}, msg
+            statusCode, {}, msg	
     """
 
     cmd = "base64 -d " + base_64data + " " + dir_path + "conductor_tmp.gz"
     ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
 
     if ret.returncode != 0:
-        raise AppException('MSG-10947', [])
+        # enomoto ログ出力
+        raise AppException('MSG-11000', ["tar file type:conductor"])
 
-
-def child_process_exist_check(organization_id, workspace_id, execution_no, driver_id, build_type=None, user_name="", password="", base_image=None ,reboot=True):
+def child_process_exist_check(organization_id, workspace_id, execution_no, driver_id, build_type=None, user_name="", password="", base_image=None, runtime_data_del="0"):
     """
     実行中の子プロの起動確認
 
@@ -190,7 +206,9 @@ def child_process_exist_check(organization_id, workspace_id, execution_no, drive
     child_process_3 = child_process_exist_check_ps()
 
     # プロセス再起動上限値
-    child_process_retry_limit = int(os.getenv('CHILD_PROCESS_RETRY_LIMIT', 3))
+    # 子プロ再起動は行わない
+    # プロセス再起動上限値は0とする
+    child_process_retry_limit = int(os.getenv('CHILD_PROCESS_RETRY_LIMIT', 0))
 
     # 子プロ起動確認
     is_running = False
@@ -214,36 +232,29 @@ def child_process_exist_check(organization_id, workspace_id, execution_no, drive
             if re.search(command_args, r_child_process) is not None:
                 is_running = True
 
-    # 子プロ確認のみ(reboot=false)
-    if reboot is False:
-        return is_running
-
     if is_running is False:
         # ステータスファイルがあるか確認
-        # status_file_path = "/storage/" + organization_id + "/" + workspace_id + "/ag_ansible_execution/status/" + execution_no
-        status_file_path = f"/storage/{organization_id}/{workspace_id}/ag_ansible_execution/status/{driver_id}/{execution_no}"
+        storagepath = os.environ.get('STORAGEPATH')
+        status_file_dir_path, status_file_path = get_execution_status_file_path(organization_id, workspace_id, driver_id, execution_no)
         if os.path.isfile(status_file_path):
             # ステータスファイルに書き込まれている再起動回数取得
-            obj = storage_read()
-            obj.open(status_file_path)
-            reboot_cnt = obj.read()
-            obj.close()
+            with open(status_file_path) as f:
+                reboot_cnt =  f.read()
 
-            # 再起動回数が10回を超える場合、再起動しない
-            if int(reboot_cnt) <= child_process_retry_limit:
+            # 再起動回数回を超える場合、再起動しない
+            if int(reboot_cnt) < child_process_retry_limit:
                 # ステータスファイルに再起動回数書き込み
-                obj = storage_write()
-                obj.open(status_file_path, 'w')
-                obj.write(str(int(reboot_cnt) + 1))
-                obj.close()
+                with open(status_file_path, "w") as f:
+                    reboot_cnt = int(reboot_cnt) + 1
+                    f.write(str(reboot_cnt))
 
+                g.applogger.info(g.appmsg.get_log_message("MSG-11005", [workspace_id, execution_no, str(reboot_cnt)]))
                 # 子プロ再起動
-                command = ["python3", "agent/agent_child_init.py", organization_id, workspace_id, execution_no, driver_id, user_name, password, base_image]
+                command = ["python3", "agent/agent_child_init.py", organization_id, workspace_id, execution_no, driver_id, user_name, password, base_image, runtime_data_del,"restart"]
                 cp = subprocess.Popen(command)  # noqa: F841
             else:
-                g.applogger.info(g.appmsg.get_log_message("MSG-10056", [execution_no, workspace_id]))
-
-        return False
+                g.applogger.info(g.appmsg.get_log_message("MSG-11004", [workspace_id, execution_no]))
+                return False
 
     return True
 
@@ -290,105 +301,12 @@ def child_process_exist_check_ps():
         # 例外を起こす
         cp3.check_returncode()
 
-def decompress_tar_file(organization_id, workspace_id, driver_id, dir_path, conductor_dir_path, file_name, conductor_file_name, execution_no):
-    """
-    tarファイルを解凍してagent用のディレクトリに移動する
-    ARGS:
-        dir_path: in,outのtarファイルディレクトリ
-        conductor_dir_path: conductorのtarファイルディレクトリ
-        file_name: in,outのtarファイル名
-        conductor_file_name: conductorのtarファイル名
-        driver_id: ドライバーID
-        execution_no: 作業番号
-
-    Returns:
-        stdout row
-    """
-
-    # in,outのtarファイルを展開
-    with tarfile.open(dir_path + "/" + file_name, 'r:gz') as tar:
-        tar.extractall(path=dir_path + "/tmp")
-
-    # 展開したファイルの一覧を取得
-    lst = os.listdir(dir_path + "/tmp")
-
-    # in/out親ディレクトリパス
-    root_dir_path = "/storage/ " + organization_id + "/" + workspace_id + "/driver/ansible/" + driver_id + "/" + execution_no
-
-    # 展開したファイルを移動する
-    for dir_name in lst:
-        if dir_name == "in":
-            # inディレクトリの移動先
-            move_dir = root_dir_path + "in/project"
-        elif dir_name == "inventory":
-            # inventoryディレクトリの移動先
-            move_dir = root_dir_path + "/inventory"
-        elif dir_name == "env":
-            # envディレクトリの移動先
-            move_dir = root_dir_path + "/env"
-        elif dir_name == "builder_executable_files":
-            # builder_executable_filesディレクトリの移動先
-            move_dir = root_dir_path + "/builder_executable_files"
-        elif dir_name == "runner_executable_files":
-            # runner_executable_filesディレクトリの移動先
-            move_dir = root_dir_path + "/runner_executable_files"
-        elif dir_name == "out":
-            # outディレクトリの移動先
-            move_dir = root_dir_path + "/out"
-        elif dir_name == ".tmp":
-            # .tmpディレクトリの移動先
-            move_dir = root_dir_path + "/.tmp"
-        elif dir_name == "tmp":
-            # tmpディレクトリの移動先
-            move_dir = root_dir_path + "/tmp"
-        # 移動先のディレクトリがない場合作成
-        if os.path.exists(move_dir):
-            os.mkdir(move_dir)
-            os.chmod(move_dir, 0o777)
-        join_path = os.path.join(dir_path + "/tmp", dir_name)
-        move_path = os.path.join(move_dir, dir_name)
-        shutil.move(join_path,move_path)
-
-        #移動後作業ディレクトリ削除
-        shutil.rmtree(dir_path + "/tmp")
-
-    # conductorのtarファイルを展開
-    with tarfile.open(conductor_dir_path + "/" + conductor_file_name, 'r:gz') as tar:
-        tar.extractall(path=conductor_dir_path + "/conductor_tmp")
-
-    # 展開したファイルの一覧を取得
-    lst = os.listdir(conductor_dir_path + "/conductor_tmp")
-
-    # 展開したファイルを移動する
-    for dir_name in lst:
-        # conductorディレクトリの移動先
-        move_dir = root_dir_path + "/conductor"
-        # 移動先のディレクトリがない場合作成
-        if os.path.exists(move_dir):
-            os.mkdir(move_dir)
-            os.chmod(move_dir, 0o777)
-        join_path = os.path.join(conductor_dir_path + "/tmp", dir_name)
-        move_path = os.path.join(move_dir, dir_name)
-        shutil.move(join_path,move_path)
-
-        # 移動後作業ディレクトリ削除
-        shutil.rmtree(conductor_dir_path + "/conductor_tmp")
-
-
-def check_child_process(execution_no):
-    """
-    子プロの死活監視
-    ARGS:
-        execution_no: 作業番号
-
-    """
 
 def get_working_child_process(organization_id, workspace_id, start_up_list):
     """ステータスファイルから作業一覧取得
     Args:
         organization_id (_type_): organization_id
         workspace_id (_type_): workspace_id
-        start_up_list: execution_no started in main_logic. [execution_no,]
 
     Returns:
         working_ps_list: { driver_id : []}
@@ -399,50 +317,61 @@ def get_working_child_process(organization_id, workspace_id, start_up_list):
         "pioneer",
         "legacy_role",
     ]
-    ps_count = 0
+    ps_exec_count = 0
+    ps_error_count = 0
     working_ps_list = {}
     error_ps_list = {}
-    status_file_dir = f"/storage/{organization_id}/{workspace_id}/ag_ansible_execution/status/"
+    storagepath = os.environ.get('STORAGEPATH')
+    status_file_dir_path = status_file_dir = f"{storagepath}/{organization_id}/{workspace_id}/ag_ansible_execution/status/"
 
     # プロセス再起動上限値
-    child_process_retry_limit = int(os.getenv('CHILD_PROCESS_RETRY_LIMIT', 3))
+    # 子プロ再起動は行わない
+    # プロセス再起動上限値は0とする
+    child_process_retry_limit = int(os.getenv('CHILD_PROCESS_RETRY_LIMIT', 0))
 
+    # ドライバ毎の空リスト作成
     [working_ps_list.setdefault(_d, []) for _d in driver_id_list]
     [error_ps_list.setdefault(_d, []) for _d in driver_id_list]
 
     for driver_id in driver_id_list:
-        for _file in glob.glob(f"{status_file_dir}/{driver_id}/*"):
-            if not os.path.isfile(_file):
-                g.applogger.debug(f"{_file}: {os.path.isfile(_file)}")
+        for _file in glob.glob(f"{status_file_dir_path}/{driver_id}/*"):
+            if len(os.path.basename(_file)) > 36:
+                # ステータスファイル以外もあるのでファイル名が36文字以上はスキップ
                 continue
+
+            if not os.path.isfile(_file):
+                continue
+
             # ステータスファイルに書き込まれている再起動回数取得
-            obj = storage_read()
-            obj.open(_file)
-            reboot_cnt = obj.read()
-            obj.close()
-            reboot_cnt = int(reboot_cnt) if len(reboot_cnt) != 0 else 0
+            with open(_file) as f:
+                reboot_cnt =  f.read()
+            if len(reboot_cnt) == 0:
+                reboot_cnt = "0"
+
             execution_no = os.path.basename(_file)
 
-            # 起動した未実行インスタンスは除く
             if execution_no in start_up_list:
+                # 起動直後の子プロ起動確認は行わず、次のループから実施
                 continue
-
-            # 子プロ死活監視
-            result_child_process = child_process_exist_check(organization_id, workspace_id, execution_no, driver_id, reboot=False)
-            g.applogger.debug(f"{driver_id=}, {execution_no=}, {reboot_cnt=}, {result_child_process=}")
-            if result_child_process and int(reboot_cnt) <= child_process_retry_limit:
+               
+            # 子プロ起動パラメータ退避ファイルから起動パラメータ取得
+            build_type, user_name, password, base_image, runtime_data_del = get_execution_parameters_file(organization_id, workspace_id, driver_id, execution_no)
+            ret = child_process_exist_check(organization_id, workspace_id, execution_no, driver_id, build_type, user_name, password, base_image, runtime_data_del)
+            if ret is True:
                 # 子プロ実行中
+                g.applogger.debug(g.appmsg.get_log_message("MSG-11002", [workspace_id, execution_no]))
                 working_ps_list[driver_id].append(execution_no)
+                ps_exec_count += 1
             else:
-                # 子プロ存在しない
+                # 子プロ未実行
+                g.applogger.debug(g.appmsg.get_log_message("MSG-11003", [workspace_id, execution_no]))
                 error_ps_list[driver_id].append(execution_no)
-            ps_count += 1
+                ps_error_count += 1
 
-    g.applogger.debug(f"ps_count: {ps_count}")
     g.applogger.debug(f"working_ps_list: \n {json.dumps(working_ps_list, indent=4) if working_ps_list else {}}")
     g.applogger.debug(f"error_ps_list: \n {json.dumps(error_ps_list, indent=4) if error_ps_list else {}}")
 
-    return ps_count, working_ps_list, error_ps_list
+    return ps_exec_count, ps_error_count, working_ps_list, error_ps_list
 
 def update_error_executions(organization_id, workspace_id, exastro_api, error_ps_list):
     """エラー対象の作業状態通知送信
@@ -453,7 +382,6 @@ def update_error_executions(organization_id, workspace_id, exastro_api, error_ps
         exastro_api: Exastro_API()
         error_ps_list: : { driver_id : []}
     """
-
     status_id = AnscConst.FAILURE # 完了(異常)
     for driver_id , del_execution_list in error_ps_list.items():
         for del_execution in del_execution_list:
@@ -461,16 +389,19 @@ def update_error_executions(organization_id, workspace_id, exastro_api, error_ps
             # 作業状態通知送信: 異常時
 
             # ステータスファイル有りで、作業中の実行プロセス停止時、エラーログに追記して通知
-            _base_dir = f"/storage/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{del_execution}"
-            [os.makedirs(f"{_base_dir}/{_c}") for _c in ["out", "in", "conductor"] if not os.path.isdir(f"{_base_dir}/{_c}")]
-            ag_parent_error_log =f"{_base_dir}/ag_parent_error.log"
-            obj = storage_write()
-            obj.open(ag_parent_error_log, 'w')
-            # Ansible実行エージェントで作業中の実行プロセスが停止した為、終了します。(Execution no:{})
-            obj.write(g.appmsg.get_api_message('MSG-10985', [del_execution]))
-            obj.close()
+            # enomoto /ag_parent_error.logパス確認
+            storagepath = os.environ.get('STORAGEPATH')
+            _base_dir = f"{storagepath}/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{del_execution}"
+            [os.makedirs(f"{_base_dir}/{_c}") for _c in ["out"] if not os.path.isdir(f"{_base_dir}/{_c}")]
+            # ログファイルのパス取得
+            exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass = get_log_file_path(organization_id, workspace_id, driver_id, del_execution)
 
-            # 作業状態通知(ファイル)
+            with open(parent_error_log_pass, 'w') as f:
+                # Ansible実行エージェントで作業中の実行プロセスが停止した為、終了します。(Execution no:{})
+                f.write(g.appmsg.get_log_message('MSG-10985', [del_execution]))
+
+            # ansibleのログファイルとアプリのログをマージする
+            log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
 
             # 各種tar＋ファイルパス取得
             out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path\
@@ -509,20 +440,20 @@ def update_error_executions(organization_id, workspace_id, exastro_api, error_ps
                     open(conductor_gztar_path, "rb"),
                     mimetypes.guess_type(conductor_gztar_path, False)[0])
 
+            # 結果データ更新
+            g.applogger.info(g.appmsg.get_log_message("MSG-10994", [workspace_id, del_execution]))
             status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, del_execution, body, form_data=form_data)
             if not status_code == 200:
-                # g.applogger.info(f"作業状態通知(ファイル)に失敗しました。(execution={del_execution}, {status_id=})")
-                g.applogger.info(g.appmsg.get_log_message("MSG-10983", [del_execution, f"{status_id=}"]))
+                g.applogger.info(g.appmsg.get_log_message("MSG-10995", [workspace_id, del_execution, status_code, response]))
                 status_update = False
 
             # 作業状態通知
             if status_update:
+                g.applogger.info(g.appmsg.get_log_message("MSG-10990", [workspace_id, del_execution, status_id]))
                 status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, del_execution, body)
                 if not status_code == 200:
-                    # g.applogger.info(f"作業状態通知に失敗しました。(execution_no={del_execution}, {status_id=})")
-                    g.applogger.info(g.appmsg.get_log_message("MSG-10984", [f"execution_no={del_execution}", f"{status_id=}"]))
+                    g.applogger.info(g.appmsg.get_log_message("MSG-10991", [workspace_id, del_execution, status_id, status_code, response]))
                     status_update = False
 
-            if status_update:
-                # ステータスファイルの削除
-                delete_status_file(organization_id, workspace_id, driver_id, del_execution)
+            # ステータスファイルの削除
+            delete_status_file(organization_id, workspace_id, driver_id, del_execution)

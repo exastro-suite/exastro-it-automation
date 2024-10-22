@@ -16,6 +16,7 @@ import subprocess
 import os
 import sys
 import time
+import pathlib
 
 from flask import g
 from common_libs.common import *  # noqa: F403
@@ -38,12 +39,14 @@ def agent_child_main():
     workspace_id = args[2]
     execution_no = args[3]
     driver_id = args[4]
+    runtime_data_del = args[9]
 
     global ansc_const
     global driver_error_log_file
 
     g.applogger.set_tag("EXECUTION_NO", execution_no)
 
+    # MSG-10720 [処理]プロシージャ開始 (作業No.:{})
     g.applogger.debug(g.appmsg.get_log_message("MSG-10720", [execution_no]))
 
     g.AnsibleCreateFilesPath = "{}/Ansible_{}".format(get_OSTmpPath(), execution_no) #####
@@ -55,34 +58,31 @@ def agent_child_main():
         # 異常時の共通処理
         # 結果データ更新+作業状態通知送信
         status = AnscConst.FAILURE
-        status_code, response = post_upload_file_and_status(
+        status_code, response, error_code, error_arg = post_upload_file_and_status(
             None, organization_id, workspace_id,
             execution_no, status, driver_id
         )
         if not status_code == 200:
-            g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
+            g.applogger.info(g.appmsg.get_log_message(error_code, error_arg))
     except Exception as e:
         exception(e)
         # 異常時の共通処理
         # 結果データ更新+作業状態通知送信
         status = AnscConst.FAILURE
-        status_code, response = post_upload_file_and_status(
+        status_code, response, error_code, error_arg = post_upload_file_and_status(
             None, organization_id, workspace_id,
             execution_no, status, driver_id
         )
         if not status_code == 200:
-            g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
+            g.applogger.info(g.appmsg.get_log_message(error_code, error_arg))
     finally:
-        # /tmpをゴミ掃除
-        # rmAnsibleCreateFiles()
-        # 作業ディレクトリ削除
-        clear_execution_tmpdir(organization_id, workspace_id, driver_id, execution_no)
-
         # ステータスファイルの削除
-        clear_execution_status_file(organization_id, workspace_id, driver_id, execution_no)
-        pass
+        delete_status_file(organization_id, workspace_id, driver_id, execution_no)
+        # /tmpのゴミ掃除
+        clear_execution_tmpdir(organization_id, workspace_id, driver_id, execution_no)
+        # 作業ディレクトリ削除
+        clear_execution_dir(organization_id, workspace_id, driver_id, execution_no, runtime_data_del)
     return 0
-
 
 def agent_child():
     # コマンドラインから引数を受け取る["自身のファイル名", "organization_id", "workspace_id", …, …]
@@ -95,6 +95,10 @@ def agent_child():
     redhad_user_name = args[6]
     redhad_password = args[7]
     base_image = args[8]
+    runtime_data_del = args[9]
+    # 再起動の処理は実装しない
+    strat_mode = args[10]
+
 
     # パスワードの復号化
     if redhad_password != "":
@@ -102,35 +106,19 @@ def agent_child():
         redhad_password = agent_decrypt(redhad_password, pass_phrase)
 
     # in/out親ディレクトリパス
-    root_dir_path = f"/storage/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{execution_no}"
+    storagepath = os.environ.get('STORAGEPATH')
+    root_dir_path = f"{storagepath}/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{execution_no}"
     # rcファイルディレクトリパス
-    rc_dir_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/" + driver_id + "/" + execution_no + "/artifacts/" + execution_no
+    rc_dir_path = storagepath + "/" + organization_id + "/" + workspace_id + "/driver/ansible/" + driver_id + "/" + execution_no + "/artifacts/" + execution_no
 
     # ログファイルパス
-    exec_log_pass = f"{root_dir_path}/out/exec.log"
-    error_log_pass = f"{root_dir_path}/out/error.log"
-    # 親プロ用エラーログ
-    parent_error_log_pass = f"{root_dir_path}/out/ag_parent_err.log"
-    # 子プロ用ログファイルパス
-    child_exec_log_pass = f"{root_dir_path}/out/child_exec.log"
-    child_error_log_pass = f"{root_dir_path}/out/child_error.log"
-    # runnerログファイルパス
-    runner_exec_log_pass = f"/storage/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/artifacts/{execution_no}/stdout"
-    runner_error_log_pass = f"/storage/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/artifacts/{execution_no}/stderr"
+    exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass = get_log_file_path(organization_id, workspace_id, driver_id, execution_no)
 
-    # 実行状態確認用のステータスファイル作成
-    status_file_dir_path, status_file_path = get_status_file_path(organization_id, workspace_id, driver_id, execution_no)
-    if not os.path.exists(status_file_dir_path):
-        os.makedirs(status_file_dir_path)
-        os.chmod(status_file_dir_path, 0o777)
-    if not os.path.isfile(status_file_path):
-        # ファイル名を作業番号で作成
-        obj = storage_write()
-        obj.open(status_file_path, 'w')
-        obj.write("0")
-        obj.close()
+    # builder Runnerのshellで使用する環境変数設定
+    project_base_path = f"{storagepath}/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{execution_no}"
+    print(project_base_path)
+    os.environ['PROJECT_BASE_DIR'] = project_base_path
 
-    # 環境変数の取得
     baseUrl = os.environ["EXASTRO_URL"]
     refresh_token = os.environ['EXASTRO_REFRESH_TOKEN']
 
@@ -143,11 +131,12 @@ def agent_child():
 
     # 投入資材取得
     _chunk_size=1024*1024
-    g.applogger.info(g.appmsg.get_log_message("MSG-10954", []))
+    g.applogger.info(g.appmsg.get_log_message("MSG-10992", [workspace_id, execution_no]))
     query= {"driver_id": driver_id}
     status_code, response = get_execution_populated_data(organization_id, workspace_id, exastro_api, execution_no, query=query)
     if not status_code == 200:
-        raise AppException("MSG-10955", [status_code, response], [status_code, response])
+        g.applogger.info(g.appmsg.get_log_message("MSG-10993", [workspace_id, execution_no, status_code, response]))
+        raise AppException("MSG-10993", [workspace_id, execution_no, status_code, response], [workspace_id, execution_no, status_code, response])
 
     # tarファイル解凍
     dir_path = f"/tmp/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/{execution_no}/"
@@ -166,31 +155,27 @@ def agent_child():
     response.close()
 
     # ログファイルの作成
-    obj = storage_write()
     if not os.path.isfile(exec_log_pass):
-        obj.open(exec_log_pass, "w")
-        obj.write("")
-        obj.close()
+        p = pathlib.Path(exec_log_pass)
+        p.touch()
 
     if not os.path.isfile(error_log_pass):
-        obj.open(error_log_pass, "w")
-        obj.write("")
-        obj.close()
+        p = pathlib.Path(error_log_pass)
+        p.touch()
 
     if not os.path.isfile(child_exec_log_pass):
-        obj.open(child_exec_log_pass, "w")
-        obj.write("")
-        obj.close()
+        p = pathlib.Path(child_exec_log_pass)
+        p.touch()
 
     if not os.path.isfile(child_error_log_pass):
-        obj.open(child_error_log_pass, "w")
-        obj.write("")
-        obj.close()
+        p = pathlib.Path(child_error_log_pass)
+        p.touch()
 
     # 実行環境構築方法がITAの場合builder.sh実行
     if build_type == "2":
         builder_result = True
         try:
+            g.applogger.debug(g.appmsg.get_log_message( "MSG-11007", [workspace_id, execution_no]))
             # ベースイメージがredhad
             if base_image == "1":
                 cmd = ["sh", f"{root_dir_path}/builder_executable_files/builder.sh", "Yes", redhad_user_name, redhad_password]
@@ -198,60 +183,63 @@ def agent_child():
             else:
                 cmd = ["sh", f"{root_dir_path}/builder_executable_files/builder.sh", "No", redhad_user_name, redhad_password]
 
-            with open(child_error_log_pass, 'a') as fp:
+            with open(child_error_log_pass, 'w') as fp:
                 ret = subprocess.run(cmd, check=True, stdout=fp, stderr=subprocess.STDOUT)
+
         except subprocess.CalledProcessError as e:
+            exception(e)
             builder_result = False
 
         except Exception as e:
+            exception(e)
             builder_result = False
 
         finally:
             # builder.shの実行に失敗した場合完了(異常)
             if builder_result is False:
-                # ログ更新
+                # ansible-builderの実行に失敗しました。(builder_executable_files/builder.sh)
+                erro_log = g.appmsg.get_log_message("MSG-10986", ["ansible-builder", "builder_executable_files/builder.sh"])
+                error_log_write(child_error_log_pass, erro_log)
+
                 status = AnscConst.FAILURE
                 log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
 
-                # agent_child_mainのAppExceptionで異常時の共通処理
-                # ansible-builderの実行に失敗しました。(builder_executable_files/builder.sh)
                 status_code = "MSG-10986"
                 msg_args = ["ansible-builder", "builder_executable_files/builder.sh"]
                 raise AppException(status_code, msg_args, msg_args)
+            else:
+                # ログファイルクリア
+                with open(child_error_log_pass, "w") as f:
+                    pass
 
     # start.sh実行
     try:
+        g.applogger.debug(g.appmsg.get_log_message( "MSG-11008", [workspace_id, execution_no]))
         start_result = True
         cmd = ["sh", f"{root_dir_path}/runner_executable_files/start.sh"]
         with open(child_error_log_pass, 'a') as fp:
             ret = subprocess.run(cmd, check=True, stdout=fp, stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
+        exception(e)
         start_result = False
 
     except Exception as e:
+        exception(e)
         start_result = False
     finally:
         # start.shの実行に失敗した場合完了(異常)
         if start_result is False:
             # ログ更新
+            erro_log = g.appmsg.get_log_message("MSG-10986", ["ansible-runner", "runner_executable_files/start.sh"])
+            error_log_write(child_error_log_pass, erro_log)
+
             status = AnscConst.FAILURE
             log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
 
             # agent_child_mainのAppExceptionで異常時の共通処理
-            # ansible-runnerの実行に失敗しました。(runner_executable_files/start.sh)
             status_code = "MSG-10986"
             msg_args = ["ansible-runner", "runner_executable_files/start.sh"]
             raise AppException(status_code, msg_args, msg_args)
-
-    artifact_path = f"/tmp/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/artifacts"
-    runner_exec_log_pass = f"{artifact_path}/{execution_no}/stdout"
-    runner_error_log_pass = f"{artifact_path}/{execution_no}/stderr"
-    if os.path.exists(artifact_path):
-        # runnerのログファイルがあればコピー
-        if os.path.exists(runner_exec_log_pass):
-            shutil.copy(runner_exec_log_pass, exec_log_pass)
-        if os.path.exists(runner_error_log_pass):
-            shutil.copy(runner_error_log_pass, error_log_pass)
 
     while True:
         # 5秒スリーブ
@@ -264,353 +252,247 @@ def agent_child():
             with open(child_error_log_pass, 'a') as fp:
                 ret = subprocess.run(cmd, check=True, stdout=fp, stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
+            exception(e)
             alive_result = False
 
         except Exception as e:
+            exception(e)
             alive_result = False
 
+        # runner作業実行状態判定
+        g.applogger.debug(g.appmsg.get_log_message( "MSG-11009", [workspace_id, execution_no, alive_result]))
         if alive_result is True:
-            # 作業実行が実行中
+            # runner作業中
             file_path = root_dir_path + "/out/forced.txt"
+            # 緊急停止ボタンがクリックされたか判定
             if os.path.isfile(file_path):
-                # 緊急停止ボタンが押された
+                # 緊急停止ボタン クリック
+                g.applogger.debug(g.appmsg.get_log_message( "MSG-11010", [workspace_id, execution_no, "True"]))
                 try:
                     stop_result = True
                     cmd = ["sh", f"{root_dir_path}/runner_executable_files/stop.sh"]
                     with open(child_error_log_pass, 'a') as fp:
                         ret = subprocess.run(cmd, check=True, stdout=fp, stderr=subprocess.STDOUT)
                 except subprocess.CalledProcessError as e:
+                    exception(e)
                     stop_result = False
 
                 except Exception as e:
+                    exception(e)
                     stop_result = False
                 finally:
-                    if stop_result is False:
-                        # stop.shの実行に失敗した場合完了(異常)
-                        status = AnscConst.FAILURE
+                    g.applogger.debug(g.appmsg.get_log_message( "MSG-11011", [workspace_id, execution_no, stop_result]))
+                    if stop_result is True:
+                        # 緊急停止に成功
+                        # runner停止完了
+                        # forced_exec作成
+                        file_path = root_dir_path + "/out/forced_exec"
+                        f = open(file_path, 'w')
+                        f.close
+
+                        # 結果データ更新 作業状態:緊急停止
+                        status = AnscConst.SCRAM
                         log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
 
-                        # agent_child_mainのAppExceptionで異常時の共通処理
-                        # 緊急停止の実行に失敗しました。(runner_executable_files/stop.sh)
-                        status_code = "MSG-10986"
-                        msg_args = ["Emergency stop", "runner_executable_files/stop.sh"]
-                        raise AppException(status_code, msg_args, msg_args)
-
-                if stop_result is True:
-                    # forced_exec作成
-                    file_path = root_dir_path + "/out/forced_exec"
-                    f = open(file_path, 'w')
-                    f.close
-                    continue
-                else:
-                    # rcファイルの中身を確認する
-                    file_path = root_dir_path + "/artifacts/" + execution_no + "/rc"
-                    if os.path.isfile(file_path):
-                        obj = storage_read()
-                        obj.open(file_path)
-                        rc_data = obj.read()
-                        obj.close()
-                        if rc_data == "0":
-                            # 結果データ更新
-                            status = AnscConst.COMPLETE
-                            log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
-                            # # 各種ファイルをtarファイルにまとめる
-                            # out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path = arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, status)
-                            # endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/result_data"
-                            # body = {
-                            #     "driver_id": driver_id,
-                            #     "status": status
-                            # }
-                            # form_data = {
-                            #     "json_parameters": json.dumps(body),
-                            #     "out_tar_data" : (os.path.basename(out_gztar_path), open(out_gztar_path, "rb"), mimetypes.guess_type(out_gztar_path, False)[0]),
-                            #     "parameters_tar_data" : (os.path.basename(parameters_gztar_path), open(parameters_gztar_path, "rb"), mimetypes.guess_type(parameters_gztar_path, False)[0]),
-                            #     "parameters_file_tar_data" : (os.path.basename(parameters_file_gztar_path), open(parameters_file_gztar_path, "rb"), mimetypes.guess_type(parameters_file_gztar_path, False)[0]),
-                            #     "conductor_tar_data" : (os.path.basename(conductor_gztar_path), open(conductor_gztar_path, "rb"), mimetypes.guess_type(conductor_gztar_path, False)[0]),
-                            # }
-                            # status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
-                            # if not status_code == 200:
-                            #     g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-
-                            # # 作業状態通知送信
-                            # body = {
-                            #     "driver_id": driver_id,
-                            #     "status": status
-                            # }
-                            # status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body)
-                            # if not status_code == 200:
-                            #     g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-                            # break
-
-                            # 結果データ更新->作業状態通知送信
-                            status_code, response = post_upload_file_and_status(
+                        # 結果データ更新->作業状態通知送信
+                        status_code, response, error_code, error_arg = post_upload_file_and_status(
                                 exastro_api, organization_id, workspace_id,
                                 execution_no, status, driver_id
-                            )
+                        )
+                        if not status_code == 200:
+                            raise AppException(error_code, error_arg)
+
+                        break
+
+                    else:
+                        # 緊急停止に失敗
+                        g.applogger.info(g.appmsg.get_log_message("MSG-10986", ["ansibe_runner", "runner_executable_files/stop.sh"]))
+
+                        # rcファイルの中身を確認する
+                        rc_data = get_runner_rc_status_file(root_dir_path, execution_no)
+
+                        if rc_data is False:
+                            # rcファイルなし
+                            # ログを残す
+                            runner_rc_status_file_none_log(child_error_log_pass, workspace_id, execution_no, "1")
+    
+                            # 結果データ更新 ステータス:完了(異常)
+                            status = AnscConst.FAILURE
+                            log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
+    
+                            # 結果データ更新->作業状態通知送信
+                            status_code, response, error_code, error_arg = post_upload_file_and_status(
+                                                        exastro_api, organization_id, workspace_id,
+                                                        execution_no, status, driver_id
+                                                    )
                             if not status_code == 200:
-                                g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
+                                raise AppException(error_code, error_arg)
+
+                            break
+
+                        elif rc_data == "0":
+                            # 結果データ更新 作業状態:完了
+                            status = AnscConst.COMPLETE
+                            log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
+
+                            # 結果データ更新->作業状態通知送信
+                            status_code, response, error_code, error_arg = post_upload_file_and_status(
+                                                        exastro_api, organization_id, workspace_id,
+                                                        execution_no, status, driver_id
+                                                    )
+                            if not status_code == 200:
+                                raise AppException(error_code, error_arg)
+
                             break
                         else:
-                            # ログを残す
-                            msg = g.appmsg.get_api_message('MSG-10953', [])
-                            obj = storage_write()
-                            obj.open(child_error_log_pass, 'a')
-                            obj.write(msg)
-                            obj.close()
-
-                            # 結果データ更新
+                            # 結果データ更新 作業状態:完了(異常)
                             status = AnscConst.FAILURE
                             log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
 
-                            # agent_child_mainのAppExceptionで異常時の共通処理
-                            status_code = "MSG-10953"
-                            msg_args = []
-                            raise AppException(status_code, msg_args, msg_args)
+                            # 結果データ更新->作業状態通知送信
+                            status_code, response, error_code, error_arg = post_upload_file_and_status(
+                                                        exastro_api, organization_id, workspace_id,
+                                                        execution_no, status, driver_id
+                                                    )
+                            if not status_code == 200:
+                                raise AppException(error_code, error_arg)
 
-                    else:
-                        # rcファイルなし
-                        # ログを残す
-                        msg = g.appmsg.get_api_message('MSG-10953', [])
-                        obj = storage_write()
-                        obj.open(child_error_log_pass, 'a')
-                        obj.write(msg)
-                        obj.close()
+                            break
 
-                        # 結果データ更新
-                        status = AnscConst.FAILURE
-                        log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
-
-                        # agent_child_mainのAppExceptionで異常時の共通処理
-                        status_code = "MSG-10953"
-                        msg_args = []
-                        raise AppException(status_code, msg_args, msg_args)
             else:
-                # rcファイルの中身を確認する
-                file_path = root_dir_path + "/artifacts/" + execution_no + "/rc"
-                if os.path.isfile(file_path):
-                    obj = storage_read()
-                    obj.open(file_path)
-                    rc_data = obj.read()
-                    obj.close()
-                    if rc_data == "0":
-                        # 結果データ更新
-                        status = AnscConst.COMPLETE
-                        log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
-                        # # 各種ファイルをtarファイルにまとめる
-                        # out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path = arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, status)
-                        # endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/result_data"
-                        # body = {
-                        #     "driver_id": driver_id,
-                        #     "status": status
-                        # }
-                        # form_data = {
-                        #     "json_parameters": json.dumps(body),
-                        #     "out_tar_data" : (os.path.basename(out_gztar_path), open(out_gztar_path, "rb"), mimetypes.guess_type(out_gztar_path, False)[0]),
-                        #     "parameters_tar_data" : (os.path.basename(parameters_gztar_path), open(parameters_gztar_path, "rb"), mimetypes.guess_type(parameters_gztar_path, False)[0]),
-                        #     "parameters_file_tar_data" : (os.path.basename(parameters_file_gztar_path), open(parameters_file_gztar_path, "rb"), mimetypes.guess_type(parameters_file_gztar_path, False)[0]),
-                        #     "conductor_tar_data" : (os.path.basename(conductor_gztar_path), open(conductor_gztar_path, "rb"), mimetypes.guess_type(conductor_gztar_path, False)[0]),
-                        # }
-                        # status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
-                        # if not status_code == 200:
-                        #     g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-
-                        # # 作業状態通知送信
-                        # endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/execution/{status}"
-                        # body = {}
-
-                        # status_code, response = retry_api_call(exastro_api, endpoint, mode="json", method="POST", body=body)
-                        # if not status_code == 200:
-                        #     g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-                        # break
-
-                        # 結果データ更新->作業状態通知送信
-                        status_code, response = post_upload_file_and_status(
-                            exastro_api, organization_id, workspace_id,
-                            execution_no, status, driver_id
-                        )
-                        if not status_code == 200:
-                            g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-                        break
-                    else:
-                        # 結果データ更新
-                        status = AnscConst.FAILURE
-
-                        # agent_child_mainのAppExceptionで異常時の共通処理
-                        # RCファイルの値が0ではありません。(X)
-                        status_code = "MSG-10987"
-                        msg_args = [rc_data]
-                        raise AppException(status_code, msg_args, msg_args)
-                else:
+                # 緊急停止ボタンは未クリック
+                g.applogger.debug(g.appmsg.get_log_message( "MSG-11010", [workspace_id, execution_no, "False"]))
+                rc_data = get_runner_rc_status_file(root_dir_path, execution_no)
+                if rc_data is False:
                     # rcファイルなし
-                    # 結果データ更新
+
+                    # 結果データ更新 ステータス:実行中
                     status = AnscConst.PROCESSING
-                    # ログ更新
                     log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
-                    # 各種ファイルをtarファイルにまとめる
-                    # out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path = arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, status)
-                    # endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/result_data"
-                    # body = {
-                    #     "driver_id": driver_id,
-                    #     "status": status
-                    # }
-                    # form_data = {
-                    #     "json_parameters": json.dumps(body),
-                    #     "out_tar_data" : (os.path.basename(out_gztar_path), open(out_gztar_path, "rb"), mimetypes.guess_type(out_gztar_path, False)[0]),
-                    # }
-                    # status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
-                    # if not status_code == 200:
-                    #     g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-
-                    # # 作業状態通知送信
-                    # endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/notification/status"
-                    # body = {
-                    #     "driver_id": driver_id,
-                    #     "status": status
-                    # }
-
-                    # status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body)
-                    # if not status_code == 200:
-                    #     g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-                    # continue
 
                     # 結果データ更新->作業状態通知送信
-                    status_code, response = post_upload_file_and_status(
-                        exastro_api, organization_id, workspace_id,
-                        execution_no, status, driver_id
+                    status_code, response, error_code, error_arg = post_upload_file_and_status(
+                                exastro_api, organization_id, workspace_id,
+                                execution_no, status, driver_id
                     )
                     if not status_code == 200:
-                        raise AppException("MSG-10957", [status_code, response], [status_code, response])
+                        raise AppException(error_code, error_arg)
+
                     continue
-        else:
-            # 作業実行が停止中
-            file_path = root_dir_path + "/out/forced_exec"
-            if os.path.isfile(file_path):
-                # 緊急停止
-                # 結果データ更新
-                status = AnscConst.SCRAM
-                log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
-                # # 各種ファイルをtarファイルにまとめる
-                # out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path = arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, status)
-                # endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/result_data"
-                # body = {
-                #     "driver_id": driver_id,
-                #     "status": status
-                # }
-                # form_data = {
-                #     "json_parameters": json.dumps(body),
-                #     "out_tar_data" : (os.path.basename(out_gztar_path), open(out_gztar_path, "rb"), mimetypes.guess_type(out_gztar_path, False)[0]),
-                #     "parameters_tar_data" : (os.path.basename(parameters_gztar_path), open(parameters_gztar_path, "rb"), mimetypes.guess_type(parameters_gztar_path, False)[0]),
-                #     "parameters_file_tar_data" : (os.path.basename(parameters_file_gztar_path), open(parameters_file_gztar_path, "rb"), mimetypes.guess_type(parameters_file_gztar_path, False)[0]),
-                #     "conductor_tar_data" : (os.path.basename(conductor_gztar_path), open(conductor_gztar_path, "rb"), mimetypes.guess_type(conductor_gztar_path, False)[0]),
-                # }
-                # status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
-                # if not status_code == 200:
-                #     g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
 
-                # # 作業状態通知送信
-                # endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/notification/status"
-                # body = {
-                #     "driver_id": driver_id,
-                #     "status": status
-                # }
+                elif rc_data == "0":
+                    # 結果データ更新 ステータス:完了
+                    status = AnscConst.COMPLETE
+                    log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
 
-                # status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body)
-                # if not status_code == 200:
-                #     g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-                # break
+                    # 結果データ更新->作業状態通知送信
+                    status_code, response, error_code, error_arg = post_upload_file_and_status(
+                                exastro_api, organization_id, workspace_id,
+                                execution_no, status, driver_id
+                    )
+                    if not status_code == 200:
+                        raise AppException(error_code, error_arg)
 
-                # 結果データ更新->作業状態通知送信
-                status_code, response = post_upload_file_and_status(
-                    exastro_api, organization_id, workspace_id,
-                    execution_no, status, driver_id
-                )
-                if not status_code == 200:
-                    g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-                break
-            else:
-                # rcファイルの中身を確認する
-                file_path = root_dir_path + "/artifacts/" + execution_no + "/rc"
-                if os.path.isfile(file_path):
-                    obj = storage_read()
-                    obj.open(file_path)
-                    rc_data = obj.read()
-                    obj.close()
-                    if rc_data == "0":
-                        # 結果データ更新
-                        status = AnscConst.COMPLETE
-                        log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
-                        # # 各種ファイルをtarファイルにまとめる
-                        # out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path = arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, status)
-                        # endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/result_data"
-                        # body = {
-                        #     "driver_id": driver_id,
-                        #     "status": status
-                        # }
-                        # form_data = {
-                        #     "json_parameters": json.dumps(body),
-                        #     "out_tar_data" : (os.path.basename(out_gztar_path), open(out_gztar_path, "rb"), mimetypes.guess_type(out_gztar_path, False)[0]),
-                        #     "parameters_tar_data" : (os.path.basename(parameters_gztar_path), open(parameters_gztar_path, "rb"), mimetypes.guess_type(parameters_gztar_path, False)[0]),
-                        #     "parameters_file_tar_data" : (os.path.basename(parameters_file_gztar_path), open(parameters_file_gztar_path, "rb"), mimetypes.guess_type(parameters_file_gztar_path, False)[0]),
-                        #     "conductor_tar_data" : (os.path.basename(conductor_gztar_path), open(conductor_gztar_path, "rb"), mimetypes.guess_type(conductor_gztar_path, False)[0]),
-                        # }
-                        # status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
-                        # if not status_code == 200:
-                        #     g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-
-                        # # 作業状態通知送信
-                        # endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/notification/status"
-                        # body = {
-                        #     "driver_id": driver_id,
-                        #     "status": status
-                        # }
-
-                        # status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body)
-                        # if not status_code == 200:
-                        #     g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-                        # break
-
-                        # 結果データ更新->作業状態通知送信
-                        status_code, response = post_upload_file_and_status(
-                            exastro_api, organization_id, workspace_id,
-                            execution_no, status, driver_id
-                        )
-                        if not status_code == 200:
-                            g.applogger.info(g.appmsg.get_log_message("MSG-10957", [status_code, response]))
-                        break
-                    else:
-                        # 結果データ更新
-                        status = AnscConst.FAILURE
-                        log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
-
-                        # agent_child_mainのAppExceptionで異常時の共通処理
-                        # RCファイルの値が0ではありません。(X)
-                        status_code = "MSG-10987"
-                        msg_args = [rc_data]
-                        raise AppException(status_code, msg_args, msg_args)
+                    break
 
                 else:
-                    # rcファイルなし
-                    # ログを残す
-                    msg = g.appmsg.get_api_message('MSG-10953', [])
-                    obj = storage_write()
-                    obj.open(child_error_log_pass, 'a')
-                    obj.write(msg)
-                    obj.close()
-
-                    # 結果データ更新
+                    # 結果データ更新 ステータス:完了(異常)
                     status = AnscConst.FAILURE
                     log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
 
-                    # agent_child_mainのAppExceptionで異常時の共通処理
-                    status_code = "MSG-10953"
-                    msg_args = []
-                    raise AppException(status_code, msg_args, msg_args)
+                    # 結果データ更新->作業状態通知送信
+                    status_code, response, error_code, error_arg = post_upload_file_and_status(
+                                exastro_api, organization_id, workspace_id,
+                                execution_no, status, driver_id
+                    )
+                    if not status_code == 200:
+                        raise AppException(error_code, error_arg)
 
-    # ステータスファイル削除
-    clear_execution_status_file(organization_id, workspace_id, driver_id, execution_no)
+                    break
+        else:
+            # runner作業状態取得失敗
+            rc_data = get_runner_rc_status_file(root_dir_path, execution_no)
+            if rc_data is False:
+                # rcファイルなし
+                # ログを残す
+                erro_log = g.appmsg.get_log_message("MSG-10986", ["ansible_runner", "runner_executable_files/alive.sh"])
+                error_log_write(child_error_log_pass, erro_log)
+                g.applogger.info(erro_log)
+
+                runner_rc_status_file_none_log(child_error_log_pass, workspace_id, execution_no, "2")
+
+                # 結果データ更新 ステータス:完了(異常)
+                status = AnscConst.FAILURE
+                log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
+
+                # 結果データ更新->作業状態通知送信
+                status_code, response, error_code, error_arg = post_upload_file_and_status(
+                                exastro_api, organization_id, workspace_id,
+                                execution_no, status, driver_id
+                )
+                if not status_code == 200:
+                    raise AppException(error_code, error_arg)
+
+                break
+
+            elif rc_data == "0":
+                # 結果データ更新 ステータス:完了
+                status = AnscConst.COMPLETE
+                log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
+
+                # 結果データ更新->作業状態通知送信
+                status_code, response, error_code, error_arg = post_upload_file_and_status(
+                                exastro_api, organization_id, workspace_id,
+                                execution_no, status, driver_id
+                )
+                if not status_code == 200:
+                    raise AppException(error_code, error_arg)
+
+                break
+
+            else:
+                # 結果データ更新 ステータス:完了(異常)
+                status = AnscConst.FAILURE
+                log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
+
+                # 結果データ更新->作業状態通知送信
+                status_code, response, error_code, error_arg = post_upload_file_and_status(
+                                exastro_api, organization_id, workspace_id,
+                                execution_no, status, driver_id
+                )
+                if not status_code == 200:
+                    raise AppException(error_code, error_arg)
+
+                break
+
+    # ステータスファイルの削除
+    delete_status_file(organization_id, workspace_id, driver_id, execution_no)
 
 if __name__ == "__main__":
     agent_child_main()
+
+
+def get_runner_rc_status_file(root_dir_path, execution_no):
+    rc_data = False
+    file_path = root_dir_path + "/artifacts/" + execution_no + "/rc"
+    if os.path.isfile(file_path):
+        obj = storage_read()
+        with open(file_path) as f:
+            rc_data = f.read()
+    return rc_data
+
+
+def runner_rc_status_file_none_log(child_error_log_path, workspace_id, execution_no, location):
+    # MSG-10953  rcファイルがありません。
+    g.applogger.info(g.appmsg.get_log_message("MSG-10953", [workspace_id, execution_no, location]))
+    msg = g.appmsg.get_log_message('MSG-10953', [workspace_id, execution_no, location])
+    error_log_write(child_error_log_path, msg)
+
+
+def error_log_write(log_file, msg):
+    with open(log_file, 'a') as f:
+        f.write(msg + "\n")
+
 
 def decompress_tar_file(organization_id, workspace_id, driver_id, dir_path, file_name, execution_no):
     """
@@ -638,7 +520,8 @@ def decompress_tar_file(organization_id, workspace_id, driver_id, dir_path, file
     lst = os.listdir(tar_path)
 
     # in/out親ディレクトリパス
-    root_dir_path = f"/storage/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{execution_no}"
+    storagepath = os.environ.get('STORAGEPATH')
+    root_dir_path = f"{storagepath}/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{execution_no}"
 
     # 展開したファイルを移動する
     move_dir = ""
@@ -672,134 +555,26 @@ def decompress_tar_file(organization_id, workspace_id, driver_id, dir_path, file
     # 作業ディレクトリ削除
     clear_execution_tmpdir(organization_id, workspace_id, driver_id, execution_no)
 
-def log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id):
-    """
-    runnerのログファイルをマージする
-    ARGS:
-        exec_log_pass: 作業状態確認に表示される実行ログ
-        error_log_pass: 作業状態確認に表示されるエラーログ
-        parent_error_log_pass: 親プロ用エラーログ
-        child_exec_log_pass: 子プロ用実行ログ
-        child_error_log_pass: 子プロ用エラーログ
-        runner_exec_log_pass: runner用実行ログ
-        runner_error_log_pass: runner用エラーログ
-    """
-
-    # runner実行ログ読み取り
-    if os.path.isfile(runner_exec_log_pass):
-        obj = storage_read()
-        obj.open(runner_exec_log_pass)
-        text =  obj.read()
-        obj.close()
-
-        # exec.logへ追記
-        obj = storage_write()
-        obj.open(exec_log_pass, "a")
-        obj.write(text)
-        obj.close()
-
-    # 子プロ用実行ログ読み取り
-    if os.path.isfile(child_exec_log_pass):
-        obj = storage_read()
-        obj.open(child_exec_log_pass)
-        text =  obj.read()
-        obj.close()
-
-        # exec.logへ追記
-        obj = storage_write()
-        obj.open(exec_log_pass, "a")
-        obj.write(text)
-        obj.close()
-
-    # runnerエラーログ読み取り
-    if os.path.isfile(runner_error_log_pass):
-        obj = storage_read()
-        obj.open(runner_error_log_pass)
-        text =  obj.read()
-        obj.close()
-
-        # error.logへ追記
-        obj = storage_write()
-        obj.open(error_log_pass, "a")
-        obj.write(text)
-        obj.close()
-
-    # 子プロ用エラーログ読み取り
-    if os.path.isfile(parent_error_log_pass):
-        obj = storage_read()
-        obj.open(parent_error_log_pass)
-        text =  obj.read()
-        obj.close()
-
-        # error.logへ追記
-        obj = storage_write()
-        obj.open(error_log_pass, "a")
-        obj.write(text)
-        obj.close()
-
-    # 子プロ用エラーログ読み取り
-    if os.path.isfile(child_error_log_pass):
-        obj = storage_read()
-        obj.open(child_error_log_pass)
-        text =  obj.read()
-        obj.close()
-
-        # error.logへ追記
-        obj = storage_write()
-        obj.open(error_log_pass, "a")
-        obj.write(text)
-        obj.close()
-
-    # 特定のキーワードで改行しansibleのログを見やすくする
-    if os.path.isfile(exec_log_pass):
-        obj = storage_read()
-        obj.open(exec_log_pass, "r")
-        log_data = obj.read()
-        obj.close()
-
-        if driver_id == "pioneer":
-            # ログ(", ")  =>  (",\n")を改行する
-            log_data = log_data.replace("\", \"", "\",\n\"")
-            # 改行文字列\r\nを改行コードに置換える
-            log_data = log_data.replace("\\r\\n", "\n")
-            # python改行文字列\\nを改行コードに置換える
-            log_data = log_data.replace("\\n", "\n")
-        else:
-            # ログ(", ")  =>  (",\n")を改行する
-            log_data = log_data.replace("\", \"", "\",\n\"")
-            # ログ(=> {)  =>  (=> {\n)を改行する
-            log_data = log_data.replace("=> {", "=> {\n")
-            # ログ(, ")  =>  (,\n")を改行する
-            log_data = log_data.replace(", \"", ",\n\"")
-            # 改行文字列\r\nを改行コードに置換える
-            log_data = log_data.replace("\\r\\n", "\n")
-            # python改行文字列\\nを改行コードに置換える
-            log_data = log_data.replace("\\n", "\n")
-    else:
-        log_data = ""
-
-    if os.path.isfile(exec_log_pass):
-        obj = storage_write()
-        obj.open(exec_log_pass, "w")
-        obj.write(log_data)
-        obj.close()
 
 def clear_execution_tmpdir(organization_id, workspace_id, driver_id, execution_no):
     _path = f"/tmp/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}"
     if os.path.isdir(_path):
         shutil.rmtree(_path)
-        g.applogger.info(f"clear_execution_tmpdir: ({_path})")
+        g.applogger.debug(f"remove execution tmp dirs. (path:{_path})")
 
-def clear_execution_status_file(organization_id, workspace_id, driver_id, execution_no):
-    _x, _path = get_status_file_path(organization_id, workspace_id, driver_id, execution_no)
-    if os.path.isfile(_path):
-        os.remove(_path)
-        g.applogger.info(f"clear_execution_status_file: ({_path})")
+def clear_execution_dir(organization_id, workspace_id, driver_id, execution_no, runtime_data_del):
+    # インターフェース情報の実行時削除がTrueの場合
+    if runtime_data_del == "1":
+        storagepath = os.environ.get('STORAGEPATH')
+        _path = f"{storagepath}/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{execution_no}"
+        if os.path.isdir(_path):
+            shutil.rmtree(_path)
+            g.applogger.debug(f"remove execution dirs. (path:{_path})")
+        _path = f"{storagepath}/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}"
+        if os.path.isdir(_path):
+            shutil.rmtree(_path)
+            g.applogger.debug(f"remove execution dirs. (path:{_path})")
 
-def get_status_file_path(organization_id, workspace_id, driver_id, execution_no):
-    status_file_dir_path = f"/storage/{organization_id}/{workspace_id}/ag_ansible_execution/status/{driver_id}"
-    status_file_path = f"{status_file_dir_path}/{execution_no}"
-    return status_file_dir_path, status_file_path,
 
 def post_upload_file_and_status(exastro_api, organization_id, workspace_id, execution_no, status, driver_id):
 
@@ -858,19 +633,33 @@ def post_upload_file_and_status(exastro_api, organization_id, workspace_id, exec
             "json_parameters",
             "out_tar_data"
         ]
-        for k, v in form_data.keys():
+        for k in form_data.keys():
             if k not in accept_key:
                 del form_data[k]
 
     # 結果データ更新
+    g.applogger.info(g.appmsg.get_log_message("MSG-10994", [workspace_id, execution_no]))
     status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
     if not status_code == 200:
-        return status_code, response
+        return status_code, response, "MSG-10995", [workspace_id, del_executions, status_code, response]
 
     # 作業状態通知送信
-    g.applogger.info(g.appmsg.get_log_message("MSG-10956", []))
+    g.applogger.info(g.appmsg.get_log_message("MSG-10990", [workspace_id, execution_no, status]))
     status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body)
     if not status_code == 200:
-        return status_code, response
+        return status_code, response, "MSG-10991", [workspace_id, execution_no, status, status_code, response]
+            
 
-    return status_code, response
+    # 作業状態通知のレスポンスで緊急停止フラグが設定されている場合、forced.txtファイル作成
+    chk_emergency_stop(response, organization_id, workspace_id, driver_id, execution_no)
+    return status_code, response, "", []
+
+def chk_emergency_stop(response, organization_id, workspace_id, driver_id, execution_no):
+    storagepath = os.environ.get('STORAGEPATH')
+    root_dir_path = f"{storagepath}/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{execution_no}"
+    # 作業状態通知のレスポンスで緊急停止ありの場合
+    if response['data']['SCRAM_STATUS'] == "1":
+        g.applogger.debug(g.appmsg.get_log_message("MSG-11012", [workspace_id, execution_no]))
+        p = pathlib.Path(root_dir_path + "/out/forced.txt")
+        p.touch()
+

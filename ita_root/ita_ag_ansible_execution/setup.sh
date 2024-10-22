@@ -69,7 +69,7 @@ declare -A dct_source_paths
 
 src_source_paths["0"]="ita_root/ita_ag_ansible_execution/*"
 src_source_paths["1"]="ita_root/messages"
-# src_source_paths["2"]="ita_root/agent/"
+src_source_paths["2"]="ita_root/agent/"
 src_source_paths["3"]="ita_root/common_libs/common"
 src_source_paths["4"]="ita_root/common_libs/ag"
 src_source_paths["5"]="ita_root/common_libs/ansible_driver"
@@ -77,7 +77,7 @@ src_source_paths["6"]="ita_root/common_libs/ansible_execution"
 
 dct_source_paths["0"]="/ita_ag_ansible_execution"
 dct_source_paths["1"]="/ita_ag_ansible_execution/"
-# dct_source_paths["2"]="/ita_ag_ansible_execution/"
+dct_source_paths["2"]="/ita_ag_ansible_execution/"
 dct_source_paths["3"]="/ita_ag_ansible_execution/common_libs/"
 dct_source_paths["4"]="/ita_ag_ansible_execution/common_libs/"
 dct_source_paths["5"]="/ita_ag_ansible_execution/common_libs/"
@@ -188,7 +188,7 @@ declare -A interactive_llist=(
     ["INSTALL_TYPE_MSG1"]="    1: ENVの作成 + インストール(dnf, pip, ソース配置) + サービスの登録"
     ["INSTALL_TYPE_MSG2"]="    2: ENVの作成 + サービスの登録"
     ["INSTALL_TYPE_MSG3"]="    3: サービスの登録"
-    # ["INSTALL_TYPE_MSG4"]="    4: ソース配置"
+    ["INSTALL_TYPE_MSG4"]="    4: Envの作成"
     ["INSTALL_TYPE_MSGq"]="    q: インストーラ終了"
     ["INSTALL_TYPE_MSGr"]="select value: (1, 2, 3, q)  :"
     ["INVALID_VALUE_IT"]="Invalid value!! (1, 2, 3, q)"
@@ -227,6 +227,9 @@ declare -A interactive_llist=(
     # ソース先重複
     ["SOURCE_UPDATE"]="インストール先に、既にソースが存在します。クリアして、インストールしますか？ (y:再インストール/n:インストールせずに、次の処理へ)  (y/n)"
     ["SOURCE_UPDATE_E1"]="※登録済みのサービスが存在する場合、再インストールすると動作に影響が発生する可能性があります。(y/n): "
+    # アンインストール
+    ["SERVICE_NAME"]="SERVICE_NAMEを入力してください。(e.g. ita-agent-ansible-execution-xxxxxxxxxxxxx)"
+    ["STORAGE_PATH"]="STORAGE_PATHを入力してください。(e.g. /${HOME}${BASE_DIR}/<SERVICE_ID>"
 )
 
 declare -A interactive_llist_adv=(
@@ -1134,17 +1137,28 @@ _EOF_
 
 }
 
+set_vars_for_env(){
+    info "set_vars_for_env :${DEP_PATTERN} start"
+    default_env_values['STORAGEPATH']=`cat "${default_env_values['REFERENCE_ENVPATH']}" | grep "STORAGEPATH=" | awk -F"STORAGEPATH=" '{print $2}'`
+    default_env_values['AGENT_SERVICE_ID']=`basename ${default_env_values['REFERENCE_ENVPATH']} | awk -F"." '{print $1}'`
+    default_env_values["AGENT_NAME"]="ita-ag-ansible-execution-${default_env_values['AGENT_SERVICE_ID']}"
+    SERVICE_ID=${default_env_values['AGENT_SERVICE_ID']}
+    DP_PATH=${default_env_values['STORAGEPATH']%$STORAG_DIR}
+    default_env_values["DATAPATH"]=${DP_PATH%$SERVICE_ID}
+    info "set_vars_for_env :${DEP_PATTERN} end"
+}
+
 install_type(){
     while true; do
         echo "${interactive_llist['INSTALL_TYPE_MSG0']}"
         echo "${interactive_llist['INSTALL_TYPE_MSG1']}"
         echo "${interactive_llist['INSTALL_TYPE_MSG2']}"
         echo "${interactive_llist['INSTALL_TYPE_MSG3']}"
-        # echo "${interactive_llist['INSTALL_TYPE_MSG4']}"
+        echo "${interactive_llist['INSTALL_TYPE_MSG4']}"
         echo "${interactive_llist['INSTALL_TYPE_MSGq']}"
         read -r -p  "${interactive_llist['INSTALL_TYPE_MSGr']}" confirm
 
-        if echo $confirm | grep -q -e "[123]"; then
+        if echo $confirm | grep -q -e "[1234]"; then
             INSTALL_TYPE=$confirm
             break
         elif echo $confirm | grep -q -e "[q]"; then
@@ -1168,7 +1182,7 @@ install(){
             install_service
             ;;
         4 )
-            install_source
+            create_envfile
             ;;
         * )
             info "no install type ${INSTALL_TYPE}"
@@ -1239,7 +1253,6 @@ install_env_service(){
 install_service(){
     additional_env_keys=(
         "AGENT_SERVICE_ID"
-        "DATAPATH"
         "REFERENCE_ENVPATH"
     )
     # 設定の入力
@@ -1247,6 +1260,9 @@ install_service(){
 
     # 作業領域のセットアップ
     init_workdir
+
+    # envから、設定値取得
+    set_vars_for_env
 
     # service
     install_agent_service
@@ -1284,6 +1300,25 @@ install_source(){
     clean_workdir
 }
 
+create_envfile(){
+    additional_env_keys=(
+        "AGENT_SERVICE_ID_YN"
+        "AGENT_SERVICE_ID"
+        "DATAPATH"
+        "EXASTRO_URL"
+        "EXASTRO_ORGANIZATION_ID"
+        "EXASTRO_WORKSPACE_ID"
+        "EXASTRO_REFRESH_TOKEN"
+    )
+    ENV_TMP_PATH="./${default_env_values['AGENT_SERVICE_ID']}.env"
+    # 設定の入力
+    inquiry_env
+
+    # .envファイルの作成
+    create_env
+
+}
+
 uninstall_type(){
     while true; do
         echo "${interactive_llist['UNINSTALL_TYPE_MSG0']}"
@@ -1309,11 +1344,26 @@ uninstall_type(){
     SERVICE_NAME=""
     STORAGE_PATH=""
     additional_uninstall_keys=(
-        "SERVICE_NAME"
-        "STORAGE_PATH"
     )
-    interactive_llist["SERVICE_NAME"]="SERVICE_NAMEを入力してください。(e.g. ita-agent-ansible-execution-xxxxxxxxxxxxx)"
-    interactive_llist["STORAGE_PATH"]="STORAGE_PATHを入力してください。(e.g. /${HOME}${BASE_DIR}/<SERVICE_ID>"
+    case "${UNINSTALL_TYPE}" in
+        1 )
+            additional_uninstall_keys=(
+                "SERVICE_NAME"
+                "STORAGE_PATH"
+            )
+            ;;
+        2 )
+            additional_uninstall_keys=(
+                "SERVICE_NAME"
+            )
+            ;;
+        3 )
+            additional_uninstall_keys=(
+                "STORAGE_PATH"
+            )
+            ;;
+    esac
+
     for env_key in "${additional_uninstall_keys[@]}"; do
         while true; do
             read -r -p "${interactive_llist[${env_key}]}: " tmp_value
@@ -1373,14 +1423,14 @@ uninstall_service(){
         info "systemctl --user daemon-reload"
         systemctl --user daemon-reload
     else
-        info "systemctl stop ${SERVICE_NAME}"
-        systemctl stop ${SERVICE_NAME}
-        info "systemctl disable ${SERVICE_NAME}"
-        systemctl disable ${SERVICE_NAME}
-        info "rm /usr/lib/systemd/system/${SERVICE_NAME}.service"
-        rm /usr/lib/systemd/system/${SERVICE_NAME}.service
-        info "systemctl daemon-reload"
-        systemctl daemon-reload
+        info "sudo systemctl stop ${SERVICE_NAME}"
+        sudo systemctl stop ${SERVICE_NAME}
+        info "sudo systemctl disable ${SERVICE_NAME}"
+        sudo systemctl disable ${SERVICE_NAME}
+        info "sudo rm /usr/lib/systemd/system/${SERVICE_NAME}.service"
+        sudo rm /usr/lib/systemd/system/${SERVICE_NAME}.service
+        info "sudo systemctl daemon-reload"
+        sudo systemctl daemon-reload
     fi
 }
 
@@ -1389,8 +1439,20 @@ uninstall_data(){
     SERVICE_ID=${SERVICE_NAME/ita-agent-ansible-execution-/}
     # STORAGE_PATH="/home/almalinux/exastro/${SERVICE_ID}/storage/"
     STORAGE_PATH="${default_env_values['STORAGE_PATH']}"
-    info "rm -rd ${STORAGE_PATH}"
-    rm -rfd  ${STORAGE_PATH}
+    if [[ "$STORAGE_PATH" == *"$SERVICE_ID"* ]]; then
+        shift
+    else
+        error "no exist SERVICE_ID storage path: ${STORAGE_PATH}"
+        exit 2
+    fi
+
+    if [ "${DEP_PATTERN}" = "RHEL8" ] || [ "${DEP_PATTERN}" = "RHEL9" ]; then
+        info "rm -rd ${STORAGE_PATH}"
+        rm -rfd  ${STORAGE_PATH}
+    else
+        info "rm -rd ${STORAGE_PATH}"
+        rm -rfd  ${STORAGE_PATH}
+    fi
 }
 #########################################
 # Main functions

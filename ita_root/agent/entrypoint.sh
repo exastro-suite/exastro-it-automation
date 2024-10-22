@@ -14,14 +14,21 @@
 # limitations under the License.
 #
 
-set -eu
+if [ $# -eq 3 ]; then
+    export ENVFILEPATH=$1
+    export PYTHONPATH=$2/
+    export STORAGEPATH=$3
+else
+    set -eu
+    PYTHONPATH=/exastro
+fi
 
 while true
 do
     # start_time=`date +%s`
     # echo "agent_init start = "`date "+%Y-%m-%d %H:%M:%S"` >> /exastro/app.log
 
-    cd /exastro
+    cd ${PYTHONPATH}
     # python3 agent/agent_init.py | tee -a /exastro/app.log
     python3 agent/agent_init.py
 

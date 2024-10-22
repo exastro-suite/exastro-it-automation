@@ -30,7 +30,9 @@ def main():
     workspace_id = args[2]
 
     # load environ variables
-    load_dotenv(override=True)
+    envfilepath = os.environ.get("ENVFILEPATH", None)
+    load_dotenv(override=True) if envfilepath is None \
+        else load_dotenv(dotenv_path=os.environ.get("ENVFILEPATH"), override=True)
 
     flask_app = Flask(__name__)
 

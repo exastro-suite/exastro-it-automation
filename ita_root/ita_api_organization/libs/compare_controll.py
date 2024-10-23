@@ -964,11 +964,14 @@ def _get_unified_diff(accept_compare_file_list, filename_1, filename_2, mimetype
                 chank_byte = 10000
                 data_1_linebreak = []
                 data_2_linebreak = []
-                with open(data_1, "rb") as tmp_data_1, open(data_2, "rb") as tmp_data_2:
-                    while chunk_1:= tmp_data_1.read(chank_byte):
-                        data_1_linebreak.extend(chunk_1.decode().splitlines())
-                    while chunk_2:= tmp_data_2.read(chank_byte):
-                        data_2_linebreak.extend(chunk_2.decode().splitlines())
+                if data_1:
+                    with open(data_1, "rb") as tmp_data_1:
+                        while chunk_1:= tmp_data_1.read(chank_byte):
+                            data_1_linebreak.extend(chunk_1.decode().splitlines())
+                if data_2:
+                    with open(data_2, "rb") as tmp_data_2:
+                        while chunk_2:= tmp_data_2.read(chank_byte):
+                            data_2_linebreak.extend(chunk_2.decode().splitlines())
         except Exception:
             t = traceback.format_exc()
             g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
@@ -1075,7 +1078,20 @@ def _get_compare_file_result(objdbca, compare_config, diff_flg_file, file_mimety
         tmp_file_data_2 = ""
         tmp_file_mimetype_2 = "text/plain"
     # compare result[file]
-    if tmp_file_data_1 != tmp_file_data_2:
+
+    # compare file
+    str_rdiff = _get_unified_diff(
+        accept_compare_file_list,
+        col_val_menu_1,
+        col_val_menu_2,
+        tmp_file_mimetype_1,
+        tmp_file_mimetype_2,
+        tmp_file_data_1, # file_required=Falseの場合、fileのパスが入る
+        tmp_file_data_2, # file_required=Falseの場合、fileのパスが入る
+        file_required
+    )
+
+    if str_rdiff:
         value_compare_flg = True
         file_compare_flg = True
         diff_flg_file.setdefault(tmp_col_name, file_compare_flg)
@@ -1083,18 +1099,7 @@ def _get_compare_file_result(objdbca, compare_config, diff_flg_file, file_mimety
         file_compare_flg = False
         diff_flg_file.setdefault(tmp_col_name, file_compare_flg)
 
-    # compare file
     if compare_mode == "file":
-        str_rdiff = _get_unified_diff(
-            accept_compare_file_list,
-            col_val_menu_1,
-            col_val_menu_2,
-            tmp_file_mimetype_1,
-            tmp_file_mimetype_2,
-            tmp_file_data_1, # file_required=Falseの場合、fileのパスが入る
-            tmp_file_data_2, # file_required=Falseの場合、fileのパスが入る
-            file_required
-        )
 
         if str_rdiff == "":
             compare_config = _set_flg(compare_config, "compare_file", False)

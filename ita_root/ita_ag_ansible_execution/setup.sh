@@ -86,6 +86,10 @@ dct_source_paths["6"]="/ita_ag_ansible_execution/common_libs/"
 dct_create_paths["0"]="/ita_ag_ansible_execution"
 dct_create_paths["1"]="/ita_ag_ansible_execution/common_libs"
 
+declare -A dct_source_paths
+xadd_source_paths["0"]="agent/agent_init.py"
+xadd_source_paths["1"]="agent/agent_child_init.py"
+
 #########################################
 # .env default variable:
 #########################################
@@ -93,10 +97,11 @@ declare -A default_env_values
 
 BASE_DIR=/exastro
 STORAG_DIR=/storage
+LOG_PATH=/log
 ENV_PATH=""
 STORAGE_PATH=""
 default_env_values=(
-    ["IS_NON_CONTAINER"]="1"
+    ["IS_NON_CONTAINER_LOG"]="1"
     ["#LOGGING_MAX_SIZE"]="10485760"
     ["#LOGGING_MAX_FILE"]="30"
     # ita_root/ita_ag_ansible_execution/Dockerfile
@@ -106,6 +111,7 @@ default_env_values=(
     ["PYTHONPATH"]=${BASE_DIR}/
     ["LANGUAGE"]=en
     ["STORAGEPATH"]=${STORAG_DIR}
+    ["LOGPATH"]=${LOG_PATH}
     ["SERVICE_NAME"]=ita-ag-ansible-execution
     ["USER_ID"]=ita-ag-ansible-execution
     # ita_root/ita_ag_ansible_execution/.env
@@ -125,21 +131,24 @@ default_env_values=(
     ["EXECUTION_ENVIRONMENT_NAMES"]=""
     ["ENTRYPOINT"]=""
     ["REFERENCE_ENVPATH"]=""
+    ["PYTHON_CMD"]=""
 )
 # use .env key
 output_env_values=(
     # "USERNAME"
     # "GROUPNAME"
-    "IS_NON_CONTAINER"
+    "IS_NON_CONTAINER_LOG"
     "LOG_LEVEL"
     "#LOGGING_MAX_SIZE"
     "#LOGGING_MAX_FILE"
     "LANGUAGE"
     "TZ"
+    "PYTHON_CMD"
 
     "PYTHONPATH"
     "APP_PATH"
     "STORAGEPATH"
+    "LOGPATH"
 
     "EXASTRO_ORGANIZATION_ID"
     "EXASTRO_WORKSPACE_ID"
@@ -857,8 +866,10 @@ inquiry_env(){
     # DATAPATH
     if [ "${default_env_values["DATAPATH"]}" = "${HOME}${BASE_DIR}" ]; then
         default_env_values["STORAGEPATH"]="${HOME}${BASE_DIR}/${default_env_values['AGENT_SERVICE_ID']}${STORAG_DIR}"
+        default_env_values["LOGPATH"]="${HOME}${BASE_DIR}/${default_env_values['AGENT_SERVICE_ID']}${LOG_PATH}"
     else
         default_env_values["STORAGEPATH"]="${default_env_values["DATAPATH"]}/${default_env_values['AGENT_SERVICE_ID']}${STORAG_DIR}"
+        default_env_values["LOGPATH"]="${default_env_values["DATAPATH"]}/${default_env_values['AGENT_SERVICE_ID']}${LOG_PATH}"
     fi
 
     info "inquiry_env :${DEP_PATTERN} end"
@@ -912,9 +923,16 @@ poetry_install(){
     cd "${default_env_values['PYTHONPATH']}"
     # poetry
     pip3 install poetry==$POETRY_VERSION
+    # poetry config --local virtualenvs.in-project true ###
+    poetry config virtualenvs.in-project true ###
     poetry config virtualenvs.create true
     poetry install --only first_install
     poetry install --without develop_build
+
+    which_poetry=`which poetry`
+    poetry_path=`ls ${which_poetry}`
+    default_env_values["PYTHON_CMD"]="${poetry_path} run python3"
+    echo ${default_env_values["PYTHON_CMD"]}
 }
 
 ansible_additional_install(){
@@ -982,6 +1000,12 @@ install_agent_source(){
     elif [ "${DEP_PATTERN}" = "AlmaLinux8" ]; then
         sudo chown -R ${EXASTRO_UID}:${HOST_DOCKER_GID} "${source_path}"
     fi
+
+    for xadd_key in "${!xadd_source_paths[@]}"; do
+        info "sudo chmod 755 ${source_path}/${xadd_source_paths[${xadd_key}]}"
+        sudo chmod 755 ${source_path}/${xadd_source_paths[${xadd_key}]}
+    done
+
     info "install_agent_source end"
 }
 
@@ -1051,6 +1075,7 @@ install_agent_service_rhel8(){
 
     ENTRYPOINT=${default_env_values["ENTRYPOINT"]}
     PYTHONPATH=${default_env_values["PYTHONPATH"]}
+    PYTHON_CMD=${default_env_values["PYTHON_CMD"]}
     AGENT_SERVICE_ID=${default_env_values['AGENT_SERVICE_ID']}
     SERVICE_PATH="${default_env_values["DATAPATH"]}/${default_env_values['AGENT_SERVICE_ID']}/${default_env_values['AGENT_NAME']}.service"
     info "create ${SERVICE_PATH}"
@@ -1060,7 +1085,7 @@ Description=Ansible Execution agent for Exastro IT Automation (${SERVICE_ID})
 
 [Service]
 WorkingDirectory=${PYTHONPATH}
-ExecStart=${ENTRYPOINT} ${ENV_PATH} ${PYTHONPATH} ${STORAGE_PATH}
+ExecStart=${ENTRYPOINT} ${ENV_PATH} ${PYTHONPATH} ${STORAGE_PATH} "${PYTHON_CMD}"
 ExecReload=/bin/kill -HUP \$MAINPID
 ExecStop=/bin/kill \$MAINPID
 Restart=always
@@ -1098,6 +1123,7 @@ install_agent_service_rhel9(){
 install_agent_service_almaLinux8(){
     ENTRYPOINT=${default_env_values["ENTRYPOINT"]}
     PYTHONPATH=${default_env_values["PYTHONPATH"]}
+    PYTHON_CMD=${default_env_values["PYTHON_CMD"]}
     AGENT_SERVICE_ID=${default_env_values['AGENT_SERVICE_ID']}
     SERVICE_PATH="${default_env_values["DATAPATH"]}/${default_env_values['AGENT_SERVICE_ID']}/${default_env_values['AGENT_NAME']}.service"
     info "create ${SERVICE_PATH}"
@@ -1107,7 +1133,7 @@ Description=Ansible Execution agent for Exastro IT Automation (${SERVICE_ID})
 
 [Service]
 WorkingDirectory=${PYTHONPATH}
-ExecStart=${ENTRYPOINT} ${ENV_PATH} ${PYTHONPATH} ${STORAGE_PATH}
+ExecStart=${ENTRYPOINT} ${ENV_PATH} ${PYTHONPATH} ${STORAGE_PATH} "${PYTHON_CMD}"
 ExecReload=/bin/kill -HUP \$MAINPID
 ExecStop=/bin/kill \$MAINPID
 Restart=always
@@ -1144,7 +1170,13 @@ set_vars_for_env(){
     default_env_values["AGENT_NAME"]="ita-ag-ansible-execution-${default_env_values['AGENT_SERVICE_ID']}"
     SERVICE_ID=${default_env_values['AGENT_SERVICE_ID']}
     DP_PATH=${default_env_values['STORAGEPATH']%$STORAG_DIR}
-    default_env_values["DATAPATH"]=${DP_PATH%$SERVICE_ID}
+    default_env_values["DATAPATH"]=${DP_PATH%/$SERVICE_ID}
+
+    which_poetry=`which poetry`
+    poetry_path="`ls ${which_poetry}`"" run python3"
+    default_env_values["PYTHON_CMD"]=$poetry_path
+    sed -i "/PYTHON_CMD=/c PYTHON_CMD=${poetry_path}" ${default_env_values['REFERENCE_ENVPATH']}
+
     info "set_vars_for_env :${DEP_PATTERN} end"
 }
 
@@ -1203,8 +1235,6 @@ install_all(){
     # 作業領域のセットアップ
     init_workdir
 
-    # .envファイルの作成
-    create_env
 
     # Git Clone
     git_clone
@@ -1214,6 +1244,9 @@ install_all(){
 
     # pipインストール: poetry
     poetry_install
+
+    # .envファイルの作成
+    create_env
 
     # ansibleインストール: redhat
     ansible_additional_install
@@ -1310,9 +1343,10 @@ create_envfile(){
         "EXASTRO_WORKSPACE_ID"
         "EXASTRO_REFRESH_TOKEN"
     )
-    ENV_TMP_PATH="./${default_env_values['AGENT_SERVICE_ID']}.env"
     # 設定の入力
     inquiry_env
+
+    ENV_TMP_PATH="./${default_env_values['AGENT_SERVICE_ID']}.env"
 
     # .envファイルの作成
     create_env

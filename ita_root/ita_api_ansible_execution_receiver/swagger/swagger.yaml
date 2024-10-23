@@ -419,10 +419,6 @@ components:
             execution_no:
               driver_id: string
               build_type: string
-              user_name: string
-              password: string
-              base_image: string
-              attach_repository: string
               anstwr_del_runtime_data: boolean
           items: {}
         message:
@@ -433,10 +429,6 @@ components:
           execution_no:
             driver_id: string
             build_type: string
-            user_name: string
-            password: string
-            base_image: string
-            attach_repository: string
             anstwr_del_runtime_data: boolean
         message: message
     notification_status_body:

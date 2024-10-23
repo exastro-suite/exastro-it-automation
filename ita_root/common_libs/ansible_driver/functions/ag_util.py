@@ -244,14 +244,18 @@ def CreateAG_ITABuilderShellFiles(objDBCA, AnscObj, out_dir, execution_no, movem
     out_file = "{}/{}".format(out_dir, "execution-environment.yml")
     with open(out_file, mode="w") as f:
         f.write(value)
-
     # builder.sh生成
     template_file = "ky_ansible_builder_shell.j2"
     item = {}
     # item["PROJECT_BASE_DIR"] = "${PROJECT_BASE_DIR}/project/builder_executable_files"
 
     item['optional_parameters'] = movemrnt_row['AG_BUILDER_OPTIONS']
-    item['tag_name'] = execdev_row['TAG_NAME']
+    # Ansible Egent 実行環境構築方法がITA以外の場合、build時のtag名にworkspace名を付加する
+    if execdev_row['BUILD_TYPE'] == AnscConst.DF_AG_BUILD_TYPE_ITA:
+        item['tag_name'] = g.WORKSPACE_ID + "_" + execdev_row['TAG_NAME']
+    else:
+        item['tag_name'] = execdev_row['TAG_NAME']
+
     # None対応
     if not item['optional_parameters']:
         item['optional_parameters'] = ""
@@ -286,7 +290,11 @@ def CreateAG_ITARunnerShellFiles(objDBCA, AnscObj, out_dir, execution_no, movemr
         msgstr = g.appmsg.get_api_message("MSG-10960", [movemrnt_row['AG_EXECUTION_ENVIRONMENT_NAME']])
         return False, msgstr
     execdev_row = rows[0]
-    ee_tag = execdev_row['TAG_NAME']
+    # Ansible Egent 実行環境構築方法がITA以外の場合、build時のtag名にworkspace名を付加する
+    if execdev_row['BUILD_TYPE'] == AnscConst.DF_AG_BUILD_TYPE_ITA:
+        ee_tag = g.WORKSPACE_ID + "_" + execdev_row['TAG_NAME']
+    else:
+        ee_tag = execdev_row['TAG_NAME']
 
     project_path = getAG_AGProjectPath(AnscObj, execution_no)
     item = {}

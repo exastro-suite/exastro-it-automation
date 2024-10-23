@@ -400,10 +400,6 @@ CREATE TABLE T_ANSC_EXECDEV
     TAG_NAME                        VARCHAR(255),                               -- タグ名
     EXECUTION_ENVIRONMENT_ID        VARCHAR(100),                               -- 実行環境定義名
     TEMPLATE_ID                     VARCHAR(40),                                -- テンプレート名
-    BASE_IMAGE_OS_TYPE              VARCHAR(40),                                -- ベースイメージOS種別
-    USER_NAME                       VARCHAR(255),                               -- ユーザー
-    PASSWORD                        TEXT,                                       -- パスワード
-    ATTACH_REPOSITORY               VARCHAR(255),                               -- アタッチリポジトリ
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
@@ -422,10 +418,6 @@ CREATE TABLE T_ANSC_EXECDEV_JNL
     TAG_NAME                        VARCHAR(255),                               -- タグ名
     EXECUTION_ENVIRONMENT_ID        VARCHAR(100),                               -- 実行環境定義名
     TEMPLATE_ID                     VARCHAR(40),                                -- テンプレート名
-    BASE_IMAGE_OS_TYPE              VARCHAR(40),                                -- ベースイメージOS種別
-    USER_NAME                       VARCHAR(255),                               -- ユーザー
-    PASSWORD                        TEXT,                                       -- パスワード
-    ATTACH_REPOSITORY               VARCHAR(255),                               -- アタッチリポジトリ
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
@@ -1843,22 +1835,6 @@ CREATE TABLE T_ANSC_EXECDEV_BUILD_TYPE
 (
     ROW_ID                          VARCHAR(2),                                 -- ROW_ID
     NAME                            VARCHAR(64),                                -- 構築方法名
-    DISP_SEQ                        INT,                                        -- 表示順序
-    NOTE                            TEXT,                                       -- 備考
-    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
-    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
-    PRIMARY KEY(ROW_ID)
-)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
-
-
-
-
--- M018_ベースイメージOS種別マスタ
-CREATE TABLE T_ANSC_BASE_IMAGE_OS_TYPE
-(
-    ROW_ID                          VARCHAR(2),                                 -- ROW_ID
-    NAME                            VARCHAR(255),                               -- OS種別名
     DISP_SEQ                        INT,                                        -- 表示順序
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ

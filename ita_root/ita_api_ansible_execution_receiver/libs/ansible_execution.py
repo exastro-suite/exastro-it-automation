@@ -116,21 +116,11 @@ def unexecuted_instance(objdbca, body={}):
                 # 作業番号
                 execution_no = record.get("EXECUTION_NO")
 
-                # 複合化→暗号化（エージェント用）
-                password = execdev_record.get('PASSWORD')
-                password = ky_decrypt(password)
-                password = agent_encrypt(execdev_record.get('PASSWORD'), pass_phrase)\
-                    if execdev_record.get('PASSWORD') else execdev_record.get('PASSWORD')
-
                 # set result[execution_no]
                 result[execution_no] = {
                     "driver_id": driver_id
                 }
                 result[execution_no]["build_type"] = execdev_record.get('BUILD_TYPE')
-                result[execution_no]["user_name"] = execdev_record.get('USER_NAME')
-                result[execution_no]["password"] = password
-                result[execution_no]["base_image"] = execdev_record.get('BASE_IMAGE_OS_TYPE')
-                result[execution_no]["attach_repository"] = execdev_record.get('ATTACH_REPOSITORY')
                 result[execution_no]["anstwr_del_runtime_data"] = anstwr_del_runtime_data
 
                 # ステータスを実行待ちに変更

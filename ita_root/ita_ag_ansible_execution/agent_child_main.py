@@ -39,8 +39,7 @@ def agent_child_main():
     workspace_id = args[2]
     execution_no = args[3]
     driver_id = args[4]
-    runtime_data_del = args[9]
-
+    runtime_data_del = args[6]
     global ansc_const
     global driver_error_log_file
 
@@ -92,18 +91,9 @@ def agent_child():
     execution_no = args[3]
     driver_id = args[4]
     build_type = args[5]
-    redhad_user_name = args[6]
-    redhad_password = args[7]
-    base_image = args[8]
-    runtime_data_del = args[9]
+    runtime_data_del = args[6]
     # 再起動の処理は実装しない
-    strat_mode = args[10]
-
-
-    # パスワードの復号化
-    if redhad_password != "":
-        pass_phrase = organization_id + " " + workspace_id
-        redhad_password = agent_decrypt(redhad_password, pass_phrase)
+    strat_mode = args[7]
 
     # in/out親ディレクトリパス
     storagepath = os.environ.get('STORAGEPATH')
@@ -116,7 +106,6 @@ def agent_child():
 
     # builder Runnerのshellで使用する環境変数設定
     project_base_path = f"{storagepath}/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{execution_no}"
-    print(project_base_path)
     os.environ['PROJECT_BASE_DIR'] = project_base_path
 
     baseUrl = os.environ["EXASTRO_URL"]
@@ -176,12 +165,7 @@ def agent_child():
         builder_result = True
         try:
             g.applogger.debug(g.appmsg.get_log_message( "MSG-11007", [workspace_id, execution_no]))
-            # ベースイメージがredhad
-            if base_image == "1":
-                cmd = ["sh", f"{root_dir_path}/builder_executable_files/builder.sh", "Yes", redhad_user_name, redhad_password]
-            # ベースイメージがothers
-            else:
-                cmd = ["sh", f"{root_dir_path}/builder_executable_files/builder.sh", "No", redhad_user_name, redhad_password]
+            cmd = ["sh", f"{root_dir_path}/builder_executable_files/builder.sh", "No", "", ""]
 
             with open(child_error_log_pass, 'w') as fp:
                 ret = subprocess.run(cmd, check=True, stdout=fp, stderr=subprocess.STDOUT)
@@ -315,11 +299,11 @@ def agent_child():
                             # rcファイルなし
                             # ログを残す
                             runner_rc_status_file_none_log(child_error_log_pass, workspace_id, execution_no, "1")
-    
+
                             # 結果データ更新 ステータス:完了(異常)
                             status = AnscConst.FAILURE
                             log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
-    
+
                             # 結果データ更新->作業状態通知送信
                             status_code, response, error_code, error_arg = post_upload_file_and_status(
                                                         exastro_api, organization_id, workspace_id,
@@ -648,7 +632,7 @@ def post_upload_file_and_status(exastro_api, organization_id, workspace_id, exec
     status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body)
     if not status_code == 200:
         return status_code, response, "MSG-10991", [workspace_id, execution_no, status, status_code, response]
-            
+
 
     # 作業状態通知のレスポンスで緊急停止フラグが設定されている場合、forced.txtファイル作成
     chk_emergency_stop(response, organization_id, workspace_id, driver_id, execution_no)

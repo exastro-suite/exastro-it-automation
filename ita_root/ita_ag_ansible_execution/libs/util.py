@@ -462,15 +462,12 @@ def create_execution_status_file(organization_id, workspace_id, driver_id, execu
             g.applogger.debug(f"create execution staus file. (path:{status_file_path})")
             f.write("0")
 
-def create_execution_parameters_file(organization_id, workspace_id, driver_id, execution_no, build_type, user_name, password, base_image, runtime_data_del):
+def create_execution_parameters_file(organization_id, workspace_id, driver_id, execution_no, build_type, runtime_data_del):
     """
     子プロ起動パラメータファイル生成
     """
     ary = {}
     ary["build_type"] = build_type
-    ary["user_name"] = user_name
-    ary["password"] = password
-    ary["base_image"] = base_image
     ary["runtime_data_del"] = runtime_data_del
     ary_dump = json.dumps(ary)
     status_file_dir_path, status_file_path = get_execution_status_file_path(organization_id, workspace_id, driver_id, execution_no)
@@ -514,7 +511,7 @@ def get_execution_parameters_file(organization_id, workspace_id, driver_id, exec
         ary_dump =  f.read()
         ary = json.loads(ary_dump)
 
-    return ary["build_type"], ary["user_name"], ary["password"], ary["base_image"], ary["runtime_data_del"]
+    return ary["build_type"], ary["runtime_data_del"]
 
 
 def get_execution_restart_status_file(organization_id, workspace_id, driver_id, execution_no):

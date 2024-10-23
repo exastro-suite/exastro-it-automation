@@ -104,22 +104,19 @@ def main_logic(organization_id, workspace_id, exastro_api, baseUrl):
             g.applogger.debug(f"{execution_no=}: \n {json.dumps(value, indent=4) if value else {}}")
             # 子プロ起動時の引数対応: None -> ""
             runtime_data_del = value["anstwr_del_runtime_data"] if value["anstwr_del_runtime_data"] else "0"
-            user_name = value["user_name"] if value["user_name"] else ""
-            password = value["password"] if value["password"] else ""
-            base_image = value["base_image"] if value["base_image"] else ""
 
             # 子プロ起動
             g.applogger.info(g.appmsg.get_log_message("MSG-11006", [workspace_id, execution_no]))
 
-            command = ["python3", "agent/agent_child_init.py", organization_id, workspace_id, execution_no, value["driver_id"], value["build_type"], user_name, password, base_image, runtime_data_del, "start"]
+            command = ["python3", "agent/agent_child_init.py", organization_id, workspace_id, execution_no, value["driver_id"], value["build_type"], runtime_data_del, "start"]
 
-            cp = subprocess.Popen(command)  
+            cp = subprocess.Popen(command)
 
-            # 子プロ起動状態ファイル生成 
+            # 子プロ起動状態ファイル生成
             create_execution_status_file(organization_id, workspace_id, value["driver_id"], execution_no)
 
             # 子プロ起動パラメータ退避
-            create_execution_parameters_file(organization_id, workspace_id, value["driver_id"], execution_no, value["build_type"], user_name, password, base_image, runtime_data_del)
+            create_execution_parameters_file(organization_id, workspace_id, value["driver_id"], execution_no, value["build_type"], runtime_data_del)
 
             # 子プロ再起動状態ファイル生成
             create_execution_restart_status_file(organization_id, workspace_id, value["driver_id"], execution_no)
@@ -188,7 +185,7 @@ def conductor_decode_tar_file(base_64data, dir_path):
         # enomoto ログ出力
         raise AppException('MSG-11000', ["tar file type:conductor"])
 
-def child_process_exist_check(organization_id, workspace_id, execution_no, driver_id, build_type=None, user_name="", password="", base_image=None, runtime_data_del="0"):
+def child_process_exist_check(organization_id, workspace_id, execution_no, driver_id, build_type=None, runtime_data_del="0"):
     """
     実行中の子プロの起動確認
 
@@ -250,7 +247,7 @@ def child_process_exist_check(organization_id, workspace_id, execution_no, drive
 
                 g.applogger.info(g.appmsg.get_log_message("MSG-11005", [workspace_id, execution_no, str(reboot_cnt)]))
                 # 子プロ再起動
-                command = ["python3", "agent/agent_child_init.py", organization_id, workspace_id, execution_no, driver_id, user_name, password, base_image, runtime_data_del,"restart"]
+                command = ["python3", "agent/agent_child_init.py", organization_id, workspace_id, execution_no, driver_id, runtime_data_del,"restart"]
                 cp = subprocess.Popen(command)  # noqa: F841
             else:
                 g.applogger.info(g.appmsg.get_log_message("MSG-11004", [workspace_id, execution_no]))
@@ -353,10 +350,10 @@ def get_working_child_process(organization_id, workspace_id, start_up_list):
             if execution_no in start_up_list:
                 # 起動直後の子プロ起動確認は行わず、次のループから実施
                 continue
-               
+
             # 子プロ起動パラメータ退避ファイルから起動パラメータ取得
-            build_type, user_name, password, base_image, runtime_data_del = get_execution_parameters_file(organization_id, workspace_id, driver_id, execution_no)
-            ret = child_process_exist_check(organization_id, workspace_id, execution_no, driver_id, build_type, user_name, password, base_image, runtime_data_del)
+            build_type, runtime_data_del = get_execution_parameters_file(organization_id, workspace_id, driver_id, execution_no)
+            ret = child_process_exist_check(organization_id, workspace_id, execution_no, driver_id, build_type, runtime_data_del)
             if ret is True:
                 # 子プロ実行中
                 g.applogger.debug(g.appmsg.get_log_message("MSG-11002", [workspace_id, execution_no]))

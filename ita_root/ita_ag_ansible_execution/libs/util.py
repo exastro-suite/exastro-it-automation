@@ -60,7 +60,7 @@ def get_agent_version():
     Returns:
         agent_version
     """
-    version_file_path = "{}{}".format(g.get("PYTHONPATH"),"VERSION.txt")
+    version_file_path = "{}/{}".format(g.get("PYTHONPATH"),"VERSION.txt")
     if os.path.isfile(version_file_path):
         with open(version_file_path, mode='r') as f:
             agent_version = f.read()
@@ -327,7 +327,7 @@ def arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, stat
         conductor_dir_path = f"{_base_path}/conductor"
         # 作業用ディレクトリパス
         tmp_dir_path = _tmp_path
-        
+
     # 作業ディレクトリがなければ作成しておく
     os.makedirs(tmp_dir_path) if not os.path.exists(tmp_dir_path) else None
     # /out無ければ空で作成しておく

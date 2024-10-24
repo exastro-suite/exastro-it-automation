@@ -281,7 +281,7 @@ def get_populated_data_path(objdbca, organization_id, workspace_id, execution_no
 
     # パス
     dir_path = f"/storage/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}"
-    tmp_basse_path = f"/tmp/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/"
+    tmp_base_path = f"/tmp/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/"
     tmp_path = f"/tmp/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/{execution_no}"
     conductor_dir_path = f"/storage/{organization_id}/{workspace_id}/driver/conductor/{conductor_instance_no}"
     tmp_c_path = f"/tmp/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/conductor"
@@ -289,7 +289,7 @@ def get_populated_data_path(objdbca, organization_id, workspace_id, execution_no
 
     try:
         # tmp_pathの初期化
-        shutil.rmtree(tmp_basse_path) if os.path.exists(tmp_basse_path) else None
+        shutil.rmtree(tmp_base_path) if os.path.exists(tmp_base_path) else None
 
         # execution_no/*
         # dir_path -> tmp_path に移動
@@ -318,14 +318,19 @@ def get_populated_data_path(objdbca, organization_id, workspace_id, execution_no
 
         # tar.gz
         with tarfile.open(gztar_path, "w:gz") as tar:
-            tar.add(tmp_basse_path, arcname="")
-        g.applogger.debug(f"tarfile.open({gztar_path}, 'w:gz'):  tar.add({tmp_basse_path})")
+            tar.add(tmp_base_path, arcname="")
+        g.applogger.debug(f"tarfile.open({gztar_path}, 'w:gz'):  tar.add({tmp_base_path})")
 
+        # move gztar_path
+        gztar_path = shutil.move(gztar_path, tmp_base_path)
+        g.applogger.debug(f"{gztar_path=}")
     finally:
-        # clear tmp_path
-        if os.path.isdir(tmp_path):
-            for _tp in glob.glob(f"{tmp_path}/*", recursive=True):
-                if os.path.isdir(_tp):
+        # clear tmp_base_path
+        if os.path.isdir(tmp_base_path):
+            for _tp in glob.glob(f"{tmp_base_path}/*", recursive=True):
+                if os.path.exists(_tp) and _tp == gztar_path:
+                    continue
+                elif os.path.exists(_tp):
                     shutil.rmtree(_tp)
                     g.applogger.debug(f"shutil.rmtree({_tp})")
 
@@ -399,44 +404,15 @@ def update_result(objdbca, organization_id, workspace_id, execution_no, paramete
         conductor_directory_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy_role/" + execution_no + "/conductor"
         tmp_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy_role/" + execution_no + "/"
 
-    for file_key, record_file_paths in file_path.items():
-        if not os.path.exists(tmp_path + file_key):
-            os.makedirs(tmp_path + file_key)
-        with tarfile.open(record_file_paths, 'r:gz') as tar:
-            tar.extractall(path=tmp_path + file_key)
+    try:
+        for file_key, record_file_paths in file_path.items():
+            if not os.path.exists(tmp_path + file_key):
+                os.makedirs(tmp_path + file_key)
+            with tarfile.open(record_file_paths, 'r:gz') as tar:
+                tar.extractall(path=tmp_path + file_key)
 
-        # outディレクトリ更新
-        if file_key == "out_tar_data":
-            # 展開したファイルの一覧を取得
-            lst = glob.glob(tmp_path + file_key + "/**", recursive=True)
-            file_list = []
-            for path in lst:
-                if os.path.isfile(path):
-                    file_list.append(path)
-
-            for file_path in file_list:
-                # 通知されたファイルで上書き
-                shutil.move(file_path, out_directory_path + "/" + os.path.basename(file_path))
-
-        # parameters, parameters_fileディレクトリ更新
-        if file_key == "parameters_tar_data" or file_key == "parameters_file_tar_data":
-            # ステータスが完了、完了(異常)の場合
-            if status == AnscConst.COMPLETE or status == AnscConst.FAILURE:
-                # 展開したファイルの一覧を取得
-                lst = glob.glob(tmp_path + file_key + "/**", recursive=True)
-                file_list = {}
-                for path in lst:
-                    if os.path.isfile(path):
-                        path = Path(path)
-                        parent_dirctory = str(path.parent)
-                        file_list[parent_dirctory] = os.path.basename(path)
-                for dir_name, file_name in file_list.items():
-                    # 通知されたファイルで上書き
-                    shutil.move(dir_name + "/" + file_name, in_directory_path + "/" + os.path.basename(dir_name) + "/" + os.path.basename(file_name))
-
-        # conductorディレクトリ更新
-        if file_key == "conductor_tar_data":
-            if status == AnscConst.COMPLETE or status == AnscConst.FAILURE:
+            # outディレクトリ更新
+            if file_key == "out_tar_data":
                 # 展開したファイルの一覧を取得
                 lst = glob.glob(tmp_path + file_key + "/**", recursive=True)
                 file_list = []
@@ -446,7 +422,42 @@ def update_result(objdbca, organization_id, workspace_id, execution_no, paramete
 
                 for file_path in file_list:
                     # 通知されたファイルで上書き
-                    shutil.move(file_path, conductor_directory_path + "/" + os.path.basename(file_path))
+                    shutil.move(file_path, out_directory_path + "/" + os.path.basename(file_path))
+
+            # parameters, parameters_fileディレクトリ更新
+            if file_key == "parameters_tar_data" or file_key == "parameters_file_tar_data":
+                # ステータスが完了、完了(異常)の場合
+                if status == AnscConst.COMPLETE or status == AnscConst.FAILURE:
+                    # 展開したファイルの一覧を取得
+                    lst = glob.glob(tmp_path + file_key + "/**", recursive=True)
+                    file_list = {}
+                    for path in lst:
+                        if os.path.isfile(path):
+                            path = Path(path)
+                            parent_dirctory = str(path.parent)
+                            file_list[parent_dirctory] = os.path.basename(path)
+                    for dir_name, file_name in file_list.items():
+                        # 通知されたファイルで上書き
+                        shutil.move(dir_name + "/" + file_name, in_directory_path + "/" + os.path.basename(dir_name) + "/" + os.path.basename(file_name))
+
+            # conductorディレクトリ更新
+            if file_key == "conductor_tar_data":
+                if status == AnscConst.COMPLETE or status == AnscConst.FAILURE:
+                    # 展開したファイルの一覧を取得
+                    lst = glob.glob(tmp_path + file_key + "/**", recursive=True)
+                    file_list = []
+                    for path in lst:
+                        if os.path.isfile(path):
+                            file_list.append(path)
+
+                    for file_path in file_list:
+                        # 通知されたファイルで上書き
+                        shutil.move(file_path, conductor_directory_path + "/" + os.path.basename(file_path))
+    finally:
+        # clear tmp_path
+        if os.path.isdir(tmp_path):
+            shutil.rmtree(tmp_path)
+            g.applogger.debug(f"shutil.rmtree({tmp_path})")
 
     return {}
 

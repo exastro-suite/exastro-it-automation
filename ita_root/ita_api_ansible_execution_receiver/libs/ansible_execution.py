@@ -24,7 +24,8 @@ from common_libs.common import storage_access
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_execution.version import AnsibleExexutionVersion
 from common_libs.ansible_execution.encrypt import agent_encrypt
-
+from common_libs.ansible_driver.functions.util import InstanceRecodeUpdate, createTmpZipFile, get_OSTmpPath
+from common_libs.common.util import get_timestamp
 
 def unexecuted_instance(objdbca, body={}):
     """
@@ -143,7 +144,7 @@ def unexecuted_instance(objdbca, body={}):
 
     return result
 
-def get_execution_status(objdbca, execution_no, body):
+def get_execution_status(objdbca, organization_id, workspace_id, execution_no, body):
     """
         緊急停止状態を返す
         ARGS:
@@ -180,46 +181,50 @@ def get_execution_status(objdbca, execution_no, body):
 
     if driver_id == "legacy":
         t_exec_sts_inst = t_ansl_exec_sts_inst
+        driver_mode_id = AnscConst.DF_LEGACY_DRIVER_ID
     elif driver_id == "pioneer":
         t_exec_sts_inst = t_ansp_exec_sts_inst
+        driver_mode_id = AnscConst.DF_PIONEER_DRIVER_ID
     elif driver_id == "legacy_role":
         t_exec_sts_inst = t_ansr_exec_sts_inst
+        driver_mode_id = AnscConst.DF_LEGACY_ROLE_DRIVER_ID
     else:
-        g.applogger.info(f"Not found {driver_id=}")
+        g.applogger.info(f"driver id is Not found {driver_id=}")
         return {}
 
     if status not in status_list:
-        g.applogger.info(f"Not found {status=}")
+        g.applogger.info(f"status id is Not found {status=}")
         return {}
 
     # ステータス更新、緊急停止状態取得
     result = {}
-    ret = objdbca.table_select(t_exec_sts_inst, 'WHERE  EXECUTION_NO=%s', [execution_no])
-    for record in ret:
-        current_status = record.get("STATUS_ID")
-        result["SCRAM_STATUS"] = record.get("ABORT_EXECUTE_FLAG")
+    rows = objdbca.table_select(t_exec_sts_inst, 'WHERE  EXECUTION_NO=%s', [execution_no])
+    for execute_row in rows:
+        current_status = execute_row.get("STATUS_ID")
+        result["SCRAM_STATUS"] = execute_row.get("ABORT_EXECUTE_FLAG")
 
     # ステータス更新制御
-    # 完了→実行中、実行中(遅延)、完了(異常)、想定外エラー、緊急停止にならないように
-    if current_status == AnscConst.COMPLETE and status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED, AnscConst.FAILURE, AnscConst.EXCEPTION, AnscConst.SCRAM]:
+    # 完了→実行中、完了(異常)、想定外エラー、緊急停止にならないように
+    if current_status == AnscConst.COMPLETE and status in [AnscConst.PROCESSING, AnscConst.FAILURE, AnscConst.EXCEPTION, AnscConst.SCRAM]:
         return result
-    # 完了(異常)→実行中、実行中(遅延)、完了、想定外エラー、緊急停止にならないように
-    if current_status == AnscConst.FAILURE and status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED, AnscConst.COMPLETE, AnscConst.EXCEPTION, AnscConst.SCRAM]:
+    # 完了(異常)→実行中、完了、想定外エラー、緊急停止にならないように
+    if current_status == AnscConst.FAILURE and status in [AnscConst.PROCESSING, AnscConst.COMPLETE, AnscConst.EXCEPTION, AnscConst.SCRAM]:
         return result
-    # 想定外エラー→実行中、実行中(遅延)、完了、完了(異常)、緊急停止にならないように
-    if current_status == AnscConst.EXCEPTION and status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED, AnscConst.COMPLETE, AnscConst.FAILURE, AnscConst.SCRAM]:
+    # 想定外エラー→実行中、完了、完了(異常)、緊急停止にならないように
+    if current_status == AnscConst.EXCEPTION and status in [AnscConst.PROCESSING, AnscConst.COMPLETE, AnscConst.FAILURE, AnscConst.SCRAM]:
         return result
-    # 緊急停止→実行中、実行中(遅延)、完了、完了(異常)、想定外エラーにならないように
-    if current_status == AnscConst.SCRAM and status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED, AnscConst.COMPLETE, AnscConst.FAILURE, AnscConst.EXCEPTION]:
+    # 緊急停止→実行中、完了、完了(異常)、想定外エラーにならないように
+    if current_status == AnscConst.SCRAM and status in [AnscConst.PROCESSING, AnscConst.COMPLETE, AnscConst.FAILURE, AnscConst.EXCEPTION]:
         return result
 
     update_status_flg = False
-    # パラメータのステータスが、実行中, 実行中(遅延)の場合 / 他
-    if status in [AnscConst.PROCESSING, AnscConst.PROCESS_DELAYED]:
-        # ステータス更新: 実行中->実行中(遅延)に変更する場合のみ
-        if current_status == AnscConst.PROCESSING and status == AnscConst.PROCESS_DELAYED:
-            update_status_flg = True
-        # ステータス更新: 実行待ち->実行中に変更する場合のみ
+    # パラメータのステータスが、実行中の場合
+    if status in [AnscConst.PROCESSING]:
+        # ステータス更新: 実行中(遅延)->実行中にならないように
+        if current_status == AnscConst.PROCESS_DELAYED and status == AnscConst.PROCESSING:
+            update_status_flg = False
+        # ステータス更新: 実行待ち->他のステータスに変更する
+        # elif current_status == AnscConst.PROCESSING_WAIT and status == AnscConst.PROCESSING:
         elif current_status == AnscConst.PROCESSING_WAIT and status == AnscConst.PROCESSING:
             update_status_flg = True
         else:
@@ -233,9 +238,45 @@ def get_execution_status(objdbca, execution_no, body):
     objdbca.db_transaction_start()
 
     if update_status_flg:
-        # ステータス更新
-        data_list = {"EXECUTION_NO": execution_no, "STATUS_ID": status}
-        objdbca.table_update(t_exec_sts_inst, data_list, "EXECUTION_NO")
+        if status == AnscConst.PROCESSING:
+            data_list = {"EXECUTION_NO": execution_no, "STATUS_ID": status}
+            objdbca.table_update(t_exec_sts_inst, data_list, "EXECUTION_NO")
+        else:
+            # /tmpに作成したファイル・ディレクトリパスを保存するファイル名
+            g.AnsibleCreateFilesPath = "{}/Ansible_{}".format(get_OSTmpPath(), execution_no)
+
+            # ステータス更新
+            execute_row["STATUS_ID"] = status
+            execute_row["TIME_END"] = get_timestamp()
+            zip_data_source_dir = f"/storage/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/out"
+            rmtmpfiles = False
+            retBool, err_msg, zip_result_file, rm_tmp_files_list = createTmpZipFile(
+                        execution_no,
+                        zip_data_source_dir,
+                        'FILE_RESULT',
+                        'ResultData_',
+                        rmtmpfiles)
+
+            if retBool is True:
+                execute_row['FILE_RESULT'] = zip_result_file
+                if execute_row['FILE_RESULT']:
+                    zip_tmp_save_path = get_OSTmpPath() + "/" + execute_row['FILE_RESULT']
+                else:
+                    zip_tmp_save_path = ''
+                # 作業インスタンス更新
+                ret = InstanceRecodeUpdate(objdbca, driver_mode_id, execution_no, execute_row, 'FILE_RESULT', zip_tmp_save_path)
+
+            else:
+                # ZIPファイル作成の作成に失敗しても、ログに出して次に進む
+                g.applogger.info(g.appmsg.get_log_message("BKY-00004", ["createTmpZipFile", err_msg]))
+
+            # zip作成時のゴミ掃除
+            for del_path in rm_tmp_files_list:
+                if os.path.isdir(del_path):
+                    shutil.rmtree(del_path)
+                elif os.path.isfile(del_path):
+                    os.remove(del_path)
+
     else:
         # 最終更新日時のみ更新: 履歴なし
         data_list = {"EXECUTION_NO": execution_no}
@@ -245,7 +286,6 @@ def get_execution_status(objdbca, execution_no, body):
     objdbca.db_transaction_end(True)
 
     return result
-
 
 def get_populated_data_path(objdbca, organization_id, workspace_id, execution_no, driver_id):
     """

@@ -100,7 +100,7 @@ def execution_status_notification(organization_id, workspace_id, execution_no, b
             check_request_body_key(body, 'status')
 
         # 作業実行関連のメニューの基本情報および項目情報の取得
-        result_data = get_execution_status(objdbca, execution_no, body)
+        result_data = get_execution_status(objdbca, organization_id, workspace_id, execution_no, body)
         # result_data.setdefault("menu_info", tmp_data[0]["data"])
     except Exception as e:
         raise e

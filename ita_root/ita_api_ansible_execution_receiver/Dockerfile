@@ -77,6 +77,7 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
     dnf install -y \
     sudo \
     git \
+    zip \
     vim \
     diffutils \
     bind-utils \

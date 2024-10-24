@@ -22,7 +22,7 @@ class AnsibleExexutionVersion:
 
     # バージョンリスト
     VERSION_MATRIX = {
-        "2.5.1": ["2.5.0","2.5.1"]
+        "2.5.1": ["2.5.1"]
     }
 
     # ステータス

@@ -47,7 +47,7 @@ dnf_install_list_common=(
     # "python39-devel"
     "langpacks-en"
     "wget"
-    # "zip"
+    "zip"
     "unzip"
     "git"
 )

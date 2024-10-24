@@ -2328,7 +2328,7 @@ def _get_file_data_columnclass(objdbca, objtable, rest_key, file_name, target_uu
         eval_class_str = "{}(objdbca,objtable,rest_key,'')".format(col_class_name)
         objcolumn = eval(eval_class_str)
         # ファイルの内容が必要な場合のみ、base64でファイルを取得
-        if file_required is True:
+        if file_required is True or col_class_name != "FileUploadColumn":
             file_data = objcolumn.get_file_data(file_name, target_uuid, None)
         file_path = objcolumn.get_file_data_path(file_name, target_uuid, None)
         file_mimetype, encoding = mimetypes.guess_type(file_path, False)
@@ -2345,7 +2345,7 @@ def _get_file_data_columnclass(objdbca, objtable, rest_key, file_name, target_uu
         msg = traceback.format_exception(type_, value, traceback_)
         g.applogger.info(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
 
-    if file_required is True:
+    if file_required is True or col_class_name != "FileUploadColumn":
         return file_data, file_mimetype
     return file_path, file_mimetype
 

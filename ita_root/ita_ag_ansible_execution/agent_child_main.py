@@ -236,9 +236,11 @@ def agent_child():
             with open(child_error_log_pass, 'a') as fp:
                 ret = subprocess.run(cmd, check=True, stdout=fp, stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
-            exception(e)
-            alive_result = False
-
+            # runnerが終るとaliveの戻りが0以外になるので、正常とする。
+            # ログをクリアする
+            with open(child_error_log_pass,"w") as f:
+                pass
+            alive_result = True
         except Exception as e:
             exception(e)
             alive_result = False

@@ -15,11 +15,14 @@ from flask import g
 import os
 import shutil
 import shlex
+import glob
+import subprocess
 
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_driver.classes.AnslConstClass import AnslConst
 from common_libs.ansible_driver.classes.AnspConstClass import AnspConst
 from common_libs.ansible_driver.classes.AnsrConstClass import AnsrConst
+from common_libs.loadtable import load_table
 
 """
   Ansible共通モジュール
@@ -377,3 +380,183 @@ def loacl_quote(arg):
     for item in list:
         result_arg += shlex.quote(item) + " "
     return result_arg
+
+def createTmpZipFile(execution_no, zip_data_source_dir, zip_type, zip_file_pfx, rmtmpfiles=True):
+    ########################################
+    # 処理内容
+    #  入力/結果ZIPファイル作成
+    #
+    # Arugments:
+    #  execution_no:               作業実行番号
+    #  zip_data_source_dir:        zipファイルの[圧縮元]の資材ディレクトリ
+    #  zip_type:                   入力/出力の区分
+    #                                   入力:FILE_INPUT   出力:FILE_RESULT
+    #  zip_file_pfx:               zipファイル名のプレフィックス
+    #                                 入力:InputData_   出力:ResultData_
+    #  rmtmpfiles:                 zip作成で利用したファイルディレクトリのゴミ掃除有無
+    # Returns:
+    #   true:正常　false:異常
+    #   zip_file_name:           ZIPファイル名返却
+    ########################################
+    err_msg = ""
+    zip_file_name = ""
+    zip_temp_save_dir = ""
+
+    if len(glob.glob(zip_data_source_dir + "/*")) > 0:
+
+        tmp_zip_data_source_dir = "/tmp/{}{}_zip".format(zip_file_pfx, execution_no)
+
+        # /tmpにzipに纏めるディレクトリの確認
+        if os.path.isdir(tmp_zip_data_source_dir) is True:
+            shutil.rmtree(tmp_zip_data_source_dir)
+
+        # /tmpにzipに纏める資材コピー
+        shutil.copytree(zip_data_source_dir, tmp_zip_data_source_dir)
+
+        # ----ZIPファイルを作成する
+        zip_file_name = zip_file_pfx + execution_no + '.zip'
+
+        # 圧縮先
+        zip_temp_save_dir = get_OSTmpPath()
+        zip_temp_save_path = zip_temp_save_dir + "/" + zip_file_name
+
+        # ゴミ掃除リストに追加
+        if rmtmpfiles is True:
+            addAnsibleCreateFilesPath(zip_temp_save_path)
+            addAnsibleCreateFilesPath(tmp_zip_data_source_dir)
+        else:
+            rmtmpfilelist = []
+            rmtmpfilelist.append(zip_temp_save_path)
+            rmtmpfilelist.append(tmp_zip_data_source_dir)
+
+        tmp_str_command = "cd " + shlex.quote(tmp_zip_data_source_dir) + " && zip -r " + shlex.quote(zip_temp_save_dir + "/" + zip_file_name) + " . -x ssh_key_files/* -x winrm_ca_files/*  -x .vault-password-file 1> /dev/null"  # noqa: E501
+
+        ret = subprocess.run(tmp_str_command, check=True, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+        # zipファイルパス
+        zip_temp_save_path = zip_temp_save_dir + "/" + zip_file_name
+        # subprocess.runのエラー時は例外発生
+        # if ret.returncode != 0:
+        #    err_msg = g.appmsg.get_log_message("MSG-10252", [zip_type, tmp_str_command, ret.stdout])
+        #    False, err_msg, zip_file_name, zip_temp_save_dir
+
+        # 処理]{}ディレクトリを圧縮(圧縮ファイル:{})
+        g.applogger.debug(g.appmsg.get_log_message("MSG-10783", [zip_type, os.path.basename(zip_temp_save_path)]))
+
+    if rmtmpfiles is True:
+        return True, err_msg, zip_file_name
+    else:
+        return True, err_msg, zip_file_name, rmtmpfilelist
+
+def InstanceRecodeUpdate(wsDb, driver_id, execution_no, execute_data, update_column_name, zip_tmp_save_path, db_update_need_no_jnl=False):
+    """
+    作業管理更新
+
+    ARGS:
+        wsDb:DB接クラス  DBConnectWs()
+        driver_id: ドライバ区分　AnscConst().DF_LEGACY_ROLE_DRIVER_ID
+        execution_no: 作業番号
+        execute_data: 更新内容配列
+        update_column_name: 更新対象のFileUpLoadColumn名
+        zip_tmp_save_path: 一時的に作成したzipファイルのパス
+        db_update_need_no_jnl: 履歴テーブル更新可否
+    RETRUN:
+        True/False, errormsg
+    """
+    TableDict = {}
+    TableDict["MENU_REST"] = {}
+    TableDict["MENU_REST"][AnscConst.DF_LEGACY_DRIVER_ID] = "execution_list_ansible_legacy"
+    TableDict["MENU_REST"][AnscConst.DF_PIONEER_DRIVER_ID] = "execution_list_ansible_pioneer"
+    TableDict["MENU_REST"][AnscConst.DF_LEGACY_ROLE_DRIVER_ID] = "execution_list_ansible_role"
+    TableDict["MENU_ID"] = {}
+    TableDict["MENU_ID"][AnscConst.DF_LEGACY_DRIVER_ID] = "20210"
+    TableDict["MENU_ID"][AnscConst.DF_PIONEER_DRIVER_ID] = "20312"
+    TableDict["MENU_ID"][AnscConst.DF_LEGACY_ROLE_DRIVER_ID] = "20412"
+    TableDict["TABLE"] = {}
+    TableDict["TABLE"][AnscConst.DF_LEGACY_DRIVER_ID] = AnslConst.vg_exe_ins_msg_table_name
+    TableDict["TABLE"][AnscConst.DF_PIONEER_DRIVER_ID] = AnspConst.vg_exe_ins_msg_table_name
+    TableDict["TABLE"][AnscConst.DF_LEGACY_ROLE_DRIVER_ID] = AnsrConst.vg_exe_ins_msg_table_name
+    MenuName = TableDict["MENU_REST"][driver_id]
+    MenuId = TableDict["MENU_ID"][driver_id]
+
+    # loadtyable.pyで使用するCOLUMN_NAME_RESTを取得
+    RestNameConfig = {}
+    # あえて廃止にしている項目もあり、要確認が必要
+    sql = "SELECT COL_NAME,COLUMN_NAME_REST FROM T_COMN_MENU_COLUMN_LINK WHERE MENU_ID = %s and DISUSE_FLAG = '0'"
+    restcolnamerow = wsDb.sql_execute(sql, [MenuId])
+    for row in restcolnamerow:
+        RestNameConfig[row["COL_NAME"]] = row["COLUMN_NAME_REST"]
+
+    ExecStsInstTableConfig = {}
+
+    # 作業番号
+    ExecStsInstTableConfig[RestNameConfig["EXECUTION_NO"]] = execution_no
+
+    # ステータス
+    if g.LANGUAGE == 'ja':
+        sql = "SELECT EXEC_STATUS_NAME_JA AS NAME FROM T_ANSC_EXEC_STATUS WHERE EXEC_STATUS_ID = %s AND DISUSE_FLAG = '0'"
+    else:
+        sql = "SELECT EXEC_STATUS_NAME_EN AS NAME FROM T_ANSC_EXEC_STATUS WHERE EXEC_STATUS_ID = %s AND DISUSE_FLAG = '0'"
+    rows = wsDb.sql_execute(sql, [execute_data["STATUS_ID"]])
+    # マスタなので件数チェックしない
+    row = rows[0]
+    ExecStsInstTableConfig[RestNameConfig["STATUS_ID"]] = row["NAME"]
+
+    # 入力データ/投入データ／出力データ/結果データ用zipデータ
+    uploadfiles = {}
+    if update_column_name == "FILE_INPUT" or update_column_name == "FILE_RESULT":
+        if zip_tmp_save_path:
+            uploadfiles = {RestNameConfig[update_column_name]: zip_tmp_save_path}
+    # 実行中の場合
+    if update_column_name == "FILE_INPUT":
+        if execute_data["FILE_INPUT"]:
+            ExecStsInstTableConfig[RestNameConfig["FILE_INPUT"]] = execute_data["FILE_INPUT"]  # 入力データ/投入データ
+
+        ExecStsInstTableConfig[RestNameConfig["TIME_START"]] = execute_data['TIME_START'].strftime('%Y/%m/%d %H:%M:%S')
+        # 終了時間が設定されていない場合がある
+        if execute_data['TIME_END']:
+            ExecStsInstTableConfig[RestNameConfig["TIME_END"]] = execute_data['TIME_END'].strftime('%Y/%m/%d %H:%M:%S')
+        if "MULTIPLELOG_MODE" in execute_data:
+            ExecStsInstTableConfig[RestNameConfig["MULTIPLELOG_MODE"]] = execute_data["MULTIPLELOG_MODE"]
+        if "LOGFILELIST_JSON" in execute_data:
+            ExecStsInstTableConfig[RestNameConfig["LOGFILELIST_JSON"]] = execute_data["LOGFILELIST_JSON"]
+
+    # 実行終了の場合
+    if update_column_name == "FILE_RESULT":
+        if execute_data["FILE_RESULT"]:
+            ExecStsInstTableConfig[RestNameConfig["FILE_RESULT"]] = execute_data["FILE_RESULT"]  # 出力データ/結果データ
+
+        ExecStsInstTableConfig[RestNameConfig["TIME_END"]] = execute_data['TIME_END'].strftime('%Y/%m/%d %H:%M:%S')
+        # MULTIPLELOG_MODEとLOGFILELIST_JSONが廃止レコードになっているので0にする
+        if "MULTIPLELOG_MODE" in execute_data:
+            ExecStsInstTableConfig[RestNameConfig["MULTIPLELOG_MODE"]] = execute_data["MULTIPLELOG_MODE"]
+        if "LOGFILELIST_JSON" in execute_data:
+            ExecStsInstTableConfig[RestNameConfig["LOGFILELIST_JSON"]] = execute_data["LOGFILELIST_JSON"]
+
+    # その他の場合
+    if update_column_name == "UPDATE":
+        if "MULTIPLELOG_MODE" in execute_data:
+            ExecStsInstTableConfig[RestNameConfig["MULTIPLELOG_MODE"]] = execute_data["MULTIPLELOG_MODE"]
+        if "LOGFILELIST_JSON" in execute_data:
+            ExecStsInstTableConfig[RestNameConfig["LOGFILELIST_JSON"]] = execute_data["LOGFILELIST_JSON"]
+
+    # 最終更新日時
+    # MSG-00005対応で最終更新日時を取得
+    sql = "SELECT LAST_UPDATE_TIMESTAMP FROM {} WHERE EXECUTION_NO = %s".format(TableDict["TABLE"][driver_id])
+    rows = wsDb.sql_execute(sql, [execution_no])
+    row = rows[0]
+    ExecStsInstTableConfig[RestNameConfig["LAST_UPDATE_TIMESTAMP"]] = row['LAST_UPDATE_TIMESTAMP'].strftime('%Y/%m/%d %H:%M:%S.%f')
+
+    parameters = {
+        "parameter": ExecStsInstTableConfig,
+        "type": "Update"
+    }
+    objmenu = load_table.loadTable(wsDb, MenuName)
+    if db_update_need_no_jnl is True:
+        objmenu.set_history_flg(False)
+    retAry = objmenu.exec_maintenance(parameters, execution_no, "", False, False, True, record_file_paths=uploadfiles)
+    result = retAry[0]
+    if result is False:
+        return False, str(retAry)
+    else:
+        return True, ""

@@ -15,7 +15,7 @@
 #
 set -eu
 
-if [ $# -eq 3 ]; then
+if [ $# -eq 4 ]; then
     export ENVFILEPATH=$1
     export PYTHONPATH=$2/
     export STORAGEPATH=$3

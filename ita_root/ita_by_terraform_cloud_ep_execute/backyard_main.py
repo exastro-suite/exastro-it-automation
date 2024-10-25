@@ -39,9 +39,6 @@ def backyard_main(organization_id, workspace_id):
     # メイン処理開始
     g.applogger.debug(g.appmsg.get_log_message("BKY-00001"))
 
-    # DB接続
-    objdbca = DBConnectWs(workspace_id)  # noqa: F405
-
     error_flag = False
 
     # メンテナンスモードのチェック
@@ -65,6 +62,9 @@ def backyard_main(organization_id, workspace_id):
         g.applogger.error(g.appmsg.get_log_message("BKY-00008", []))
         return
 
+    # DB接続
+    objdbca = DBConnectWs(workspace_id)  # noqa: F405
+
     # 「未実行」「未実行(予約)」の作業インスタンスを取得し、ステータスを「準備中」に変更する
     if skip_flag is False:
         retBool = instance_prepare(objdbca)
@@ -80,6 +80,8 @@ def backyard_main(organization_id, workspace_id):
     retBool = instance_check(objdbca)
     if retBool is False:
         error_flag = True
+
+    objdbca.db_disconnect()
 
     if error_flag is False:
         # 正常終了

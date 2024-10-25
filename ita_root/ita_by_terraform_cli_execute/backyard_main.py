@@ -82,6 +82,8 @@ def main_logic(organization_id, workspace_id):
     if retBool is False:
         return False
 
+    wsDb.db_disconnect()
+
     return True
 
 

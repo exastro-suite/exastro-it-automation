@@ -925,11 +925,15 @@ def organization_update(organization_id, body=None):  # noqa: E501
                     t = traceback.format_exc()
                     g.applogger.error("The problem is occured in MongoDB.See below logs...(organization_id='{}' workspace_id='{}')".format(organization_id, workspace_id))
                     g.applogger.error(arrange_stacktrace_format(t))
+                finally:
+                    ws_mongo.disconnect()
 
                 g.db_connect_info.pop("WS_MONGO_CONNECTION_STRING")
                 g.db_connect_info.pop("WS_MONGO_DATABASE")
                 g.db_connect_info.pop("WS_MONGO_USER")
                 g.db_connect_info.pop("WS_MONGO_PASSWORD")
+
+            ws_db.db_disconnect()
 
         # t_comn_organization_db_infoテーブルのMONGODB接続情報, NO_INSTALL_DRIVERを更新する
         if len(update_no_install_driver) > 0:
@@ -956,6 +960,8 @@ def organization_update(organization_id, body=None):  # noqa: E501
             org_db.db_disconnect()
         if 'org_mongo' in locals():
             org_mongo.disconnect()
+        if 'ws_db' in locals():
+            ws_db.disconnect()
         if 'ws_mongo' in locals():
             ws_mongo.disconnect()
 

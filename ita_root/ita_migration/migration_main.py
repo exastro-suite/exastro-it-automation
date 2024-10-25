@@ -111,6 +111,7 @@ def __migration_main(version):
 
         g.applogger.info("[Trace] Begin BASE migrate.")
         worker.migrate()
+        common_db.db_disconnect()
         g.applogger.info("[Trace] End BASE migrate.")
 
     org_list = util.get_organization_ids()
@@ -129,6 +130,7 @@ def __migration_main(version):
 
             g.applogger.info("[Trace] Begin ORG migrate.")
             org_worker.migrate()
+            org_db.db_disconnect()
             g.applogger.info("[Trace] End ORG migrate.")
 
         ws_id_list = util.get_workspace_ids(organization_id)
@@ -144,6 +146,7 @@ def __migration_main(version):
 
                 g.applogger.info("[Trace] Begin WS migrate.")
                 ws_worker.migrate()
+                ws_db.db_disconnect()
                 g.applogger.info("[Trace] End WS migrate.")
 
             del g.WORKSPACE_ID

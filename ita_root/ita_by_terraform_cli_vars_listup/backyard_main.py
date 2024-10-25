@@ -70,5 +70,6 @@ def backyard_main(organization_id, workspace_id):
         # トランザクション終了(正常)
         objdbca.db_transaction_end(True)
 
+    objdbca.db_disconnect()
     # 終了
     return

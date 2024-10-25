@@ -493,6 +493,7 @@ def backyard_main(organization_id, workspace_id):
         raise Exception(e)
 
     finally:
+        dbAccess.db_disconnect()
         dbAccess = None
         restApiCaller = None
 

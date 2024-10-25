@@ -159,6 +159,7 @@ def backyard_child_main(organization_id, workspace_id):
     finally:
         # /tmpをゴミ掃除
         rmAnsibleCreateFiles()
+        wsDb.db_disconnect()
 
 
 def update_status_error(wsDb: DBConnectWs, ansConstObj, execution_no):

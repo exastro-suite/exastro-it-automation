@@ -53,9 +53,6 @@ def backyard_main(organization_id, workspace_id):
     g.applogger.debug(debug_msg)
 
     try:
-        # DB接続
-        objdbca = DBConnectWs(workspace_id)  # noqa: F405
-
         # インポート実行用のアップロードID
         upload_id = ""
 
@@ -78,6 +75,9 @@ def backyard_main(organization_id, workspace_id):
             # エラーログ出力
             g.applogger.error(g.appmsg.get_log_message("BKY-00008", []))
             return
+
+        # DB接続
+        objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
         # 未実行のレコードを取得する
         ret = objdbca.table_select("T_BULK_EXCEL_EXPORT_IMPORT", 'WHERE STATUS = %s AND DISUSE_FLAG = %s', [1, 0])
@@ -397,4 +397,7 @@ def backyard_main(organization_id, workspace_id):
 
         # ステータスを完了(異常)に更新
         util.setStatus(task['EXECUTION_NO'], STATUS_FAILURE, objdbca)
+    finally:
+        objdbca.db_disconnect()
+
     return

@@ -98,6 +98,8 @@ def backyard_child_main(organization_id, workspace_id):
         g.applogger.debug(g.appmsg.get_log_message("MSG-10722", [execution_no, tf_workspace_id]))
 
         raise e
+    finally:
+        wsDb.db_disconnect()
 
 
 def main_logic(wsDb: DBConnectWs):  # noqa: C901

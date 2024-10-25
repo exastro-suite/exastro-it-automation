@@ -62,11 +62,6 @@ def backyard_main(organization_id, workspace_id):
         RETURN:
 
     """
-    # DB接続
-    tmp_msg = 'db connect'
-    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-    objdbca = DBConnectWs(workspace_id)  # noqa: F405
-
     # メイン処理開始
     debug_msg = g.appmsg.get_log_message("BKY-20001", [])
     g.applogger.debug(debug_msg)
@@ -84,6 +79,11 @@ def backyard_main(organization_id, workspace_id):
         t = traceback.format_exc()
         g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         return
+
+    # DB接続
+    tmp_msg = 'db connect'
+    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+    objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
     try:
         strage_path = os.environ.get('STORAGEPATH')
@@ -223,6 +223,8 @@ def backyard_main(organization_id, workspace_id):
             g.applogger.debug(f"clear {tmp_workspace_path}")
             shutil.rmtree(tmp_workspace_path)
             os.makedirs(tmp_workspace_path)
+
+        objdbca.db_disconnect()
 
     # メイン処理終了
     debug_msg = g.appmsg.get_log_message("BKY-20002", [])
@@ -2574,6 +2576,7 @@ def get_import_config(execution_no_path):
     no_install_driver = [] if no_install_driver_tmp is None or \
         len(no_install_driver_tmp) == 0 else json.loads(no_install_driver_tmp)
     import_config["no_install_driver"] = no_install_driver
+    org_db.db_disconnect()
 
     g.applogger.info(f"{import_config=}")
 

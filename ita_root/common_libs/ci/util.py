@@ -120,6 +120,7 @@ def wrapper_job(main_logic, organization_id=None, workspace_id=None, loop_count=
                 exception(e)
 
         if count >= max:
+            common_db.db_disconnect()
             break
         else:
             count = count + 1
@@ -141,6 +142,8 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
         workspace_info_list = org_db.table_select('T_COMN_WORKSPACE_DB_INFO', 'WHERE `DISUSE_FLAG`=0 ORDER BY `LAST_UPDATE_TIMESTAMP`')
     else:
         workspace_info_list = org_db.table_select("T_COMN_WORKSPACE_DB_INFO", "WHERE `DISUSE_FLAG`=0 AND `WORKSPACE_ID`=%s", [workspace_id])  # noqa: E501
+
+    org_db.db_disconnect()
 
     for workspace_info in workspace_info_list:
         # set applogger.set_level: default:INFO / Use ITA_DB config value

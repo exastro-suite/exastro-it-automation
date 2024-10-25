@@ -74,7 +74,7 @@ class LabeledEventCollection(CollectionBase):
                 tmp_value = ObjectId(value)
             except Exception:
                 msg_tmp = {0: {}}
-                # ObjectId: Only exact match search is possible for object ID. (Input value:{})
+                # Only perfect match is possible when searching for object ID. (Input value:{})
                 msg_tmp[0][column_name_dict["11010401"]] = [g.appmsg.get_api_message("499-01824", [value])]
                 msg = json.dumps(msg_tmp, ensure_ascii=False)
                 raise AppException("499-00201", [msg], [msg])
@@ -144,7 +144,7 @@ class LabeledEventCollection(CollectionBase):
                             raise Exception
             except Exception:
                 msg_tmp = {0: {}}
-                # Please search in the format of object ID.
+                # Please search using Object ID format.
                 msg_tmp[0][column_name_dict["11010409"]] = [g.appmsg.get_api_message("499-01825")]
                 msg = json.dumps(msg_tmp, ensure_ascii=False)
                 raise AppException("499-00201", [msg], [msg])
@@ -190,7 +190,7 @@ class LabeledEventCollection(CollectionBase):
                 tmp_value = ObjectId(value)
             except Exception:
                 msg_tmp = {0: {}}
-                # ObjectId: Only exact match search is possible for object ID. (Input value:{})
+                # Only perfect match is possible when searching for object ID. (Input value:{})
                 msg_tmp[0][column_name_dict["11010401"]] = [g.appmsg.get_api_message("499-01824", [value])]
                 msg = json.dumps(msg_tmp, ensure_ascii=False)
                 raise AppException("499-00201", [msg], [msg])
@@ -227,7 +227,7 @@ class LabeledEventCollection(CollectionBase):
                 tmp_value = json.loads(value)
             except Exception:
                 msg_tmp = {0: {}}
-                # Please search in the format of object ID.
+                # Please search using Object ID format.
                 msg_tmp[0][column_name_dict["11010409"]] = [g.appmsg.get_api_message("499-01825")]
                 msg = json.dumps(msg_tmp, ensure_ascii=False)
                 raise AppException("499-00201", [msg], [msg])

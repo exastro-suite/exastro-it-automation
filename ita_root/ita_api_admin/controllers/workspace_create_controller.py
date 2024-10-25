@@ -110,7 +110,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
                 # OASEが有効かつ、環境変数「MONGO_HOST」と「MONGO_CONNECTION_STRING」両方に値が無い場合は、workspace作成をできないようにする。
                 org_db.db_disconnect()
                 org_root_db.db_disconnect()
-                # The OASE driver cannot be added because the MongoDB host is not set in the environment variables.
+                # The OASE driver cannot be added because no MongoDB host is set in the environment variables.
                 return '', g.appmsg.get_api_message("490-02015", []), "490-02015", 490
 
             # make workspace-mongo connect infomation

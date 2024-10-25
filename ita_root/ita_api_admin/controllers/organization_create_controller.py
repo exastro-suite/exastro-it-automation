@@ -961,7 +961,7 @@ def organization_update(organization_id, body=None):  # noqa: E501
         if 'org_mongo' in locals():
             org_mongo.disconnect()
         if 'ws_db' in locals():
-            ws_db.disconnect()
+            ws_db.db_disconnect()
         if 'ws_mongo' in locals():
             ws_mongo.disconnect()
 

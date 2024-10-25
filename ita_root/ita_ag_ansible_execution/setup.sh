@@ -922,7 +922,7 @@ poetry_install(){
     echo ""
     cd "${default_env_values['PYTHONPATH']}"
     # poetry
-    pip3 install poetry==$POETRY_VERSION
+    sudo pip3 install poetry==$POETRY_VERSION
     # poetry config --local virtualenvs.in-project true ###
     poetry config virtualenvs.in-project true ###
     poetry config virtualenvs.create true
@@ -998,6 +998,7 @@ install_agent_source(){
         podman unshare chown ${EXASTRO_UID}:${EXASTRO_GID} "${source_path}"
         sudo chcon -R -h -t container_file_t "${base_path}"
     elif [ "${DEP_PATTERN}" = "AlmaLinux8" ]; then
+        HOST_DOCKER_GID=$(grep docker /etc/group|awk -F':' '{print $3}')
         sudo chown -R ${EXASTRO_UID}:${HOST_DOCKER_GID} "${source_path}"
     fi
 
@@ -1005,6 +1006,11 @@ install_agent_source(){
         info "sudo chmod 755 ${source_path}/${xadd_source_paths[${xadd_key}]}"
         sudo chmod 755 ${source_path}/${xadd_source_paths[${xadd_key}]}
     done
+
+    if [ "${DEP_PATTERN}" = "AlmaLinux8" ]; then
+        echo "${source_path}/agent/entrypoint.sh"
+        sudo chcon -R -h -t bin_t "${source_path}/agent/entrypoint.sh"
+    fi
 
     info "install_agent_source end"
 }
@@ -1439,6 +1445,9 @@ uninstall(){
             uninstall_service
             ;;
         3 )
+            S_NAME=${default_env_values['STORAGE_PATH']}
+            SERVICE_NAME=${S_NAME##*/}
+            default_env_values['SERVICE_NAME']="ita-ag-ansible-execution-${SERVICE_NAME}"
             uninstall_data
             ;;
         * )
@@ -1470,11 +1479,11 @@ uninstall_service(){
 
 uninstall_data(){
     SERVICE_NAME="${default_env_values['SERVICE_NAME']}"
-    SERVICE_ID=${SERVICE_NAME/ita-agent-ansible-execution-/}
+    SERVICE_ID=${SERVICE_NAME/ita-ag-ansible-execution-/}
     # STORAGE_PATH="/home/almalinux/exastro/${SERVICE_ID}/storage/"
     STORAGE_PATH="${default_env_values['STORAGE_PATH']}"
     if [[ "$STORAGE_PATH" == *"$SERVICE_ID"* ]]; then
-        shift
+        echo ""
     else
         error "no exist SERVICE_ID storage path: ${STORAGE_PATH}"
         exit 2
@@ -1485,7 +1494,7 @@ uninstall_data(){
         rm -rfd  ${STORAGE_PATH}
     else
         info "rm -rd ${STORAGE_PATH}"
-        rm -rfd  ${STORAGE_PATH}
+        sudo rm -rfd  ${STORAGE_PATH}
     fi
 }
 #########################################

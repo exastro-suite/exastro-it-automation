@@ -22,8 +22,6 @@ from flask import g
 from common_libs.common import *  # noqa: F403
 from common_libs.common.storage_access import storage_read, storage_write
 from common_libs.ag.util import app_exception, exception
-from common_libs.ansible_driver.functions.util import get_OSTmpPath
-from common_libs.ansible_driver.functions.util import rmAnsibleCreateFiles
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_execution.encrypt import agent_decrypt
 from agent.libs.exastro_api import Exastro_API
@@ -47,8 +45,6 @@ def agent_child_main():
 
     # MSG-10720 [処理]プロシージャ開始 (作業No.:{})
     g.applogger.debug(g.appmsg.get_log_message("MSG-10720", [execution_no]))
-
-    g.AnsibleCreateFilesPath = "{}/Ansible_{}".format(get_OSTmpPath(), execution_no) #####
 
     try:
         agent_child()

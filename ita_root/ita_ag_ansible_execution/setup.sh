@@ -900,9 +900,17 @@ create_env(){
     echo ""
     info "create_env :${DEP_PATTERN} start"
 
-    which_poetry=`which poetry`
-    poetry_path="`ls ${which_poetry}`"" run python3"
-    default_env_values["PYTHON_CMD"]=$poetry_path
+    if [ "${DEP_PATTERN}" = "RHEL8" ] || [ "${DEP_PATTERN}" = "RHEL9" ]; then
+        which_poetry=`which poetry`
+        poetry_path="`ls ${which_poetry}`"" run python3"
+        default_env_values["PYTHON_CMD"]=$poetry_path
+    else
+        sudo /usr/bin/python3 -m pip install poetry==1.6.0
+        which_poetry=`which poetry`
+        poetry_path="`ls ${which_poetry}`"" run python3"
+        # poetry_path="/usr/local/bin/poetry run python3"
+        default_env_values["PYTHON_CMD"]=$poetry_path
+    fi
 
     # .env crate
     for env_key in "${output_env_values[@]}"; do
@@ -929,9 +937,16 @@ init_appdir(){
 
 poetry_install(){
     echo ""
+
+    if [ "${DEP_PATTERN}" = "RHEL8" ] || [ "${DEP_PATTERN}" = "RHEL9" ]; then
+        echo ""
+    else
+        sudo /usr/bin/python3 -m pip install poetry==1.6.0
+    fi
+
     cd "${default_env_values['PYTHONPATH']}"
     # poetry
-    sudo pip3 install poetry==$POETRY_VERSION
+    pip3 install poetry==$POETRY_VERSION
 
     poetry config virtualenvs.in-project true
     poetry config virtualenvs.create true
@@ -1158,7 +1173,7 @@ _EOF_
     sudo cp -p ${SERVICE_PATH} /usr/lib/systemd/system/
     info "sudo systemctl daemon-reload"
     sudo systemctl daemon-reload
-    info "systemctl enable ${default_env_values['AGENT_NAME']}"
+    info "sudo systemctl enable ${default_env_values['AGENT_NAME']}"
     sudo systemctl enable "${default_env_values['AGENT_NAME']}"
 
     read -r -p  "${interactive_llist['SERVICE_MSG_START']}" confirm
@@ -1167,7 +1182,7 @@ _EOF_
         info "systemctl daemon-reload & enable ${default_env_values['AGENT_NAME']}"
         info "Run manually!!! : systemctl start ${default_env_values['AGENT_NAME']}"
     else
-        info "systemctl start ${default_env_values['AGENT_NAME']}"
+        info "sudo systemctl start ${default_env_values['AGENT_NAME']}"
         sudo systemctl start "${default_env_values['AGENT_NAME']}"
     fi
 

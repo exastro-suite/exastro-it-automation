@@ -177,7 +177,7 @@ services:
       retries: 200
     environment:
       - TZ=Asia/Tokyo
-      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
       # - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
       # - MYSQL_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
       # - MARIADB_DATABASE=${MARIADB_DATABASE}

@@ -193,56 +193,56 @@ additional_env_keys=(
 declare -A interactive_llist=(
     # msg
     # install
-    ["INSTALL_TYPE_MSG0"]="実施する処理を選択してください。"
-    ["INSTALL_TYPE_MSG1"]="    1: ENVの作成 + インストール(dnf, pip, ソース配置) + サービスの登録"
-    ["INSTALL_TYPE_MSG2"]="    2: ENVの作成 + サービスの登録"
-    ["INSTALL_TYPE_MSG3"]="    3: サービスの登録"
-    ["INSTALL_TYPE_MSG4"]="    4: Envの作成"
-    ["INSTALL_TYPE_MSGq"]="    q: インストーラ終了"
-    ["INSTALL_TYPE_MSGr"]="select value: (1, 2, 3, q)  :"
-    ["INVALID_VALUE_IT"]="Invalid value!! (1, 2, 3, q)"
-    ["_TOP_MSG"]="以降、default値有りで、「未入力+Enter」の場合は、default値が適用されます。"
+    ["INSTALL_TYPE_MSG0"]="Please select which process to execute."
+    ["INSTALL_TYPE_MSG1"]="    1: Create ENV, Install, Register service"
+    ["INSTALL_TYPE_MSG2"]="    2: Create ENV, Register service"
+    ["INSTALL_TYPE_MSG3"]="    3: Register service"
+    ["INSTALL_TYPE_MSG4"]="    4: Create Env"
+    ["INSTALL_TYPE_MSGq"]="    q: Quit installer"
+    ["INSTALL_TYPE_MSGr"]="select value: (1, 2, 3, 4, q)  :"
+    ["INVALID_VALUE_IT"]="Invalid value!! (1, 2, 3, 4, q)"
+    ["_TOP_MSG"]="'No value + Enter' is input while default value exists, the default value will be used."
     ["INVALID_VALUE_YN"]="Invalid value!! (y/n)"
     ["INVALID_VALUE_AS"]="Invalid value!! (1, 2)"
     ["INVALID_VALUE_E1"]="Invalid value!! [0-9a-zA-Z-_]"
     ["INVALID_VALUE_URL"]="Invalid URL format"
-    ["INVALID_SETUP_VERSION"]="指定したバージョンが不正です。"
-    ["SERVICE_MSG_START"]="エージェントのサービスを開始しますか? (y/n)"
-    ["INVALID_VALUE_F_ENV"]=".envファイルが存在しません。パスを確認してください。"
+    ["INVALID_SETUP_VERSION"]="The specified version is invalid."
+    ["SERVICE_MSG_START"]="Do you want to start the Agent service? (y/n)"
+    ["INVALID_VALUE_F_ENV"]="No .env exists. Check the path and try again."
     # uninstall
-    ["UNINSTALL_TYPE_MSG0"]="実施する処理を選択してください。"
-    ["UNINSTALL_TYPE_MSG1"]="    1: サービスの削除＋データの削除"
-    ["UNINSTALL_TYPE_MSG2"]="    2: サービスの削除"
-    ["UNINSTALL_TYPE_MSG3"]="    3: データの削除"
-    ["UNINSTALL_TYPE_MSGq"]="    q: アンインストール終了"
+    ["UNINSTALL_TYPE_MSG0"]="Please select which process to execute."
+    ["UNINSTALL_TYPE_MSG1"]="    1: Delete service, Delete Data"
+    ["UNINSTALL_TYPE_MSG2"]="    2: Delete service"
+    ["UNINSTALL_TYPE_MSG3"]="    3: Delete Data"
+    ["UNINSTALL_TYPE_MSGq"]="    q: Quit uninstaller"
     ["UNINSTALL_TYPE_MSGr"]="select value: (1, 2, 3, q)  :"
-    ["SERVICE_ID"]="SERVICE_IDを入力してください。"
-    ["STORAGE_PATH"]="STORAGE_PATHを入力してください。"
+    ["SERVICE_ID"]="Input SERVICE_ID."
+    ["STORAGE_PATH"]="Input STORAGE_PATH."
 
-    # 環境情報
-    ["AGENT_SERVICE_ID_YN"]="エージェントのサービス名は、ita-agent-ansible-execution-${SERVICE_ID}です。個別に指定する場合は、「n」を選択して指定ください。(y/n) "
-    ["AGENT_SERVICE_ID"]="エージェントのサービス名を入力してください。ita-agent-ansible-execution-が接頭に付与されます。"
-    ["AGENT_VERSION"]="エージェントバージョンを入力してください。タグ指定: X.Y.Z, ブランチ指定: X.Y [default: 未入力+Enter(最新のリリースバージョン)]"
-    ["INSTALLPATH"]="インストール先をフルパスで指定してください。"
-    ["DATAPATH"]="データ保存先をフルパスで指定してください。"
-    ["ANSIBLE_SUPPORT"]="利用するAnsible-builder, Ansible-runnerを選択してください。(1, 2) [1=Ansible 2=Red Hat Ansible Automation Platform] "
-    ["EXASTRO_URL"]="ITAへの接続先URLを入力してください。"
-    ["EXASTRO_ORGANIZATION_ID"]="ORGANIZATION_IDを入力してください。"
-    ["EXASTRO_WORKSPACE_ID"]="WORKSPACE_IDを入力してください。"
-    ["EXASTRO_REFRESH_TOKEN"]="ITAへログイン可能なユーザーのREFRESH_TOKENを入力してください。ここで入力しない場合、生成された.envファイルのEXASTRO_REFRESH_TOKENを変更してください。"
-    # ["EXECUTION_ENVIRONMENT_NAMES"]="実行環境を入力してください。参照：Ansible共通->実行環境管理->実行環境名 複数の場合は「,」区切りで入力 ex) ag01,ag02"
-    # サービス登録のみ
-    ["REFERENCE_ENVPATH"]=".envファイルのフルパス入力してください。"
-    # ソース先重複
-    ["SOURCE_UPDATE"]="インストール先に、既にソースが存在します。クリアして、インストールしますか？ (y:再インストール/n:インストールせずに、次の処理へ)  (y/n)"
-    ["SOURCE_UPDATE_E1"]="※登録済みのサービスが存在する場合、再インストールすると動作に影響が発生する可能性があります。(y/n): "
-    # アンインストール
-    ["SERVICE_NAME"]="SERVICE_NAMEを入力してください。(e.g. ita-agent-ansible-execution-xxxxxxxxxxxxx)"
-    ["STORAGE_PATH"]="STORAGE_PATHを入力してください。(e.g. /${HOME}${BASE_DIR}/<SERVICE_ID>"
+    # install env
+    ["AGENT_SERVICE_ID_YN"]="The Agent service name is in the following format: ita-agent-ansible-execution-${SERVICE_ID}. Select "n" to specify individual names. (y/n)"
+    ["AGENT_SERVICE_ID"]="Input the Agent service name . The string "ita-agent-ansible-execution-" is added to the start of the name."
+    ["AGENT_VERSION"]="Input the version of the Agent. Tag specification: X.Y.Z, Branch specification: X.Y [default: No Input+Enter(Latest release version)]"
+    ["INSTALLPATH"]="Specify full path for the install location."
+    ["DATAPATH"]="Specify full path for the data storage location."
+    ["ANSIBLE_SUPPORT"]="Select which Ansible-builder and/or Ansible-runner to use(1, 2) [1=Ansible 2=Red Hat Ansible Automation Platform] "
+    ["EXASTRO_URL"]="Input the ITA connection URL."
+    ["EXASTRO_ORGANIZATION_ID"]="Input ORGANIZATION_ID."
+    ["EXASTRO_WORKSPACE_ID"]="Input WORKSPACE_ID."
+    ["EXASTRO_REFRESH_TOKEN"]="Input a REFRESH_TOKEN for a user that can log in to ITA. If the token cannot be input here, change the EXASTRO_REFRESH_TOKEN in the generated .env file."
+
+    # service register
+    ["REFERENCE_ENVPATH"]="Input the full path for the .env file."
+    # source check
+    ["SOURCE_UPDATE"]="A source already exists in the installation destination. Do you want to delete it and re-install?  (y:Re-install/n:Move to the next process without installing) (y/n)"
+    ["SOURCE_UPDATE_E1"]="※If a registered service already exists with a different version, the existing service might be affected.(y/n): "
+    # uninstall service
+    ["SERVICE_NAME"]="Input a SERVICE_NAME.(e.g. ita-agent-ansible-execution-xxxxxxxxxxxxx)"
+    ["STORAGE_PATH"]="Input a STORAGE_PATH.(e.g. /${HOME}${BASE_DIR}/<SERVICE_ID>)"
 )
 
 declare -A interactive_llist_adv=(
-    ["EXASTRO_REFRESH_TOKEN_1"]="後ほど、生成された.envファイルのEXASTRO_REFRESH_TOKENを変更してください。"
+    ["EXASTRO_REFRESH_TOKEN_1"]="Make sure to change the EXASTRO_REFRESH_TOKEN in the generated .env file."
 )
 
 #########################################
@@ -768,7 +768,9 @@ inquiry_env(){
     info "inquiry_env :${DEP_PATTERN} start"
 
     echo "${interactive_llist['_TOP_MSG']}"
-    read -r -p "->  Enterで開始" tmp_value
+    read -r -p "->  Enter" tmp_value
+    echo ""
+    echo ""
 
     for env_key in "${additional_env_keys[@]}"; do
         while true; do
@@ -777,7 +779,10 @@ inquiry_env(){
             fi
 
             echo "${interactive_llist[${env_key}]}: "
-            if [ -n "${default_env_values[${env_key}]}" ] && [ "${default_env_values[${env_key}]}" != "" ]; then
+            if [ "${env_key}" = "EXASTRO_REFRESH_TOKEN" ];then
+                read -sp "Input Value [default: ${default_env_values[${env_key}]} ]: " tmp_value
+                echo ""
+            elif [ -n "${default_env_values[${env_key}]}" ] && [ "${default_env_values[${env_key}]}" != "" ]; then
                 read -r -p "Input Value [default: ${default_env_values[${env_key}]} ]: " tmp_value
                 echo ""
             else
@@ -853,7 +858,7 @@ inquiry_env(){
         default_env_values['AGENT_SERVICE_ID']="${SERVICE_ID}"
     fi
 
-    # PATH関連
+    # PATH
     default_env_values["APP_PATH"]=${default_env_values["INSTALLPATH"]}
     default_env_values["PYTHONPATH"]=${default_env_values["INSTALLPATH"]}/ita_ag_ansible_execution
     default_env_values["AGENT_NAME"]="ita-ag-ansible-execution-${default_env_values['AGENT_SERVICE_ID']}"
@@ -895,7 +900,11 @@ create_env(){
     echo ""
     info "create_env :${DEP_PATTERN} start"
 
-    # .env作成
+    which_poetry=`which poetry`
+    poetry_path="`ls ${which_poetry}`"" run python3"
+    default_env_values["PYTHON_CMD"]=$poetry_path
+
+    # .env crate
     for env_key in "${output_env_values[@]}"; do
         echo -e "${env_key}=${default_env_values[${env_key}]}" >> ${ENV_TMP_PATH}
     done
@@ -923,16 +932,12 @@ poetry_install(){
     cd "${default_env_values['PYTHONPATH']}"
     # poetry
     sudo pip3 install poetry==$POETRY_VERSION
-    # poetry config --local virtualenvs.in-project true ###
-    poetry config virtualenvs.in-project true ###
+
+    poetry config virtualenvs.in-project true
     poetry config virtualenvs.create true
     poetry install --only first_install
     poetry install --without develop_build
 
-    which_poetry=`which poetry`
-    poetry_path=`ls ${which_poetry}`
-    default_env_values["PYTHON_CMD"]="${poetry_path} run python3"
-    echo ${default_env_values["PYTHON_CMD"]}
 }
 
 ansible_additional_install(){
@@ -1028,6 +1033,7 @@ install_agent_service(){
         podman unshare chown ${EXASTRO_UID}:${EXASTRO_GID} "${STORAGE_PATH}/"
         sudo chcon -R -h -t container_file_t "${default_env_values["DATAPATH"]}"
     elif [ "${DEP_PATTERN}" = "AlmaLinux8" ]; then
+        HOST_DOCKER_GID=$(grep docker /etc/group|awk -F':' '{print $3}')
         sudo chown -R ${EXASTRO_UID}:${HOST_DOCKER_GID} "${STORAGE_PATH}/"
     fi
 
@@ -1101,8 +1107,6 @@ WantedBy=default.target
 
 _EOF_
 
-    #*****
-    #
     info "cp -p ${SERVICE_PATH}  ${HOME}/.config/systemd/user/"
     cat "${SERVICE_PATH}"
     sudo cp -p ${SERVICE_PATH}  ${HOME}/.config/systemd/user/
@@ -1148,7 +1152,7 @@ Restart=always
 WantedBy=default.target
 
 _EOF_
-    #*****
+
     info "cp -p ${SERVICE_PATH} /usr/lib/systemd/system/"
     cat "${SERVICE_PATH}"
     sudo cp -p ${SERVICE_PATH} /usr/lib/systemd/system/
@@ -1229,38 +1233,37 @@ install(){
 }
 install_all(){
 
-    # 設定の入力
+    # interactive
     inquiry_env
 
-    # dnfインストール:
+    # dnf install:
     dnf_install
 
     # Installation container engine
     installation_container_engine
 
-    # 作業領域のセットアップ
+    # init workdir
     init_workdir
-
 
     # Git Clone
     git_clone
 
-    # agentインストール
+    # agent install
     install_agent_source
 
-    # pipインストール: poetry
+    # pip install: poetry
     poetry_install
 
-    # .envファイルの作成
+    # create .env
     create_env
 
-    # ansibleインストール: redhat
+    # ansible runner/builder install: [ANSIBLE_SUPPORT!=1]
     ansible_additional_install
 
-    # service
+    # service register
     install_agent_service
 
-    # 作業領域の削除
+    # clean workdir
     clean_workdir
 }
 
@@ -1274,19 +1277,19 @@ install_env_service(){
         "EXASTRO_WORKSPACE_ID"
         "EXASTRO_REFRESH_TOKEN"
     )
-    # 設定の入力
+    # interactive
     inquiry_env
 
-    # 作業領域のセットアップ
+    # init workdir
     init_workdir
 
-    # .envファイルの作成
+    # acreate .env
     create_env
 
-    # service
+    # service register
     install_agent_service
 
-    # 作業領域の削除
+    # acclean workdir
     clean_workdir
 }
 install_service(){
@@ -1294,19 +1297,19 @@ install_service(){
         "AGENT_SERVICE_ID"
         "REFERENCE_ENVPATH"
     )
-    # 設定の入力
+    # interactive
     inquiry_env
 
-    # 作業領域のセットアップ
+    # init workdir
     init_workdir
 
-    # envから、設定値取得
+    # get env value
     set_vars_for_env
 
-    # service
+    # service register
     install_agent_service
 
-    # 作業領域の削除
+    # acclean workdir
     clean_workdir
 }
 
@@ -1317,25 +1320,25 @@ install_source(){
         "ANSIBLE_SUPPORT"
     )
 
-    # 設定の入力
+    # interactive
     inquiry_env
 
-    # 作業領域のセットアップ
+    # init workdir
     init_workdir
 
     # Git Clone
     git_clone
 
-    # agentインストール
+    # agent install
     install_agent_source
 
-    # pipインストール: poetry
+    # pip install: poetry
     poetry_install
 
-    # ansibleインストール: redhat
+    # ansible runner/builder install: [ANSIBLE_SUPPORT!=1]
     ansible_additional_install
 
-    # 作業領域の削除
+    # acclean workdir
     clean_workdir
 }
 
@@ -1349,12 +1352,12 @@ create_envfile(){
         "EXASTRO_WORKSPACE_ID"
         "EXASTRO_REFRESH_TOKEN"
     )
-    # 設定の入力
+    # interactive
     inquiry_env
 
     ENV_TMP_PATH="./${default_env_values['AGENT_SERVICE_ID']}.env"
 
-    # .envファイルの作成
+    # acreate .env
     create_env
 
 }
@@ -1501,7 +1504,7 @@ uninstall_data(){
 # Main functions
 #########################################
 main() {
-    # 引数チェック
+    # check args
     check_args "$#"
 
     SUB_COMMAND=$1
@@ -1513,7 +1516,7 @@ main() {
     fi
 
     get_system_info
-    # モード判定
+    # check install/uninstall
     case "$SUB_COMMAND" in
         install)
             shift

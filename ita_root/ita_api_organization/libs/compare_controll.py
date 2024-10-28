@@ -29,8 +29,8 @@ import unicodedata
 import shutil
 import traceback
 
-import dictdiffer
 import difflib
+from deepdiff import DeepDiff
 
 import openpyxl
 
@@ -820,20 +820,27 @@ def _execute_compare_data(objdbca, compare_config, options, file_required=False)
                 # target only
                 tmp_target_data_1 = {k: v for k, v in target_data_1.items() if k not in negative_key}
                 tmp_target_data_2 = {k: v for k, v in target_data_2.items() if k not in negative_key}
+
                 # diff 全体
-                result_dictdiffer = list(dictdiffer.diff(tmp_target_data_1, tmp_target_data_2))
+                result_deepdiff = DeepDiff(tmp_target_data_1, tmp_target_data_2)
 
                 tmp_compare_result = False
-                if len(result_dictdiffer) != 0:
+                if len(result_deepdiff) != 0:
                     tmp_compare_result = True
                 else:
                     pass
                 compare_config["result_compare_host"].setdefault(target_host, tmp_compare_result)
 
+                diff_keys_set = set()
+                for diff_type in ["type_changes","dictionary_item_added", "dictionary_item_removed", "values_changed"]:
+                    if diff_type in result_deepdiff:
+                        for key in result_deepdiff[diff_type]:
+                            diff_keys_set.add(key.split("[")[-1].strip("']"))
+                diff_key = list(diff_keys_set)
+
                 # get target rest_key
                 target_data_key = list(target_data_1.keys())
                 target_data_key.extend(list(target_data_2.keys()))
-                diff_key = [i1 for i0, i1, i2 in result_dictdiffer]
 
                 # get file target list
                 file_list_colneme = [tmp_info.get('col_name') for tmp_info in column_info if tmp_info.get("file_flg") is True]
@@ -1755,6 +1762,8 @@ def _set_column_info(objdbca, compare_config, options):
         # detail_flg: True: use T_COMPARE_DETAIL_LIST / False: use T_COMN_MENU_COLUMN_LINK
         if detail_flg is False:
             menu_id = target_menu_info.get("menu_1").get("menu_id")
+            menu_id_2 = target_menu_info.get("menu_2").get("menu_id")
+
             sql_str = textwrap.dedent("""
                 SELECT
                     `TAB_A`.*,
@@ -1772,6 +1781,22 @@ def _set_column_info(objdbca, compare_config, options):
             bind_list = [menu_id]
             # compare_list
             rows = objdbca.sql_execute(sql_str, bind_list)
+
+            sql_str_2 = textwrap.dedent("""
+                SELECT
+                    `TAB_A`.*,
+                    `TAB_B`.`COLUMN_CLASS_NAME`
+                FROM
+                    `T_COMN_MENU_COLUMN_LINK` `TAB_A`
+                LEFT JOIN `T_COMN_COLUMN_CLASS` `TAB_B` ON ( `TAB_A`.`COLUMN_CLASS` = `TAB_B`.`COLUMN_CLASS_ID` )
+                WHERE `TAB_A`.`MENU_ID` = %s
+                AND `TAB_A`.`DISUSE_FLAG` <> 1
+                ORDER BY  `TAB_A`.`COLUMN_DISP_SEQ` ASC
+            """).format().strip()
+            bind_list_2 = [menu_id_2]
+            # compare_list
+            rows_2 = objdbca.sql_execute(sql_str_2, bind_list_2)
+
             if len(rows) >= 1:
                 row = {
                     'COMPARE_DETAIL_ID': 'menu',
@@ -1805,6 +1830,12 @@ def _set_column_info(objdbca, compare_config, options):
                 # for row in tmp_rows:
 
                 for row in rows:
+                    for row_2 in rows_2:
+                        col_key_2 = row_2.get("COLUMN_NAME_REST")
+                        if col_key_2 not in del_parameter_list:
+                            column_class_2 = row_2.get("COLUMN_CLASS")
+                            column_class_2 = row_2.get("COLUMN_CLASS_NAME")
+
                     compare_col_title = "{}/{}".format(
                         row.get("FULL_COL_GROUP_NAME_" + language.upper()),
                         row.get("COLUMN_NAME_" + language.upper())
@@ -1815,7 +1846,7 @@ def _set_column_info(objdbca, compare_config, options):
                         column_class = row.get("COLUMN_CLASS_NAME")
                         # file comapre target flg
                         file_flg = False
-                        if column_class in file_column_list:
+                        if column_class in file_column_list or column_class_2 in file_column_list:
                             compare_config = _set_flg(compare_config, "compare_file", True)
                             file_flg = True
 
@@ -1843,7 +1874,7 @@ def _set_column_info(objdbca, compare_config, options):
                             "no_input_order_flg": no_input_order_flg,
                             "vertical_no_use_flg": vertical_no_use_flg,
                             "column_class_1": column_class,
-                            "column_class_2": column_class
+                            "column_class_2": column_class_2
                         }
                         column_info.append(tmp_column_info)
         else:

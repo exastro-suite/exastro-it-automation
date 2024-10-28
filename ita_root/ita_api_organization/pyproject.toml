@@ -13,7 +13,6 @@ requests = ">=0.0.0"
 pytz = ">=0.0.0"
 pymysql = ">=0.0.0"
 openpyxl = ">=0.0.0"
-dictdiffer = ">=0.0.0"
 pyrsistent = ">=0.0.0"
 flask = "^2.0.0"
 six = ">=0.0.0"
@@ -25,6 +24,7 @@ pycryptodome = ">=0.0.0"
 python-hcl2 = ">=0.0.0"
 cryptography = ">=0.0.0"
 pymongo = ">=0.0.0"
+deepdiff = ">=0.0.0"
 
 
 [tool.poetry.group.first_install.dependencies]

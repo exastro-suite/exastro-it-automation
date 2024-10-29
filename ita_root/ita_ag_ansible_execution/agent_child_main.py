@@ -22,6 +22,7 @@ from flask import g
 from common_libs.common import *  # noqa: F403
 from common_libs.common.storage_access import storage_read, storage_write
 from common_libs.ag.util import app_exception, exception
+from common_libs.ansible_driver.functions.util import get_OSTmpPath
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_execution.encrypt import agent_decrypt
 from agent.libs.exastro_api import Exastro_API
@@ -161,7 +162,7 @@ def agent_child():
         builder_result = True
         try:
             g.applogger.debug(g.appmsg.get_log_message( "MSG-11007", [workspace_id, execution_no]))
-            cmd = ["sh", f"{root_dir_path}/builder_executable_files/builder.sh", "No", "", ""]
+            cmd = ["sh", f"{root_dir_path}/builder_executable_files/builder.sh"]
 
             with open(child_error_log_pass, 'w') as fp:
                 ret = subprocess.run(cmd, check=True, stdout=fp, stderr=subprocess.STDOUT)
@@ -623,7 +624,7 @@ def post_upload_file_and_status(exastro_api, organization_id, workspace_id, exec
     g.applogger.info(g.appmsg.get_log_message("MSG-10994", [workspace_id, execution_no]))
     status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
     if not status_code == 200:
-        return status_code, response, "MSG-10995", [workspace_id, del_executions, status_code, response]
+        return status_code, response, "MSG-10995", [workspace_id, execution_no, status_code, response]
 
     # 作業状態通知送信
     g.applogger.info(g.appmsg.get_log_message("MSG-10990", [workspace_id, execution_no, status]))

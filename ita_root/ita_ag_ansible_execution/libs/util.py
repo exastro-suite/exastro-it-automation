@@ -60,7 +60,7 @@ def get_agent_version():
     Returns:
         agent_version
     """
-    version_file_path = "{}/{}".format(g.get("PYTHONPATH"),"VERSION.txt")
+    version_file_path = "{}{}".format(g.get("PYTHONPATH"),"VERSION.txt")
     if os.path.isfile(version_file_path):
         with open(version_file_path, mode='r') as f:
             agent_version = f.read()
@@ -333,8 +333,8 @@ def arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, stat
     # /out無ければ空で作成しておく
     os.makedirs(out_dir_path) if not os.path.exists(out_dir_path) else None
     # parameters・parameters_file無ければ空で作成しておく
-    os.makedirs(in_dir_path + "/parameter") if not os.path.exists(in_dir_path + "/parameter") else None
-    os.makedirs(in_dir_path + "/parameters_file") if not os.path.exists(in_dir_path + "/parameters_file") else None
+    os.makedirs(in_dir_path + "/_parameters") if not os.path.exists(in_dir_path + "/_parameters") else None
+    os.makedirs(in_dir_path + "/_parameters_file") if not os.path.exists(in_dir_path + "/_parameters_file") else None
     # /conductor無ければ空で作成しておく
     os.makedirs(conductor_dir_path) if not os.path.exists(conductor_dir_path) else None
 
@@ -363,9 +363,9 @@ def arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, stat
 
     # ステータスが完了、完了(異常)、緊急停止場合
     else:
-        parameters_tar_dir_path = tmp_dir_path + "/parameter"
+        parameters_tar_dir_path = tmp_dir_path + "/_parameters"
         parameters_gztar_path = parameters_tar_dir_path + ".tar.gz"
-        parameters_file_tar_dir_path = tmp_dir_path + "/parameters_file"
+        parameters_file_tar_dir_path = tmp_dir_path + "/_parameters_file"
         parameters_file_gztar_path = parameters_file_tar_dir_path + ".tar.gz"
         conductor_tar_dir_path = tmp_dir_path + "/conductor"
         conductor_gztar_path = conductor_tar_dir_path + ".tar.gz"
@@ -389,8 +389,8 @@ def arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, stat
 
 
         # parameters・parameters_fileをtarファイルにまとめる
-        shutil.copytree(in_dir_path + "/parameter", parameters_tar_dir_path, dirs_exist_ok=True)
-        shutil.copytree(in_dir_path + "/parameters_file", parameters_file_tar_dir_path, dirs_exist_ok=True)
+        shutil.copytree(in_dir_path + "/_parameters", parameters_tar_dir_path, dirs_exist_ok=True)
+        shutil.copytree(in_dir_path + "/_parameters_file", parameters_file_tar_dir_path, dirs_exist_ok=True)
         with tarfile.open(parameters_gztar_path, "w:gz") as tar:
             tar.add(parameters_tar_dir_path, arcname="")
         with tarfile.open(parameters_file_gztar_path, "w:gz") as tar:

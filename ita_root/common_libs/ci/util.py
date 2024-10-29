@@ -568,5 +568,5 @@ def set_service_loglevel(common_db=None):
         g.applogger.set_level(loglevel)
 
         # connect inside function
-        if common_db is None:
+        if common_db is None and 'tmp_common_db' in locals():
             tmp_common_db.db_disconnect()

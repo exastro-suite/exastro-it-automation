@@ -1151,7 +1151,10 @@ class CreateAnsibleExecFiles():
                 return False, mt_rolenames, mt_rolevars, mt_roleglobalvars, mt_role_rolepackage_id, mt_def_vars_list, mt_def_array_vars_list
 
             # unner_executable_files配下にstart.sh・stop.sh・alive.shを生成する
-            ret, msgstr = CreateAG_ITARunnerShellFiles(self.lv_objDBCA, self.AnscObj, self.getAnsible_in_runner_files_Dir(), in_execno, movement_row)
+            playbook = "playbook.yml"
+            if self.getAnsibleDriverID() == self.AnscObj.DF_LEGACY_ROLE_DRIVER_ID:
+                playbook = "site.yml"
+            ret, msgstr = CreateAG_ITARunnerShellFiles(self.lv_objDBCA, self.AnscObj, self.getAnsible_in_runner_files_Dir(), in_execno, movement_row, playbook)
             if ret is False:
                 self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
                                    str(inspect.currentframe().f_lineno), msgstr)

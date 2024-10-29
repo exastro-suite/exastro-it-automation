@@ -252,7 +252,7 @@ def CreateAG_ITABuilderShellFiles(objDBCA, AnscObj, out_dir, execution_no, movem
     item['optional_parameters'] = movemrnt_row['AG_BUILDER_OPTIONS']
     # Ansible Egent 実行環境構築方法がITA以外の場合、build時のtag名にworkspace名を付加する
     if execdev_row['BUILD_TYPE'] == AnscConst.DF_AG_BUILD_TYPE_ITA:
-        item['tag_name'] = g.WORKSPACE_ID + "_" + execdev_row['TAG_NAME']
+        item['tag_name'] = g.ORGANIZATION_ID + "_" + g.WORKSPACE_ID + "_" + execdev_row['TAG_NAME']
     else:
         item['tag_name'] = execdev_row['TAG_NAME']
 
@@ -271,7 +271,7 @@ def CreateAG_ITABuilderShellFiles(objDBCA, AnscObj, out_dir, execution_no, movem
     return True, ""
 
 
-def CreateAG_ITARunnerShellFiles(objDBCA, AnscObj, out_dir, execution_no, movemrnt_row):
+def CreateAG_ITARunnerShellFiles(objDBCA, AnscObj, out_dir, execution_no, movemrnt_row, playbook):
     """
       ansible-runnerの実行に必要なshellを作成する。
       Arguments:
@@ -280,6 +280,7 @@ def CreateAG_ITARunnerShellFiles(objDBCA, AnscObj, out_dir, execution_no, movemr
         out_dir:      shell出力先ディレクトリ
         execution_no: 作業番号
         movement_row: Movement対象レコード情報
+        playbook:     親playbook名
       Returns:
         True: 正常
     """
@@ -292,7 +293,7 @@ def CreateAG_ITARunnerShellFiles(objDBCA, AnscObj, out_dir, execution_no, movemr
     execdev_row = rows[0]
     # Ansible Egent 実行環境構築方法がITA以外の場合、build時のtag名にworkspace名を付加する
     if execdev_row['BUILD_TYPE'] == AnscConst.DF_AG_BUILD_TYPE_ITA:
-        ee_tag = g.WORKSPACE_ID + "_" + execdev_row['TAG_NAME']
+        ee_tag = g.ORGANIZATION_ID + "_" + g.WORKSPACE_ID + "_" + execdev_row['TAG_NAME']
     else:
         ee_tag = execdev_row['TAG_NAME']
 
@@ -300,6 +301,8 @@ def CreateAG_ITARunnerShellFiles(objDBCA, AnscObj, out_dir, execution_no, movemr
     item = {}
     item["EXECUTION_NO"] = execution_no
     item["TAG_NAME"] = ee_tag
+    item["PLAYBOOK"] = playbook
+
     # item["PROJECT_BASE_DIR"] = "${PROJECT_BASE_DIR}"
     # item['OUT_DIR'] = "${PROJECT_BASE_DIR}" + "/"
     template_file_path = get_AnsibleDriverShellPath()

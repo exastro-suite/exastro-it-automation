@@ -16,6 +16,7 @@ import subprocess
 import tarfile
 import datetime
 import glob
+import os
 
 from flask import g
 from common_libs.common import *  # noqa: F403
@@ -423,6 +424,7 @@ def update_result(objdbca, organization_id, workspace_id, execution_no, paramete
     ret = objdbca.table_select(t_exec_sts_inst, where, parameter)
     if ret:
         current_status_id = ret[0].get("STATUS_ID", None) if len(ret) == 1 else None
+        conductor_instance_no = ret[0].get("CONDUCTOR_INSTANCE_NO", None) if len(ret) == 1 else None
 
     # 準備完了～実行中ステータスの場合以外、ファイルの更新はさせない
     if current_status_id and current_status_id not in allowed_update_status:
@@ -430,21 +432,25 @@ def update_result(objdbca, organization_id, workspace_id, execution_no, paramete
 
     if driver_id == "legacy":
         out_directory_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "/out"
-        in_directory_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "/in/project"
-        conductor_directory_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "/conductor"
+        in_directory_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "/in"
         tmp_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "/"
     elif driver_id == "pioneer":
         out_directory_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/pioneer/" + execution_no + "/out"
-        in_directory_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/pioneer/" + execution_no + "/in/project"
-        conductor_directory_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/pioneer/" + execution_no + "/conductor"
+        in_directory_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/pioneer/" + execution_no + "/in"
         tmp_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/pioneer/" + execution_no + "/"
     else:
         out_directory_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy_role/" + execution_no + "/out"
-        in_directory_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy_role/" + execution_no + "/in/project"
-        conductor_directory_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy_role/" + execution_no + "/conductor"
+        in_directory_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy_role/" + execution_no + "/in"
         tmp_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy_role/" + execution_no + "/"
+    if conductor_instance_no:
+        conductor_directory_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/conductor/" + conductor_instance_no
 
     try:
+        # {'conductor_tar_data': '/tmp/org1/ws2/driver/ansible/legacy/2ed69707-d211-4bb4-9c65-ec0165efddac/conductor.tar.gz',
+        #  'out_tar_data': '/tmp/org1/ws2/driver/ansible/legacy/2ed69707-d211-4bb4-9c65-ec0165efddac/out.tar.gz',
+        #  'parameters_file_tar_data': '/tmp/org1/ws2/driver/ansible/legacy/2ed69707-d211-4bb4-9c65-ec0165efddac/parameters_file.tar.gz',
+        #  'parameters_tar_data': '/tmp/org1/ws2/driver/ansible/legacy/2ed69707-d211-4bb4-9c65-ec0165efddac/parameter.tar.gz'}
+        g.applogger.debug("update_result file_path:" + str(file_path))
         for file_key, record_file_paths in file_path.items():
             if not os.path.exists(tmp_path + file_key):
                 os.makedirs(tmp_path + file_key)
@@ -453,46 +459,40 @@ def update_result(objdbca, organization_id, workspace_id, execution_no, paramete
 
             # outディレクトリ更新
             if file_key == "out_tar_data":
-                # 展開したファイルの一覧を取得
-                lst = glob.glob(tmp_path + file_key + "/**", recursive=True)
-                file_list = []
-                for path in lst:
-                    if os.path.isfile(path):
-                        file_list.append(path)
+                cmd = "cp -rf {} {}".format(tmp_path + file_key + "/*", out_directory_path + "/.")
+                g.applogger.debug("Update out directory: command {}".format(cmd))
+                ret = subprocess.run(cmd, text=True, shell=True)
 
-                for file_path in file_list:
-                    # 通知されたファイルで上書き
-                    shutil.move(file_path, out_directory_path + "/" + os.path.basename(file_path))
-
-            # parameters, parameters_fileディレクトリ更新
-            if file_key == "parameters_tar_data" or file_key == "parameters_file_tar_data":
+            # in/parametersディレクトリ更新
+            if file_key == "parameters_tar_data":
                 # ステータスが完了、完了(異常)の場合
                 if status == AnscConst.COMPLETE or status == AnscConst.FAILURE:
                     # 展開したファイルの一覧を取得
-                    lst = glob.glob(tmp_path + file_key + "/**", recursive=True)
-                    file_list = {}
-                    for path in lst:
-                        if os.path.isfile(path):
-                            path = Path(path)
-                            parent_dirctory = str(path.parent)
-                            file_list[parent_dirctory] = os.path.basename(path)
-                    for dir_name, file_name in file_list.items():
-                        # 通知されたファイルで上書き
-                        shutil.move(dir_name + "/" + file_name, in_directory_path + "/" + os.path.basename(dir_name) + "/" + os.path.basename(file_name))
+                    cmd = "cp -rf {} {}".format(tmp_path + file_key + "/*", in_directory_path + "/_parameters/.")
+                    g.applogger.debug("Update in/parameters directory: command {}".format(cmd))
+                    ret = subprocess.run(cmd, text=True, shell=True)
+            if file_key == "parameters_file_tar_data":
+                # ステータスが完了、完了(異常)の場合
+                if status == AnscConst.COMPLETE or status == AnscConst.FAILURE:
+                    # 展開したファイルの一覧を取得
+                    cmd = "cp -rf {} {}".format(tmp_path + file_key + "/*", in_directory_path + "/_parameters_file/.")
+                    g.applogger.debug("Update in/_parameters_file directory: command {}".format(cmd))
+                    ret = subprocess.run(cmd, text=True, shell=True)
 
             # conductorディレクトリ更新
             if file_key == "conductor_tar_data":
-                if status == AnscConst.COMPLETE or status == AnscConst.FAILURE:
-                    # 展開したファイルの一覧を取得
-                    lst = glob.glob(tmp_path + file_key + "/**", recursive=True)
-                    file_list = []
-                    for path in lst:
-                        if os.path.isfile(path):
-                            file_list.append(path)
+                # 展開したファイルの一覧を取得
+                if conductor_instance_no:
+                    if status == AnscConst.COMPLETE or status == AnscConst.FAILURE:
+                        # 展開したファイルの一覧を取得
+                        cmd = "cp -rf {} {}".format(tmp_path + file_key + "/*", conductor_directory_path + "/.")
+                        g.applogger.debug("Update conductor directory: command {}".format(cmd))
+                        ret = subprocess.run(cmd, text=True, shell=True)
 
-                    for file_path in file_list:
-                        # 通知されたファイルで上書き
-                        shutil.move(file_path, conductor_directory_path + "/" + os.path.basename(file_path))
+    except subprocess.CalledProcessError as e:
+        exception(e)
+    except Exception as e:
+        exception(e)
     finally:
         # clear tmp_path
         if os.path.isdir(tmp_path):

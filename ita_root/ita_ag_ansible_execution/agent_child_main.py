@@ -22,7 +22,6 @@ from flask import g
 from common_libs.common import *  # noqa: F403
 from common_libs.common.storage_access import storage_read, storage_write
 from common_libs.ag.util import app_exception, exception
-from common_libs.ansible_driver.functions.util import get_OSTmpPath
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_execution.encrypt import agent_decrypt
 from agent.libs.exastro_api import Exastro_API

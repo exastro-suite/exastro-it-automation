@@ -220,8 +220,8 @@ declare -A interactive_llist=(
     ["STORAGE_PATH"]="Input STORAGE_PATH."
 
     # install env
-    ["AGENT_SERVICE_ID_YN"]="The Agent service name is in the following format: ita-agent-ansible-execution-${SERVICE_ID}. Select "n" to specify individual names. (y/n)"
-    ["AGENT_SERVICE_ID"]="Input the Agent service name . The string "ita-agent-ansible-execution-" is added to the start of the name."
+    ["AGENT_SERVICE_ID_YN"]="The Agent service name is in the following format: ita-ag-ansible-execution-${SERVICE_ID}. Select "n" to specify individual names. (y/n)"
+    ["AGENT_SERVICE_ID"]="Input the Agent service name . The string "ita-ag-ansible-execution-" is added to the start of the name."
     ["AGENT_VERSION"]="Input the version of the Agent. Tag specification: X.Y.Z, Branch specification: X.Y [default: No Input+Enter(Latest release version)]"
     ["INSTALLPATH"]="Specify full path for the install location."
     ["DATAPATH"]="Specify full path for the data storage location."
@@ -237,7 +237,7 @@ declare -A interactive_llist=(
     ["SOURCE_UPDATE"]="A source already exists in the installation destination. Do you want to delete it and re-install?  (y:Re-install/n:Move to the next process without installing) (y/n)"
     ["SOURCE_UPDATE_E1"]="※If a registered service already exists with a different version, the existing service might be affected.(y/n): "
     # uninstall service
-    ["SERVICE_NAME"]="Input a SERVICE_NAME.(e.g. ita-agent-ansible-execution-xxxxxxxxxxxxx)"
+    ["SERVICE_NAME"]="Input a SERVICE_NAME.(e.g. ita-ag-ansible-execution-xxxxxxxxxxxxx)"
     ["STORAGE_PATH"]="Input a STORAGE_PATH.(e.g. /${HOME}${BASE_DIR}/<SERVICE_ID>)"
 )
 
@@ -860,7 +860,7 @@ inquiry_env(){
 
     # PATH
     default_env_values["APP_PATH"]=${default_env_values["INSTALLPATH"]}
-    default_env_values["PYTHONPATH"]=${default_env_values["INSTALLPATH"]}/ita_ag_ansible_execution
+    default_env_values["PYTHONPATH"]=${default_env_values["INSTALLPATH"]}/ita_ag_ansible_execution/
     default_env_values["AGENT_NAME"]="ita-ag-ansible-execution-${default_env_values['AGENT_SERVICE_ID']}"
     default_env_values["USER_ID"]="${default_env_values['AGENT_SERVICE_ID']}"
     default_env_values["SERVICE_NAME"]="ita-ag-ansible-execution"
@@ -905,10 +905,8 @@ create_env(){
         poetry_path="`ls ${which_poetry}`"" run python3"
         default_env_values["PYTHON_CMD"]=$poetry_path
     else
-        sudo /usr/bin/python3 -m pip install poetry==1.6.0
         which_poetry=`which poetry`
         poetry_path="`ls ${which_poetry}`"" run python3"
-        # poetry_path="/usr/local/bin/poetry run python3"
         default_env_values["PYTHON_CMD"]=$poetry_path
     fi
 
@@ -938,11 +936,6 @@ init_appdir(){
 poetry_install(){
     echo ""
 
-    if [ "${DEP_PATTERN}" = "RHEL8" ] || [ "${DEP_PATTERN}" = "RHEL9" ]; then
-        echo ""
-    else
-        sudo /usr/bin/python3 -m pip install poetry==1.6.0
-    fi
 
     cd "${default_env_values['PYTHONPATH']}"
     # poetry
@@ -1162,7 +1155,7 @@ ExecStart=${ENTRYPOINT} ${ENV_PATH} ${PYTHONPATH} ${STORAGE_PATH} "${PYTHON_CMD}
 ExecReload=/bin/kill -HUP \$MAINPID
 ExecStop=/bin/kill \$MAINPID
 Restart=always
-
+User=${USER}
 [Install]
 WantedBy=default.target
 

@@ -17,7 +17,7 @@ def conductor_class_validate(objdbca, objtable, option):
     tmp_parameter = entry_parameter.get('parameter')
     conductor_data = json.loads(tmp_parameter.get(target_rest_name))
     conductor_name = tmp_parameter.get('conductor_name')
-    cclibs = ConductorCommonLibs(cmd_type=option.get('cmd_type'))
+    cclibs = ConductorCommonLibs(wsdb_istc=objdbca, cmd_type=option.get('cmd_type'))
     result = cclibs.chk_format_all(copy.deepcopy(conductor_data))
     if result[0] is False:
         status_code = '499-00201'

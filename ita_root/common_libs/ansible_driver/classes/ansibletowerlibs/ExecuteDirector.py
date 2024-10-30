@@ -1280,7 +1280,7 @@ class ExecuteDirector():
             # 認証方式：証明書認証(winrm)、
             winrmPrivateKey = ""
             winrmPublicKey = ""
-            if hostInfo['LOGIN_AUTH_TYPE'] in [AnscConst.DF_LOGIN_AUTH_TYPE_KEY_WINRM]:
+            if hostInfo['LOGIN_AUTH_TYPE'] == AnscConst.DF_LOGIN_AUTH_TYPE_KEY_WINRM:
                 if 'WINRM_CERT_PEM_FILE' in hostInfo and hostInfo['WINRM_CERT_PEM_FILE']:
                     winrmPublicKey = self.getDeviceListWinrmPublicKeyFileContent(hostInfo['SYSTEM_ID'], hostInfo['WINRM_CERT_PEM_FILE'])
                     # ky_encrptのスクランブルを復号
@@ -1329,14 +1329,14 @@ class ExecuteDirector():
             # WinRM接続
             # 認証方式:パスワード認証(winrm) / 証明書認証(winrm)
             hostData['winrm'] = False
-            if hostInfo['LOGIN_AUTH_TYPE'] in (AnscConst.DF_LOGIN_AUTH_TYPE_PW_WINRM, AnscConst.DF_LOGIN_AUTH_TYPE_KEY_WINRM):
+            if hostInfo['LOGIN_AUTH_TYPE'] in [AnscConst.DF_LOGIN_AUTH_TYPE_PW_WINRM, AnscConst.DF_LOGIN_AUTH_TYPE_KEY_WINRM]:
                 hostData['winrm'] = True
                 if not hostInfo['WINRM_PORT']:
                     hostInfo['WINRM_PORT'] = AnscConst.LC_WINRM_PORT
 
                 hostData['winrmPort'] = hostInfo['WINRM_PORT']
 
-            if hostInfo['LOGIN_AUTH_TYPE'] in AnscConst.DF_LOGIN_AUTH_TYPE_KEY_WINRM:
+            if hostInfo['LOGIN_AUTH_TYPE'] == AnscConst.DF_LOGIN_AUTH_TYPE_KEY_WINRM:
                 # 公開鍵ファイル/秘密鍵ファイル
                 if 'WINRM_CERT_PEM_FILE' in hostInfo and hostInfo['WINRM_CERT_PEM_FILE'] is not None and len(hostInfo['WINRM_CERT_PEM_FILE']) > 0:
                     filePath = "winrm_key_files/%s-%s" % (hostInfo['SYSTEM_ID'], hostInfo['WINRM_CERT_PEM_FILE'])

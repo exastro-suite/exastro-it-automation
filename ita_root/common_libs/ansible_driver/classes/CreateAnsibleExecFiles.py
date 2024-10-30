@@ -1520,7 +1520,7 @@ class CreateAnsibleExecFiles():
                     ssh_key_file_path = self.setAnsibleSideFilePath(ssh_key_file_path, self.LC_ITA_IN_DIR)
                     # 秘密鍵認証の場合にssh-agntでパスフレーズの入力を省略する為の情報生成
                     if ina_hostinfolist[host_name]['LOGIN_AUTH_TYPE'] == self.AnscObj.DF_LOGIN_AUTH_TYPE_KEY_PP_USE:
-                        if self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_AG: # enomomto 実行エンジンがAnsible Agentの場合の場合、秘密鍵認証（パスフレーズあり）の場合にパスフレーズを暗号化
+                        if self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_AG: # 実行エンジンがAnsible Agentの場合の場合、秘密鍵認証（パスフレーズあり）の場合にパスフレーズを暗号化
                             # 秘密鍵認証（パスフレーズあり）の場合にパスフレーズを暗号化しansible_passとEnter passphrase for keyを設定
                             login_pw_ansible_vault = ""
                             make_vaultpass = self.makeAnsibleVaultPassword(ina_hostinfolist[host_name]['LOGIN_PW'],
@@ -1537,7 +1537,7 @@ class CreateAnsibleExecFiles():
                             CreateSSHAgentConfigInfoFile = True
 
                             # ssh-agentの設定に必要な情報を一時ファイルに出力
-                            # enomomto AGの場合をssh-agent用のssh鍵ファイルのバスを加工する。
+                            # AGの場合をssh-agent用のssh鍵ファイルのバスを加工する。
                             if self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_AG:
                                 write_ssh_key_file_path = Replace_HostVrasFilepath("in", ssh_key_file_path)
                             else:
@@ -1590,8 +1590,8 @@ class CreateAnsibleExecFiles():
                     # ansible実行時のパスに変更
                     win_private_key_file_path = self.setAnsibleSideFilePath(win_private_key_file_path, self.LC_ITA_IN_DIR)
 
-                    # enomomto AGの場合にansible_winrm_cert_pemのパスを加工
-                    if self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_AG: # enomomto AGの場合を追加
+                    # AGの場合にansible_winrm_cert_pemのパスを加工
+                    if self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_AG:
                         write_win_private_key_file_path = Replace_HostVrasFilepath("in", win_private_key_file_path)
                     else:
                         write_win_private_key_file_path = win_private_key_file_path
@@ -2017,7 +2017,10 @@ class CreateAnsibleExecFiles():
                 elif self.getAnsibleDriverID() == self.AnscObj.DF_PIONEER_DRIVER_ID:
                     log_file_path = self.setAnsibleSideFilePath(self.getAnsible_out_Dir(), self.LC_ITA_OUT_DIR)
                     host_vars_path = self.setAnsibleSideFilePath(self.getAnsible_original_hosts_vars_Dir(), self.LC_ITA_TMP_DIR)
-
+                    if self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_AG:
+                        # 実行エンジンがAnsible Agentの場合、ホスト変数のパスを加工する
+                        log_file_path = "/outdir/out"
+                        host_vars_path = Replace_HostVrasFilepath("tmp", host_vars_path, "outdir/tmp")
                     # original_exec_dirはオリジナル対話ファイル格納ディレクトリを渡し、pioneer_module.pyでexec_fileのファイル名と結合してファイル名を解決
                     value += "    - name: pioneer_module exec\n"
                     value += "      pioneer_module: username={{ " + self.AnscObj.ITA_SP_VAR_ANS_USERNAME_VAR_NAME + " }} " + \
@@ -2443,7 +2446,7 @@ class CreateAnsibleExecFiles():
         Returns:
             作業実行hostsファイル名
         """
-        if self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_AG: # enomomto AGの場合を追加
+        if self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_AG: # AGの場合を追加
             file = "{}/{}/{}".format(self.getAnsible_in_Dir(), self.LC_ANS_INVENTORY_DIR, self.LC_ANS_HOSTS_FILE)
         else:
             file = self.getAnsible_in_Dir() + "/" + self.LC_ANS_HOSTS_FILE
@@ -4254,6 +4257,10 @@ class CreateAnsibleExecFiles():
                         # ファイルパスをansible側から見たパスに変更する。
                         cpf_path = self.setAnsibleSideFilePath(cpf_path, self.LC_ITA_IN_DIR)
 
+                        # 実行エンジンがAnsible Agentの場合、ホスト変数のパスを加工する
+                        if self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_AG:
+                            cpf_path = Replace_HostVrasFilepath("in", cpf_path)
+
                         # la_cpf_path[copy変数]=inディレクトリ配下ののcopyファイルパス
                         la_cpf_path[cpf_var_name] = cpf_path
 
@@ -4679,6 +4686,10 @@ class CreateAnsibleExecFiles():
                     path = self.getHostvarsfile_copy_file_value(key, file_name)
                     path = self.setAnsibleSideFilePath(path, self.LC_ITA_IN_DIR)
 
+                    # 実行エンジンがAnsible Agentの場合、、ホスト変数のパスを加工する。
+                    if self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_AG:
+                        path = Replace_HostVrasFilepath("in", path)
+
                     # mt_legacy_Role_cpf_vars_list[copy変数]=inディレクトリ配下のファイルパス
                     mt_legacy_Role_cpf_vars_list[var_name] = path
 
@@ -4716,6 +4727,10 @@ class CreateAnsibleExecFiles():
                     # inディレクトリ配下のテンプレートファイルバスを取得
                     path = self.getHostvarsfile_template_file_path(tpf_key, tpf_file_name)
                     path = self.setAnsibleSideFilePath(path, self.LC_ITA_IN_DIR)
+
+                    # 実行エンジンがAnsible Agentの場合、、ホスト変数のパスを加工する。
+                    if self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_AG:
+                        path = Replace_HostVrasFilepath("in", path)
 
                     # mt_legacy_Role_tpf_vars_list[copy変数]=inディレクトリ配下のテンプレートファイルパス
                     mt_legacy_Role_tpf_vars_list[tpf_var_name] = path
@@ -4781,6 +4796,10 @@ class CreateAnsibleExecFiles():
 
                         # ファイルパスをansible側から見たパスに変更する。
                         tpf_path = self.setAnsibleSideFilePath(tpf_path, self.LC_ITA_IN_DIR)
+
+                        # 実行エンジンがAnsible Agentの場合、ホスト変数のパスを加工する
+                        if self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_AG:
+                            tpf_path = Replace_HostVrasFilepath("in", tpf_path)
 
                         # la_tpf_path[テンプレート変数]=inディレクトリ配下ののファイルパス
                         la_tpf_path[tpf_var_name] = tpf_path
@@ -5118,10 +5137,10 @@ class CreateAnsibleExecFiles():
 
             mkdir = "{}/{}/{}/in/_parameters/{}".format(ita_base_dir, driver_list[driver_id], execute_no, host_name)
             scpsrcdir = "{}/{}/{}/in/_parameters".format(ita_base_dir, driver_list[driver_id], execute_no)
-            if self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_ANSIBLE:  # enomomto AGの場合を追加
+            if self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_ANSIBLE:  # AGの場合を追加
                 host_var_vaule = "{}/{}/{}/in/_parameters".format(ans_base_dir, driver_list[driver_id], execute_no)
 
-            elif self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_AG:  # enomomto AGの場合を追加
+            elif self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_AG:  # AGの場合を追加
                 host_var_vaule = "_parameters"
 
             else:
@@ -5145,10 +5164,10 @@ class CreateAnsibleExecFiles():
             mkdir = "{}/{}/{}/out/_parameters/{}".format(ita_base_dir, driver_list[driver_id], execute_no, host_name)
             host_var_vaule = "{}/{}/{}/out/_parameters".format(ita_base_dir, driver_list[driver_id], execute_no)
 
-            if self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_ANSIBLE: # enomomto AGの場合を追加
+            if self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_ANSIBLE: # AGの場合を追加
                 host_var_vaule = "{}/{}/{}/out/_parameters".format(ans_base_dir, driver_list[driver_id], execute_no)
 
-            elif self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_AG: # enomomto AGの場合を追加
+            elif self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_AG: # AGの場合を追加
                 host_var_vaule = "/outdir/out/_parameters".format(ans_base_dir, driver_list[driver_id], execute_no)
             else:
                 host_var_vaule = "{}/{}/_parameters".format(self.getTowerProjectDirPath("ExastroPath"), self.LC_ITA_OUT_DIR)
@@ -5170,10 +5189,10 @@ class CreateAnsibleExecFiles():
             scpsrcdir = "{}/{}/{}/in/_parameters_file".format(ita_base_dir, driver_list[driver_id], execute_no)
             host_var_vaule = "{}/{}/{}/in/_parameters_file".format(ita_base_dir, driver_list[driver_id], execute_no)
 
-            if self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_ANSIBLE: # enomomto AGの場合を追加
+            if self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_ANSIBLE: # AGの場合を追加
                 host_var_vaule = "{}/{}/{}/in/_parameters_file".format(ans_base_dir, driver_list[driver_id], execute_no)
 
-            elif self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_AG: # enomomto AGの場合を追加
+            elif self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_AG: # AGの場合を追加
                 host_var_vaule = "_parameters_file"
 
             else:
@@ -5196,10 +5215,10 @@ class CreateAnsibleExecFiles():
 
             mkdir = "{}/{}/{}/out/_parameters_file/{}".format(ita_base_dir, driver_list[driver_id], execute_no, host_name)
             host_var_vaule = "{}/{}/{}/out/_parameters_file".format(ita_base_dir, driver_list[driver_id], execute_no)
-            if self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_ANSIBLE: # enomomto AGの場合を追加
+            if self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_ANSIBLE: # AGの場合を追加
                 host_var_vaule = "{}/{}/{}/out/_parameters_file".format(ans_base_dir, driver_list[driver_id], execute_no)
 
-            elif self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_AG: # enomomto AGの場合を追加
+            elif self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_AG: # AGの場合を追加
                 host_var_vaule = "/outdir/out/_parameters_file"
 
             else:
@@ -5265,10 +5284,10 @@ class CreateAnsibleExecFiles():
             host_var_name = self.AnscObj.ITA_SP_VAR_MOVEMENT_STS_FILE
 
             host_var_vaule = "{}/{}/{}/out/MOVEMENT_STATUS_FILE".format(ans_base_dir, driver_list[driver_id], execute_no)
-            if self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_ANSIBLE: # enomomto AGの場合を追加
+            if self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_ANSIBLE: # AGの場合を追加
                 host_var_vaule = "{}/{}/{}/out/MOVEMENT_STATUS_FILE".format(ans_base_dir, driver_list[driver_id], execute_no)
 
-            elif self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_AG: # enomomto AGの場合を追加
+            elif self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_AG: # AGの場合を追加
                 host_var_vaule = "/outdir/out/MOVEMENT_STATUS_FILE"
 
             else:
@@ -5301,14 +5320,14 @@ class CreateAnsibleExecFiles():
                 mt_host_vars[host_name][self.LC_ANS_PIONEER_LANG_VAR_NAME] = hostinfo['PIONEER_LANG_STRING']
 
                 path = "{}/{}".format(self.setAnsibleSideFilePath(self.getAnsible_original_dialog_files_Dir(), self.LC_ITA_TMP_DIR), host_name)
-                if self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_AG: # enomomto AGの場合を追加
+                if self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_AG: # AGの場合を追加
                     path = Replace_HostVrasFilepath("tmp", path, "outdir/tmp")
                 else:
                     pass
                 mt_host_vars[host_name][self.LC_ANS_PIONEER_ORIGINAL_EXEC_FILE_DIR] = path
 
                 path = "{}/{}".format(self.setAnsibleSideFilePath(self.getAnsible_vault_hosts_vars_Dir(), self.LC_ITA_TMP_DIR), host_name)
-                if self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_AG: # enomomto AGの場合を追加
+                if self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_AG: # AGの場合を追加
                     path = Replace_HostVrasFilepath("tmp", path, "outdir/tmp")
                 else:
                     pass
@@ -5502,7 +5521,7 @@ class CreateAnsibleExecFiles():
         """
         if self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_ANSIBLE:
             Upd_Path = in_Path.replace(self.getAnsibleBaseDir('ANSIBLE_SH_PATH_ITA'), self.getAnsibleBaseDir('ANSIBLE_SH_PATH_ANS'))
-        elif self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_AG:  # enomomto AGの場合を追加
+        elif self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_AG:  # AGの場合を追加
             Upd_Path = in_Path
         else:
             Upd_Path = self.setAnsibleTowerSideFilePath(in_Path, in_DirId)

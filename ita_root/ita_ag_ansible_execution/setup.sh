@@ -586,6 +586,10 @@ installation_podman_on_rhel8() {
     else
         echo "export XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR}" >> ${HOME}/.bashrc
     fi
+
+    # use rootless mode
+    echo "export BUILDAH_ISOLATION=chroot" >> ${HOME}/.bashrc
+
     sudo systemctl start user@${EXASTRO_UID}
 
     info "Start and enable Podman socket service"

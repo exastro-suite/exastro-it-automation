@@ -26,6 +26,7 @@ WORK_DIR=""
 ENV_TMP_PATH=""
 SERVICE_ID=`date +%Y%m%d%H%M%S%3N`
 INSTALL_TYPE=1
+ANSIBLE_SUPPORT=1
 
 SOURCE_REPOSITORY="https://github.com/exastro-suite/exastro-it-automation.git"
 SOURCE_REPOSITORY="https://github.com/exastro-suite/exastro-it-automation-dev.git" #*****
@@ -60,7 +61,7 @@ dnf_install_list_rhel9=(
     "python3-requests"
 )
 dnf_install_list_almaLinux8=(
-    "docker"
+    "podman-docker"
 )
 
 # install source_path src->dst
@@ -238,7 +239,7 @@ declare -A interactive_llist=(
     ["SOURCE_UPDATE_E1"]="※If a registered service already exists with a different version, the existing service might be affected.(y/n): "
     # uninstall service
     ["SERVICE_NAME"]="Input a SERVICE_NAME.(e.g. ita-ag-ansible-execution-xxxxxxxxxxxxx)"
-    ["STORAGE_PATH"]="Input a STORAGE_PATH.(e.g. /${HOME}${BASE_DIR}/<SERVICE_ID>)"
+    ["STORAGE_PATH"]="Input a STORAGE_PATH.(e.g. ${HOME}${BASE_DIR}/<SERVICE_ID>)"
 )
 
 declare -A interactive_llist_adv=(
@@ -611,17 +612,31 @@ installation_docker_on_alamalinux8() {
     # info "Update packages"
     # sudo dnf update -y
 
-    info "Add Docker repository"
-    sudo dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
+    #
+    CONTAINERS_CONF=${HOME}/.config/containers/containers.conf
+    info "Change container containers.conf"
+    mkdir -p ${HOME}/.config/containers/
+    sudo cp /usr/share/containers/containers.conf ${HOME}/.config/containers/
+    # sed -i.$(date +%Y%m%d-%H%M%S) -e 's|^network_backend = "cni"|network_backend = "netavark"|' ${CONTAINERS_CONF}
+    if [ ! -z "${PROXY}" ]; then
+        if ! (grep -q "^ *http_proxy *=" ${CONTAINERS_CONF}); then
+            sudo sed -i -e '/^#http_proxy = \[\]/a http_proxy = true' ${CONTAINERS_CONF}
+        fi
+        if ! (grep -q "^ *http_proxy *=" ${CONTAINERS_CONF}); then
+            sudo sed -i -e '/^#http_proxy *=.*/a http_proxy = true' ${CONTAINERS_CONF}
+        fi
+        if grep -q "^ *env *=" ${CONTAINERS_CONF}; then
+            if grep "^ *env *=" ${CONTAINERS_CONF} | grep -q -v "http_proxy"; then
+                sudo sed -i -e 's/\(^ *env *=.*\)\]/\1,"http_proxy='${http_proxy//\//\\/}'"]/' ${CONTAINERS_CONF}
+            fi
+            if grep "^ *env *=" ${CONTAINERS_CONF} | grep -q -v "https_proxy"; then
+                sudo sed -i -e 's/\(^ *env *=.*\)\]/\1,"https_proxy='${https_proxy//\//\\/}'"]/' ${CONTAINERS_CONF}
+            fi
+        else
+            sudo sed -i -e '/^#env = \[\]/a env = ["http_proxy='${http_proxy}'","https_proxy='${https_proxy}'"]' ${CONTAINERS_CONF}
+        fi
+    fi
 
-    info "Install Docker and additional tools"
-    sudo dnf install -y docker-ce docker-ce-cli containerd.io git
-
-    info "Start and enable Docker service"
-    sudo systemctl enable --now docker
-
-    info "Add current user to the docker group (optional)"
-    sudo usermod -aG docker ${USER}
 }
 
 ### Check args
@@ -651,6 +666,18 @@ _EOF_
 dnf_install(){
     echo ""
     info "Install additional tools: ${DEP_PATTERN}"
+
+    ANSIBLE_SUPPORT=${default_env_values["ANSIBLE_SUPPORT"]}
+    if [ "${ANSIBLE_SUPPORT}" = "2" ] && [ "${DEP_PATTERN}" = "RHEL8" ];then
+        sudo subscription-manager repos --enable=rhel-8-for-x86_64-baseos-rpms
+        sudo subscription-manager repos --enable=rhel-8-for-x86_64-appstream-rpms
+        sudo subscription-manager repos --enable=ansible-inside-1.1-for-rhel-8-x86_64-rpms
+    elif [ "${ANSIBLE_SUPPORT}" = "2" ] && [ "${DEP_PATTERN}" = "RHEL9" ];then
+        sudo subscription-manager repos --enable=rhel-9-for-x86_64-baseos-rpms
+        sudo subscription-manager repos --enable=rhel-9-for-x86_64-appstream-rpms
+        sudo subscription-manager repos --enable=ansible-inside-1.1-for-rhel-9-x86_64-rpms
+    fi
+
     case "${DEP_PATTERN}" in
         RHEL8 )
             dnf_install_rhel8
@@ -940,7 +967,7 @@ init_appdir(){
 poetry_install(){
     echo ""
 
-
+    sudo chmod 777 "${default_env_values['PYTHONPATH']}"
     cd "${default_env_values['PYTHONPATH']}"
     # poetry
     pip3 install poetry==$POETRY_VERSION
@@ -1154,6 +1181,7 @@ install_agent_service_almaLinux8(){
 Description=Ansible Execution agent for Exastro IT Automation (${SERVICE_ID})
 
 [Service]
+Environment=BUILDAH_ISOLATION=chroot
 WorkingDirectory=${PYTHONPATH}
 ExecStart=${ENTRYPOINT} ${ENV_PATH} ${PYTHONPATH} ${STORAGE_PATH} "${PYTHON_CMD}"
 ExecReload=/bin/kill -HUP \$MAINPID

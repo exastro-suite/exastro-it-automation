@@ -42,6 +42,7 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
     python39-mod_wsgi \
     langpacks-en \
     wget \
+    zip \
     unzip \
 &&  pip3.9 install poetry==1.6.0 \
 &&  poetry config virtualenvs.create false \

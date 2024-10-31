@@ -775,11 +775,11 @@ init_workdir(){
     info "init_workdir ${WORK_DIR} start"
     if [ ! -e "${WORK_DIR}" ]; then
         info "create ${WORK_DIR}"
-        mkdir -m 777 -p "${WORK_DIR}"
+        mkdir -m 755 -p "${WORK_DIR}"
     else
         info "clear & create ${WORK_DIR}"
         rm -rfd "${WORK_DIR}"
-        mkdir -m 777 -p "${WORK_DIR}"
+        mkdir -m 755 -p "${WORK_DIR}"
     fi
     info "init_workdir ${WORK_DIR} end"
 }
@@ -949,25 +949,11 @@ create_env(){
     info "create_env :${DEP_PATTERN} end"
 }
 
-init_appdir(){
-    echo ""
-    info "init_workdir ${WORK_DIR} start"
-    if [ ! -e "${WORK_DIR}" ]; then
-        info "create ${WORK_DIR}"
-        mkdir -m 777 -p "${WORK_DIR}"
-    else
-        info "clear & create ${WORK_DIR}"
-        rm -rfd "${WORK_DIR}"
-        mkdir -m 777 -p "${WORK_DIR}"
-    fi
-
-    info "init_workdir ${WORK_DIR} end"
-}
 
 poetry_install(){
     echo ""
 
-    sudo chmod 777 "${default_env_values['PYTHONPATH']}"
+    sudo chmod 755 "${default_env_values['PYTHONPATH']}"
     cd "${default_env_values['PYTHONPATH']}"
     # poetry
     pip3 install poetry==$POETRY_VERSION
@@ -1065,8 +1051,8 @@ install_agent_service(){
 
     # create ~/storage
     STORAGE_PATH="${default_env_values['STORAGEPATH']}"
-    info "mkdir -m 777 -p ${STORAGE_PATH}"
-    mkdir -m 777 -p "${STORAGE_PATH}"
+    info "mkdir -m 764 -p ${STORAGE_PATH}"
+    mkdir -m 764 -p "${STORAGE_PATH}"
 
     if [ "${DEP_PATTERN}" = "RHEL8" ] || [ "${DEP_PATTERN}" = "RHEL9" ]; then
         podman unshare chown ${EXASTRO_UID}:${EXASTRO_GID} "${STORAGE_PATH}/"

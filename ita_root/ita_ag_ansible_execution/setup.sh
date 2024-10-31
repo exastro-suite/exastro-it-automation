@@ -1051,8 +1051,8 @@ install_agent_service(){
 
     # create ~/storage
     STORAGE_PATH="${default_env_values['STORAGEPATH']}"
-    info "mkdir -m 764 -p ${STORAGE_PATH}"
-    mkdir -m 764 -p "${STORAGE_PATH}"
+    info "mkdir -m 767 -p ${STORAGE_PATH}"
+    mkdir -m 767 -p "${STORAGE_PATH}"
 
     if [ "${DEP_PATTERN}" = "RHEL8" ] || [ "${DEP_PATTERN}" = "RHEL9" ]; then
         podman unshare chown ${EXASTRO_UID}:${EXASTRO_GID} "${STORAGE_PATH}/"

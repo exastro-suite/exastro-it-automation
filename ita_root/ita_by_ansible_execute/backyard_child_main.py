@@ -1331,7 +1331,7 @@ def ag_execute_statuscheck(ansdrv, wsDb, ansc_const, execution_no, Timeout_Inter
         # 無い場合は作成
         Path(ag_status_file_path).touch()
     # ansibe agent作業状態通知受信ファイルの更新日時所得
-    ag_status_file_unix_time = os.path.getatime(ag_status_file_path)
+    ag_status_file_unix_time = os.path.getmtime(ag_status_file_path)
     # 現在時刻取得
     now_unix_time = time.time()
     # ansibe agent作業状態通知受信ファイルの更新がTimeout_Interval以上更新されなかったら、想定外エラーにする。

@@ -16,7 +16,7 @@ dependencies:
   python: {{ python_requirements_file }}
 {% if galaxy_requirements_file == "" %}
 {% else %}
-  galaxy_tag: {{ galaxy_requirements_file }}
+  galaxy: {{ galaxy_requirements_file }}
 {% endif %}
   python_interpreter:
     package_system: "python39"

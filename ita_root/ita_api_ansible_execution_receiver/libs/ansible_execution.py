@@ -570,27 +570,25 @@ def update_ansible_agent_status_file(organization_id, workspace_id, body):
 
     # 作業状態通知受信ファイルを空更新する
     for execution_no in legacy:
-        file_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "/out/ansible_agent_status_file.txt"
+        file_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "/tmp/ansible_agent_status_file.txt"
         if os.path.exists(file_path):
-            # 元の日時を取得
-            sr = os.stat(path=file_path)
-            # 更新日時のみ変更
-            now = datetime.datetime.now().timestamp()
-            os.utime(path=file_path, times=(sr.st_atime, now))
+            # 更新日時変更
+            with open(file_path , "w") as fd:
+                pass
+
     for execution_no in pioneer:
-        file_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/pioneer/" + execution_no + "out/ansible_agent_status_file.txt"
+        file_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/pioneer/" + execution_no + "/tmp/ansible_agent_status_file.txt"
         if os.path.exists(file_path):
-            # 元の日時を取得
-            sr = os.stat(path=file_path)
-            # 更新日時のみ変更
-            os.utime(path=file_path, times=(sr.st_atime, datetime.datetime.now()))
+            # 更新日時変更
+            with open(file_path , "w") as fd:
+                pass
+
     for execution_no in legacy_role:
-        file_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy_role/" + execution_no + "out/ansible_agent_status_file.txt"
+        file_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy_role/" + execution_no + "/tmp/ansible_agent_status_file.txt"
         if os.path.exists(file_path):
-            # 元の日時を取得
-            sr = os.stat(path=file_path)
-            # 更新日時のみ変更
-            os.utime(path=file_path, times=(sr.st_atime, datetime.datetime.now()))
+            # 更新日時変更
+            with open(file_path , "w") as fd:
+                pass
 
     return True
 

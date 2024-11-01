@@ -699,15 +699,10 @@ dnf_install(){
     esac
 
     for install_pkg in "${install_list[@]}" ; do
-        chk=`dnf list git | grep git | wc -l`
-        if [ $chk -eq 0 ]; then
-            info "${install_pkg} install start"
-            info "sudo dnf install -y ${install_pkg}"
-            sudo sudo dnf install -y "${install_pkg}"
-            info "${install_pkg} install end"
-        else
-            info "${install_pkg} installed. skip"
-        fi
+        info "${install_pkg} install start"
+        info "sudo dnf install -y ${install_pkg}"
+        sudo sudo dnf install -y "${install_pkg}"
+        info "${install_pkg} install end"
     done
 }
 
@@ -716,17 +711,17 @@ update_pip_rhel8(){
 }
 
 dnf_install_rhel8(){
-    install_list=${dnf_install_list_common}
+    install_list=(${dnf_install_list_common[@]})
     install_list+=(${dnf_install_list_rhel8[@]})
 }
 
 dnf_install_rhel9(){
-    install_list=${dnf_install_list_common}
+    install_list=(${dnf_install_list_common[@]})
     install_list+=(${dnf_install_list_rhel9[@]})
 }
 
 dnf_install_almaLinux8(){
-    install_list=${dnf_install_list_common}
+    install_list=(${dnf_install_list_common[@]})
     install_list+=(${dnf_install_list_almaLinux8[@]})
 }
 
@@ -1024,13 +1019,6 @@ install_agent_source(){
         echo "install skip"
     fi
 
-    if [ "${DEP_PATTERN}" = "RHEL8" ] || [ "${DEP_PATTERN}" = "RHEL9" ]; then
-        podman unshare chown ${EXASTRO_UID}:${EXASTRO_GID} "${source_path}"
-        sudo chcon -R -h -t container_file_t "${base_path}"
-    elif [ "${DEP_PATTERN}" = "AlmaLinux8" ]; then
-        HOST_DOCKER_GID=$(grep docker /etc/group|awk -F':' '{print $3}')
-        sudo chown -R ${EXASTRO_UID}:${HOST_DOCKER_GID} "${source_path}"
-    fi
 
     for xadd_key in "${!xadd_source_paths[@]}"; do
         info "sudo chmod 755 ${source_path}/${xadd_source_paths[${xadd_key}]}"
@@ -1051,16 +1039,9 @@ install_agent_service(){
 
     # create ~/storage
     STORAGE_PATH="${default_env_values['STORAGEPATH']}"
-    info "mkdir -m 767 -p ${STORAGE_PATH}"
-    mkdir -m 767 -p "${STORAGE_PATH}"
+    info "mkdir -m 755 -p ${STORAGE_PATH}"
+    mkdir -m 755 -p "${STORAGE_PATH}"
 
-    if [ "${DEP_PATTERN}" = "RHEL8" ] || [ "${DEP_PATTERN}" = "RHEL9" ]; then
-        podman unshare chown ${EXASTRO_UID}:${EXASTRO_GID} "${STORAGE_PATH}/"
-        sudo chcon -R -h -t container_file_t "${default_env_values["DATAPATH"]}"
-    elif [ "${DEP_PATTERN}" = "AlmaLinux8" ]; then
-        HOST_DOCKER_GID=$(grep docker /etc/group|awk -F':' '{print $3}')
-        sudo chown -R ${EXASTRO_UID}:${HOST_DOCKER_GID} "${STORAGE_PATH}/"
-    fi
 
     # cp .env
     ENV_PATH="${default_env_values["DATAPATH"]}/${default_env_values['AGENT_SERVICE_ID']}/.env"

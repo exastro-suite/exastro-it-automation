@@ -2455,7 +2455,7 @@ def menu_import_exec_difference_version(
     """
     try:
         # create & connect sandboxdb
-        connect_info, ws_db_sb = preparation_sandbox_workspace(workspace_id)
+        connect_info, ws_db_sb = preparation_sandbox_workspace(workspace_id, execution_no_path)
         file_path_info = {}
 
         # import kym->sandboxdb
@@ -2582,7 +2582,7 @@ def get_import_config(execution_no_path):
 
     return import_config
 
-def preparation_sandbox_workspace(workspace_id):
+def preparation_sandbox_workspace(workspace_id, execution_no_path):
     """
         一時作業用DBの作成
     Args:
@@ -2592,7 +2592,7 @@ def preparation_sandbox_workspace(workspace_id):
         ws_db_sb: DBConnectWsSandbox()
     """
     # create sandboxdb & execute workspace sql
-    connect_info = sandbox_workspace_create(workspace_id)
+    connect_info = sandbox_workspace_create(workspace_id, execution_no_path)
     # connect sandboxdb
     ws_db_sb = DBConnectWsSandbox(
         connect_info["db_username"],
@@ -2679,7 +2679,7 @@ def migration_execute(ws_worker, mode="db"):
 
     return
 
-def sandbox_workspace_create(workspace_id):  # noqa: E501
+def sandbox_workspace_create(workspace_id, execution_no_path):  # noqa: E501
     """
     インポート作業用の一時使用Workspaceを作成する
     ARGS:
@@ -2742,8 +2742,8 @@ def sandbox_workspace_create(workspace_id):  # noqa: E501
         last_update_timestamp = str(get_timestamp())
 
         for sql_files in sql_list:
-            ddl_file = os.environ.get('PYTHONPATH') + "sql/" + sql_files[0]
-            dml_file = os.environ.get('PYTHONPATH') + "sql/" + sql_files[1]
+            ddl_file = execution_no_path + "/sql/" + sql_files[0]
+            dml_file = execution_no_path + "/sql/" + sql_files[1]
 
             # インストールしないドライバに指定されているSQLは実行しない
             if (sql_files[0] == 'terraform_common.sql' and 'terraform_cloud_ep' in no_install_driver and 'terraform_cli' in no_install_driver) or \

@@ -29,7 +29,6 @@ INSTALL_TYPE=1
 ANSIBLE_SUPPORT=1
 
 SOURCE_REPOSITORY="https://github.com/exastro-suite/exastro-it-automation.git"
-SOURCE_REPOSITORY="https://github.com/exastro-suite/exastro-it-automation-dev.git" #*****
 SOURCE_REPOSITORY_NAME="exastro-it-automation"
 
 SOURCE_DIR_NAME="ita_ag_ansible_execution"
@@ -38,6 +37,17 @@ SOURCE_DIR_PATH="ita_root/ita_ag_ansible_execution"
 #########################################
 # install config variable:
 #########################################
+# repos
+declare -A rhel8_repos
+declare -A rhel9_repos
+
+rhel8_repos["base"]="rhel-8-for-x86_64-baseos-rpms"
+rhel8_repos["appstream"]="rhel-8-for-x86_64-appstream-rpms"
+rhel8_repos["aap"]="ansible-automation-platform-2.5-for-rhel-8-x86_64-rpms"
+
+rhel9_repos["base"]="rhel-9-for-x86_64-baseos-rpms"
+rhel9_repos["appstream"]="rhel-9-for-x86_64-appstream-rpms"
+rhel9_repos["aap"]="ansible-automation-platform-2.5-for-rhel-9-x86_64-rpms"
 
 # dnf install list: common
 dnf_install_list_common=(
@@ -245,6 +255,13 @@ declare -A interactive_llist=(
 declare -A interactive_llist_adv=(
     ["EXASTRO_REFRESH_TOKEN_1"]="Make sure to change the EXASTRO_REFRESH_TOKEN in the generated .env file."
 )
+
+###############################################
+# debug options: Uncomment out if necessary
+###############################################
+# set -x
+SOURCE_REPOSITORY="https://github.com/exastro-suite/exastro-it-automation-dev.git"
+
 
 #########################################
 # Utility functions
@@ -667,16 +684,31 @@ dnf_install(){
     echo ""
     info "Install additional tools: ${DEP_PATTERN}"
 
+    set +e
     ANSIBLE_SUPPORT=${default_env_values["ANSIBLE_SUPPORT"]}
     if [ "${ANSIBLE_SUPPORT}" = "2" ] && [ "${DEP_PATTERN}" = "RHEL8" ];then
-        sudo subscription-manager repos --enable=rhel-8-for-x86_64-baseos-rpms
-        sudo subscription-manager repos --enable=rhel-8-for-x86_64-appstream-rpms
-        sudo subscription-manager repos --enable=ansible-inside-1.1-for-rhel-8-x86_64-rpms
+        info "sudo subscription-manager repos --enable=${rhel8_repos['base']}"
+        sudo subscription-manager repos --enable=${rhel8_repos['base']}
+        info "sudo subscription-manager repos --enable=${rhel8_repos['appstream']}"
+        sudo subscription-manager repos --enable=${rhel8_repos['appstream']}
+        info "sudo subscription-manager repos --enable=${rhel8_repos['aap']}"
+        sudo subscription-manager repos --enable=${rhel8_repos['aap']}
     elif [ "${ANSIBLE_SUPPORT}" = "2" ] && [ "${DEP_PATTERN}" = "RHEL9" ];then
-        sudo subscription-manager repos --enable=rhel-9-for-x86_64-baseos-rpms
-        sudo subscription-manager repos --enable=rhel-9-for-x86_64-appstream-rpms
-        sudo subscription-manager repos --enable=ansible-inside-1.1-for-rhel-9-x86_64-rpms
+        info "sudo subscription-manager repos --enable=${rhel9_repos['base']}"
+        sudo subscription-manager repos --enable=${rhel9_repos['base']}
+        info "sudo subscription-manager repos --enable=${rhel9_repos['appstream']}"
+        sudo subscription-manager repos --enable=${rhel9_repos['appstream']}
+        info "sudo subscription-manager repos --enable=${rhel9_repos['aap']}"
+        sudo subscription-manager repos --enable=${rhel9_repos['aap']}
     fi
+
+    if [ $? -eq 0 ]; then
+        echo ""
+    else
+        warn "Please check your subscription-manager and repository settings."
+    fi
+
+    set -e
 
     case "${DEP_PATTERN}" in
         RHEL8 )
@@ -961,22 +993,17 @@ poetry_install(){
 }
 
 ansible_additional_install(){
-    if [ ${default_env_values["ANSIBLE_SUPPORT"]} != "1" ]; then
-        echo "install redhat ansible"
-        sudo pip3 uninstall -y ansible-builder ansible-runner
-        case "${DEP_PATTERN}" in
-            RHEL8 )
-                shift
-                sudo dnf install ansible-builder ansible-runner
-                ;;
-            RHEL9 )
-                shift
-                sudo dnf install ansible-builder ansible-runner
-                ;;
-            * )
-                #*****
-                ;;
-        esac
+    if [ ${default_env_values["ANSIBLE_SUPPORT"]} = "2" ]; then
+        if [ "${DEP_PATTERN}" = "RHEL8" ] || [ "${DEP_PATTERN}" = "RHEL9" ]; then
+            info "uninstall ansible-builder ansible-runner"
+            sudo pip3 uninstall -y ansible-builder ansible-runner
+            info "sudo dnf install -y ansible-builder ansible-runner"
+            sudo dnf install -y ansible-builder ansible-runner
+        else
+            info "Skip install ansible-builder ansible-runner. Is not RHEL."
+        fi
+    else
+        info "Skip install ansible-builder ansible-runner. Is not RHEL."
     fi
 }
 
@@ -1103,6 +1130,21 @@ Description=Ansible Execution agent for Exastro IT Automation (${SERVICE_ID})
 
 [Service]
 WorkingDirectory=${PYTHONPATH}
+_EOF_
+
+if [ -z "${PROXY}" ]; then
+    echo ""
+else
+    cat << _EOF_ >>${SERVICE_PATH}
+Environment=HTTP_PROXY=${http_proxy}
+Environment=http_proxy=${Environment=http_proxy=${http_proxy}}
+Environment=HTTPS_PROXY=${http_proxy}
+Environment=https_proxy=${http_proxy}
+_EOF_
+
+fi
+
+cat << _EOF_ >>${SERVICE_PATH}
 ExecStart=${ENTRYPOINT} ${ENV_PATH} ${PYTHONPATH} ${STORAGE_PATH} "${PYTHON_CMD}"
 ExecReload=/bin/kill -HUP \$MAINPID
 ExecStop=/bin/kill \$MAINPID
@@ -1149,6 +1191,21 @@ Description=Ansible Execution agent for Exastro IT Automation (${SERVICE_ID})
 
 [Service]
 Environment=BUILDAH_ISOLATION=chroot
+_EOF_
+
+if [ -z "${PROXY}" ]; then
+    echo ""
+else
+    cat << _EOF_ >>${SERVICE_PATH}
+Environment=HTTP_PROXY=${http_proxy}
+Environment=http_proxy=${http_proxy}
+Environment=HTTPS_PROXY=${http_proxy}
+Environment=https_proxy=${http_proxy}
+_EOF_
+
+fi
+
+cat << _EOF_ >>${SERVICE_PATH}
 WorkingDirectory=${PYTHONPATH}
 ExecStart=${ENTRYPOINT} ${ENV_PATH} ${PYTHONPATH} ${STORAGE_PATH} "${PYTHON_CMD}"
 ExecReload=/bin/kill -HUP \$MAINPID

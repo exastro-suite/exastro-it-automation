@@ -684,31 +684,31 @@ dnf_install(){
     echo ""
     info "Install additional tools: ${DEP_PATTERN}"
 
-    set +e
-    ANSIBLE_SUPPORT=${default_env_values["ANSIBLE_SUPPORT"]}
-    if [ "${ANSIBLE_SUPPORT}" = "2" ] && [ "${DEP_PATTERN}" = "RHEL8" ];then
-        info "sudo subscription-manager repos --enable=${rhel8_repos['base']}"
-        sudo subscription-manager repos --enable=${rhel8_repos['base']}
-        info "sudo subscription-manager repos --enable=${rhel8_repos['appstream']}"
-        sudo subscription-manager repos --enable=${rhel8_repos['appstream']}
-        info "sudo subscription-manager repos --enable=${rhel8_repos['aap']}"
-        sudo subscription-manager repos --enable=${rhel8_repos['aap']}
-    elif [ "${ANSIBLE_SUPPORT}" = "2" ] && [ "${DEP_PATTERN}" = "RHEL9" ];then
-        info "sudo subscription-manager repos --enable=${rhel9_repos['base']}"
-        sudo subscription-manager repos --enable=${rhel9_repos['base']}
-        info "sudo subscription-manager repos --enable=${rhel9_repos['appstream']}"
-        sudo subscription-manager repos --enable=${rhel9_repos['appstream']}
-        info "sudo subscription-manager repos --enable=${rhel9_repos['aap']}"
-        sudo subscription-manager repos --enable=${rhel9_repos['aap']}
-    fi
+    # set +e
+    # ANSIBLE_SUPPORT=${default_env_values["ANSIBLE_SUPPORT"]}
+    # if [ "${ANSIBLE_SUPPORT}" = "2" ] && [ "${DEP_PATTERN}" = "RHEL8" ];then
+    #     info "sudo subscription-manager repos --enable=${rhel8_repos['base']}"
+    #     sudo subscription-manager repos --enable=${rhel8_repos['base']}
+    #     info "sudo subscription-manager repos --enable=${rhel8_repos['appstream']}"
+    #     sudo subscription-manager repos --enable=${rhel8_repos['appstream']}
+    #     info "sudo subscription-manager repos --enable=${rhel8_repos['aap']}"
+    #     sudo subscription-manager repos --enable=${rhel8_repos['aap']}
+    # elif [ "${ANSIBLE_SUPPORT}" = "2" ] && [ "${DEP_PATTERN}" = "RHEL9" ];then
+    #     info "sudo subscription-manager repos --enable=${rhel9_repos['base']}"
+    #     sudo subscription-manager repos --enable=${rhel9_repos['base']}
+    #     info "sudo subscription-manager repos --enable=${rhel9_repos['appstream']}"
+    #     sudo subscription-manager repos --enable=${rhel9_repos['appstream']}
+    #     info "sudo subscription-manager repos --enable=${rhel9_repos['aap']}"
+    #     sudo subscription-manager repos --enable=${rhel9_repos['aap']}
+    # fi
 
-    if [ $? -eq 0 ]; then
-        echo ""
-    else
-        warn "Please check your subscription-manager and repository settings."
-    fi
+    # if [ $? -eq 0 ]; then
+    #     echo ""
+    # else
+    #     warn "Please check your subscription-manager and repository settings."
+    # fi
 
-    set -e
+    # set -e
 
     case "${DEP_PATTERN}" in
         RHEL8 )
@@ -1137,7 +1137,7 @@ if [ -z "${PROXY}" ]; then
 else
     cat << _EOF_ >>${SERVICE_PATH}
 Environment=HTTP_PROXY=${http_proxy}
-Environment=http_proxy=${Environment=http_proxy=${http_proxy}}
+Environment=http_proxy=${http_proxy}
 Environment=HTTPS_PROXY=${http_proxy}
 Environment=https_proxy=${http_proxy}
 _EOF_

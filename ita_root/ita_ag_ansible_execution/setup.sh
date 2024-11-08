@@ -220,6 +220,7 @@ declare -A interactive_llist=(
     ["INVALID_SETUP_VERSION"]="The specified version is invalid."
     ["SERVICE_MSG_START"]="Do you want to start the Agent service? (y/n)"
     ["INVALID_VALUE_F_ENV"]="No .env exists. Check the path and try again."
+    ["INVALID_VALUE_IS_DIR"]="Invalid value!! Not found "
     # uninstall
     ["UNINSTALL_TYPE_MSG0"]="Please select which process to execute."
     ["UNINSTALL_TYPE_MSG1"]="    1: Delete service, Delete Data"
@@ -905,6 +906,16 @@ inquiry_env(){
                         info "${interactive_llist['INVALID_SETUP_VERSION']} main or <= ${AGENT_INSTALLER_VERSION}"
                         continue
                     fi
+                elif [ ${env_key} = "INSTALLPATH" ]; then
+                    if [ "${INSTALL_TYPE}" = "2" ]; then
+                        if [ -d $tmp_value ]; then
+                            default_env_values[$env_key]=$tmp_value
+                            break
+                        else
+                            echo "${interactive_llist['INVALID_VALUE_IS_DIR']} ${tmp_value}"
+                            continue
+                        fi
+                    fi
                 fi
                 default_env_values[$env_key]=$tmp_value
                 break
@@ -1346,6 +1357,7 @@ install_env_service(){
     additional_env_keys=(
         "AGENT_SERVICE_ID_YN"
         "AGENT_SERVICE_ID"
+        "INSTALLPATH"
         "DATAPATH"
         "EXASTRO_URL"
         "EXASTRO_ORGANIZATION_ID"

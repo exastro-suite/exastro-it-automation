@@ -1087,7 +1087,7 @@ install_agent_service(){
         ENV_TMP_PATH="${default_env_values['REFERENCE_ENVPATH']}"
     fi
 
-    if [ "`realpath ${ENV_TMP_PATH}`" != "`realpath ${ENV_PATH}`" ]; then
+    if [ -z $ENV_TMP_PATH ] && [ "`realpath ${ENV_TMP_PATH}`" != "`realpath ${ENV_PATH}`" ]; then
         if [ -f $ENV_PATH ]; then
             rm -rf $ENV_PATH
         fi

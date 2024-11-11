@@ -89,7 +89,7 @@ class AppLog:
                 # set filename, maxBytes, backupCount [priority: env > logging.yml]
                 dictConfig['handlers']["myfile"]["filename"] = filename if filename else dictConfig['handlers']["myfile"]["filename"]
                 dictConfig['handlers']["myfile"]["maxBytes"] = int(logging_max_size) if logging_max_size else dictConfig['handlers']["myfile"]["maxBytes"]
-                dictConfig['handlers']["myfile"]["backupCount"] = int(logging_max_file) if logging_max_size else dictConfig['handlers']["myfile"]["backupCount"]
+                dictConfig['handlers']["myfile"]["backupCount"] = int(logging_max_file) if logging_max_file else dictConfig['handlers']["myfile"]["backupCount"]
 
         # set config
         self._config = dictConfig

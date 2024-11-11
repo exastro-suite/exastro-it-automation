@@ -1087,11 +1087,13 @@ install_agent_service(){
         ENV_TMP_PATH="${default_env_values['REFERENCE_ENVPATH']}"
     fi
 
-    if [ -f $ENV_PATH ]; then
-        rm -rf $ENV_PATH
+    if [ "`realpath ${ENV_TMP_PATH}`" != "`realpath ${ENV_PATH}`" ]; then
+        if [ -f $ENV_PATH ]; then
+            rm -rf $ENV_PATH
+        fi
+        info "cp -rf $ENV_TMP_PATH $ENV_PATH"
+        cp -rf $ENV_TMP_PATH $ENV_PATH
     fi
-    info "cp -rf $ENV_TMP_PATH $ENV_PATH"
-    cp -rf $ENV_TMP_PATH $ENV_PATH
 
     case "${DEP_PATTERN}" in
         RHEL8 )

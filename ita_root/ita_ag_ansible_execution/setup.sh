@@ -1088,7 +1088,7 @@ install_agent_service(){
     fi
 
     if [ "${default_env_values['REFERENCE_ENVPATH']}" != "" ]; then
-        if [ -z $ENV_TMP_PATH ] && [ "`realpath ${ENV_TMP_PATH}`" != "`realpath ${ENV_PATH}`" ]; then
+        if [ "`realpath ${ENV_TMP_PATH}`" != "`realpath ${ENV_PATH}`" ]; then
             if [ -f $ENV_PATH ]; then
                 rm -rf $ENV_PATH
             fi
@@ -1312,9 +1312,9 @@ install(){
         3 )
             install_service
             ;;
-        # 4 )
-        #     create_envfile
-        #     ;;
+        4 )
+            create_envfile
+            ;;
         * )
             info "no install type ${INSTALL_TYPE}"
             ;;

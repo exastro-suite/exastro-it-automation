@@ -202,7 +202,7 @@ class storage_read_bytes(storage_base):
             tmp_file_path = file_path
 
         chunks = []
-        with tmp_file_path.open("rb") as f:
+        with open(tmp_file_path ,"rb") as f:
             while chunk := f.read(10000):
                 chunks.append(chunk)
         value = b''.join(chunks)

@@ -1521,18 +1521,16 @@ class CreateAnsibleExecFiles():
                     # 秘密鍵認証の場合にssh-agntでパスフレーズの入力を省略する為の情報生成
                     if ina_hostinfolist[host_name]['LOGIN_AUTH_TYPE'] == self.AnscObj.DF_LOGIN_AUTH_TYPE_KEY_PP_USE:
                         if self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_AG: # 実行エンジンがAnsible Agentの場合の場合、秘密鍵認証（パスフレーズあり）の場合にパスフレーズを暗号化
-## ansible-runnerがansible_ssh_passの暗号化未対応の為、暗号化処理はコメント　ここから
-##                            # 秘密鍵認証（パスフレーズあり）の場合にパスフレーズを暗号化しansible_passとEnter passphrase for keyを設定
-##                            login_pw_ansible_vault = ""
-##                            make_vaultpass = self.makeAnsibleVaultPassword(ina_hostinfolist[host_name]['LOGIN_PW'],
-##                                                                           login_pw_ansible_vault,
-##                                                                           indento_sp12,
-##                                                                           ina_hostinfolist[host_name]['SSH_KEY_FILE_PASSPHRASE'])
-##                            if make_vaultpass is False:
-##                                return False, mt_pioneer_sshkeyfilelist, mt_pioneer_sshextraargslist
-## ansible-runnerがansible_ssh_passの暗号化未対応の為、暗号化処理はコメント　ここまで
+                            # 秘密鍵認証（パスフレーズあり）の場合にパスフレーズを暗号化しansible_passとEnter passphrase for keyを設定
+                            login_pw_ansible_vault = ""
+                            make_vaultpass = self.makeAnsibleVaultPassword(ina_hostinfolist[host_name]['SSH_KEY_FILE_PASSPHRASE'],
+                                                                           login_pw_ansible_vault,
+                                                                           indento_sp12,
+                                                                           ina_hostinfolist[host_name]['SYSTEM_ID'])
+                            if make_vaultpass is False:
+                                return False, mt_pioneer_sshkeyfilelist, mt_pioneer_sshextraargslist
 
-                            passphrase = "ansible_ssh_pass: " + ina_hostinfolist[host_name]['SSH_KEY_FILE_PASSPHRASE']
+                            passphrase = "ansible_ssh_pass: " + make_vaultpass
                             sshpassprompt = "ansible_sshpass_prompt: " + '"Enter passphrase for key"'
 
                         if ina_hostinfolist[host_name]["SSH_KEY_FILE_PASSPHRASE"]:

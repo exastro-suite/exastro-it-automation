@@ -267,7 +267,7 @@ def api_filter_download_file(func):
             (flask)response
         '''
         try:
-            g.applogger.debug("[ts={}] controller start -> {}".format(api_timestamp, kwargs))
+            g.applogger.debug("chunk")
 
             # controller execute and make response
             controller_res = func(*args, **kwargs)
@@ -302,7 +302,7 @@ def api_filter_download_temporary_file(func):
             (flask)response
         '''
         try:
-            g.applogger.debug("[ts={}] controller start -> {}".format(api_timestamp, kwargs))
+            g.applogger.debug("chunk")
 
             # controller execute and make response
             controller_res = func(*args, **kwargs)

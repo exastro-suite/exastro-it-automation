@@ -1625,7 +1625,7 @@ class CreateAnsibleExecFiles():
                     # ansible agentの場合をansible_winrm_cert_key_pemのバスを加工する。
                     if self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_AG:
                         # ansible agentの場合を追加
-                        write_win_public_key_file_path = ("/in/", win_public_key_file_path)
+                        write_win_public_key_file_path = Replace_HostVrasFilepath("in", win_public_key_file_path)
                     else:
                         write_win_public_key_file_path = win_public_key_file_path
 

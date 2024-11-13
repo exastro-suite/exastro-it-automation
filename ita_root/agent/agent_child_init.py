@@ -45,7 +45,7 @@ def main():
             g.LANGUAGE = os.environ.get("LANGUAGE")
             g.SERVICE_NAME = os.environ.get("SERVICE_NAME")
             # create app log instance and message class instance
-            g.applogger = AppLog()
+            g.applogger = AppChildLog()
             g.appmsg = MessageTemplate(g.LANGUAGE)
 
             main_logic()

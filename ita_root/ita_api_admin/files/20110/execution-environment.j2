@@ -22,6 +22,10 @@ dependencies:
     package_system: "python39"
     python_path: "/usr/bin/python3.9"
 
+additional_build_steps:
+  append_base:
+    - RUN /usr/bin/python3.9 -m pip install --upgrade pip
+
 options:
   package_manager_path: {{ package_manager_path }}
   user: root

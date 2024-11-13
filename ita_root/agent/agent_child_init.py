@@ -17,7 +17,7 @@ import os
 import sys
 
 from common_libs.common.exception import AppException
-from common_libs.common.logger import AppLog
+from common_libs.common.logger import AppLog, AppChildLog
 from common_libs.common.message_class import MessageTemplate
 from common_libs.ag.util import app_exception, exception
 from agent_child_main import agent_child_main as main_logic

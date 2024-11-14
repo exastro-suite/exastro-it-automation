@@ -29,11 +29,6 @@ def external_valid_menu_before(objdbca, objtable, option):
     str_tag_name = getColumnValue(option, "tag_name", PasswordCol=False)
     str_definition_name = getColumnValue(option, "Execution_environment_definition_name", PasswordCol=False)
     str_template_name = getColumnValue(option, "template_name", PasswordCol=False)
-    # 2:その他　1:Redhat
-    str_base_image_os_type = getColumnValue(option, "base_image_os_type", PasswordCol=False)
-    str_user_name = getColumnValue(option, "user_name", PasswordCol=False)
-    str_password = getColumnValue(option, "password", PasswordCol=True)
-    str_attach_repository = getColumnValue(option, "attach_repository", PasswordCol=True)
 
     # Ansible Egent 実行環境構築方法
     DF_AG_BUILD_TYPE_MANUAL = '1'
@@ -51,20 +46,6 @@ def external_valid_menu_before(objdbca, objtable, option):
             manual_req_col.append(objtable['COLINFO']["Execution_environment_definition_name"][lang_col_name])
         if not str_template_name:
             manual_req_col.append(objtable['COLINFO']["template_name"][lang_col_name])
-        if not str_base_image_os_type:
-            manual_req_col.append(objtable['COLINFO']["base_image_os_type"][lang_col_name])
-        if not str_user_name:
-            # Ansible Egent ベースイメージOS種別がredhatの場合の必須入力チェック
-            if str_base_image_os_type == AnscConst.DF_AG_BASE_IMAGE_TYPE_REDHAT:
-                redhat_req_col.append(objtable['COLINFO']["user_name"][lang_col_name])
-        if not str_password:
-            # Ansible Egent ベースイメージOS種別がredhatの場合の必須入力チェック
-            if str_base_image_os_type == AnscConst.DF_AG_BASE_IMAGE_TYPE_REDHAT:
-                redhat_req_col.append(objtable['COLINFO']["password"][lang_col_name])
-        if not str_attach_repository:
-            # Ansible Egent ベースイメージOS種別がredhatの場合の必須入力チェック
-            if str_base_image_os_type == AnscConst.DF_AG_BASE_IMAGE_TYPE_REDHAT:
-                redhat_req_col.append(objtable['COLINFO']["attach_repository"][lang_col_name])
 
     if len(manual_req_col) != 0:
         retBool = False

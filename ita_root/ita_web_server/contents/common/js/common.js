@@ -29,7 +29,7 @@ const fn = ( function() {
     'use strict';
 
     // バージョン
-    const version = '2.5.0';
+    const version = '2.5.1';
 
     // AbortController
     const controller = new AbortController();
@@ -2284,7 +2284,7 @@ html: {
         }
 
         file += `<div class="inputFileClear">`
-            + cmn.html.button( cmn.html.icon('clear'), 'itaButton inputFileClearButton popup', { action: 'restore', title: getMessage.FTE00076 })
+            + cmn.html.button( cmn.html.icon('clear'), 'itaButton inputFileClearButton popup', Object.assign( attrs, { action: 'restore', title: getMessage.FTE00076 }))
         + `</div>`;
 
         return `<div class="inputFileWrap">`

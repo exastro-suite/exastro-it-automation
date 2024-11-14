@@ -800,7 +800,8 @@ color: #FFF;
 .standBy .button {
 cursor: no-drop!important;
 }
-.input:disabled {
+.input:disabled,
+.inputFile:disabled {
 background-color: var(--black15);
 border-color: var(--black30);
 color: var(--rowDiscardTextColor)!important;
@@ -808,6 +809,12 @@ opacity: .5!important;
 }
 .tBodyTrDiscard .input[data-key="remarks"] {
 background-color: var(--white100);
+}
+.tBodyTrDiscard .input[data-key="remarks"].tableEditChange {
+background-color: #DFF4CF;
+}
+.tBodyTrDiscard .input[data-key="remarks"]:disabled {
+background-color: var(--black15)!important;
 }
 .button:disabled > .inner {
 transform: none!important;
@@ -2851,6 +2858,10 @@ height: auto!important;
 }
 .tBodyTrDiscard .tableEditInputSelectContainer,
 .tBodyTrDiscard .tableEditInputMultipleSelectContainer {
+cursor: no-drop;
+}
+.tBodyTrDiscard .tableEditInputSelectContainer > *,
+.tBodyTrDiscard .tableEditInputMultipleSelectContainer > * {
 pointer-events: none;
 }
 .tableEditInputSelectValue {

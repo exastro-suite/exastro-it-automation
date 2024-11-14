@@ -872,7 +872,7 @@ def collect_search_candidates_from_mongodb(wsMongo: MONGOConnectWs, column, menu
     return sorted(result)
 
 
-def custom_check_sheet_type(menu, sheet_type_list, wsdb_istc=None):
+def custom_check_sheet_type(menu, sheet_type_list, wsdb_istc):
     """
     check_sheet_type
     メニューテーブル紐付管理に紐づいていない場合、独自メニュー用素材を返す
@@ -886,9 +886,6 @@ def custom_check_sheet_type(menu, sheet_type_list, wsdb_istc=None):
         or
         独自メニュー用素材
     """
-
-    if not wsdb_istc:
-        wsdb_istc = DBConnectWs(g.get('WORKSPACE_ID'))  # noqa: F405
 
     query_str = textwrap.dedent("""
         SELECT * FROM `T_COMN_MENU_TABLE_LINK` TAB_A

@@ -281,6 +281,8 @@ def backyard_main(organization_id, workspace_id):  # noqa: C901
 
     # ConductorとOperationの復活チェック################
 
+    objdbca.db_disconnect()
+
     debug_msg = g.appmsg.get_log_message("BKY-20002", [])
     g.applogger.debug(debug_msg)
 

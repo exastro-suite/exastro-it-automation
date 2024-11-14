@@ -103,7 +103,7 @@ def organization_create(body, organization_id):
         # 3. mongo_owner=True   mongo_connection_string="xxx"   WS単位でユーザを作成し、ＤＢと紐づける。外部のmongoを利用。未実装
         if (mongo_owner is True and not mongo_host) or (mongo_owner is False and not mongo_connection_string):
             # どちらのpatternの接続情報もなく、OASEドライバを追加できない。
-            # The OASE driver cannot be added because the connection infomation of mongo is not set.
+            # The OASE driver cannot be added because the mongo connection information is not set.
             return '', g.appmsg.get_api_message("490-02007", []), "490-02007", 490
 
         # v2.4ではmongo_owner=Trueは、内部コンテナしか許さないので、pattern1に流す
@@ -406,7 +406,7 @@ def organization_info(organization_id):  # noqa: E501
         common_db = DBConnectCommon()  # noqa: F405
         connect_info = common_db.get_orgdb_connect_info(organization_id)
         if connect_info is False:
-            # Organization does not exist.
+            # No Organization exists.
             return '', g.appmsg.get_api_message("490-02010", []), "490-02010", 490
 
         # ドライバのインストール状態を取得する
@@ -601,7 +601,7 @@ def organization_update(organization_id, body=None):  # noqa: E501
             # 3. mongo_owner=True   mongo_connection_string="xxx"   WS単位でユーザを作成し、ＤＢと紐づける。外部のmongoを利用。未実装
             if (mongo_owner is True and not mongo_host) or (mongo_owner is False and not mongo_connection_string):
                 # どちらのpatternの接続情報もなく、OASEドライバを追加できない。
-                # The OASE driver cannot be added because the connection infomation of mongo is not set.
+                # The OASE driver cannot be added because the mongo connection information is not set.
                 return '', g.appmsg.get_api_message("490-02007", []), "490-02007", 490
 
             if "oase" not in no_install_driver:
@@ -609,11 +609,11 @@ def organization_update(organization_id, body=None):  # noqa: E501
                 g.applogger.info("oase is already installed. Connection infocation of mongo will be updated.(oase update pattern 2)")
                 # v2.4ではpattern2→pattern2しか許さない
                 if mongo_owner is True or not mongo_connection_string or bool(org_connect_info['MONGO_OWNER']) is True or not org_connect_info['MONGO_CONNECTION_STRING']:
-                    # This change of mongo connection infomation is not allowed.
+                    # This mongo connection information cannot be changed.
                     return '', g.appmsg.get_api_message("490-02011", []), "490-02011", 490
                 # 同じ文字列の送信は許さない
                 if mongo_connection_string == ky_decrypt(org_connect_info.get('MONGO_CONNECTION_STRING')):
-                    # This mongo connection infomation is already changed.
+                    # This mongo connection information has already been changed.
                     return '', g.appmsg.get_api_message("490-02012", []), "490-02012", 490
 
             # v2.4ではmongo_owner=Trueは、内部コンテナしか許さないので、pattern1に流す
@@ -925,11 +925,15 @@ def organization_update(organization_id, body=None):  # noqa: E501
                     t = traceback.format_exc()
                     g.applogger.error("The problem is occured in MongoDB.See below logs...(organization_id='{}' workspace_id='{}')".format(organization_id, workspace_id))
                     g.applogger.error(arrange_stacktrace_format(t))
+                finally:
+                    ws_mongo.disconnect()
 
                 g.db_connect_info.pop("WS_MONGO_CONNECTION_STRING")
                 g.db_connect_info.pop("WS_MONGO_DATABASE")
                 g.db_connect_info.pop("WS_MONGO_USER")
                 g.db_connect_info.pop("WS_MONGO_PASSWORD")
+
+            ws_db.db_disconnect()
 
         # t_comn_organization_db_infoテーブルのMONGODB接続情報, NO_INSTALL_DRIVERを更新する
         if len(update_no_install_driver) > 0:
@@ -956,6 +960,8 @@ def organization_update(organization_id, body=None):  # noqa: E501
             org_db.db_disconnect()
         if 'org_mongo' in locals():
             org_mongo.disconnect()
+        if 'ws_db' in locals():
+            ws_db.db_disconnect()
         if 'ws_mongo' in locals():
             ws_mongo.disconnect()
 

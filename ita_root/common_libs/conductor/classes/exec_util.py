@@ -410,7 +410,7 @@ class ConductorExecuteLibs():
             conductor_data = self.override_conductor_data(p_conductor_data, db_conductor_data)
 
             # conductor_dataのバリデーション + IDから名称を現時点に最新化
-            cclibs = ConductorCommonLibs()
+            cclibs = ConductorCommonLibs(wsdb_istc=self.objdbca)
             tmp_result = cclibs.override_node_idlink(copy.deepcopy(conductor_data))
             if tmp_result[0] is False:
                 raise Exception()

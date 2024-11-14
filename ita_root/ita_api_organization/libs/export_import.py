@@ -1791,6 +1791,7 @@ def _check_zip_file(upload_id, organization_id, workspace_id):
     # バージョン差異チェック
     common_db = DBConnectCommon()
     version_data = _collect_ita_version(common_db)
+    common_db.db_disconnect()
 
     export_version = ''
     if os.path.isfile(uploadPath + upload_id + '/VERSION'):

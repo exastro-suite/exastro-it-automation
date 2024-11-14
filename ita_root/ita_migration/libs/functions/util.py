@@ -106,6 +106,7 @@ def get_migration_target_versions():
         return version_list[1:]
 
     data_list = common_db.table_select("T_COMN_VERSION", "WHERE `SERVICE_ID` = 1")
+    common_db.db_disconnect()
     if len(data_list) != 1:
         raise Exception("Failed to get current version.")
 
@@ -134,6 +135,7 @@ def set_version(version):
     common_db.db_transaction_start()
     common_db.table_update("T_COMN_VERSION", data, "SERVICE_ID")
     common_db.db_commit()
+    common_db.db_disconnect()
 
 
 BACKYARD_STOP_FLAG_FILE_NAME = "skip_all_service"
@@ -172,6 +174,7 @@ def get_organization_ids():
 
     common_db = DBConnectCommon()  # noqa: F405
     organization_info_list = common_db.table_select("T_COMN_ORGANIZATION_DB_INFO", "WHERE `DISUSE_FLAG`=0 ORDER BY `LAST_UPDATE_TIMESTAMP`")
+    common_db.db_disconnect()
 
     return_dict = [[x.get('ORGANIZATION_ID'), x.get('NO_INSTALL_DRIVER')] for x in organization_info_list]
 

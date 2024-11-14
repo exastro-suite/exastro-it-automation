@@ -151,6 +151,9 @@ class MainFunctions():
             FREE_LOG = g.appmsg.get_api_message("MSG-100010")
             g.applogger.debug(FREE_LOG)
 
+        self.ws_db.db_disconnect()
+        self.ws_db = None
+
     def getOpeDelMenuList(self, OpeDelLists):
         """
           オペレーション削除管理「T_COMN_DEL_OPERATION_LIST」の情報取得

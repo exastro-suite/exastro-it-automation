@@ -39,9 +39,6 @@ def backyard_main(organization_id, workspace_id):
 
 
 def main_logic(organization_id, workspace_id):
-    # db instance
-    wsDb = DBConnectWs(workspace_id)  # noqa: F405
-
     # メンテナンスモードのチェック
     try:
         maintenance_mode = get_maintenance_mode_setting()
@@ -57,30 +54,36 @@ def main_logic(organization_id, workspace_id):
         g.applogger.error(g.appmsg.get_log_message("BKY-00008", []))
         return False
 
-    # 準備中/実行中の作業インスタンスに関して、実行プロセスが存在しているかの存在確認
-    if child_process_exist_check(wsDb, organization_id, workspace_id) is False:
-        g.applogger.debug(g.appmsg.get_log_message("MSG-10059"))
-        return False
+    # db instance
+    wsDb = DBConnectWs(workspace_id)  # noqa: F405
 
-    # 実行中インスタンスのワークスペースIDをキャッシュ
-    records = get_running_process(wsDb)
-    executed_worksapce_id_list = []
-    for record in records:
-        worksapce_id = record['I_WORKSPACE_ID']
+    try:
+        # 準備中/実行中の作業インスタンスに関して、実行プロセスが存在しているかの存在確認
+        if child_process_exist_check(wsDb, organization_id, workspace_id) is False:
+            g.applogger.debug(g.appmsg.get_log_message("MSG-10059"))
+            return False
 
-        if worksapce_id in executed_worksapce_id_list:
-            continue
-        executed_worksapce_id_list.append(worksapce_id)
+        # 実行中インスタンスのワークスペースIDをキャッシュ
+        records = get_running_process(wsDb)
+        executed_worksapce_id_list = []
+        for record in records:
+            worksapce_id = record['I_WORKSPACE_ID']
 
-    # backyard_execute_stopの値が"1"の場合、メンテナンス中のためreturnする。
-    if str(maintenance_mode['backyard_execute_stop']) == "1":
-        g.applogger.debug(g.appmsg.get_log_message("BKY-00006", []))
-        return True
+            if worksapce_id in executed_worksapce_id_list:
+                continue
+            executed_worksapce_id_list.append(worksapce_id)
 
-    # 未実行（実行待ち）の作業を実行
-    retBool = run_unexecuted(wsDb, organization_id, workspace_id, executed_worksapce_id_list)
-    if retBool is False:
-        return False
+        # backyard_execute_stopの値が"1"の場合、メンテナンス中のためreturnする。
+        if str(maintenance_mode['backyard_execute_stop']) == "1":
+            g.applogger.debug(g.appmsg.get_log_message("BKY-00006", []))
+            return True
+
+        # 未実行（実行待ち）の作業を実行
+        retBool = run_unexecuted(wsDb, organization_id, workspace_id, executed_worksapce_id_list)
+        if retBool is False:
+            return False
+    finally:
+        wsDb.db_disconnect()
 
     return True
 

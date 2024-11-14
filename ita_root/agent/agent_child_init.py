@@ -17,7 +17,7 @@ import os
 import sys
 
 from common_libs.common.exception import AppException
-from common_libs.common.logger import AppLog
+from common_libs.common.logger import AppLog, AppChildLog
 from common_libs.common.message_class import MessageTemplate
 from common_libs.ag.util import app_exception, exception
 from agent_child_main import agent_child_main as main_logic
@@ -30,7 +30,9 @@ def main():
     workspace_id = args[2]
 
     # load environ variables
-    load_dotenv(override=True)
+    envfilepath = os.environ.get("ENVFILEPATH", None)
+    load_dotenv(override=True) if envfilepath is None \
+        else load_dotenv(dotenv_path=os.environ.get("ENVFILEPATH"), override=True)
 
     flask_app = Flask(__name__)
 
@@ -43,7 +45,7 @@ def main():
             g.LANGUAGE = os.environ.get("LANGUAGE")
             g.SERVICE_NAME = os.environ.get("SERVICE_NAME")
             # create app log instance and message class instance
-            g.applogger = AppLog()
+            g.applogger = AppChildLog()
             g.appmsg = MessageTemplate(g.LANGUAGE)
 
             main_logic()

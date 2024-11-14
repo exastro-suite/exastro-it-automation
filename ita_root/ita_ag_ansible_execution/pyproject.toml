@@ -17,6 +17,8 @@ pycryptodome = ">=0.0.0"
 python-dotenv = ">=0.0.0"
 ansible-builder = ">=3.0.0"
 ansible-runner = ">=2.0.0"
+requests-toolbelt = ">=0.0.0"
+pip = "^24.3.1"
 
 
 [tool.poetry.group.first_install.dependencies]

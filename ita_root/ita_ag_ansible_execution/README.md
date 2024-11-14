@@ -16,32 +16,32 @@
     　必要に応じて、サイジング、及びメンテナンス（Docker Image や Build Cache等について）を実行してください。
 
 ### OS要件
-    RHEL9: 
+    RHEL9:
         Red Hat Enterprise Linux release 9.4 (Plow)：(動作確認済み)
-    Almalinux8: 
+    Almalinux8:
         AlmaLinux release 8.9 (Midnight Oncilla)：(動作確認済み)
 
     ※SELinuxがPermissiveに変更されていること。
         $ sudo vi /etc/selinux/config
             SELINUX=Permissive
 
-        $ getenforce	
+        $ getenforce
             Permissive
 
     ※サブスクリプションの登録は、インストーラ実行前に実施しておいてください。
 
-### RHEL(サポート付きライセンス利用の場合) 
+### RHEL(サポート付きライセンス利用の場合)
     有償版のAnsible-builder、Ansible-runnerを利用する場合、サブスクリプションの登録、リポジトリ有効化は、インストーラ実行前に実施しておいてください。
 
     ・Red Hat コンテナーレジストリーの認証
         podman login registry.redhat.io
 
-    ・利用するリポジトリ    
+    ・利用するリポジトリ
         rhel-9-for-x86_64-baseos-rpms
         rhel-9-for-x86_64-appstream-rpms
         ansible-automation-platform-2.5-for-rhel-9-x86_64-rpms
-        
-    ・有効化されているリポジトリの確認、リポジトリの有効化        
+
+    ・有効化されているリポジトリの確認、リポジトリの有効化
         sudo subscription-manager repos --list-enabled
         sudo subscription-manager repos --enable=rhel-9-for-x86_64-baseos-rpms
         sudo subscription-manager repos --enable=rhel-9-for-x86_64-appstream-rpms
@@ -54,9 +54,9 @@
 
 ### ソフトウェア要件
     Python3.9以上がインストールされていること。
-    以下、コマンドが実行できること    
-        ・sudo 
-        
+    以下、コマンドが実行できること
+        ・sudo
+
         ・python3 -V
             Python 3.9.18
         ・pip3 -V
@@ -67,7 +67,7 @@
         ・接続先のITA
         ・各種インストール、及びモジュール、BaseImage取得先等（インターネットへの接続を含む）
         ・作業対象サーバ
-            
+
 ### エージェントサービスの前提条件
     エージェントサーバ→ITAへのアウトバウンド通信が許可されていること
     以下、上記の各種要件を満たしていること
@@ -79,10 +79,10 @@
 
 ### インストーラ実行の事前準備
     以下から、setup.shをDLし、インストールするサーバに配置してください。
-        wget https://raw.githubusercontent.com/exastro-suite/exastro-it-automation-dev/refs/heads/main/ita_root/ita_ag_ansible_execution/setup.sh
+        wget https://raw.githubusercontent.com/exastro-suite/exastro-it-automation/refs/heads/main/ita_root/ita_ag_ansible_execution/setup.sh
     インストーラを実行するユーザーが実行できる権限に変更してください。
         chmod 755 setup.sh
-    
+
     インストーラを実行
     ./setup.sh <install / uninstall>
 
@@ -97,7 +97,7 @@
 
 ### エージェントサービスのインストール
     ./setup.sh install
-    
+
     ①以下で、エージェントのインストールモードを聞かれるので、指定してください。
         1: 必要なモジュールのインストール、サービスのソースコードのインストール、サービスの登録・起動を行います。
         2: 追加でサービスの登録・起動を行います。
@@ -110,11 +110,11 @@
         3: Register service
         q: Quit installer
     select value: (1, 2, 3, q)  :
-    
+
     以下、「default: xxxxxx」がある項目については、Enterを押下すると、defaultの値が適用されます。
-    
+
     以下①で、1, 2を指定した場合です。
-        
+
         ②以下、Enterを押下すると、必要な設定値を対話形式での入力が開始されます。
         'No value + Enter' is input while default value exists, the default value will be used.
         ->  Enter
@@ -125,16 +125,16 @@
 
         ④インストールするエージェントサービスの名称を設定すす場合は、nを押して以降の対話で、指定してください。
         The Agent service name is in the following format: ita-ag-ansible-execution-20241112115209622. Select n to specify individual names. (y/n):
-        Input Value [default: y ]: 
+        Input Value [default: y ]:
 
         ⑤↑で「n」を入力した場合のみこちら表示されます。
         Input the Agent service name . The string ita-ag-ansible-execution- is added to the start of the name.:
-        Input Value : 
-        
+        Input Value :
+
         ⑥ソースコードのインストール先を指定する場合は入力してください。
         Specify full path for the install location.:
         Input Value [default: /home/cloud-user/exastro ]:
-        
+
         ⑦データの保存先を指定する場合は入力してください。
         Specify full path for the data storage location.:
         Input Value [default: /home/cloud-user/exastro ]:
@@ -143,19 +143,19 @@
         　償版を利用する場合は、リポジトリ有効化したうえで、2を指定してください。
         Select which Ansible-builder and/or Ansible-runner to use(1, 2) [1=Ansible 2=Red Hat Ansible Automation Platform] :
         Input Value [default: 1 ]:
-        
+
         ⑨接続先のITAのURLを指定してください。　e.g. http://exastro.example.com:30080
         Input the ITA connection URL.:
-        Input Value : 
-        
+        Input Value :
+
         ⑩接続先のITAのORGANIZATIONを指定してください。
         Input ORGANIZATION_ID.:
-        Input Value : 
+        Input Value :
 
         ⑪接続先のITAのWORKSPACEを指定してください。
         Input WORKSPACE_ID.:
-        Input Value : 
-        
+        Input Value :
+
         ⑫接続先のITAのリフレッシュトークンを指定してください。（トークンの取得方法は以下、参照。）
             https://ita-docs.exastro.org/ja/2.4/manuals/platform_management/general.html#id8
         後で設定する場合は、Enter押して次に進んでください。
@@ -166,30 +166,30 @@
 
         ⑬サービスの起動を行う場合は、を選択してください。起動しない場合は、後ほど手動で起動してください。
         Do you want to start the Agent service? (y/n)y
-        
+
         ⑭インストールしたサービスの情報が表示されます。
         Install Ansible Execution Agent Infomation:
             Agent Service id:   <サービスの一意な識別子:yyyyMMddHHmmssfff or 対話で指定した文字列>
             Agent Service Name: ita-ag-ansible-execution-<サービスの一意な識別子:yyyyMMddHHmmssfff or 対話で指定した文字列>
             Storage Path:       /home/cloud-user/exastro/<サービスの一意な識別子:yyyyMMddHHmmssfff or 対話で指定した文字列>/storage
             Env Path:           /home/cloud-user/exastro/<サービスの一意な識別子:yyyyMMddHHmmssfff or 対話で指定した文字列>/.env
-            
+
 
     以下①で、3を指定した場合です。
         ③使用する.envのパスを指定してください。envの情報をもとに、サービスの登録・起動を行います。
         Input the full path for the .env file.:
         Input Value :
-        
+
         ⑬サービスの起動を行う場合は、を選択してください。起動しない場合は、後ほど手動で起動してください。
         Do you want to start the Agent service? (y/n)y
-        
+
         ⑭インストールしたサービスの情報が表示されます。
         Install Ansible Execution Agent Infomation:
             Agent Service id:   <サービスの一意な識別子:yyyyMMddHHmmssfff or 対話で指定した文字列>
             Agent Service Name: ita-ag-ansible-execution-<サービスの一意な識別子:yyyyMMddHHmmssfff or 対話で指定した文字列>
             Storage Path:       /home/cloud-user/exastro/<サービスの一意な識別子:yyyyMMddHHmmssfff or 対話で指定した文字列>/storage
             Env Path:           /home/cloud-user/exastro/<サービスの一意な識別子:yyyyMMddHHmmssfff or 対話で指定した文字列>/.env
-            
+
 
 ### エージェントサービスの各種操作
 
@@ -197,15 +197,15 @@ AlmaLinux
     systemctl daemon-reload
     systemctl status  ita-ag-ansible-execution-<サービスの一意な識別子:yyyyMMddHHmmssfff or 対話で指定した文字列>
     systemctl start ita-ag-ansible-execution-<サービスの一意な識別子:yyyyMMddHHmmssfff or 対話で指定した文字列>
-    systemctl stop  ita-ag-ansible-execution-<サービスの一意な識別子:yyyyMMddHHmmssfff or 対話で指定した文字列>			
-    systemctl restart  ita-ag-ansible-execution-<サービスの一意な識別子:yyyyMMddHHmmssfff or 対話で指定した文字列>	
+    systemctl stop  ita-ag-ansible-execution-<サービスの一意な識別子:yyyyMMddHHmmssfff or 対話で指定した文字列>
+    systemctl restart  ita-ag-ansible-execution-<サービスの一意な識別子:yyyyMMddHHmmssfff or 対話で指定した文字列>
 
 RHEL9
     systemctl --user daemon-reload
     systemctl --user status  ita-ag-ansible-execution-<サービスの一意な識別子:yyyyMMddHHmmssfff or 対話で指定した文字列>
     systemctl --user start ita-ag-ansible-execution-<サービスの一意な識別子:yyyyMMddHHmmssfff or 対話で指定した文字列>
-    systemctl --user stop  ita-ag-ansible-execution-<サービスの一意な識別子:yyyyMMddHHmmssfff or 対話で指定した文字列>			
-    systemctl --user restart  ita-ag-ansible-execution-<サービスの一意な識別子:yyyyMMddHHmmssfff or 対話で指定した文字列>	
+    systemctl --user stop  ita-ag-ansible-execution-<サービスの一意な識別子:yyyyMMddHHmmssfff or 対話で指定した文字列>
+    systemctl --user restart  ita-ag-ansible-execution-<サービスの一意な識別子:yyyyMMddHHmmssfff or 対話で指定した文字列>
 
 
 ### エージェントサービスのアンインストール
@@ -228,17 +228,17 @@ RHEL9
     select value: (1, 2, 3, q)  :
 
     以下①で、1, 2を指定した場合です。
-        
+
         ②アンインストールするエージェントのサービス名（ita-ag-ansible-execution-<サービスの一意な識別子:yyyyMMddHHmmssfff or 対話で指定した文字列>）を指定してください。
-        Input a SERVICE_NAME.(e.g. ita-ag-ansible-execution-xxxxxxxxxxxxx): 
-        
+        Input a SERVICE_NAME.(e.g. ita-ag-ansible-execution-xxxxxxxxxxxxx):
+
         ③②で指定した、サービス名のデータの保存先を指定してください。
-        Input a STORAGE_PATH.(e.g. /home/cloud-user/exastro/<SERVICE_ID>): 
+        Input a STORAGE_PATH.(e.g. /home/cloud-user/exastro/<SERVICE_ID>):
 
 
     以下①で、2を指定した場合です。
         ②アンインストールするエージェントのサービス名（ita-ag-ansible-execution-<サービスの一意な識別子:yyyyMMddHHmmssfff or 対話で指定した文字列>）を指定してください。
-        Input a SERVICE_NAME.(e.g. ita-ag-ansible-execution-xxxxxxxxxxxxx): 
+        Input a SERVICE_NAME.(e.g. ita-ag-ansible-execution-xxxxxxxxxxxxx):
 
     以下①で、3を指定した場合です。
         サービス削除済みのサービス名のデータの保存先（<サービスの一意な識別子:yyyyMMddHHmmssfff or 対話で指定した文字列>）を指定してください。
@@ -247,7 +247,7 @@ RHEL9
 
 ### エージェントサービスの構成
     以下、デフォルトの設定値で、インストールした場合
-    
+
     サービスのアプリケーションソースコード
         /home/cloud-user/exastro/ita_ag_ansible_execution/
     各種データの保存領域
@@ -281,15 +281,14 @@ RHEL9
         ITERATION=10
         EXECUTE_INTERVAL=5
 
-    以下の設定値については、インストーラで固定値で設定されますので、必要に応じて、コメントアウト外す、値を変更してください。    
+    以下の設定値については、インストーラで固定値で設定されますので、必要に応じて、コメントアウト外す、値を変更してください。
         LOG_LEVEL=INFO                  :ログ出力のレベル <INFO/DEBUG>
         #LOGGING_MAX_SIZE=10485760      :ログローテートするファイルサイズ
         #LOGGING_MAX_FILE=30            :ログローテートされたバックアップ数
         EXECUTION_ENVIRONMENT_NAMES=    :実行環境名を指定　※1
         ITERATION=10                    :サービスの実行スクリプト中に、実行するpythonの回数
         EXECUTE_INTERVAL=5              :処理実行のインターバルの時間
-        
+
         ※1 Ansible共通→実行環境管理→実行環境名のものを,区切りで指定してください。
             デフォルト状態（指定無し）では、全てを作業実行対象として動作します。
             指定されている場合、該当する実行環境名で実行された作業のみを作業対象とみなします。
-    

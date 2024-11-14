@@ -223,8 +223,6 @@ def post_compare_execute_file(organization_id, workspace_id, menu, body=None, fi
         file_required = True
         if file=="no":
             file_required = False
-        print("file_required file_required file_required file_required file_required file_required file_required ")
-        print(file_required)
 
         options = {}
         options.setdefault("compare_mode", "file")

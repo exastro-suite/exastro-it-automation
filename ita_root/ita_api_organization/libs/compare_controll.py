@@ -29,8 +29,8 @@ import unicodedata
 import shutil
 import traceback
 
-import dictdiffer
 import difflib
+from deepdiff import DeepDiff
 
 import openpyxl
 
@@ -820,20 +820,27 @@ def _execute_compare_data(objdbca, compare_config, options, file_required=False)
                 # target only
                 tmp_target_data_1 = {k: v for k, v in target_data_1.items() if k not in negative_key}
                 tmp_target_data_2 = {k: v for k, v in target_data_2.items() if k not in negative_key}
+
                 # diff 全体
-                result_dictdiffer = list(dictdiffer.diff(tmp_target_data_1, tmp_target_data_2))
+                result_deepdiff = DeepDiff(tmp_target_data_1, tmp_target_data_2)
 
                 tmp_compare_result = False
-                if len(result_dictdiffer) != 0:
+                if len(result_deepdiff) != 0:
                     tmp_compare_result = True
                 else:
                     pass
                 compare_config["result_compare_host"].setdefault(target_host, tmp_compare_result)
 
+                diff_keys_set = set()
+                for diff_type in ["type_changes","dictionary_item_added", "dictionary_item_removed", "values_changed"]:
+                    if diff_type in result_deepdiff:
+                        for key in result_deepdiff[diff_type]:
+                            diff_keys_set.add(key.split("[")[-1].strip("']"))
+                diff_key = list(diff_keys_set)
+
                 # get target rest_key
                 target_data_key = list(target_data_1.keys())
                 target_data_key.extend(list(target_data_2.keys()))
-                diff_key = [i1 for i0, i1, i2 in result_dictdiffer]
 
                 # get file target list
                 file_list_colneme = [tmp_info.get('col_name') for tmp_info in column_info if tmp_info.get("file_flg") is True]
@@ -953,39 +960,57 @@ def _get_unified_diff(accept_compare_file_list, filename_1, filename_2, mimetype
     """
     filename_1 = "" if filename_1 is None or len(filename_1) == 0 else filename_1
     filename_2 = "" if filename_2 is None or len(filename_2) == 0 else filename_2
+    chunk_byte = 10000
 
+    file_diff = False
     str_rdiff = ""
-    if mimetype_1 in accept_compare_file_list and mimetype_2 in accept_compare_file_list:
-        try:
-            if file_required is True:
-                data_1_linebreak = base64.b64decode(data_1.encode()).decode().splitlines()
-                data_2_linebreak = base64.b64decode(data_2.encode()).decode().splitlines()
-            else:
-                chank_byte = 10000
-                data_1_linebreak = []
-                data_2_linebreak = []
-                with open(data_1, "rb") as tmp_data_1, open(data_2, "rb") as tmp_data_2:
-                    while chunk_1:= tmp_data_1.read(chank_byte):
+    try:
+        if file_required is True:
+            data_1_linebreak = base64.b64decode(data_1.encode()).decode().splitlines()
+            data_2_linebreak = base64.b64decode(data_2.encode()).decode().splitlines()
+        else:
+            data_1_linebreak = []
+            data_2_linebreak = []
+            if data_1:
+                with open(data_1, "rb") as tmp_data_1:
+                    while chunk_1:= tmp_data_1.read(chunk_byte):
                         data_1_linebreak.extend(chunk_1.decode().splitlines())
-                    while chunk_2:= tmp_data_2.read(chank_byte):
+            if data_2:
+                with open(data_2, "rb") as tmp_data_2:
+                    while chunk_2:= tmp_data_2.read(chunk_byte):
                         data_2_linebreak.extend(chunk_2.decode().splitlines())
-        except Exception:
-            t = traceback.format_exc()
-            g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
-            # read file is faild
-            status_code = "499-01006"
-            log_msg_args = [filename_1, filename_2]
-            api_msg_args = [filename_1, filename_2]
-            raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
+    except (UnicodeDecodeError, ValueError):
+        if not data_1 and not data_2:
+            file_diff = False
+        elif not data_1 or not data_2:
+            file_diff = True
+        else:
+            with open(data_1, "rb") as tmp_data_1, open(data_2, "rb") as tmp_data_2:
+                while chunk_1 := tmp_data_1.read(chunk_byte):
+                    chunk_2 = tmp_data_2.read(chunk_byte)
+                    if chunk_1 != chunk_2:
+                        file_diff = True
+        return file_diff, str_rdiff
+    except Exception:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
+        # read file is faild
+        status_code = "499-01006"
+        log_msg_args = [filename_1, filename_2]
+        api_msg_args = [filename_1, filename_2]
+        raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
-        rdiff = difflib.unified_diff(
-            data_1_linebreak,
-            data_2_linebreak,
-            filename_1,
-            filename_2,
-            lineterm='')
-        str_rdiff = '\n'.join(rdiff)
-    return str_rdiff
+    rdiff = difflib.unified_diff(
+        data_1_linebreak,
+        data_2_linebreak,
+        filename_1,
+        filename_2,
+        lineterm='')
+    str_rdiff = '\n'.join(rdiff)
+
+    if str_rdiff:
+        file_diff = True
+    return file_diff, str_rdiff
 
 
 # 縦型メニュー項目名:代入順序入り変換上書き
@@ -1075,17 +1100,10 @@ def _get_compare_file_result(objdbca, compare_config, diff_flg_file, file_mimety
         tmp_file_data_2 = ""
         tmp_file_mimetype_2 = "text/plain"
     # compare result[file]
-    if tmp_file_data_1 != tmp_file_data_2:
-        value_compare_flg = True
-        file_compare_flg = True
-        diff_flg_file.setdefault(tmp_col_name, file_compare_flg)
-    else:
-        file_compare_flg = False
-        diff_flg_file.setdefault(tmp_col_name, file_compare_flg)
 
     # compare file
-    if compare_mode == "file":
-        str_rdiff = _get_unified_diff(
+    if not file_required and (os.path.exists(tmp_file_data_1) or os.path.exists(tmp_file_data_2)):
+        file_diff, str_rdiff = _get_unified_diff(
             accept_compare_file_list,
             col_val_menu_1,
             col_val_menu_2,
@@ -1095,6 +1113,26 @@ def _get_compare_file_result(objdbca, compare_config, diff_flg_file, file_mimety
             tmp_file_data_2, # file_required=Falseの場合、fileのパスが入る
             file_required
         )
+        if file_diff and str_rdiff:
+            file_compare_flg = True
+            diff_flg_file.setdefault(tmp_col_name, file_compare_flg)
+        elif file_diff:
+            value_compare_flg = False
+            file_compare_flg = True
+            diff_flg_file.setdefault(tmp_col_name, file_compare_flg)
+        else:
+            file_compare_flg = False
+            diff_flg_file.setdefault(tmp_col_name, file_compare_flg)
+    else:
+        if col_val_menu_1 != col_val_menu_2:
+            value_compare_flg = False
+            file_compare_flg = True
+            diff_flg_file.setdefault(tmp_col_name, file_compare_flg)
+        else:
+            file_compare_flg = False
+            diff_flg_file.setdefault(tmp_col_name, file_compare_flg)
+
+    if compare_mode == "file":
 
         if str_rdiff == "":
             compare_config = _set_flg(compare_config, "compare_file", False)
@@ -1750,6 +1788,8 @@ def _set_column_info(objdbca, compare_config, options):
         # detail_flg: True: use T_COMPARE_DETAIL_LIST / False: use T_COMN_MENU_COLUMN_LINK
         if detail_flg is False:
             menu_id = target_menu_info.get("menu_1").get("menu_id")
+            menu_id_2 = target_menu_info.get("menu_2").get("menu_id")
+
             sql_str = textwrap.dedent("""
                 SELECT
                     `TAB_A`.*,
@@ -1767,6 +1807,22 @@ def _set_column_info(objdbca, compare_config, options):
             bind_list = [menu_id]
             # compare_list
             rows = objdbca.sql_execute(sql_str, bind_list)
+
+            sql_str_2 = textwrap.dedent("""
+                SELECT
+                    `TAB_A`.*,
+                    `TAB_B`.`COLUMN_CLASS_NAME`
+                FROM
+                    `T_COMN_MENU_COLUMN_LINK` `TAB_A`
+                LEFT JOIN `T_COMN_COLUMN_CLASS` `TAB_B` ON ( `TAB_A`.`COLUMN_CLASS` = `TAB_B`.`COLUMN_CLASS_ID` )
+                WHERE `TAB_A`.`MENU_ID` = %s
+                AND `TAB_A`.`DISUSE_FLAG` <> 1
+                ORDER BY  `TAB_A`.`COLUMN_DISP_SEQ` ASC
+            """).format().strip()
+            bind_list_2 = [menu_id_2]
+            # compare_list
+            rows_2 = objdbca.sql_execute(sql_str_2, bind_list_2)
+
             if len(rows) >= 1:
                 row = {
                     'COMPARE_DETAIL_ID': 'menu',
@@ -1800,6 +1856,13 @@ def _set_column_info(objdbca, compare_config, options):
                 # for row in tmp_rows:
 
                 for row in rows:
+                    for row_2 in rows_2:
+                        col_key_2 = row_2.get("COLUMN_NAME_REST")
+                        if col_key_2 not in del_parameter_list:
+                            if row_2.get("COLUMN_CLASS") == row.get("COLUMN_CLASS"):
+                                column_class_2 = row_2.get("COLUMN_CLASS")
+                                column_class_2 = row_2.get("COLUMN_CLASS_NAME")
+
                     compare_col_title = "{}/{}".format(
                         row.get("FULL_COL_GROUP_NAME_" + language.upper()),
                         row.get("COLUMN_NAME_" + language.upper())
@@ -1810,7 +1873,7 @@ def _set_column_info(objdbca, compare_config, options):
                         column_class = row.get("COLUMN_CLASS_NAME")
                         # file comapre target flg
                         file_flg = False
-                        if column_class in file_column_list:
+                        if column_class in file_column_list or column_class_2 in file_column_list:
                             compare_config = _set_flg(compare_config, "compare_file", True)
                             file_flg = True
 
@@ -1838,7 +1901,7 @@ def _set_column_info(objdbca, compare_config, options):
                             "no_input_order_flg": no_input_order_flg,
                             "vertical_no_use_flg": vertical_no_use_flg,
                             "column_class_1": column_class,
-                            "column_class_2": column_class
+                            "column_class_2": column_class_2
                         }
                         column_info.append(tmp_column_info)
         else:
@@ -2323,15 +2386,16 @@ def _get_file_data_columnclass(objdbca, objtable, rest_key, file_name, target_uu
         eval_class_str = "{}(objdbca,objtable,rest_key,'')".format(col_class_name)
         objcolumn = eval(eval_class_str)
         # ファイルの内容が必要な場合のみ、base64でファイルを取得
-        if file_required is True:
+        if file_required is True or col_class_name != "FileUploadColumn":
             file_data = objcolumn.get_file_data(file_name, target_uuid, None)
         file_path = objcolumn.get_file_data_path(file_name, target_uuid, None)
         file_mimetype, encoding = mimetypes.guess_type(file_path, False)
         if file_mimetype is None:
-            # check binary file
-            ret, file_mimetype, encoding = no_mimetype_is_binary_chk(file_path, file_mimetype, encoding)
-            if ret is False and file_mimetype is None:
-                file_mimetype = "text/plain"
+            if os.path.exists(file_path):
+                # check binary file
+                ret, file_mimetype, encoding = no_mimetype_is_binary_chk(file_path, file_mimetype, encoding)
+                if ret is False and file_mimetype is None:
+                    file_mimetype = "text/plain"
 
     except AppException as _app_e:  # noqa: F405
         raise AppException(_app_e)  # noqa: F405
@@ -2340,7 +2404,7 @@ def _get_file_data_columnclass(objdbca, objtable, rest_key, file_name, target_uu
         msg = traceback.format_exception(type_, value, traceback_)
         g.applogger.info(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
 
-    if file_required is True:
+    if file_required is True or col_class_name != "FileUploadColumn":
         return file_data, file_mimetype
     return file_path, file_mimetype
 

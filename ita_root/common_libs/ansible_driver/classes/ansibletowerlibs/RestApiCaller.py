@@ -23,7 +23,6 @@ from flask import g
 
 from common_libs.common.util import ky_decrypt
 from common_libs.ansible_driver.functions.util import getAnsibleConst
-from common_libs.common.dbconnect.dbconnect_ws import DBConnectWs
 from socket import timeout
 
 def setAACRestAPITimoutVaule(objdbca):

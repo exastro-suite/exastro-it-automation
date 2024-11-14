@@ -117,8 +117,6 @@ services:
       - vol-ita-storage:/storage
     networks:
       - exastro
-    profiles:
-      - ita-ansible-execution
 
   ita-api-oase-receiver:
     user: 1000:1000
@@ -152,8 +150,6 @@ services:
     #   - vol-ita-storage:/storage
     networks:
       - exastro
-    profiles:
-      - ita-oase
 
   ita-web-server:
     user: 1000:1000
@@ -181,7 +177,7 @@ services:
       retries: 200
     environment:
       - TZ=Asia/Tokyo
-      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
       # - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
       # - MYSQL_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
       # - MARIADB_DATABASE=${MARIADB_DATABASE}
@@ -197,6 +193,7 @@ services:
 
   ita-mongodb:
     image: mongo:6.0.7
+    entrypoint: ["mongod","--config","/etc/mongo/mongod.conf"]
     # healthcheck:
     #   test: echo 'db.runCommand("ping").ok' | mongosh mongodb://127.0.0.1:27017/test || exit 1
     #   interval: 3s
@@ -208,14 +205,14 @@ services:
     ports:
       - "0.0.0.0:27017:27017"
     volumes:
-      # - ../ita_root/ita_mongodb/conf/mongod.conf:/etc/mongo/mongod.conf
-      # - ../ita_root/ita-mongodb/initdb.d:/docker-entrypoint-initdb.d
+      - ../ita_root/ita_mongodb/conf/mongod.conf:/etc/mongo/mongod.conf
       # - ../ita_root/ita_mongodb/logs:/root/logs
       - ../.volumes/ita-mongodb/data:/data/db
+      - ../.volumes/ita-mongodb/configdb:/data/configdb
     networks:
       - exastro
     profiles:
-      - ita-oase
+      - mongo
 
   ita-by-ansible-execute:
     user: 1000:${HOST_DOCKER_GID:-1000}

@@ -349,7 +349,7 @@ CREATE TABLE T_ANSC_BASE_IMAGE_OS_TYPE
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 -- -------------------------------------------------------
--- - ▼パラメータシート 実行環境バラメータ定義
+-- - ▼パラメータシート 実行環境パラメータ定義
 -- -------------------------------------------------------
 CREATE TABLE `T_CMDB_f7a294e8-a7a7-4d03-8a76-e2f910db55d7`
 (

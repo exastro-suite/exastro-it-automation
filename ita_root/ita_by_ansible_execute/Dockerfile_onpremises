@@ -28,7 +28,6 @@ ENV CONTAINER_BASE=docker
 ENV DEFAULT_LOCAL_TMP=/tmp
 ENV SERVICE_NAME=ita-by-ansible-execute
 ENV ANSIBLE_AGENT_NON_COMMUNICATION_DETECTION_TIME=600
-ENV CHILD_PROCESS_RETRY_LIMIT=3
 
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
     dnf install -y \

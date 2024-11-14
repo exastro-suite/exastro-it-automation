@@ -62,11 +62,6 @@ def backyard_main(organization_id, workspace_id):
         RETURN:
 
     """
-    # DB接続
-    tmp_msg = 'db connect'
-    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-    objdbca = DBConnectWs(workspace_id)  # noqa: F405
-
     # メイン処理開始
     debug_msg = g.appmsg.get_log_message("BKY-20001", [])
     g.applogger.debug(debug_msg)
@@ -84,6 +79,11 @@ def backyard_main(organization_id, workspace_id):
         t = traceback.format_exc()
         g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         return
+
+    # DB接続
+    tmp_msg = 'db connect'
+    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+    objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
     try:
         strage_path = os.environ.get('STORAGEPATH')
@@ -179,7 +179,7 @@ def backyard_main(organization_id, workspace_id):
                 main_func_result, msg, trace_msg = menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_dir, uploadfiles_60103_dir)
                 g.applogger.info("menu_import_exec END")
 
-            db_reconnention(objdbca, True) if objdbca else None
+            db_reconnention(objdbca) if objdbca else None
             # メイン処理がFalseの場合、異常系処理
             if not main_func_result:
                 # エラーログ出力
@@ -223,6 +223,8 @@ def backyard_main(organization_id, workspace_id):
             g.applogger.debug(f"clear {tmp_workspace_path}")
             shutil.rmtree(tmp_workspace_path)
             os.makedirs(tmp_workspace_path)
+
+        objdbca.db_disconnect()
 
     # メイン処理終了
     debug_msg = g.appmsg.get_log_message("BKY-20002", [])
@@ -1485,7 +1487,6 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
         # ファイル名更新用パラメータを作成
         parameters = {
             "file": {
-                "file_name": file_encode(kym_path)
             },
             "parameter": {
                 "file_name": kym_name,
@@ -1494,7 +1495,13 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
             },
             "type": "Update"
         }
-
+        tmp_kym_path = kym_path.replace("/storage/", "/tmp/")
+        tmp_kym_dir_path = tmp_kym_path.replace(os.path.basename(kym_path), "")
+        os.makedirs(tmp_kym_dir_path, exist_ok=True)
+        shutil.move(kym_path, tmp_kym_dir_path)
+        record_file_paths = {
+            "file_name": tmp_kym_path
+        }
         # 「メニューエクスポート・インポート管理」のファイル名を更新
         objmenu = load_table.loadTable(objdbca, 'menu_export_import_list')
 
@@ -1503,7 +1510,7 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
         g.applogger.debug(debug_msg)
         objdbca.db_transaction_start()
 
-        exec_result = objmenu.exec_maintenance(parameters, execution_no, "", False, False, True, False, True)  # noqa: E999
+        exec_result = objmenu.exec_maintenance(parameters, execution_no, "", False, False, True, False, True, record_file_paths=record_file_paths)  # noqa: E999
 
         # コミット/トランザクション終了
         debug_msg = g.appmsg.get_log_message("BKY-20005", [])
@@ -1516,7 +1523,8 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
             raise Exception("499-00701", [result_msg])  # loadTableバリデーションエラー
 
         # 更新が正常に終了したらtmpの作業ファイルを削除する
-        os.remove(kym_path)
+        os.remove(kym_path) if os.path.isfile(kym_path) else None
+        os.remove(tmp_kym_path) if os.path.isfile(tmp_kym_path) else None
 
         # 正常系リターン
         return True, msg, None
@@ -1999,6 +2007,9 @@ def import_table_and_data(
     for record in menus_list:
         db_reconnention(objdbca) if objdbca else None
         db_reconnention(ws_db_sb) if ws_db_sb else None
+        db_reconnention(objdbca, True) if objdbca and not objdbca._is_transaction else None
+        db_reconnention(ws_db_sb, True) if ws_db_sb and not ws_db_sb._is_transaction  else None
+
         param = record['parameter']
         # menu_id = param.get('uuid')
         menu_id = param.get('menu_name')
@@ -2096,8 +2107,8 @@ def import_table_and_data(
                 else:
                     if objdbca._is_transaction is False and ita_base_menu_flg is True:
                         # トランザクション開始
-                        db_reconnention(objdbca, True) if objdbca else None
-                        db_reconnention(ws_db_sb, True) if ws_db_sb else None
+                        db_reconnention(objdbca) if objdbca else None
+                        db_reconnention(ws_db_sb) if ws_db_sb else None
                         debug_msg = g.appmsg.get_log_message("BKY-20004", [])
                         g.applogger.info(debug_msg)
                         objdbca.db_transaction_start()
@@ -2190,8 +2201,15 @@ def import_table_and_data(
 
         if objdbca._is_transaction is False and ita_base_menu_flg is False:
             # トランザクション開始
-            db_reconnention(objdbca, True) if objdbca else None
-            db_reconnention(ws_db_sb, True) if ws_db_sb else None
+            db_reconnention(objdbca) if objdbca else None
+            db_reconnention(ws_db_sb) if ws_db_sb else None
+            debug_msg = g.appmsg.get_log_message("BKY-20004", [])
+            g.applogger.info(debug_msg)
+            objdbca.db_transaction_start()
+        elif objdbca._is_transaction is False:
+            # トランザクション開始
+            db_reconnention(objdbca) if objdbca else None
+            db_reconnention(ws_db_sb) if ws_db_sb else None
             debug_msg = g.appmsg.get_log_message("BKY-20004", [])
             g.applogger.info(debug_msg)
             objdbca.db_transaction_start()
@@ -2229,7 +2247,6 @@ def import_table_and_data(
             debug_msg = g.appmsg.get_log_message("BKY-20005", [])
             g.applogger.info(debug_msg)
             objdbca.db_transaction_end(True)
-            objdbca._is_transaction = False
 
         # ファイル配置
         if file_put_flg and objmenu:
@@ -2438,7 +2455,7 @@ def menu_import_exec_difference_version(
     """
     try:
         # create & connect sandboxdb
-        connect_info, ws_db_sb = preparation_sandbox_workspace(workspace_id)
+        connect_info, ws_db_sb = preparation_sandbox_workspace(workspace_id, execution_no_path)
         file_path_info = {}
 
         # import kym->sandboxdb
@@ -2559,12 +2576,13 @@ def get_import_config(execution_no_path):
     no_install_driver = [] if no_install_driver_tmp is None or \
         len(no_install_driver_tmp) == 0 else json.loads(no_install_driver_tmp)
     import_config["no_install_driver"] = no_install_driver
+    org_db.db_disconnect()
 
     g.applogger.info(f"{import_config=}")
 
     return import_config
 
-def preparation_sandbox_workspace(workspace_id):
+def preparation_sandbox_workspace(workspace_id, execution_no_path):
     """
         一時作業用DBの作成
     Args:
@@ -2574,7 +2592,7 @@ def preparation_sandbox_workspace(workspace_id):
         ws_db_sb: DBConnectWsSandbox()
     """
     # create sandboxdb & execute workspace sql
-    connect_info = sandbox_workspace_create(workspace_id)
+    connect_info = sandbox_workspace_create(workspace_id, execution_no_path)
     # connect sandboxdb
     ws_db_sb = DBConnectWsSandbox(
         connect_info["db_username"],
@@ -2661,7 +2679,7 @@ def migration_execute(ws_worker, mode="db"):
 
     return
 
-def sandbox_workspace_create(workspace_id):  # noqa: E501
+def sandbox_workspace_create(workspace_id, execution_no_path):  # noqa: E501
     """
     インポート作業用の一時使用Workspaceを作成する
     ARGS:
@@ -2724,8 +2742,8 @@ def sandbox_workspace_create(workspace_id):  # noqa: E501
         last_update_timestamp = str(get_timestamp())
 
         for sql_files in sql_list:
-            ddl_file = os.environ.get('PYTHONPATH') + "sql/" + sql_files[0]
-            dml_file = os.environ.get('PYTHONPATH') + "sql/" + sql_files[1]
+            ddl_file = execution_no_path + "/sql/" + sql_files[0]
+            dml_file = execution_no_path + "/sql/" + sql_files[1]
 
             # インストールしないドライバに指定されているSQLは実行しない
             if (sql_files[0] == 'terraform_common.sql' and 'terraform_cloud_ep' in no_install_driver and 'terraform_cli' in no_install_driver) or \

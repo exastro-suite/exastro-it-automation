@@ -85,9 +85,7 @@ class ConductorCommonLibs():
 
     __db = None
 
-    def __init__(self, wsdb_istc=None, cmd_type='Register'):
-        if not wsdb_istc:
-            wsdb_istc = DBConnectWs(g.get('WORKSPACE_ID'))  # noqa: F405
+    def __init__(self, wsdb_istc, cmd_type='Register'):
         self.__db = wsdb_istc
 
         self.cmd_type = cmd_type

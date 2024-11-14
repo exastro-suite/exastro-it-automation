@@ -43,6 +43,7 @@ class DBConnectOrg(DBConnectCommon):
         # get db-connect-infomation from organization-db
         common_db = DBConnectCommon()
         connect_info = common_db.get_orgdb_connect_info(organization_id)
+        common_db.db_disconnect()
         if connect_info is False:
             raise AppException("999-00001", ["ORGANIZATION_ID=" + self.organization_id])
 
@@ -160,6 +161,7 @@ class DBConnectOrgRoot(DBConnectOrg):
         # get db-connect-infomation from ita-common-db
         common_db = DBConnectCommon()
         connect_info = common_db.get_orgdb_connect_info(organization_id)
+        common_db.db_disconnect()
         if connect_info is False:
             raise AppException("999-00001", ["ORGANIZATION_ID=" + organization_id])
 

@@ -13,11 +13,13 @@
 #   limitations under the License.
 
 import connexion
+import json
 
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectWs
 from common_libs.api import api_filter, api_filter_download_temporary_file, check_request_body, check_request_body_key
 from libs.ansible_execution import * # noqa: F403
+from libs.ansible_execution_receiver_common import check_menu_info, check_auth_menu
 from flask import g
 
 
@@ -53,6 +55,22 @@ def post_unexecuted_instance(organization_id, workspace_id, body):  # noqa: E501
             body = dict(connexion.request.get_json())
         else:
             body = {}
+
+        target_menu = {'legacy': 'execution_ansible_legacy',
+                       'pioneer': 'execution_ansible_pioneer',
+                       'legacy_role': 'execution_ansible_role'}
+
+        # ドライバが判別できないので、全ドライバーの作業実行メニューに対してロール権限をチェックを行う
+        for driver_id, menu in target_menu.items():
+            # メニューの存在確認
+            check_menu_info(menu, objdbca)
+            # メニューに対するロール権限をチェック
+            privilege = check_auth_menu(menu, objdbca)
+            if privilege == '2':
+                status_code = "401-00001"
+                log_msg_args = [menu]
+                api_msg_args = [menu]
+                raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
         # 作業実行関連のメニューの基本情報および項目情報の取得
         result_data = unexecuted_instance(objdbca, body)
@@ -99,8 +117,24 @@ def execution_status_notification(organization_id, workspace_id, execution_no, b
             check_request_body_key(body, 'driver_id')  # keyが無かったら400-00002エラー
             check_request_body_key(body, 'status')
 
+        target_menu = {'legacy': 'execution_ansible_legacy',
+                       'pioneer': 'execution_ansible_pioneer',
+                       'legacy_role': 'execution_ansible_role'}
+
+        menu = target_menu[body.get('driver_id')]
+
+        # メニューの存在確認
+        check_menu_info(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        privilege = check_auth_menu(menu, objdbca)
+        if privilege == '2':
+            status_code = "401-00001"
+            log_msg_args = [menu]
+            api_msg_args = [menu]
+            raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
+
         # 作業実行関連のメニューの基本情報および項目情報の取得
-        result_data = get_execution_status(objdbca, execution_no, body)
+        result_data = get_execution_status(objdbca, organization_id, workspace_id, execution_no, body)
         # result_data.setdefault("menu_info", tmp_data[0]["data"])
     except Exception as e:
         raise e
@@ -136,6 +170,22 @@ def get_populated_data(organization_id, workspace_id, execution_no, driver_id): 
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
     try:
+        target_menu = {'legacy': 'execution_ansible_legacy',
+                       'pioneer': 'execution_ansible_pioneer',
+                       'legacy_role': 'execution_ansible_role'}
+
+        menu = target_menu[driver_id]
+
+        # メニューの存在確認
+        check_menu_info(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        privilege = check_auth_menu(menu, objdbca)
+        if privilege == '2':
+            status_code = "401-00001"
+            log_msg_args = [menu]
+            api_msg_args = [menu]
+            raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
+
         # 作業実行関連のメニューの基本情報および項目情報の取得
         result_data = get_populated_data_path(objdbca, organization_id, workspace_id, execution_no, driver_id)
         # result_data.setdefault("menu_info", tmp_data[0]["data"])
@@ -176,6 +226,24 @@ def update_result_data(organization_id, workspace_id, execution_no, body=None, *
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
     try:
+        dict_doby = json.loads(body['json_parameters'])
+        driver_id = dict_doby['driver_id']
+        target_menu = {'legacy': 'execution_ansible_legacy',
+                       'pioneer': 'execution_ansible_pioneer',
+                       'legacy_role': 'execution_ansible_role'}
+
+        menu = target_menu[driver_id]
+
+        # メニューの存在確認
+        check_menu_info(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        privilege = check_auth_menu(menu, objdbca)
+        if privilege == '2':
+            status_code = "401-00001"
+            log_msg_args = [menu]
+            api_msg_args = [menu]
+            raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
+
         # 各Driverパス
         tmp_path = "/tmp/" + organization_id + "/" + workspace_id
 
@@ -219,6 +287,17 @@ def agent_version(organization_id, workspace_id, body):  # noqa: E501
         # bodyのjson形式チェック
         check_request_body()
 
+        menu = 'agent list'
+        # メニューの存在確認
+        check_menu_info(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        privilege = check_auth_menu(menu, objdbca)
+        if privilege == '2':
+            status_code = "401-00001"
+            log_msg_args = [menu]
+            api_msg_args = [menu]
+            raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
+
         if connexion.request.is_json:
             body = dict(connexion.request.get_json())
             check_request_body_key(body, 'agent_name')  # keyが無かったら400-00002エラー
@@ -257,6 +336,23 @@ def execution_notification(organization_id, workspace_id, body):  # noqa: E501
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
     try:
+
+        target_menu = {'legacy': 'execution_ansible_legacy',
+                       'pioneer': 'execution_ansible_pioneer',
+                       'legacy_role': 'execution_ansible_role'}
+
+        # ドライバが判別できないので、全ドライバーの作業実行メニューに対してロール権限をチェックを行う
+        for driver_id, menu in target_menu.items():
+            # メニューの存在確認
+            check_menu_info(menu, objdbca)
+            # メニューに対するロール権限をチェック
+            privilege = check_auth_menu(menu, objdbca)
+            if privilege == '2':
+                status_code = "401-00001"
+                log_msg_args = [menu]
+                api_msg_args = [menu]
+                raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
+
         result_data = update_ansible_agent_status_file(organization_id, workspace_id, body)
         # result_data.setdefault("menu_info", tmp_data[0]["data"])
     except Exception as e:

@@ -50,7 +50,7 @@
 ### Ansible builderで使用する動作確認済みのベースイメージ
     ITAの画面で、入力用→実行環境バラメータ定義→Imageにて、指定します。
     registry.access.redhat.com/ubi9/ubi-init:latest
-    registry.redhat.io/ansible-automation-platform-24/ee-supported-rhel8:latest 	(サポート付きライセンス利用の場合)
+    registry.redhat.io/ansible-automation-platform-24/ee-supported-rhel9:latest 	(サポート付きライセンス利用の場合)
 
 ### ソフトウェア要件
     Python3.9以上がインストールされていること。

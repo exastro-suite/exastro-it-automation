@@ -2644,6 +2644,8 @@ def backyard_main(organization_id, workspace_id):
     except Exception as e:
         error_flag = 1
         raise Exception(e)
+    finally:
+        DBobj.db_disconnect()
 
     # 結果出力
     FREE_LOG = ""

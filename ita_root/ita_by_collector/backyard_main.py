@@ -933,6 +933,8 @@ def backyard_main(organization_id, workspace_id):
         t = traceback.format_exc()
         g.applogger.info("[ts={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
         print_exception_msg(e)
+    finally:
+        dbAccess.db_disconnect()
 
     ################################
     # 結果出力

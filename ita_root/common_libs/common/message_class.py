@@ -31,6 +31,8 @@ class MessageTemplate:
 
         # set messages dir
         self.path = '/exastro/messages'
+        # set messages dir: Non Container mode
+        self.path =  f'{os.environ.get("PYTHONPATH", None)}/messages' if os.environ.get("PYTHONPATH", None) else self.path
 
         # define variable
         self.messages = {'log': {}, 'api': {}}

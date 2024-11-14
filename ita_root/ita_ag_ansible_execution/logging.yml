@@ -8,9 +8,11 @@ handlers:
     formatter: myformat
     stream: ext://sys.stdout
   myfile:
-    class: logging.FileHandler
+    class: logging.handlers.RotatingFileHandler
     formatter: myformat
     filename: app.log
+    maxBytes: 10485760
+    backupCount: 30
   myconsole:
     class: logging.StreamHandler
     formatter: myformat

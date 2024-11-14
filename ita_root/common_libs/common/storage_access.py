@@ -201,7 +201,11 @@ class storage_read_bytes(storage_base):
             # not /storage
             tmp_file_path = file_path
 
-        value = Path(tmp_file_path).read_bytes()
+        chunks = []
+        with open(tmp_file_path ,"rb") as f:
+            while chunk := f.read(10000):
+                chunks.append(chunk)
+        value = b''.join(chunks)
         if storage_flg is True:
             # /tmpの掃除
             if os.path.isfile(tmp_file_path) is True:

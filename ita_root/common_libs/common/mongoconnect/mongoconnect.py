@@ -279,6 +279,7 @@ class MONGOConnectWs(MONGOConnectCommon):
             # get db-connect-infomation from organization-db
             org_db = DBConnectOrg(organization_id)
             connect_info = org_db.get_wsdb_connect_info(workspace_id)
+            org_db.db_disconnect()
             if connect_info is False:
                 db_info = "WORKSPACE_ID=" + workspace_id
                 db_info = "ORGANIZATION_ID=" + organization_id + "," + db_info if organization_id else db_info

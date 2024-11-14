@@ -73,7 +73,7 @@ def get_initial_setting_ansible(organization_id):  # noqa: E501
         org_db_info_list = common_db.table_select("T_COMN_ORGANIZATION_DB_INFO", where_str, bind_value_list)
 
         if len(org_db_info_list) == 0:
-            # Organization_id[{}] is not exist.
+            # Organization_id[{}] does not exist.
             return '', g.appmsg.get_api_message("490-02001", [organization_id]), "490-02001", 490
         else:
             initial_data_ansible_if = org_db_info_list[0].get('INITIAL_DATA_ANSIBLE_IF')
@@ -109,7 +109,7 @@ def post_initial_setting_ansible(organization_id, body=None):  # noqa: E501
         org_db_info_list = common_db.table_select("T_COMN_ORGANIZATION_DB_INFO", where_str, bind_value_list)
 
         if len(org_db_info_list) == 0:
-            # Organization_id[{}] is not exist.
+            # Organization_id[{}] does not exist.
             return '', g.appmsg.get_api_message("490-02001", [organization_id]), "490-02001", 490
 
         org_db_info = org_db_info_list[0]
@@ -117,19 +117,19 @@ def post_initial_setting_ansible(organization_id, body=None):  # noqa: E501
         # input_limit_settingのチェック
         if 'input_limit_setting' in body.keys():
             if body.get('input_limit_setting') not in [True, False]:
-                # Key[{}] is invalid. Set True or False.
+                # Key[{}] is invalid. Set either True or False.
                 return '', g.appmsg.get_api_message("490-02002", ["input_limit_setting"]), "490-02002", 490
 
         # execution_engine_listのチェック
         if 'execution_engine_list' in body.keys():
             execution_engine_list = body.get('execution_engine_list')
             if len(execution_engine_list) == 0:
-                # Key[{}] is invalid. Set 'Ansible-Core' or 'Ansible Automation Controller' or both.
+                # Key[{}] is invalid. Set 'Ansible-Core',  'Ansible Automation Controller' or both.
                 return '', g.appmsg.get_api_message("490-02003", ["execution_engine_list"]), "490-02003", 490
 
             for execution_engine in execution_engine_list:
                 if execution_engine not in ['Ansible-Core', 'Ansible Automation Controller', 'Ansible Execution Agent']:
-                    # Key[{}] is invalid. Set 'Ansible-Core' or 'Ansible Automation Controller' or both.
+                    # Key[{}] is invalid. Set 'Ansible-Core',  'Ansible Automation Controller' or both.
                     return '', g.appmsg.get_api_message("490-02003", ["execution_engine_list"]), "490-02003", 490
 
         # initial_dataのチェック

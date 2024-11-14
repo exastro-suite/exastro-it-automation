@@ -52,4 +52,6 @@ def main(work_dir_path, db_conn):
     view_sql = "GRANT SELECT ,UPDATE ON TABLE `{ws_db_name}`.`V_ANSR_EXEC_STS_INST2` TO '{db_user}'@'%'".format(ws_db_name=ws_db_name, db_user=os.getenv("DB_USER"))
     org_root_db.sql_execute(view_sql, [])
 
+    org_root_db.db_disconnect()
+
     return 0

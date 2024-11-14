@@ -26,6 +26,7 @@ import shlex
 import subprocess
 import json
 import mimetypes
+import re
 
 from common_libs.common.exception import AppException
 from common_libs.common.util import arrange_stacktrace_format
@@ -38,8 +39,9 @@ def get_agent_id(organization_id, workspace_id, agent_name):
     Returns:
         agent_id
     """
-    version_file_path = "/storage/agent_id"
-    version_dir_path = f"/storage/{organization_id}/{workspace_id}/ag_ansible_execution/{agent_name}"
+    storagepath = os.environ.get('STORAGEPATH')
+    version_file_path = f"{storagepath}/agent_id"
+    version_dir_path = f"{storagepath}/{organization_id}/{workspace_id}/ag_ansible_execution/{agent_name}"
     version_file_name = "agent_id"
     version_file_path = f"{version_dir_path}/{version_file_name}"
     if os.path.isfile(version_file_path):
@@ -58,34 +60,35 @@ def get_agent_version():
     Returns:
         agent_version
     """
-    version_file_path = "/exastro/VERSION.txt"
+    version_file_path = "{}{}".format(g.get("PYTHONPATH"),"VERSION.txt")
     if os.path.isfile(version_file_path):
         with open(version_file_path, mode='r') as f:
-            agent_version= f.read()
+            agent_version = f.read()
+            # 末尾の改行があった場合、取り除く
+            agent_version = agent_version.strip()
     else:
         agent_version = "2.5.0" #####
-
     return agent_version
 
 def delete_status_file(organization_id, workspace_id, driver_id, execution_no):
     """
-        ステータスファイルの削除
+        ステータスファイル関連の削除
     """
-    status_file = f"/storage/{organization_id}/{workspace_id}/ag_ansible_execution/status/{driver_id}/{execution_no}"
-    if os.path.isfile(status_file):
-        os.remove(status_file)
-        g.applogger.info(f"delete_status_file: {status_file=}, {os.path.isfile(status_file)}")
+    clear_execution_status_file(organization_id, workspace_id, driver_id, execution_no)
+    clear_execution_parameters_file(organization_id, workspace_id, driver_id, execution_no)
+    clear_execution_restart_status_file(organization_id, workspace_id, driver_id, execution_no)
 
 def get_upload_file_info(organization_id, workspace_id, driver_id, execution_no):
     """
         作業状態通知送信(ファイル)用のアーカイブ作成
     """
+    storagepath = os.environ.get('STORAGEPATH')
     upload_file_info = {
         "out_data": None,
         "conductor_data": None
     }
-    out_data_dir = f"/storage/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/out"
-    conductor_dir = f"/storage/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/conductor"
+    out_data_dir = f"{storagepath}/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/out"
+    conductor_dir = f"{storagepath}/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/conductor"
     _uuid = str(uuid.uuid4())
     tmp_dir_name = f"/tmp/{organization_id}/{workspace_id}/{_uuid}"
     os.makedirs(tmp_dir_name) if not os.path.isdir(tmp_dir_name) else None
@@ -303,19 +306,19 @@ def arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, stat
         parameters_file_gztar_path: parameters_fileディレクトリtarファイルパス
         conductor_gztar_path: conductor_fileディレクトリtarファイルパス
     """
+    storagepath = os.environ.get('STORAGEPATH')
     if mode == "child":
         # outディレクトリパス
-        out_dir_path = f"/storage/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{execution_no}/out"
+        out_dir_path = f"{storagepath}/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{execution_no}/out"
         # inディレクトリパス
-        in_dir_path = f"/storage/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{execution_no}/project"
+        in_dir_path = f"{storagepath}/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{execution_no}/project"
         # conductorディレクトリパス
-        conductor_dir_path = f"/storage/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{execution_no}/conductor"
+        conductor_dir_path = f"{storagepath}/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{execution_no}/conductor"
         # 作業用ディレクトリパス
         tmp_dir_path = "/tmp/" +  organization_id + "/" + workspace_id + "/driver/ansible/" + driver_id + "/" + execution_no
     elif mode == "parent":
-        # /storage/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{execution_no}/
-        _base_path = f"/storage/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{execution_no}"
-        _tmp_path = _base_path.replace("/storage/", "/tmp/")
+        _base_path = f"{storagepath}/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{execution_no}"
+        _tmp_path = _base_path.replace(storagepath, "/tmp/")
         # outディレクトリパス
         out_dir_path = f"{_base_path}/out"
         # inディレクトリパス
@@ -330,8 +333,8 @@ def arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, stat
     # /out無ければ空で作成しておく
     os.makedirs(out_dir_path) if not os.path.exists(out_dir_path) else None
     # parameters・parameters_file無ければ空で作成しておく
-    os.makedirs(in_dir_path + "/parameter") if not os.path.exists(in_dir_path + "/parameter") else None
-    os.makedirs(in_dir_path + "/parameters_file") if not os.path.exists(in_dir_path + "/parameters_file") else None
+    os.makedirs(in_dir_path + "/_parameters") if not os.path.exists(in_dir_path + "/_parameters") else None
+    os.makedirs(in_dir_path + "/_parameters_file") if not os.path.exists(in_dir_path + "/_parameters_file") else None
     # /conductor無ければ空で作成しておく
     os.makedirs(conductor_dir_path) if not os.path.exists(conductor_dir_path) else None
 
@@ -358,11 +361,11 @@ def arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, stat
         with tarfile.open(out_gztar_path, "w:gz") as tar:
             tar.add(out_tar_dir_path, arcname="")
 
-    # ステータスが完了、完了(異常)の場合
-    elif status == AnscConst.COMPLETE or status == AnscConst.FAILURE:
-        parameters_tar_dir_path = tmp_dir_path + "/parameter"
+    # ステータスが完了、完了(異常)、緊急停止場合
+    else:
+        parameters_tar_dir_path = tmp_dir_path + "/_parameters"
         parameters_gztar_path = parameters_tar_dir_path + ".tar.gz"
-        parameters_file_tar_dir_path = tmp_dir_path + "/parameters_file"
+        parameters_file_tar_dir_path = tmp_dir_path + "/_parameters_file"
         parameters_file_gztar_path = parameters_file_tar_dir_path + ".tar.gz"
         conductor_tar_dir_path = tmp_dir_path + "/conductor"
         conductor_gztar_path = conductor_tar_dir_path + ".tar.gz"
@@ -386,8 +389,8 @@ def arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, stat
 
 
         # parameters・parameters_fileをtarファイルにまとめる
-        shutil.copytree(in_dir_path + "/parameter", parameters_tar_dir_path, dirs_exist_ok=True)
-        shutil.copytree(in_dir_path + "/parameters_file", parameters_file_tar_dir_path, dirs_exist_ok=True)
+        shutil.copytree(in_dir_path + "/_parameters", parameters_tar_dir_path, dirs_exist_ok=True)
+        shutil.copytree(in_dir_path + "/_parameters_file", parameters_file_tar_dir_path, dirs_exist_ok=True)
         with tarfile.open(parameters_gztar_path, "w:gz") as tar:
             tar.add(parameters_tar_dir_path, arcname="")
         with tarfile.open(parameters_file_gztar_path, "w:gz") as tar:
@@ -402,3 +405,235 @@ def arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, stat
                 tar.add(conductor_tar_dir_path, arcname="")
 
     return out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path
+
+
+def clear_execution_status_file(organization_id, workspace_id, driver_id, execution_no):
+    """
+    子プロ起動状態ファイル削除
+    """
+    _x, _path = get_execution_status_file_path(organization_id, workspace_id, driver_id, execution_no)
+    if os.path.isfile(_path):
+        g.applogger.debug(f"delete status file. (path:{_path})")
+        os.remove(_path)
+
+
+def clear_execution_parameters_file(organization_id, workspace_id, driver_id, execution_no):
+    """
+    子プロ起動パラメータファイル削除
+    """
+    _x, _path = get_execution_status_file_path(organization_id, workspace_id, driver_id, execution_no)
+    _path += "_parameter"
+    if os.path.isfile(_path):
+        g.applogger.debug(f"delete execution restart file. (path:{_path})")
+        os.remove(_path)
+
+
+def clear_execution_restart_status_file(organization_id, workspace_id, driver_id, execution_no):
+    """
+    子プロ再起動状態ファイル削除
+    """
+    _x, _path = get_execution_status_file_path(organization_id, workspace_id, driver_id, execution_no)
+    _path += "_restart"
+    if os.path.isfile(_path):
+        g.applogger.debug(f"delete execution restart file. (path:{_path})")
+        os.remove(_path)
+
+
+def get_execution_status_file_path(organization_id, workspace_id, driver_id, execution_no):
+    """
+    子プロ起動状態ファイルパス取得
+    """
+    storagepath = os.environ.get('STORAGEPATH')
+    status_file_dir_path = f"{storagepath}/{organization_id}/{workspace_id}/ag_ansible_execution/status/{driver_id}"
+    status_file_path = f"{status_file_dir_path}/{execution_no}"
+    return status_file_dir_path, status_file_path,
+
+def create_execution_status_file(organization_id, workspace_id, driver_id, execution_no):
+    """
+    子プロ起動状態ファイル生成
+    """
+    status_file_dir_path, status_file_path = get_execution_status_file_path(organization_id, workspace_id, driver_id, execution_no)
+    if not os.path.exists(status_file_dir_path):
+        os.makedirs(status_file_dir_path)
+        os.chmod(status_file_dir_path, 0o777)
+    if not os.path.isfile(status_file_path):
+        # ファイル名を作業番号で作成
+        with open(status_file_path, 'w') as f:
+            g.applogger.debug(f"create execution staus file. (path:{status_file_path})")
+            f.write("0")
+
+def create_execution_parameters_file(organization_id, workspace_id, driver_id, execution_no, build_type, runtime_data_del):
+    """
+    子プロ起動パラメータファイル生成
+    """
+    ary = {}
+    ary["build_type"] = build_type
+    ary["runtime_data_del"] = runtime_data_del
+    ary_dump = json.dumps(ary)
+    status_file_dir_path, status_file_path = get_execution_status_file_path(organization_id, workspace_id, driver_id, execution_no)
+    status_file_path += "_parameter"
+    if not os.path.exists(status_file_dir_path):
+        os.makedirs(status_file_dir_path)
+        os.chmod(status_file_dir_path, 0o777)
+    if not os.path.isfile(status_file_path):
+        # ファイル名を作業番号で作成
+        with open(status_file_path, 'w') as f:
+            g.applogger.debug(f"create execution parameter  file. (path:{status_file_path})")
+            f.write(ary_dump)
+
+def create_execution_restart_status_file(organization_id, workspace_id, driver_id, execution_no):
+    """
+    子プロ再起動状態ファイル生成
+    """
+    ary = {}
+    ary["status"] = "staus_0"
+    ary_dump = json.dumps(ary)
+    status_file_dir_path, status_file_path = get_execution_status_file_path(organization_id, workspace_id, driver_id, execution_no)
+    status_file_path += "_restart"
+    if not os.path.exists(status_file_dir_path):
+        os.makedirs(status_file_dir_path)
+        os.chmod(status_file_dir_path, 0o777)
+    if not os.path.isfile(status_file_path):
+        # ファイル名を作業番号で作成
+        with open(status_file_path, 'w') as f:
+            g.applogger.debug(f"create execution restart file. (path:{status_file_path})")
+            f.write(ary_dump)
+
+
+def get_execution_parameters_file(organization_id, workspace_id, driver_id, execution_no):
+    """
+    子プロ起動パラメータファイルより起動パラメータ取得
+    """
+    status_file_dir_path, status_file_path = get_execution_status_file_path(organization_id, workspace_id, driver_id, execution_no)
+    status_file_path += "_parameter"
+    with open(status_file_path, 'r') as f:
+        g.applogger.debug(f"read execution parameter file. (path:{status_file_path})")
+        ary_dump =  f.read()
+        ary = json.loads(ary_dump)
+
+    return ary["build_type"], ary["runtime_data_del"]
+
+
+def get_execution_restart_status_file(organization_id, workspace_id, driver_id, execution_no):
+    """
+    子プロ再起動状態ファイル取得
+    """
+    status_file_dir_path, status_file_path = get_execution_status_file_path(organization_id, workspace_id, driver_id, execution_no)
+    status_file_path += "_restart"
+    with open(status_file_path, 'r') as f:
+        ary_dump =  f.read()
+        ary = json.loads(ary_dump)
+        status = ary["status"]
+        g.applogger.debug(f"read execution restart file. (path:{status_file_path} status:{status})")
+    return status
+
+def get_log_file_path(organization_id, workspace_id, driver_id, execution_no):
+    """
+    ログファイルのパスを返却
+    """
+    # in/out親ディレクトリパス
+    storagepath = os.environ.get('STORAGEPATH')
+    root_dir_path = f"{storagepath}/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{execution_no}"
+    # ログファイルパス
+    exec_log_pass = f"{root_dir_path}/out/exec.log"
+    error_log_pass = f"{root_dir_path}/out/error.log"
+    # 親プロ用エラーログ
+    #parent_error_log_pass = f"{root_dir_path}/ag_parent_log/ag_parent_err.log"
+    parent_error_log_pass = f"{root_dir_path}/out/ag_parent_err.log"
+    # 子プロ用ログファイルパス
+    child_exec_log_pass = f"{root_dir_path}/out/child_exec.log"
+    child_error_log_pass = f"{root_dir_path}/out/child_error.log"
+    # runnerログファイルパス
+    runner_exec_log_pass = f"{storagepath}/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{execution_no}/artifacts/{execution_no}/stdout"
+    runner_error_log_pass = f"{storagepath}/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{execution_no}/artifacts/{execution_no}/stderr"
+
+    return exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass
+
+
+def log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id):
+    """
+    builder・runner・アプリのログファイルをマージする
+    ARGS:
+        exec_log_pass: 作業状態確認に表示される実行ログ
+        error_log_pass: 作業状態確認に表示されるエラーログ
+        parent_error_log_pass: 親プロ用エラーログ
+        child_exec_log_pass: 子プロ用実行ログ
+        child_error_log_pass: 子プロ用エラーログ
+        runner_exec_log_pass: runner用実行ログ    ansible 標準出力
+        runner_error_log_pass: runner用エラーログ ansible 標準エラー出力
+    """
+    # 作業状態確認に表示するエラーログにrunnerのエラーログを設定する
+    log_data = ""
+    if os.path.isfile(runner_error_log_pass):
+        with open(runner_error_log_pass, "r") as f:
+            log_data = f.read()
+    # 作業状態確認に表示するエラーログにagent(親)のエラーログを設定する
+    if os.path.isfile(parent_error_log_pass):
+        with open(parent_error_log_pass, "r") as f:
+            log_data += f.read()
+        with open(error_log_pass, "w") as f:
+            f.write(log_data)
+    # 作業状態確認に表示するエラーログにagent(子)のエラーログを設定する
+    if os.path.isfile(child_error_log_pass):
+        with open(child_error_log_pass, "r") as f:
+            log_data += f.read()
+    # 作業状態確認に表示するエラーログに書き込む
+    with open(error_log_pass, "w") as f:
+        f.write(log_data)
+
+    # 特定のキーワードで改行しrunnerの実行ログを見やすくする
+    if os.path.isfile(runner_exec_log_pass):
+        runner_exec_original_log_pass = runner_exec_log_pass + ".org"
+        shutil.copy(runner_exec_log_pass, runner_exec_original_log_pass)
+        with open(runner_exec_original_log_pass, "r") as f:
+            log_data = f.read()
+
+        # カラーエスケープシーケンスを削除する。
+        while True:
+            log_data = re.sub(  '\x1b\[([0-9]{1,2});([0-9]{1,2})m','',log_data, 9999999999)
+            ret = re.match('\x1b\[([0-9]{1,2});([0-9]{1,2})m', log_data)
+            if ret is None:
+                break
+        while True:
+            log_data = re.sub(  '\x1b\[([0-9]{1,2})m','',log_data, 9999999999)
+            ret = re.match('\x1b\[([0-9]{1,2})m', log_data)
+            if ret is None:
+                break
+        # 改行コードをCRLFからLFに置換する
+        while True:
+            log_data = re.sub('\\r','',log_data, 999999999)
+            ret = re.match('\\r' ,log_data)
+            if ret is None:
+                break
+
+        if driver_id == "pioneer":
+            # ログ(", ")  =>  (",\n")を改行する
+            log_data = log_data.replace("\", \"", "\",\n\"")
+            # 改行文字列\r\nを改行コードに置換える
+            log_data = log_data.replace("\\r\\n", "\n")
+            # python改行文字列\\nを改行コードに置換える
+            log_data = log_data.replace("\\n", "\n")
+        else:
+            # ログ(", ")  =>  (",\n")を改行する
+            log_data = log_data.replace("\", \"", "\",\n\"")
+            # ログ(=> {)  =>  (=> {\n)を改行する
+            log_data = log_data.replace("=> {", "=> {\n")
+            # ログ(, ")  =>  (,\n")を改行する
+            log_data = log_data.replace(", \"", ",\n\"")
+            # 改行文字列\r\nを改行コードに置換える
+            log_data = log_data.replace("\\r\\n", "\n")
+            # python改行文字列\\nを改行コードに置換える
+            log_data = log_data.replace("\\n", "\n")
+    else:
+        log_data = ""
+
+    # 作業状態確認に表示する実行ログにrunnerの実行ログを設定する
+    with open(exec_log_pass, "w") as f:
+        f.write(log_data)
+
+    # 作業状態確認に表示する実行ログにagentの実行ログを設定する
+    if os.path.isfile(child_exec_log_pass):
+        with open(child_exec_log_pass, "r") as f:
+            log_data = f.read()
+        with open(exec_log_pass, "a") as f:
+            f.write(log_data)

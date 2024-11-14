@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # Copyright 2022 NEC Corporation#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,7 +28,9 @@ from agent_main import agent_main as main_logic
 
 def main():
     # load environ variables
-    load_dotenv(override=True)
+    envfilepath = os.environ.get("ENVFILEPATH", None)
+    load_dotenv(override=True) if envfilepath is None \
+        else load_dotenv(dotenv_path=os.environ.get("ENVFILEPATH"), override=True)
 
     flask_app = Flask(__name__)
 
@@ -41,11 +44,13 @@ def main():
             g.AGENT_NAME = os.environ.get("AGENT_NAME", "agent-oase-01")
             g.USER_ID = os.environ.get("USER_ID")
             g.LANGUAGE = os.environ.get("LANGUAGE")
+            g.PYTHONPATH = os.environ.get("PYTHONPATH") if envfilepath else None
 
             # create app log instance and message class instance
             g.applogger = AppLog()
             g.applogger.set_level(os.environ.get("LOG_LEVEL", "INFO"))
             g.appmsg = MessageTemplate(g.LANGUAGE)
+            g.applogger.debug(f"env: {[(x, os.environ.get(x, None)) for x in os.environ]}")
 
             # 実行インターバル
             interval = int(os.environ.get("EXECUTE_INTERVAL", 5))  # デフォルト 5s
@@ -64,8 +69,6 @@ def main():
                 if loop_count < 1:
                     interval = 86400 - 10
                     loop_count = 1
-            # print(f'{interval=}')
-            # print(f'{loop_count=}')
             loop_count = loop_count if len(args) == 1 else int(args[1])  # コマンドライン指定すると上書き
 
             # 妥当な設定（organization_id, workspace_id）でなければ、メイン処理に回さない

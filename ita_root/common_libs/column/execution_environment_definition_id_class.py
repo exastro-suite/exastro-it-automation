@@ -96,7 +96,7 @@ class ExecutionEnvironmentDefinitionIDColumn(IDColumn):
                 retBool, msg, val
         """
         msg = ''
-        output_val = ""
+        output_val = None
         master_row = self.search_id_data_list()
         search_candidates = []
         if key:

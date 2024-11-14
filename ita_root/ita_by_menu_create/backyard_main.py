@@ -76,6 +76,7 @@ def backyard_main(organization_id, workspace_id):
     # backyard_execute_stopの値が"1"の場合、メンテナンス中のためreturnする。
     if str(maintenance_mode['backyard_execute_stop']) == "1":
         g.applogger.debug(g.appmsg.get_log_message("BKY-00006", []))
+        objdbca.db_disconnect()
         return
 
     # 「パラメータシート作成履歴」から「未実行(ID:1)」のレコードを取得
@@ -184,6 +185,8 @@ def backyard_main(organization_id, workspace_id):
             g.applogger.error(msg)
             continue
         objdbca.db_transaction_end(True)
+
+    objdbca.db_disconnect()
 
     # メイン処理終了
     debug_msg = g.appmsg.get_log_message("BKY-20002", [])

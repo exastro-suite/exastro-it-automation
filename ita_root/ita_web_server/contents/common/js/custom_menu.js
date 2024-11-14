@@ -10,6 +10,20 @@ function getWorkspace() {
     return window.location.pathname.split('/')[3];
 }
 
+function refreshTokenForce() {
+    return new Promise(function( resolve, reject ){
+        CommonAuth.refreshTokenForce().then(function(){
+            resolve();
+        }).catch(function( e ){
+            reject( e );
+        });
+    });
+}
+
+function tokenRefreshPermanently( flag ) {
+    CommonAuth.tokenRefreshPermanently( flag );
+}
+
 function customMenu( info ) {
     return new Promise(function( resolve, reject ) {
         const mainHtml = ( info )? info.custom_menu['main.html']: null;

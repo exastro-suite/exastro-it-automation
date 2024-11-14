@@ -223,6 +223,8 @@ def backyard_main(organization_id, workspace_id):
         g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         tmp_msg = g.appmsg.get_log_message("BKY-60000", ['End: Exception'])
         g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+    finally:
+        objdbca.db_disconnect()
 
     # 処理終了
     tmp_msg = g.appmsg.get_log_message("BKY-60000", ['End'])

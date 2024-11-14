@@ -1,4 +1,6 @@
 [
     ["ansible.sql", "ansible_master.sql"],
+    ["terraform_cli.sql", ""],
+    ["terraform_cloud_ep.sql", ""],
     ["", "oase_master.sql"]
 ]

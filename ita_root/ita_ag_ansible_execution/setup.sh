@@ -261,7 +261,7 @@ declare -A interactive_llist_adv=(
 # debug options: Uncomment out if necessary
 ###############################################
 # set -x
-SOURCE_REPOSITORY="https://github.com/exastro-suite/exastro-it-automation-dev.git"
+# SOURCE_REPOSITORY="https://github.com/exastro-suite/exastro-it-automation-dev.git"
 
 
 #########################################

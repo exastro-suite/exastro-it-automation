@@ -36,69 +36,70 @@ def backyard_main(organization_id, workspace_id):
     # DB接続準備
     ws_db = DBConnectWs(workspace_id)  # noqa: F405
 
-    # トランザクション開始
-    ws_db.db_transaction_start()
+    try:
+        # トランザクション開始
+        ws_db.db_transaction_start()
 
-    # 関連データベースが更新されバックヤード処理が必要か判定
-    if not has_changes_related_tables(ws_db, proc_loaded_row_id):
-        g.applogger.debug("No changes, skip workflow.")
+        # 関連データベースが更新されバックヤード処理が必要か判定
+        if not has_changes_related_tables(ws_db, proc_loaded_row_id):
+            g.applogger.debug("No changes, skip workflow.")
+            # トランザクション終了
+            ws_db.db_transaction_end(False)
+            # DB切断
+            ws_db.db_disconnect()
+            return
+
+        # 各インスタンス準備
+        g.applogger.debug("[Trace] Read all related table.")
+        dialog_table = DialogTable(ws_db)  # noqa: F405
+        dialog_table.store_dbdata_in_memory()
+
+        tpl_table = TemplateTable(ws_db)  # noqa: F405
+        tpl_table.store_dbdata_in_memory()
+
+        mov_table = MovementTable(ws_db)  # noqa: F405
+        mov_table.store_dbdata_in_memory()
+
+        mov_material_link_table = MovementMaterialLinkTable(ws_db)  # noqa: F405
+        mov_material_link_table.store_dbdata_in_memory()
+
+        mov_vars_link_table = MovementVarsLinkTable(ws_db)  # noqa: F405
+        mov_vars_link_table.store_dbdata_in_memory(contain_disused_data=True)
+
+        # - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +
+        # メイン処理開始
+        # - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +
+        g.applogger.debug("[Trace] Start extracting variables.")
+        # 対話ファイル素材集変数チェック
+        tpl_vars_dict = tpl_table.extract_variable()
+        dialog_vars_dict = dialog_table.extract_variable(tpl_vars_dict)
+
+        # Movement変数チェック（Movement - Role 変数紐づけ、Movement追加オプション）
+        mov_records = mov_table.get_stored_records()
+        mov_matl_lnk_records = mov_material_link_table.get_stored_records()
+
+        mov_vars_dict = util.extract_variable_for_movement(mov_records, mov_matl_lnk_records, dialog_vars_dict)
+
+        # 作業実行時変数チェック（具体値を確認しTPFある場合は変数を追加する）
+        mov_vars_dict = util.extract_variable_for_execute(mov_vars_dict, tpl_vars_dict, ws_db)
+
+        # Movement変数 登録・廃止
+        mov_vars_link_table.register_and_discard(mov_vars_dict)
+
+        # バックヤード処理実行フラグを更新
+        has_changes_related_tables_off(ws_db, proc_loaded_row_id)
+
+        # - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +
+        # 終了処理
+        # - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +
+        # DBコミット
+        ws_db.db_commit()
+
         # トランザクション終了
-        ws_db.db_transaction_end(False)
+        ws_db.db_transaction_end(True)
+    finally:
         # DB切断
         ws_db.db_disconnect()
-        return
-
-    # 各インスタンス準備
-    g.applogger.debug("[Trace] Read all related table.")
-    dialog_table = DialogTable(ws_db)  # noqa: F405
-    dialog_table.store_dbdata_in_memory()
-
-    tpl_table = TemplateTable(ws_db)  # noqa: F405
-    tpl_table.store_dbdata_in_memory()
-
-    mov_table = MovementTable(ws_db)  # noqa: F405
-    mov_table.store_dbdata_in_memory()
-
-    mov_material_link_table = MovementMaterialLinkTable(ws_db)  # noqa: F405
-    mov_material_link_table.store_dbdata_in_memory()
-
-    mov_vars_link_table = MovementVarsLinkTable(ws_db)  # noqa: F405
-    mov_vars_link_table.store_dbdata_in_memory(contain_disused_data=True)
-
-    # - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +
-    # メイン処理開始
-    # - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +
-    g.applogger.debug("[Trace] Start extracting variables.")
-    # 対話ファイル素材集変数チェック
-    tpl_vars_dict = tpl_table.extract_variable()
-    dialog_vars_dict = dialog_table.extract_variable(tpl_vars_dict)
-
-    # Movement変数チェック（Movement - Role 変数紐づけ、Movement追加オプション）
-    mov_records = mov_table.get_stored_records()
-    mov_matl_lnk_records = mov_material_link_table.get_stored_records()
-
-    mov_vars_dict = util.extract_variable_for_movement(mov_records, mov_matl_lnk_records, dialog_vars_dict)
-
-    # 作業実行時変数チェック（具体値を確認しTPFある場合は変数を追加する）
-    mov_vars_dict = util.extract_variable_for_execute(mov_vars_dict, tpl_vars_dict, ws_db)
-
-    # Movement変数 登録・廃止
-    mov_vars_link_table.register_and_discard(mov_vars_dict)
-
-    # バックヤード処理実行フラグを更新
-    has_changes_related_tables_off(ws_db, proc_loaded_row_id)
-
-    # - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +
-    # 終了処理
-    # - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +
-    # DBコミット
-    ws_db.db_commit()
-
-    # トランザクション終了
-    ws_db.db_transaction_end(True)
-
-    # DB切断
-    ws_db.db_disconnect()
 
     g.applogger.debug("backyard_main ita_by_ansible_pioneer_vars_listup end")
 

@@ -618,6 +618,8 @@ def backyard_main(organization_id, workspace_id):
 
     obj.InitFunction()
 
-    ret = obj.MainFunction()
-
-    obj.EndFunction(ret)
+    try:
+      ret = False
+      ret = obj.MainFunction()
+    finally:
+      obj.EndFunction(ret)

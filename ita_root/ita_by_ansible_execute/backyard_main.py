@@ -69,20 +69,20 @@ def main_logic(common_db):
     else:
         ansibleAg = KubernetesMode()
 
+    # メンテナンスモードのチェック
     try:
-        # メンテナンスモードのチェック
-        try:
-            maintenance_mode = get_maintenance_mode_setting()
-            # data_update_stopの値が"1"の場合、メンテナンス中のためreturnする。
-            if str(maintenance_mode['data_update_stop']) == "1":
-                g.applogger.debug(g.appmsg.get_log_message("BKY-00005", []))
-                return True
-        except Exception as e:
-            t = traceback.format_exc()  # 例外メッセージとトレース出力
-            g.applogger.error("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
-            g.applogger.error(g.appmsg.get_log_message("BKY-00008", []))
-            return False
+        maintenance_mode = get_maintenance_mode_setting()
+        # data_update_stopの値が"1"の場合、メンテナンス中のためreturnする。
+        if str(maintenance_mode['data_update_stop']) == "1":
+            g.applogger.debug(g.appmsg.get_log_message("BKY-00005", []))
+            return True
+    except Exception as e:
+        t = traceback.format_exc()  # 例外メッセージとトレース出力
+        g.applogger.error("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
+        g.applogger.error(g.appmsg.get_log_message("BKY-00008", []))
+        return False
 
+    try:
         # システム全体の同時実行数取得
         all_execution_limit = get_all_execution_limit("ita.system.ansible.execution_limit")
         # organization毎の同時実行数取得
@@ -161,6 +161,8 @@ def main_logic(common_db):
             g.WORKSPACE_ID = None
     except AppException as e:
         common_db.db_rollback()
+        if 'wsDb' in locals():
+            wsDb.db_disconnect()
         raise AppException(e)
 
     return True

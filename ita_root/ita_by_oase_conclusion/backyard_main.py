@@ -40,7 +40,7 @@ def backyard_main(organization_id, workspace_id):
     """
     # メイン処理開始
     tmp_msg = g.appmsg.get_log_message("BKY-90000", ['Started'])
-    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+    g.applogger.debug(tmp_msg)  # noqa: F405
 
     # strage_path = os.environ.get('STORAGEPATH')
     # workspace_path = strage_path + "/".join([organization_id, workspace_id])
@@ -60,14 +60,14 @@ def backyard_main(organization_id, workspace_id):
 
         # ルール判定
         tmp_msg = g.appmsg.get_log_message("BKY-90001", ['Started'])
-        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        g.applogger.debug(tmp_msg)  # noqa: F405
         ret = JudgeMain(wsDb, judgeTime, EventObj, actionObj)
         if ret is False:
             tmp_msg = g.appmsg.get_log_message("BKY-90001", ['Ended without evaluating events'])
-            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+            g.applogger.info(tmp_msg)  # noqa: F405
         else:
             tmp_msg = g.appmsg.get_log_message("BKY-90001", ['Ended'])
-            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+            g.applogger.info(tmp_msg)  # noqa: F405
 
         # 評価結果のステータスを監視するクラス
         action_status_monitor = ActionStatusMonitor(wsDb, EventObj)
@@ -97,7 +97,7 @@ def backyard_main(organization_id, workspace_id):
 
     # メイン処理終了
     tmp_msg = g.appmsg.get_log_message("BKY-90000", ['Ended'])
-    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+    g.applogger.info(tmp_msg)  # noqa: F405
 
     return
 

@@ -152,7 +152,7 @@ class BaseTable():
             FROM `T_COMN_MENU_TABLE_LINK` `TAB_A`
             LEFT JOIN `T_COMN_MENU` TAB_B ON (`TAB_A`.`MENU_ID` = `TAB_B`.`MENU_ID`)
             WHERE `TAB_A`.`TABLE_NAME` = %s
-            AND `TAB_A`.`SHEET_TYPE` = 1
+            AND `TAB_A`.`SHEET_TYPE` IN (1, 4)
             AND `TAB_A`.`ROW_INSERT_FLAG` = {iudr_flg}
             AND `TAB_A`.`ROW_UPDATE_FLAG` = {iudr_flg}
             AND `TAB_A`.`ROW_DISUSE_FLAG` = {iudr_flg}

@@ -86,12 +86,20 @@ def backyard_main(organization_id, workspace_id):  # noqa: C901
         min_interval = 1
         try:
             if max_interval >= int(system_interval) and int(system_interval) >= min_interval:
-                interval_time = system_interval
+                interval_time = int(system_interval)
         except ValueError:
-            interval_time = "3"
+            interval_time = 3
 
-        where_str2 = "WHERE DISUSE_FLAG=0 AND (STATUS_ID=%s OR STATUS_ID=%s) AND (NEXT_EXECUTION_DATE<NOW()+INTERVAL %s MINUTE)"
-        inOps_list = objdbca.table_select(table_name, where_str2, [status_ids_list["STATUS_IN_OPERATION"], status_ids_list["STATUS_LINKING_ERROR"], int(interval_time)])  # noqa: E501
+        current_datetime = datetime.datetime.now()
+
+        current_plus_interval = current_datetime + datetime.timedelta(minutes=interval_time)
+        where_str2 = "WHERE DISUSE_FLAG=0 AND (STATUS_ID=%s OR STATUS_ID=%s) AND (NEXT_EXECUTION_DATE<%s)"
+        bind_values = [
+            status_ids_list["STATUS_IN_OPERATION"],
+            status_ids_list["STATUS_LINKING_ERROR"],
+            current_plus_interval.strftime("%Y-%m-%d %H:%M:%S")
+        ]
+        inOps_list = objdbca.table_select(table_name, where_str2, bind_values)  # noqa: E501
 
         platform_users = {}
         try:
@@ -134,7 +142,6 @@ def backyard_main(organization_id, workspace_id):  # noqa: C901
                 execute_flag = True
                 status_id = item["STATUS_ID"]
                 next_execution_date = item["NEXT_EXECUTION_DATE"]
-                current_datetime = datetime.datetime.now()
 
                 # レコードのステータスIDが紐付けエラーの場合、一度「準備中」に設定
                 if status_id == status_ids_list["STATUS_LINKING_ERROR"]:
@@ -498,7 +505,6 @@ def calc_period_day(next_execution_date, start_date, interval, pattern_time, cur
                     calcd_next_date = None
                     return calcd_next_date
             calcd_next_date = added_time
-
     else:
         calcd_next_date = next_execution_date + datetime.timedelta(days=interval)
 

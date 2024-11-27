@@ -295,10 +295,24 @@ def file_encode(file_path):
     else:
         # not /storage
         tmp_file_path = file_path
+
     # ファイル読み込み
-    with open(tmp_file_path, "rb") as f:
-        read_value = base64.b64encode(f.read()).decode()
-    f.close()
+    read_value = ""
+    @filre_read_retry
+    def tmp_file_path_read():
+        nonlocal read_value
+        try:
+            with open(tmp_file_path, "rb") as f:
+                read_value = base64.b64encode(f.read()).decode()
+            f.close()
+            return True
+        except Exception as e:
+            g.applogger.info("tmp_file_path cannot read. file_path={}".format(tmp_file_path))
+            t = traceback.format_exc()
+            g.applogger.info(arrange_stacktrace_format(t))
+            raise e
+
+    tmp_file_path_read()
 
     if storage_flg is True:
         @filre_read_retry
@@ -313,6 +327,7 @@ def file_encode(file_path):
                     g.applogger.info(arrange_stacktrace_format(t))
                     return False
             else:
+                g.applogger.info("remove skipped. file_path={}".format(tmp_file_path))
                 return True
         tmp_file_path_remove()
 
@@ -325,7 +340,7 @@ def filre_read_retry(func):
         ファイルストレージへの書き込み直後の読み込みが遅い場合向けの対策
         「FileNotFoundError: [Errno 2] No such file or directory」が出るため、リトライを行う
         デコレーター関数
-        ・file_encodeの中に二例あげています
+        ・file_encodeの中に例をあげています
     """
     #
     def wrapper(*args, **kwargs):

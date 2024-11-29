@@ -329,10 +329,25 @@ responseError: function( status, responseJson, fetchController, option = {}) {
                 if ( option.authorityErrMove !== false ) {
                     if ( !iframeFlag ) {
                         if ( fetchController ) fetchController.abort();
-                        alert( responseJson.message );
-                        location.replace('/' + organization_id + '/workspaces/' + workspace_id + '/ita/');
+
+                        if ( option.dataRegistrationFlag !== true ) {
+                            if ( responseJson && responseJson.message ) {
+                                alert( responseJson.message );
+                            } else {
+                                alert('401 Unauthorized');
+                            }
+                            location.replace('/' + organization_id + '/workspaces/' + workspace_id + '/ita/');
+                        } else {
+                            let message = getMessage.FTE00186( status );
+                            if ( responseJson && responseJson.message ) {
+                                message = message + '\n' + responseJson.message;
+                            }
+                            alert( message );
+                            resolve( null );
+                        }
                     } else {
-                        cmn.iframeMessage( responseJson.message );
+                        const message = ( responseJson && responseJson.message )? responseJson.message: '';
+                        cmn.iframeMessage( message );
                     }
                 } else {
                     resolve( responseJson );
@@ -342,15 +357,38 @@ responseError: function( status, responseJson, fetchController, option = {}) {
             case 403:
                 if ( !iframeFlag ) {
                     if ( fetchController ) fetchController.abort();
-                    alert( responseJson.message );
-                    window.location.href = `/${organization_id}/platform/workspaces`;
+
+                    if ( option.dataRegistrationFlag !== true ) {
+                        if ( responseJson && responseJson.message ) {
+                            alert( responseJson.message );
+                        } else {
+                            alert('403 Forbidden');
+                        }
+                        window.location.href = `/${organization_id}/platform/workspaces`;
+                    } else {
+                        let message = getMessage.FTE00186( status );
+                        if ( responseJson && responseJson.message ) {
+                            message = message + '\n' + responseJson.message;
+                        }
+                        alert( message );
+                        resolve( null );
+                    }
                 } else {
-                    cmn.iframeMessage( responseJson.message );
+                    const message = ( responseJson && responseJson.message )? responseJson.message: '';
+                    cmn.iframeMessage( message );
                 }
             break;
             // その他のエラー
             default:
-                cmn.systemErrorAlert();
+                console.error( status );
+                console.error( responseJson );
+                if ( option.dataRegistrationFlag !== true ) {
+                    cmn.systemErrorAlert();
+                } else {
+                    status = fn.cv( status, 'Unknown');
+                    alert( getMessage.FTE00186( status ) );
+                    resolve( null );
+                }
         }
     });
 },
@@ -895,7 +933,7 @@ xhr: function( url, formData ) {
         }).fail(function( jqXHR ){
             if ( jqXHR.statusText !== 'abort') {
                 setTimeout(function(){
-                    cmn.responseError( jqXHR.status, jqXHR.responseJSON ).then(function( result ){
+                    cmn.responseError( jqXHR.status, jqXHR.responseJSON, null, { dataRegistrationFlag: true }).then(function( result ){
                         progressModal.close();
                         progressModal = null;
                         reject( result );

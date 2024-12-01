@@ -12,6 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from flask import g
 import os
 import json
 import requests
@@ -21,6 +22,7 @@ def main(work_dir_path, db_conn):
     ###################################
     # Organizationのファイルアップロードサイズ最大値の設定
     ###################################
+    g.applogger.info("[Trace] migration_2_5_0_BASE")
     host_name = os.environ.get('PLATFORM_API_HOST')
     port = os.environ.get('PLATFORM_API_PORT')
     header_para = {
@@ -52,5 +54,3 @@ def main(work_dir_path, db_conn):
         raise Exception(f'API ERROR. URL=[{api_url}], StatusCode=[{request_response.status_code}], Response-[{str(response_data)}]')
 
     return 0
-
-main("", "")

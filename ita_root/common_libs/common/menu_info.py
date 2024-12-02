@@ -188,23 +188,28 @@ def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, 
 
             # json形式のレコードは改行を削除
             validate_option = record.get('VALIDATE_OPTION')
-
-            # ファイルアップロードカラムに対して、ファイルサイズ上限値を設定
-            if record.get("COLUMN_CLASS") == "9":
-                if record.get('VALIDATE_OPTION') is None:
-                    # 既存メニューに対しては、リソースプランの値を設定
-                    validate_option = json.dumps({
-                        "upload_max_size": int(org_upload_file_size_limit)
-                    })
-                else:
-                    param_upload_file_size_limit = json.loads(validate_option).get("upload_max_size")
-                    # パラメーターシートに設定されている上限値とリソースプランの上限値を比較
-                    validate_option = json.dumps({
-                        "upload_max_size": min(int(param_upload_file_size_limit), int(org_upload_file_size_limit))
-                    })
-
             if type(validate_option) is str:
                 validate_option = validate_option.replace('\n', '')
+
+            # ファイルアップロードカラムに対して、ファイルサイズ上限値を設定
+            if record.get("COLUMN_CLASS") in ["9", "20"]:
+                max_upload_size_key = "upload_max_size"
+                if record.get('VALIDATE_OPTION') is None:
+                    # validate_optionが設定されていない場合
+                    validate_option = json.dumps({
+                        max_upload_size_key: int(org_upload_file_size_limit)
+                    })
+                else:
+                    # validate_optionが設定されている場合
+                    current_validate_option = json.loads(validate_option)
+                    if max_upload_size_key in current_validate_option:
+                        # パラメーターシートに設定されている上限値とリソースプランの上限値を比較
+                        param_upload_file_size_limit = current_validate_option.get(max_upload_size_key)
+                        current_validate_option[max_upload_size_key] = min(int(param_upload_file_size_limit), int(org_upload_file_size_limit))
+                    else:
+                        # validate_optionに"upload_max_size"が無い場合は、リソースプランの値を設定
+                        current_validate_option[max_upload_size_key] = int(org_upload_file_size_limit)
+                    validate_option = json.dumps(current_validate_option)
 
             before_validate_register = record.get('BEFORE_VALIDATE_REGISTER')
             if type(before_validate_register) is str:

@@ -173,6 +173,12 @@ def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, 
     column_group_info_data = {}
 
     if ret:
+        # リソースプランののファイルサイズ上限値を取得
+        if g.get("ORG_UPLOAD_FILE_SIZE_LIMIT"):
+            org_upload_file_size_limit = g.ORG_UPLOAD_FILE_SIZE_LIMIT
+        else:
+            org_upload_file_size_limit = get_org_upload_file_size_limit(g.ORGANIZATION_ID)
+
         for count, record in enumerate(ret, 1):
 
             if ((record.get('INPUT_ITEM') in ['2'] and record.get('VIEW_ITEM') in ['0']) or
@@ -182,6 +188,21 @@ def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, 
 
             # json形式のレコードは改行を削除
             validate_option = record.get('VALIDATE_OPTION')
+
+            # ファイルアップロードカラムに対して、ファイルサイズ上限値を設定
+            if record.get("COLUMN_CLASS") == "9":
+                if record.get('VALIDATE_OPTION') is None:
+                    # 既存メニューに対しては、リソースプランの値を設定
+                    validate_option = json.dumps({
+                        "upload_max_size": int(org_upload_file_size_limit)
+                    })
+                else:
+                    param_upload_file_size_limit = json.loads(validate_option).get("upload_max_size")
+                    # パラメーターシートに設定されている上限値とリソースプランの上限値を比較
+                    validate_option = json.dumps({
+                        "upload_max_size": min(int(param_upload_file_size_limit), int(org_upload_file_size_limit))
+                    })
+
             if type(validate_option) is str:
                 validate_option = validate_option.replace('\n', '')
 

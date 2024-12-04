@@ -429,7 +429,7 @@ def createTmpZipFile(execution_no, zip_data_source_dir, zip_type, zip_file_pfx, 
             rmtmpfilelist.append(zip_temp_save_path)
             rmtmpfilelist.append(tmp_zip_data_source_dir)
 
-        tmp_str_command = "cd " + shlex.quote(tmp_zip_data_source_dir) + " && zip -r " + shlex.quote(zip_temp_save_dir + "/" + zip_file_name) + " . -x ssh_key_files/* -x winrm_ca_files/*  -x .vault-password-file 1> /dev/null"  # noqa: E501
+        tmp_str_command = "cd " + shlex.quote(tmp_zip_data_source_dir) + " && zip -r " + shlex.quote(zip_temp_save_dir + "/" + zip_file_name) + " . -x ssh_key_files/* -x winrm_key_files/*  -x .vault-password-file 1> /dev/null"  # noqa: E501
 
         ret = subprocess.run(tmp_str_command, check=True, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 

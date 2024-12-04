@@ -814,8 +814,8 @@ def _execute_compare_data(objdbca, compare_config, options, file_required=False)
                 negative_key = [
                     g.appmsg.get_api_message('MSG-60028'),  # 'メニュー名', 'menu',
                     g.appmsg.get_api_message('MSG-60029'),  # '項番', 'uuid',
-                    g.appmsg.get_api_message('MSG-60030'),  # 'オペレーション名', 'operation_name_disp',
-                    g.appmsg.get_api_message('MSG-60031'),  # '基準日時', 'base_datetime',
+                    f"{g.appmsg.get_api_message('MSG-90046')}/{g.appmsg.get_api_message('MSG-60030')}", # 'オペレーション名', 'operation_name_disp',
+                    f"{g.appmsg.get_api_message('MSG-90046')}/{g.appmsg.get_api_message('MSG-60031')}"  # '基準日時', 'base_datetime',
                 ]
                 # target only
                 tmp_target_data_1 = {k: v for k, v in target_data_1.items() if k not in negative_key}
@@ -823,20 +823,20 @@ def _execute_compare_data(objdbca, compare_config, options, file_required=False)
 
                 # diff 全体
                 result_deepdiff = DeepDiff(tmp_target_data_1, tmp_target_data_2)
-
                 tmp_compare_result = False
-                if len(result_deepdiff) != 0:
-                    tmp_compare_result = True
-                else:
-                    pass
-                compare_config["result_compare_host"].setdefault(target_host, tmp_compare_result)
-
                 diff_keys_set = set()
                 for diff_type in ["type_changes","dictionary_item_added", "dictionary_item_removed", "values_changed"]:
                     if diff_type in result_deepdiff:
                         for key in result_deepdiff[diff_type]:
                             diff_keys_set.add(key.split("[")[-1].strip("']"))
                 diff_key = list(diff_keys_set)
+
+                if len(result_deepdiff) != 0:
+                    tmp_compare_result = True
+                else:
+                    pass
+                compare_config["result_compare_host"].setdefault(target_host, tmp_compare_result)
+
 
                 # get target rest_key
                 target_data_key = list(target_data_1.keys())
@@ -878,7 +878,6 @@ def _execute_compare_data(objdbca, compare_config, options, file_required=False)
         g.applogger.info(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
         compare_config = _set_flg(compare_config, "execute_compare_error", True)
         retBool = False
-
     return retBool, compare_config,
 
 
@@ -1686,7 +1685,7 @@ def _set_compare_detail_config(objdbca, compare_config, options):
             row = {
                 'COMPARE_DETAIL_ID': 'operation_name_disp',
                 'COMPARE_ID': 'operation_name_disp',
-                'COMPARE_COL_TITLE': g.appmsg.get_api_message('MSG-60030'),  # 'オペレーション名',
+                'COMPARE_COL_TITLE': f"{g.appmsg.get_api_message('MSG-90046')}/{g.appmsg.get_api_message('MSG-60030')}",  # 'オペレーション/オペレーション名',
                 'TARGET_COLUMN_ID_1': 'operation_name_disp',
                 'TARGET_INPUT_ORDER_1': None,
                 'TARGET_COLUMN_ID_2': 'operation_name_disp',
@@ -1711,7 +1710,7 @@ def _set_compare_detail_config(objdbca, compare_config, options):
             row = {
                 'COMPARE_DETAIL_ID': 'base_datetime',
                 'COMPARE_ID': 'base_datetime',
-                'COMPARE_COL_TITLE': g.appmsg.get_api_message('MSG-60031'),  # '基準日時',
+                'COMPARE_COL_TITLE': f"{g.appmsg.get_api_message('MSG-90046')}/{g.appmsg.get_api_message('MSG-60031')}",  # 'オペレーション/基準日時',
                 'TARGET_COLUMN_ID_1': 'base_datetime',
                 'TARGET_INPUT_ORDER_1': None,
                 'TARGET_COLUMN_ID_2': 'base_datetime',

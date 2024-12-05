@@ -283,7 +283,7 @@ def file_encode(file_path):
         tmp_file_path = obj.make_temp_path(file_path)
         # /storageから/tmpにコピー
         # issue2432対策。azureストレージの初回アクセス時に、不規則に「FileNotFoundError: [Errno 2] No such file or directory」が出るため、一度だけリトライを行う
-        @filre_read_retry
+        @file_read_retry
         def tmp_copy_func():
             try:
                 shutil.copy2(file_path, tmp_file_path)
@@ -298,7 +298,7 @@ def file_encode(file_path):
 
     # ファイル読み込み
     read_value = ""
-    @filre_read_retry
+    @file_read_retry
     def tmp_file_path_read():
         nonlocal read_value
         try:
@@ -315,7 +315,7 @@ def file_encode(file_path):
     tmp_file_path_read()
 
     if storage_flg is True:
-        @filre_read_retry
+        @file_read_retry
         def tmp_file_path_remove():
             if os.path.isfile(tmp_file_path) is True:
                 try:
@@ -334,9 +334,9 @@ def file_encode(file_path):
     return read_value
 
 
-def filre_read_retry(func):
+def file_read_retry(func):
     """
-    filre_read_retry
+    file_read_retry
         ファイルストレージへの書き込み直後の読み込みが遅い場合向けの対策
         「FileNotFoundError: [Errno 2] No such file or directory」が出るため、リトライを行う
         デコレーター関数

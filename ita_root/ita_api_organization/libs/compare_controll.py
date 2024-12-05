@@ -828,7 +828,7 @@ def _execute_compare_data(objdbca, compare_config, options, file_required=False)
                 for diff_type in ["type_changes","dictionary_item_added", "dictionary_item_removed", "values_changed"]:
                     if diff_type in result_deepdiff:
                         for key in result_deepdiff[diff_type]:
-                            diff_keys_set.add(key.split("[")[-1].strip("']"))
+                            diff_keys_set.add(key[6:-2])
                 diff_key = list(diff_keys_set)
 
                 if len(result_deepdiff) != 0:

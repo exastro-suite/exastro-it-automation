@@ -1838,8 +1838,8 @@ def fileBackup(backupfile_dir, uploadfiles_dir, menu_id_list):
         # コピーできたかを確認する
         for path in resAry:
             if not os.path.exists(path):
-                msg = "file:{}".format(path)
-                raise AppException("MSG-140005", [msg], [msg])
+                msg = "file is not found : {}".format(path)
+                g.applogger.info(msg)
 
     g.applogger.debug("fileBackup end")
 

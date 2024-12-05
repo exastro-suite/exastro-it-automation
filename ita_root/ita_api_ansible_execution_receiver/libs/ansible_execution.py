@@ -363,7 +363,8 @@ def get_populated_data_path(objdbca, organization_id, workspace_id, execution_no
         g.applogger.debug(f"tarfile.open({gztar_path}, 'w:gz'):  tar.add({tmp_base_path})")
 
         # move gztar_path
-        gztar_path = shutil.move(gztar_path, tmp_base_path)
+        tmp_shutil_move(gztar_path, tmp_base_path)
+        gztar_path = f"{tmp_base_path}{execution_no}.tar.gz"
         g.applogger.debug(f"{gztar_path=}")
     finally:
         # clear tmp_base_path
@@ -727,4 +728,14 @@ def tmp_copy_subprocess_run(cmd):
         return True
     except Exception as e:
         g.applogger.info("copy failed. cmd={}, ret={}".format(cmd, ret if ret else None))
+        raise e
+
+@file_read_retry
+def tmp_shutil_move(gztar_path, tmp_base_path):
+    try:
+        gztar_path = shutil.move(gztar_path, tmp_base_path)
+        g.applogger.debug(f"{gztar_path=}")
+        return True
+    except Exception as e:
+        g.applogger.info("move failed. gztar_path={}, tmp_base_path={}".format(gztar_path, tmp_base_path))
         raise e

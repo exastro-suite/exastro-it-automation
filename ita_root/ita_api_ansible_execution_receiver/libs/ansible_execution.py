@@ -358,9 +358,19 @@ def get_populated_data_path(objdbca, organization_id, workspace_id, execution_no
                 g.applogger.debug(f"os.makedirs, os.chmod, ({tmp_c_path})")
 
         # tar.gz
-        with tarfile.open(gztar_path, "w:gz") as tar:
-            tar.add(tmp_base_path, arcname="")
-        g.applogger.debug(f"tarfile.open({gztar_path}, 'w:gz'):  tar.add({tmp_base_path})")
+        @file_read_retry
+        def tarfile_gztar_path():
+            try:
+                with tarfile.open(gztar_path, "w:gz") as tar:
+                    tar.add(tmp_base_path, arcname="")
+                g.applogger.debug(f"tarfile.open({gztar_path}, 'w:gz'):  tar.add({tmp_base_path})")
+                return True
+            except Exception as e:
+                g.applogger.info("tarfile_gztar_path failed. file_path={}".format(gztar_path))
+                t = traceback.format_exc()
+                g.applogger.info(arrange_stacktrace_format(t))
+                raise e
+        tarfile_gztar_path()
 
         # move gztar_path
         tmp_shutil_move(gztar_path, tmp_base_path)
@@ -376,9 +386,11 @@ def get_populated_data_path(objdbca, organization_id, workspace_id, execution_no
                     shutil.rmtree(_tp)
                     g.applogger.debug(f"shutil.rmtree({_tp})")
 
-        with tarfile.open(gztar_path, 'r:gz') as tar:
-            g.applogger.debug(f"{tar.getmembers()=}")
-
+        try:
+            with tarfile.open(gztar_path, 'r:gz') as tar:
+                g.applogger.debug(f"{tar.getmembers()=}")
+        except Exception as e:
+            print_exception_msg(e)
 
     return gztar_path
 

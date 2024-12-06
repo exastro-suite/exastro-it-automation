@@ -442,6 +442,9 @@ def createTmpZipFile(execution_no, zip_data_source_dir, zip_type, zip_file_pfx, 
 
         # 処理]{}ディレクトリを圧縮(圧縮ファイル:{})
         g.applogger.debug(g.appmsg.get_log_message("MSG-10783", [zip_type, os.path.basename(zip_temp_save_path)]))
+    else:
+        rmtmpfilelist = []
+        g.applogger.info("zip_data_source_dir:({}) not found".format(zip_data_source_dir))
 
     if rmtmpfiles is True:
         return True, err_msg, zip_file_name

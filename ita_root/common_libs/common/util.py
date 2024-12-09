@@ -16,6 +16,7 @@
 共通関数 module
 """
 from flask import g
+import time
 import secrets
 import string
 import base64
@@ -281,33 +282,90 @@ def file_encode(file_path):
         # /storage
         tmp_file_path = obj.make_temp_path(file_path)
         # /storageから/tmpにコピー
-        i = 0
-        while True:
-            # issue2432対策。azureストレージの初回アクセス時に、不規則に「FileNotFoundError: [Errno 2] No such file or directory」が出るため、一度だけリトライを行う
-            i = i + 1
+        # issue2432対策。azureストレージの初回アクセス時に、不規則に「FileNotFoundError: [Errno 2] No such file or directory」が出るため、一度だけリトライを行う
+        @file_read_retry
+        def tmp_copy_func():
             try:
                 shutil.copy2(file_path, tmp_file_path)
-                break
+                return True
             except Exception as e:
                 g.applogger.info("copy failed. file_path={}, tmp_file_path={}".format(file_path, tmp_file_path))
-                if i == 2:
-                    raise e
-                t = traceback.format_exc()
-                g.applogger.info(arrange_stacktrace_format(t))
+                raise e
+        tmp_copy_func()
     else:
         # not /storage
         tmp_file_path = file_path
+
     # ファイル読み込み
-    with open(tmp_file_path, "rb") as f:
-        read_value = base64.b64encode(f.read()).decode()
-    f.close()
+    read_value = ""
+    @file_read_retry
+    def tmp_file_path_read():
+        nonlocal read_value
+        try:
+            with open(tmp_file_path, "rb") as f:
+                read_value = base64.b64encode(f.read()).decode()
+            f.close()
+            return True
+        except Exception as e:
+            g.applogger.info("tmp_file_path cannot read. file_path={}".format(tmp_file_path))
+            t = traceback.format_exc()
+            g.applogger.info(arrange_stacktrace_format(t))
+            raise e
+
+    tmp_file_path_read()
 
     if storage_flg is True:
-        if os.path.isfile(tmp_file_path) is True:
-            os.remove(tmp_file_path)
+        @file_read_retry
+        def tmp_file_path_remove():
+            if os.path.isfile(tmp_file_path) is True:
+                try:
+                    os.remove(tmp_file_path)
+                    return True
+                except Exception as e:
+                    g.applogger.info("remove failed. file_path={}".format(tmp_file_path))
+                    t = traceback.format_exc()
+                    g.applogger.info(arrange_stacktrace_format(t))
+                    return False
+            else:
+                g.applogger.info("remove skipped. file_path={}".format(tmp_file_path))
+                return True
+        tmp_file_path_remove()
 
     return read_value
 
+
+def file_read_retry(func):
+    """
+    file_read_retry
+        ファイルストレージへの書き込み直後の読み込みが遅い場合向けの対策
+        「FileNotFoundError: [Errno 2] No such file or directory」が出るため、リトライを行う
+        デコレーター関数
+        ・file_encodeの中に例をあげています
+    """
+    #
+    def wrapper(*args, **kwargs):
+        retry_delay_time = 0.1  # リトライのインターバル
+        retBool = False
+        i = 1
+        max = 3 # リトライ回数
+        while True:
+            try:
+                retBool = func(*args, **kwargs)
+                if retBool is True:
+                    break
+            except Exception as e:
+                # raiseしたくない場合は、funcの中でログを出力し、（エラーを抑止して）Falseを返却してください
+                t = traceback.format_exc()
+                g.applogger.info(arrange_stacktrace_format(t))
+                if i == max:
+                    raise e
+
+            if i == max:
+                break
+            time.sleep(retry_delay_time)
+            i = i + 1
+
+    return wrapper
 
 def file_decode(file_path):
     """

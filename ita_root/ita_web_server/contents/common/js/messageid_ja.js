@@ -226,6 +226,7 @@ export function messageid_ja() {
         'FTE00183' : "JSONダウンロード（ファイルなし）",
         'FTE00184' : "編集反映中",
         'FTE00185' : "ダウンロード中",
+        'FTE00186' : function( statusCode ){return `データの登録中にエラーが発生しました。（${statusCode}）`},
 
         // パラメータシート定義・作成
         'FTE01001' : "項目",

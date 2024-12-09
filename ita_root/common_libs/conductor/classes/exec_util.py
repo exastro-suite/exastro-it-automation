@@ -2920,9 +2920,9 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
         result.setdefault('status_file_path', None)
         result.setdefault('str_row', None)
         result.setdefault('status_file_value', None)
-        i = 0
-        while True:
-            i = i + 1
+
+        @file_read_retry
+        def tmp_read_func():
             try:
                 status_file_val = None
                 tmp_f_str_line = None
@@ -2938,15 +2938,11 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
                     result['status_file_path'] = status_file_path
                     result['str_row'] = tmp_f_str
                     result['status_file_value'] = status_file_val
-                    break
+                return True
             except Exception:
-                t = traceback.format_exc()
-                g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
+                g.applogger.info(f"open failed. status_file={status_file_path=}")
                 retBool = False
-            g.applogger.info(f"{status_file_path}: wait:{retry_delay_time} (retry:{i=})")
-            time.sleep(retry_delay_time)
-            if i == 3:
-                break
+        tmp_read_func()
 
         return retBool, result,
 

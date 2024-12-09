@@ -358,12 +358,23 @@ def get_populated_data_path(objdbca, organization_id, workspace_id, execution_no
                 g.applogger.debug(f"os.makedirs, os.chmod, ({tmp_c_path})")
 
         # tar.gz
-        with tarfile.open(gztar_path, "w:gz") as tar:
-            tar.add(tmp_base_path, arcname="")
-        g.applogger.debug(f"tarfile.open({gztar_path}, 'w:gz'):  tar.add({tmp_base_path})")
+        @file_read_retry
+        def tarfile_gztar_path():
+            try:
+                with tarfile.open(gztar_path, "w:gz") as tar:
+                    tar.add(tmp_base_path, arcname="")
+                g.applogger.debug(f"tarfile.open({gztar_path}, 'w:gz'):  tar.add({tmp_base_path})")
+                return True
+            except Exception as e:
+                g.applogger.info("tarfile_gztar_path failed. file_path={}".format(gztar_path))
+                t = traceback.format_exc()
+                g.applogger.info(arrange_stacktrace_format(t))
+                raise e
+        tarfile_gztar_path()
 
         # move gztar_path
-        gztar_path = shutil.move(gztar_path, tmp_base_path)
+        tmp_shutil_move(gztar_path, tmp_base_path)
+        gztar_path = f"{tmp_base_path}{execution_no}.tar.gz"
         g.applogger.debug(f"{gztar_path=}")
     finally:
         # clear tmp_base_path
@@ -375,9 +386,11 @@ def get_populated_data_path(objdbca, organization_id, workspace_id, execution_no
                     shutil.rmtree(_tp)
                     g.applogger.debug(f"shutil.rmtree({_tp})")
 
-        with tarfile.open(gztar_path, 'r:gz') as tar:
-            g.applogger.debug(f"{tar.getmembers()=}")
-
+        try:
+            with tarfile.open(gztar_path, 'r:gz') as tar:
+                g.applogger.debug(f"{tar.getmembers()=}")
+        except Exception as e:
+            print_exception_msg(e)
 
     return gztar_path
 
@@ -461,7 +474,7 @@ def update_result(objdbca, organization_id, workspace_id, execution_no, paramete
             if file_key == "out_tar_data":
                 cmd = "cp -rf {} {}".format(tmp_path + file_key + "/*", out_directory_path + "/.")
                 g.applogger.debug("Update out directory: command {}".format(cmd))
-                ret = subprocess.run(cmd, text=True, shell=True)
+                tmp_copy_subprocess_run(cmd)
 
             # in/parametersディレクトリ更新
             if file_key == "parameters_tar_data":
@@ -470,14 +483,14 @@ def update_result(objdbca, organization_id, workspace_id, execution_no, paramete
                     # 展開したファイルの一覧を取得
                     cmd = "cp -rf {} {}".format(tmp_path + file_key + "/*", in_directory_path + "/_parameters/.")
                     g.applogger.debug("Update in/parameters directory: command {}".format(cmd))
-                    ret = subprocess.run(cmd, text=True, shell=True)
+                    tmp_copy_subprocess_run(cmd)
             if file_key == "parameters_file_tar_data":
                 # ステータスが完了、完了(異常)の場合
                 if status == AnscConst.COMPLETE or status == AnscConst.FAILURE:
                     # 展開したファイルの一覧を取得
                     cmd = "cp -rf {} {}".format(tmp_path + file_key + "/*", in_directory_path + "/_parameters_file/.")
                     g.applogger.debug("Update in/_parameters_file directory: command {}".format(cmd))
-                    ret = subprocess.run(cmd, text=True, shell=True)
+                    tmp_copy_subprocess_run(cmd)
 
             # conductorディレクトリ更新
             if file_key == "conductor_tar_data":
@@ -487,11 +500,13 @@ def update_result(objdbca, organization_id, workspace_id, execution_no, paramete
                         # 展開したファイルの一覧を取得
                         cmd = "cp -rf {} {}".format(tmp_path + file_key + "/*", conductor_directory_path + "/.")
                         g.applogger.debug("Update conductor directory: command {}".format(cmd))
-                        ret = subprocess.run(cmd, text=True, shell=True)
+                        tmp_copy_subprocess_run(cmd)
 
     except subprocess.CalledProcessError as e:
+        print_exception_msg(e)
         exception(e)
     except Exception as e:
+        print_exception_msg(e)
         exception(e)
     finally:
         # clear tmp_path
@@ -717,3 +732,22 @@ def create_file_path(connexion_request, tmp_path, execution_no):
             return False, [], file_paths
 
     return True, parameters, file_paths
+
+@file_read_retry
+def tmp_copy_subprocess_run(cmd):
+    try:
+        ret = subprocess.run(cmd, text=True, shell=True)
+        return True
+    except Exception as e:
+        g.applogger.info("copy failed. cmd={}, ret={}".format(cmd, ret if ret else None))
+        raise e
+
+@file_read_retry
+def tmp_shutil_move(gztar_path, tmp_base_path):
+    try:
+        gztar_path = shutil.move(gztar_path, tmp_base_path)
+        g.applogger.debug(f"{gztar_path=}")
+        return True
+    except Exception as e:
+        g.applogger.info("move failed. gztar_path={}, tmp_base_path={}".format(gztar_path, tmp_base_path))
+        raise e

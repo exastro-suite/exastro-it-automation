@@ -13,7 +13,7 @@
     "490-01002": "The workspace is created. But, error occurred. So, please contact System Administrator.(error={})",
     "490-02001": "Organization_id[{}] does not exist.",
     "490-02002": "Key[{}] is invalid. Set either True or False.",
-    "490-02003": "Key[{}] is invalid. Set 'Ansible-Core',  'Ansible Automation Controller' or both.",
+    "490-02003": "Key[{}] is invalid. Set  from 'Ansible-Core',  'Ansible Automation Controller' , 'Ansible Execution Agent'.",
     "490-02004": "Key[{}] is invalid. Key[{}] is required.",
     "490-02005": "Value of key[{}] is invalid.",
     "490-02006": "Body paramater '{}' is required.",

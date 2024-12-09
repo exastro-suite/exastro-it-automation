@@ -13,7 +13,7 @@
     "490-01002": "ワークスペースの作成は完了しましたが、一部エラーが発生したため、管理者に問い合わせてください。(error={})",
     "490-02001": "organization_id[{}]が存在しません。",
     "490-02002": "key[{}]が無効です。True または False を設定します。",
-    "490-02003": "key[{}]が無効です。「Ansible-Core」または「Ansible Automation Controller」、あるいはその両方を設定します。",
+    "490-02003": "key[{}]が無効です。「Ansible-Core」、「Ansible Automation Controller」、「Ansible Execution Agent」から設定します。",
     "490-02004": "key[{}]が無効です。key[{}]が必要です。",
     "490-02005": "key[{}]の値が無効です。",
     "490-02006": "bodyパラメータ「{}」は必須です。",

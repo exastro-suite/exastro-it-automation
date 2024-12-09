@@ -221,6 +221,7 @@ export function messageid_en() {
         'FTE00183' : "JSON download (No File)",
         'FTE00184' : "Editing reflected",
         'FTE00185' : "Download",
+        'FTE00186' : function( statusCode ){return `An error occurred while registering the data. (${statusCode})`},
 
         // Create parameter sheet
         'FTE01001' : "Item",

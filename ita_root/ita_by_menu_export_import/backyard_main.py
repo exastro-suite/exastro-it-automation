@@ -365,7 +365,12 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
 
         # 正常系リターン
         return True, msg, None
-    except AppException as msg:
+    except AppException as e:
+        args = e.args
+        result_code, log_msg_args, api_msg_args = args
+        msg = g.appmsg.get_log_message(result_code, log_msg_args)
+        g.applogger.info(msg)
+
         trace_msg = traceback.format_exc()
         g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(trace_msg)))
         g.applogger.info(f"{record=}")
@@ -1828,17 +1833,13 @@ def fileBackup(backupfile_dir, uploadfiles_dir, menu_id_list):
 
         if sp_copy.returncode != 0:
             msg = sp_copy.stderr
-            log_msg_args = [msg]
-            api_msg_args = [msg]
-            raise AppException("MSG-140005", [log_msg_args], [api_msg_args])
+            raise AppException("MSG-140005", [msg], [msg])
 
         # コピーできたかを確認する
         for path in resAry:
             if not os.path.exists(path):
-                msg = g.appmsg.get_api_message("MSG-30036")
-                log_msg_args = [msg]
-                api_msg_args = [msg]
-                raise AppException("MSG-140005", [log_msg_args], [api_msg_args])
+                msg = "file is not found : {}".format(path)
+                g.applogger.info(msg)
 
     g.applogger.debug("fileBackup end")
 

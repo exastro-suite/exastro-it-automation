@@ -31,257 +31,266 @@ def backyard_main(organization_id, workspace_id):  # noqa: C901
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # Status変数
-    status_ids_list = {
-        "STATUS_IN_PREPARATION": "1",  # ステータス：準備中
-        "STATUS_IN_OPERATION": "2",  # ステータス：稼働中
-        "STATUS_COMPLETED": "3",  # ステータス：完了
-        "STATUS_MISMATCH_ERROR": "4",  # ステータス：不整合エラー
-        "STATUS_LINKING_ERROR": "5",  # ステータス：紐付けエラー
-        "STATUS_UNEXPECTED_ERROR": "6",  # ステータス：想定外エラー
-        "STATUS_CONDUCTOR_DISCARD": "7",  # ステータス：conductor廃止
-        "STATUS_OPERATION_DISCARD": "8"  # ステータス：operation廃止
-    }
-
-    # ################次回実行日付の設定（初回）
-    table_name = "T_COMN_CONDUCTOR_REGULARLY_LIST"
-    where_str = "WHERE DISUSE_FLAG=0 AND NEXT_EXECUTION_DATE IS NULL AND `STATUS_ID`=%s"
-    prep_list = objdbca.table_select(table_name, where_str, status_ids_list["STATUS_IN_PREPARATION"])
-    if len(prep_list) != 0:
-
-        for item in prep_list:
-            objdbca.db_transaction_start()
-            status_id, next_execution_date = calc_next_execution_date(item, status_ids_list)
-            try:
-                data_list = {
-                    "REGULARLY_ID": item["REGULARLY_ID"],
-                    "STATUS_ID": status_id,
-                    "NEXT_EXECUTION_DATE": next_execution_date,
-                    "LAST_UPDATE_USER": g.get('USER_ID')
-                }
-                ret = objdbca.table_update(table_name, data_list, "REGULARLY_ID")
-                debug_msg = g.appmsg.get_log_message("BKY-40009", [item["REGULARLY_ID"]])
-                g.applogger.debug(debug_msg)
-
-            except Exception as e:
-                objdbca.db_transaction_end(False)
-                t = traceback.format_exc()
-                g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
-                debug_msg = g.appmsg.get_log_message("BKY-40012", [])
-                g.applogger.info(debug_msg)
-
-            objdbca.db_transaction_end(True)
-    else:
-        debug_msg = g.appmsg.get_log_message("BKY-40001", [])
-        g.applogger.debug(debug_msg)
-    # 次回実行日付の設定（初回）################
-
-    # ################ Conductorの予約と次回実行日付の更新
-    # インターバル設定
-    system_settings = objdbca.table_select("T_COMN_SYSTEM_CONFIG", "WHERE CONFIG_ID=%s", ["INTERVAL_TIME"])
-    system_interval = system_settings[0]["VALUE"]
-    interval_time = "3"
-    max_interval = 525600
-    min_interval = 1
     try:
-        if max_interval >= int(system_interval) and int(system_interval) >= min_interval:
-            interval_time = system_interval
-    except ValueError:
-        interval_time = "3"
+        # Status変数
+        status_ids_list = {
+            "STATUS_IN_PREPARATION": "1",  # ステータス：準備中
+            "STATUS_IN_OPERATION": "2",  # ステータス：稼働中
+            "STATUS_COMPLETED": "3",  # ステータス：完了
+            "STATUS_MISMATCH_ERROR": "4",  # ステータス：不整合エラー
+            "STATUS_LINKING_ERROR": "5",  # ステータス：紐付けエラー
+            "STATUS_UNEXPECTED_ERROR": "6",  # ステータス：想定外エラー
+            "STATUS_CONDUCTOR_DISCARD": "7",  # ステータス：conductor廃止
+            "STATUS_OPERATION_DISCARD": "8"  # ステータス：operation廃止
+        }
 
-    where_str2 = "WHERE DISUSE_FLAG=0 AND (STATUS_ID=%s OR STATUS_ID=%s) AND (NEXT_EXECUTION_DATE<NOW()+INTERVAL %s MINUTE)"
-    inOps_list = objdbca.table_select(table_name, where_str2, [status_ids_list["STATUS_IN_OPERATION"], status_ids_list["STATUS_LINKING_ERROR"], int(interval_time)])  # noqa: E501
+        # ################次回実行日付の設定（初回）
+        table_name = "T_COMN_CONDUCTOR_REGULARLY_LIST"
+        where_str = "WHERE DISUSE_FLAG=0 AND NEXT_EXECUTION_DATE IS NULL AND `STATUS_ID`=%s"
+        prep_list = objdbca.table_select(table_name, where_str, status_ids_list["STATUS_IN_PREPARATION"])
+        if len(prep_list) != 0:
 
-    platform_users = {}
-    try:
-        platform_users = get_exastro_platform_users()
-    except AppException as e:
-        msg_code, logmsg_args = e.args
-        msg = g.appmsg.get_log_message(msg_code, [logmsg_args[0], logmsg_args[1]])
-        print_exception_msg(msg)
-    except Exception:
-        t = traceback.format_exc()
-        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
-
-    active_user_list = []
-    for user_id in platform_users.keys():
-        active_user_list.append(user_id)
-
-    c_menu = 'conductor_instance_list'
-    n_menu = 'conductor_node_instance_list'
-    cc_menu = 'conductor_class_edit'
-    m_menu = 'movement_list'
-    notice = 'conductor_notice_definition'
-    objconductor = load_table.loadTable(objdbca, c_menu)  # noqa: F405
-    objnode = load_table.loadTable(objdbca, n_menu)  # noqa: F405
-    objmovement = load_table.loadTable(objdbca, m_menu)  # noqa: F405
-    objcclass = load_table.loadTable(objdbca, cc_menu)  # noqa: F405
-    objcnotice = load_table.loadTable(objdbca, notice)  # noqa: F405
-    objmenus = {
-        "objconductor": objconductor,
-        "objnode": objnode,
-        "objmovement": objmovement,
-        "objcclass": objcclass,
-        "objcnotice": objcnotice
-    }
-
-    objCexec = ConductorExecuteLibs(objdbca, "", objmenus)
-
-    if len(inOps_list) != 0:
-        for item in inOps_list:
-
-            execute_flag = True
-            status_id = item["STATUS_ID"]
-            next_execution_date = item["NEXT_EXECUTION_DATE"]
-            current_datetime = datetime.datetime.now()
-
-            # レコードのステータスIDが紐付けエラーの場合、一度「準備中」に設定
-            if status_id == status_ids_list["STATUS_LINKING_ERROR"]:
-                status_id = status_ids_list["STATUS_IN_PREPARATION"]
-
-            # 実行ユーザの廃止チェック
-            if item["EXECUTION_USER_ID"] not in active_user_list:
-                status_id = status_ids_list["STATUS_LINKING_ERROR"]
-                execute_flag = False
-                debug_msg = g.appmsg.get_log_message("BKY-40003", [item["EXECUTION_USER_ID"]])
-                g.applogger.debug(debug_msg)
-
-            # conductorの廃止チェック
-            cclass_disuse = check_conductor_disuse(objdbca, item["CONDUCTOR_CLASS_ID"])
-            if cclass_disuse is True:
-                status_id = status_ids_list["STATUS_CONDUCTOR_DISCARD"]
-                execute_flag = False
-
-            # operationの廃止チェック
-            op_disuse = check_operation_disuse(objdbca, item["OPERATION_ID"])
-            if op_disuse is True:
-                status_id = status_ids_list["STATUS_OPERATION_DISCARD"]
-                execute_flag = False
-
-            # conductorインスタンス登録処理
-            objdbca.db_transaction_start()
-            if next_execution_date >= current_datetime:
-                if execute_flag is True:
-                    tmp_parameter = {
-                        'conductor_class_id': item["CONDUCTOR_CLASS_ID"],
-                        'operation_id': item["OPERATION_ID"],
-                        'schedule_date': str(item["NEXT_EXECUTION_DATE"]).replace("-", "/"),
-                        'conductor_data': {},
-                    }
-                    try:
-                        # パラメータチェック
-                        check_param = objCexec.chk_execute_parameter_format(tmp_parameter)
-                        tmp_parameter = check_param[2]
-                        parameter = objCexec.create_execute_register_parameter(tmp_parameter, None)
-                        conductor_parameter = parameter[1].get('conductor')
-                        node_parameters = parameter[1].get('node')
-
-                        # conductorインスタンス, nodeインスタンス登録
-                        debug_msg = g.appmsg.get_log_message("BKY-40007", [])
-                        g.applogger.debug(debug_msg)
-
-                        # パラメータのexecution_userを、レコードを登録したユーザに差し替え
-                        user_setting_flag = False
-                        for key, value in platform_users.items():
-                            if key == item["EXECUTION_USER_ID"]:
-                                user_setting_flag = True
-                                conductor_parameter["parameter"]["execution_user"] = value
-                                break
-
-                        # 差し替えに失敗した場合
-                        if user_setting_flag is False:
-                            debug_msg = g.appmsg.get_log_message("BKY-40011", [])
-                            g.applogger.debug(debug_msg)
-                            raise Exception
-
-                        instance_ret = objCexec.conductor_instance_exec_maintenance(conductor_parameter)  # noqa: F841
-                        debug_msg = g.appmsg.get_log_message("BKY-40008", [])
-                        g.applogger.debug(debug_msg)
-                        node_ret = objCexec.node_instance_exec_maintenance(node_parameters)  # noqa: F841
-                        objdbca.db_transaction_end(True)
-
-                        # 次回実行日付計算
-                        status_id, next_execution_date = calc_next_execution_date(item, status_ids_list)
-
-                    except Exception as e:
-                        t = traceback.format_exc()
-                        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
-                        debug_msg = g.appmsg.get_log_message("BKY-40006", [item["CONDUCTOR_CLASS_ID"], item["OPERATION_ID"], str(item["NEXT_EXECUTION_DATE"])])  # noqa: E501
-                        g.applogger.info(debug_msg)
-                        objdbca.db_transaction_end(False)
-                        status_id = status_ids_list["STATUS_LINKING_ERROR"]
-            else:
-                if status_id == status_ids_list["STATUS_LINKING_ERROR"]:
-                    pass
-                else:
-                    status_id = status_ids_list["STATUS_IN_PREPARATION"]
-                    next_execution_date = None
-
-            if status_id == status_ids_list["STATUS_COMPLETED"]:
-                next_execution_date = None
-
-            try:
-                if item["STATUS_ID"] == status_ids_list["STATUS_LINKING_ERROR"] and status_id == status_ids_list["STATUS_LINKING_ERROR"]:
-                    pass
-                else:
+            for item in prep_list:
+                objdbca.db_transaction_start()
+                status_id, next_execution_date = calc_next_execution_date(item, status_ids_list)
+                try:
                     data_list = {
                         "REGULARLY_ID": item["REGULARLY_ID"],
                         "STATUS_ID": status_id,
                         "NEXT_EXECUTION_DATE": next_execution_date,
                         "LAST_UPDATE_USER": g.get('USER_ID')
                     }
-                    objdbca.db_transaction_start()
                     ret = objdbca.table_update(table_name, data_list, "REGULARLY_ID")
-                    objdbca.db_transaction_end(True)
-            except Exception as e:
-                t = traceback.format_exc()
-                g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
-                debug_msg = g.appmsg.get_log_message("BKY-40012", [])
-                g.applogger.info(debug_msg)
-    else:
-        debug_msg = g.appmsg.get_log_message("BKY-40002", [])
-        g.applogger.debug(debug_msg)
-    # Conductorの予約と次回実行日付の更新################
+                    debug_msg = g.appmsg.get_log_message("BKY-40009", [item["REGULARLY_ID"]])
+                    g.applogger.debug(debug_msg)
 
-    # ################ ConductorとOpertionの復活チェック
-    where_str3 = "WHERE DISUSE_FLAG=0 AND (STATUS_ID=%s OR STATUS_ID=%s)"
-    restore_check_list = objdbca.table_select(table_name, where_str3, [status_ids_list["STATUS_CONDUCTOR_DISCARD"], status_ids_list["STATUS_OPERATION_DISCARD"]])    # noqa: E501
-    if restore_check_list != 0:
-        for item in restore_check_list:
-            status_id = item["STATUS_ID"]
+                except Exception as e:
+                    objdbca.db_transaction_end(False)
+                    t = traceback.format_exc()
+                    g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
+                    debug_msg = g.appmsg.get_log_message("BKY-40012", [])
+                    g.applogger.info(debug_msg)
 
-            # conductorの廃止チェック
-            if status_id == status_ids_list["STATUS_CONDUCTOR_DISCARD"]:
+                objdbca.db_transaction_end(True)
+        else:
+            debug_msg = g.appmsg.get_log_message("BKY-40001", [])
+            g.applogger.debug(debug_msg)
+        # 次回実行日付の設定（初回）################
+
+        # ################ Conductorの予約と次回実行日付の更新
+        # インターバル設定
+        system_settings = objdbca.table_select("T_COMN_SYSTEM_CONFIG", "WHERE CONFIG_ID=%s", ["INTERVAL_TIME"])
+        system_interval = system_settings[0]["VALUE"]
+        interval_time = "3"
+        max_interval = 525600
+        min_interval = 1
+        try:
+            if max_interval >= int(system_interval) and int(system_interval) >= min_interval:
+                interval_time = int(system_interval)
+        except ValueError:
+            interval_time = 3
+
+        current_datetime = datetime.datetime.now()
+
+        current_plus_interval = current_datetime + datetime.timedelta(minutes=interval_time)
+        where_str2 = "WHERE DISUSE_FLAG=0 AND (STATUS_ID=%s OR STATUS_ID=%s) AND (NEXT_EXECUTION_DATE<%s)"
+        bind_values = [
+            status_ids_list["STATUS_IN_OPERATION"],
+            status_ids_list["STATUS_LINKING_ERROR"],
+            current_plus_interval.strftime("%Y-%m-%d %H:%M:%S")
+        ]
+        inOps_list = objdbca.table_select(table_name, where_str2, bind_values)  # noqa: E501
+
+        platform_users = {}
+        try:
+            platform_users = get_exastro_platform_users()
+        except AppException as e:
+            msg_code, logmsg_args = e.args
+            msg = g.appmsg.get_log_message(msg_code, [logmsg_args[0], logmsg_args[1]])
+            print_exception_msg(msg)
+        except Exception:
+            t = traceback.format_exc()
+            g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
+
+        active_user_list = []
+        for user_id in platform_users.keys():
+            active_user_list.append(user_id)
+
+        c_menu = 'conductor_instance_list'
+        n_menu = 'conductor_node_instance_list'
+        cc_menu = 'conductor_class_edit'
+        m_menu = 'movement_list'
+        notice = 'conductor_notice_definition'
+        objconductor = load_table.loadTable(objdbca, c_menu)  # noqa: F405
+        objnode = load_table.loadTable(objdbca, n_menu)  # noqa: F405
+        objmovement = load_table.loadTable(objdbca, m_menu)  # noqa: F405
+        objcclass = load_table.loadTable(objdbca, cc_menu)  # noqa: F405
+        objcnotice = load_table.loadTable(objdbca, notice)  # noqa: F405
+        objmenus = {
+            "objconductor": objconductor,
+            "objnode": objnode,
+            "objmovement": objmovement,
+            "objcclass": objcclass,
+            "objcnotice": objcnotice
+        }
+
+        objCexec = ConductorExecuteLibs(objdbca, "", objmenus)
+
+        if len(inOps_list) != 0:
+            for item in inOps_list:
+
+                execute_flag = True
+                status_id = item["STATUS_ID"]
+                next_execution_date = item["NEXT_EXECUTION_DATE"]
+
+                # レコードのステータスIDが紐付けエラーの場合、一度「準備中」に設定
+                if status_id == status_ids_list["STATUS_LINKING_ERROR"]:
+                    status_id = status_ids_list["STATUS_IN_PREPARATION"]
+
+                # 実行ユーザの廃止チェック
+                if item["EXECUTION_USER_ID"] not in active_user_list:
+                    status_id = status_ids_list["STATUS_LINKING_ERROR"]
+                    execute_flag = False
+                    debug_msg = g.appmsg.get_log_message("BKY-40003", [item["EXECUTION_USER_ID"]])
+                    g.applogger.debug(debug_msg)
+
+                # conductorの廃止チェック
                 cclass_disuse = check_conductor_disuse(objdbca, item["CONDUCTOR_CLASS_ID"])
                 if cclass_disuse is True:
-                    break
+                    status_id = status_ids_list["STATUS_CONDUCTOR_DISCARD"]
+                    execute_flag = False
 
-            # operationの廃止チェック
-            if status_id == status_ids_list["STATUS_OPERATION_DISCARD"]:
+                # operationの廃止チェック
                 op_disuse = check_operation_disuse(objdbca, item["OPERATION_ID"])
                 if op_disuse is True:
-                    break
+                    status_id = status_ids_list["STATUS_OPERATION_DISCARD"]
+                    execute_flag = False
 
-            try:
-                data_list = {
-                    "REGULARLY_ID": item["REGULARLY_ID"],
-                    "STATUS_ID": status_ids_list["STATUS_IN_PREPARATION"],
-                    "NEXT_EXECUTION_DATE": None,
-                    "LAST_UPDATE_USER": g.get('USER_ID')
-                }
+                # conductorインスタンス登録処理
                 objdbca.db_transaction_start()
-                ret = objdbca.table_update(table_name, data_list, "REGULARLY_ID")  # noqa: F841
-                objdbca.db_transaction_end(True)
-            except Exception as e:
-                t = traceback.format_exc()
-                g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
-                debug_msg = g.appmsg.get_log_message("BKY-40012", [])
-                g.applogger.info(debug_msg)
-                objdbca.db_transaction_end(False)
+                if next_execution_date >= current_datetime:
+                    if execute_flag is True:
+                        tmp_parameter = {
+                            'conductor_class_id': item["CONDUCTOR_CLASS_ID"],
+                            'operation_id': item["OPERATION_ID"],
+                            'schedule_date': str(item["NEXT_EXECUTION_DATE"]).replace("-", "/"),
+                            'conductor_data': {},
+                        }
+                        try:
+                            # パラメータチェック
+                            check_param = objCexec.chk_execute_parameter_format(tmp_parameter)
+                            tmp_parameter = check_param[2]
+                            parameter = objCexec.create_execute_register_parameter(tmp_parameter, None)
+                            conductor_parameter = parameter[1].get('conductor')
+                            node_parameters = parameter[1].get('node')
 
-    # ConductorとOperationの復活チェック################
+                            # conductorインスタンス, nodeインスタンス登録
+                            debug_msg = g.appmsg.get_log_message("BKY-40007", [])
+                            g.applogger.debug(debug_msg)
 
-    objdbca.db_disconnect()
+                            # パラメータのexecution_userを、レコードを登録したユーザに差し替え
+                            user_setting_flag = False
+                            for key, value in platform_users.items():
+                                if key == item["EXECUTION_USER_ID"]:
+                                    user_setting_flag = True
+                                    conductor_parameter["parameter"]["execution_user"] = value
+                                    break
+
+                            # 差し替えに失敗した場合
+                            if user_setting_flag is False:
+                                debug_msg = g.appmsg.get_log_message("BKY-40011", [])
+                                g.applogger.debug(debug_msg)
+                                raise Exception
+
+                            instance_ret = objCexec.conductor_instance_exec_maintenance(conductor_parameter)  # noqa: F841
+                            debug_msg = g.appmsg.get_log_message("BKY-40008", [])
+                            g.applogger.debug(debug_msg)
+                            node_ret = objCexec.node_instance_exec_maintenance(node_parameters)  # noqa: F841
+                            objdbca.db_transaction_end(True)
+
+                            # 次回実行日付計算
+                            status_id, next_execution_date = calc_next_execution_date(item, status_ids_list)
+
+                        except Exception as e:
+                            t = traceback.format_exc()
+                            g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
+                            debug_msg = g.appmsg.get_log_message("BKY-40006", [item["CONDUCTOR_CLASS_ID"], item["OPERATION_ID"], str(item["NEXT_EXECUTION_DATE"])])  # noqa: E501
+                            g.applogger.info(debug_msg)
+                            objdbca.db_transaction_end(False)
+                            status_id = status_ids_list["STATUS_LINKING_ERROR"]
+                else:
+                    if status_id == status_ids_list["STATUS_LINKING_ERROR"]:
+                        pass
+                    else:
+                        status_id = status_ids_list["STATUS_IN_PREPARATION"]
+                        next_execution_date = None
+
+                if status_id == status_ids_list["STATUS_COMPLETED"]:
+                    next_execution_date = None
+
+                try:
+                    if item["STATUS_ID"] == status_ids_list["STATUS_LINKING_ERROR"] and status_id == status_ids_list["STATUS_LINKING_ERROR"]:
+                        pass
+                    else:
+                        data_list = {
+                            "REGULARLY_ID": item["REGULARLY_ID"],
+                            "STATUS_ID": status_id,
+                            "NEXT_EXECUTION_DATE": next_execution_date,
+                            "LAST_UPDATE_USER": g.get('USER_ID')
+                        }
+                        objdbca.db_transaction_start()
+                        ret = objdbca.table_update(table_name, data_list, "REGULARLY_ID")
+                        objdbca.db_transaction_end(True)
+                except Exception as e:
+                    t = traceback.format_exc()
+                    g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
+                    debug_msg = g.appmsg.get_log_message("BKY-40012", [])
+                    g.applogger.info(debug_msg)
+        else:
+            debug_msg = g.appmsg.get_log_message("BKY-40002", [])
+            g.applogger.debug(debug_msg)
+        # Conductorの予約と次回実行日付の更新################
+
+        # ################ ConductorとOpertionの復活チェック
+        where_str3 = "WHERE DISUSE_FLAG=0 AND (STATUS_ID=%s OR STATUS_ID=%s)"
+        restore_check_list = objdbca.table_select(table_name, where_str3, [status_ids_list["STATUS_CONDUCTOR_DISCARD"], status_ids_list["STATUS_OPERATION_DISCARD"]])    # noqa: E501
+        if restore_check_list != 0:
+            for item in restore_check_list:
+                status_id = item["STATUS_ID"]
+
+                # conductorの廃止チェック
+                if status_id == status_ids_list["STATUS_CONDUCTOR_DISCARD"]:
+                    cclass_disuse = check_conductor_disuse(objdbca, item["CONDUCTOR_CLASS_ID"])
+                    if cclass_disuse is True:
+                        break
+
+                # operationの廃止チェック
+                if status_id == status_ids_list["STATUS_OPERATION_DISCARD"]:
+                    op_disuse = check_operation_disuse(objdbca, item["OPERATION_ID"])
+                    if op_disuse is True:
+                        break
+
+                try:
+                    data_list = {
+                        "REGULARLY_ID": item["REGULARLY_ID"],
+                        "STATUS_ID": status_ids_list["STATUS_IN_PREPARATION"],
+                        "NEXT_EXECUTION_DATE": None,
+                        "LAST_UPDATE_USER": g.get('USER_ID')
+                    }
+                    objdbca.db_transaction_start()
+                    ret = objdbca.table_update(table_name, data_list, "REGULARLY_ID")  # noqa: F841
+                    objdbca.db_transaction_end(True)
+                except Exception as e:
+                    t = traceback.format_exc()
+                    g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
+                    debug_msg = g.appmsg.get_log_message("BKY-40012", [])
+                    g.applogger.info(debug_msg)
+                    objdbca.db_transaction_end(False)
+
+        # ConductorとOperationの復活チェック################
+
+    finally:
+        objdbca.db_disconnect()
 
     debug_msg = g.appmsg.get_log_message("BKY-20002", [])
     g.applogger.debug(debug_msg)
@@ -496,7 +505,6 @@ def calc_period_day(next_execution_date, start_date, interval, pattern_time, cur
                     calcd_next_date = None
                     return calcd_next_date
             calcd_next_date = added_time
-
     else:
         calcd_next_date = next_execution_date + datetime.timedelta(days=interval)
 

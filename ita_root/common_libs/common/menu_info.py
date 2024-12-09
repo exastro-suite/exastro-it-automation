@@ -173,6 +173,12 @@ def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, 
     column_group_info_data = {}
 
     if ret:
+        # リソースプランののファイルサイズ上限値を取得
+        if g.get("ORG_UPLOAD_FILE_SIZE_LIMIT"):
+            org_upload_file_size_limit = g.ORG_UPLOAD_FILE_SIZE_LIMIT
+        else:
+            org_upload_file_size_limit = get_org_upload_file_size_limit(g.ORGANIZATION_ID)
+
         for count, record in enumerate(ret, 1):
 
             if ((record.get('INPUT_ITEM') in ['2'] and record.get('VIEW_ITEM') in ['0']) or
@@ -184,6 +190,26 @@ def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, 
             validate_option = record.get('VALIDATE_OPTION')
             if type(validate_option) is str:
                 validate_option = validate_option.replace('\n', '')
+
+            # ファイルアップロードカラムに対して、ファイルサイズ上限値を設定
+            if record.get("COLUMN_CLASS") in ["9", "20"]:
+                max_upload_size_key = "upload_max_size"
+                if record.get('VALIDATE_OPTION') is None:
+                    # validate_optionが設定されていない場合
+                    validate_option = json.dumps({
+                        max_upload_size_key: int(org_upload_file_size_limit)
+                    })
+                else:
+                    # validate_optionが設定されている場合
+                    current_validate_option = json.loads(validate_option)
+                    if max_upload_size_key in current_validate_option:
+                        # パラメーターシートに設定されている上限値とリソースプランの上限値を比較
+                        param_upload_file_size_limit = current_validate_option.get(max_upload_size_key)
+                        current_validate_option[max_upload_size_key] = min(int(param_upload_file_size_limit), int(org_upload_file_size_limit))
+                    else:
+                        # validate_optionに"upload_max_size"が無い場合は、リソースプランの値を設定
+                        current_validate_option[max_upload_size_key] = int(org_upload_file_size_limit)
+                    validate_option = json.dumps(current_validate_option)
 
             before_validate_register = record.get('BEFORE_VALIDATE_REGISTER')
             if type(before_validate_register) is str:

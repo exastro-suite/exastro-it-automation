@@ -429,7 +429,7 @@ def createTmpZipFile(execution_no, zip_data_source_dir, zip_type, zip_file_pfx, 
             rmtmpfilelist.append(zip_temp_save_path)
             rmtmpfilelist.append(tmp_zip_data_source_dir)
 
-        tmp_str_command = "cd " + shlex.quote(tmp_zip_data_source_dir) + " && zip -r " + shlex.quote(zip_temp_save_dir + "/" + zip_file_name) + " . -x ssh_key_files/* -x winrm_ca_files/*  -x .vault-password-file 1> /dev/null"  # noqa: E501
+        tmp_str_command = "cd " + shlex.quote(tmp_zip_data_source_dir) + " && zip -r " + shlex.quote(zip_temp_save_dir + "/" + zip_file_name) + " . -x ssh_key_files/* -x winrm_key_files/*  -x .vault-password-file 1> /dev/null"  # noqa: E501
 
         ret = subprocess.run(tmp_str_command, check=True, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
@@ -442,6 +442,9 @@ def createTmpZipFile(execution_no, zip_data_source_dir, zip_type, zip_file_pfx, 
 
         # 処理]{}ディレクトリを圧縮(圧縮ファイル:{})
         g.applogger.debug(g.appmsg.get_log_message("MSG-10783", [zip_type, os.path.basename(zip_temp_save_path)]))
+    else:
+        rmtmpfilelist = []
+        g.applogger.info("zip_data_source_dir:({}) not found".format(zip_data_source_dir))
 
     if rmtmpfiles is True:
         return True, err_msg, zip_file_name

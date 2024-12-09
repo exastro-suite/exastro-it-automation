@@ -255,6 +255,7 @@ def CreateAG_ITABuilderShellFiles(objDBCA, AnscObj, out_dir, execution_no, movem
         item['tag_name'] = g.ORGANIZATION_ID + "_" + g.WORKSPACE_ID + "_" + execdev_row['TAG_NAME']
     else:
         item['tag_name'] = execdev_row['TAG_NAME']
+    item['tag_name'] = item['tag_name'].lower()
 
     # None対応
     if not item['optional_parameters']:
@@ -296,6 +297,7 @@ def CreateAG_ITARunnerShellFiles(objDBCA, AnscObj, out_dir, execution_no, movemr
         ee_tag = g.ORGANIZATION_ID + "_" + g.WORKSPACE_ID + "_" + execdev_row['TAG_NAME']
     else:
         ee_tag = execdev_row['TAG_NAME']
+    ee_tag = ee_tag.lower()
 
     project_path = getAG_AGProjectPath(AnscObj, execution_no)
     item = {}

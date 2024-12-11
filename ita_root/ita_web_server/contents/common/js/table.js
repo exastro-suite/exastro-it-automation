@@ -1206,7 +1206,7 @@ filterHtml( filterHeaderFlag = true ) {
               } else {
                   switch ( filterType ) {
                       case 'discard':
-                          return '1';
+                          return '0';
                       break;
                       case 'dateTime':
                       case 'text':
@@ -1224,11 +1224,12 @@ filterHtml( filterHeaderFlag = true ) {
 
         if ( rest === 'discard') {
             const list = {
-                '0': getMessage.FTE00040,
-                '1': getMessage.FTE00041,
-                '2': getMessage.FTE00042
+                '0': getMessage.FTE00041,
+                '1': getMessage.FTE00042,
+                '2': getMessage.FTE00040
             };
-            cellHtml.push( fn.html.select( list, ['filterInput', 'filterInputDiscard'], list[initValue], name, { type: 'discard', rest: rest } ) );
+            const listNum = ( initValue === '')? '2': initValue;
+            cellHtml.push( fn.html.select( list, ['filterInput', 'filterInputDiscard'], list[ listNum ], name, { type: 'discard', rest: rest } ) );
         } else {
             switch ( filterType ) {
                 // 文字列検索

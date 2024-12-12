@@ -255,3 +255,8 @@ position: relative;
 .d2h-file-name {
 padding: 1px!important;
 }
+
+.comparaNullValue {
+font-size: 90%;
+opacity: .25;
+}

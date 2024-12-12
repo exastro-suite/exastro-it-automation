@@ -942,9 +942,6 @@ def detail_first_line_format_trace_history(ws, startRow, dataVaridationDict):
     border = Border(left=side, right=side, top=side, bottom=side)
 
     # 入力規則の設定
-    dv = DataValidation(type='list', formula1='FILTER_ROW_EDIT_BY_FILE')
-    dv.add(ws.cell(row=startRow, column=3))
-    ws.add_data_validation(dv)
     dataVaridationDict[get_column_letter(3)] = 'FILTER_ROW_EDIT_BY_FILE'
 
     column_num = ws.max_column + 1
@@ -985,11 +982,6 @@ def create_blank_line(
             if not trace_history_flag and copyToCol == 'C':
                 ws[copyToCoord].value = ws[copyFrmCoord].value
 
-            if copyToCol in dataVaridationDict:
-                dv = DataValidation(
-                    type='list', formula1=dataVaridationDict[copyToCol])
-                dv.add(copyToCoord)
-                ws.add_data_validation(dv)
 
             # 書式がある場合は書式もコピー
             if ws[copyFrmCoord].has_style:
@@ -1133,6 +1125,9 @@ def collect_excel_journal(
     # ウィンドウ枠の固定
     ws.freeze_panes = ws.cell(row=startDetailRow, column=1).coordinate
 
+    # 開始入力行
+    dv_startRows = startDetailRow
+
     column_rest_name_list = ['journal_id', 'journal_datetime'] + column_rest_name_list
     for param in result:
         for k, v in param.items():
@@ -1146,11 +1141,6 @@ def collect_excel_journal(
                         ws.cell(row=startDetailRow, column=3).border = border
                         ws.cell(row=startDetailRow, column=3, value='')
                         ws.cell(row=startDetailRow, column=3).data_type = 's'
-                        # 入力規則の設定
-                        dv = DataValidation(
-                            type='list', formula1='FILTER_ROW_EDIT_BY_FILE')
-                        dv.add(ws.cell(row=startDetailRow, column=3))
-                        ws.add_data_validation(dv)
                         dataVaridationDict[get_column_letter(
                             3)] = 'FILTER_ROW_EDIT_BY_FILE'
                         if value == '1':
@@ -1190,16 +1180,13 @@ def collect_excel_journal(
                             column=column_num).data_type = 's'
 
                         if key in name_define_list:
-                            dv = DataValidation(type='list', formula1=key)
-                            dv.add(
-                                ws.cell(
-                                    row=startDetailRow,
-                                    column=column_num))
-                            ws.add_data_validation(dv)
                             if key not in dataVaridationDict:
                                 dataVaridationDict[get_column_letter(
                                     column_num)] = key
                 startDetailRow += 1
+
+    # 最終入力行
+    dv_endRows = startDetailRow
 
     # 空行追加処理
     ws = create_blank_line(ws, dataVaridationDict, 10, True)
@@ -1213,6 +1200,11 @@ def collect_excel_journal(
             if get_column_letter(col_i) in gray_column:
                 # セルの背景色をグレーにする
                 ws.cell(row=startRow + row_j + 2, column=col_i).fill = fill_gr
+
+    # 空行追加分
+    dv_endRows += 10
+    # 実行処理種別の入力規則(list)の範囲指定
+    add_datavalidation_range(ws, name_define_list, column_rest_name_list, dv_startRows, dv_endRows, jnl=True)
 
     wb.save(file_path)  # noqa: E303
     return file_path
@@ -1364,6 +1356,9 @@ def collect_excel_filter(
     # ウィンドウ枠の固定
     ws.freeze_panes = ws.cell(row=startRow + 7, column=4).coordinate
 
+    # 開始入力行
+    dv_startRows = startRow + 7
+
     for param in result:
         for k, v in param.items():
             if k == 'parameter':
@@ -1385,11 +1380,6 @@ def collect_excel_filter(
                         ws.cell(row=startRow + 7, column=3).border = border
                         ws.cell(row=startRow + 7, column=3, value='-')
                         ws.cell(row=startRow + 7, column=3).data_type = 's'
-                        # 入力規則の設定
-                        dv = DataValidation(
-                            type='list', formula1='FILTER_ROW_EDIT_BY_FILE')
-                        dv.add(ws.cell(row=startRow + 7, column=3))
-                        ws.add_data_validation(dv)
                         dataVaridationDict[get_column_letter(
                             3)] = 'FILTER_ROW_EDIT_BY_FILE'
 
@@ -1422,14 +1412,10 @@ def collect_excel_filter(
                     ws.cell(row=startRow + 7, column=column_num, value=value)
                     ws.cell(row=startRow + 7, column=column_num).data_type = 's'
 
-                    if key in name_define_list:
-                        dv = DataValidation(type='list', formula1=key)
-                        dv.add(ws.cell(row=startRow + 7, column=column_num))
-                        ws.add_data_validation(dv)
-                        if key not in dataVaridationDict:
-                            dataVaridationDict[get_column_letter(
-                                column_num)] = key
                 startRow = startRow + 1
+
+    # 最終入力行
+    dv_endRows = startRow + 7
 
     # 空行追加処理
     ws = create_blank_line(ws, dataVaridationDict, 10)
@@ -1445,6 +1431,11 @@ def collect_excel_filter(
                 ws.cell(
                     row=startDetailRow + row_j,
                     column=col_i).fill = fill_gr
+
+    # 空行追加分
+    dv_endRows += 10
+    # 実行処理種別の入力規則(list)の範囲指定
+    add_datavalidation_range(ws, name_define_list, column_rest_name_list, dv_startRows, dv_endRows)
 
     # フッターを作成する
     ws = create_footer(ws, font_wh, al_lt, al_cc, fill_bl)
@@ -1990,3 +1981,34 @@ def get_special_column_pulldown_list(column_list, pulldown_list):
                 if 'label_name' in pulldown_list[column_name_rest]:
                     pulldown_list[column_name_rest] = pulldown_list[column_name_rest]['label_name']
     return pulldown_list
+
+def add_datavalidation_range(ws, name_define_list, column_rest_name_list, dv_startRows, dv_endRows, jnl=False):
+    _base_num = 4 if not jnl else 1
+
+    # 列番号変換
+    _column_key = get_column_letter(3)
+
+    # 実行処理種別の入力規則(list)の範囲指定
+    dv = DataValidation(type='list', formula1='FILTER_ROW_EDIT_BY_FILE')
+
+    # 範囲指定→入力規則の設定追加
+    dv.add(f'{_column_key}{dv_startRows}:{_column_key}{dv_endRows}')
+    ws.add_data_validation(dv)
+    g.applogger.debug(f'実行処理種別: {_column_key}{dv_startRows}:{_column_key}{dv_endRows}')
+
+    # カラム名と名前定義のチェック
+    _name_define_list = [_k for _k in name_define_list if _k in column_rest_name_list]
+    g.applogger.debug(f"{_name_define_list=}")
+
+    # パラメータ/XXXXの入力規則(list)の範囲指定（名前の定義ありの場合）
+    for _column_name_rest in _name_define_list:
+        # 列番号変換
+        _column_key = get_column_letter(column_rest_name_list.index(_column_name_rest) + _base_num)
+
+        # DataValidation取得
+        dv = DataValidation(type='list', formula1=_column_name_rest)
+
+        # 範囲指定→入力規則の設定追加
+        dv.add(f'{_column_key}{dv_startRows}:{_column_key}{dv_endRows}')
+        ws.add_data_validation(dv)
+        g.applogger.debug(f'{_column_name_rest}: {_column_key}{dv_startRows}:{_column_key}{dv_endRows}')

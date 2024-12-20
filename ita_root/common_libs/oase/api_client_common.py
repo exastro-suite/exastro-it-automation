@@ -53,7 +53,7 @@ class APIClientCommon:
         self.mailbox_name = event_settings["MAILBOXNAME"]
         self.parameter = event_settings["PARAMETER"]
         # 前回イベント収集日時（初回イベント収取時は、システム日時が設定されている）
-        self.last_fetched_timestamp = event_settings["LAST_FETCHED_TIMESTAMP"] if event_settings["LAST_FETCHED_TIMESTAMP"] else None
+        self.last_fetched_timestamp = event_settings["LAST_FETCHED_TIMESTAMP"] if event_settings["LAST_FETCHED_TIMESTAMP"] else 0
         self.saved_ids = event_settings["SAVED_IDS"] if "SAVED_IDS" in event_settings else None
 
         # URLのHOST部が、環境変数NO_PROXYに、存在する場合、verify = Falseに設定
@@ -74,8 +74,8 @@ class APIClientCommon:
             # SSL照明書の指定がないため、SSLエラーが発生するため
             self.verify = False
 
-        self.respons_list_flag = event_settings["RESPONSE_LIST_FLAG"]
-        self.respons_key = event_settings["RESPONSE_KEY"]
+        self.response_list_flag = event_settings["RESPONSE_LIST_FLAG"]
+        self.response_key = event_settings["RESPONSE_KEY"]
         self.event_id_key = event_settings["EVENT_ID_KEY"]
 
         # 重複チェック用イベントIDキー名（イベント直下に格納する項目）
@@ -88,17 +88,37 @@ class APIClientCommon:
         self.parameter = parameter  # APIのパラメータ
         if self.parameter is not None:
             # パラメータ中の"EXASTRO_LAST_FETCHED_TIME"を前回イベント収集日時（初回はシステム日時）に置換
-            last_fetched_time = datetime.datetime.utcfromtimestamp(self.last_fetched_timestamp)
+            last_fetched_time = datetime.datetime.fromtimestamp(self.last_fetched_timestamp)
             last_fetched_ymd = last_fetched_time.strftime('%Y/%m/%d %H:%M:%S')
             last_fetched_dmy = last_fetched_time.strftime('%d/%m/%y %H:%M:%S')
             last_fetched_timestamp = str(int(datetime.datetime.timestamp(last_fetched_time)))
 
-            for key, value in self.parameter.items():
-                if type(value) is str:
-                    value = value.replace("EXASTRO_LAST_FETCHED_YY_MM_DD", last_fetched_ymd)
-                    value = value.replace("EXASTRO_LAST_FETCHED_DD_MM_YY", last_fetched_dmy)
-                    value = value.replace("EXASTRO_LAST_FETCHED_TIMESTAMP", last_fetched_timestamp)
-                    self.parameter[key] = value
+            def replace_reserved_variable(value):
+                # 予約語を置換する
+                value = value.replace("EXASTRO_LAST_FETCHED_YY_MM_DD", last_fetched_ymd)
+                value = value.replace("EXASTRO_LAST_FETCHED_DD_MM_YY", last_fetched_dmy)
+                value = value.replace("EXASTRO_LAST_FETCHED_TIMESTAMP", last_fetched_timestamp)
+                return value
+
+            def search_reserved_variable(parameter):
+                # パラメータの中から再帰的に置換する
+                parameter_type = type(parameter)
+                if parameter_type is dict:
+                    for key, value in parameter.items():
+                        value_type = type(value)
+                        if value_type is dict:
+                            parameter[key] = search_reserved_variable(value)
+                        elif value_type is list:
+                            parameter[key] = list(map(search_reserved_variable, value))
+                        elif value_type is str:
+                            parameter[key] = replace_reserved_variable(value)
+                    return parameter
+                elif parameter_type is list:
+                    return list(map(search_reserved_variable, parameter))
+                elif parameter_type is str:
+                    return replace_reserved_variable(parameter)
+
+            self.parameter = search_reserved_variable(self.parameter)
 
         try:
             proxies = None
@@ -108,14 +128,13 @@ class APIClientCommon:
                     "https": f"{self.proxy_host}:{self.proxy_port}"
                 }
 
-            # g.applogger.debug("-------------Request Info ------------------------")
             # g.applogger.debug("METHOD.............{}".format(self.request_method))
             # g.applogger.debug("URL................{}".format(self.url))
             # g.applogger.debug("AUTH_TOKEN.........{}".format(self.auth_token))
             # g.applogger.debug("verify.............{}".format(self.verify))
             # g.applogger.debug("env.NO_PROXY.......{}".format(os.environ['NO_PROXY']))
             # g.applogger.debug("proxies............{}".format(proxies))
-            # g.applogger.debug("Parameter..........{}".format(parameter))
+            g.applogger.debug("Request Parameter..........{}".format(parameter))
 
             # deepcode ignore SSLVerificationBypass: <please specify a reason of ignoring this>
             response = requests.request(
@@ -127,20 +146,17 @@ class APIClientCommon:
                 verify=self.verify,
                 proxies=proxies
             )
-            # g.applogger.debug("-------------Respons Info ------------------------")
-            # g.applogger.debug("Response...........{}".format(response))
-            # g.applogger.debug("HTTP STATUS........{}".format(response.status_code))
-            # g.applogger.debug("Respons: \n{}\n".format(API_response))
 
             if response.status_code < 200 or response.status_code > 299:
                 raise AppException("AGT-10029", ["HTTP STATUS = {}".format(response.status_code)])
 
             API_response = response.json()
-            g.applogger.debug(g.appmsg.get_log_message("AGT-10043", [API_response]))
-            result, respons_json = self.get_new_events(API_response)
-            g.applogger.debug(g.appmsg.get_log_message("AGT-10044", [API_response]))
 
-            return result, respons_json
+            # g.applogger.debug(g.appmsg.get_log_message("AGT-10043", [API_response]))
+            result, response_json = self.get_new_events(API_response)
+            # g.applogger.debug(g.appmsg.get_log_message("AGT-10044", [response_json]))
+
+            return result, response_json
 
         except requests.exceptions.InvalidJSONError:
             g.applogger.info(g.appmsg.get_log_message("AGT-10045", []))
@@ -161,10 +177,10 @@ class APIClientCommon:
 
         result_json = copy.deepcopy(raw_json)
 
-        if self.respons_key is not None:
+        if self.response_key is not None:
             # 設定で指定したキーの値でレスポンスを取得
-            respons_key_json = self.get_value_from_jsonpath(self.respons_key, result_json)
-            if respons_key_json is None:
+            response_key_json = self.get_value_from_jsonpath(self.response_key, result_json)
+            if response_key_json is None:
             # レスポンスキーの指定が間違っている場合
             # これ以降でIDを正当につけられないはずなので、この時点でつける
                 self.setEventIDforEvent(result_json, now_time)
@@ -174,39 +190,39 @@ class APIClientCommon:
                 pass
         else:
             # レスポンスキーが未指定の場合
-            respons_key_json = result_json
+            response_key_json = result_json
 
         # RESPONSE_LIST_FLAGの値がリスト形式ではない場合
         # 返却するイベントはオブジェクト
-        if self.respons_list_flag == "0":
-            if isinstance(respons_key_json, list) is True:
+        if self.response_list_flag == "0":
+            if isinstance(response_key_json, list) is True:
             # 実際の値はリスト（設定間違い）
-                # respons_key_jsonが、配列の場合、オブジェクトで返却
+                # response_key_jsonが、配列の場合、オブジェクトで返却
                 self.setEventIDforEvent(result_json, now_time)
                 return False, result_json
 
-            event_flg, event = self.get_elements_new_event(respons_key_json)
+            event_flg, event = self.get_elements_new_event(response_key_json)
             if event_flg == True and len(event) > 0:
             # 重複チェックで、未登録イベントの場合、追加
-                respons_key_json = event
+                response_key_json = event
             elif event_flg == False and len(event) > 0:
             # イベントIDキーが未指定、または、間違っている場合、IDに日時シリアルを設定し追加
                 event[self.event_id_key_name] = now_time
-                respons_key_json = event
+                response_key_json = event
             else:
             # 重複チェックで、重複したイベントのため、空を返却
-                respons_key_json.clear()
+                response_key_json.clear()
 
         # RESPONSE_LIST_FLGの値がリスト形式の場合（分割処理して格納）
         # 返却するイベントは配列
         else:
             new_event_list = []
-            if isinstance(respons_key_json, list) is False:
+            if isinstance(response_key_json, list) is False:
             # 実際の値はリストではない（設定間違い）
                 self.setEventIDforEvent(result_json, now_time)
                 return False, result_json
 
-            for element in respons_key_json:
+            for element in response_key_json:
                 event_flg, event = self.get_elements_new_event(element)
                 if event_flg == True and len(event) > 0:
                 # イベントIDキーが指定済みで、重複チェックで、重複なしと判定された場合、追加
@@ -222,12 +238,12 @@ class APIClientCommon:
 
             if len(new_event_list) > 0:
                 # 全要素を削除
-                for i in reversed(range(len(respons_key_json))):
-                    del respons_key_json[i]
+                for i in reversed(range(len(response_key_json))):
+                    del response_key_json[i]
                 # 対象イベントを設定
-                respons_key_json.extend(new_event_list)
+                response_key_json.extend(new_event_list)
             else:
-                respons_key_json.clear()
+                response_key_json.clear()
 
         return True, result_json
 

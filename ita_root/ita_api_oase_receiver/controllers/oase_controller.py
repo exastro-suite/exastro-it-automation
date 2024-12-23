@@ -207,7 +207,7 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
                     single_event['_exastro_end_time'] = end_time
 
                 # 未来の削除用に生成時刻をもたせておく
-                single_event['_exastro_created_at'] = datetime.datetime.utcnow()
+                single_event['_exastro_created_at'] = datetime.datetime.now()
 
                 # 辞書化したイベントをリストに格納
                 events.append(single_event)

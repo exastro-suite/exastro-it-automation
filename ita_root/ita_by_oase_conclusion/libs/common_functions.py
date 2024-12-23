@@ -43,7 +43,7 @@ def InsertConclusionEvent(EventObj, RuleInfo, UseEventIdList, ConclusionLablesSt
     conclusionEvent["labels"]["_exastro_checked"] = "1"
     conclusionEvent["labels"]["_exastro_type"] = "conclusion"
     conclusionEvent["labels"]["_exastro_rule_name"] = RuleInfo['RULE_LABEL_NAME']
-    conclusionEvent["exastro_created_at"] = datetime.datetime.utcnow()
+    conclusionEvent["exastro_created_at"] = datetime.datetime.now()
     conclusionEvent["exastro_rules"] = []
     conclusionEvent["exastro_rules"].insert(0, {'id': RuleInfo['RULE_ID'], 'name': RuleInfo['RULE_NAME']})
     if type(UseEventIdList) == str:

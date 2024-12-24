@@ -658,8 +658,8 @@ def collect_pulldown_list(objdbca, menu, menu_record):
     ret = objdbca.table_select(t_common_menu_column_link, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_id, 0])
 
     pulldown_list = {}
-    # 7(IDColumn), 11(LinkIDColumn), 18(RoleIDColumn), 21(JsonIDColumn), 22(EnvironmentIDColumn), 28(NotificationIDColumn), 30(FilterConditionDialogColumn), 31(RuleConditionDialogColumn), 32(ExecutionEnvironmentDefinitionIDColumn)
-    id_column_list = ["7", "11", "18", "21", "22", "27", "28", "30", "31", "32"]
+    # 7(IDColumn), 11(LinkIDColumn), 18(RoleIDColumn), 21(JsonIDColumn), 22(EnvironmentIDColumn), 28(NotificationIDColumn), 30(FilterConditionDialogColumn), 31(RuleConditionDialogColumn), 32(ExecutionEnvironmentDefinitionIDColumn), 33(MultiSelectIDColumn)
+    id_column_list = ["7", "11", "18", "21", "22", "27", "28", "30", "31", "32", "33"]
     for record in ret:
         column_class_id = str(record.get('COLUMN_CLASS'))
 
@@ -750,8 +750,8 @@ def collect_search_candidates(objdbca, menu, column, menu_record={}, menu_table_
         return []
 
     search_candidates = []
-    # 7(IDColumn), 11(LinkIDColumn), 14(LastUpdateUserColumn), 18(RoleIDColumn), 21(JsonIDColumn), 22(EnvironmentIDColumn), 28(NotificationIDColumn), 30(FilterConditionDialogColumn), 31(RuleConditionDialogColumn), 32(ExecutionEnvironmentDefinitionIDColumn)
-    id_column_list = ["7", "11", "14", "18", "21", "22", "28", "30", "31", "32"]
+    # 7(IDColumn), 11(LinkIDColumn), 14(LastUpdateUserColumn), 18(RoleIDColumn), 21(JsonIDColumn), 22(EnvironmentIDColumn), 28(NotificationIDColumn), 30(FilterConditionDialogColumn), 31(RuleConditionDialogColumn), 32(ExecutionEnvironmentDefinitionIDColumn), 33(MultiSelectIDColumn)
+    id_column_list = ["7", "11", "14", "18", "21", "22", "28", "30", "31", "32", "33"]
     # 28(NotificationIDColumn), , 30(FilterConditionDialogColumn), 31(RuleConditionDialogColumn)
     # の場合のプルダウンの一覧に合致するデータ抽出
     if column_class_id in ["28", "30", "31"]:

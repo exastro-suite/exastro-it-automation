@@ -772,7 +772,7 @@ def calc_period_month_DoW_num(next_execution_date, start_date, interval, pattern
     else:
         required_column = [interval, pattern_time, pattern_DoW, pattern_week_num]
 
-    pattern_DoW = pattern_DoW[0]
+    pattern_DoW = json.loads(pattern_DoW)["id"][0]
 
     for value in required_column:
         if value is False:

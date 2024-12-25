@@ -8,4 +8,4 @@ FROM ${ANSIBLE_AGENT_IMAGE}:${ANSIBLE_AGENT_IMAGE_TAG}
 
 # Example:
 # RUN ansible-galaxy collection install amazon.aws \
-#  &&  pip3.9 install --upgrade boto3 botocore
+#  &&  pip3.12 install --upgrade boto3 botocore

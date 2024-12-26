@@ -15,7 +15,7 @@ ARG USERNAME=app_user
 ARG GROUPNAME=app_user
 ARG APP_PATH=/exastro
 
-FROM    registry.access.redhat.com/ubi9/ubi-init as common_build
+FROM    registry.access.redhat.com/ubi9/ubi-init:9.4 as common_build
 ARG USERNAME
 ARG GROUPNAME
 ARG APP_PATH
@@ -43,7 +43,7 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
     langpacks-en \
     wget \
     unzip \
-&&  pip3.12 install poetry==1.6.0 \
+&&  pip3.12 install poetry==1.8.4 \
 &&  poetry config virtualenvs.create false \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME \

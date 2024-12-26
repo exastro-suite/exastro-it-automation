@@ -15,7 +15,7 @@ ARG USERNAME=app_user
 ARG GROUPNAME=app_user
 ARG APP_PATH=/exastro
 
-FROM    registry.access.redhat.com/ubi8/ubi-init as common_build
+FROM    registry.access.redhat.com/ubi9/ubi-init:9.4 as common_build
 ARG USERNAME
 ARG GROUPNAME
 ARG APP_PATH
@@ -27,8 +27,8 @@ ENV STORAGEPATH=/storage/
 ENV SERVICE_NAME=ita-by-menu-export-import
 
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
-    curl -LO https://dev.mysql.com/get/mysql80-community-release-el7-3.noarch.rpm \
-&&  dnf -y localinstall mysql80-community-release-el7-3.noarch.rpm \
+    curl -LO https://dev.mysql.com/get/mysql80-community-release-el9-4.noarch.rpm \
+&&  dnf -y localinstall mysql80-community-release-el9-4.noarch.rpm \
 &&  curl -LO https://repo.mysql.com/RPM-GPG-KEY-mysql-2023 \
 &&  rpm --import RPM-GPG-KEY-mysql-2023 \
 &&  dnf -y install mysql-community-client
@@ -36,16 +36,21 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
     dnf install -y \
     gcc \
-    python39 \
-    python39-devel \
-    python39-mod_wsgi \
+    python3.12 \
+    python3.12-devel \
+    python3.12-pip \
+    python3.12-mod_wsgi \
     langpacks-en \
     wget \
     unzip \
-&&  pip3.9 install poetry==1.6.0 \
+&&  pip3.12 install poetry==1.8.4 \
 &&  poetry config virtualenvs.create false \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
+
+RUN alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 1000000 \
+&&  alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 31200 \
+&&  alternatives --set python3 /usr/bin/python3.12
 
 WORKDIR $APP_PATH
 
@@ -95,6 +100,8 @@ COPY ./ita_root/backyard/ $APP_PATH/backyard/
 COPY ./ita_root/ita_migration/versions/ $APP_PATH/versions/
 COPY ./ita_root/ita_migration/version.list $APP_PATH/version.list
 COPY ./ita_root/ita_api_admin/sql/ $APP_PATH/sql/
+
+ENTRYPOINT ["bash", "./backyard/entrypoint.sh"]
 
 #
 # Build for production

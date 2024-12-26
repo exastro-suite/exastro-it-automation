@@ -944,6 +944,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    command: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_ag_oase/common_libs:cached

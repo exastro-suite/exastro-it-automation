@@ -157,10 +157,10 @@ def collection_logic(sqliteDB, organization_id, workspace_id, exastro_api):
 
     # イベント収集
     events = []
-    event_collection_settings_enable = []
+    event_collection_result_list = []  # 収集結果のサマリ（最新収集日時の保存の可否に利用する）
     if settings is not False:
         g.applogger.info(g.appmsg.get_log_message("AGT-10011", []))
-        events, event_collection_settings_enable = collect_event(sqliteDB, settings, timestamp_dict)
+        events, event_collection_result_list = collect_event(sqliteDB, settings, timestamp_dict)
         g.applogger.info(g.appmsg.get_log_message("AGT-10012", [len(events)]))
     else:
         g.applogger.debug(g.appmsg.get_log_message("AGT-10013", []))
@@ -169,7 +169,7 @@ def collection_logic(sqliteDB, organization_id, workspace_id, exastro_api):
     if settings is not False:
         try:
             sqliteDB.db_connect.execute("BEGIN")
-            sqliteDB.insert_events(events, event_collection_settings_enable)
+            sqliteDB.insert_events(events, event_collection_result_list)
             # イベントが1件以上なら、イベントの中身・取得時間・最終取得時間をsqliteに保存する
             if len(events) != 0:
                 g.applogger.debug(g.appmsg.get_log_message("AGT-10014", []))
@@ -265,7 +265,6 @@ def collection_logic(sqliteDB, organization_id, workspace_id, exastro_api):
                     sqliteDB.update_sent_flag(table_name, list)
                 except AppException as e:  # noqa E405
                     sqliteDB.db_connect.rollback()
-                    sqliteDB.db_close()
                     app_exception(e)
 
             g.applogger.debug(g.appmsg.get_log_message("AGT-10019", []))

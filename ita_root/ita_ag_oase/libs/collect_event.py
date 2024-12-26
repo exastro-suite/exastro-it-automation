@@ -28,12 +28,12 @@ from common_libs.oase.encrypt import agent_decrypt
 ######################################################
 def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=None):
     events = []
-    event_collection_settings_enable = []  # イベント収集対象が収集可能な状態かどうか（eventの保存の可否に利用する）
+    event_collection_result_list = []  # イベント収集対象の収集結果（最新収集日時の保存の可否に利用する）
     pass_phrase = g.ORGANIZATION_ID + " " + g.WORKSPACE_ID
 
     for setting in event_collection_settings:
         setting["LAST_FETCHED_TIMESTAMP"] = last_fetched_timestamps[setting["EVENT_COLLECTION_SETTINGS_NAME"]]
-        event_collection_settings_enable_single = {}
+        event_collection_result = {}
 
         # 重複取得防止のため、event_collection_settings_nameに対応するidリストをDBから取得し、settingsに加える
         try:
@@ -49,10 +49,10 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
 
         fetched_time = datetime.datetime.now()  # API取得時間
 
-        # イベント収集設定名とfetched_timeをevent_collection_settings_enable_singleに追加する
-        event_collection_settings_enable_single["name"] = setting["EVENT_COLLECTION_SETTINGS_NAME"]
-        event_collection_settings_enable_single["fetched_time"] = int(fetched_time.timestamp())
-        event_collection_settings_enable_single["is_save"] = True
+        # イベント収集設定名とfetched_timeを記録しておく（次回の取得日時に利用するためのdbへの保存の可否に利用する）
+        event_collection_result["name"] = setting["EVENT_COLLECTION_SETTINGS_NAME"]
+        event_collection_result["fetched_time"] = int(fetched_time.timestamp())
+        event_collection_result["is_save"] = True
 
         # パスワードカラムを複合化しておく
         setting['AUTH_TOKEN'] = agent_decrypt(setting['AUTH_TOKEN'], pass_phrase)
@@ -68,20 +68,21 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
         except AppException as e:
             g.applogger.info(g.appmsg.get_log_message("AGT-10001", [setting["EVENT_COLLECTION_SETTINGS_ID"]]))
             app_exception(e)
-            event_collection_settings_enable_single["is_save"] = False
+            event_collection_result["is_save"] = False
 
-        # イベント収集数をevent_collection_settings_enable_singleに追加する
-        event_collection_settings_enable_single["len"] = len(json_data)
-        event_collection_settings_enable.append(event_collection_settings_enable_single)
+        # 戻り値のevent_collection_result_listに追加しておく
+        event_length = 0
+        event_collection_result["len"] = event_length
+        event_collection_result_list.append(event_collection_result)
 
-        # イベントが0件の場合はスキップ
-        if event_collection_settings_enable_single["len"] == 0:
+        # レスポンスが空の場合はスキップ
+        if len(json_data) == 0:
             continue
 
         if setting["RESPONSE_KEY"]:
             # 設定で指定したキーの値でレスポンスを取得
-            respons_key_json_data = get_value_from_jsonpath(setting["RESPONSE_KEY"], json_data)
-            if respons_key_json_data is None:
+            response_key_json_data = get_value_from_jsonpath(setting["RESPONSE_KEY"], json_data)
+            if response_key_json_data is None:
                 # レスポンスキーの指定が間違っている場合、受信したイベントで以降処理する。
                 g.applogger.info(g.appmsg.get_log_message("AGT-10002", [setting["RESPONSE_KEY"], setting["EVENT_COLLECTION_SETTINGS_ID"]]))
                 # 「利用できない」フラグをonにする
@@ -92,7 +93,7 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
                         event = setNotAvailable(event, "RESPONSE_KEY not found")
             else:
                 # レスポンスキーで取得できた場合、レスポンスキーの値で以降処理する。
-                json_data = respons_key_json_data
+                json_data = response_key_json_data
         else:
             # レスポンスキーが未指定の場合
             pass
@@ -107,12 +108,14 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
                     event = setNotAvailable(event, "RESPONSE_LIST_FLAG is incorrect.(Not Dict Type)")
                     event = init_label(event, fetched_time, setting)
                     events.append(event)
+                event_length += len(json_data)
             else:
             # 値がオブジェクト
                 if len(json_data) > 0:
                     # イベントIDキーがあるかのチェック
                     event = checkEventIdKey(json_data, setting["EVENT_ID_KEY"], setting["EVENT_COLLECTION_SETTINGS_ID"])
                     event = init_label(event, fetched_time, setting)
+                    event_length += 1
                     events.append(event)
 
         # RESPONSE_LIST_FLGの値がリスト形式の場合（分割処理して格納）
@@ -124,6 +127,7 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
                 if len(json_data) > 0:
                     event = setNotAvailable(json_data, "RESPONSE_LIST_FLAG is incorrect.(Not List Type)")
                     event = init_label(event, fetched_time, setting)
+                    event_length += 1
                     events.append(event)
             else:
             # 値がリスト
@@ -132,8 +136,13 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
                     event = checkEventIdKey(event, setting["EVENT_ID_KEY"], setting["EVENT_COLLECTION_SETTINGS_ID"])
                     event = init_label(event, fetched_time, setting)
                     events.append(event)
+                event_length += len(json_data)
 
-    return events, event_collection_settings_enable
+        # イベント収集数を更新しておく
+        event_collection_result_list[len(event_collection_result_list)-1]["len"] = event_length
+        g.applogger.debug(f'{event_collection_result_list=}')
+
+    return events, event_collection_result_list
 
 
 def init_label(data, fetched_time, setting):

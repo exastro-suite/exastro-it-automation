@@ -75,7 +75,7 @@ def maintenance_all(organization_id, workspace_id, menu, body=None, **kwargs):  
             raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
         os.mkdir(tmp_path)
-        retBool, parameters, file_paths = menu_maintenance_all.create_maintenance_parameters(connexion.request, tmp_path)
+        retBool, parameters, file_paths = menu_maintenance_all.create_maintenance_parameters(connexion.request, tmp_path, menu)
 
         if retBool is False:
             status_code = "400-00003"

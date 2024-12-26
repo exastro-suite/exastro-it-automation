@@ -1459,12 +1459,6 @@ class loadTable():
                             rest_val = str(rest_val) if rest_val is not None else rest_val
                             entry_parameter[rest_key] = rest_val
 
-                        # Conductor定期作業実行：曜日のカラムクラス変更 #1597
-                        if objcolumn.get_objcol().get("COLUMN_DEFINITION_ID") == "3010714":
-                            if not (rest_val.startswith("[") and rest_val.endswith("]")):
-                                rest_val = json.dumps([f"{rest_val}"])
-                                entry_parameter[rest_key] = rest_val
-
                         if import_mode is False:
                             # カラムクラス毎の処理:レコード操作前 + カラム毎の個別処理:レコード操作前
                             tmp_exec = objcolumn.before_iud_action(rest_val, copy.deepcopy(target_col_option))

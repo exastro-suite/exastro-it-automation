@@ -141,7 +141,7 @@ def maintenance_update(organization_id, workspace_id, menu, uuid, body=None, **k
         target_uuid = uuid
         parameter = {}
         os.mkdir(tmp_path)
-        retBool, parameter, file_paths = menu_maintenance.create_maintenance_parameters(connexion.request, cmd_type, tmp_path, menu)
+        retBool, parameter, file_paths = menu_maintenance.create_maintenance_parameters(connexion.request, cmd_type, tmp_path)
         if retBool is False:
             status_code = "400-00003"
             request_content_type = connexion.request.content_type.lower()

@@ -58,7 +58,7 @@ def rest_maintenance(objdbca, menu, parameter, target_uuid, file_paths={}):
     return result
 
 
-def create_maintenance_parameters(connexion_request, cmd_type='Register', tmp_path="", menu=""):
+def create_maintenance_parameters(connexion_request, cmd_type='Register', tmp_path=""):
     """
     create_maintenance_parameters
         Use connexion.request
@@ -130,11 +130,5 @@ def create_maintenance_parameters(connexion_request, cmd_type='Register', tmp_pa
     # check parameters
     if len(parameters) == 0:
         return False, [], file_paths
-
-    # Conductor定期作業実行：曜日のカラムクラス変更 #1597
-    if menu == "conductor_regularly_execution" and "day_of_week" in parameters["parameter"]:
-        day_of_week = parameters["parameter"]["day_of_week"]
-        if not (day_of_week.startswith("[") and day_of_week.endswith("]")):
-            parameters["parameter"]["day_of_week"] = json.dumps([f"{day_of_week}"])
 
     return True, parameters, file_paths

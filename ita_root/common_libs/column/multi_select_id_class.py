@@ -24,6 +24,63 @@ class MultiSelectIDColumn(IDColumn):
     """
     マルチ選択プルダウン親クラス
     """
+    ###
+    # [maintenance] レコード操作前処理実施
+    def before_iud_action(self, val='', option={}):
+        """
+            レコード操作前処理 (共通バリデーション + 個別処理 )
+            ARGS:
+                val:値
+            RETRUN:
+                ( True / False , メッセージ, val , option )
+        """
+        retBool = True
+        msg = ''
+
+        # カラムクラス毎個別処理レコード操作前
+        result_0 = self.before_iud_common_action(val, option)
+        if result_0[0] is not True:
+            return result_0
+        else:
+            option = result_0[2]
+            val = result_0[3]
+
+        # 標準バリデーションレコード操作前
+        result_1 = self.before_iud_validate_check(val, option)
+        if result_1[0] is not True:
+            return result_1
+
+        # 個別処理レコード操作前
+        result_2 = self.before_iud_col_action(option)
+        if result_2[0] is not True:
+            return result_2
+        else:
+            retBool = result_2[0]
+            msg = result_2[1]
+            option = result_2[2]
+
+        return retBool, msg, val, option
+
+    def before_iud_common_action(self, val="", option={}):
+        """
+            カラムクラス毎の個別処理 レコード操作前
+            ARGS:
+                val:値
+                option:オプション
+            RETRUN:
+                True / エラーメッセージ
+        """
+        retBool = True
+        msg = ''
+        rest_name = self.get_rest_key_name()
+
+        if not (val.startswith("[") and val.endswith("]")):
+            val = json.dumps([f"{val}"])
+
+        option['entry_parameter']['parameter'][rest_name] = val
+
+        return retBool, msg, option, val
+
     def json_key_to_keyname_convart(self, column_value, search_candidates, master_row):
         """
             SON形式で格納されているKey(DB)を名称リストに変換

@@ -191,6 +191,7 @@ class MultiSelectIDColumn(IDColumn):
         msg = ''
 
         master_row = self.search_id_data_list()
+        self.data_list_set_flg = False
 
         try:
             if not val:

@@ -17,6 +17,7 @@ import datetime
 import re
 import calendar
 import traceback
+import json
 from common_libs.conductor.classes.exec_util import ConductorExecuteLibs
 from common_libs.loadtable import *  # noqa: F403
 from common_libs.common.util import get_exastro_platform_users
@@ -329,20 +330,20 @@ def check_operation_disuse(objdbca, id):
 
 
 # 次回実行日付とステータスIDを返す
-def calc_next_execution_date(list, status_ids_list):    # noqa: C901
+def calc_next_execution_date(col_list, status_ids_list):    # noqa: C901
     current_datetime = datetime.datetime.now()
 
-    start_date = list["START_DATE"]
-    end_date = list["END_DATE"]
-    period_id = list["REGULARLY_PERIOD_ID"]
-    interval = list["EXECUTION_INTERVAL"]
-    pattern_week_num = list["PATTERN_WEEK_NUMBER_ID"]
-    pattern_DoW = list["PATTERN_DAY_OF_WEEK_ID"]
-    pattern_day = list["PATTERN_DAY"]
-    pattern_time = list["PATTERN_TIME"]
-    stop_start_date = list["EXECUTION_STOP_START_DATE"]
-    stop_end_date = list["EXECUTION_STOP_END_DATE"]
-    next_execution_date = list["NEXT_EXECUTION_DATE"]
+    start_date = col_list["START_DATE"]
+    end_date = col_list["END_DATE"]
+    period_id = col_list["REGULARLY_PERIOD_ID"]
+    interval = col_list["EXECUTION_INTERVAL"]
+    pattern_week_num = col_list["PATTERN_WEEK_NUMBER_ID"]
+    pattern_DoW = col_list["PATTERN_DAY_OF_WEEK_ID"]
+    pattern_day = col_list["PATTERN_DAY"]
+    pattern_time = col_list["PATTERN_TIME"]
+    stop_start_date = col_list["EXECUTION_STOP_START_DATE"]
+    stop_end_date = col_list["EXECUTION_STOP_END_DATE"]
+    next_execution_date = col_list["NEXT_EXECUTION_DATE"]
 
     status_id = status_ids_list["STATUS_IN_PREPARATION"]
     failed_validation = False
@@ -374,9 +375,16 @@ def calc_next_execution_date(list, status_ids_list):    # noqa: C901
 
     # 曜日のチェック
     if pattern_DoW:
-        regex_format = r"^[1-7]$"
-        checked = check_regex(regex_format, pattern_DoW)
-        if checked is None:
+        try:
+            id_dict = json.loads(pattern_DoW)
+            if not isinstance(id_dict["id"], list):
+                failed_validation = True
+                status_id = status_ids_list["STATUS_MISMATCH_ERROR"]
+            for DoW_str in id_dict["id"]:
+                if DoW_str not in ["1", "2", "3", "4", "5", "6", "7"]:
+                    failed_validation = True
+                    break
+        except Exception:
             failed_validation = True
             status_id = status_ids_list["STATUS_MISMATCH_ERROR"]
 
@@ -402,8 +410,8 @@ def calc_next_execution_date(list, status_ids_list):    # noqa: C901
         if next_execution_date is False:
             next_execution_date = None
 
-        if period_id == "1":
-            next_execution_date = calc_period_time(next_execution_date, start_date, interval, current_datetime, stop_start_date, stop_end_date)
+        if period_id in ["1", "7"]:
+            next_execution_date = calc_period_time(next_execution_date, start_date, interval, current_datetime, stop_start_date, stop_end_date, period_id)
             status_id = status_ids_list["STATUS_MISMATCH_ERROR"] if next_execution_date is None else status_ids_list["STATUS_IN_OPERATION"]
         elif period_id == "2":
             next_execution_date = calc_period_day(next_execution_date, start_date, interval, pattern_time, current_datetime, stop_start_date, stop_end_date)  # noqa: E501
@@ -436,8 +444,8 @@ def check_regex(format_str, string):
     return checked
 
 
-# 周期ID：1の時の計算
-def calc_period_time(next_execution_date, start_date, interval, current_datetime, stop_start_date, stop_end_date):
+# 周期ID：1, 7の時の計算（時間・分）
+def calc_period_time(next_execution_date, start_date, interval, current_datetime, stop_start_date, stop_end_date, period_id):
     calcd_next_date = None
     if next_execution_date is None:
         required_column = [start_date, interval]
@@ -456,14 +464,20 @@ def calc_period_time(next_execution_date, start_date, interval, current_datetime
             loop_check_date = start_date
             added_time = start_date
             while current_datetime > added_time:
-                added_time = added_time + datetime.timedelta(hours=interval)
+                if period_id == "1": # hours
+                    added_time = added_time + datetime.timedelta(hours=interval)
+                elif period_id == "7": # minutes
+                    added_time = added_time + datetime.timedelta(minutes=interval)
                 if loop_check_date >= added_time:
                     calcd_next_date = None
                     return calcd_next_date
             calcd_next_date = added_time
 
     else:
-        calcd_next_date = next_execution_date + datetime.timedelta(hours=interval)
+        if period_id == "1": # hours
+            calcd_next_date = next_execution_date + datetime.timedelta(hours=interval)
+        elif period_id == "7": # minutes
+            calcd_next_date = next_execution_date + datetime.timedelta(minutes=interval)
 
     # 抑止期間チェック
     if stop_start_date and stop_end_date:
@@ -471,7 +485,10 @@ def calc_period_time(next_execution_date, start_date, interval, current_datetime
             loop_check_date = calcd_next_date
             added_time = calcd_next_date
             while stop_end_date >= calcd_next_date:
-                added_time = added_time + datetime.timedelta(hours=interval)
+                if period_id == "1": # hours
+                    added_time = added_time + datetime.timedelta(hours=interval)
+                elif period_id == "7": # minutes
+                    added_time = added_time + datetime.timedelta(minutes=interval)
                 if loop_check_date >= added_time:
                     calcd_next_date = None
                     return calcd_next_date
@@ -480,7 +497,7 @@ def calc_period_time(next_execution_date, start_date, interval, current_datetime
     return calcd_next_date
 
 
-# 周期ID：2の時の計算
+# 周期ID：2の時の計算（日）
 def calc_period_day(next_execution_date, start_date, interval, pattern_time, current_datetime, stop_start_date, stop_end_date):
     calcd_next_date = None
     if next_execution_date is None:
@@ -523,7 +540,7 @@ def calc_period_day(next_execution_date, start_date, interval, pattern_time, cur
     return calcd_next_date
 
 
-# 周期ID：3の時の計算
+# 周期ID：3の時の計算（週）
 def calc_period_week(next_execution_date, start_date, interval, pattern_time, pattern_DoW, current_datetime, stop_start_date, stop_end_date):
     calcd_next_date = None
     if next_execution_date is None:
@@ -535,52 +552,96 @@ def calc_period_week(next_execution_date, start_date, interval, pattern_time, pa
         if value is False:
             return calcd_next_date
 
-    if next_execution_date is None:
-
-        dow_diff = int(pattern_DoW) - (start_date.date().weekday() + 1)  # 指定の曜日と開始日付の曜日との差分
-        start_date_pattern_added = datetime.datetime.strptime(f"{start_date.date()} {pattern_time}", "%Y-%m-%d %H:%M:%S") + datetime.timedelta(days=dow_diff)  # noqa: E501
-        target_DoW = start_date_pattern_added.date().weekday() + 1
-        if pattern_DoW == str(target_DoW) is False:
-            calcd_next_date = None
-            return calcd_next_date
-
-        if start_date > current_datetime:
-            if start_date_pattern_added > start_date:
-                calcd_next_date = start_date_pattern_added
-            else:
-                loop_check_date = start_date_pattern_added
-                added_time = start_date_pattern_added
-                while start_date > added_time:
-                    added_time = added_time + datetime.timedelta(weeks=interval)
-                    if loop_check_date >= added_time:
-                        calcd_next_date = None
-                        return calcd_next_date
-                calcd_next_date = added_time
+    # 文字列のリストを数値のリストに変換
+    DoW_list = [int(i) for i in json.loads(pattern_DoW)["id"]]
+    # 基準日時と同じ週の対象曜日の日時リストを返す関数
+    def get_week_days(base_datetime, monday_calender=False):
+        if monday_calender:
+            start_of_week = base_datetime - datetime.timedelta(days=(base_datetime.date().weekday()))
         else:
-            loop_check_date = start_date_pattern_added
-            added_time = start_date_pattern_added
-            while current_datetime > added_time:
-                added_time = added_time + datetime.timedelta(weeks=interval)
-                if loop_check_date >= added_time:
-                    calcd_next_date = None
-                    return calcd_next_date
-            calcd_next_date = added_time
+            start_of_week = base_datetime - datetime.timedelta(days=(base_datetime.date().weekday() + 1) % 7)
 
+        week_days = []
+        for day in sorted(DoW_list):
+            day_offset = (day) % 7
+            week_day = start_of_week + datetime.timedelta(days=day_offset)
+            week_days.append(week_day)
+        return sorted(week_days)
+
+
+    if next_execution_date is None:
+        start_date_pattern_added = datetime.datetime.strptime(f"{start_date.date()} {pattern_time}", "%Y-%m-%d %H:%M:%S")  # noqa: E501
+        # 開始日時以降かつ一番近い初回実行日時を割り出す
+        execution_date_week_days = get_week_days(start_date_pattern_added)
+        if execution_date_week_days[-1] < start_date:
+            execution_date_week_days = get_week_days(start_date_pattern_added + datetime.timedelta(weeks=interval))
+        for date in execution_date_week_days:
+            if date >= start_date:
+                first_datetime = date
+                break
+        calcd_next_date = first_datetime
+
+        # 初回実行日時が現在日時より小さい場合は、一番近い日時を割り出す
+        if calcd_next_date < current_datetime:
+            added_time = calcd_next_date
+            loop_check_date = calcd_next_date
+            if current_datetime >= execution_date_week_days[-1]:
+                added_time = added_time + datetime.timedelta(weeks=interval)
+                execution_date_week_days = get_week_days(added_time)
+            exit_loop = False
+            while current_datetime >= added_time:
+                for date in execution_date_week_days:
+                    if current_datetime <= date:
+                        added_time = date
+                        exit_loop = True
+                        break
+                if exit_loop:
+                    break
+                added_time = added_time + datetime.timedelta(weeks=interval)
+                execution_date_week_days = get_week_days(added_time)
+                added_time = execution_date_week_days[0]
+            if loop_check_date >= added_time:
+                calcd_next_date = None
+                return calcd_next_date
+            calcd_next_date = added_time
     else:
-        calcd_next_date = next_execution_date + datetime.timedelta(weeks=interval)
+        execution_date_week_days = get_week_days(next_execution_date)
+        # 対象実行日時がその週の最後の指定曜日か確認
+        if next_execution_date == execution_date_week_days[-1]:
+            next_execution_date = next_execution_date + datetime.timedelta(weeks=interval)
+            execution_date_week_days = get_week_days(next_execution_date)
+            calcd_next_date = execution_date_week_days[0]
+        else:
+            for date in execution_date_week_days:
+                if date >= next_execution_date:
+                    calcd_next_date = date
+                    break
 
     # 抑止期間チェック
     if stop_start_date and stop_end_date:
         if calcd_next_date >= stop_start_date and stop_end_date >= calcd_next_date:
             added_time = calcd_next_date
             loop_check_date = calcd_next_date
-            while stop_end_date >= added_time:
+            if stop_end_date >= execution_date_week_days[-1]:
                 added_time = added_time + datetime.timedelta(weeks=interval)
-                if loop_check_date >= added_time:
-                    calcd_next_date = None
-                    return calcd_next_date
-            calcd_next_date = added_time
+                execution_date_week_days = get_week_days(added_time)
+            exit_loop = False
+            while stop_end_date >= added_time and not exit_loop:
+                for date in execution_date_week_days:
+                    if stop_end_date <= date:
+                        added_time = date
+                        exit_loop = True
+                        break
+                if exit_loop:
+                    break
+                added_time = added_time + datetime.timedelta(weeks=interval)
+                execution_date_week_days = get_week_days(added_time)
+                added_time = execution_date_week_days[0]
 
+            if loop_check_date >= added_time:
+                calcd_next_date = None
+                return calcd_next_date
+            calcd_next_date = added_time
     return calcd_next_date
 
 
@@ -710,6 +771,8 @@ def calc_period_month_DoW_num(next_execution_date, start_date, interval, pattern
         required_column = [start_date, interval, pattern_time, pattern_DoW, pattern_week_num]
     else:
         required_column = [interval, pattern_time, pattern_DoW, pattern_week_num]
+
+    pattern_DoW = json.loads(pattern_DoW)["id"][0]
 
     for value in required_column:
         if value is False:

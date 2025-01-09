@@ -1,3 +1,5 @@
 [
+    ["workspace.sql", "workspace_master.sql"],
+    ["conductor.sql", "conductor_master.sql"],
     ["", "ansible_master.sql"]
 ]

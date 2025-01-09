@@ -15,7 +15,7 @@ ARG USERNAME=app_user
 ARG GROUPNAME=app_user
 ARG APP_PATH=/exastro
 
-FROM    registry.access.redhat.com/ubi8/ubi-init as common_build
+FROM    registry.access.redhat.com/ubi9/ubi-init:9.4 as common_build
 ARG USERNAME
 ARG GROUPNAME
 ARG APP_PATH
@@ -36,13 +36,14 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
     gcc \
     httpd \
     httpd-devel \
-    python39 \
-    python39-devel \
-    python39-mod_wsgi \
+    python3.12 \
+    python3.12-devel \
+    python3.12-pip \
+    python3.12-mod_wsgi \
     langpacks-en \
     wget \
     unzip \
-&&  pip3.9 install poetry==1.6.0 \
+&&  pip3.12 install poetry==1.8.4 \
 &&  poetry config virtualenvs.create false \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME \
@@ -52,6 +53,10 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
 &&  chown $USERNAME:$GROUPNAME $APACHE_PID_DIR \
 &&  mkdir -p $APACHE_SOCKET_DIR \
 &&  chown $USERNAME:$GROUPNAME $APACHE_SOCKET_DIR
+
+RUN alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 1000000 \
+&&  alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 31200 \
+&&  alternatives --set python3 /usr/bin/python3.12
 
 WORKDIR $APP_PATH
 

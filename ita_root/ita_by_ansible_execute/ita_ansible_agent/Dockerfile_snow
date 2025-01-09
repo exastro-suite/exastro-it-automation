@@ -15,7 +15,7 @@ ARG USERNAME=app_user
 ARG GROUPNAME=app_user
 ARG WORK_PATH=/tmp
 
-FROM    registry.access.redhat.com/ubi8/ubi-init AS common_build
+FROM    registry.access.redhat.com/ubi9/ubi-init:9.4 AS common_build
 ARG USERNAME
 ARG GROUPNAME
 ARG WORK_PATH
@@ -23,13 +23,18 @@ ARG WORK_PATH
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
     dnf install -y \
     openssh-clients \
-    python39 \
-    python39-devel \
+    python3.12 \
+    python3.12-devel \
+    python3.12-pip \
     sshpass \
-&&  pip3.9 install poetry==1.6.0 \
+&&  pip3.12 install poetry==1.8.4 \
 &&  poetry config virtualenvs.create false \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
+
+RUN alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 1000000 \
+&&  alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 31200 \
+&&  alternatives --set python3 /usr/bin/python3.12
 
 WORKDIR $WORK_PATH
 
@@ -64,7 +69,7 @@ ARG USERNAME
 ARG GROUPNAME
 
 RUN ansible-galaxy collection install servicenow.servicenow \
-&&  pip3.9 install --upgrade pysnow
+&&  pip3.12 install --upgrade pysnow
 
 USER $USERNAME
 

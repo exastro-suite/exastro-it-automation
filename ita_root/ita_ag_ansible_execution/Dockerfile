@@ -15,7 +15,7 @@ ARG USERNAME=app_user
 ARG GROUPNAME=app_user
 ARG APP_PATH=/exastro
 
-FROM    registry.access.redhat.com/ubi8/ubi-init as common_build
+FROM    registry.access.redhat.com/ubi9/ubi-init:9.4 as common_build
 ARG USERNAME
 ARG GROUPNAME
 ARG APP_PATH
@@ -31,17 +31,22 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
     podman-docker \
     gcc \
     openssh-clients \
-    python39 \
-    python39-devel \
+    python3.12 \
+    python3.12-devel \
+    python3.12-pip \
     langpacks-en \
     wget \
     zip \
     unzip \
 
-&&  pip3.9 install poetry==1.6.0 \
+&&  pip3.12 install poetry==1.8.4 \
 &&  poetry config virtualenvs.create false \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
+
+RUN alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 1000000 \
+&&  alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 31200 \
+&&  alternatives --set python3 /usr/bin/python3.12
 
 WORKDIR $APP_PATH
 
@@ -88,6 +93,8 @@ COPY ./ita_root/ita_ag_ansible_execution/ $APP_PATH/
 COPY ./ita_root/common_libs/ $APP_PATH/common_libs/
 COPY ./ita_root/messages/ $APP_PATH/messages/
 COPY ./ita_root/agent/ $APP_PATH/agent/
+
+ENTRYPOINT ["bash", "./agent/entrypoint.sh"]
 
 #
 # Build for production

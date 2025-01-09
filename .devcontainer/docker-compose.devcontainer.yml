@@ -107,6 +107,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_ansible_execute/common_libs:cached
@@ -141,6 +142,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_ansible_legacy_role_vars_listup/common_libs:cached
@@ -175,6 +177,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_ansible_legacy_vars_listup/common_libs:cached
@@ -209,6 +212,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_ansible_pioneer_vars_listup/common_libs:cached
@@ -243,6 +247,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_ansible_towermaster_sync/common_libs:cached
@@ -277,6 +282,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_collector/common_libs:cached
@@ -311,6 +317,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_conductor_synchronize/common_libs:cached
@@ -345,6 +352,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_conductor_regularly/common_libs:cached
@@ -379,6 +387,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_menu_create/common_libs:cached
@@ -413,6 +422,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_menu_export_import/common_libs:cached
@@ -450,6 +460,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_excel_export_import/common_libs:cached
@@ -484,6 +495,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_terraform_cloud_ep_execute/common_libs:cached
@@ -518,6 +530,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_terraform_cloud_ep_vars_listup/common_libs:cached
@@ -552,6 +565,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_terraform_cli_execute/common_libs:cached
@@ -586,6 +600,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_terraform_cli_vars_listup/common_libs:cached
@@ -620,6 +635,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_hostgroup_split/common_libs:cached
@@ -654,6 +670,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_cicd_for_iac/common_libs:cached
@@ -688,6 +705,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_execinstance_dataautoclean/common_libs:cached
@@ -722,6 +740,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_file_autoclean/common_libs:cached
@@ -860,6 +879,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_oase_conclusion/common_libs:cached
@@ -924,6 +944,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_ag_oase/common_libs:cached

@@ -190,9 +190,6 @@ class MultiSelectIDColumn(IDColumn):
         """
         msg = ''
 
-        master_row = self.search_id_data_list()
-        self.data_list_set_flg = False
-
         try:
             if not val:
                 val = {}
@@ -210,6 +207,8 @@ class MultiSelectIDColumn(IDColumn):
             msg_args = [str(val)]
             msg = g.appmsg.get_api_message(status_code, msg_args)
             raise Exception(status_code, msg)
+
+        master_row = self.get_values_by_key(json_val["id"])
 
         search_candidates = []
         if isinstance(json_val["id"], list):

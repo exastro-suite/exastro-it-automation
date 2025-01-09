@@ -659,7 +659,7 @@ CREATE TABLE T_ANSL_VALUE
     SYSTEM_ID                       VARCHAR(40),                                -- ホスト
     MVMT_VAR_LINK_ID                VARCHAR(40),                                -- 変数名
     SENSITIVE_FLAG                  VARCHAR(2),                                 -- Sensitive設定
-    VARS_ENTRY                      TEXT,                                       -- 値
+    VARS_ENTRY                      LONGTEXT,                                   -- 値
     VARS_ENTRY_FILE                 VARCHAR(255),                               -- ファイル
     ASSIGN_SEQ                      INT,                                        -- 代入順序
     VARS_ENTRY_USE_TPFVARS          VARCHAR(1),                                 -- テンプレート変数使用有無
@@ -1042,7 +1042,7 @@ CREATE TABLE T_ANSP_VALUE
     SYSTEM_ID                       VARCHAR(40),                                -- ホスト
     MVMT_VAR_LINK_ID                VARCHAR(40),                                -- 変数名
     SENSITIVE_FLAG                  VARCHAR(2),                                 -- Sensitive設定
-    VARS_ENTRY                      TEXT,                                       -- 値
+    VARS_ENTRY                      LONGTEXT,                                   -- 値
     VARS_ENTRY_FILE                 VARCHAR(255),                               -- ファイル
     ASSIGN_SEQ                      INT,                                        -- 代入順序
     VARS_ENTRY_USE_TPFVARS          VARCHAR(1),                                 -- テンプレート変数使用有無
@@ -1417,7 +1417,7 @@ CREATE TABLE T_ANSR_VALUE
     MVMT_VAR_LINK_ID                VARCHAR(40),                                -- 変数名
     COL_SEQ_COMBINATION_ID          VARCHAR(40),                                -- メンバー変数名
     SENSITIVE_FLAG                  VARCHAR(2),                                 -- Sensitive設定
-    VARS_ENTRY                      TEXT,                                       -- 値
+    VARS_ENTRY                      LONGTEXT,                                   -- 値
     VARS_ENTRY_FILE                 VARCHAR(255),                               -- ファイル
     ASSIGN_SEQ                      INT,                                        -- 代入順序
     VARS_ENTRY_USE_TPFVARS          VARCHAR(1),                                 -- テンプレート変数使用有無

@@ -213,7 +213,7 @@ CREATE TABLE T_COMN_MENU_COLUMN_LINK
     REQUIRED_ITEM                   VARCHAR(2),                                 -- 一意制約フラグ
     AUTOREG_HIDE_ITEM               VARCHAR(2),                                 -- 選択対象外フラグ
     AUTOREG_ONLY_ITEM               VARCHAR(2),                                 -- 代入値自動登録選択項目フラグ
-    INITIAL_VALUE                   TEXT,                                       -- 初期値
+    INITIAL_VALUE                   LONGTEXT,                                   -- 初期値
     VALIDATE_OPTION                 TEXT,                                       -- バリデーション値
     VALIDATE_REG_EXP                TEXT,                                       -- 正規表現バリデーション
     BEFORE_VALIDATE_REGISTER        TEXT,                                       -- 個別バリデーション前
@@ -258,7 +258,7 @@ CREATE TABLE T_COMN_MENU_COLUMN_LINK_JNL
     REQUIRED_ITEM                   VARCHAR(2),                                 -- 一意制約フラグ
     AUTOREG_HIDE_ITEM               VARCHAR(2),                                 -- 選択対象外フラグ
     AUTOREG_ONLY_ITEM               VARCHAR(2),                                 -- 代入値自動登録選択項目フラグ
-    INITIAL_VALUE                   TEXT,                                       -- 初期値
+    INITIAL_VALUE                   LONGTEXT,                                   -- 初期値
     VALIDATE_OPTION                 TEXT,                                       -- バリデーション値
     VALIDATE_REG_EXP                TEXT,                                       -- 正規表現バリデーション
     BEFORE_VALIDATE_REGISTER        TEXT,                                       -- 個別バリデーション前

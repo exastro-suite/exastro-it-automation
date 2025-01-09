@@ -2473,8 +2473,19 @@ class ExecuteDirector():
 
             g.applogger.info("[Trace] git clone done.")
 
-            cmd = "/bin/cp -rf %s %s" % (SrcFilePath, self.gitLoaclRepositoriesPath)
-            subprocess.run(cmd, shell=True, capture_output=True, text=True, check=True)
+            shutil.copytree(SrcFilePath.replace("/*", ""),
+                            self.gitLoaclRepositoriesPath,
+                            dirs_exist_ok=True,
+                            )
+            g.applogger.debug(f"[Trace] shutil.copytree. src: {SrcFilePath.replace("/*", "")}, dst: {self.gitLoaclRepositoriesPath}")
+
+            # __ita_tmp_dir__配下のconductor_workflowr_dirに使う資材は不要なので除外する
+            conductor_path = self.vg_TowerProjectsScpPathArray[AnscConst.DF_GITREPO_CONDUCTOR_PATH] \
+                if AnscConst.DF_GITREPO_CONDUCTOR_PATH in self.vg_TowerProjectsScpPathArray else None
+            if conductor_path:
+                git_local_conductor_path = f"{self.gitLoaclRepositoriesPath}/__ita_tmp_dir__/__ita_conductor_dir__"
+                shutil.rmtree(git_local_conductor_path) if os.path.isdir(git_local_conductor_path) else None
+                g.applogger.debug(f"[Trace] shutil.rmtree. src: {git_local_conductor_path}")
 
             os.chdir(self.gitLoaclRepositoriesPath)
             git_username = g.gitlab_connect_info.get('GITLAB_USER')
@@ -2928,9 +2939,9 @@ class ExecuteDirector():
         if storage_flg is True:
             # /storage
             tmp_file_path = obj.make_temp_path(path)
-            if os.path.exists(tmp_file_path) is True:
+            if os.path.exists(path) is True:
                 #  /storageから/tmpにファイルコピー(パーミッション維持)
-                shutil.copy2(path, self.tmp_file_path)
+                shutil.copy2(path, tmp_file_path)
         else:
             # not /storage
             tmp_file_path = path

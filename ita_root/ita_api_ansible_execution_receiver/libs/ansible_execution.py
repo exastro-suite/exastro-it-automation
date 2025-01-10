@@ -750,8 +750,11 @@ def update_timestamp(file_path):
             # 更新日時変更
             with open(file_path , "w") as fd:
                 pass
-        g.applogger.debug(f"{file_path=}")
-        return True
+            g.applogger.debug(f"{file_path=}")
+            return True
+        else:
+            g.applogger.info(f"open failed. file={file_path=}")
+            return False
     except Exception as e:
         g.applogger.info(f"Failed to update file. ({file_path})")
         raise e

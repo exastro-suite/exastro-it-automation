@@ -1,0 +1,19 @@
+[TITLE]
+既知（判定済）イベントが発生しました。
+
+[BODY]
+詳細
+　イベントID　　　：{{ _id }}
+　イベント収集設定：{{ labels._exastro_event_collection_settings_id }}
+　イベント取得日時：{{ labels._exastro_fetched_time }}
+　イベント有効日時：{{ labels._exastro_end_time }}
+　イベント種別　　：{{ labels._exastro_type }}
+
+　再評価
+　　評価ルール名　　：{{ labels._exastro_rule_name }}
+　　利用イベント　　：{{ exastro_events }}
+
+　ラベル：
+　  {% for key, value in labels.items() %}
+　　・{{ key }}：{{ value }}
+　　{% endfor %}

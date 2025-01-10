@@ -1,5 +1,8 @@
 [
     ["workspace.sql", "workspace_master.sql"],
     ["conductor.sql", "conductor_master.sql"],
-    ["", "ansible_master.sql"]
+    ["ansible.sql", "ansible_master.sql"],
+    ["menu_create.sql", "menu_create_master.sql"],
+    ["terraform_cli.sql", "terraform_cli_master.sql"],
+    ["terraform_cloud_ep.sql", "terraform_cloud_ep_master.sql"]
 ]

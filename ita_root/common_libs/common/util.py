@@ -928,8 +928,9 @@ def put_uploadfiles_not_override(config_file_path, src_dir, dest_dir):
     return True
 
 
-def put_uploadfiles_jnl(_db_conn, config_file_path, src_dir, dest_dir):
+def put_uploadfiles_jnl(ws_db, config_file_path, src_dir, dest_dir):
     """
+    履歴作成用
     config_file_pathのファイルに記載されているファイルをdest_dir配下に作成する
 
     Arguments:
@@ -941,123 +942,179 @@ def put_uploadfiles_jnl(_db_conn, config_file_path, src_dir, dest_dir):
         is success:(bool)
     """
 
-    # 現在時間を取得する
-    last_update_timestamp = get_timestamp()
-
-    # バックヤードユーザのユーザIDを取得しリストに格納する
-    backyard_user_data = _db_conn.table_select("T_COMN_BACKYARD_USER", "WHERE DISUSE_FLAG = %s", [0])
-    backyard_user_list = []
-    for backyard_user in backyard_user_data:
-        backyard_user_list.append(backyard_user["USER_ID"])
-
     with open(config_file_path, 'r') as material_conf_json:
         material_conf = json.load(material_conf_json)
-        _db_conn.db_transaction_start()
+        ts_fmt = '%Y-%m-%d %H:%M:%S.%f'
+
+        ws_db.db_transaction_start()
         for menu_id, menu_record in material_conf.items():
-            # 対象メニューの通常テーブル名・履歴テーブル名・rest名でのPrimaryキーを取得する
-            table_data = _db_conn.table_select("T_COMN_MENU_TABLE_LINK", "WHERE MENU_ID = %s AND DISUSE_FLAG = %s", [menu_id, 0])[0]
-            table_name = table_data["TABLE_NAME"]
+            # 対象メニューの通常テーブル名・履歴テーブル名・Primaryキー名を取得する
+            data = ws_db.table_select("T_COMN_MENU_TABLE_LINK", "WHERE MENU_ID = %s AND DISUSE_FLAG = %s", [menu_id, 0])[0]
+            table_name = data["TABLE_NAME"]
             table_name_jnl = table_name + "_JNL"
-            primary_key_rest = table_data["PK_COLUMN_NAME_REST"]
-            # 対象メニューの通常テーブルのPrimaryキーのカラム名を取得する
-            primary_key_name = _db_conn.table_select("T_COMN_MENU_COLUMN_LINK", "WHERE MENU_ID = {} AND COLUMN_NAME_REST = '{}' AND DISUSE_FLAG = {}".format(menu_id, primary_key_rest, 0))[0]["COL_NAME"]
-            for primary_key_value, jnl_record_list in menu_record.items():
-                sql_execute_flag = False
-                for count, jnl_record in enumerate(jnl_record_list, start=0):
-                    for jnl_id, jnl_data_list in jnl_record.items():
+
+            # 対象メニューのPrimaryキーのカラム名をREST名から引く
+            primary_key_rest = data["PK_COLUMN_NAME_REST"]
+            primary_key_name = ws_db.table_select("T_COMN_MENU_COLUMN_LINK", "WHERE MENU_ID = {} AND COLUMN_NAME_REST = '{}' AND DISUSE_FLAG = {}".format(menu_id, primary_key_rest, 0))[0]["COL_NAME"]
+
+            for primary_key_value, jnl_record_block_list in menu_record.items():
+                # 通常テーブルの１レコードに対しての履歴
+
+                # 履歴テーブル内で、（通常テーブル内primaryキーの値が一致する中で）変更日時が最新のレコードを取得する
+                latest_jnl_record = ws_db.table_select(table_name_jnl, "WHERE {} = '{}' ORDER BY `JOURNAL_REG_DATETIME` DESC LIMIT 1".format(primary_key_name, primary_key_value, 0))[0]  # noqa: E501
+
+                # 変更日時に現在時間を入れておく（挿入する履歴の変更日時に使う）
+                # 重要：履歴配列（jnl_record_block_list）の最後を最新レコードとして扱う想定
+                journal_reg_datetime = str(get_timestamp())
+
+                sql_execute_flag = False  # primaryキーの値単位で履歴の挿入の有無
+
+                for jnl_record_block in jnl_record_block_list:
+                    # 挿入する予定の履歴IDの一覧
+                    jnl_id_list = jnl_record_block.keys()
+
+                    for jnl_id, jnl_data_list in jnl_record_block.items():
                         # 履歴テーブルに指定の履歴IDと同じものが存在するか確認する
-                        jnl_id_record = _db_conn.table_select(table_name_jnl, "WHERE JOURNAL_SEQ_NO = %s AND DISUSE_FLAG = %s", [jnl_id, 0])
-                        # 既に履歴テーブルに指定の履歴IDと同じものが存在する際はSQL文を実行しない
-                        if len(jnl_id_record) != 0:
+                        jnl_record_list = ws_db.table_select(table_name_jnl, "WHERE JOURNAL_SEQ_NO = %s", [jnl_id])
+                        # 既に履歴テーブルに指定の履歴IDと同じものが存在すれば、スキップ
+                        if len(jnl_record_list) != 0:
                             g.applogger.info(f"[Trace] Processing was skipped because the specified history ID={jnl_id}(primary_key_value={primary_key_value}) already exists in the history table.")
                             continue
 
-                        # _____DATE_____の置換、繰り返す中で1秒ずつ増やす
-                        last_update_timestamp_count = str(last_update_timestamp + datetime.timedelta(seconds=count))
-                        # SQL文を取得し、実行する
-                        sql = jnl_data_list[0]
-                        sql_execute = sql.replace("_____DATE_____", "STR_TO_DATE('" + last_update_timestamp_count + "','%Y-%m-%d %H:%i:%s.%f')")
-                        _db_conn.sql_execute(sql_execute)
+                        # 履歴テーブルに、指定の直前履歴IDが存在するか確認する
+                        # 直前履歴IDを取得する
+                        prev_jnl_id = jnl_data_list[0]
+                        is_prev_journal = True
+                        if prev_jnl_id is None or prev_jnl_id == "":
+                            is_prev_journal = False
+                        else:
+                            jnl_record_list = ws_db.table_select(table_name_jnl, "WHERE JOURNAL_SEQ_NO = %s", [prev_jnl_id])
+                            if len(jnl_record_list) == 0:
+                                is_prev_journal = False
+
+                        if is_prev_journal is True:
+                        # 直前履歴IDが存在する
+                            if jnl_record_list[0]['JOURNAL_SEQ_NO'] == latest_jnl_record['JOURNAL_SEQ_NO']:
+                            # 直前履歴が、履歴テーブルの中で、最新レコードになっている → 今から挿入する履歴レコードが最新となる予定
+                                # 1秒足す（journal_reg_datetimeは現在時刻の想定）
+                                journal_reg_datetime = datetime.datetime.strptime(journal_reg_datetime, ts_fmt) + datetime.timedelta(seconds=1)
+                            else:
+                            # 直前履歴が最新になっていない → ユーザが履歴を挿入しているか、別の履歴があると想定される
+                                # 1秒足す（直前履歴の値に対して）
+                                journal_reg_datetime = jnl_record_list[0]['JOURNAL_REG_DATETIME'] + datetime.timedelta(seconds=1)
+                        else:
+                        # 直前履歴IDが存在しない
+                            if prev_jnl_id in jnl_id_list:
+                            # 直前履歴IDのレコードが挿入直後（commitされてないから取得できない）と判断して、そのまま続行
+                                # 1秒足す（journal_reg_datetimeは前の履歴の値）
+                                try:
+                                    journal_reg_datetime = datetime.datetime.strptime(journal_reg_datetime, ts_fmt) + datetime.timedelta(seconds=1)
+                                except:
+                                    # 想定外（config.jsonの直前履歴IDの指定や並びがおかしい？）
+                                    g.applogger.info(f"[Trace] Processing was skipped because the specified history ID={prev_jnl_id}(primary_key_value={primary_key_value}) is invalid in the config.json.")
+                                    continue
+                            else:
+                                if prev_jnl_id is None or prev_jnl_id == "":
+                                # 直前履歴IDが空になっている
+                                # 今から挿入する履歴レコードを最新にする（今まで通りのsqlパッチとファイルパッチで対応できるはずなので、使わない想定）
+                                    # 1秒足す（journal_reg_datetimeは現在時刻の想定）
+                                    journal_reg_datetime = datetime.datetime.strptime(journal_reg_datetime, ts_fmt) + datetime.timedelta(seconds=1)
+                                else:
+                                # 想定外（存在しない直前履歴IDを指定している）
+                                    g.applogger.info(f"[Trace] Processing was skipped because the specified history ID={prev_jnl_id}(primary_key_value={primary_key_value}) not exists in the history table.")
+                                    continue
+
+                        journal_reg_datetime = str(journal_reg_datetime)
+
+                        # _____DATE_____を置換して、SQLを実行する
+                        insert_jnl_data = {}
+                        for insert_key, insert_val in jnl_data_list[1].items():
+                            if type(insert_val) == str:
+                                insert_val = insert_val.replace("_____DATE_____", journal_reg_datetime)
+                            insert_jnl_data[insert_key] = insert_val
+
+                        # make sql statement
+                        column_list = list(insert_jnl_data.keys())
+                        prepared_list = ["%s"]*len(column_list)
+                        value_list = list(insert_jnl_data.values())
+                        sql = "INSERT INTO `{}` ({}) VALUES ({})".format(table_name_jnl, ','.join(column_list), ','.join(prepared_list))
+                        ws_db.sql_execute(sql, value_list)
                         sql_execute_flag = True
 
                         # ファイル名等が指定されていなければスキップする
-                        if len(jnl_data_list) < 2:
+                        if len(jnl_data_list) < 3:
                             continue
-                        for jnl_data in jnl_data_list[1]:
+                        for jnl_data in jnl_data_list[2]:
                             # ファイル等の指定が3つそろっていない際はスキップする
                             if len(jnl_data) != 3:
                                 continue
                             # ファイル名、パスを取得する
-                            file_name = jnl_data[0]
-                            org_file = os.path.join(os.path.join(src_dir, menu_id), file_name)
+                            org_file_relative = jnl_data[0]
+                            file_name = os.path.basename(org_file_relative)
+                            org_file = os.path.join(os.path.join(src_dir, menu_id), org_file_relative)
                             old_file_path = os.path.join(dest_dir, menu_id) + jnl_data[1]
-                            file_path = os.path.join(dest_dir, menu_id) + jnl_data[2]
                             # 指定のディレクトリ・ファイルを作成する
                             if not os.path.isdir(old_file_path):
                                 os.makedirs(old_file_path)
                             shutil.copy(org_file, old_file_path + file_name)
 
-                # primaryキーの値単位で1度もSQL文を実行しなかったデータは下記処理をスキップする
+                # primaryキーの値単位で履歴の挿入がなかった
                 if sql_execute_flag is False:
                     continue
 
-                # 履歴テーブル内で、通常テーブル内primaryキーの値が一致する中で変更日時が最新のレコードを取得する
-                latest_last_update_record_jnl = _db_conn.table_select(table_name_jnl, "WHERE {} = '{}' AND `DISUSE_FLAG` = {} ORDER BY `JOURNAL_REG_DATETIME` DESC LIMIT 1".format(primary_key_name, primary_key_value, 0))[0]  # noqa: E501
-                # 取得したレコードから最終更新者を取得
-                latest_last_update_user = latest_last_update_record_jnl["LAST_UPDATE_USER"]
-
-                # 取得した最終更新者がバックヤードユーザか判断する
-                if latest_last_update_user not in backyard_user_list:
+                # 通常テーブルの該当レコードを取得する
+                normal_current_record = ws_db.table_select(table_name, "WHERE {} = '{}' AND DISUSE_FLAG = {}".format(primary_key_name, primary_key_value, 0))[0]
+                if normal_current_record['LAST_UPDATE_TIMESTAMP'].strftime(ts_fmt) > journal_reg_datetime:
+                # 通常テーブルのほうが新しい（例.ユーザが更新）ので、通常テーブルのupdateの必要がない
                     continue
                 else:
-                    # 履歴テーブル最新レコードと通常テーブル最新レコードが一致しないため、通常テーブルにUPDATEを行う（ファイルを指定している際はシンボリックリンクの張り替えを行う）
-                    # 更新前の通常テーブル最新レコードを取得する
-                    previous_record = _db_conn.table_select(table_name, "WHERE {} = '{}' AND DISUSE_FLAG = {}".format(primary_key_name, primary_key_value, 0))[0]
-
-                    last_update_record_copy = latest_last_update_record_jnl.copy()
+                # 履歴テーブル最新レコードと通常テーブル最新レコードが一致しないため、通常テーブルにUPDATEを行う（ファイルを指定している際はシンボリックリンクの張り替えを行う）
+                    # 挿入する履歴配列の最後を最新レコードとして扱う
+                    insert_jnl_data_copy = insert_jnl_data.copy()
 
                     # 通常テーブルに履歴テーブルのレコードから履歴テーブル特有のkey,valueを削除したものをUPDATEする
-                    del latest_last_update_record_jnl["JOURNAL_SEQ_NO"]
-                    del latest_last_update_record_jnl["JOURNAL_REG_DATETIME"]
-                    del latest_last_update_record_jnl["JOURNAL_ACTION_CLASS"]
-                    _db_conn.table_update(table_name, latest_last_update_record_jnl, primary_key_name, False, False)
+                    del insert_jnl_data_copy["JOURNAL_SEQ_NO"]
+                    del insert_jnl_data_copy["JOURNAL_REG_DATETIME"]
+                    del insert_jnl_data_copy["JOURNAL_ACTION_CLASS"]
+                    ws_db.table_update(table_name, insert_jnl_data_copy, primary_key_name, False, False)
 
-                # 取得したレコードとconfigファイルを照らし合わせてファイル名・パスを取得する
-                for jnl_record in jnl_record_list:
-                    for jnl_id, jnl_data_list in jnl_record.items():
-                        if jnl_id != last_update_record_copy["JOURNAL_SEQ_NO"]:
+                # 挿入する履歴配列の最後を最新レコードとして扱う
+                last_jnl_index = len(jnl_record_block_list) - 1
+                jnl_record_block = jnl_record_block_list[last_jnl_index]
+
+                for jnl_id, jnl_data_list in jnl_record_block.items():
+                    # ファイル名等が指定されていなければスキップする
+                    if len(jnl_data_list) < 3:
+                        continue
+                    for jnl_data in jnl_data_list[2]:
+                        # ファイル等の指定が3つそろっていない際はスキップする
+                        if len(jnl_data) != 3:
                             continue
-                        # ファイル名等が指定されていなければスキップする
-                        if len(jnl_data_list) < 2:
-                            continue
-                        for jnl_data in jnl_data_list[1]:
-                            # ファイル等の指定が3つそろっていない際はスキップする
-                            if len(jnl_data) != 3:
-                                continue
-                            # 更新前のファイル名を取得する
-                            file_column_rest_name = jnl_data[1].split('/')[1]
-                            file_column_name = _db_conn.table_select("T_COMN_MENU_COLUMN_LINK", "WHERE MENU_ID = {} AND COLUMN_NAME_REST = '{}' AND DISUSE_FLAG = {}".format(menu_id, file_column_rest_name, 0))[0]["COL_NAME"]
-                            previous_file_name = previous_record[file_column_name]
-                            # ファイル名、パスを取得する
-                            file_name = jnl_data[0]
-                            org_file = os.path.join(os.path.join(src_dir, menu_id), file_name)
-                            old_file_path = os.path.join(dest_dir, menu_id) + jnl_data[1]
-                            file_path = os.path.join(dest_dir, menu_id) + jnl_data[2]
-                            dir_path_file = file_path + file_name
+                        # 更新前のファイル名を取得する
+                        file_column_rest_name = jnl_data[1].split('/')[1]
+                        file_column_name = ws_db.table_select("T_COMN_MENU_COLUMN_LINK", "WHERE MENU_ID = {} AND COLUMN_NAME_REST = '{}' AND DISUSE_FLAG = {}".format(menu_id, file_column_rest_name, 0))[0]["COL_NAME"]
+                        previous_file_name = normal_current_record[file_column_name]
+                        # ファイル名、パスを取得する
+                        org_file_relative = jnl_data[0]
+                        file_name = os.path.basename(org_file_relative)
+                        org_file = os.path.join(os.path.join(src_dir, menu_id), org_file_relative)
+                        old_file_path = os.path.join(dest_dir, menu_id) + jnl_data[1]
+                        file_path = os.path.join(dest_dir, menu_id) + jnl_data[2]
+                        dir_path_file = file_path + file_name
 
-                            # 更新前シンボリックリンクがある場合は削除してから作成する
-                            if previous_file_name is not None:
-                                if os.path.isfile(file_path + previous_file_name):
-                                    os.unlink(file_path + previous_file_name)
-                            # シンボリックリンクを作成する
-                            try:
-                                os.symlink(old_file_path + file_name, dir_path_file)
-                            except Exception:
-                                retBool = False
-                                msg = g.appmsg.get_api_message('MSG-00015', [old_file_path + file_name, dir_path_file])
-                                return retBool, msg
+                        # 更新前シンボリックリンクがある場合は削除してから作成する
+                        if previous_file_name is not None:
+                            if os.path.isfile(file_path + previous_file_name):
+                                os.unlink(file_path + previous_file_name)
+                        # シンボリックリンクを作成する
+                        try:
+                            os.symlink(old_file_path + file_name, dir_path_file)
+                        except Exception:
+                            retBool = False
+                            msg = g.appmsg.get_api_message('MSG-00015', [old_file_path + file_name, dir_path_file])
+                            return retBool, msg
 
-        _db_conn.db_commit()
+        ws_db.db_commit()
 
     return True
 

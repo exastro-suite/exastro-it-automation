@@ -30,7 +30,7 @@ from common_libs.api import api_filter_admin, check_request_body_key
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectOrg, MONGOConnectWs
 from common_libs.common.mongoconnect.const import Const as mongoConst
 from common_libs.common.dbconnect import *  # noqa: F403
-from common_libs.common.util import ky_decrypt, ky_encrypt, get_timestamp, create_dirs, put_uploadfiles, arrange_stacktrace_format
+from common_libs.common.util import ky_decrypt, ky_encrypt, get_timestamp, create_dirs, put_uploadfiles, arrange_stacktrace_format, put_uploadfiles_jnl
 from libs.admin_common import initial_settings_ansible
 from common_libs.common.exception import AppException
 
@@ -196,9 +196,10 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         ]
         last_update_timestamp = str(get_timestamp())
 
+        python_path = os.environ.get('PYTHONPATH')
         for sql_files in sql_list:
-            ddl_file = os.environ.get('PYTHONPATH') + "sql/" + sql_files[0]
-            dml_file = os.environ.get('PYTHONPATH') + "sql/" + sql_files[1]
+            ddl_file = python_path + "sql/" + sql_files[0]
+            dml_file = python_path + "sql/" + sql_files[1]
 
             # インストールしないドライバに指定されているSQLは実行しない
             if (sql_files[0] == 'terraform_common.sql' and 'terraform_cloud_ep' in no_install_driver and 'terraform_cli' in no_install_driver) or \
@@ -236,13 +237,12 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             ws_db.db_commit()
 
         # make storage directory for workspace job
-        create_dir_list = os.path.join(os.environ.get('PYTHONPATH'), "config", "create_dir_list.txt")
+        create_dir_list = os.path.join(python_path, "config", "create_dir_list.txt")
         create_dirs(create_dir_list, workspace_dir)
-        g.applogger.info("make storage directory for workspace job")
+        g.applogger.info("storage directory for workspace is made")
 
         # set initial material files
-        src_dir = os.path.join(os.environ.get('PYTHONPATH'), "files")
-        g.applogger.info(f"[Trace] src_dir={src_dir}")
+        src_dir = os.path.join(python_path, "files")
         if os.path.isdir(src_dir):
             config_file_list = [f for f in os.listdir(src_dir) if os.path.isfile(os.path.join(src_dir, f))]
             g.applogger.info(f"[Trace] config_file_list={config_file_list}")
@@ -257,10 +257,33 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
 
                 dest_dir = os.path.join(workspace_dir, "uploadfiles")
                 config_file_path = os.path.join(src_dir, config_file_name)
-                g.applogger.info(f"[Trace] dest_dir={dest_dir}")
+
                 g.applogger.info(f"[Trace] config_file_path={config_file_path}")
+                # ファイル配置
                 put_uploadfiles(config_file_path, src_dir, dest_dir)
-        g.applogger.info("set initial material files")
+        g.applogger.info("initial material files is set")
+
+        # execute jnl patch
+        src_dir = os.path.join(python_path, "jnl")
+        if os.path.isdir(src_dir):
+            config_file_list = [f for f in os.listdir(src_dir) if os.path.isfile(os.path.join(src_dir, f))]
+            g.applogger.info(f"[Trace] config_file_list={config_file_list}")
+
+            for config_file_name in config_file_list:
+                if config_file_name != "config.json":
+                    # 対象のconfigファイルがインストール必要なドライバのものか判断
+                    driver_name = config_file_name.replace('_config.json', '')
+                    if driver_name in no_install_driver:
+                        g.applogger.info(f"[Trace] SKIP CONFIG FILE NAME=[{config_file_name}] BECAUSE {driver_name} IS NOT INSTALLED.")
+                        continue
+
+                dest_dir = os.path.join(workspace_dir, "uploadfiles")
+                config_file_path = os.path.join(src_dir, config_file_name)
+
+                g.applogger.info(f"[Trace] config_file_path={config_file_path}")
+                # jnlパッチの処理
+                put_uploadfiles_jnl(ws_db, config_file_path, src_dir, dest_dir)
+        g.applogger.info("jnl patch is executed")
 
         # 初期データ設定(ansible)
         if (inistial_data_ansible_if is not None) and (len(inistial_data_ansible_if) != 0):

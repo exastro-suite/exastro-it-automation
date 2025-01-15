@@ -17,9 +17,13 @@ import os
 import datetime
 import time
 import sqlite3
+import traceback
+import inspect
 
 from common_libs.common import *  # noqa F403
-from common_libs.ci.util import app_exception, exception
+from common_libs.common.util import arrange_stacktrace_format
+from common_libs.common.util import get_iso_datetime
+from common_libs.ag.util import app_exception, exception
 from common_libs.oase.const import oaseConst
 from agent.libs.exastro_api import Exastro_API
 from libs.collect_event import collect_event
@@ -42,6 +46,23 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
     # SQLiteモジュール
     sqliteDB = sqliteConnect(organization_id, workspace_id)
 
+    # 環境変数の取得
+    base_url = os.environ["EXASTRO_URL"]
+    username = os.environ.get("EXASTRO_USERNAME")
+    password = os.environ.get("EXASTRO_PASSWORD")
+    refresh_token = os.environ.get("EXASTRO_REFRESH_TOKEN")
+
+    # ITAのAPI呼び出しモジュール
+    exastro_api = Exastro_API(
+        base_url,
+        username,
+        password,
+        refresh_token
+    )
+    # ITAへの認証がtokenの場合
+    if refresh_token is not None:
+        exastro_api.get_access_token( organization_id, refresh_token)
+
     # ループに入る前にevent_collection_settings.jsonを削除
     setting_removed = remove_file()
     if setting_removed is True:
@@ -54,7 +75,7 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
         print("")
 
         try:
-            collection_logic(sqliteDB, organization_id, workspace_id)
+            collection_logic(sqliteDB, organization_id, workspace_id, exastro_api)
         except AppException as e:  # noqa F405
             app_exception(e)
         except Exception as e:
@@ -75,22 +96,16 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
         sqliteDB.db_close()
         g.applogger.debug(g.appmsg.get_log_message("AGT-10025", []))
     except Exception:
+        t = traceback.format_exc()
+        g.applogger.info("[ts={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
+        print_exception_msg(e)
         g.applogger.info(g.appmsg.get_log_message("AGT-10026", []))
 
 
-def collection_logic(sqliteDB, organization_id, workspace_id):
+def collection_logic(sqliteDB, organization_id, workspace_id, exastro_api):
 
-    # 環境変数の取得
-    username = os.environ["EXASTRO_USERNAME"]
-    password = os.environ["EXASTRO_PASSWORD"]
     setting_name_list = os.environ["EVENT_COLLECTION_SETTINGS_NAMES"].split(",")
     baseUrl = os.environ["EXASTRO_URL"]
-    # ITAのAPI呼び出しモジュール
-    exastro_api = Exastro_API(
-        username,
-        password
-    )
-
     g.applogger.debug(g.appmsg.get_log_message("AGT-10006", []))
 
     # イベント収集設定ファイルからイベント収集設定の取得
@@ -100,7 +115,7 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
 
     # イベント収集設定ファイルが無い場合、ITAから設定を取得 + 設定ファイル作成
     if settings is False:
-        endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/oase_agent/event_collection/settings"
+        endpoint = f"/api/{organization_id}/workspaces/{workspace_id}/oase_agent/event_collection/settings"
         g.applogger.info(g.appmsg.get_log_message("AGT-10008", []))
         try:
             status_code, response = exastro_api.api_request(
@@ -135,16 +150,17 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
                 sqliteDB.insert_last_fetched_time(name, current_timestamp)
                 sqliteDB.db_connect.commit()
     except sqlite3.OperationalError:
+        # 最終取得日時テーブルが存在しない場合、最終取得日時テーブル作成語、再度、登録する
         for name in setting_name_list:
             sqliteDB.insert_last_fetched_time(name, current_timestamp)
             sqliteDB.db_connect.commit()
 
     # イベント収集
     events = []
-    event_collection_settings_enable = []
+    event_collection_result_list = []  # 収集結果のサマリ（最新収集日時の保存の可否に利用する）
     if settings is not False:
         g.applogger.info(g.appmsg.get_log_message("AGT-10011", []))
-        events, event_collection_settings_enable = collect_event(sqliteDB, settings, timestamp_dict)
+        events, event_collection_result_list = collect_event(sqliteDB, settings, timestamp_dict)
         g.applogger.info(g.appmsg.get_log_message("AGT-10012", [len(events)]))
     else:
         g.applogger.debug(g.appmsg.get_log_message("AGT-10013", []))
@@ -153,7 +169,7 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
     if settings is not False:
         try:
             sqliteDB.db_connect.execute("BEGIN")
-            sqliteDB.insert_events(events, event_collection_settings_enable)
+            sqliteDB.insert_events(events, event_collection_result_list)
             # イベントが1件以上なら、イベントの中身・取得時間・最終取得時間をsqliteに保存する
             if len(events) != 0:
                 g.applogger.debug(g.appmsg.get_log_message("AGT-10014", []))
@@ -175,6 +191,7 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
     send_to_ita_flag = False
 
     # event_collection_settings_nameとfetched_timeの組み合わせで辞書を作成
+    # 設定名ごとに未送信の「取得回」を取得
     for name in setting_name_list:
         try:
             sqliteDB.db_cursor.execute(
@@ -194,7 +211,7 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
         else:
             send_to_ita_flag = True
 
-        # 作成した辞書を使用してイベントをDBから検索
+        # 作成した辞書を使用して「イベント」をDBから検索
         for item in unsent_timestamp:
             unsent_event = {}
             event_collection_settings_name = item[1]
@@ -228,7 +245,7 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
             event_count = event_count + len(event["event"])
         # "Sending {} events to Exastro IT Automation"
         g.applogger.info(g.appmsg.get_log_message("AGT-10017", [event_count]))
-        endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/oase_agent/events"
+        endpoint = f"/api/{organization_id}/workspaces/{workspace_id}/oase_agent/events"
         try:
             status_code, response = exastro_api.api_request(
                 "POST",
@@ -248,7 +265,6 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
                     sqliteDB.update_sent_flag(table_name, list)
                 except AppException as e:  # noqa E405
                     sqliteDB.db_connect.rollback()
-                    sqliteDB.db_close()
                     app_exception(e)
 
             g.applogger.debug(g.appmsg.get_log_message("AGT-10019", []))
@@ -260,12 +276,12 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
         g.applogger.info(g.appmsg.get_log_message("AGT-10021", []))
 
     # 不要なレコードのDELETE（1世代前までのイベントは残す）
+    g.applogger.debug(g.appmsg.get_log_message("AGT-10022", []))
     to_delete_timestamp_rowids = []  # sent_timestampテーブルから削除するレコードのrowids
     to_delete_events_rowids = []  # eventsテーブルから削除するレコードのrowids
     remain_events_dict = {}  # eventsテーブルに残すレコードの{event_collection_settings_name: [...fetched_time]}
-    g.applogger.debug(g.appmsg.get_log_message("AGT-10022", []))
-    for name in setting_name_list:
 
+    for name in setting_name_list:
         try:
             # sent_timestampテーブルから送信済みフラグが1のレコードを全件取得
             sqliteDB.db_cursor.execute(
@@ -291,8 +307,11 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
             to_delete_timestamp_rowids.extend(rowids)
 
 
-        except sqlite3.OperationalError:
+        except sqlite3.OperationalError as e:
             # テーブルが作られていない（イベントが無い）場合、処理を終了
+            # t = traceback.format_exc()
+            # g.applogger.info("[ts={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
+            print_exception_msg(e)
             return
 
     # 削除対象イベントが無い場合、削除処理をスキップ
@@ -315,3 +334,13 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
             app_exception(e)
 
     return
+
+def print_exception_msg(e):
+    """
+    例外メッセージを、infoログに出力する
+    """
+    # 例外と、発生したファイ名と行番号を出力
+    info = inspect.getouterframes(inspect.currentframe())[1]
+    msg_line = "({}:{})".format(os.path.basename(info.filename), info.lineno)
+    exception_msg = "exception_msg='{}'".format(e)
+    g.applogger.info('[timestamp={}] {} {}'.format(get_iso_datetime(), exception_msg, msg_line))

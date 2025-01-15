@@ -12,7 +12,7 @@
 # limitations under the License.
 #
 """
-common_libs api common function module
+common_libs CLI common function module
 """
 from flask import g
 import os

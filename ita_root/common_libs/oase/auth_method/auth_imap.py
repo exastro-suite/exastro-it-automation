@@ -75,7 +75,7 @@ class IMAPAuthClient(APIClientCommon):
         logged_in = self.imap_login()
 
         if logged_in is False:
-            return response
+            return False, response
 
         # メールボックスの選択
         if self.mailbox_name is None:
@@ -85,14 +85,14 @@ class IMAPAuthClient(APIClientCommon):
             mailbox = self.client.select_folder(self.mailbox_name)  # noqa F841
 
             # 最後の取得時間以降に受信したメールのIDを取得
-            datetime_obj = datetime.datetime.utcfromtimestamp(self.last_fetched_timestamp)
+            datetime_obj = datetime.datetime.fromtimestamp(self.last_fetched_timestamp)
             target_datetime = datetime_obj.strftime("%d-%b-%Y")
             message_ids = self.client.search(["SINCE", target_datetime])
 
             # 取得したIDのメールの内容を取得
             mail_dict = self.client.fetch(message_ids, ['ENVELOPE', 'RFC822.HEADER', 'RFC822.TEXT'])
             if mail_dict == {}:
-                return response
+                return False, response
 
             # メールの内容を辞書型にまとめる
             for mid, d in mail_dict.items():
@@ -284,7 +284,7 @@ class IMAPAuthClient(APIClientCommon):
 
         socks.setdefaultproxy()
 
-        return response
+        return True, response
 
     def _parser(self, header_text, key):
 

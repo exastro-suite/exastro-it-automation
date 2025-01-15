@@ -2477,7 +2477,7 @@ class ExecuteDirector():
                             self.gitLoaclRepositoriesPath,
                             dirs_exist_ok=True,
                             )
-            g.applogger.debug(f"[Trace] shutil.copytree. src: {SrcFilePath.replace("/*", "")}, dst: {self.gitLoaclRepositoriesPath}")
+            g.applogger.debug(f"[Trace] shutil.copytree. src: {SrcFilePath}, dst: {self.gitLoaclRepositoriesPath}")
 
             # __ita_tmp_dir__配下のconductor_workflowr_dirに使う資材は不要なので除外する
             conductor_path = self.vg_TowerProjectsScpPathArray[AnscConst.DF_GITREPO_CONDUCTOR_PATH] \

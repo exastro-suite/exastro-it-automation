@@ -29,7 +29,7 @@ class sqliteConnect:
         # DBカーソル作成
         self.db_cursor = self.db_connect.cursor()
 
-    def insert_events(self, events, event_collection_settings_enable):
+    def insert_events(self, events, event_collection_result_list):
 
         timestamp_info = []
         processed = set()
@@ -51,17 +51,15 @@ class sqliteConnect:
             raise AppException("AGT-10027", [e, event])
 
         try:
+            # イベントが1件以上ある場合のみ保存
             for info in timestamp_info:
-                self.insert_timestamp(
+                self.insert_sent_timestamp(
                     info["name"],
                     info["timestamp"]
                 )
-                self.insert_last_fetched_time(
-                    info["name"],
-                    info["timestamp"]
-                )
-            for data in event_collection_settings_enable:
-                if data["is_save"] is True and data["len"] == 0:
+            # イベント取得で例外の場合は保存しない。(v2.4~)例外じゃなければ、0件でも保存する
+            for data in event_collection_result_list:
+                if data["is_save"] is True:
                     self.insert_last_fetched_time(
                         data["name"],
                         data["fetched_time"]
@@ -112,7 +110,6 @@ class sqliteConnect:
                     sent_flag BOOLEAN NOT NULL
                 )
             """
-
         )
         # イベントがメールの場合、message_idが必ずあるため、message_idを保存（メール重複取得防止のため）
         if "message_id" in event:
@@ -126,7 +123,7 @@ class sqliteConnect:
             (event["_exastro_event_collection_settings_name"], unique_id, event_string, event["_exastro_fetched_time"], False)
         )
 
-    def insert_timestamp(self, id, fetched_time):
+    def insert_sent_timestamp(self, id, fetched_time):
         table_name = "sent_timestamp"
         self.db_cursor.execute(
             f"""

@@ -931,6 +931,15 @@ paths:
         explode: false
         schema:
           type: string
+      - name: file
+        in: query
+        description: ファイルデータの形式指定
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+        example: ?file=binary
       responses:
         "200":
           description: Success
@@ -982,6 +991,15 @@ paths:
         explode: false
         schema:
           type: string
+      - name: file
+        in: query
+        description: ファイルデータの形式指定
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+        example: ?file=binary
       responses:
         "200":
           description: Success
@@ -1032,6 +1050,15 @@ paths:
         explode: false
         schema:
           type: string
+      - name: file
+        in: query
+        description: ファイルデータの形式指定
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+        example: ?file=binary
       requestBody:
         content:
           application/json:
@@ -1147,6 +1174,15 @@ paths:
         explode: false
         schema:
           type: string
+      - name: file
+        in: query
+        description: ファイルデータの形式指定
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+        example: ?file=binary
       responses:
         "200":
           description: Success
@@ -2861,6 +2897,15 @@ paths:
         explode: false
         schema:
           type: string
+      - name: file
+        in: query
+        description: ファイルデータの形式指定
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+        example: ?file=binary
       responses:
         "200":
           description: Success
@@ -2920,6 +2965,15 @@ paths:
         explode: false
         schema:
           type: string
+      - name: file
+        in: query
+        description: ファイルデータの形式指定
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+        example: ?file=binary
       responses:
         "200":
           description: Success
@@ -4343,6 +4397,15 @@ paths:
         explode: false
         schema:
           type: string
+      - name: file
+        in: query
+        description: ファイルデータの形式指定
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+        example: ?file=binary
       requestBody:
         content:
           application/json:
@@ -5041,6 +5104,15 @@ paths:
         explode: false
         schema:
           type: string
+      - name: file
+        in: query
+        description: ファイルデータの形式指定
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+        example: ?file=binary
       requestBody:
         content:
           application/json:

@@ -703,8 +703,7 @@ def patch_conductor_scram(organization_id, workspace_id, menu, conductor_instanc
 
 
 # Conductor作業確認一覧個別関連
-@api_filter_download_temporary_file
-def get_conductor_input_data(organization_id, workspace_id, menu, conductor_instance_id):  # noqa: E501
+def get_conductor_input_data(organization_id, workspace_id, menu, conductor_instance_id, file=None):  # noqa: E501
     """get_conductor_input_data
 
     Conductor作業の投入データ # noqa: E501
@@ -717,40 +716,56 @@ def get_conductor_input_data(organization_id, workspace_id, menu, conductor_inst
     :type menu: str
     :param conductor_instance_id: Conductor Instance ID
     :type conductor_instance_id: str
+    :param file: ファイルデータの形式指定
+    :type file: str
 
-    :rtype: InlineResponse20015
+    :rtype: InlineResponse20019
     """
-    # DB接続
-    objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    try:
-        # メニューの存在確認
-        check_menu_info(menu, objdbca)
+    def main_func(base64_flg):
+        # DB接続
+        objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-        sheet_type_list = ['0']
-        check_sheet_type(menu, sheet_type_list, objdbca)
+        try:
+            # メニューの存在確認
+            check_menu_info(menu, objdbca)
 
-        # メニューに対するロール権限をチェック
-        check_auth_menu(menu, objdbca)
+            # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+            sheet_type_list = ['0']
+            check_sheet_type(menu, sheet_type_list, objdbca)
 
-        # このRestAPIは「Conductor作業履歴」専用
-        if menu != 'conductor_list':
-            log_msg_args = [menu]
-            api_msg_args = [menu]
-            raise AppException("401-00003", log_msg_args, api_msg_args)  # noqa: F405
+            # メニューに対するロール権限をチェック
+            check_auth_menu(menu, objdbca)
 
-        # 入力データ収集
-        data_type = 'input'
-        result_data = conductor_controll.create_movement_zip(objdbca, menu, data_type, conductor_instance_id)
-    except Exception as e:
-        raise e
-    finally:
-        objdbca.db_disconnect()
-    return result_data,
+            # このRestAPIは「Conductor作業履歴」専用
+            if menu != 'conductor_list':
+                log_msg_args = [menu]
+                api_msg_args = [menu]
+                raise AppException("401-00003", log_msg_args, api_msg_args)  # noqa: F405
 
-@api_filter_download_temporary_file
-def get_conductor_result_data(organization_id, workspace_id, menu, conductor_instance_id):  # noqa: E501
+            # 入力データ収集
+            data_type = 'input'
+            result_data = conductor_controll.create_movement_zip(objdbca, menu, data_type, conductor_instance_id, base64_flg)
+        except Exception as e:
+            raise e
+        finally:
+            objdbca.db_disconnect()
+        return result_data,
+
+    # ファイルをバイナリ or Base64で返すか分岐
+    if file == "binary":
+        @api_filter_download_temporary_file
+        def return_filepath():
+            return main_func(False)
+        return return_filepath()
+    else:
+        @api_filter
+        def return_base64():
+            return main_func(True)
+        return return_base64()
+
+
+def get_conductor_result_data(organization_id, workspace_id, menu, conductor_instance_id, file=None):  # noqa: E501
     """get_conductor_result_data
 
     Conductor作業の結果データ # noqa: E501
@@ -763,34 +778,50 @@ def get_conductor_result_data(organization_id, workspace_id, menu, conductor_ins
     :type menu: str
     :param conductor_instance_id: Conductor Instance ID
     :type conductor_instance_id: str
+    :param file: ファイルデータの形式指定
+    :type file: str
 
-    :rtype: InlineResponse20016
+    :rtype: InlineResponse20020
     """
-    # DB接続
-    objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    try:
-        # メニューの存在確認
-        check_menu_info(menu, objdbca)
+    def main_func(base64_flg):
+        # DB接続
+        objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-        sheet_type_list = ['0']
-        check_sheet_type(menu, sheet_type_list, objdbca)
+        try:
+            # メニューの存在確認
+            check_menu_info(menu, objdbca)
 
-        # メニューに対するロール権限をチェック
-        check_auth_menu(menu, objdbca)
+            # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+            sheet_type_list = ['0']
+            check_sheet_type(menu, sheet_type_list, objdbca)
 
-        # このRestAPIは「Conductor作業履歴」専用
-        if menu != 'conductor_list':
-            log_msg_args = [menu]
-            api_msg_args = [menu]
-            raise AppException("401-00003", log_msg_args, api_msg_args)  # noqa: F405
+            # メニューに対するロール権限をチェック
+            check_auth_menu(menu, objdbca)
 
-        # 結果データ収集
-        data_type = 'result'
-        result_data = conductor_controll.create_movement_zip(objdbca, menu, data_type, conductor_instance_id)
-    except Exception as e:
-        raise e
-    finally:
-        objdbca.db_disconnect()
-    return result_data,
+            # このRestAPIは「Conductor作業履歴」専用
+            if menu != 'conductor_list':
+                log_msg_args = [menu]
+                api_msg_args = [menu]
+                raise AppException("401-00003", log_msg_args, api_msg_args)  # noqa: F405
+
+            # 結果データ収集
+            data_type = 'result'
+            result_data = conductor_controll.create_movement_zip(objdbca, menu, data_type, conductor_instance_id, base64_flg)
+        except Exception as e:
+            raise e
+        finally:
+            objdbca.db_disconnect()
+        return result_data,
+
+    # ファイルをバイナリ or Base64で返すか分岐
+    if file == "binary":
+        @api_filter_download_temporary_file
+        def return_filepath():
+            return main_func(False)
+        return return_filepath()
+    else:
+        @api_filter
+        def return_base64():
+            return main_func(True)
+        return return_base64()

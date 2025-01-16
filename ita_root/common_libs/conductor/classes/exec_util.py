@@ -2506,7 +2506,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
 
         return retBool, result,
 
-    def create_zip_data(self, conductor_instance_id, data_type='', execution_data={}):
+    def create_zip_data(self, conductor_instance_id, data_type='', execution_data={}, base64_flg=False):
         """
         作業対象のファイル取得+ZIP化+base64
             RETRUN:
@@ -2599,8 +2599,18 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
 
                         _nest(tmp_work_path)
 
-                # Zipファイルが作成されたpathを返却
-                result = zip_file_path
+                if base64_flg:
+                    obj = storage_access.storage_read()
+                    obj.open(zip_file_path, "rb")
+                    zip_base64_str = base64.b64encode(obj.read()).decode('utf-8')  # noqa: F405
+                    obj.close()
+                    result.setdefault('file_name', zip_file_name)
+                    result.setdefault('file_data', zip_base64_str)
+                    if os.path.isfile(zip_file_path) is True:  # noqa: F405
+                        os.remove(zip_file_path)  # noqa: F405
+                else:
+                    # Zipファイルが作成されたpathを返却
+                    result = zip_file_path
 
         except Exception:
             t = traceback.format_exc()
@@ -2616,7 +2626,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
 
         return retBool, result,
 
-    def create_movement_zip(self, conductor_instance_id, data_type=''):
+    def create_movement_zip(self, conductor_instance_id, data_type='', base64_flg=False):
         """
             作業対象ConductorのMVのZIPファイルbase64化
             RETRUN:
@@ -2633,7 +2643,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             execution_data = tmp_result[1]
 
             # ZIPファイル生成 + pathを取得
-            tmp_result = self.create_zip_data(conductor_instance_id, data_type, execution_data)
+            tmp_result = self.create_zip_data(conductor_instance_id, data_type, execution_data, base64_flg)
             if tmp_result[0] is not True:
                 raise Exception()
             result = tmp_result[1]

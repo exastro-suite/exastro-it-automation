@@ -85,7 +85,7 @@ constructor( tableId, mode, info, params, option = {}) {
     // Excel download
     tb.rest.excelDownload = ( tb.params.restExcelDownload )?
         tb.params.restExcelDownload:
-        `/menu/${tb.params.menuNameRest}/excel/`;
+        `/menu/${tb.params.menuNameRest}/excel/?file=binary`;
 
     // JSON download
     tb.rest.jsonDownload = ( tb.params.restJsonDownload )?

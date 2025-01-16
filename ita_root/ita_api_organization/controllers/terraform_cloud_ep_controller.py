@@ -469,8 +469,7 @@ def get_terraform_organization_list(organization_id, workspace_id):  # noqa: E50
     return data,
 
 
-@api_filter_download_temporary_file
-def get_terraform_policy_file(organization_id, workspace_id, tf_organization_name, policy_name, body=None):  # noqa: E501
+def get_terraform_policy_file(organization_id, workspace_id, tf_organization_name, policy_name, body=None, file=None):  # noqa: E501
     """get_terraform_policy_file
 
     連携しているTerraform Cloud/EnterpriseからPolicyコードをダウンロードする # noqa: E501
@@ -485,36 +484,52 @@ def get_terraform_policy_file(organization_id, workspace_id, tf_organization_nam
     :type policy_name: str
     :param body:
     :type body: dict | bytes
+    :param file: ファイルデータの形式指定
+    :type file: str
 
     :rtype: InlineResponse2006
     """
-    # DB接続
-    objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    try:
-        # メニューの存在確認
-        menu = 'linked_terraform_management'
-        check_menu_info(menu, objdbca)
+    def main_func(base64_flg):
+        # DB接続
+        objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-        sheet_type_list = ['24']
-        check_sheet_type(menu, sheet_type_list, objdbca)
+        try:
+            # メニューの存在確認
+            menu = 'linked_terraform_management'
+            check_menu_info(menu, objdbca)
 
-        # メニューに対するロール権限をチェック
-        check_auth_menu(menu, objdbca)
+            # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+            sheet_type_list = ['24']
+            check_sheet_type(menu, sheet_type_list, objdbca)
 
-        parameters = {"download_path": ""}
-        if connexion.request.is_json:
-            body = dict(connexion.request.get_json())
-            parameters = body
+            # メニューに対するロール権限をチェック
+            check_auth_menu(menu, objdbca)
 
-        # Policyコードの取得
-        data = terraform_cloud_ep.get_policy_file(objdbca, tf_organization_name, policy_name, parameters)
-    except Exception as e:
-        raise e
-    finally:
-        objdbca.db_disconnect()
-    return data,
+            parameters = {"download_path": ""}
+            if connexion.request.is_json:
+                body = dict(connexion.request.get_json())
+                parameters = body
+
+            # Policyコードの取得
+            data = terraform_cloud_ep.get_policy_file(objdbca, tf_organization_name, policy_name, parameters, base64_flg=base64_flg)
+        except Exception as e:
+            raise e
+        finally:
+            objdbca.db_disconnect()
+        return data,
+
+    # ファイルをバイナリ or Base64で返すか分岐
+    if file == "binary":
+        @api_filter_download_temporary_file
+        def return_filepath():
+            return main_func(False)
+        return return_filepath()
+    else:
+        @api_filter
+        def return_base64():
+            return main_func(True)
+        return return_base64()
 
 
 @api_filter

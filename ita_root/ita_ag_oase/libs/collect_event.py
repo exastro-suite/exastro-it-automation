@@ -140,7 +140,7 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
 
         # イベント収集数を更新しておく
         event_collection_result_list[len(event_collection_result_list)-1]["len"] = event_length
-        g.applogger.debug(f'{event_collection_result_list=}')
+        g.applogger.debug(f'{event_collection_result=}')
 
     return events, event_collection_result_list
 

@@ -124,17 +124,17 @@ class DockerMode(AnsibleAgent):
         dir_tmp = "%s/.tmp/work/" % (container_mount_path_driver)
         shutil.copytree('/exastro/templates/work/', dir_tmp)
 
-        # create command string
-        command = ["/usr/local/bin/docker-compose", "-f", exec_manifest, "-p", project_name, "build"]
+        # # create command string
+        # command = ["/usr/local/bin/docker-compose", "-f", exec_manifest, "-p", project_name, "build"]
 
-        # docker-compose -f file -p project build
-        cp = subprocess.run(command, capture_output=True, text=True)
+        # # docker-compose -f file -p project build
+        # cp = subprocess.run(command, capture_output=True, text=True)
 
-        if cp.returncode == 0:
-            pass
-        else:
-            # cp.check_returncode()  # 例外を発生させたい場合
-            return False, {"function": "container_build", "return_code": cp.returncode, "stderr": cp.stderr}
+        # if cp.returncode == 0:
+        #     pass
+        # else:
+        #     # cp.check_returncode()  # 例外を発生させたい場合
+        #     return False, {"function": "container_build", "return_code": cp.returncode, "stderr": cp.stderr}
 
         command = ["/usr/local/bin/docker-compose", "-f", exec_manifest, "-p", project_name, "up", "-d"]
 

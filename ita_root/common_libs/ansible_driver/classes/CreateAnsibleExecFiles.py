@@ -1141,7 +1141,7 @@ class CreateAnsibleExecFiles():
 
         self.setTemporary_file_Dir(c_tmpdir)
 
-        # Ansible Egent用のディレクトリを作成
+        # Ansible Agent用のディレクトリを作成
         if self.lv_exec_mode == AnscConst.DF_EXEC_MODE_AG:
             # Ansibe bulder用　shell作成
             ret, msgstr  = CreateAG_ITABuilderShellFiles(self.lv_objDBCA, self.AnscObj, self.getAnsible_in_builder_files_Dir(), in_execno, movement_row)

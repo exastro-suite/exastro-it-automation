@@ -20,7 +20,7 @@ import os
 import datetime
 import json
 
-from flask import g
+from flask import g, request
 from copy import copy
 from openpyxl import Workbook
 from openpyxl.workbook.defined_name import DefinedName
@@ -996,7 +996,9 @@ def collect_excel_journal(
         workspace_id,
         menu,
         menu_record,
-        menu_table_link_record):
+        menu_table_link_record,
+        base64_flg=False
+    ):
     """
         変更履歴のExcelを取得する
 
@@ -1207,6 +1209,13 @@ def collect_excel_journal(
     add_datavalidation_range(ws, name_define_list, column_rest_name_list, dv_startRows, dv_endRows, jnl=True)
 
     wb.save(file_path)  # noqa: E303
+    if base64_flg:
+        # 編集してきたエクセルファイルをエンコードする
+        wbEncode = file_encode(file_path)  # noqa: F405 F841
+        # エンコード後wbは削除する
+        os.remove(file_path)
+        return wbEncode
+
     return file_path
 
 
@@ -1219,7 +1228,9 @@ def collect_excel_filter(
         menu_table_link_record,
         filter_parameter=None,
         backyard_exec=False,
-        backyard_lang=""):
+        backyard_lang="",
+        base64_flg=False
+    ):
     """
         検索条件を指定し、Excelを取得する
 
@@ -1493,8 +1504,13 @@ def collect_excel_filter(
                         ws_filter.cell(row=work_row, column=4 + i, value=filter_range)
                         ws_filter.cell(row=work_row, column=4 + i).data_type = 's'
                         work_row += 1
-
     wb.save(file_path)  # noqa: E303
+    if base64_flg:
+        # 編集してきたエクセルファイルをエンコードする
+        wbEncode = file_encode(file_path)  # noqa: F405 F841
+        # エンコード後wbは削除する
+        os.remove(file_path)    # noqa: F405
+        return wbEncode
 
     return file_path
 
@@ -1507,7 +1523,9 @@ def execute_excel_maintenance(
         menu_record,
         excel_data,
         backyard_exec=False,
-        backyard_lang=""):
+        backyard_lang="",
+        base64_flg=False
+    ):
     """execute_excel_maintenance
 
         Excelでレコードを登録/更新/廃止/復活する # noqa: E501
@@ -1544,9 +1562,25 @@ def execute_excel_maintenance(
         api_msg_args = [msg]
         raise AppException(status_code, log_msg_args, api_msg_args)     # noqa: F405
 
+    if base64_flg is False:
+        # 受け取ったデータを編集用として一時的にエクセルファイルに保存
+        file_path = excel_data
+    else:
+        # make storage directory for excel
+        strage_path = os.environ.get('STORAGEPATH')
+        excel_dir = strage_path + \
+            "/".join([organization_id, workspace_id]) + "/tmp/excel"
+        if not os.path.isdir(excel_dir):
+            os.makedirs(excel_dir)
+            g.applogger.debug("made excel_dir")
 
-    # 受け取ったデータを編集用として一時的にエクセルファイルに保存
-    file_path = excel_data
+        wbDecode = base64.b64decode(excel_data.encode('utf-8'))
+        # 受け取ったデータを編集用として一時的にエクセルファイルに保存
+        file_name = 'post_excel_maintenance_tmp.xlsx'
+        file_path = excel_dir + '/' + file_name
+        file_write.open(file_path, mode="wb")
+        file_write.write(wbDecode)
+        file_write.close()
 
     try:
         # ファイルを読み込む
@@ -1757,6 +1791,10 @@ def create_upload_parameters(connexion_request, organization_id, workspace_id):
         bool, excel_data,
     """
 
+    base64_flg= True
+    if "multipart/form-data" in request.content_type:
+        base64_flg = False
+
     # if connexion_request:
     if connexion_request.is_json:
         # application/json
@@ -1781,14 +1819,14 @@ def create_upload_parameters(connexion_request, organization_id, workspace_id):
             "/".join([organization_id, workspace_id]) + "/tmp/excel"
         if not os.path.isdir(excel_dir):
             os.makedirs(excel_dir)
-        file_path = excel_dir + "/" + 'post_excel_maintenance_tmp.xlsx'
+        excel_data = excel_dir + "/" + 'post_excel_maintenance_tmp.xlsx'
 
         for _file_key in connexion_request.files:
             # set excel str_b64_file_data
             _file_data = connexion_request.files[_file_key]
             file_name = _file_data.filename
 
-            f = open(file_path, 'wb')
+            f = open(excel_data, 'wb')
             while True:
                 # fileの読み込み
                 buf = _file_data.stream.read(1000000)
@@ -1801,7 +1839,7 @@ def create_upload_parameters(connexion_request, organization_id, workspace_id):
     else:
         return False, {},
 
-    return True, file_path,
+    return True, excel_data, base64_flg
 
 
 def analysys_menu_info(menu_info_data):

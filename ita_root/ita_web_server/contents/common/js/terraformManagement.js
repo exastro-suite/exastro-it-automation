@@ -167,7 +167,7 @@ setup() {
                 const download_path = $button.attr('data-download_path'),
                     tf_organization_name = $button.attr('data-tf_organization_name'),
                     policy_name = $button.attr('data-policy_name');
-                set.rest = `/terraform/policy/${tf_organization_name}/download/${policy_name}/`;
+                set.rest = `/terraform/policy/${tf_organization_name}/download/${policy_name}/?file=binary`;
                 set.method = `POST`;
                 set.body = {
                     download_path: download_path

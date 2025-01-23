@@ -987,6 +987,13 @@ paths:
           required: true
           schema:
             type: string
+        - name: file
+          in: query
+          description: ファイルデータの形式指定
+          required: false
+          schema:
+            type: string
+          example: "?file=binary"
       responses:
         '200':
           description: Success
@@ -1044,6 +1051,13 @@ paths:
           required: true
           schema:
             type: string
+        - name: file
+          in: query
+          description: ファイルデータの形式指定
+          required: false
+          schema:
+            type: string
+          example: "?file=binary"
       responses:
         '200':
           description: Success
@@ -1099,6 +1113,13 @@ paths:
           required: true
           schema:
             type: string
+        - name: file
+          in: query
+          description: ファイルデータの形式指定
+          required: false
+          schema:
+            type: string
+          example: "?file=binary"
       requestBody:
         content:
           application/json:
@@ -1232,6 +1253,13 @@ paths:
           required: true
           schema:
             type: string
+        - name: file
+          in: query
+          description: ファイルデータの形式指定
+          required: false
+          schema:
+            type: string
+          example: "?file=binary"
       responses:
         '200':
           description: Success
@@ -3161,6 +3189,13 @@ paths:
           required: true
           schema:
             type: string
+        - name: file
+          in: query
+          description: ファイルデータの形式指定
+          required: false
+          schema:
+            type: string
+          example: "?file=binary"
       responses:
         '200':
           description: Success
@@ -3228,6 +3263,13 @@ paths:
           required: true
           schema:
             type: string
+        - name: file
+          in: query
+          description: ファイルデータの形式指定
+          required: false
+          schema:
+            type: string
+          example: "?file=binary"
       responses:
         '200':
           description: Success
@@ -4974,6 +5016,13 @@ paths:
           required: true
           schema:
             type: string
+        - name: file
+          in: query
+          description: ファイルデータの形式指定
+          required: false
+          schema:
+            type: string
+          example: "?file=binary"
       requestBody:
         content:
           application/json:
@@ -5768,6 +5817,13 @@ paths:
           required: true
           schema:
             type: string
+        - name: file
+          in: query
+          description: ファイルデータの形式指定
+          required: false
+          schema:
+            type: string
+          example: "?file=binary"
       requestBody:
         content:
           application/json:

@@ -632,7 +632,7 @@ def conductor_execute_action(objdbca, menu, mode='', conductor_instance_id='', n
     return result
 
 
-def create_movement_zip(objdbca, menu, data_type, conductor_instance_id):
+def create_movement_zip(objdbca, menu, data_type, conductor_instance_id, base64_flg=False):
     """
         Conductorで実行したMovementのファイルをZIP、base64出力
         ARGS:
@@ -672,7 +672,7 @@ def create_movement_zip(objdbca, menu, data_type, conductor_instance_id):
         if tmp_result is False:
             raise Exception()
 
-        tmp_result = objCexec.create_movement_zip(conductor_instance_id, data_type)
+        tmp_result = objCexec.create_movement_zip(conductor_instance_id, data_type, base64_flg)
         result = tmp_result[1]
 
     except Exception:

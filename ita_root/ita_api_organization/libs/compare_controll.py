@@ -151,7 +151,7 @@ def get_compares_data(objdbca, menu):
 
 
 # 比較実行
-def compare_execute(objdbca, menu, parameter, options={}, file_required=False):
+def compare_execute(objdbca, menu, parameter, options={}, file_required=False, output_base64=False):
     """
         compare_execute
         ARGS:
@@ -249,7 +249,7 @@ def compare_execute(objdbca, menu, parameter, options={}, file_required=False):
 
         if output_flg is True:
             # excel output
-            result = _create_outputfile(objdbca, compare_config, result, options)
+            result = _create_outputfile(objdbca, compare_config, result, options, output_base64)
 
     except AppException as _app_e:  # noqa: F405
         raise AppException(_app_e)  # noqa: F405
@@ -2427,7 +2427,7 @@ def _get_col_name_input_order(col_name, input_order, input_order_lang=None):
 
 
 # ファイル出力:Excel
-def _create_outputfile(objdbca, compare_config, data, options):
+def _create_outputfile(objdbca, compare_config, data, options, output_base64=False):
     """
         create excel base64
         ARGS:
@@ -2480,6 +2480,15 @@ def _create_outputfile(objdbca, compare_config, data, options):
         # save book
         wb.save(file_path)  # noqa: E303
 
+        if output_base64:
+            # get excel base64 data
+            wbEncode = file_encode(file_path)  # noqa: F405 F841
+            # clear tmp file
+            if work_dir_path is not None and os.path.isdir(work_dir_path) is True:
+                shutil.rmtree(work_dir_path)
+            result["file_name"] = file_name
+            result["file_data"] = wbEncode
+
     except AppException as _app_e:  # noqa: F405
         # clear work_dir
         if work_dir_path is not None and os.path.isdir(work_dir_path) is True:
@@ -2496,6 +2505,9 @@ def _create_outputfile(objdbca, compare_config, data, options):
         log_msg_args = [e]
         api_msg_args = [e]
         raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
+
+    if output_base64:
+        return result
 
     return file_path
 

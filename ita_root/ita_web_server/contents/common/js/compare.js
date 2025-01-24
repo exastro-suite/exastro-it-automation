@@ -45,7 +45,7 @@ setRestApiUrls() {
     cp.rest.info = `/menu/${cp.menu}/compare/info/`;
     cp.rest.list = `/menu/${cp.menu}/compare/execute/info/`;
     cp.rest.compare = `/menu/${cp.menu}/compare/execute/`;
-    cp.rest.download = `/menu/${cp.menu}/compare/execute/output/`;
+    cp.rest.download = `/menu/${cp.menu}/compare/execute/output/?file=binary`;
 }
 /*
 ##################################################

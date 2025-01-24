@@ -84,6 +84,8 @@ class Migration:
         """
         migrate file
         """
+        g.applogger.info("[Trace] migrate file start")
+
         no_install_driver = self._no_install_driver
         # FILE処理
         # ディレクトリ作成
@@ -112,13 +114,15 @@ class Migration:
                 g.applogger.info(f"[Trace] dest_dir={dest_dir}")
                 g.applogger.info(f"[Trace] config_file_path={config_file_path}")
                 put_uploadfiles(config_file_path, src_dir, dest_dir)
-        g.applogger.info("[Trace] delivery files complete")
+        g.applogger.info("[Trace] migrate file complete")
 
     def migrate_file_not_override(self):
         """
         migrate file: not override
         (Forked from migrate_file)
         """
+        g.applogger.info("[Trace] migrate file start")
+
         # FILE処理:上書きしない
         # ディレクトリ作成
         config_file_path = os.path.join(self._resource_dir_path, "create_dir_list.txt")
@@ -136,12 +140,13 @@ class Migration:
         if os.path.isfile(config_file_path):
             # ファイルが無い場合にのみ配置し、上書きはしない
             put_uploadfiles_not_override(config_file_path, src_dir, dest_dir)
-            g.applogger.info("[Trace] delivery files complete")
+            g.applogger.info("[Trace] migrate files complete")
 
     def migrate_jnl(self):
         """
         migrate jnl
         """
+        g.applogger.info("[Trace] migrate journal patch start")
 
         _db_conn = self._db_conn
         no_install_driver = self._no_install_driver
@@ -166,19 +171,20 @@ class Migration:
                 g.applogger.info(f"[Trace] dest_dir={dest_dir}")
                 g.applogger.info(f"[Trace] config_file_path={config_file_path}")
                 put_uploadfiles_jnl(_db_conn, config_file_path, src_dir, dest_dir)
-        g.applogger.info("[Trace] delivery jnl files complete")
+        g.applogger.info("[Trace] migrate journal patch complete")
 
     def migrate_specific(self):
         """
         migrate specific
         """
         # 特別処理
+        g.applogger.info("[Trace] migrate specific logic start")
         # migrationを呼出す
         src_dir = os.path.join(self._resource_dir_path, "specific")
         config_file_path = os.path.join(src_dir, "config.json")
         if os.path.isfile(config_file_path):
             self._specific_logic(config_file_path, src_dir)
-            g.applogger.info("[Trace] specific logic complete")
+            g.applogger.info("[Trace] migrate specific logic complete")
 
     def _db_migrate(self, sql_dir):
         """

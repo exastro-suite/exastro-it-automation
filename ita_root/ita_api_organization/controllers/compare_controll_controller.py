@@ -124,8 +124,7 @@ def post_compare_execute(organization_id, workspace_id, menu, body=None):  # noq
     return result_data,
 
 
-@api_filter_download_temporary_file
-def post_compare_execute_output(organization_id, workspace_id, menu, body=None):  # noqa: E501
+def post_compare_execute_output(organization_id, workspace_id, menu, body=None, file=None):  # noqa: E501
     """post_compare_execute_output
 
     比較実行ファイル出力 # noqa: E501
@@ -138,43 +137,59 @@ def post_compare_execute_output(organization_id, workspace_id, menu, body=None):
     :type menu: str
     :param body:
     :type body: dict | bytes
+    :param file: ファイルデータの形式指定
+    :type file: str
 
-    :rtype: InlineResponse20021
+    :rtype: InlineResponse20027
     """
-    # メンテナンスモードのチェック
-    if g.maintenance_mode.get('data_update_stop') == '1':
-        status_code = "498-00018"
-        raise AppException(status_code, [], [])  # noqa: F405
 
-    # DB接続
-    objdbca = DBConnectWs(workspace_id)  # noqa: F405
+    def main_func(base64_flg):
+        # メンテナンスモードのチェック
+        if g.maintenance_mode.get('data_update_stop') == '1':
+            status_code = "498-00018"
+            raise AppException(status_code, [], [])  # noqa: F405
 
-    try:
-        # メニューの存在確認
-        check_menu_info(menu, objdbca)
+        # DB接続
+        objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-        sheet_type_list = ['17']
-        check_sheet_type(menu, sheet_type_list, objdbca)
+        try:
+            # メニューの存在確認
+            check_menu_info(menu, objdbca)
 
-        # メニューに対するロール権限をチェック
-        check_auth_menu(menu, objdbca)
+            # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+            sheet_type_list = ['17']
+            check_sheet_type(menu, sheet_type_list, objdbca)
 
-        result_data = {}
-        parameter = {}
-        if connexion.request.is_json:
-            body = dict(connexion.request.get_json())
-            parameter = body
+            # メニューに対するロール権限をチェック
+            check_auth_menu(menu, objdbca)
 
-        options = {}
-        options.setdefault("compare_mode", "nomal")
-        options.setdefault("output_flg", True)
-        result_data = compare_controll.compare_execute(objdbca, menu, parameter, options)
-    except Exception as e:
-        raise e
-    finally:
-        objdbca.db_disconnect()
-    return result_data,
+            result_data = {}
+            parameter = {}
+            if connexion.request.is_json:
+                body = dict(connexion.request.get_json())
+                parameter = body
+
+            options = {}
+            options.setdefault("compare_mode", "nomal")
+            options.setdefault("output_flg", True)
+            result_data = compare_controll.compare_execute(objdbca, menu, parameter, options, output_base64=base64_flg)
+        except Exception as e:
+            raise e
+        finally:
+            objdbca.db_disconnect()
+        return result_data,
+
+    # ファイルをバイナリ or Base64で返すか分岐
+    if file == "binary":
+        @api_filter_download_temporary_file
+        def return_filepath():
+            return main_func(False)
+        return return_filepath()
+    else:
+        @api_filter
+        def return_base64():
+            return main_func(True)
+        return return_base64()
 
 
 @api_filter

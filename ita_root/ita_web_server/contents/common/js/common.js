@@ -29,7 +29,7 @@ const fn = ( function() {
     'use strict';
 
     // バージョン
-    const version = '2.5.2';
+    const version = '2.5.3';
 
     // AbortController
     const controller = new AbortController();

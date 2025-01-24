@@ -21,8 +21,7 @@ from common_libs.api import api_filter, check_request_body, api_filter_download_
 from libs.organization_common import check_menu_info, check_auth_menu, check_sheet_type
 
 
-@api_filter_download_temporary_file
-def get_excel_filter(organization_id, workspace_id, menu, body=None):  # noqa: E501
+def get_excel_filter(organization_id, workspace_id, menu, file=None):  # noqa: E501
     """get_excel_filter
 
     全件のExcelを取得する # noqa: E501
@@ -33,37 +32,50 @@ def get_excel_filter(organization_id, workspace_id, menu, body=None):  # noqa: E
     :type workspace_id: str
     :param menu: メニュー名
     :type menu: str
+    :param file: ファイルデータの形式指定
+    :type file: str
 
-    :rtype: InlineResponse2004
+    :rtype: InlineResponse2007
     """
+    def main_func(base64_flg):
+        # DB接続
+        objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # DB接続
-    objdbca = DBConnectWs(workspace_id)  # noqa: F405
+        try:
+            # メニューの存在確認
+            menu_record = check_menu_info(menu, objdbca)
 
-    try:
-        # メニューの存在確認
-        menu_record = check_menu_info(menu, objdbca)
+            # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+            sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
+            # 28 : 作業管理のシートタイプ追加
+            sheet_type_list.append('28')
+            menu_table_link_record = check_sheet_type(menu, sheet_type_list, objdbca)
 
-        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-        sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
-        # 28 : 作業管理のシートタイプ追加
-        sheet_type_list.append('28')
-        menu_table_link_record = check_sheet_type(menu, sheet_type_list, objdbca)
+            # メニューに対するロール権限をチェック
+            check_auth_menu(menu, objdbca)
 
-        # メニューに対するロール権限をチェック
-        check_auth_menu(menu, objdbca)
+            filter_parameter = {'discard': {'NORMAL': ''}}
+            result_data = menu_excel.collect_excel_filter(objdbca, organization_id, workspace_id, menu, menu_record, menu_table_link_record, filter_parameter, base64_flg=base64_flg)
+        except Exception as e:
+            raise e
+        finally:
+            objdbca.db_disconnect()
+        return result_data,
 
-        filter_parameter = {'discard': {'NORMAL': ''}}
-        result_data = menu_excel.collect_excel_filter(objdbca, organization_id, workspace_id, menu, menu_record, menu_table_link_record, filter_parameter)
-    except Exception as e:
-        raise e
-    finally:
-        objdbca.db_disconnect()
-    return result_data,
+    # ファイルをバイナリ or Base64で返すか分岐
+    if file == "binary":
+        @api_filter_download_temporary_file
+        def return_filepath():
+            return main_func(False)
+        return return_filepath()
+    else:
+        @api_filter
+        def return_base64():
+            return main_func(True)
+        return return_base64()
 
 
-@api_filter_download_temporary_file
-def get_excel_format(organization_id, workspace_id, menu):  # noqa: E501
+def get_excel_format(organization_id, workspace_id, menu, file=None):  # noqa: E501
     """get_excel_format
 
     新規登録用Excelを取得する # noqa: E501
@@ -74,36 +86,52 @@ def get_excel_format(organization_id, workspace_id, menu):  # noqa: E501
     :type workspace_id: str
     :param menu: メニュー名
     :type menu: str
+    :param file: ファイルデータの形式指定
+    :type file: str
 
-    :rtype: InlineResponse2004
+    :rtype: InlineResponse2007
     """
 
-    # DB接続
-    objdbca = DBConnectWs(workspace_id)  # noqa: F405
+    def main_func(base64_flg):
+        # DB接続
+        objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    try:
-        # メニューの存在確認
-        menu_record = check_menu_info(menu, objdbca)
+        try:
+            # メニューの存在確認
+            menu_record = check_menu_info(menu, objdbca)
 
-        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-        sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
-        # 28 : 作業管理のシートタイプ追加
-        sheet_type_list.append('28')
-        menu_table_link_record = check_sheet_type(menu, sheet_type_list, objdbca)
+            # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+            sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
+            # 28 : 作業管理のシートタイプ追加
+            sheet_type_list.append('28')
+            menu_table_link_record = check_sheet_type(menu, sheet_type_list, objdbca)
 
-        # メニューに対するロール権限をチェック
-        check_auth_menu(menu, objdbca)
+            # メニューに対するロール権限をチェック
+            check_auth_menu(menu, objdbca)
 
-        result_data = menu_excel.collect_excel_filter(objdbca, organization_id, workspace_id, menu, menu_record, menu_table_link_record)
-    except Exception as e:
-        raise e
-    finally:
-        objdbca.db_disconnect()
-    return result_data,
+            result_data = menu_excel.collect_excel_filter(objdbca, organization_id, workspace_id, menu, menu_record, menu_table_link_record, base64_flg=base64_flg)
+        except Exception as e:
+            raise e
+        finally:
+            objdbca.db_disconnect()
+        return result_data,
+
+    # ファイルをバイナリ or Base64で返すか分岐
+    if file == "binary":
+        print("あっちあっちあっちあっちあっち")
+        @api_filter_download_temporary_file
+        def return_filepath():
+            return main_func(False)
+        return return_filepath()
+    else:
+        print("こっちこっちこっちこっちこっち")
+        @api_filter
+        def return_base64():
+            return main_func(True)
+        return return_base64()
 
 
-@api_filter_download_temporary_file
-def get_excel_journal(organization_id, workspace_id, menu):  # noqa: E501
+def get_excel_journal(organization_id, workspace_id, menu, file=None):  # noqa: E501
     """get_excel_journal
 
     変更履歴のExcelを取得する # noqa: E501
@@ -114,36 +142,50 @@ def get_excel_journal(organization_id, workspace_id, menu):  # noqa: E501
     :type workspace_id: str
     :param menu: メニュー名
     :type menu: str
+    :param file: ファイルデータの形式指定
+    :type file: str
 
-    :rtype: InlineResponse2004
+    :rtype: InlineResponse2007
     """
 
-    # DB接続
-    objdbca = DBConnectWs(workspace_id)  # noqa: F405
+    def main_func(base64_flg):
+        # DB接続
+        objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    try:
-        # メニューの存在確認
-        menu_record = check_menu_info(menu, objdbca)
+        try:
+            # メニューの存在確認
+            menu_record = check_menu_info(menu, objdbca)
 
-        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-        sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
-        # 28 : 作業管理のシートタイプ追加
-        sheet_type_list.append('28')
-        menu_table_link_record = check_sheet_type(menu, sheet_type_list, objdbca)
+            # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+            sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
+            # 28 : 作業管理のシートタイプ追加
+            sheet_type_list.append('28')
+            menu_table_link_record = check_sheet_type(menu, sheet_type_list, objdbca)
 
-        # メニューに対するロール権限をチェック
-        check_auth_menu(menu, objdbca)
+            # メニューに対するロール権限をチェック
+            check_auth_menu(menu, objdbca)
 
-        result_data = menu_excel.collect_excel_journal(objdbca, organization_id, workspace_id, menu, menu_record, menu_table_link_record)
-    except Exception as e:
-        raise e
-    finally:
-        objdbca.db_disconnect()
-    return result_data,
+            result_data = menu_excel.collect_excel_journal(objdbca, organization_id, workspace_id, menu, menu_record, menu_table_link_record, base64_flg=base64_flg)
+        except Exception as e:
+            raise e
+        finally:
+            objdbca.db_disconnect()
+        return result_data,
+
+    # ファイルをバイナリ or Base64で返すか分岐
+    if file == "binary":
+        @api_filter_download_temporary_file
+        def return_filepath():
+            return main_func(False)
+        return return_filepath()
+    else:
+        @api_filter
+        def return_base64():
+            return main_func(True)
+        return return_base64()
 
 
-@api_filter_download_temporary_file
-def post_excel_filter(organization_id, workspace_id, menu, body=None):  # noqa: E501
+def post_excel_filter(organization_id, workspace_id, menu, body=None, file=None):  # noqa: E501
     """post_excel_filter
 
     検索条件を指定し、Excelを取得する # noqa: E501
@@ -156,38 +198,53 @@ def post_excel_filter(organization_id, workspace_id, menu, body=None):  # noqa: 
     :type menu: str
     :param body:
     :type body: dict | bytes
+    :param file: ファイルデータの形式指定
+    :type file: str
 
-    :rtype: InlineResponse2004
+    :rtype: InlineResponse2007
     """
 
-    # DB接続
-    objdbca = DBConnectWs(workspace_id)  # noqa: F405
+    def main_func(base64_flg):
+        # DB接続
+        objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    try:
-        # メニューの存在確認
-        menu_record = check_menu_info(menu, objdbca)
+        try:
+            # メニューの存在確認
+            menu_record = check_menu_info(menu, objdbca)
 
-        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-        sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
-        # 28 : 作業管理のシートタイプ追加
-        sheet_type_list.append('28')
-        menu_table_link_record = check_sheet_type(menu, sheet_type_list, objdbca)
+            # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+            sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
+            # 28 : 作業管理のシートタイプ追加
+            sheet_type_list.append('28')
+            menu_table_link_record = check_sheet_type(menu, sheet_type_list, objdbca)
 
-        # メニューに対するロール権限をチェック
-        check_auth_menu(menu, objdbca)
+            # メニューに対するロール権限をチェック
+            check_auth_menu(menu, objdbca)
 
-        filter_parameter = {}
-        if connexion.request.is_json:
-            body = dict(connexion.request.get_json())
-            filter_parameter = body
+            filter_parameter = {}
+            if connexion.request.is_json:
+                body = dict(connexion.request.get_json())
+                filter_parameter = body
 
-        # メニューのカラム情報を取得
-        result_data = menu_excel.collect_excel_filter(objdbca, organization_id, workspace_id, menu, menu_record, menu_table_link_record, filter_parameter)
-    except Exception as e:
-        raise e
-    finally:
-        objdbca.db_disconnect()
-    return result_data,
+            # メニューのカラム情報を取得
+            result_data = menu_excel.collect_excel_filter(objdbca, organization_id, workspace_id, menu, menu_record, menu_table_link_record, filter_parameter, base64_flg=base64_flg)
+        except Exception as e:
+            raise e
+        finally:
+            objdbca.db_disconnect()
+        return result_data,
+
+    # ファイルをバイナリ or Base64で返すか分岐
+    if file == "binary":
+        @api_filter_download_temporary_file
+        def return_filepath():
+            return main_func(False)
+        return return_filepath()
+    else:
+        @api_filter
+        def return_base64():
+            return main_func(True)
+        return return_base64()
 
 
 @api_filter
@@ -237,7 +294,7 @@ def post_excel_maintenance(organization_id, workspace_id, menu, body=None, **kwa
         check_request_body()
 
         excel_data = {}
-        retBool, excel_data = menu_excel.create_upload_parameters(connexion.request, organization_id, workspace_id)
+        retBool, excel_data, base64_flg = menu_excel.create_upload_parameters(connexion.request, organization_id, workspace_id)
         if retBool is False:
             status_code = "400-00003"
             request_content_type = connexion.request.content_type.lower()
@@ -246,7 +303,7 @@ def post_excel_maintenance(organization_id, workspace_id, menu, body=None, **kwa
             raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
         # メニューのカラム情報を取得
-        result_data = menu_excel.execute_excel_maintenance(objdbca, organization_id, workspace_id, menu, menu_record, excel_data)
+        result_data = menu_excel.execute_excel_maintenance(objdbca, organization_id, workspace_id, menu, menu_record, excel_data, base64_flg=base64_flg)
     except Exception as e:
         raise e
     finally:

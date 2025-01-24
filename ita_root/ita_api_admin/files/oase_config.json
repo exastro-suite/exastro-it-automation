@@ -1,9 +1,9 @@
 {
     "110102":
     [
-        {"New.j2":["/template_file/1/old/1-2/","/template_file/1/"]},
-        {"Known(evaluated).j2":["/template_file/2/old/2-2/","/template_file/2/"]},
-        {"Known(timeout).j2":["/template_file/3/old/3-2/","/template_file/3/"]},
-        {"Undetected.j2":["/template_file/4/old/4-2/","/template_file/4/"]}
+        {"新規.j2":["/template_file/1/old/1/","/template_file/1/"]},
+        {"既知（判定済）.j2":["/template_file/2/old/2/","/template_file/2/"]},
+        {"既知（時間切れ）.j2":["/template_file/3/old/3/","/template_file/3/"]},
+        {"未知.j2":["/template_file/4/old/4/","/template_file/4/"]}
     ]
 }

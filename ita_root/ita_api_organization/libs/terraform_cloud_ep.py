@@ -899,7 +899,7 @@ def get_policy_list(objdbca):
     return return_data
 
 
-def get_policy_file(objdbca, tf_organization_name, policy_name, parameters):
+def get_policy_file(objdbca, tf_organization_name, policy_name, parameters, base64_flg):
     """
         連携先TerraformからPolicyコードを取得する
         ARGS:
@@ -940,14 +940,18 @@ def get_policy_file(objdbca, tf_organization_name, policy_name, parameters):
 
     # ファイルをエンコード
     if responseContents:
-        tmp_uuid = str(uuid.uuid4())
-        tmp_file_dir = f"/tmp/{tmp_uuid}"
-        tmp_file_path = f"{tmp_file_dir}/{file_name}"
-        os.makedirs(tmp_file_dir)
-        with open(tmp_file_path, "w")as f:
-            f.write(responseContents)
+        if base64_flg:
+            file = base64.b64encode(responseContents.encode('utf-8')).decode()
+            return_data = {'file_name': file_name, 'file': file}
+        else:
+            tmp_uuid = str(uuid.uuid4())
+            tmp_file_dir = f"/tmp/{tmp_uuid}"
+            return_data = f"{tmp_file_dir}/{file_name}"
+            os.makedirs(tmp_file_dir)
+            with open(return_data, "w")as f:
+                f.write(responseContents)
 
-    return tmp_file_path
+    return return_data
 
 
 def get_policy_set_list(objdbca):  # noqa: C901

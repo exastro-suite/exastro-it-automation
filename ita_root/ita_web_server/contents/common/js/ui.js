@@ -1427,7 +1427,7 @@ defaultMenu( sheetType, dataType = 'n', fileFlag = true ) {
                         if ( limit && mn.info.menu_info.xls_print_limit < result ) {
                             alert( getMessage.FTE00085( result, limit) );
                         } else {
-                            downloadFile('excel', `/menu/${mn.params.menuNameRest}/excel/`, fileName + 'all.xlsx');
+                            downloadFile('excel', `/menu/${mn.params.menuNameRest}/excel/?file=binary`, fileName + 'all.xlsx');
                         }
                     }).catch(function( error ){
                         fn.gotoErrPage( error.message );
@@ -1444,7 +1444,7 @@ defaultMenu( sheetType, dataType = 'n', fileFlag = true ) {
                     downloadFile('json', `/menu/${mn.params.menuNameRest}/filter/?file=no`, fileName + 'all.json');
                 break;
                 case 'newDwonloadExcel':
-                    downloadFile('excel', `/menu/${mn.params.menuNameRest}/excel/format/`, fileName + 'format.xlsx');
+                    downloadFile('excel', `/menu/${mn.params.menuNameRest}/excel/format/?file=binary`, fileName + 'format.xlsx');
                 break;
                 case 'excelUpload':
                     mn.fileRegister( $button, 'excel');
@@ -1453,7 +1453,7 @@ defaultMenu( sheetType, dataType = 'n', fileFlag = true ) {
                     mn.fileRegister( $button, 'json');
                 break;
                 case 'allHistoryDwonloadExcel':
-                    downloadFile('excel', `/menu/${mn.params.menuNameRest}/excel/journal/`, fileName + 'journal.xlsx');
+                    downloadFile('excel', `/menu/${mn.params.menuNameRest}/excel/journal/?file=binary`, fileName + 'journal.xlsx');
                 break;
             }
         });

@@ -69,6 +69,7 @@ def exception(e):
     # catch - other all error
     t = traceback.format_exc()
     g.applogger.error(arrange_stacktrace_format(t))
+    print_exception_msg(e)
 
 def ky_decrypt(lcstr, input_encrypt_key=None):
     """

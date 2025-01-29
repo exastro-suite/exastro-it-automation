@@ -2868,7 +2868,7 @@ class DefaultVarsFileAnalysis():
 
         return True, ina_vars_chain_list, in_error_code, in_line
 
-    def chkDefVarsListPlayBookGlobalVarsList(self, ina_play_global_vars_list, ina_global_vars_list, in_errmsg):
+    def chkDefVarsListPlayBookGlobalVarsList(self, ina_play_global_vars_list, ina_global_vars_list, ina_global_sensitive_vars_list, in_errmsg):
 
         """
         処理内容
@@ -2879,7 +2879,7 @@ class DefaultVarsFileAnalysis():
           ina_play_global_vars_list:     ロールパッケージ内のPlaybookで定義している変数リスト
                                           [role名][変数名]=0
           ina_global_vars_list:          グローバル変数管理の変数リスト
-
+          ina_global_vars_sensitive_list:          グローバル変数（センシティブ）管理の変数リスト
         戻り値
           true:   正常
           false:  異常
@@ -2893,7 +2893,9 @@ class DefaultVarsFileAnalysis():
 
         for role_name, vars_list in self.php_array(ina_play_global_vars_list):
             for vars_name, dummy in self.php_array(vars_list):
-                if vars_name not in ina_global_vars_list:
+                if vars_name in ina_global_vars_list or vars_name in ina_global_sensitive_vars_list:
+                    pass
+                else:
                     in_errmsg = '%s\n%s' % (in_errmsg, g.appmsg.get_api_message("MSG-10465", [role_name, vars_name]))
                     ret_code = False
 

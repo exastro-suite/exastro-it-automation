@@ -1796,7 +1796,7 @@ class loadTable():
                         if jsonkey in json_cols_base_key:
                             objcolumn = self.get_columnclass(jsonkey)
                             # ID → VALUE 変換処理不要ならVALUE変更無し
-                            if self.get_col_class_name(jsonkey) in ['PasswordColumn']:
+                            if self.get_col_class_name(jsonkey) in ['PasswordColumn', 'MultiPasswordColumn']:
                                 # 内部処理用
                                 if mode in ['input', 'export', 'export_jnl']:
                                     if jsonval is not None:
@@ -1875,7 +1875,7 @@ class loadTable():
                     objcolumn = self.get_columnclass(rest_key)
 
                     # ID → VALUE 変換処理不要ならVALUE変更無し
-                    if self.get_col_class_name(rest_key) in ['PasswordColumn']:
+                    if self.get_col_class_name(rest_key) in ['PasswordColumn', 'MultiPasswordColumn']:
                         # 内部処理用
                         if mode in ['input', 'export', 'export_jnl']:
                             if col_val is not None:
@@ -2922,7 +2922,7 @@ class bulkLoadTable(loadTable):
                         if jsonkey in json_cols_base_key:
                             objcolumn = self.get_columnclass(jsonkey)
                             # 値の複合化
-                            if self.get_col_class_name(jsonkey) in ['PasswordColumn', 'SensitiveSingleTextColumn', 'SensitiveMultiTextColumn']:
+                            if self.get_col_class_name(jsonkey) in ['PasswordColumn', 'MultiPasswordColumn', 'SensitiveSingleTextColumn', 'SensitiveMultiTextColumn']:
                                 jsonval = util.ky_decrypt(jsonval) if jsonval is not None else None
                             rest_parameter[jsonkey] = jsonval
                             # ファイル
@@ -2940,7 +2940,7 @@ class bulkLoadTable(loadTable):
                     objcolumn = self.get_columnclass(rest_key)
 
                     # 値の複合化
-                    if self.get_col_class_name(rest_key) in ['PasswordColumn', 'SensitiveSingleTextColumn', 'SensitiveMultiTextColumn']:
+                    if self.get_col_class_name(rest_key) in ['PasswordColumn', 'MultiPasswordColumn', 'SensitiveSingleTextColumn', 'SensitiveMultiTextColumn']:
                         col_val = util.ky_decrypt(col_val) if col_val is not None else None
                     rest_parameter.setdefault(rest_key, col_val)
 

@@ -99,8 +99,8 @@ constructor( tableId, mode, info, params, option = {}) {
 }
 /*
 ##################################################
-   Work check
-   > 非同期イベントの状態
+    Work check
+    > 非同期イベントの状態
 ##################################################
 */
 workStart( type, time = 50 ) {
@@ -145,7 +145,7 @@ get checkWork() {
 }
 /*
 ##################################################
-   Table構造データ
+    Table構造データ
 ##################################################
 */
 tableStructuralData() {
@@ -203,8 +203,8 @@ tableStructuralData() {
 }
 /*
 ##################################################
-   Header hierarchy
-   > ヘッダー階層データと列データをセット
+    Header hierarchy
+    > ヘッダー階層データと列データをセット
 ##################################################
 */
 setHeaderHierarchy() {
@@ -214,11 +214,11 @@ setHeaderHierarchy() {
     tb.tableStructuralData();
 
     // 特殊列
-    const specialHeadColumn = [ tb.idNameRest, 'discard'],
-          specialFootColumn = ['last_update_date_time', 'last_updated_user'],
-          specialHeadColumnKeys = [],
-          specialFootColumnKeys = [],
-          fileColumns = ['FileUploadColumn'];
+    const specialHeadColumn = [ tb.idNameRest, 'discard'];
+    const specialFootColumn = ['last_update_date_time', 'last_updated_user'];
+    const specialHeadColumnKeys = [];
+    const specialFootColumnKeys = [];
+    const fileColumns = ['FileUploadColumn'];
 
     tb.data.hierarchy = [];
     tb.data.columnKeys = [];
@@ -262,13 +262,6 @@ setHeaderHierarchy() {
     };
     hierarchy( tb.structural.menu_info, 0 );
 
-    // 固定列用情報
-    tb.data.sticky = {};
-    tb.data.sticky.leftLast = specialHeadColumn[0];
-    tb.data.sticky.rightFirst = specialFootColumn[0];
-    tb.data.sticky.commonFirst = restOrder[0];
-    tb.data.sticky.commonLast = restOrder[ restOrder.length - 1 ];
-
     // 特殊列を先頭に追加
     for ( const columnKey of specialHeadColumnKeys ) {
         if ( columnKey ) {
@@ -283,10 +276,33 @@ setHeaderHierarchy() {
             tb.data.columnKeys.push( columnKey );
         }
     }
+    // カラムキーリストからカラム名リストの作成
+    tb.data.columnNames = [];
+    for ( const key of tb.data.columnKeys ) {
+        tb.data.columnNames.push( tb.columnKeyToRestName( key ) );
+    }
+    tb.data.stickyColumnNames = [];
+    // 固定化するカラム名リストの作成
+    for ( const name of tb.data.columnNames ) {
+        if ( this.sticky.indexOf( name ) !== -1 ) {
+            tb.data.stickyColumnNames.push( name );
+        }
+    }
 }
 /*
 ##################################################
-   Main html
+    カラムキーからカラム名（REST）を返す
+##################################################
+*/
+columnKeyToRestName( columnKey ) {
+    for ( const key in this.info.column_info ) {
+        if ( key === columnKey ) return this.info.column_info[ key ].column_name_rest;
+    }
+    return null;
+}
+/*
+##################################################
+    Main html
 ##################################################
 */
 mainHtml() {
@@ -342,7 +358,7 @@ mainHtml() {
 }
 /*
 ##################################################
-   Setup
+    Setup
 ##################################################
 */
 setup() {
@@ -372,8 +388,9 @@ setup() {
     tb.idNameRest = tb.info.menu_info.pk_column_name_rest;
 
     // テーブルデータ
-    tb.data = {};
-    tb.data.count = 0;
+    tb.data = {
+        count: 0
+    };
 
     // 複製用ファイル
     tb.data.tempFile = {};
@@ -387,6 +404,9 @@ setup() {
         tb.tableMode = 'input';
     }
 
+    // 初期値
+    tb.setInitStickyColumn();
+
     // テーブル設定
     tb.initTableSettingValue();
     tb.setTableSettingValue();
@@ -395,8 +415,7 @@ setup() {
     tb.setHeaderHierarchy();
 
     // Worker
-    tb.worker = new Worker(`${tb.params.dir}/js/table_worker.js`);
-    tb.setWorkerEvent();
+    tb.setupWorker();
 
     // ページング
     tb.paging = {};
@@ -475,6 +494,26 @@ setup() {
     tb.setTable( tb.mode );
 
     return tb.$.container;
+}
+/*
+##################################################
+    Worker Setup
+##################################################
+*/
+setupWorker() {
+    this.worker = new Worker(`${this.params.dir}/js/table_worker.js`);
+    this.setWorkerEvent();
+}
+/*
+##################################################
+    Init Sticky Column
+##################################################
+*/
+setInitStickyColumn() {
+    this.sticky = [
+        'discard', // 廃止
+        this.idNameRest // UUID
+    ];
 }
 /*
 ##################################################
@@ -838,8 +877,8 @@ setTable( mode ) {
             const menuList = {
                 Main: [
                     { input: { className: 'tableHistoryId', type: 'tableInputHistoryId', before: tb.idName }},
-                    { button: { type: 'tableShowHistory', icon: 'clock', text: getMessage.FTE00027, action: 'default', disabled: true, minWidth: '200px'}},
-                    { button: { type: 'tableResetHistory', icon: 'clear', text: getMessage.FTE00028, action: 'normal', disabled: true, minWidth: '200px'}}
+                    { button: { type: 'tableShowHistory', icon: 'clock', text: getMessage.FTE00027, action: 'default', disabled: true, minWidth: '160px'}},
+                    { button: { type: 'tableResetHistory', icon: 'clear', text: getMessage.FTE00028, action: 'normal', disabled: true, minWidth: '160px'}}
                 ]
             };
             tb.$.header.html( fn.html.operationMenu( menuList ) );
@@ -852,15 +891,16 @@ setTable( mode ) {
             tb.$.message.html( historyMessage );
 
             // メニューボタン
-            const $show = tb.$.header.find('.itaButton[data-type="tableShowHistory"]'),
-                  $reset = tb.$.header.find('.itaButton[data-type="tableResetHistory"]'),
-                  $input = tb.$.header.find('.tableHistoryId');
+            const $show = tb.$.header.find('.itaButton[data-type="tableShowHistory"]');
+            const $reset = tb.$.header.find('.itaButton[data-type="tableResetHistory"]');
+            const $input = tb.$.header.find('.tableHistoryId');
 
             $show.on('click', function(){
                 const uuid = $input.val();
                 tb.workStart('filter');
                 tb.workerPost('history', uuid );
                 $reset.prop('disabled', false );
+                $maintenance.prop('disabled', false );
             });
 
             // 履歴リセット
@@ -873,6 +913,7 @@ setTable( mode ) {
                 $input.val('').trigger('input');
                 $reset.prop('disabled', true );
                 $show.prop('disabled', true );
+                $maintenance.prop('disabled', true );
             });
 
             $input.on('input', function(){
@@ -1031,8 +1072,8 @@ theadHtml( filterFlag = true, filterHeaderFlag = true ) {
                 }
                 // 廃止、ID列を固定
                 if ( filterHeaderFlag ) {
-                    if ( i === 0 && tb.mode !== 'history') {
-                        if ( [ tb.idNameRest, 'discard'].indexOf( column.column_name_rest ) !== -1 ) {
+                    if ( tb.mode !== 'history') {
+                        if ( tb.sticky.indexOf( column.column_name_rest ) !== -1 ) {
                             className.push('tHeadLeftSticky');
                         }
                     }
@@ -3273,8 +3314,9 @@ setWorkerEvent() {
             break;
             case 'error':
                 tb.workEnd();
-                alert( message.data.result.message );
-                location.replace('system_error/');
+                const errorMessage = ( message.data.result && message.data.result.message )? message.data.result.message: 'System Error.';
+                console.error( errorMessage );
+                fn.gotoErrPage( errorMessage );
             break;
             default:
                 tb.data.body =  message.data.result;
@@ -3687,7 +3729,7 @@ cellHtml( item, columnKey, journal ) {
     let cellClass = 'tBodyTd',
         cellType = 'td';
     if ( tb.mode !== 'history') {
-        if ( [ tb.idNameRest, 'discard'].indexOf( columnName ) !== -1 ) {
+        if ( tb.sticky.indexOf( columnName ) !== -1 ) {
             className.push('tBodyLeftSticky');
             cellType = 'th';
             cellClass = 'tBodyTh';
@@ -3816,7 +3858,7 @@ viewCellHtml( item, columnKey, journal ) {
         case 'FileUploadEncryptColumn': case 'JsonIDColumn':
         case 'UserIDColumn': case 'NotificationIDColumn':
         case 'FilterConditionSettingColumn': case 'ConclusionEventSettingColumn':
-        case 'ExecutionEnvironmentDefinitionIDColumn':
+        case 'ExecutionEnvironmentDefinitionIDColumn': case 'MultiSelectIDColumn':
             return checkJournal( value );
 
         // リンク
@@ -4043,15 +4085,16 @@ editCellHtml( item, columnKey ) {
     parameter = item.parameter,
     file = item.file;
 
-    const rowId = parameter[ tb.idNameRest ],
-          columnInfo = tb.info.column_info[ columnKey ],
-          columnName = fn.escape( columnInfo.column_name_rest ),
-          columnType = fn.escape( columnInfo.column_type ),
-          inputClassName = [],
-          inputRequired = fn.cv( columnInfo.required_item, '0'),
-          autoInput = '<span class="tBodyAutoInput"></span>',
-          inputItem = columnInfo.input_item,
-          name = `${columnName}_${columnType}_${rowId}`;
+    const
+    rowId = parameter[ tb.idNameRest ],
+    columnInfo = tb.info.column_info[ columnKey ],
+    columnName = fn.escape( columnInfo.column_name_rest ),
+    columnType = fn.escape( columnInfo.column_type ),
+    inputClassName = [],
+    inputRequired = fn.cv( columnInfo.required_item, '0'),
+    autoInput = '<span class="tBodyAutoInput"></span>',
+    inputItem = columnInfo.input_item,
+    name = `${columnName}_${columnType}_${rowId}`;
 
     const setValue = function( v ) {
         switch ( columnType ) {
@@ -4170,7 +4213,7 @@ editCellHtml( item, columnKey ) {
 
     switch ( columnType ) {
         // JsonColumn
-        case 'JsonColumn':
+        case 'JsonColumn': case 'MultiSelectIDColumn':
             if ( fn.typeof( value ) === 'object' || fn.typeof( value ) === 'array') {
                 value = fn.escape( fn.jsonStringify( value ) );
             } else {
@@ -4244,7 +4287,7 @@ editCellHtml( item, columnKey ) {
                 deleteFlag = ( inputData && inputData.after.parameter[ columnName ] === null )? true: false;
             inputClassName.push('tableEditInputText');
 
-            return fn.html.inputPassword( inputClassName, value, name, attr, { widthAdjustment: true, deleteToggle: deleteToggleFlag, deleteFlag: deleteFlag });
+            return fn.html.inputPassword( inputClassName, value, name, attr, { widthAdjustment: true, deleteToggle: deleteToggleFlag, deleteFlag: deleteFlag, textarea: true });
         }
 
         // ファイルアップロード
@@ -6330,6 +6373,7 @@ scheduleSettingData() {
     return {
         input: ['start_date', 'end_date', 'period', 'interval', 'week_number', 'day_of_week', 'day', 'time', 'execution_stop_start_date', 'execution_stop_end_date', 'remarks'],
         period: {
+            period_0: getMessage.FTE00141,
             period_1: getMessage.FTE00126,
             period_2: getMessage.FTE00127,
             period_3: getMessage.FTE00128,
@@ -6338,6 +6382,7 @@ scheduleSettingData() {
             period_6: getMessage.FTE00131,
         },
         schedule: {
+            scheduleIntervalMinutesInput: [ getMessage.FTE00132, 1, 1439, getMessage.FTE00141, 1, 'period_0', 'interval'],
             scheduleIntervalHourInput: [ getMessage.FTE00132, 1, 99, getMessage.FTE00133, 1, 'period_1', 'interval'],
             scheduleIntervalDayInput: [ getMessage.FTE00132, 1, 99, getMessage.FTE00134, 1, 'period_2', 'interval'],
             scheduleIntervalWeekInput: [ getMessage.FTE00132,  1, 99, getMessage.FTE00135, 1, 'period_3', 'interval'],
@@ -6396,26 +6441,39 @@ scheduleSettingOpen( itemId, buttonText ) {
         // 初期値を取得
         const initScheduleValue = {};
         for ( const key of data.input ) {
-            const $target = tb.$.tbody.find(`.tableEditInputHidden[data-id="${itemId}"][data-key="${key}"]`),
-                  value = $target.val();
+            const $target = tb.$.tbody.find(`.tableEditInputHidden[data-id="${itemId}"][data-key="${key}"]`);
+            const value = $target.val();
             initScheduleValue[ key ] = value;
         }
 
         // モーダルで設定したスケジュールをセットする
         const setSchedule = function() {
             for ( const key of data.input ) {
-                const $target = tb.$.tbody.find(`.tableEditInputHidden[data-id="${itemId}"][data-key="${key}"]`),
-                      before = $target.val();
+                const $target = tb.$.tbody.find(`.tableEditInputHidden[data-id="${itemId}"][data-key="${key}"]`);
+                const before = $target.val();
 
                 let after = '';
                 if ( key === 'period') {
                     after = $mbody.find(`.schedulePeriodType:checked`).val();
                 } else if ( key === 'time') {
-                    const h = $mbody.find(`.input[data-key="${key}"]:visible`).val(),
-                          m = $mbody.find(`.input[data-key="${key}_minutes"]:visible`).val(),
-                          s = $mbody.find(`.input[data-key="${key}_seconds"]:visible`).val();
+                    const h = $mbody.find(`.input[data-key="${key}"]:visible`).val();
+                    const m = $mbody.find(`.input[data-key="${key}_minutes"]:visible`).val();
+                    const s = $mbody.find(`.input[data-key="${key}_seconds"]:visible`).val();
                     if ( h && m && s ) {
                         after = `${fn.zeroPadding(h,2)}:${fn.zeroPadding(m,2)}:${fn.zeroPadding(s,2)}`;
+                    }
+                } else if ( key === 'day_of_week') {
+                    const $target = $mbody.find(`.input[data-key="${key}"]:visible`);
+                    const values = [];
+                    if ( $target.length && $target.is('.scheduleWeekCheckbox') ) {
+                        $target.filter(':checked').each(function(){
+                            values.push( $( this ).val() );
+                        });
+                    } else if ( $target.length ) {
+                        values.push( $target.val() );
+                    }
+                    if ( values.length ) {
+                        after = fn.jsonStringify( values );
                     }
                 } else {
                     after = $mbody.find(`.input[data-key="${key}"]:visible`).val();
@@ -6428,14 +6486,34 @@ scheduleSettingOpen( itemId, buttonText ) {
         };
 
         // 曜日選択
-        const weekSelect = function( type, key ) {
-            const week = ( type === 'num')? getMessage.FTE00124: getMessage.FTE00125,
-                  weekHtml = [];
+        const weekSelect = function() {
+            const key = 'day_of_week';
+            const week = getMessage.FTE00125;
+            const weekLength = week.length;
+            const weekHtml = [];
+            const initValues = fn.jsonParse( initScheduleValue[ key ], 'array');
+            for ( let i = 0; i < weekLength; i++ ) {
+                const val = week[i];
+                const attr = {
+                    key: key
+                };
+                if ( initValues.indexOf( val ) !== -1 ) attr.checked = 'checked';
+                weekHtml.push( fn.html.checkboxText('scheduleWeekCheckbox input', val, `${tb.id}_scheduleWeekCheckbox`, `${tb.id}_scheduleWeekCheckbox_${i}`, attr, val ) );
+            }
+            return `<div class="scheduleWeekCheckboxWrap">${weekHtml.join('')}</div>`;
+        };
+
+        // 週選択
+        const monthWeekSelect = function( type, key ) {
+            const week = ( type === 'num')? getMessage.FTE00124: getMessage.FTE00125;
+            const weekHtml = [];
+            const initValues = ( type === 'num')? [ initScheduleValue[ key ] ]: fn.jsonParse( initScheduleValue[ key ], 'array');
+            const initValue = initValues[0];
             for ( const val of week ) {
-                if ( val === initScheduleValue[ key ] ) {
-                    weekHtml.push(`<option value="${val}" selected>${val}</option>`)
+                if ( initValue === val ) {
+                    weekHtml.push(`<option value="${val}" selected>${val}</option>`);
                 } else {
-                    weekHtml.push(`<option value="${val}">${val}</option>`)
+                    weekHtml.push(`<option value="${val}">${val}</option>`);
                 }
             }
             return `<select class="scheduleSelect input" data-key="${key}">${weekHtml.join('')}</select>`;
@@ -6445,9 +6523,9 @@ scheduleSettingOpen( itemId, buttonText ) {
         const schedulePeriodItemHtml = function( type, item ) {
             switch( type ) {
                 case 'scheduleDayWeekInput':
-                    return weekSelect('day', 'day_of_week');
+                    return weekSelect();
                 case 'scheduleMonthDayWeekInput':
-                    return weekSelect('num', 'week_number') + '&nbsp;' +  weekSelect('day', 'day_of_week');
+                    return monthWeekSelect('num', 'week_number') + '&nbsp;' +  monthWeekSelect('day', 'day_of_week');
                 default:
                     return fn.html.inputFader('schedulePeriodInput', item[4], item[1], { min: item[1], max: item[2], key: item[6] }, { after: item[3] });
             }
@@ -6467,8 +6545,8 @@ scheduleSettingOpen( itemId, buttonText ) {
                     attr.checked = 'checked';
                     selectPeriod = key;
                 }
-                const id = itemId + '_schedulePeriodType',
-                      html = `<li class="commonRadioItem schedulePeriodRadioItem">`
+                const id = itemId + '_schedulePeriodType';
+                const html = `<li class="commonRadioItem schedulePeriodRadioItem">`
                     + fn.html.radioText('schedulePeriodType', data.period[key], id, id + key, attr, data.period[key] )
                 + `</li>`;
                 list.push( html );
@@ -6549,6 +6627,9 @@ scheduleSettingOpen( itemId, buttonText ) {
                             + `</ul>`
                             + `<table class="commonInputTable" data-type="${selectPeriod}">`
                                 + `<tbody class="commonInputTbody">`
+                                    + `<tr class="commonInputTr schedulePeriodDetailTr period_3">`
+                                        + `<th class="commonInputTh" colspan="2"><p class="commonParagraph">${getMessage.FTE00187}</p></th>`
+                                    + `</tr>`
                                     + feaderList()
                                 + `</tbody>`
                             + `</table>`

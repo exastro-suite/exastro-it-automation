@@ -222,6 +222,7 @@ export function messageid_en() {
         'FTE00184' : "Editing reflected",
         'FTE00185' : "Download",
         'FTE00186' : function( statusCode ){return `An error occurred while registering the data. (${statusCode})`},
+        'FTE00187' : 'Regular execution of weekly tasks assumes Sunday as the start of the week. Recurrence schedules are calculated based on settings.',
 
         // Create parameter sheet
         'FTE01001' : "Item",

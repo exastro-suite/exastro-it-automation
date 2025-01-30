@@ -4287,7 +4287,7 @@ editCellHtml( item, columnKey ) {
                 deleteFlag = ( inputData && inputData.after.parameter[ columnName ] === null )? true: false;
             inputClassName.push('tableEditInputText');
 
-            return fn.html.inputPassword( inputClassName, value, name, attr, { widthAdjustment: true, deleteToggle: deleteToggleFlag, deleteFlag: deleteFlag, textarea: true });
+            return fn.html.inputPassword( inputClassName, value, name, attr, { widthAdjustment: true, deleteToggle: deleteToggleFlag, deleteFlag: deleteFlag });
         }
 
         // ファイルアップロード

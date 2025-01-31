@@ -425,6 +425,27 @@ class DBConnectCommon:
 
         return data_list if is_last_res is True else is_last_res
 
+    def table_permanent_delete(self, table_name, where_str="", bind_value_list=[], is_delete_history=False):
+        """
+        delete permanently from table
+
+        Arguments:
+            table_name: table name
+            where_str: sql statement of WHERE sentence ex."WHERE name = %s and number = %s"
+            bind_value_list: value list ex.["hoge taro", 5]
+            is_delete_history: whether delete jnl table or not
+        Returns:
+
+        """
+        where_str = " {}".format(where_str) if where_str else ""
+        sql = "DELETE FROM `{}`{}".format(table_name, where_str)
+        ret = self.sql_execute(sql, bind_value_list)
+
+        if is_delete_history is True:
+            history_table_name = table_name + "_JNL"
+            sql = "DELETE FROM `{}`{}".format(history_table_name, where_str)
+            ret = self.sql_execute(sql, bind_value_list)
+
     def table_lock(self, table_name_list=[]):
         """
         lock table of table-list-table

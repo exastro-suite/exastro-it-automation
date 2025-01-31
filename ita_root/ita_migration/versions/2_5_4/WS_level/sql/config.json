@@ -1,3 +1,5 @@
 [
-    ["oase.sql", ""]
+    ["oase.sql", ""],
+    ["", "ansible_master.sql"],
+    ["", "conductor_master.sql"]
 ]

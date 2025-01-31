@@ -62,19 +62,15 @@ def main(work_dir_path, ws_db):
 
         # 削除対象のデータがあるか
         ret = ws_db.table_count(oaseConst.T_OASE_EVENT_COLLECTION_PROGRESS, "WHERE `FETCHED_TIME` <= %s and `EVENT_COLLECTION_ID` != %s and `EVENT_COLLECTION_SETTINGS_ID` = %s", [fetched_time_limit, event_collection_id, event_collection_settings_id])  # noqa: F841
-
-        g.applogger.info(f"{event_collection_id=}")
-        g.applogger.info(f"{event_collection_settings_id=}")
-        g.applogger.info(f"{ret=}")
+        # g.applogger.info(f"{event_collection_id=}")
+        # g.applogger.info(f"{event_collection_settings_id=}")
+        # g.applogger.info(f"{ret=}")
 
         # 削除
         if ret > 0:
-            pass
-            # ws_db.db_transaction_start()
-            # ret = ws_db.table_permanent_delete(oaseConst.T_OASE_EVENT_COLLECTION_PROGRESS, "WHERE `FETCHED_TIME` <= %s and 'EVENT_COLLECTION_ID' != %s and `EVENT_COLLECTION_SETTINGS_ID` = %s", [fetched_time_limit, event_collection_id, event_collection_settings_id])  # noqa: F841
-            # ws_db.db_transaction_end(True)
+            ws_db.db_transaction_start()
+            ret = ws_db.table_permanent_delete(oaseConst.T_OASE_EVENT_COLLECTION_PROGRESS, "WHERE `FETCHED_TIME` <= %s and `EVENT_COLLECTION_ID` != %s and `EVENT_COLLECTION_SETTINGS_ID` = %s", [fetched_time_limit, event_collection_id, event_collection_settings_id])  # noqa: F841
+            ws_db.db_transaction_end(True)
 
     g.applogger.info("[Trace][end] bug fix issue2685")
     return 0
-
-

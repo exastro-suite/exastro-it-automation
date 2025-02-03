@@ -92,7 +92,7 @@ class CollectionBase():
                     result.update(self._create_separated_supported_search_value(rest_key_name, type, value, event_data_dict))
 
                 else:
-                    # 通常の流れで処理できる場合の分岐
+                # 通常の流れで処理できる場合の分岐
                     collection_item_name = self._convert_parameter_item_name_to_collection_item_name(rest_key_name, value)
 
                     # 1つの条件で複数のカラムに条件指定が必要な場合を考慮してループで処理する。
@@ -205,7 +205,7 @@ class CollectionBase():
         """
         個別に処理が必要な検索値生成処理を定義するためのメソッド
         必要に応じてオーバーライドして各検索値を生成する処理を実装すること。
-        また項目を追加する場合は「_create_separated_supported_search_value」に同様の判定を追加すること
+        また項目を追加する場合は「_is_separated_supported_item」に同様の判定を追加すること
         Args:
             rest_key_name: パラメータ名
             type: パラメータのタイプ（NORMAL, LIST, RANGE）

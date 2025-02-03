@@ -846,29 +846,29 @@ def collect_search_candidates_from_mongodb(wsMongo: MONGOConnectWs, column, menu
 
     # filter向けに用意した処理を流用し、python側で絞り込んだ方が実装工数が短くなるため一旦この実装とする。
     # MongoDBから扱わない項目も取得しているため、その分のコストが重い場合は専用の実装を検討する。
-    tmp_result = (wsMongo.collection(mondodb_collection_name)
-                  .find()
-                  .sort(sort_key))
+    tmp_result = wsMongo.collection(mondodb_collection_name).find().sort(sort_key)
     result_list = collection.create_result(tmp_result, objdbca)
+    tmp_result = None  # 初期化
 
     search_candidates = []
     for item in result_list:
         if column in item["parameter"]:
             search_candidates.append(item["parameter"][column])
+    result_list = None  # 初期化
 
     # 重複を排除したリストを作成
     # 値がobjectの可能性もあるため詰めなおす方式で実装
     result = []
-    for item in search_candidates:
-        # jsonに変換を試みて変換できなければそのまま、変換できればlist or dictとして処理する
-        def is_json(item):
-            try:
-                json.loads(item)
-            except ValueError:
-                return False
-            else:
-                return True
+    # jsonに変換を試みて変換できなければそのまま、変換できればlist or dictとして処理する
+    def is_json(item):
+        try:
+            json.loads(item)
+        except ValueError:
+            return False
+        else:
+            return True
 
+    for item in search_candidates:
         if item is None:
             continue
 
@@ -894,6 +894,7 @@ def collect_search_candidates_from_mongodb(wsMongo: MONGOConnectWs, column, menu
         else:
             if item not in result:
                 result.append(item)
+    search_candidates = None  # 初期化
 
     return sorted(result)
 

@@ -257,11 +257,11 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
         fetched_time_limit = int(datetime.datetime.now().timestamp()) - event_collections_progress_ttl
 
         values_list = [fetched_time_limit] + event_collection_settings_id_list
-        ret = wsDb.table_count(oaseConst.T_OASE_EVENT_COLLECTION_PROGRESS, "WHERE `FETCHED_TIME` <= %s and `EVENT_COLLECTION_SETTINGS_ID` in ({})".format(','.join(["%s"]*len(event_collection_settings_id_list))), values_list)  # noqa: F841
+        ret = wsDb.table_count(oaseConst.T_OASE_EVENT_COLLECTION_PROGRESS, "WHERE `FETCHED_TIME` < %s and `EVENT_COLLECTION_SETTINGS_ID` in ({})".format(','.join(["%s"]*len(event_collection_settings_id_list))), values_list)  # noqa: F841
 
         if ret > 0:
             wsDb.db_transaction_start()
-            ret = wsDb.table_permanent_delete(oaseConst.T_OASE_EVENT_COLLECTION_PROGRESS, "WHERE `FETCHED_TIME` <= %s and `EVENT_COLLECTION_SETTINGS_ID` in ({})".format(','.join(["%s"]*len(event_collection_settings_id_list))), values_list)  # noqa: F841
+            ret = wsDb.table_permanent_delete(oaseConst.T_OASE_EVENT_COLLECTION_PROGRESS, "WHERE `FETCHED_TIME` < %s and `EVENT_COLLECTION_SETTINGS_ID` in ({})".format(','.join(["%s"]*len(event_collection_settings_id_list))), values_list)  # noqa: F841
             wsDb.db_transaction_end(True)
 
     finally:

@@ -12,12 +12,14 @@
 # limitations under the License.
 #
 
+from flask import g
+
 import datetime
 import json
-from flask import g
 import re
 from bson.objectid import ObjectId
 
+from common_libs.common.util import print_exception_msg
 from common_libs.common.exception import AppException
 from common_libs.common.mongoconnect.collection_base import CollectionBase
 from common_libs.oase.const import oaseConst
@@ -35,8 +37,6 @@ class LabeledEventCollection(CollectionBase):
         "_exastro_fetched_time",
         "_exastro_end_time"
     ]
-
-    LABELS_PARAMETER = None
 
     def _is_separated_supported_item(self, rest_key_name, type):
         # _exastro_event_statusにLISTが指定された場合$orを使用する必要があるため個別対応とした
@@ -251,7 +251,6 @@ class LabeledEventCollection(CollectionBase):
         if rest_key_name == "_exastro_event_status" and type == "LIST":
             tmp_list: list = value
             if len(tmp_list) == 1:
-
                 return self.__create_exastro_event_status_search_value(tmp_list[0], event_data_dict)
 
             elif len(tmp_list) > 1:
@@ -265,9 +264,50 @@ class LabeledEventCollection(CollectionBase):
                 return {}
 
         if rest_key_name == "labels":
-            # labelsのフィルタリングは_format_result_valueで行うため、ここではフィールドへ値の退避のみ行う。
-            self.LABELS_PARAMETER = {type: value}
-            return {}
+            def make_search_json_format(val):
+            # 検索文字列をjsonフォーマットにしてmongoで検索できるようにする
+                # 入力例： "key1":"1", "key2":"1"
+                #   -> {}で囲んでjson変換
+                f_value = "{" + val + "}"
+                try:
+                    json_value = json.loads(f_value)
+                except Exception:
+                    if val[-1] == ":":
+                    # 入力例： key:
+                        key_name = val[:-1]
+                        return {"labels.{}".format(key_name): {"$regex": ".*"}}
+                    elif ":" not in val:
+                    # 入力例： key
+                        key_name = val
+                        return {"labels.{}".format(key_name): {"$regex": ".*"}}
+                    else:
+                    # 入力例： {"key1":"1", "key2":"1"}
+                    #   -> そのままjson変換
+                        try:
+                            json_value = json.loads(val)
+                        except Exception as e:
+                            print_exception_msg(e)
+                            return {"labels": val}
+
+                ret = {}
+                for k, val in json_value.items():
+                    ret["labels.{}".format(k)] = val
+                return ret
+
+            if type == "NORMAL":
+                return make_search_json_format(value)
+            elif type == "LIST":
+                # or検索
+                tmp_list: list = value
+                if len(tmp_list) == 1:
+                    return make_search_json_format(value[0])
+
+                elif len(tmp_list) > 1:
+                    result_list = []
+                    for item in tmp_list:
+                        result_list.append(make_search_json_format(item))
+
+                    return {"$or": result_list}
 
         return {rest_key_name: value}
 
@@ -383,22 +423,5 @@ class LabeledEventCollection(CollectionBase):
 
             # 画面返却時、配列やobjectは扱えないため文字列に変更する。
             format_item["_exastro_events"] = json.dumps(format_item["_exastro_events"], ensure_ascii=False)
-
-        # LABELS_PARAMETERがNoneではない場合、labelsに対する条件が指定されているため確認を行う。
-        # labelsの検索の要件をMongoDBの検索時に満たそうとするとサブドキュメントに対してあいまい検索が必要となる。
-        # しかし、確認した限りだと文字列型以外にあいまい検索は不可のためpython側での対応とした
-        if self.LABELS_PARAMETER is not None:
-            tmp_str = str(format_item["labels"])
-            for type, value in self.LABELS_PARAMETER.items():
-                if type == "NORMAL":
-                    value = [value]
-
-                for item in value:
-                    if item in tmp_str:
-                        return format_item
-
-            # ここまで処理が流れた場合、labelsが条件を満たす内容ではないためNoneを返却する
-            # Noneを返却 = 画面に返却しないデータとして処理する
-            return None
 
         return format_item

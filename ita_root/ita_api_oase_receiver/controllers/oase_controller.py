@@ -14,7 +14,6 @@
 
 from flask import g
 
-import json
 import datetime
 
 from common_libs.common import *  # noqa: F403
@@ -245,8 +244,25 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
 
         # MySQLにイベント収集設定IDとfetched_timeを保存する処理を行う
         wsDb.db_transaction_start()
-        ret = wsDb.table_insert(oaseConst.T_OASE_EVENT_COLLECTION_PROGRESS, collection_group_list, "EVENT_COLLECTION_ID", True)  # noqa: F841
+        insert_data_list = wsDb.table_insert(oaseConst.T_OASE_EVENT_COLLECTION_PROGRESS, collection_group_list, "EVENT_COLLECTION_ID", False)  # noqa: F841
         wsDb.db_transaction_end(True)
+
+        # T_OASE_EVENT_COLLECTION_PROGRESSにinsertしたデータのEVENT_COLLECTION_SETTINGS_IDを抽出
+        event_collection_settings_id_list = []
+        event_collection_settings_id_list = [insert_data['EVENT_COLLECTION_SETTINGS_ID'] for insert_data in insert_data_list if insert_data['EVENT_COLLECTION_SETTINGS_ID'] not in event_collection_settings_id_list]
+
+        # T_OASE_EVENT_COLLECTION_PROGRESSの古いデータを削除
+        # 挿入したデータのEVENT_COLLECTION_SETTINGS_IDの中で、指定の期間を過ぎたものを抽出し、あれば削除
+        event_collections_progress_ttl = int(float(os.getenv("EVENT_COLLECTION_PROGRESS_TTL", 72)) * 60 * 60)
+        fetched_time_limit = int(datetime.datetime.now().timestamp()) - event_collections_progress_ttl
+
+        values_list = [fetched_time_limit] + event_collection_settings_id_list
+        ret = wsDb.table_count(oaseConst.T_OASE_EVENT_COLLECTION_PROGRESS, "WHERE `FETCHED_TIME` < %s and `EVENT_COLLECTION_SETTINGS_ID` in ({})".format(','.join(["%s"]*len(event_collection_settings_id_list))), values_list)  # noqa: F841
+
+        if ret > 0:
+            wsDb.db_transaction_start()
+            ret = wsDb.table_permanent_delete(oaseConst.T_OASE_EVENT_COLLECTION_PROGRESS, "WHERE `FETCHED_TIME` < %s and `EVENT_COLLECTION_SETTINGS_ID` in ({})".format(','.join(["%s"]*len(event_collection_settings_id_list))), values_list)  # noqa: F841
+            wsDb.db_transaction_end(True)
 
     finally:
         wsDb.db_transaction_end(False)

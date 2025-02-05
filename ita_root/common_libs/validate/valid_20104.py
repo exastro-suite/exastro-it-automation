@@ -36,7 +36,7 @@ def external_valid_menu_before(objdbca, objtable, option):
 
     # entry_parameterはUI入力ベースの情報
     # current_parameterはDBに登録済みの情報
-
+    global_variable_name = None
     if option["cmd_type"] == "Register" or option["cmd_type"] == "Update":
         global_variable_name =  option["entry_parameter"]["parameter"]["global_variable_name"]\
             if "global_variable_name" in option["entry_parameter"]["parameter"] else None

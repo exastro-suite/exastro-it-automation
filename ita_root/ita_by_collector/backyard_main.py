@@ -583,7 +583,7 @@ def backyard_main(organization_id, workspace_id):
                             if isinstance(arrTargetUploadfiles, list) is True:
                                 for strTargetUploadfile in arrTargetUploadfiles:
                                     targetHosts = strTargetUploadfile.replace(strCollectTargetPath, "").split('/')
-                                    keyname = os.path.splitext(os.path.basename(strTargetUploadfile))[0]
+                                    keyname = os.path.basename(strTargetUploadfile)
                                     if targetHosts[1] not in arrTargetUploadLists:
                                         arrTargetUploadLists[targetHosts[1]] = {}
 
@@ -736,21 +736,26 @@ def backyard_main(organization_id, workspace_id):
                                                             tmp_param['file'][col_name] = ''
 
                                                         # ファイルアップロード対象リストのファイルデータをセット
-                                                        upload_filepath = {}
-                                                        if hostname in arrTargetUploadLists and varmembermembervalue in arrTargetUploadLists[hostname]:
-                                                            upload_filepath = arrTargetUploadLists[hostname][varmembermembervalue]
+                                                        upload_filepath = ""
 
+                                                        # ファイル名が無い場合は、ファイルの検索をしない
+                                                        if not varmembermembervalue:
+                                                            pass
+                                                        # ファイル名のみでの検索
+                                                        elif hostname in arrTargetUploadLists and varmembermembervalue in arrTargetUploadLists[hostname]:
+                                                            upload_filepath = arrTargetUploadLists[hostname][varmembermembervalue]
+                                                        # パス + ファイル名での検索
                                                         elif hostname in arrTargetUploadListFullpath:
                                                             for tmpfilekey, tmparrfilepath in arrTargetUploadListFullpath[hostname].items():
                                                                 if (tmpfilekey == varmembermembervalue) or (tmpfilekey.endswith(varmembermembervalue)):
                                                                     upload_filepath = tmparrfilepath
                                                                     break
 
-                                                        if upload_filepath:
-                                                            tmp_param['file'][col_name] = upload_filepath
-                                                            # パス指定時、ファイル名で、parameterを上書き
-                                                            # parameter /xxxx/filename -> filename
-                                                            tmp_param['parameter'][col_name] = os.path.basename(upload_filepath)
+                                                        # ファイル情報をパラメーターにセット
+                                                        tmp_param['file'][col_name] = upload_filepath if varmembermembervalue else varmembermembervalue
+                                                        # パス指定時、ファイル名で、parameterを上書き
+                                                        # parameter /xxxx/filename -> filename
+                                                        tmp_param['parameter'][col_name] = os.path.basename(upload_filepath) if varmembermembervalue else None
 
                                                     # バンドル使用のメニュー名を保持
                                                     if vertical_flag and menu_name not in bandle_menus:

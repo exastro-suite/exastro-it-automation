@@ -3008,7 +3008,7 @@ createNode( nodeID ) {
 
     // Note
     let noteText = nodeData['note'];
-    if ( noteText !== undefined && noteText !== null ) {
+    if ( noteText !== undefined && noteText !== null && noteText !== '') {
         noteText = fn.escape( noteText, true );
         nodeHTML += '<div class="node-note note-open"><div class="node-note-inner"><p>' + noteText + '</p></div></div>';
     } else {

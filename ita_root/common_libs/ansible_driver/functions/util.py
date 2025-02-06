@@ -563,3 +563,38 @@ def InstanceRecodeUpdate(wsDb, driver_id, execution_no, execute_data, update_col
         return False, str(retAry)
     else:
         return True, ""
+
+
+def gbl_variable_unique_check(wsDb, gbl_name, menu_id="20104"):
+    """グローバル変数の一意制約
+
+    Args:
+        wsDb:DB接クラス  DBConnectWs()
+        gbl_name : グローバル変数名(GBL_xxxx)
+        menu_id: メニューID. Defaults to "20104".
+
+    Returns:
+        bool, get_api_message(str)
+    """
+    # TABLE:  T_ANSC_GLOBAL_VAR / T_ANSC_GLOBAL_VAR_SENSITIVE
+    # COLUMN: GBL_VARS_NAME_ID, VARS_NAME
+    # 20104: グローバル変数管理 / 20113: グローバル変数（センシティブ）管理
+    # menu_id: 20104 (入力：グローバル変数管理→検索対象：グローバル変数（センシティブ）管理)
+    # menu_id: 20113 (入力：グローバル変数（センシティブ）→検索対象：管理グローバル変数管理)
+    search_table = "T_ANSC_GLOBAL_VAR_SENSITIVE" \
+        if menu_id == "20104" else "T_ANSC_GLOBAL_VAR"
+
+    sql = f"SELECT GBL_VARS_NAME_ID, VARS_NAME FROM `{search_table}` WHERE DISUSE_FLAG = '0' AND VARS_NAME = %s"
+    _rows = wsDb.sql_execute(sql, [gbl_name])
+    g.applogger.debug(f"gbl_variable_unique_check: {sql} {gbl_name} {_rows}")
+
+    if len(_rows) == 0:
+        return True, ""
+    else:
+        # グローバル変数名「{}」は、グローバル変数管理で使用されています。(項番:{})
+        # グローバル変数名「{}」は、グローバル変数(センシティブ)管理で使用されています。(項番:{})
+        _row_ids = [_r.get("GBL_VARS_NAME_ID") for _r in _rows]
+        status_code = 'MSG-11013' if menu_id == "20104" else  'MSG-11014'
+        msg_args = [gbl_name, ", ".join(_row_ids)]
+        msg = g.appmsg.get_api_message(status_code, msg_args)
+        return False, msg

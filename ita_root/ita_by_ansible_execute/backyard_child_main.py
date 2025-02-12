@@ -31,8 +31,6 @@ from common_libs.common.dbconnect import *
 from common_libs.common.exception import AppException, ValidationException
 from common_libs.ansible_driver.functions.util import InstanceRecodeUpdate, createTmpZipFile
 from common_libs.common.util import get_timestamp, file_encode, ky_encrypt
-from common_libs.loadtable import load_table
-from common_libs.ci.util import log_err
 
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_driver.classes.AnslConstClass import AnslConst
@@ -46,7 +44,6 @@ from common_libs.ansible_driver.functions.util import getAnsibleConst
 from common_libs.ansible_driver.functions.util import get_OSTmpPath
 from common_libs.ansible_driver.functions.util import addAnsibleCreateFilesPath
 from common_libs.ansible_driver.functions.util import rmAnsibleCreateFiles
-from common_libs.ansible_driver.functions.ag_util import get_AGStatusFilepath
 from common_libs.ansible_driver.functions.ansibletowerlibs.AnsibleTowerExecute import AnsibleTowerExecution
 from common_libs.driver.functions import operation_LAST_EXECUTE_TIMESTAMP_update
 from common_libs.ci.util import app_exception_driver_log, exception_driver_log, validation_exception_driver_log, validation_exception
@@ -317,6 +314,7 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id, rerun_mode, workspace
         Timeout_Interval = 600
     else:
         Timeout_Interval = get_time
+
     while True:
         time.sleep(check_interval)
 
@@ -672,7 +670,7 @@ def instance_checkcondition(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, a
 
     else:
         # 実行エンジンがAnsible Agenntの場合
-        status, db_update_need = ag_execute_statuscheck(ansdrv, wsDb, ansc_const, execution_no, Timeout_Interval)
+        status, db_update_need = ag_execute_statuscheck(ansdrv, ansc_const, execution_no, execute_data, Timeout_Interval)
 
     # 状態をログに出力
     g.applogger.info(g.appmsg.get_log_message("BKY-10006", [execution_no, status]))
@@ -730,7 +728,7 @@ def instance_checkcondition(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, a
     else:
         # statusによって処理を分岐
         if status in [ansc_const.COMPLETE, ansc_const.FAILURE, ansc_const.EXCEPTION, ansc_const.SCRAM] or error_flag != 0:
-            # 実行エンジンがAnsible Agentの場合、ag_execute_statuscheckでエラーを検出した場合を除き。
+            # 実行エンジンがAnsible Agentの場合、ag_execute_statuscheckでエラーを検出した場合を除き
             # 作業インスタンスの更新はita_api_ansible_execution_receiverで行う
             if db_update_need is True:
                 db_update_need = True
@@ -1319,24 +1317,17 @@ def makeExtraVarsParameter(ext_var_string):
 
     return False, error_msg
 
-def ag_execute_statuscheck(ansdrv, wsDb, ansc_const, execution_no, Timeout_Interval):
-    retBool, execute_data = cm.get_execution_process_info(wsDb, ansc_const, execution_no)
-    if retBool is False:
-        err_log = "Failed to get execution instance. execution_no:{}".format[execution_no]
-        raise Exception(err_log)
+def ag_execute_statuscheck(ansdrv, ansc_const, execution_no, execute_data, Timeout_Interval):
     ret_status = execute_data["STATUS_ID"]
-    ag_status_file_path = get_AGStatusFilepath(ansc_const, execution_no)
-    # ansibe agent起動確認ファイルの有無判定
-    if os.path.isfile(ag_status_file_path) is False:
-        # 無い場合は作成
-        Path(ag_status_file_path).touch()
-    # ansibe agent作業状態通知受信ファイルの更新日時所得
-    ag_status_file_unix_time = os.path.getmtime(ag_status_file_path)
-    # 現在時刻取得
-    now_unix_time = time.time()
-    # ansibe agent作業状態通知受信ファイルの更新がTimeout_Interval以上更新されなかったら、想定外エラーにする。
     db_update_need = False
-    if((ag_status_file_unix_time + Timeout_Interval) < now_unix_time):
+    # 該当の作業実行のレコードの最終更新日時
+    exec_sts_inst_last_update_time = execute_data['LAST_UPDATE_TIMESTAMP']
+    # 最終更新日時 + Timeout_Interval
+    error_limit_time = exec_sts_inst_last_update_time.timestamp() + Timeout_Interval
+    # 現在時刻取得
+    now_time = time.time()
+    # Timeout_Interval以上更新されていなかったら、想定外エラーにする。
+    if error_limit_time < now_time:
         err_msg = g.appmsg.get_log_message("MSG-10969", [str(Timeout_Interval),execution_no])
         log_dir = getAnsibleExecutDirPath(ansc_const, execution_no) + "/out"
         ansdrv.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),

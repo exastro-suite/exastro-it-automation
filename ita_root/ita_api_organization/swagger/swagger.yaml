@@ -100,19 +100,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200'
+                $ref: "#/components/schemas/inline_response_200"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.menu_info_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/column/:
     get:
@@ -151,19 +151,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_1'
+                $ref: "#/components/schemas/inline_response_200_1"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.menu_info_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/pulldown/:
     get:
@@ -202,19 +202,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_2'
+                $ref: "#/components/schemas/inline_response_200_2"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.menu_info_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/search/candidates/{column}/:
     get:
@@ -261,19 +261,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_3'
+                $ref: "#/components/schemas/inline_response_200_3"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.menu_info_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/filter/count/:
     get:
@@ -312,19 +312,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_4'
+                $ref: "#/components/schemas/inline_response_200_4"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.menu_filter_controller
     post:
       tags:
@@ -360,26 +360,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/filter_count_body'
+              $ref: "#/components/schemas/filter_count_body"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_4'
+                $ref: "#/components/schemas/inline_response_200_4"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.menu_filter_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/filter/:
     get:
@@ -414,31 +414,38 @@ paths:
           type: string
       - name: file
         in: query
-        description: ファイルダウンロード指定
+        description: Base64文字列形式でのファイル取得指定
         required: false
         style: form
         explode: true
         schema:
           type: string
+        examples:
+          example1:
+            summary: ファイル取得なし
+            value: '.../filter?file=no'
+          example2:
+            summary: ファイル取得あり
+            value: '.../filter'
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_5'
+                $ref: "#/components/schemas/inline_response_200_5"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.menu_filter_controller
     post:
       tags:
@@ -472,36 +479,43 @@ paths:
           type: string
       - name: file
         in: query
-        description: ファイルダウンロード指定
+        description: Base64文字列形式でのファイル取得指定
         required: false
         style: form
         explode: true
         schema:
           type: string
+        examples:
+          example1:
+            summary: ファイル取得なし
+            value: '.../filter?file=no'
+          example2:
+            summary: ファイル取得あり
+            value: '.../filter'
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/menu_filter_body'
+              $ref: "#/components/schemas/menu_filter_body"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_5'
+                $ref: "#/components/schemas/inline_response_200_5"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.menu_filter_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/filter/journal/{uuid}/:
     get:
@@ -556,19 +570,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_5'
+                $ref: "#/components/schemas/inline_response_200_5"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.menu_filter_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/{uuid}/{column}/file/:
     get:
@@ -623,19 +637,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_5'
+                $ref: "#/components/schemas/inline_response_200_5"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.menu_filter_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/{uuid}/{column}/file/journal/{journal_uuid}/:
     get:
@@ -698,19 +712,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_5'
+                $ref: "#/components/schemas/inline_response_200_5"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.menu_filter_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/maintenance/:
     post:
@@ -747,29 +761,29 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/menu_maintenance_body'
+              $ref: "#/components/schemas/menu_maintenance_body"
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/MAINTENANCE_FORM'
+              $ref: "#/components/schemas/MAINTENANCE_FORM"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_6'
+                $ref: "#/components/schemas/inline_response_200_6"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.menu_maintenance_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/maintenance/{uuid}/:
     patch:
@@ -814,29 +828,29 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/maintenance_uuid_body'
+              $ref: "#/components/schemas/maintenance_uuid_body"
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/MAINTENANCE_FORM'
+              $ref: "#/components/schemas/MAINTENANCE_FORM"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_6'
+                $ref: "#/components/schemas/inline_response_200_6"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.menu_maintenance_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/maintenance/all/:
     post:
@@ -876,35 +890,37 @@ paths:
               type: array
               description: 登録/更新/廃止/復活するidとレコードの値を設定
               items:
-                $ref: '#/components/schemas/MAINTENANCE_PARAMETERS'
+                $ref: "#/components/schemas/MAINTENANCE_PARAMETERS"
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/MAINTENANCE_ALL_FORM'
+              $ref: "#/components/schemas/MAINTENANCE_ALL_FORM"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_6'
+                $ref: "#/components/schemas/inline_response_200_6"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.menu_maintenance_all_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/excel/format/:
     get:
       tags:
       - Menu Excel
-      description: 新規登録用Excelを取得する
+      description: |
+        新規登録用Excelを取得する<br>
+        ※ダウンロードするのファイルの形式指定が2種類あります。
       operationId: get_excel_format
       parameters:
       - name: organization_id
@@ -933,38 +949,51 @@ paths:
           type: string
       - name: file
         in: query
-        description: ファイルデータの形式指定
+        description: ダウンロードするファイルの形式指定
         required: false
         style: form
         explode: true
         schema:
           type: string
-        example: ?file=binary
+        examples:
+          example1:
+            summary: バイナリ形式（推奨）
+            value: '.../format/?file=binary'
+          example2:
+            summary: Base64文字列形式（2.5.0以降非推奨）
+            value: '.../format/'
       responses:
         "200":
-          description: Success
+          description: |
+            Success <br>
+            ※クエリパラメータにfile=binaryが含まれる場合は、ファイルはバイナリ形式で返されます。<br>
+            ※ファイル名は、HTTPヘッダーの"Content-Disposition"に含まれる"filename"を参照します。
           content:
+            application/octet-stream:
+              example: Binary data
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_7'
+                $ref: "#/components/schemas/inline_response_200_7"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.menu_excel_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/excel/:
     get:
       tags:
       - Menu Excel
-      description: 全件のExcelを取得する
+      description: |
+        全件のExcelを取得する<br>
+        ※ダウンロードするのファイルの形式指定が2種類あります。
       operationId: get_excel_filter
       parameters:
       - name: organization_id
@@ -993,37 +1022,50 @@ paths:
           type: string
       - name: file
         in: query
-        description: ファイルデータの形式指定
+        description: ダウンロードするファイルの形式指定
         required: false
         style: form
         explode: true
         schema:
           type: string
-        example: ?file=binary
+        examples:
+          example1:
+            summary: バイナリ形式（推奨）
+            value: '.../excel/?file=binary'
+          example2:
+            summary: Base64文字列形式（2.5.0以降非推奨）
+            value: '.../excel/'
       responses:
         "200":
-          description: Success
+          description: |
+            Success <br>
+            ※クエリパラメータにfile=binaryが含まれる場合は、ファイルはバイナリ形式で返されます。<br>
+            ※ファイル名は、HTTPヘッダーの"Content-Disposition"に含まれる"filename"を参照します。
           content:
+            application/octet-stream:
+              example: Binary data
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_7'
+                $ref: "#/components/schemas/inline_response_200_7"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.menu_excel_controller
     post:
       tags:
       - Menu Excel
-      description: 検索条件を指定し、Excelを取得する
+      description: |
+        検索条件を指定し、Excelを取得する<br>
+        ※ダウンロードするのファイルの形式指定が2種類あります。
       operationId: post_excel_filter
       parameters:
       - name: organization_id
@@ -1052,43 +1094,63 @@ paths:
           type: string
       - name: file
         in: query
-        description: ファイルデータの形式指定
+        description: ダウンロードするファイルの形式指定
         required: false
         style: form
         explode: true
         schema:
           type: string
-        example: ?file=binary
+        examples:
+          example1:
+            summary: バイナリ形式（推奨）
+            value: '.../excel/?file=binary'
+          example2:
+            summary: Base64文字列形式（2.5.0以降非推奨）
+            value: '.../excel/'
       requestBody:
         content:
           application/json:
             schema:
+              type: object
               description: 検索条件を設定
+              example:
+                discard:
+                  NORMAL: "0"
+                column_name:
+                  LIST:
+                  - op01
       responses:
         "200":
-          description: Success
+          description: |
+            Success <br>
+            ※クエリパラメータにfile=binaryが含まれる場合は、ファイルはバイナリ形式で返されます。<br>
+            ※ファイル名は、HTTPヘッダーの"Content-Disposition"に含まれる"filename"を参照します。
           content:
+            application/octet-stream:
+              example: Binary data
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_7'
+                $ref: "#/components/schemas/inline_response_200_7"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.menu_excel_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/excel/maintenance/:
     post:
       tags:
       - Menu Excel
-      description: Excelでレコードを登録/更新/廃止/復活する
+      description: |
+        Excelでレコードを登録/更新/廃止/復活する<br>
+        ※ver2.5.0以降では、multipart/form-dataでのリクエストを推奨
       operationId: post_excel_maintenance
       parameters:
       - name: organization_id
@@ -1119,35 +1181,44 @@ paths:
         content:
           application/json:
             schema:
-              description: 検索条件を設定
+              type: object
+            example:
+              excel: base64 string
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/excel_maintenance_body'
+              example: |
+                ----------------------------XXXXXX
+                Content-Disposition: form-data; name="excel"; filename="xxxxx.xlsx"
+                Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+                (binary content of the file)
+                ----------------------------XXXXXX--
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_7'
+                $ref: "#/components/schemas/inline_response_200_8"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.menu_excel_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/excel/journal/:
     get:
       tags:
       - Menu Excel
-      description: 変更履歴のExcelを取得する
+      description: |
+        変更履歴のExcelを取得する<br>
+        ※ダウンロードするのファイルの形式指定が2種類あります。
       operationId: get_excel_journal
       parameters:
       - name: organization_id
@@ -1176,32 +1247,43 @@ paths:
           type: string
       - name: file
         in: query
-        description: ファイルデータの形式指定
+        description: ダウンロードするファイルの形式指定
         required: false
         style: form
         explode: true
         schema:
           type: string
-        example: ?file=binary
+        examples:
+          example1:
+            summary: バイナリ形式（推奨）
+            value: '.../journal/?file=binary'
+          example2:
+            summary: Base64文字列形式（2.5.0以降非推奨）
+            value: '.../journal/'
       responses:
         "200":
-          description: Success
+          description: |
+            Success <br>
+            ※クエリパラメータにfile=binaryが含まれる場合は、ファイルはバイナリ形式で返されます。<br>
+            ※ファイル名は、HTTPヘッダーの"Content-Disposition"に含まれる"filename"を参照します。
           content:
+            application/octet-stream:
+              example: Binary data
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_7'
+                $ref: "#/components/schemas/inline_response_200_7"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.menu_excel_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/user/:
     get:
@@ -1232,19 +1314,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_8'
+                $ref: "#/components/schemas/inline_response_200_9"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.user_info_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/user/menus/:
     get:
@@ -1275,19 +1357,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_9'
+                $ref: "#/components/schemas/inline_response_200_10"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.user_info_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/user/menus/panels/:
     get:
@@ -1318,19 +1400,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_10'
+                $ref: "#/components/schemas/inline_response_200_11"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.user_info_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/user/table_settings/:
     post:
@@ -1367,19 +1449,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_11'
+                $ref: "#/components/schemas/inline_response_200_12"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.user_info_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/user/dashboard/:
     get:
@@ -1410,19 +1492,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_11'
+                $ref: "#/components/schemas/inline_response_200_12"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.user_info_controller
     post:
       tags:
@@ -1458,19 +1540,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_11'
+                $ref: "#/components/schemas/inline_response_200_12"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.user_info_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/version/:
     get:
@@ -1501,19 +1583,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_12'
+                $ref: "#/components/schemas/inline_response_200_13"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.system_info_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/create/define/execute/:
     post:
@@ -1549,19 +1631,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_11'
+                $ref: "#/components/schemas/inline_response_200_12"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.menu_create_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/create/define/:
     get:
@@ -1592,19 +1674,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_11'
+                $ref: "#/components/schemas/inline_response_200_12"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.menu_create_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/create/define/{menu_create}/:
     get:
@@ -1643,19 +1725,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_11'
+                $ref: "#/components/schemas/inline_response_200_12"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.menu_create_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/create/define/pulldown/initial/{menu}/{column}/:
     get:
@@ -1702,19 +1784,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_11'
+                $ref: "#/components/schemas/inline_response_200_12"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.menu_create_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/create/define/reference/item/{menu}/{column}/:
     get:
@@ -1761,19 +1843,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_11'
+                $ref: "#/components/schemas/inline_response_200_12"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.menu_create_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/parameter_collection/:
     get:
@@ -1804,19 +1886,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_13'
+                $ref: "#/components/schemas/inline_response_200_14"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.menu_create_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/parameter_collection/filter_data/:
     get:
@@ -1847,19 +1929,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_14'
+                $ref: "#/components/schemas/inline_response_200_15"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.menu_create_controller
     post:
       tags:
@@ -1895,19 +1977,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_15'
+                $ref: "#/components/schemas/inline_response_200_16"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.menu_create_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/parameter_collection/filter_data/{uuid}:
     delete:
@@ -1946,19 +2028,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_15'
+                $ref: "#/components/schemas/inline_response_200_16"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.menu_create_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/class/info/:
     get:
@@ -1997,19 +2079,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_16'
+                $ref: "#/components/schemas/inline_response_200_17"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.conductor_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/class/{conductor_class_id}/:
     get:
@@ -2056,19 +2138,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_6'
+                $ref: "#/components/schemas/inline_response_200_6"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.conductor_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/class/maintenance/:
     post:
@@ -2113,19 +2195,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_11'
+                $ref: "#/components/schemas/inline_response_200_12"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.conductor_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/class/maintenance/{conductor_class_id}/:
     patch:
@@ -2178,19 +2260,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_11'
+                $ref: "#/components/schemas/inline_response_200_12"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.conductor_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/execute/info/:
     get:
@@ -2229,19 +2311,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_17'
+                $ref: "#/components/schemas/inline_response_200_18"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.conductor_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/execute/filter/{target}/:
     post:
@@ -2286,26 +2368,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/filter_target_body'
+              $ref: "#/components/schemas/filter_target_body"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_5'
+                $ref: "#/components/schemas/inline_response_200_5"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.conductor_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/execute/filter/{target}/search/candidates/{column}/:
     get:
@@ -2360,19 +2442,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_3'
+                $ref: "#/components/schemas/inline_response_200_3"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.conductor_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/execute/class/info/:
     get:
@@ -2411,19 +2493,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_16'
+                $ref: "#/components/schemas/inline_response_200_17"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.conductor_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/execute/class/{conductor_class_id}/:
     get:
@@ -2470,19 +2552,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_6'
+                $ref: "#/components/schemas/inline_response_200_6"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.conductor_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/execute/:
     post:
@@ -2519,26 +2601,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/conductor_execute_body'
+              $ref: "#/components/schemas/conductor_execute_body"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_11'
+                $ref: "#/components/schemas/inline_response_200_12"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.conductor_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/info/{conductor_instance_id}/:
     get:
@@ -2585,19 +2667,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_16'
+                $ref: "#/components/schemas/inline_response_200_17"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.conductor_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/{conductor_instance_id}/:
     get:
@@ -2644,19 +2726,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_18'
+                $ref: "#/components/schemas/inline_response_200_19"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.conductor_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/{conductor_instance_id}/cancel/:
     patch:
@@ -2708,19 +2790,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_11'
+                $ref: "#/components/schemas/inline_response_200_12"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.conductor_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/{conductor_instance_id}/scram/:
     patch:
@@ -2772,19 +2854,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_11'
+                $ref: "#/components/schemas/inline_response_200_12"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.conductor_controll_controller
   ? /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/{conductor_instance_id}/node/{node_instance_id}/relese/
   : patch:
@@ -2844,25 +2926,27 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_11'
+                $ref: "#/components/schemas/inline_response_200_12"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.conductor_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/{conductor_instance_id}/input_data/:
     get:
       tags:
       - Conductor Controll
-      description: Conductor作業の投入データ
+      description: |
+        Conductor作業の投入データ<br>
+        ※ダウンロードするのファイルの形式指定が2種類あります。
       operationId: get_conductor_input_data
       parameters:
       - name: organization_id
@@ -2905,32 +2989,45 @@ paths:
         explode: true
         schema:
           type: string
-        example: ?file=binary
+        examples:
+          example1:
+            summary: バイナリ形式（推奨）
+            value: '.../input_data/?file=binary'
+          example2:
+            summary: Base64文字列形式(2.5.0以降非推奨)
+            value: '.../input_data/'
       responses:
         "200":
-          description: Success
+          description: |
+            Success <br>
+            ※クエリパラメータにfile=binaryが含まれる場合は、ファイルはバイナリ形式で返されます。<br>
+            ※ファイル名は、HTTPヘッダーの"Content-Disposition"に含まれる"filename"を参照します。
           content:
+            application/octet-stream:
+              example: Binary data
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_19'
+                $ref: "#/components/schemas/inline_response_200_20"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.conductor_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/{conductor_instance_id}/result_data/:
     get:
       tags:
       - Conductor Controll
-      description: Conductor作業の結果データ
+      description: |
+        Conductor作業の結果データ<br>
+        ※ダウンロードするのファイルの形式指定が2種類あります。
       operationId: get_conductor_result_data
       parameters:
       - name: organization_id
@@ -2973,26 +3070,37 @@ paths:
         explode: true
         schema:
           type: string
-        example: ?file=binary
+        examples:
+          example1:
+            summary: バイナリ形式（推奨）
+            value: '.../result_data/?file=binary'
+          example2:
+            summary: Base64文字列形式(2.5.0以降非推奨)
+            value: '.../result_data/'
       responses:
         "200":
-          description: Success
+          description: |
+            Success <br>
+            ※クエリパラメータにfile=binaryが含まれる場合は、ファイルはバイナリ形式で返されます。<br>
+            ※ファイル名は、HTTPヘッダーの"Content-Disposition"に含まれる"filename"を参照します。
           content:
+            application/octet-stream:
+              example: Binary data
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_20'
+                $ref: "#/components/schemas/inline_response_200_21"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.conductor_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/execute/:
     post:
@@ -3029,26 +3137,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/driver_execute_body'
+              $ref: "#/components/schemas/driver_execute_body"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_21'
+                $ref: "#/components/schemas/inline_response_200_22"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.driver_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/execute_dry_run/:
     post:
@@ -3087,26 +3195,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/driver_execute_dry_run_body'
+              $ref: "#/components/schemas/driver_execute_dry_run_body"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_21'
+                $ref: "#/components/schemas/inline_response_200_22"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.driver_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/execute_check_parameter/:
     post:
@@ -3143,26 +3251,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/driver_execute_check_parameter_body'
+              $ref: "#/components/schemas/driver_execute_check_parameter_body"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_21'
+                $ref: "#/components/schemas/inline_response_200_22"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.driver_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/execute_delete_resource/:
     post:
@@ -3199,26 +3307,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/driver_execute_delete_resource_body'
+              $ref: "#/components/schemas/driver_execute_delete_resource_body"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_21'
+                $ref: "#/components/schemas/inline_response_200_22"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.driver_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/{execution_no}/:
     get:
@@ -3265,19 +3373,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_11'
+                $ref: "#/components/schemas/inline_response_200_12"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.driver_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/{execution_no}/populated_data:
     get:
@@ -3324,19 +3432,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_11'
+                $ref: "#/components/schemas/inline_response_200_12"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.driver_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/{execution_no}/result_data:
     get:
@@ -3383,19 +3491,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_11'
+                $ref: "#/components/schemas/inline_response_200_12"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.driver_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/{execution_no}/cancel/:
     patch:
@@ -3442,19 +3550,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_11'
+                $ref: "#/components/schemas/inline_response_200_12"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.driver_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/{execution_no}/scram/:
     patch:
@@ -3501,19 +3609,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_11'
+                $ref: "#/components/schemas/inline_response_200_12"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.driver_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/execute/info/:
     get:
@@ -3552,19 +3660,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_22'
+                $ref: "#/components/schemas/inline_response_200_23"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.driver_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/execute/filter/{target}/:
     post:
@@ -3609,26 +3717,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/filter_target_body_1'
+              $ref: "#/components/schemas/filter_target_body_1"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_5'
+                $ref: "#/components/schemas/inline_response_200_5"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.driver_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/execute/filter/{target}/search/candidates/{column}/:
     get:
@@ -3683,19 +3791,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_3'
+                $ref: "#/components/schemas/inline_response_200_3"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.driver_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/export/info/:
     get:
@@ -3726,19 +3834,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_23'
+                $ref: "#/components/schemas/inline_response_200_24"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.export_import_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/bulk/export/execute/:
     post:
@@ -3767,32 +3875,34 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/export_execute_body'
+              $ref: "#/components/schemas/export_execute_body"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_24'
+                $ref: "#/components/schemas/inline_response_200_25"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.export_import_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/import/upload/:
     post:
       tags:
       - Export Import
-      description: メニューインポートのアップロード
+      description: |
+        メニューインポートのアップロード<br>
+        ※ver2.5.0以降では、multipart/form-dataでのリクエストを推奨
       operationId: post_menu_import_upload
       parameters:
       - name: organization_id
@@ -3816,28 +3926,32 @@ paths:
           application/json:
             schema:
               type: object
+            example:
+              file:
+                name: ita_exportdata_XXXXXXXXXXXX.kym
+                base64: base64 string
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/MENU_UPLOAD_FORM'
+              $ref: "#/components/schemas/MENU_UPLOAD_FORM"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_25'
+                $ref: "#/components/schemas/inline_response_200_26"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.export_import_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/import/execute/:
     post:
@@ -3866,26 +3980,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/import_execute_body'
+              $ref: "#/components/schemas/import_execute_body"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_24'
+                $ref: "#/components/schemas/inline_response_200_25"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.export_import_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/excel/bulk/export/info/:
     get:
@@ -3916,19 +4030,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200'
+                $ref: "#/components/schemas/inline_response_200"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.export_import_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/excel/bulk/export/execute/:
     post:
@@ -3957,32 +4071,34 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/export_execute_body_1'
+              $ref: "#/components/schemas/export_execute_body_1"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200'
+                $ref: "#/components/schemas/inline_response_200"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.export_import_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/excel/bulk/upload/:
     post:
       tags:
       - Export Import
-      description: Excel一括インポートのアップロード
+      description: |
+        Excel一括インポートのアップロード<br>
+        ※ver2.5.0以降では、multipart/form-dataでのリクエストを推奨
       operationId: post_excel_bulk_upload
       parameters:
       - name: organization_id
@@ -4005,29 +4121,33 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/bulk_upload_body'
+              type: object
+            example:
+              zipfile:
+                name: ITA_FILES_XXXXXXXXXXXX.zip
+                base64: base64 string
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/EXCEL_BULK_UPLOAD_FORM'
+              $ref: "#/components/schemas/EXCEL_BULK_UPLOAD_FORM"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200'
+                $ref: "#/components/schemas/inline_response_200"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.export_import_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/excel/bulk/import/execute/:
     post:
@@ -4056,26 +4176,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/import_execute_body_1'
+              $ref: "#/components/schemas/import_execute_body_1"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200'
+                $ref: "#/components/schemas/inline_response_200"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.export_import_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/info/:
     get:
@@ -4114,19 +4234,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_6'
+                $ref: "#/components/schemas/inline_response_200_6"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.compare_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/info/:
     get:
@@ -4165,19 +4285,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_26'
+                $ref: "#/components/schemas/inline_response_200_27"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.compare_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/filter/{target}/:
     post:
@@ -4222,26 +4342,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/filter_target_body_2'
+              $ref: "#/components/schemas/filter_target_body_2"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_5'
+                $ref: "#/components/schemas/inline_response_200_5"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.compare_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/filter/{target}/search/candidates/{column}/:
     get:
@@ -4296,19 +4416,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_3'
+                $ref: "#/components/schemas/inline_response_200_3"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.compare_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/:
     post:
@@ -4345,32 +4465,34 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/compare_execute_body'
+              $ref: "#/components/schemas/compare_execute_body"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_6'
+                $ref: "#/components/schemas/inline_response_200_6"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.compare_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/output/:
     post:
       tags:
       - Compare Controll
-      description: 比較実行ファイル出力
+      description: |
+        比較実行ファイル出力<br>
+        ※ダウンロードするのファイルの形式指定が2種類あります。
       operationId: post_compare_execute_output
       parameters:
       - name: organization_id
@@ -4405,31 +4527,37 @@ paths:
         explode: true
         schema:
           type: string
-        example: ?file=binary
+        examples:
+          example1:
+            summary: バイナリ形式（推奨）
+            value: '.../output/?file=binary'
+          example2:
+            summary: Base64文字列形式(2.5.0以降非推奨)
+            value: '.../output/'
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/execute_output_body'
+              $ref: "#/components/schemas/execute_output_body"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_27'
+                $ref: "#/components/schemas/inline_response_200_28"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.compare_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/file/:
     post:
@@ -4474,26 +4602,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/execute_file_body'
+              $ref: "#/components/schemas/execute_file_body"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_6'
+                $ref: "#/components/schemas/inline_response_200_6"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.compare_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/:
     get:
@@ -4524,19 +4652,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_6'
+                $ref: "#/components/schemas/inline_response_200_6"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.terraform_cloud_ep_controller
     post:
       tags:
@@ -4564,26 +4692,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/terraform_organization_body'
+              $ref: "#/components/schemas/terraform_organization_body"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_6'
+                $ref: "#/components/schemas/inline_response_200_6"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.terraform_cloud_ep_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/{tf_organization_name}/:
     delete:
@@ -4622,19 +4750,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_6'
+                $ref: "#/components/schemas/inline_response_200_6"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.terraform_cloud_ep_controller
     patch:
       tags:
@@ -4670,26 +4798,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/organization_tf_organization_name_body'
+              $ref: "#/components/schemas/organization_tf_organization_name_body"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_6'
+                $ref: "#/components/schemas/inline_response_200_6"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.terraform_cloud_ep_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/{tf_organization_name}/check/:
     get:
@@ -4728,19 +4856,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_6'
+                $ref: "#/components/schemas/inline_response_200_6"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.terraform_cloud_ep_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/workspace/:
     get:
@@ -4771,19 +4899,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_6'
+                $ref: "#/components/schemas/inline_response_200_6"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.terraform_cloud_ep_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/workspace/{tf_organization_name}/:
     post:
@@ -4820,26 +4948,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/workspace_tf_organization_name_body'
+              $ref: "#/components/schemas/workspace_tf_organization_name_body"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_6'
+                $ref: "#/components/schemas/inline_response_200_6"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.terraform_cloud_ep_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/workspace/{tf_organization_name}/{tf_workspace_name}/:
     delete:
@@ -4886,19 +5014,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_6'
+                $ref: "#/components/schemas/inline_response_200_6"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.terraform_cloud_ep_controller
     patch:
       tags:
@@ -4942,26 +5070,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/tf_organization_name_tf_workspace_name_body'
+              $ref: "#/components/schemas/tf_organization_name_tf_workspace_name_body"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_6'
+                $ref: "#/components/schemas/inline_response_200_6"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.terraform_cloud_ep_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/{tf_organization_name}/{tf_workspace_name}/check/:
     get:
@@ -5008,19 +5136,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_6'
+                $ref: "#/components/schemas/inline_response_200_6"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.terraform_cloud_ep_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policy/:
     get:
@@ -5051,25 +5179,27 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_6'
+                $ref: "#/components/schemas/inline_response_200_6"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.terraform_cloud_ep_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policy/{tf_organization_name}/download/{policy_name}/:
     post:
       tags:
       - Terraform Cloud EP
-      description: 連携しているTerraform Cloud/EnterpriseからPolicyコードをダウンロードする
+      description: |
+        連携しているTerraform Cloud/EnterpriseからPolicyコードをダウンロードする<br>
+        ※ダウンロードするのファイルの形式指定が2種類あります。
       operationId: get_terraform_policy_file
       parameters:
       - name: organization_id
@@ -5106,37 +5236,48 @@ paths:
           type: string
       - name: file
         in: query
-        description: ファイルデータの形式指定
+        description: ダウンロードするファイルの形式指定
         required: false
         style: form
         explode: true
         schema:
           type: string
-        example: ?file=binary
+        examples:
+          example1:
+            summary: バイナリ形式
+            value: ".../download/{policy_name}/?file=binary"
+          example2:
+            summary: Base64文字列形式（2.5.0以降非推奨）
+            value: ".../download/{policy_name}/"
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/download_policy_name_body'
+              $ref: "#/components/schemas/download_policy_name_body"
       responses:
         "200":
-          description: Success
+          description: |
+            Success <br>
+            ※クエリパラメータにfile=binaryが含まれる場合は、ファイルはバイナリ形式で返されます。<br>
+            ※ファイル名は、HTTPヘッダーの"Content-Disposition"に含まれる"filename"を参照します。
           content:
+            application/octet-stream:
+              example: Binary data
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_6'
+                $ref: "#/components/schemas/inline_response_200_29"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.terraform_cloud_ep_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policy/{tf_organization_name}/delete/{policy_name}/:
     delete:
@@ -5183,19 +5324,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_6'
+                $ref: "#/components/schemas/inline_response_200_6"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.terraform_cloud_ep_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policyset/:
     get:
@@ -5226,19 +5367,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_6'
+                $ref: "#/components/schemas/inline_response_200_6"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.terraform_cloud_ep_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policyset/{tf_organization_name}/delete/{policy_set_name}/:
     delete:
@@ -5285,19 +5426,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_6'
+                $ref: "#/components/schemas/inline_response_200_6"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.terraform_cloud_ep_controller
   ? /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policyset/{tf_organization_name}/relationship/{policy_set_name}/workspace/{tf_workspace_name}/
   : delete:
@@ -5352,19 +5493,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_6'
+                $ref: "#/components/schemas/inline_response_200_6"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.terraform_cloud_ep_controller
   ? /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policyset/{tf_organization_name}/relationship/{policy_set_name}/policy/{policy_name}/
   : delete:
@@ -5419,19 +5560,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_6'
+                $ref: "#/components/schemas/inline_response_200_6"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.terraform_cloud_ep_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/cicd_for_iac/resume/repository/{uuid}/:
     post:
@@ -5470,19 +5611,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_11'
+                $ref: "#/components/schemas/inline_response_200_12"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.cicd_for_ia_c_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/cicd_for_iac/resume/file_link/{uuid}/:
     post:
@@ -5521,19 +5662,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_11'
+                $ref: "#/components/schemas/inline_response_200_12"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.cicd_for_ia_c_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/oase/filter/{menu}/:
     get:
@@ -5572,19 +5713,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_5'
+                $ref: "#/components/schemas/inline_response_200_5"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.oase_controller
     post:
       tags:
@@ -5620,26 +5761,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/filter_menu_body'
+              $ref: "#/components/schemas/filter_menu_body"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_5'
+                $ref: "#/components/schemas/inline_response_200_5"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.oase_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/oase/event_flow/history/:
     post:
@@ -5668,26 +5809,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/event_flow_history_body'
+              $ref: "#/components/schemas/event_flow_history_body"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_28'
+                $ref: "#/components/schemas/inline_response_200_30"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.oase_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/apply/:
     post:
@@ -5716,26 +5857,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ita_apply_body'
+              $ref: "#/components/schemas/ita_apply_body"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_11'
+                $ref: "#/components/schemas/inline_response_200_12"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.apply_controller
   /internal-api/health-check/liveness:
     get:
@@ -5749,13 +5890,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_29'
+                $ref: "#/components/schemas/inline_response_200_31"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.internal_health_check_service_controller
   /internal-api/health-check/readiness:
     get:
@@ -5769,13 +5910,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_29'
+                $ref: "#/components/schemas/inline_response_200_31"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.internal_health_check_service_controller
 components:
   schemas:
@@ -5790,11 +5931,6 @@ components:
           type: object
         UNIQUE_VAL:
           type: object
-      example:
-        TD: {}
-        TD_IHP: {}
-        PAGE_NO: 0
-        UNIQUE_VAL: {}
     COLUMN_GROUP_INFO:
       type: object
       additionalProperties:
@@ -6055,17 +6191,17 @@ components:
           type: array
           items: {}
         RANGE:
-          $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS_RANGE'
+          $ref: "#/components/schemas/FILTER_REQUEST_PARAMETERS_RANGE"
     FILTER_PARAMETERS:
       type: object
       properties:
         parameter:
-          $ref: '#/components/schemas/FILTER_PARAMETERS_parameter'
+          $ref: "#/components/schemas/FILTER_PARAMETERS_parameter"
         file:
-          $ref: '#/components/schemas/FILTER_PARAMETERS_file'
+          $ref: "#/components/schemas/FILTER_PARAMETERS_file"
       example:
         file:
-          rest_key_name: base64 encode file
+          rest_key_name: base64 encode file（empty string if ?file=no）
         parameter:
           rest_key_name: rest_key_name
     MAINTENANCE_PARAMETER_P:
@@ -6083,9 +6219,9 @@ components:
       type: object
       properties:
         parameter:
-          $ref: '#/components/schemas/FILTER_PARAMETERS_parameter'
+          $ref: "#/components/schemas/FILTER_PARAMETERS_parameter"
         file:
-          $ref: '#/components/schemas/FILTER_PARAMETERS_file'
+          $ref: "#/components/schemas/MAINTENANCE_PARAMETERS_file"
         type:
           type: string
           example: Register/Update
@@ -6288,7 +6424,7 @@ components:
       type: object
       properties:
         node_name:
-          $ref: '#/components/schemas/NODE_RESULT_node_name'
+          $ref: "#/components/schemas/NODE_RESULT_node_name"
       example:
         node_name:
           operation_name: オペレーション名
@@ -6306,39 +6442,39 @@ components:
             menu_id: メニューID
             execution_id: 作業ID
     MENU_UPLOAD_FORM:
-      type: object
-      properties:
-        file:
-          type: string
-          description: インポート対象のkymファイルを指定。
-          format: binary
+      example: |
+        ----------------------------XXXXXXXXXXXXX
+        Content-Disposition: form-data; name="ita_exportdata_XXXXXXXXXXXX.kym"; filename="ita_exportdata_XXXXXXXXXXXX.kym"
+        Content-Type: application/octet-stream
+        (binary content of the file)
+        ----------------------------XXXXXXXXXXXXX--
     EXCEL_BULK_UPLOAD_FORM:
-      type: object
-      properties:
-        zipfile:
-          type: string
-          description: インポート対象をまとめたzipファイルを指定。
-          format: binary
+      example: |
+        ----------------------------XXXXXXXXXXXXX
+        Content-Disposition: form-data; name="ITA_FILES_XXXXXXXXXXXXXXXXX.zip"; filename="ITA_FILES_XXXXXXXXXXXXXXXXX.zip"
+        Content-Type: application/x-zip-compressed
+        (binary content of the file)
+        ----------------------------XXXXXXXXXXXXX--
     ApplyParameterTypeA:
       type: array
       items:
-        $ref: '#/components/schemas/ApplyParameterTypeA_inner'
+        $ref: "#/components/schemas/ApplyParameterTypeA_inner"
     ApplyParameterTypeB:
       type: array
       items:
-        $ref: '#/components/schemas/ApplyParameterTypeB_inner'
+        $ref: "#/components/schemas/ApplyParameterTypeB_inner"
     ApplyParameterTypeC:
       type: object
       properties:
         rest_key_name:
           type: array
           items:
-            $ref: '#/components/schemas/ApplyParameterTypeC_rest_key_name'
+            $ref: "#/components/schemas/ApplyParameterTypeC_rest_key_name"
     ApplyParameterTypeD:
       type: object
       properties:
         rest_key_name:
-          $ref: '#/components/schemas/ApplyParameterTypeC_rest_key_name'
+          $ref: "#/components/schemas/ApplyParameterTypeC_rest_key_name"
     inline_response_200:
       type: object
       properties:
@@ -6346,7 +6482,7 @@ components:
           type: string
           example: 000-00000
         data:
-          $ref: '#/components/schemas/inline_response_200_data'
+          $ref: "#/components/schemas/inline_response_200_data"
         message:
           type: string
       example:
@@ -6519,7 +6655,7 @@ components:
     filter_count_body:
       properties:
         rest_key_name:
-          $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+          $ref: "#/components/schemas/FILTER_REQUEST_PARAMETERS"
       description: 検索条件を設定
     inline_response_200_5:
       type: object
@@ -6530,32 +6666,32 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/FILTER_PARAMETERS'
+            $ref: "#/components/schemas/FILTER_PARAMETERS"
         message:
           type: string
       example:
         result: 000-00000
         data:
         - file:
-            rest_key_name: base64 encode file
+            rest_key_name: base64 encode file（empty string if ?file=no）
           parameter:
             rest_key_name: rest_key_name
         - file:
-            rest_key_name: base64 encode file
+            rest_key_name: base64 encode file（empty string if ?file=no）
           parameter:
             rest_key_name: rest_key_name
         message: message
     menu_filter_body:
       properties:
         rest_key_name:
-          $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+          $ref: "#/components/schemas/FILTER_REQUEST_PARAMETERS"
       description: 検索条件を設定
     menu_maintenance_body:
       properties:
         parameter:
-          $ref: '#/components/schemas/MAINTENANCE_PARAMETER_P'
+          $ref: "#/components/schemas/MAINTENANCE_PARAMETER_P"
         file:
-          $ref: '#/components/schemas/MAINTENANCE_PARAMETER_F'
+          $ref: "#/components/schemas/MAINTENANCE_PARAMETER_F"
       description: 登録する値を設定
     inline_response_200_6:
       type: object
@@ -6574,9 +6710,9 @@ components:
     maintenance_uuid_body:
       properties:
         parameter:
-          $ref: '#/components/schemas/MAINTENANCE_PARAMETER_P'
+          $ref: "#/components/schemas/MAINTENANCE_PARAMETER_P"
         file:
-          $ref: '#/components/schemas/MAINTENANCE_PARAMETER_F'
+          $ref: "#/components/schemas/MAINTENANCE_PARAMETER_F"
       description: 更新する値を設定。廃止/復活は廃止フラグを更新することで実施。
     inline_response_200_7:
       type: object
@@ -6585,26 +6721,10 @@ components:
           type: string
           example: 000-00000
         data:
-          $ref: '#/components/schemas/inline_response_200_7_data'
+          type: string
+          example: base64 string
         message:
           type: string
-      example:
-        result: 000-00000
-        data:
-          TABLE:
-            TD: {}
-            TD_IHP: {}
-            PAGE_NO: 0
-            UNIQUE_VAL: {}
-        message: message
-    excel_maintenance_body:
-      type: object
-      properties:
-        excel:
-          type: string
-          description: excelファイルアップロードの対象を指定。
-          format: binary
-      description: 検索条件を設定
     inline_response_200_8:
       type: object
       properties:
@@ -6612,7 +6732,26 @@ components:
           type: string
           example: 000-00000
         data:
-          $ref: '#/components/schemas/inline_response_200_8_data'
+          $ref: "#/components/schemas/inline_response_200_8_data"
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
+          Register: 6.02745618307040320615897144307382404804229736328125
+          Discard: 0.80082819046101150206595775671303272247314453125
+          Update: 5.962133916683182377482808078639209270477294921875
+          Restore: 1.46581298050294517310021547018550336360931396484375
+          IdList: []
+        message: message
+    inline_response_200_9:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          $ref: "#/components/schemas/inline_response_200_9_data"
         message:
           type: string
           example: SUCCESS
@@ -6631,14 +6770,14 @@ components:
           - workspace2
           - workspace3
         message: SUCCESS
-    inline_response_200_9:
+    inline_response_200_10:
       type: object
       properties:
         result:
           type: string
           example: 000-00000
         data:
-          $ref: '#/components/schemas/inline_response_200_9_data'
+          $ref: "#/components/schemas/inline_response_200_10_data"
         message:
           type: string
           example: SUCCESS
@@ -6698,7 +6837,7 @@ components:
               menu_name: メニュー9
               menu_name_rest: menu_9
         message: SUCCESS
-    inline_response_200_10:
+    inline_response_200_11:
       type: object
       properties:
         result:
@@ -6720,7 +6859,7 @@ components:
         data:
           key: data
         message: SUCCESS
-    inline_response_200_11:
+    inline_response_200_12:
       type: object
       properties:
         result:
@@ -6734,7 +6873,7 @@ components:
         result: 000-00000
         data: true
         message: message
-    inline_response_200_12:
+    inline_response_200_13:
       type: object
       properties:
         result:
@@ -6757,7 +6896,7 @@ components:
           - string
           - string
         message: message
-    inline_response_200_13:
+    inline_response_200_14:
       type: object
       properties:
         result:
@@ -6781,7 +6920,7 @@ components:
           hostgroup: []
           parameter_sheet: []
         message: message
-    inline_response_200_14:
+    inline_response_200_15:
       type: object
       properties:
         result:
@@ -6803,7 +6942,7 @@ components:
           filter_name: xxx
           filter_json: xxx
         message: message
-    inline_response_200_15:
+    inline_response_200_16:
       type: object
       properties:
         result:
@@ -6814,14 +6953,14 @@ components:
       example:
         result: 000-00000
         message: message
-    inline_response_200_16:
+    inline_response_200_17:
       type: object
       properties:
         result:
           type: string
           example: 000-00000
         data:
-          $ref: '#/components/schemas/inline_response_200_16_data'
+          $ref: "#/components/schemas/inline_response_200_17_data"
         message:
           type: string
       example:
@@ -6866,14 +7005,14 @@ components:
             - id: string
               name: string
         message: message
-    inline_response_200_17:
+    inline_response_200_18:
       type: object
       properties:
         result:
           type: string
           example: 000-00000
         data:
-          $ref: '#/components/schemas/inline_response_200_17_data'
+          $ref: "#/components/schemas/inline_response_200_18_data"
         message:
           type: string
       example:
@@ -6950,7 +7089,7 @@ components:
     filter_target_body:
       properties:
         rest_key_name:
-          $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+          $ref: "#/components/schemas/FILTER_REQUEST_PARAMETERS"
       description: 検索条件を設定
     conductor_execute_body:
       type: object
@@ -6965,14 +7104,14 @@ components:
         conductor_data:
           type: object
       description: 作業実行するConductorの構成情報
-    inline_response_200_18:
+    inline_response_200_19:
       type: object
       properties:
         result:
           type: string
           example: 000-00000
         data:
-          $ref: '#/components/schemas/inline_response_200_18_data'
+          $ref: "#/components/schemas/inline_response_200_19_data"
         message:
           type: string
       example:
@@ -7009,22 +7148,6 @@ components:
             conductor_instance_id: ConductorインスタンスID
           conductor_class: {}
         message: message
-    inline_response_200_19:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          $ref: '#/components/schemas/inline_response_200_19_data'
-        message:
-          type: string
-      example:
-        result: 000-00000
-        data:
-          file_name: "InputData_Conductor_{conductor_instance_id}.zip"
-          file_data: All movement input data zip base64 string
-        message: message
     inline_response_200_20:
       type: object
       properties:
@@ -7032,15 +7155,19 @@ components:
           type: string
           example: 000-00000
         data:
-          $ref: '#/components/schemas/inline_response_200_20_data'
+          $ref: "#/components/schemas/inline_response_200_20_data"
         message:
           type: string
-      example:
-        result: 000-00000
+    inline_response_200_21:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
         data:
-          file_name: "ResultData_Conductor_{conductor_instance_id}.zip"
-          file_data: All movement result data zip base64 string
-        message: message
+          $ref: "#/components/schemas/inline_response_200_21_data"
+        message:
+          type: string
     driver_execute_body:
       type: object
       properties:
@@ -7052,7 +7179,7 @@ components:
           type: string
           example: YYYY/MM/DD hh:mm
       description: 作業実行するDriverの構成情報
-    inline_response_200_21:
+    inline_response_200_22:
       type: object
       properties:
         result:
@@ -7097,14 +7224,14 @@ components:
         tf_workspace_name:
           type: string
       description: 作業実行するDriverの構成情報
-    inline_response_200_22:
+    inline_response_200_23:
       type: object
       properties:
         result:
           type: string
           example: 000-00000
         data:
-          $ref: '#/components/schemas/inline_response_200_22_data'
+          $ref: "#/components/schemas/inline_response_200_23_data"
         message:
           type: string
       example:
@@ -7181,16 +7308,16 @@ components:
     filter_target_body_1:
       properties:
         rest_key_name:
-          $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+          $ref: "#/components/schemas/FILTER_REQUEST_PARAMETERS"
       description: 検索条件を設定
-    inline_response_200_23:
+    inline_response_200_24:
       type: object
       properties:
         result:
           type: string
           example: 000-00000
         data:
-          $ref: '#/components/schemas/inline_response_200_23_data'
+          $ref: "#/components/schemas/inline_response_200_24_data"
         message:
           type: string
       example:
@@ -7240,21 +7367,6 @@ components:
           - <menu_name_rest 1>
           - <menu_name_rest 2>
           items: {}
-    inline_response_200_24:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          $ref: '#/components/schemas/inline_response_200_24_data'
-        message:
-          type: string
-      example:
-        result: 000-00000
-        data:
-          execution_no: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-        message: message
     inline_response_200_25:
       type: object
       properties:
@@ -7262,7 +7374,22 @@ components:
           type: string
           example: 000-00000
         data:
-          $ref: '#/components/schemas/inline_response_200_25_data'
+          $ref: "#/components/schemas/inline_response_200_25_data"
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
+          execution_no: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+        message: message
+    inline_response_200_26:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          $ref: "#/components/schemas/inline_response_200_26_data"
         message:
           type: string
       example:
@@ -7328,26 +7455,21 @@ components:
     export_execute_body_1:
       properties:
         rest_key_name:
-          $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
-      description: 検索条件を設定
-    bulk_upload_body:
-      properties:
-        rest_key_name:
-          $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+          $ref: "#/components/schemas/FILTER_REQUEST_PARAMETERS"
       description: 検索条件を設定
     import_execute_body_1:
       properties:
         rest_key_name:
-          $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+          $ref: "#/components/schemas/FILTER_REQUEST_PARAMETERS"
       description: 検索条件を設定
-    inline_response_200_26:
+    inline_response_200_27:
       type: object
       properties:
         result:
           type: string
           example: 000-00000
         data:
-          $ref: '#/components/schemas/inline_response_200_26_data'
+          $ref: "#/components/schemas/inline_response_200_27_data"
         message:
           type: string
       example:
@@ -7424,7 +7546,7 @@ components:
     filter_target_body_2:
       properties:
         rest_key_name:
-          $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+          $ref: "#/components/schemas/FILTER_REQUEST_PARAMETERS"
       description: 検索条件を設定
     compare_execute_body:
       properties:
@@ -7458,14 +7580,14 @@ components:
           items:
             example: host_name
       description: 比較条件を設定
-    inline_response_200_27:
+    inline_response_200_28:
       type: object
       properties:
         result:
           type: string
           example: 000-00000
         data:
-          $ref: '#/components/schemas/inline_response_200_27_data'
+          $ref: "#/components/schemas/inline_response_200_28_data"
         message:
           type: string
       example:
@@ -7528,10 +7650,20 @@ components:
           type: string
           example: /api/v2/policies/pol-xxxxxxxxxx/download
       description: policyコードのダウンロードパスを記載
+    inline_response_200_29:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          $ref: "#/components/schemas/inline_response_200_29_data"
+        message:
+          type: string
     filter_menu_body:
       properties:
         rest_key_name:
-          $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+          $ref: "#/components/schemas/FILTER_REQUEST_PARAMETERS"
       description: 検索条件を設定
     event_flow_history_body:
       properties:
@@ -7551,7 +7683,7 @@ components:
           type: boolean
           example: false
       description: 検索条件を指定
-    inline_response_200_28:
+    inline_response_200_30:
       type: object
       properties:
         result:
@@ -7561,7 +7693,7 @@ components:
           type: array
           example: []
           items:
-            $ref: '#/components/schemas/inline_response_200_28_data'
+            $ref: "#/components/schemas/inline_response_200_30_data"
         message:
           type: string
       example:
@@ -7583,12 +7715,12 @@ components:
         parameter_info:
           nullable: true
           anyOf:
-          - $ref: '#/components/schemas/ApplyParameterTypeA'
-          - $ref: '#/components/schemas/ApplyParameterTypeB'
-          - $ref: '#/components/schemas/ApplyParameterTypeC'
-          - $ref: '#/components/schemas/ApplyParameterTypeD'
+          - $ref: "#/components/schemas/ApplyParameterTypeA"
+          - $ref: "#/components/schemas/ApplyParameterTypeB"
+          - $ref: "#/components/schemas/ApplyParameterTypeC"
+          - $ref: "#/components/schemas/ApplyParameterTypeD"
       description: 適用するパラメータ情報および作業実行するConductorの構成情報
-    inline_response_200_29:
+    inline_response_200_31:
       type: object
       properties:
         result:
@@ -7622,9 +7754,15 @@ components:
       properties:
         rest_key_name:
           type: string
-          example: base64 encode file
+          example: base64 encode file（empty string if ?file=no）
       example:
-        rest_key_name: base64 encode file
+        rest_key_name: base64 encode file（empty string if ?file=no）
+    MAINTENANCE_PARAMETERS_file:
+      type: object
+      properties:
+        rest_key_name:
+          type: string
+          example: base64 encode file
     NODE_RESULT_node_name:
       type: object
       properties:
@@ -7727,18 +7865,18 @@ components:
         type:
           type: string
         parameter:
-          $ref: '#/components/schemas/FILTER_PARAMETERS_parameter'
+          $ref: "#/components/schemas/FILTER_PARAMETERS_parameter"
         file:
-          $ref: '#/components/schemas/FILTER_PARAMETERS_file'
+          $ref: "#/components/schemas/MAINTENANCE_PARAMETERS_file"
     inline_response_200_data:
       type: object
       properties:
         column_group_info:
-          $ref: '#/components/schemas/COLUMN_GROUP_INFO'
+          $ref: "#/components/schemas/COLUMN_GROUP_INFO"
         column_info:
-          $ref: '#/components/schemas/COLUMN_INFO'
+          $ref: "#/components/schemas/COLUMN_INFO"
         menu_info:
-          $ref: '#/components/schemas/MENU_INFO'
+          $ref: "#/components/schemas/MENU_INFO"
       example:
         column_group_info:
           key:
@@ -7805,18 +7943,27 @@ components:
             column_type: 0
             column_group_name: column_group_name
             ref_sort_conditions: ref_sort_conditions
-    inline_response_200_7_data:
+    inline_response_200_8_data:
       type: object
       properties:
-        TABLE:
-          $ref: '#/components/schemas/TABLE'
+        Discard:
+          type: number
+        IdList:
+          type: array
+          example: []
+        Register:
+          type: number
+        Restore:
+          type: number
+        Update:
+          type: number
       example:
-        TABLE:
-          TD: {}
-          TD_IHP: {}
-          PAGE_NO: 0
-          UNIQUE_VAL: {}
-    inline_response_200_8_data:
+        Register: 6.02745618307040320615897144307382404804229736328125
+        Discard: 0.80082819046101150206595775671303272247314453125
+        Update: 5.962133916683182377482808078639209270477294921875
+        Restore: 1.46581298050294517310021547018550336360931396484375
+        IdList: []
+    inline_response_200_9_data:
       type: object
       properties:
         roles:
@@ -7847,7 +7994,7 @@ components:
         - workspace1
         - workspace2
         - workspace3
-    inline_response_200_9_data:
+    inline_response_200_10_data:
       type: object
       properties:
         menu_groups:
@@ -7956,13 +8103,13 @@ components:
             id: "10109"
             menu_name: メニュー9
             menu_name_rest: menu_9
-    inline_response_200_16_data:
+    inline_response_200_17_data:
       type: object
       properties:
         list:
-          $ref: '#/components/schemas/CONDUCTOR_INFO_LIST'
+          $ref: "#/components/schemas/CONDUCTOR_INFO_LIST"
         dict:
-          $ref: '#/components/schemas/CONDUCTOR_INFO_DICT'
+          $ref: "#/components/schemas/CONDUCTOR_INFO_DICT"
       example:
         dict:
           node_status:
@@ -8002,13 +8149,13 @@ components:
           conductors:
           - id: string
             name: string
-    inline_response_200_17_data:
+    inline_response_200_18_data:
       type: object
       properties:
         conductor_list:
-          $ref: '#/components/schemas/inline_response_200_data'
+          $ref: "#/components/schemas/inline_response_200_data"
         operation_list:
-          $ref: '#/components/schemas/inline_response_200_data'
+          $ref: "#/components/schemas/inline_response_200_data"
       example:
         operation_list: null
         conductor_list:
@@ -8077,15 +8224,15 @@ components:
               column_type: 0
               column_group_name: column_group_name
               ref_sort_conditions: ref_sort_conditions
-    inline_response_200_18_data:
+    inline_response_200_19_data:
       type: object
       properties:
         conductor_class:
           type: object
         conductor:
-          $ref: '#/components/schemas/CONDUCTOR_RESULT'
+          $ref: "#/components/schemas/CONDUCTOR_RESULT"
         node:
-          $ref: '#/components/schemas/NODE_RESULT'
+          $ref: "#/components/schemas/NODE_RESULT"
       example:
         node:
           node_name:
@@ -8117,7 +8264,7 @@ components:
           remarks: 備考
           conductor_instance_id: ConductorインスタンスID
         conductor_class: {}
-    inline_response_200_19_data:
+    inline_response_200_20_data:
       type: object
       properties:
         file_name:
@@ -8126,10 +8273,7 @@ components:
         file_data:
           type: string
           example: All movement input data zip base64 string
-      example:
-        file_name: "InputData_Conductor_{conductor_instance_id}.zip"
-        file_data: All movement input data zip base64 string
-    inline_response_200_20_data:
+    inline_response_200_21_data:
       type: object
       properties:
         file_name:
@@ -8138,16 +8282,13 @@ components:
         file_data:
           type: string
           example: All movement result data zip base64 string
-      example:
-        file_name: "ResultData_Conductor_{conductor_instance_id}.zip"
-        file_data: All movement result data zip base64 string
-    inline_response_200_22_data:
+    inline_response_200_23_data:
       type: object
       properties:
         movement_list:
-          $ref: '#/components/schemas/inline_response_200_data'
+          $ref: "#/components/schemas/inline_response_200_data"
         operation_list:
-          $ref: '#/components/schemas/inline_response_200_data'
+          $ref: "#/components/schemas/inline_response_200_data"
       example:
         operation_list: null
         movement_list:
@@ -8216,7 +8357,7 @@ components:
               column_type: 0
               column_group_name: column_group_name
               ref_sort_conditions: ref_sort_conditions
-    inline_response_200_23_data:
+    inline_response_200_24_data:
       type: object
       properties:
         menu_groups:
@@ -8253,7 +8394,7 @@ components:
               id: "10101"
               menu_name: システム設定
               menu_name_rest: system_settings
-    inline_response_200_24_data:
+    inline_response_200_25_data:
       type: object
       properties:
         execution_no:
@@ -8261,7 +8402,7 @@ components:
           example: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
       example:
         execution_no: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-    inline_response_200_25_data_import_list:
+    inline_response_200_26_data_import_list:
       properties:
         menu_groups:
           type: array
@@ -8315,7 +8456,7 @@ components:
                 menu_name_en: System settings
                 menu_name_ja: システム設定
                 menu_name_rest: system_settings
-    inline_response_200_25_data:
+    inline_response_200_26_data:
       type: object
       properties:
         upload_id:
@@ -8337,7 +8478,7 @@ components:
           type: string
           example: "1: 履歴あり / 2: 履歴なし"
         import_list:
-          $ref: '#/components/schemas/inline_response_200_25_data_import_list'
+          $ref: "#/components/schemas/inline_response_200_26_data_import_list"
       example:
         mode: "1: 環境移行 / 2: 時刻指定"
         upload_id: xxxxxxxxxxxxxxxxxxxxxxxx
@@ -8377,13 +8518,13 @@ components:
         specified_time: YYYY/MM/DD hh:mm
         abolished_type: "1: 廃止を含む / 2: 廃止を除く"
         journal_type: "1: 履歴あり / 2: 履歴なし"
-    inline_response_200_26_data:
+    inline_response_200_27_data:
       type: object
       properties:
         compare_list:
-          $ref: '#/components/schemas/inline_response_200_data'
+          $ref: "#/components/schemas/inline_response_200_data"
         device_list:
-          $ref: '#/components/schemas/inline_response_200_data'
+          $ref: "#/components/schemas/inline_response_200_data"
       example:
         device_list: null
         compare_list:
@@ -8452,7 +8593,7 @@ components:
               column_type: 0
               column_group_name: column_group_name
               ref_sort_conditions: ref_sort_conditions
-    inline_response_200_27_data:
+    inline_response_200_28_data:
       type: object
       properties:
         file_name:
@@ -8464,7 +8605,15 @@ components:
       example:
         file_name: "{compare_name}_YYYY/MMDDhhmmss.xlsx"
         file_data: Compare result base64 string
-    inline_response_200_28_data:
+    inline_response_200_29_data:
+      type: object
+      properties:
+        file:
+          type: string
+          example: base64 string
+        file_name:
+          type: string
+    inline_response_200_30_data:
       type: object
       properties:
         datetime:

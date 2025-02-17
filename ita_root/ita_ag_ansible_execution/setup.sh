@@ -1007,7 +1007,7 @@ ansible_additional_install(){
     if [ ${default_env_values["ANSIBLE_SUPPORT"]} = "2" ]; then
         if [ "${DEP_PATTERN}" = "RHEL8" ] || [ "${DEP_PATTERN}" = "RHEL9" ]; then
             info "uninstall ansible-builder ansible-runner"
-            sudo pip3 uninstall -y ansible-builder ansible-runner
+            poetry run pip3 uninstall -y ansible-builder ansible-runner
             info "sudo dnf install -y ansible-builder ansible-runner"
             sudo dnf install -y ansible-builder ansible-runner
         else

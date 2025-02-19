@@ -277,6 +277,7 @@ fetch: function( url, token, method = 'GET', data, option = {} ) {
                             }
                         }).catch(function( error ){
                             cmn.systemErrorAlert();
+                            reject( error );
                         });
                     } else {
                         errorCount++;
@@ -286,6 +287,7 @@ fetch: function( url, token, method = 'GET', data, option = {} ) {
                             });
                         }).catch(function( error ){
                             cmn.systemErrorAlert();
+                            reject( error );
                         });
                     }
                 }
@@ -317,7 +319,7 @@ fetch: function( url, token, method = 'GET', data, option = {} ) {
 ##################################################
 */
 responseError: function( status, responseJson, fetchController, option = {}) {
-    return new Promise(function( resolve ){
+    return new Promise(function( resolve, reject ){
         switch ( status ) {
             // 呼び出し元に返す
             case 498: // メンテナンス中
@@ -348,6 +350,7 @@ responseError: function( status, responseJson, fetchController, option = {}) {
                     } else {
                         const message = ( responseJson && responseJson.message )? responseJson.message: '';
                         cmn.iframeMessage( message );
+                        resolve( null );
                     }
                 } else {
                     resolve( responseJson );
@@ -376,6 +379,7 @@ responseError: function( status, responseJson, fetchController, option = {}) {
                 } else {
                     const message = ( responseJson && responseJson.message )? responseJson.message: '';
                     cmn.iframeMessage( message );
+                    reject();
                 }
             break;
             // その他のエラー
@@ -384,6 +388,7 @@ responseError: function( status, responseJson, fetchController, option = {}) {
                 console.error( responseJson );
                 if ( option.dataRegistrationFlag !== true ) {
                     cmn.systemErrorAlert();
+                    reject();
                 } else {
                     status = fn.cv( status, 'Unknown');
                     alert( getMessage.FTE00186( status ) );
@@ -398,12 +403,7 @@ responseError: function( status, responseJson, fetchController, option = {}) {
 ##################################################
 */
 systemErrorAlert: function() {
-    if ( windowFlag ) {
-        cmn.gotoErrPage( getMessage.FTE10030 );
-    } else {
-        console.error( getMessage.FTE10030 );
-        throw new Error( getMessage.FTE10030 );
-    }
+    if ( windowFlag ) cmn.gotoErrPage( getMessage.FTE10030 );
 },
 /*
 ##################################################
@@ -640,17 +640,21 @@ date: function( date, format ) {
 ##################################################
 */
 getPathname: function(){
-    return ( new URL( document.location ) ).pathname;
+    if ( iframeFlag ) {
+        return ( new URL( window.parent.location ) ).pathname;
+    } else {
+        return ( new URL( document.location ) ).pathname;
+    }
 },
-/*
 /*
 ##################################################
    URLパラメータ
 ##################################################
 */
 getParams: function() {
-    const searchParams = ( new URL( document.location ) ).searchParams.entries(),
-          params = {};
+    const location = ( iframeFlag )? new URL( window.parent.location ): new URL( document.location );
+    const searchParams = location.searchParams.entries();
+    const params = {};
     for ( const [ key, val ] of searchParams ) {
         params[ key ] = val;
     }
@@ -1966,33 +1970,45 @@ html: {
         return  input;
     },
     inputPassword: function( className, value, name, attrs = {}, option = {} ) {
-        const wrapClass = ['inputPasswordWrap'],
-              attr = inputCommon( value, name, attrs );
+        const wrapClass = ['inputPasswordWrap'];
+        const attr = inputCommon( value, name, attrs );
 
         className = classNameCheck( className, 'inputPassword input');
-        if ( option.widthAdjustment ) className.push('inputTextWidthAdjustment')
+        if ( option.widthAdjustment ) className.push('inputTextWidthAdjustment');
+        if ( option.textarea ) className.push('mask inputPasswordTextarea textareaAdjustment textarea');
         attr.push(`class="${className.join(' ')}"` );
 
-        let input = `<input type="password" ${attr.join(' ')} autocomplete="new-password">`;
-
-        if ( option.widthAdjustment ) {
-            input = ``
-            + `<div class="inputTextWidthAdjustmentWrap">`
-                + input
-                + `<div class="inputTextWidthAdjustmentText">${value}</div>`
+        let input = '';
+        if ( !option.textarea ) {
+            input = `<input type="password" ${attr.join(' ')} autocomplete="new-password">`;
+            if ( option.widthAdjustment ) {
+                input = ``
+                + `<div class="inputTextWidthAdjustmentWrap">`
+                    + input
+                    + `<div class="inputTextWidthAdjustmentText">${value}</div>`
+                + `</div>`;
+            }
+        } else {
+            input += `<div class="textareaAdjustmentWrap inputPasswordTextareaAdjustmentWrap">`
+                + `<textarea spellcheck="false" wrap="soft" ${attr.join(' ')}>${value}</textarea>`
+                + `<div class="mask textareaAdjustmentText textareaWidthAdjustmentText">${value}</div>`
+                + `<div class="mask textareaAdjustmentText textareaHeightAdjustmentText">${value}</div>`
             + `</div>`
         }
 
+
         // パスワード表示
         const eyeAttrs = { action: 'default'};
+        const passwordButtonClass = ['itaButton', 'inputPasswordToggleButton'];
         if ( attrs.disabled ) eyeAttrs.disabled = 'disabled';
+        if ( option.textarea ) passwordButtonClass.push('inputPasswordTextareaToggleButton');
         input = `<div class="inputPasswordBody">${input}</div>`
-        + `<div class="inputPasswordToggle">${cmn.html.button( cmn.html.icon('eye_close'), 'itaButton inputPasswordToggleButton', eyeAttrs )}</div>`;
+        + `<div class="inputPasswordToggle">${cmn.html.button( cmn.html.icon('eye_close'), passwordButtonClass.join(' '), eyeAttrs )}</div>`;
 
         // パスワード削除
         if ( option.deleteToggle ) {
-            const deleteClass = ['itaButton', 'inputPasswordDeleteToggleButton', 'popup'],
-                  deleteAttrs = { action: 'danger', title: getMessage.FTE10041 };
+            const deleteClass = ['itaButton', 'inputPasswordDeleteToggleButton', 'popup'];
+            const deleteAttrs = { action: 'danger', title: getMessage.FTE10041 };
             let iconName = 'cross';
 
             if ( attrs.disabled ) deleteAttrs.disabled = 'disabled';
@@ -2239,8 +2255,8 @@ html: {
     cell: function( element, className, type = 'td', rowspan = 1, colspan = 1, attrs = {}) {
         const attr = bindAttrs( attrs );
         attr.push(`class="${classNameCheck( className, type ).join(' ')}"`);
-        attr.push(`rowspan="${rowspan}"`);
-        attr.push(`colspan="${colspan}"`);
+        if ( rowspan !== 1 ) attr.push(`rowspan="${rowspan}"`);
+        if ( colspan !== 1 ) attr.push(`colspan="${colspan}"`);
         return ``
         + `<${type} ${attr.join(' ')}>`
             + `<div class="ci">${element}</div>`
@@ -2766,18 +2782,47 @@ setCommonEvents: function() {
 
     // パスワード表示・非表示切替
     $body.on('click', '.inputPasswordToggleButton', function(){
-        const $button = $( this ),
-              $input = $button.closest('.inputPasswordWrap').find('.inputPassword');
+        const $button = $( this );
+        const $input = $button.closest('.inputPasswordWrap').find('.inputPassword');
+        const textareaFlag = ( $button.is('.inputPasswordTextareaToggleButton') )? true: false;
 
         if ( !$button.is('.on') ) {
             $button.addClass('on');
             $button.find('.inner').html( cmn.html.icon('eye_open'));
-            $input.attr('type', 'text');
+            if ( textareaFlag ) {
+                $input.removeClass('mask');
+                $input.nextAll().removeClass('mask');
+            } else {
+                $input.attr('type', 'text');
+            }
         } else {
             $button.removeClass('on');
             $button.find('.inner').html( cmn.html.icon('eye_close'));
-            $input.attr('type', 'password');
+            if ( textareaFlag ) {
+                $input.addClass('mask');
+                $input.nextAll().addClass('mask');
+            } else {
+                $input.attr('type', 'password');
+            }
         }
+    });
+
+    // パスワードテキストエリアの入力をinputに反映
+    $body.on('change.inputPasswordTextarea', '.inputPasswordTextarea', function(){
+        const $textarea = $( this );
+        const val = $textarea.val();
+        const $input = $textarea.closest('.inputPasswordWrap').find('.inputPassword');
+
+        $input.val( val );
+    });
+
+    // パスワード入力をテキストエリアにも反映
+    $body.on('change.inputPasswordTextarea', '.inputPasswordToggleTextarea', function(){
+        const $input = $( this );
+        const val = $input.val();
+        const $textarea = $input.closest('.inputPasswordWrap').find('.inputPasswordTextarea');
+
+        $textarea.val( val );
     });
 
     // パスワード候補を初回クリックで出さないようにする
@@ -3291,7 +3336,14 @@ gotoErrPage: function( message ) {
             } else {
                 window.alert('Unknown error.');
             }
-            window.location.href = './system_error/';
+            const params = cmn.getParams();
+            if ( params.debug !== 'true') {
+                if ( iframeFlag ) {
+                    window.parent.parent.location.href = './system_error/';
+                } else {
+                    window.location.href = './system_error/';
+                }
+            }
         }
     } else {
         if ( message ) {

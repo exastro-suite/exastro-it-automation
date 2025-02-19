@@ -382,6 +382,7 @@ export function messageid_en() {
         'FTE01155' : function(id){ return `Duplicate ID（${id}）.`;},
         'FTE01156' : function(id){ return `ID（${id}） specified in columns was not found.`;},
         'FTE01157': 'Failed to load JSON.',
+        'FTE01158' : "Enter the maximum number of bytes.\nThe maximum size is 8192 bytes.\nFor editing, it is possible to increase it from the original value.\nThe byte count of half-width alphanumeric characters are equivalent to the number of characters.\nFor full-width characters, the number of characters x 3 + 2 bytes is required.",
 
         // Conductor
         'FTE02001' : "Conductor instance id is not yet set.",

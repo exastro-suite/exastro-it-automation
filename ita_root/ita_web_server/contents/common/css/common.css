@@ -164,7 +164,6 @@ background-color: #60C60D;
 background-color: var(--accentColor100);
 }
 
-
 .input:focus {
 background-color: var(--focusBackgroundColor);
 border-color: var(--focusColor);
@@ -2631,10 +2630,27 @@ position: sticky;
 z-index: 10;
 left: 0;
 }
-.tHeadLeftSticky {
+.tHeadRightSticky,
+.tBodyRightSticky {
+position: sticky;
+z-index: 10;
+right: -1px;
+}
+.tHeadRightSticky {
+box-shadow: -1px 0 0 0 var(--mainColor100);
+}
+.tHeadFilter.tHeadRightSticky {
+box-shadow: -1px 0 0 0 var(--black50);
+}
+.tBodyRightSticky {
+box-shadow: -1px 0 0 0 var(--mainColor40);
+}
+.tHeadLeftSticky,
+.tHeadRightSticky {
 background-color: var(--mainColor60);
 }
-.tBodyLeftSticky {
+.tBodyLeftSticky,
+.tBodyRightSticky {
 z-index: 5;
 }
 .tBodyTrRowSelect {
@@ -4978,9 +4994,11 @@ margin-bottom: 8px;
 .commonParagraph {
 margin-bottom: 8px; padding: 8px;
 border-left: 4px solid rgba( 0,0,0,.2 );
+text-align: left;
 line-height: 1.5;
 letter-spacing: .5px;
 word-break: break-all;
+white-space: normal;
 font-size: 12px;
 }
 .commonParagraph:last-child {
@@ -5433,6 +5451,7 @@ width: auto; min-width: auto;
 display: none;
 }
 .commonInputTable .period_T,
+.commonInputTable[data-type="period_0"] .period_0,
 .commonInputTable[data-type="period_1"] .period_1,
 .commonInputTable[data-type="period_2"] .period_2,
 .commonInputTable[data-type="period_3"] .period_3,
@@ -5441,11 +5460,19 @@ display: none;
 .commonInputTable[data-type="period_6"] .period_6 {
 display: table-row;
 }
+.commonInputTable[data-type="period_0"] .period_T,
 .commonInputTable[data-type="period_1"] .period_T {
 display: none;
 }
 .scheduleNote {
 resize: vertical;
+}
+.scheduleWeekCheckboxWrap {
+    display: inline-flex;
+    flex-wrap: wrap;
+}
+.scheduleWeekCheckboxWrap .checkboxTextWrap {
+    flex: 0 0 auto;
 }
 
 /*
@@ -5816,6 +5843,26 @@ background-color: #444;
 box-shadow: 0 0 4px rgba( 0,0,0,.5 ) inset,
           0 0 8px rgba( 0,0,0,.2 ),
           0 0 0 2px #666;
+}
+/*
+##################################################
+    Masked font
+##################################################
+*/
+@font-face {
+    font-family: 'exastro-masked-font';
+    src:
+        url('../fonts/exastro-masked-font.ttf') format('truetype'),
+        url('../fonts/exastro-masked-font.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+    font-display: block;
+}
+.mask {
+    font-family: 'exastro-masked-font' !important;
+    font-size: 5px!important;
+    line-height: 22px;
+    letter-spacing: 3.5px;
 }
 /*
 ##################################################

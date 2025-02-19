@@ -387,6 +387,7 @@ export function messageid_ja() {
         'FTE01155' : function(id){ return `ID（${id}）が重複しています。`;},
         'FTE01156' : function(id){ return `columnsに指定されたID（${id}）が見つかりません。`;},
         'FTE01157': 'JSONの読み込みに失敗しました。',
+        'FTE01158' : "最大バイト数を入力します。[最大長]8192バイト\n編集の場合、元の値より増加させることは可能です。\n※半角英数字なら文字数分となります。\n※全角文字ならば文字数×3＋2 バイト必要になります。",
 
         // Conductor
         'FTE02001' : "ConductorインスタンスIDが未設定です。",

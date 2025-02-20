@@ -21,7 +21,10 @@ from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
 from common_libs.loadtable import *
 from common_libs.loadcollection.load_collection import loadCollection
 
+# from memory_profiler import profile
 
+
+# @profile
 def rest_count(objdbca, menu, filter_parameter):
     """
         メニューの件数取得
@@ -66,7 +69,7 @@ def rest_count(objdbca, menu, filter_parameter):
 
     return result
 
-
+# @profile
 def rest_filter(objdbca, menu, filter_parameter, base64_file_flg=True):
     """
         メニューのレコード取得

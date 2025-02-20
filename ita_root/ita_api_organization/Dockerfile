@@ -86,6 +86,10 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
     poetry install --with develop_build
 
+# ---- test
+RUN pip3.9 install memory-profiler
+# ----
+
 USER $USERNAME
 
 RUN mkdir ~/.config \

@@ -22,8 +22,10 @@ from common_libs.api import api_filter, api_filter_download_file
 from libs.organization_common import check_menu_info, check_auth_menu, check_sheet_type
 from libs import menu_filter
 
+# from memory_profiler import profile
 
 @api_filter
+# @profile
 def get_filter_count(organization_id, workspace_id, menu):  # noqa: E501
     """get_filter_count
 
@@ -67,6 +69,7 @@ def get_filter_count(organization_id, workspace_id, menu):  # noqa: E501
 
 
 @api_filter
+# @profile
 def get_filter(organization_id, workspace_id, menu, file=None):  # noqa: E501
     """get_filter
 
@@ -117,6 +120,7 @@ def get_filter(organization_id, workspace_id, menu, file=None):  # noqa: E501
 
 
 @api_filter
+# @profile
 def get_journal(organization_id, workspace_id, menu, uuid, file=None):  # noqa: E501
     """get_journal
 
@@ -165,6 +169,7 @@ def get_journal(organization_id, workspace_id, menu, uuid, file=None):  # noqa: 
 
 
 @api_filter
+# @profile
 def post_filter(organization_id, workspace_id, menu, body=None, file=None):  # noqa: E501
     """post_filter
 
@@ -223,6 +228,7 @@ def post_filter(organization_id, workspace_id, menu, body=None, file=None):  # n
 
 
 @api_filter
+# @profile
 def post_filter_count(organization_id, workspace_id, menu, body=None):  # noqa: E501
     """post_filter_count
 

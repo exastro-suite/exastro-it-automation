@@ -16,7 +16,7 @@ import re
 
 # import text_column_class
 from flask import g
-from .password_class import PasswordColumn
+from .text_column_class import TextColumn
 from common_libs.common import *  # noqa: F403
 
 """
@@ -25,7 +25,7 @@ from common_libs.common import *  # noqa: F403
 """
 
 
-class MultiPasswordColumn(PasswordColumn):
+class MultiPasswordColumn(TextColumn):
     def check_basic_valid(self, val, option={}):
         """
             バリデーション処理(カラムクラス毎)
@@ -52,3 +52,36 @@ class MultiPasswordColumn(PasswordColumn):
             return retBool, msg
         return retBool,
 
+    def convert_value_input(self, val=''):
+        """
+            値を暗号化
+            ARGS:
+                val:値
+            RETRUN:
+                retBool, msg, val
+        """
+        retBool = True
+        msg = ''
+
+        # self.encrypt_typeでエンクリプトを分岐
+        if val is not None:
+            if len(str(val)) > 0:
+                val = ky_encrypt(val)  # noqa: F405
+            else:
+                val = None
+
+        return retBool, msg, val
+
+    def convert_value_output(self, val=''):
+        """
+            値を暗号化
+            ARGS:
+                val:値
+            RETRUN:
+                retBool, msg, val
+        """
+        retBool = True
+        msg = ''
+        val = None
+
+        return retBool, msg, val

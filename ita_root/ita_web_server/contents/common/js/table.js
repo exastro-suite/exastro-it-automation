@@ -210,6 +210,9 @@ tableStructuralData() {
 setHeaderHierarchy() {
     const tb = this;
 
+    // 固定カラム
+    tb.setStickyColumn();
+
     // テーブル構造データ
     tb.tableStructuralData();
 
@@ -403,9 +406,6 @@ setup() {
         tb.tableMode = 'input';
     }
 
-    // 初期値
-    tb.setInitStickyColumn();
-
     // テーブル設定
     tb.initTableSettingValue();
     tb.setTableSettingValue();
@@ -508,15 +508,21 @@ setupWorker() {
     Init Sticky Column
 ##################################################
 */
-setInitStickyColumn() {
-    this.leftSticky = [
-        'discard',
-        //this.idNameRest,
-    ];
-    this.rightSticky = [
-        //'last_updated_user',
-        //'last_update_date_time'
-    ];
+setStickyColumn() {
+    const leftFixed = this.getTableSettingValue('fixedLeftItem');
+    const rightFixed = this.getTableSettingValue('fixedRightItem');
+
+    if ( leftFixed && leftFixed.length ) {
+        this.leftSticky = leftFixed;
+        this.leftSticky.push('discard')
+    } else {
+        this.leftSticky = ['discard'];
+    }
+    if ( rightFixed && rightFixed.length ) {
+        this.rightSticky = rightFixed;
+    } else {
+        this.rightSticky = [];
+    }
 }
 /*
 ##################################################
@@ -561,6 +567,9 @@ setTable( mode ) {
     tb.mode = mode;
 
     tb.$.table.attr('table-mode', tb.tableMode );
+
+    // 固定カラムチェック
+    tb.setStickyColumn();
 
     // フィルター位置
     if ( tb.mode !== 'parameter') {
@@ -5511,18 +5520,26 @@ initTableSettingValue() {
 }
 /*
 ##################################################
-   テーブル設定値をセット
+    テーブル設定値をセット
 ##################################################
 */
 setTableSettingValue() {
     const tb = this;
 
-    const restUser = fn.storage.get('restUser', 'session'),
-          tableSetting = ( restUser.web_table_settings && restUser.web_table_settings.table )? restUser.web_table_settings.table: {};
+    const restUser = fn.storage.get('restUser', 'session');
+    const tableSetting = ( restUser.web_table_settings && restUser.web_table_settings.table )? restUser.web_table_settings.table: {};
 
-    const general = fn.cv( tableSetting.general, {}),
-          individual = ( tableSetting.individual && tableSetting.individual[ tb.params.menuNameRest ] && tableSetting.individual[ tb.params.menuNameRest ][ tb.id ] )?
-              tableSetting.individual[ tb.params.menuNameRest ][ tb.id ]: {};
+
+    const general = fn.cv( tableSetting.general, {});
+    const individual = (
+            tableSetting.individual && tableSetting.individual[ tb.params.menuNameRest ] &&
+            tableSetting.individual[ tb.params.menuNameRest ][ tb.id ]
+        )?
+        tableSetting.individual[ tb.params.menuNameRest ][ tb.id ]:
+        {
+            view: {},
+            input: {}
+        };
 
     // 値をセット
     if ( !tb.tableSetting ) tb.tableSetting = {};
@@ -5533,7 +5550,7 @@ setTableSettingValue() {
 }
 /*
 ##################################################
-   テーブル設定値チェック
+    テーブル設定値チェック
 ##################################################
 */
 checkTableSettingValue() {
@@ -5545,6 +5562,8 @@ checkTableSettingValue() {
     if ( !data.individual[ tb.tableMode ].check ) data.individual[ tb.tableMode ].check = {};
     if ( !data.individual[ tb.tableMode ].color ) data.individual[ tb.tableMode ].color = {};
     if ( !data.individual[ tb.tableMode ].hideItem ) data.individual[ tb.tableMode ].hideItem = [];
+    if ( !data.individual[ tb.tableMode ].fixedLeftItem ) data.individual[ tb.tableMode ].fixedLeftItem = [];
+    if ( !data.individual[ tb.tableMode ].fixedRightItem ) data.individual[ tb.tableMode ].fixedRightItem = [];
 
     if ( !data.general[ tb.tableMode ] ) data.general[ tb.tableMode ] = {};
     if ( !data.general[ tb.tableMode ].check ) data.general[ tb.tableMode ].check = {};
@@ -5552,7 +5571,7 @@ checkTableSettingValue() {
 }
 /*
 ##################################################
-   テーブル設定取得
+    テーブル設定取得
 ##################################################
 */
 getTableSettingValue( key ) {
@@ -5563,15 +5582,27 @@ getTableSettingValue( key ) {
 
     // 個別か共通か
     if ( tb.mode !== 'parameter') {
-        if ( key !== 'color' && key !== 'hideItem') {
+        if ( key !== 'color' && key !== 'hideItem' && key !== 'fixedLeftItem' && key !== 'fixedRightItem') {
             if ( !data.individual[ tb.tableMode ].check[ key ] || data.individual[ tb.tableMode ].check[ key ] === 'common') {
                 return data.general[ tb.tableMode ].check[ key ];
             } else {
                 return data.individual[ tb.tableMode ].check[ key ];
             }
-        } else if( key === 'hideItem') {
+        } else if ( key === 'hideItem') {
             if ( data.individual[ tb.tableMode ].hideItem ) {
                 return data.individual[ tb.tableMode ].hideItem;
+            } else {
+                return [];
+            }
+        } else if( key === 'fixedLeftItem') {
+            if ( data.individual[ tb.tableMode ].fixedLeftItem ) {
+                return data.individual[ tb.tableMode ].fixedLeftItem;
+            } else {
+                return [];
+            }
+        } else if( key === 'fixedRightItem') {
+            if ( data.individual[ tb.tableMode ].fixedRightItem ) {
+                return data.individual[ tb.tableMode ].fixedRightItem;
             } else {
                 return [];
             }
@@ -5596,7 +5627,7 @@ getTableSettingValue( key ) {
 }
 /*
 ##################################################
-   テーブル設定初期値取得
+    テーブル設定初期値取得
 ##################################################
 */
 getTableSettingInitValue( target, type, key ) {
@@ -5608,7 +5639,7 @@ getTableSettingInitValue( target, type, key ) {
 }
 /*
 ##################################################
-   テーブル設定適用
+    テーブル設定適用
 ##################################################
 */
 tableSettingOk() {
@@ -5638,12 +5669,28 @@ tableSettingOk() {
         }
 
         // 表示・非表示
-        const $check = tb.tableSettingModal[ tb.tableMode ].$.dbody.find('.tableSettingCheck').not(':checked'),
-            unCheckList = [];
+        const $check = tb.tableSettingModal[ tb.tableMode ].$.dbody.find('.tableSettingCheck').not(':checked');
+        const unCheckList = [];
         $check.each(function(){
             unCheckList.push( $( this ).val() );
         });
         settingData.individual[ tb.tableMode ].hideItem = unCheckList;
+
+        // 左固定
+        const $leftCheck = tb.tableSettingModal[ tb.tableMode ].$.dbody.find('.tableSettingLeftFixedCheck:checked');
+        const leftCheckList = [];
+        $leftCheck.each(function(){
+            leftCheckList.push( $( this ).val() );
+        });
+        settingData.individual[ tb.tableMode ].fixedLeftItem = leftCheckList;
+
+        // 右固定
+        const $rightCheck = tb.tableSettingModal[ tb.tableMode ].$.dbody.find('.tableSettingRightFixedCheck:checked');
+        const rightCheckList = [];
+        $rightCheck.each(function(){
+            rightCheckList.push( $( this ).val() );
+        });
+        settingData.individual[ tb.tableMode ].fixedRightItem = rightCheckList;
 
         tb.saveTableSetting().then(function(){
             resolve();
@@ -5652,7 +5699,7 @@ tableSettingOk() {
 }
 /*
 ##################################################
-   テーブル設定更新 ＞ 再表示
+    テーブル設定更新 ＞ 再表示
 ##################################################
 */
 saveTableSetting() {
@@ -5699,7 +5746,7 @@ saveTableSetting() {
 }
 /*
 ##################################################
-   テーブル設定モーダルを開く
+    テーブル設定モーダルを開く
 ##################################################
 */
 tableSettingOpen() {
@@ -5865,9 +5912,11 @@ tableSettingOpen() {
                     tableSettingHtml += ``
                         + `<div class="commonTitle">${getMessage.FTE00100}</div>`
                         + `<div class="commonBody">`
-                            + `<p class="commonParagraph">`
-                                + getMessage.FTE00104
-                            + `</p>`
+                            + `<div class="tableSettingListHeader">`
+                                + `<p class="commonParagraph tableSettingListNote">${getMessage.FTE00104}</p>`
+                                + `<div class="tableSettingListNoteLeft">${fn.html.icon('align_left')}</div>`
+                                + `<div class="tableSettingListNoteRight">${fn.html.icon('align_right')}</div>`
+                            + `</div>`
                             + tb.tableSettingListHtml()
                         + `</div>`;
                 }
@@ -5924,23 +5973,29 @@ tableSettingReset() {
 }
 /*
 ##################################################
-   項目一覧HTML
+    項目一覧HTML
 ##################################################
 */
 tableSettingListHtml() {
     const tb = this;
 
-    const id = tb.id + '_' + tb.tableMode;
+    const selectId = `${tb.id}_${tb.tableMode}_select`;
+    const fixedId = `${tb.id}_${tb.tableMode}_fixed`;
 
     let html = '';
     const tableSettingList = function( list, className ) {
         for ( const key of list ) {
-            const type = key.slice( 0, 1 ),
-                  attr = ( tb.tableSetting.individual[ tb.tableMode ].hideItem && tb.tableSetting.individual[ tb.tableMode ].hideItem.indexOf( key ) !== -1 )? {}: {checked: 'checked'};
+            const type = key.slice( 0, 1 );
+            const attr = ( tb.tableSetting.individual[ tb.tableMode ].hideItem && tb.tableSetting.individual[ tb.tableMode ].hideItem.indexOf( key ) !== -1 )? {}: {checked: 'checked'};
 
             html += `<li class="${className}">`;
             if ( type === 'c') {
                 const data = tb.info.column_info[ key ];
+                const restName = data.column_name_rest;
+                const fixedLeftAttr = ( tb.tableSetting.individual[ tb.tableMode ].fixedLeftItem && tb.tableSetting.individual[ tb.tableMode ].fixedLeftItem.indexOf( restName ) !== -1 )? {checked: 'checked'}: {};
+                const fixedRightAttr = ( tb.tableSetting.individual[ tb.tableMode ].fixedRightItem && tb.tableSetting.individual[ tb.tableMode ].fixedRightItem.indexOf( restName ) !== -1 )? {checked: 'checked'}: {};
+                if ( fixedLeftAttr.checked === 'checked') fixedRightAttr.disabled = 'disabled';
+                if ( fixedRightAttr.checked === 'checked') fixedLeftAttr.disabled = 'disabled';
 
                 // 表示しない項目
                 const exclusion = ['discard'];
@@ -5948,7 +6003,7 @@ tableSettingListHtml() {
                 let text = data.column_name;
                 if ( tb.mode === 'edit') {
                     const noRequiredMark = [ tb.idNameRest, 'last_update_date_time', 'last_updated_user'];
-                    if ( data.required_item === '1' && noRequiredMark.indexOf( data.column_name_rest ) === -1 ) {
+                    if ( data.required_item === '1' && noRequiredMark.indexOf( restName ) === -1 ) {
                         text += fn.html.required();
                         attr.disabled = 'disabled';
                     }
@@ -5957,15 +6012,21 @@ tableSettingListHtml() {
                     }
                 }
 
-                if ( exclusion.indexOf( data.column_name_rest ) === -1 ) {
+                if ( exclusion.indexOf( restName ) === -1 ) {
                     html += `<div class="tableSettingItemName">`
-                    + fn.html.checkboxText('tableSettingCheck tableSettingCheckItem', key, id + '_itemSelect', id + '_' + data.column_name_rest, attr, text )
+                    + fn.html.checkboxText('tableSettingCheck tableSettingCheckItem', key, selectId + '_itemSelect', selectId + '_' + restName, attr, text )
+                    + `<div class="tableSettingItemFixed">`
+                        + fn.html.check('tableSettingFixedCheck tableSettingLeftFixedCheck', restName, fixedId + '_itemLeftFixed', fixedId + '_itemLeftFixed_' + restName, fixedLeftAttr )
+                    + `</div>`
+                    + `<div class="tableSettingItemFixed">`
+                        + fn.html.check('tableSettingFixedCheck tableSettingRightFixedCheck', restName, fixedId + '_itemRightFixed', fixedId + '_itemRightFixed_' + restName, fixedRightAttr )
+                    + `</div>`
                     + `</div>`;
                 }
             } else {
                 const data = tb.info.column_group_info[ key ];
                 html += `<div class="tableSettingItemName tableSettingGroupName">`
-                + fn.html.checkboxText('tableSettingCheck tableSettingCheckGroup', key, id + '_groupSelect', id + '_' + data.column_group_id, attr, data.column_group_name )
+                + fn.html.checkboxText('tableSettingCheck tableSettingCheckGroup', key, selectId + '_groupSelect', selectId + '_' + data.column_group_id, attr, data.column_group_name )
                 + `</div>`
                 + `<ul class="tableSettingList">`;
                 tableSettingList( data['columns_' + tb.tableMode ], 'tableSettingItem tableSettingItemChild');
@@ -5981,7 +6042,7 @@ tableSettingListHtml() {
 
 /*
 ##################################################
-   グループチェック状態を確認
+    グループチェック状態を確認
 ##################################################
 */
 tableSettingGroupCheck() {
@@ -6098,6 +6159,21 @@ tableSettingEvents() {
         // 親要素のチェック
         parentCheck( $check );
 
+    });
+
+    // カラム固定チェック
+    $dBody.find('.tableSettingFixedCheck').on('change', function() {
+        const $check = $( this );
+        const value = $check.val();
+        const checked = $check.prop('checked');
+
+        if ( $check.is('.tableSettingRightFixedCheck') ) {
+            const $target = $dBody.find(`.tableSettingLeftFixedCheck[value="${value}"]`);
+            $target.prop('disabled', checked );
+        } else {
+            const $target = $dBody.find(`.tableSettingRightFixedCheck[value="${value}"]`);
+            $target.prop('disabled', checked );
+        }
     });
 }
 /*

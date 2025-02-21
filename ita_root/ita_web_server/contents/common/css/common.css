@@ -326,6 +326,10 @@ background-color: var(--mainColor80);
 background-image: linear-gradient( rgba(255,255,255,.2), rgba(255,255,255,0) );
 border-color: var(--mainColor100);
 }
+.checkbox:disabled ~ .checkboxLabel {
+opacity: .3;
+cursor: no-drop;
+}
 .checkboxTextOneOrMore .checkboxText:checked ~ .checkboxTextLabel > .checkboxTextMark {
 background-color: var(--mainColor10);
 }
@@ -2601,6 +2605,7 @@ overflow: hidden;
 max-width: 640px;
 white-space: pre;
 text-overflow: ellipsis;
+text-align: left;
 }
 .tHeadFilterNone .filterNone,
 .tBodyAutoInput {
@@ -5615,6 +5620,45 @@ margin: 0 auto;
 .noData .tableHorizontal .tableWrap,
 .noData.noFilter .tableWrap  {
 display: none!important;
+}
+.tableSettingListHeader {
+display: flex;
+gap: 8px;
+margin-bottom: 8px;
+}
+.tableSettingListHeader > p {
+margin-bottom: 0!important;
+}
+.tableSettingListNote {
+flex: 1 1 auto;
+}
+.tableSettingListNoteLeft,
+.tableSettingListNoteRight {
+flex: 0 0 36px;
+text-align: center;
+padding: 0;
+display: flex;
+justify-content: center;
+align-items: center;
+font-size: 16px;
+border: 1px solid rgba(0, 0, 0, .2);
+border-radius: 4px;
+}
+.tableSettingListNoteRight {
+margin-right: 8px;
+}
+.tableSettingItemName {
+display: flex;
+gap: 8px;
+}
+.tableSettingItemName .checkboxTextWrap {
+flex: 1 1 auto;
+}
+.tableSettingItemFixed {
+flex: 0 0 36px;
+display: flex;
+justify-content: center;
+align-items: center;
 }
 /*
 ##################################################

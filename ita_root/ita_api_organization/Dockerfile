@@ -63,6 +63,10 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
     poetry install --without develop_build
 
+# ---- test
+RUN pip3.9 install memory-profiler
+# ----
+
 #
 # Build for development
 #   Specify options when creating this image: --target develop_build
@@ -85,10 +89,6 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
 
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
     poetry install --with develop_build
-
-# ---- test
-RUN pip3.9 install memory-profiler
-# ----
 
 USER $USERNAME
 

@@ -126,7 +126,8 @@ def create_maintenance_parameters(connexion_request, cmd_type='Register', tmp_pa
 
         else:
             return False, [], file_paths
-
+    else:
+        raise AppException("400-00001", [f"Content-Type: {connexion_request.content_type}"])
     # check parameters
     if len(parameters) == 0:
         return False, [], file_paths

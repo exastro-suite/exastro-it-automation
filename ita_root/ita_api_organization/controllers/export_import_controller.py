@@ -305,12 +305,6 @@ def post_excel_bulk_upload(organization_id, workspace_id, body=None, **kwargs): 
         check_request_body()
 
         retBool, body, path_data = export_import.create_upload_parameters(connexion.request, 'zipfile', organization_id, workspace_id, excel=True)
-        if retBool is False:
-            status_code = "400-00003"
-            request_content_type = connexion.request.content_type.lower()
-            log_msg_args = [request_content_type]
-            api_msg_args = [request_content_type]
-            raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
         result_data = export_import.execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca, path_data)
     except Exception as e:
@@ -394,12 +388,6 @@ def post_menu_import_upload(organization_id, workspace_id, body=None, **kwargs):
 
         body_file = {}
         retBool, body, path_data = export_import.create_upload_parameters(connexion.request, 'file', organization_id, workspace_id)
-        if retBool is False:
-            status_code = "400-00003"
-            request_content_type = connexion.request.content_type.lower()
-            log_msg_args = [request_content_type]
-            api_msg_args = [request_content_type]
-            raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
         body_file = check_request_body_key(body, 'file')  # keyが無かったら400-00002エラー
 

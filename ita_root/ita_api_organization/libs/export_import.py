@@ -2106,7 +2106,8 @@ def create_upload_parameters(connexion_request, key_name, organization_id, works
 
 
     else:
-        return False, {},
+        msg_args = [f"Content-Type: {connexion_request.content_type}"]
+        raise AppException("400-00001", msg_args, msg_args)
 
     return True, upload_data, path_data
 

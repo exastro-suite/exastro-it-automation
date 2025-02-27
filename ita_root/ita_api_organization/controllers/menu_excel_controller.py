@@ -295,12 +295,6 @@ def post_excel_maintenance(organization_id, workspace_id, menu, body=None, **kwa
 
         excel_data = {}
         retBool, excel_data, base64_flg = menu_excel.create_upload_parameters(connexion.request, organization_id, workspace_id)
-        if retBool is False:
-            status_code = "400-00003"
-            request_content_type = connexion.request.content_type.lower()
-            log_msg_args = [request_content_type]
-            api_msg_args = [request_content_type]
-            raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
         # メニューのカラム情報を取得
         result_data = menu_excel.execute_excel_maintenance(objdbca, organization_id, workspace_id, menu, menu_record, excel_data, base64_flg=base64_flg)

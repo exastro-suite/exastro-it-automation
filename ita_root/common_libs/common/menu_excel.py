@@ -1837,7 +1837,8 @@ def create_upload_parameters(connexion_request, organization_id, workspace_id):
                 f.write(buf)
             f.close()
     else:
-        return False, {},
+        msg_args = [f"Content-Type: {connexion_request.content_type}"]
+        raise AppException("400-00001", msg_args, msg_args)
 
     return True, excel_data, base64_flg
 

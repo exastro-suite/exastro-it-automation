@@ -74,7 +74,7 @@ class IDColumn(Column):
                 データリスト
         """
 
-        if self.data_list_set_flg:
+        if self.data_list_set_flg is True:
             return self.id_data_list
         else:
             id_data_list = self.search_id_data_list()
@@ -164,17 +164,26 @@ class IDColumn(Column):
         tmp_values = {}
         values = {}
 
-        # データリストを取得
-        id_data_list = self.get_id_data_list()
+        # 参照先のリストを格納
+        id_data_list = {}
 
         # 一致検索
         if len(where_equal) > 0:
             for where_value in where_equal:
+                # 「空白」検索はnull検索をするため（参照先をみにいかない）
+                if where_value is None:
+                    tmp_values[None] = None
+                    continue
+
+                # 参照先のリストを必要なときだけ取得
+                if len(id_data_list) == 0:
+                    id_data_list = self.get_id_data_list()
+
                 for key, value in id_data_list.items():
                     if str(where_value) == str(value):
                         tmp_values[key] = value
         else:
-            tmp_values = id_data_list
+            tmp_values = self.get_id_data_list()
 
         # あいまい検索
         if len(where_like) > 0:
@@ -279,6 +288,7 @@ class IDColumn(Column):
         str_where = ''
         conjunction = ''
         save_type = self.get_save_type()
+        colname = self.get_col_name()
 
         if search_mode == "LIST":
             # マスタを検索
@@ -304,25 +314,25 @@ class IDColumn(Column):
 
                     if len(str_where) != 0:
                         conjunction = 'or'
-                    bindkey = "__{}__{}__".format(self.get_col_name(), listno)
+                    bindkey = "__{}__{}__".format(colname, listno)
                     bindkeys.append(bindkey)
                     bindvalues.setdefault(bindkey, bindvalue)
                     listno = listno + 1
 
                 if bindkeys != []:
-                    str_where = str_where + f" {conjunction} JSON_UNQUOTE(JSON_EXTRACT(`{self.get_col_name()}`, '$.{self.get_rest_key_name()}'))"
+                    str_where = str_where + f" {conjunction} JSON_UNQUOTE(JSON_EXTRACT(`{colname}`, '$.{self.get_rest_key_name()}'))"
                     str_where = str_where + f" IN ( {','.join(bindkeys)} )"
             else:
                 for bindvalue in tmp_conf:
 
-                    bindkey = "__{}__{}__".format(self.get_col_name(), listno)
+                    bindkey = "__{}__{}__".format(colname, listno)
                     bindkeys.append(bindkey)
                     bindvalues.setdefault(bindkey, bindvalue)
                     listno += 1
 
                 bindkey = "{}".format(",".join(map(str, bindkeys)))
                 str_where = " `{col_name}` IN ( {bindkey} ) ".format(
-                    col_name=self.get_col_name(),
+                    col_name=colname,
                     bindkey=bindkey
                 )
 

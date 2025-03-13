@@ -724,10 +724,17 @@ def organization_update(organization_id, body=None):  # noqa: E501
 
                             prepared_list = []
                             trg_count = sql.count('__ROLE_ID__')
+                            ansible_agt_trg_count = sql.count('__ANSIBLE_AGENT_ROLE_ID__')
+                            oase_agt_trg_count = sql.count('__OASE_AGENT_ROLE_ID__')
                             if trg_count > 0:
                                 prepared_list = list(map(lambda a: role_id, range(trg_count)))
                                 sql = ws_db.prepared_val_escape(sql).replace('\'__ROLE_ID__\'', '%s')
-
+                            if ansible_agt_trg_count > 0:
+                                agent_role_id = f'_{workspace_id}-agent-ansible'
+                                sql = sql.replace('\'__ANSIBLE_AGENT_ROLE_ID__\'', f'\'{agent_role_id}\'')
+                            if 'oase' in add_drivers and oase_agt_trg_count > 0:
+                                agent_role_id = f'_{workspace_id}-agent-oase'
+                                sql = sql.replace('\'__OASE_AGENT_ROLE_ID__\'', f'\'{agent_role_id}\'')
                             ws_db.sql_execute(sql, prepared_list)
                     ws_db.db_commit()
 

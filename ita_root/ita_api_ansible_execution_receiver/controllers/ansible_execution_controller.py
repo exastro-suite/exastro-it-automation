@@ -353,7 +353,7 @@ def execution_notification(organization_id, workspace_id, body):  # noqa: E501
                 api_msg_args = [menu]
                 raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
-        result_data = update_ansible_agent_status_file(organization_id, workspace_id, body)
+        result_data = update_ansible_agent_status_file(organization_id, workspace_id, body, objdbca)
         # result_data.setdefault("menu_info", tmp_data[0]["data"])
     except Exception as e:
         raise e

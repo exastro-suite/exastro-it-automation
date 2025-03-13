@@ -847,22 +847,17 @@ class Column():
             conjunction = ''
             if save_type == 'JSON':
                 for bindvalue in tmp_conf:
-                    tmp_result = self.convert_value_input(bindvalue)
-                    if tmp_result[0] is True:
-                        bindvalue = json.dumps(tmp_result[2], ensure_ascii=False)
+                    _retBool, _msg, bindvalue = self.convert_value_input(bindvalue)
                     if len(str_where) != 0:
                         conjunction = 'or'
                     bindkey = "__{}__{}__".format(self.get_col_name(), listno)
                     bindkeys.append(bindkey)
                     bindvalues.setdefault(bindkey, bindvalue)
                     listno = listno + 1
-                    str_where = str_where + ' ' + conjunction + ' JSON_CONTAINS(`{}`, {}, "$.{}")'.format(
-                        self.get_col_name(),
-                        bindkey,
-                        self.get_rest_key_name()
-                    )
-                if len(str_where) != 0:
-                    str_where = '(' + str_where + ')'
+                if bindkeys != []:
+                    str_where = str_where + f" {conjunction} JSON_UNQUOTE(JSON_EXTRACT(`{self.get_col_name()}`, '$.{self.get_rest_key_name()}'))"
+                    str_where = str_where + f" IN ( {','.join(bindkeys)} )"
+
             else:
                 if None in tmp_conf:
                     str_where = "`{col_name}` IS NULL ".format(col_name=self.get_col_name())

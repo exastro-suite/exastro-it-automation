@@ -20,6 +20,7 @@ import shutil
 import collections
 import re
 import zipfile
+import glob
 
 import base64
 import datetime
@@ -1471,6 +1472,30 @@ def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body, 
     finally:
         # 展開したファイル等削除
         clear_files(clear_file_list)
+
+        #/storage/{org_id}/{ws_id}/tmp/driver/import_menu/upload/配下に残っているtar.gzファイルを削除
+        tar_files = glob.glob(os.path.join(upload_dir_name,'*.tar.gz'))
+        for file in tar_files:
+            e_file = file.replace(upload_dir_name,'').replace('_ita_data.tar.gz','')
+            ex_file = e_file[1:15]
+            now_file = upload_id[0:14]
+
+            #/tmp/{org_id}/{ws_id}/tmp/driver/import_menu/upload/配下にコピーが完了している（現処理とそれ以前の）tar.gzファイルのみ削除
+            if ex_file > now_file:
+                continue
+            @file_read_retry
+            def tar_file_remove():
+                try:
+                    os.remove(file)
+                    return True
+                except Exception as e:
+                    g.applogger.info("remove failed. file_path={}".format(file))
+                    t = traceback.format_exc()
+                    g.applogger.info(arrange_stacktrace_format(t))
+                    return False
+            tar_file_remove()
+
+    return result_data
 
     return result_data
 

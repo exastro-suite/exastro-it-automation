@@ -50,10 +50,10 @@ INSERT INTO T_COMN_ROLE_MENU_LINK (LINK_ID,MENU_ID,ROLE_ID,PRIVILEGE,NOTE,DISUSE
 INSERT INTO T_COMN_ROLE_MENU_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,LINK_ID,MENU_ID,ROLE_ID,PRIVILEGE,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('110109',_____DATE_____,'INSERT','110109','110109','__ROLE_ID__','1',NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_ROLE_MENU_LINK (LINK_ID,MENU_ID,ROLE_ID,PRIVILEGE,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('110110','110110','__ROLE_ID__','2',NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_ROLE_MENU_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,LINK_ID,MENU_ID,ROLE_ID,PRIVILEGE,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('110110',_____DATE_____,'INSERT','110110','110110','__ROLE_ID__','2',NULL,'0',_____DATE_____,1);
-INSERT INTO T_COMN_ROLE_MENU_LINK (LINK_ID,MENU_ID,ROLE_ID,PRIVILEGE,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('b2404bde-9bfd-4724-9211-50a4898a3ce7','110101','__OASE_AGENT_ROLE_ID__','2',NULL,'0',_____DATE_____,1);
-INSERT INTO T_COMN_ROLE_MENU_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,LINK_ID,MENU_ID,ROLE_ID,PRIVILEGE,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('e6fc644b-0ff9-4bca-9d84-b4f4ef1cf319',_____DATE_____,'INSERT','b2404bde-9bfd-4724-9211-50a4898a3ce7','110101','__OASE_AGENT_ROLE_ID__','2',NULL,'0',_____DATE_____,1);
-INSERT INTO T_COMN_ROLE_MENU_LINK (LINK_ID,MENU_ID,ROLE_ID,PRIVILEGE,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('7699348f-0e81-4c01-8517-d69ef4b688a0','110104','__OASE_AGENT_ROLE_ID__','1',NULL,'0',_____DATE_____,1);
-INSERT INTO T_COMN_ROLE_MENU_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,LINK_ID,MENU_ID,ROLE_ID,PRIVILEGE,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('11f96ad8-1e3c-4edf-a255-7c17bc98e5c3',_____DATE_____,'INSERT','7699348f-0e81-4c01-8517-d69ef4b688a0','110104','__OASE_AGENT_ROLE_ID__','1',NULL,'0',_____DATE_____,1);
+INSERT INTO T_COMN_ROLE_MENU_LINK (LINK_ID,MENU_ID,ROLE_ID,PRIVILEGE,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('110101-agent-oase','110101','__OASE_AGENT_ROLE_ID__','2',NULL,'0',_____DATE_____,1);
+INSERT INTO T_COMN_ROLE_MENU_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,LINK_ID,MENU_ID,ROLE_ID,PRIVILEGE,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('110101-agent-oase',_____DATE_____,'INSERT','110101-agent-oase','110101','__OASE_AGENT_ROLE_ID__','2',NULL,'0',_____DATE_____,1);
+INSERT INTO T_COMN_ROLE_MENU_LINK (LINK_ID,MENU_ID,ROLE_ID,PRIVILEGE,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('110104-agent-oase','110104','__OASE_AGENT_ROLE_ID__','1',NULL,'0',_____DATE_____,1);
+INSERT INTO T_COMN_ROLE_MENU_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,LINK_ID,MENU_ID,ROLE_ID,PRIVILEGE,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('110104-agent-oase',_____DATE_____,'INSERT','110104-agent-oase','110104','__OASE_AGENT_ROLE_ID__','1',NULL,'0',_____DATE_____,1);
 
 INSERT INTO T_COMN_MENU_TABLE_LINK (TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,HOSTGROUP,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('110101','110101','T_OASE_EVENT_COLLECTION_SETTINGS',NULL,'event_collection_settings_id','（エージェントに設定する）イベント収集対象の、接続方式・認証方式・TTL等をメンテナンス（閲覧/登録/更新/廃止）できます。','You can maintain (view/register/update/abolish) the connection method, authentication method, TTL, etc. of the event collection target (set on the agent).','0','1','0','0','0','1','1','1','1','0',NULL,NULL,'agent_setting_valid',NULL,NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_TABLE_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,HOSTGROUP,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(110101,_____DATE_____,'INSERT','110101','110101','T_OASE_EVENT_COLLECTION_SETTINGS',NULL,'event_collection_settings_id','（エージェントに設定する）イベント収集対象の、接続方式・認証方式・TTL等をメンテナンス（閲覧/登録/更新/廃止）できます。','You can maintain (view/register/update/abolish) the connection method, authentication method, TTL, etc. of the event collection target (set on the agent).','0','1','0','0','0','1','1','1','1','0',NULL,NULL,'agent_setting_valid',NULL,NULL,'0',_____DATE_____,1);
@@ -329,10 +329,10 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA
 "max_length": 4000
 }',NULL,NULL,NULL,'[最大長]4000バイト
 JSON形式で入力します。
-
+ 
 ・リクエストメソッドがGETの場合：
 クエリパラメータ(接続先に追加される、"?"以降の値）として使用されます。
-ex.
+ex. 
 　接続先：http://example.com/dir/
 　入力値：{ "name": "test" }
 　の場合
@@ -340,7 +340,7 @@ ex.
 ・リクエストメソッドがPOSTの場合：
 リクエストのペイロードとして使用されます。','[Maximum length] 4000 bytes
 Enter in JSON format.
-
+ 
 ・If the request method is GET:
 It is used as a query parameter (the value after "?" that is added to the connection destination).
 ex.
@@ -355,10 +355,10 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOU
 "max_length": 4000
 }',NULL,NULL,NULL,'[最大長]4000バイト
 JSON形式で入力します。
-
+ 
 ・リクエストメソッドがGETの場合：
 クエリパラメータ(接続先に追加される、"?"以降の値）として使用されます。
-ex.
+ex. 
 　接続先：http://example.com/dir/
 　入力値：{ "name": "test" }
 　の場合
@@ -366,7 +366,7 @@ ex.
 ・リクエストメソッドがPOSTの場合：
 リクエストのペイロードとして使用されます。','[Maximum length] 4000 bytes
 Enter in JSON format.
-
+ 
 ・If the request method is GET:
 It is used as a query parameter (the value after "?" that is added to the connection destination).
 ex.
@@ -729,7 +729,7 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA
 "max_length": 255
 }',NULL,NULL,NULL,'[最大長]255バイト
 ラベル付与したい値を入力します。
-
+ 
 正規表現で使用したい場合は、以下のように入力してください。
 ①正規表現を使って（「比較する値」による）検索を行い、任意の値をラベルにつけたい
 任意の値を入力してください。
@@ -737,13 +737,13 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA
 値を空欄にしてください。
 ③②のマッチした結果に対して、正規表現置換を行いたい場合
 検索結果のキャプチャグループの値を使いたい場合などを想定しています
-ex.
+ex. 
 ・キャプチャグループの1個目をラベルの値にしたい場合
 　→ \\1
 ・キャプチャグループの1個目 + 任意の値（.com）をラベルの値にしたい場合
 　→ \\1.com','[Maximum length] 255 bytes
 Enter the value you want to label.
-
+ 
 If you want to use it as a regular expression, enter it as follows.
 ① I want to search using regular expressions (by "value to compare") and add any value to the label.
 Please enter any value.
@@ -761,7 +761,7 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOU
 "max_length": 255
 }',NULL,NULL,NULL,'[最大長]255バイト
 ラベル付与したい値を入力します。
-
+ 
 正規表現で使用したい場合は、以下のように入力してください。
 ①正規表現を使って（「比較する値」による）検索を行い、任意の値をラベルにつけたい
 任意の値を入力してください。
@@ -769,13 +769,13 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOU
 値を空欄にしてください。
 ③②のマッチした結果に対して、正規表現置換を行いたい場合
 検索結果のキャプチャグループの値を使いたい場合などを想定しています
-ex.
+ex. 
 ・キャプチャグループの1個目をラベルの値にしたい場合
 　→ \\1
 ・キャプチャグループの1個目 + 任意の値（.com）をラベルの値にしたい場合
 　→ \\1.com','[Maximum length] 255 bytes
 Enter the value you want to label.
-
+ 
 If you want to use it as a regular expression, enter it as follows.
 ① I want to search using regular expressions (by "value to compare") and add any value to the label.
 Please enter any value.

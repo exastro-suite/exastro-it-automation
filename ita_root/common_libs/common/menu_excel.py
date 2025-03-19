@@ -1562,15 +1562,6 @@ def execute_excel_maintenance(
     # 変数定義
     t_common_menu_column_link = 'T_COMN_MENU_COLUMN_LINK'
 
-    # メニューのカラム情報を取得
-    objmenu = load_table.loadTable(objdbca, menu)   # noqa: F405
-    mode = 'excel'
-    status_code, result, msg = objmenu.rest_filter({}, mode)
-    if status_code != '000-00000':
-        log_msg_args = [msg]
-        api_msg_args = [msg]
-        raise AppException(status_code, log_msg_args, api_msg_args)     # noqa: F405
-
     if base64_flg is False:
         # 受け取ったデータを編集用として一時的にエクセルファイルに保存
         file_path = excel_data
@@ -1594,6 +1585,7 @@ def execute_excel_maintenance(
     try:
         # ファイルを読み込む
         wb = openpyxl.load_workbook(file_path)
+        # wb = openpyxl.load_workbook(file_path, read_only=True, data_only=True)
     except BadZipfile:
         # 次のファイルタイプのみ許容します。[.xlsx,.xlsm]
         status_code = '499-00401'

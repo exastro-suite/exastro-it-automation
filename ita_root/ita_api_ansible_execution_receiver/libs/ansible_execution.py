@@ -738,7 +738,6 @@ def tmp_shutil_move(gztar_path, tmp_base_path):
         g.applogger.info("move failed. gztar_path={}, tmp_base_path={}".format(gztar_path, tmp_base_path))
         raise e
 
-@file_read_retry
 def update_timestamp(ws_db, driver_name, execution_no):
     # 各driverのテーブル
     if driver_name == "legacy":
@@ -750,4 +749,6 @@ def update_timestamp(ws_db, driver_name, execution_no):
     update_date = {
         'EXECUTION_NO': execution_no
     }
+    ws_db.db_transaction_start()
     ws_db.table_update(t_exec_sts_inst, update_date, 'EXECUTION_NO', False, True)
+    ws_db.db_transaction_end(True)

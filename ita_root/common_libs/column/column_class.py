@@ -652,63 +652,47 @@ class Column():
         if self.col_name not in primary_key_list:
             if self.col_name == "DATA_JSON":
                 # カラム名がDATA_JSON(パラメータシート作成機能により作られたメニューのカラム)の場合
-                # ベースの条件（廃止を除外）を作成
-                where_str = ' WHERE DISUSE_FLAG = 0'
+                where_str = " where DISUSE_FLAG = 0"
                 bind_value_list = []
-
-                if val:
-                    if self.class_name in ["IDColumn", "JsonIDColumn"]:
-                        # IDColumn系の場合はID変換後の値と比較
-                        convert_val = val
-                        tmp_result = self.convert_value_input(val)
-                        if tmp_result[0] is True:
-                            convert_val = tmp_result[2]
-                        where_str = where_str + ' AND JSON_UNQUOTE(JSON_EXTRACT(`{}`,"$.{}")) = %s '.format(
-                            "DATA_JSON",
-                            self.rest_key_name,
-                        )
-                        bind_value_list.append(convert_val)
-                    else:
-                        # 通常のカラムの場合
-                        if type(val) is str and val.lower() == "null":
-                            # 文字列としての"null"はjsonとしてのnullと区別するようにWHERE句を作成
-                            where_str = where_str + ' AND BINARY JSON_UNQUOTE(JSON_EXTRACT(`{0}`,"$.{1}")) = %s AND JSON_TYPE(JSON_EXTRACT(`{0}`,"$.{1}")) != "NULL"'.format(
-                                "DATA_JSON",
-                                self.rest_key_name,
-                            )
-                            bind_value_list.append(val)
-                        else:
-                            # 通常の文字列用のWHERE句を作成
-                            where_str = where_str + ' AND BINARY JSON_UNQUOTE(JSON_EXTRACT(`{}`,"$.{}")) = %s '.format(
-                                "DATA_JSON",
-                                self.rest_key_name,
-                            )
-                            bind_value_list.append(val)
-                else:
-                    # 入力値が「空」および「JSONとしてのnull(None)」場合、登録されている値が「空」であるかどうかとJSON_TYPEがnullであるかどうかを判定する。
-                    where_str = where_str + ' AND (JSON_TYPE(JSON_EXTRACT(`{0}`,"$.{1}")) = "NULL" OR JSON_UNQUOTE(JSON_EXTRACT(`{0}`,"$.{1}")) = "")'.format(
-                        "DATA_JSON",
-                        self.rest_key_name,
-                    )
-
-                # 更新時、自分のレコードを除外する条件
                 if 'uuid' in option:
                     if option.get('uuid') is not None:
-                        where_str = where_str + " AND `{}` <> %s ".format(primary_key_list[0])
+                        where_str = where_str + " and `{}` <> %s ".format(primary_key_list[0])
                         bind_value_list.append(option.get('uuid'))
 
-                # テーブルSELECTを実行
                 result = self.objdbca.table_select(self.table_name, where_str, bind_value_list)
-                tmp_uuids = []
-                if len(result) != 0:
+                if result:
+                    tmp_uuids = []
                     for tmp_rows in result:
-                        tmp_uuids.append(tmp_rows.get(primary_key_list[0]))
-                    retBool = False
-                    status_code = 'MSG-00025'
-                    str_uuids = ', '.join(map(str, tmp_uuids))
-                    msg_args = [str_uuids, val]
-                    msg = g.appmsg.get_api_message(status_code, msg_args)
-                    return retBool, msg
+                        data_json = tmp_rows.get("DATA_JSON")
+                        if data_json:
+                            json_rows = json.loads(data_json)
+                            for jsonkey, jsonval in json_rows.items():
+                                if jsonkey == self.rest_key_name:
+                                    # IDColumn, JsonIDColumnの場合はID変換後の値と比較
+                                    if self.class_name == "IDColumn" or self.class_name == "JsonIDColumn":
+                                        convert_val = val
+                                        tmp_result = self.convert_value_input(val)
+                                        if tmp_result[0] is True:
+                                            convert_val = tmp_result[2]
+                                        if str(jsonval) == str(convert_val):
+                                            tmp_uuids.append(tmp_rows.get(primary_key_list[0]))
+                                            retBool = False
+                                    else:
+                                        # jsonvalとvalが両方「空」もしくは「null(None)」の組み合わせの場合にバリデーションエラーにする
+                                        if not jsonval and not val:
+                                            tmp_uuids.append(tmp_rows.get(primary_key_list[0]))
+                                            retBool = False
+                                        else:
+                                            if jsonval == val:
+                                                tmp_uuids.append(tmp_rows.get(primary_key_list[0]))
+                                                retBool = False
+
+                    if not retBool:
+                        status_code = 'MSG-00025'
+                        str_uuids = ', '.join(map(str, tmp_uuids))
+                        msg_args = [str_uuids, val]
+                        msg = g.appmsg.get_api_message(status_code, msg_args)
+                        return retBool, msg
 
             else:
                 if self.class_name == "IDColumn":

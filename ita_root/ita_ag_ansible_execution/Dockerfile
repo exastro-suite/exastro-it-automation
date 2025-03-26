@@ -76,7 +76,8 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
     bind-utils \
     iputils \
 &&  usermod -G wheel $USERNAME \
-&&  echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+&&  echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers \
+&&  echo "%${GROUPNAME} ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
     poetry install --with develop_build

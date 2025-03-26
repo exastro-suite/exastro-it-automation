@@ -87,7 +87,8 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
 &&  curl -L https://github.com/docker/compose/releases/download/v2.5.0/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose \
 &&  chmod +x /usr/local/bin/docker-compose \
 &&  usermod -G wheel $USERNAME \
-&&  echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+&&  echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers \
+&&  echo "%${GROUPNAME} ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
     poetry install --with develop_build

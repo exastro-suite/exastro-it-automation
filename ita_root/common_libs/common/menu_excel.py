@@ -685,7 +685,7 @@ def create_column_info(
 
         tmp = '×'
         # カラムクラスが12（NoteColumn）の場合は任意を設定する
-        if column_class == '12':
+        if column_class == 'NoteColumn':
             tmp = '○'
         # 廃止(×固定)
         ws.cell(row=startRow + 2, column=column_num).font = font_bl
@@ -704,10 +704,10 @@ def create_column_info(
         ws.cell(row=startRow + 3, column=column_num).data_type = 's'
 
         # 改行
-        # 改行OK：MultiTextColumn、NoteColumn、SensitiveMultiTextColumnのもの
+        # 改行OK：MultiTextColumn、NoteColumn、SensitiveMultiTextColumn、MultiPasswordColumnのもの
         # 改行NG：上記以外
         new_line = 'NG'
-        if column_class == '2' or column_class == '12' or column_class == '17':
+        if column_class == 'MultiTextColumn' or column_class == 'NoteColumn' or column_class == 'SensitiveMultiTextColumn' or column_class == 'MultiPasswordColumn':
             new_line = 'OK'
         ws.cell(row=startRow + 4, column=column_num).font = font_bl
         ws.cell(row=startRow + 4, column=column_num).fill = fill_gr

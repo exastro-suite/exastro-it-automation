@@ -106,8 +106,8 @@ def backyard_main(organization_id, workspace_id):  # noqa: C901
         try:
             platform_users = get_exastro_platform_users()
         except AppException as e:
-            msg_code, logmsg_args = e.args
-            msg = g.appmsg.get_log_message(msg_code, [logmsg_args[0], logmsg_args[1]])
+            msg_code, logmsg_args, apimsg_args = e.args
+            msg = g.appmsg.get_log_message(msg_code, logmsg_args)
             print_exception_msg(msg)
         except Exception:
             t = traceback.format_exc()

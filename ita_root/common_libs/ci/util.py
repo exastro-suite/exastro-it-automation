@@ -219,6 +219,8 @@ def wrapper_job_all_org(main_logic, loop_count=500):
         # get organization_info_list
         # job for organization
         try:
+            main_logic_exec = None
+
             g.applogger.debug(f"wrapper_job_all_org loop=[{count}]")
             common_db = DBConnectCommon()  # noqa: F405
 

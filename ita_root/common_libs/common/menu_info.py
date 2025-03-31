@@ -844,9 +844,12 @@ def collect_search_candidates_from_mongodb(wsMongo: MONGOConnectWs, column, menu
     # MongoDB向けの記法に変換が必要なため、DBから取得した値はそのまま利用しない
     sort_key = collection.create_sort_key(menu_record["SORT_KEY"])
 
+
     # filter向けに用意した処理を流用し、python側で絞り込んだ方が実装工数が短くなるため一旦この実装とする。
     # MongoDBから扱わない項目も取得しているため、その分のコストが重い場合は専用の実装を検討する。
-    tmp_result = wsMongo.collection(mondodb_collection_name).find().sort(sort_key)
+    # 暫定対応でsortはなし（cosmosDBが非対応だから）
+    # tmp_result = wsMongo.collection(mondodb_collection_name).find().sort(sort_key)
+    tmp_result = wsMongo.collection(mondodb_collection_name).find()
     result_list = collection.create_result(tmp_result, objdbca)
     tmp_result = None  # 初期化
 

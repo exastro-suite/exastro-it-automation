@@ -54,6 +54,7 @@ class loadCollection():
             mondodb_collection_name = self.wsMongo.get_collection_name(mariadb_table_name)
             collection = self.wsMongo.create_collection(mondodb_collection_name)
             where_str = collection.create_where(parameter, objdbca)
+            # g.applogger.info(f"{where_str=}")
 
             # MongoDB向けの記法に変換が必要なため、DBから取得した値はそのまま利用しない
             # sort_key = collection.create_sort_key(self.load_table.get_sort_key())
@@ -63,9 +64,9 @@ class loadCollection():
             #                   .find(where_str)
             #                   .sort(sort_key))
 
-            # 2.4.0暫定対応
             if mode in ['mongo']:
-                # g.applogger.info(f"{where_str=}")
+                # 暫定対応でsortはなし（cosmosDBが非対応だから）v2.4.0
+                # tmp_result = self.wsMongo.collection(mondodb_collection_name).find(filter=where_str).sort(sort_key)
                 tmp_result = self.wsMongo.collection(mondodb_collection_name).find(filter=where_str)
                 result_list = collection.create_result(tmp_result, objdbca)
             elif mode in ['mongo_count']:

@@ -351,16 +351,6 @@ def Replace_HostVrasFilepath(rsplase_path, file_path,insert_path=""):
     ret_file_path = "{}{}".format(insert_path,ary[1])
     return ret_file_path
 
-def get_AGStatusFilepath(ansConstObj, execute_no):
-    """
-      ansibe agent作業状態通知受信ファイルパス取得
-      Arguments:
-        ansConstObj: ansible共通定数オブジェクト
-        execute_no: 作業番号
-      Returns:
-        ansibe agent作業状態通知受信ファイルパス
-    """
-    return "{}/tmp/ansible_agent_status_file.txt".format(getAnsibleExecutDirPath(ansConstObj, execute_no))
 
 def get_AGChildProcessRestartCountFilepath(ansConstObj, execute_no):
     """

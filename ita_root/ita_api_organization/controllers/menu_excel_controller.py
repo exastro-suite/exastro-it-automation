@@ -118,13 +118,11 @@ def get_excel_format(organization_id, workspace_id, menu, file=None):  # noqa: E
 
     # ファイルをバイナリ or Base64で返すか分岐
     if file == "binary":
-        print("あっちあっちあっちあっちあっち")
         @api_filter_download_temporary_file
         def return_filepath():
             return main_func(False)
         return return_filepath()
     else:
-        print("こっちこっちこっちこっちこっち")
         @api_filter
         def return_base64():
             return main_func(True)

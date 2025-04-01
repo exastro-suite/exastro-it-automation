@@ -258,11 +258,18 @@ def collection_logic(sqliteDB, organization_id, workspace_id, exastro_api):
         # データ送信に成功した場合、sent_flagカラムの値をtrueにアップデート
         if status_code == 200:
             # "Successfully sent events to Exastro IT Automation."
-            g.applogger.info(g.appmsg.get_log_message("AGT-10018", []))
-            for table_name, list in {"events": unsent_event_rowids, "sent_timestamp": unsent_timestamp_rowids}.items():
+            response_data = response["data"]
+            if isinstance(response_data, list) is True and len(response_data) > 0:
+                msg = " Here are not saved events\n{}".format(",\n".join(response_data))
+            else:
+                msg = ""
+            # del response_data
+            g.applogger.info(g.appmsg.get_log_message("AGT-10018", [msg]))
+
+            for table_name, data_list in {"events": unsent_event_rowids, "sent_timestamp": unsent_timestamp_rowids}.items():
                 try:
                     sqliteDB.db_connect.execute("BEGIN")
-                    sqliteDB.update_sent_flag(table_name, list)
+                    sqliteDB.update_sent_flag(table_name, data_list)
                 except AppException as e:  # noqa E405
                     sqliteDB.db_connect.rollback()
                     app_exception(e)
@@ -305,7 +312,6 @@ def collection_logic(sqliteDB, organization_id, workspace_id, exastro_api):
             # rowidのみを抜き出したリスト
             rowids = [item[0] for item in to_delete_timestamp]
             to_delete_timestamp_rowids.extend(rowids)
-
 
         except sqlite3.OperationalError as e:
             # テーブルが作られていない（イベントが無い）場合、処理を終了

@@ -443,10 +443,17 @@ paths:
             type: string
         - name: file
           in: query
-          description: ファイルダウンロード指定
+          description: Base64文字列形式でのファイル取得指定
           required: false
           schema:
             type: string
+          examples:
+            example1:
+              summary: ファイル取得なし
+              value: .../filter?file=no
+            example2:
+              summary: ファイル取得あり
+              value: .../filter
       responses:
         '200':
           description: Success
@@ -503,10 +510,17 @@ paths:
             type: string
         - name: file
           in: query
-          description: ファイルダウンロード指定
+          description: Base64文字列形式でのファイル取得指定
           required: false
           schema:
             type: string
+          examples:
+            example1:
+              summary: ファイル取得なし
+              value: .../filter?file=no
+            example2:
+              summary: ファイル取得あり
+              value: .../filter
       requestBody:
         content:
           application/json:
@@ -965,7 +979,9 @@ paths:
     get:
       tags:
         - Menu Excel
-      description: 新規登録用Excelを取得する
+      description: |
+        新規登録用Excelを取得する<br>
+        ※ダウンロードするのファイルの形式指定が2種類あります。
       operationId: getExcelFormat
       x-openapi-router-controller: controllers.menu_excel_controller
       parameters:
@@ -989,15 +1005,26 @@ paths:
             type: string
         - name: file
           in: query
-          description: ファイルデータの形式指定
+          description: ダウンロードするファイルの形式指定
           required: false
           schema:
             type: string
-          example: "?file=binary"
+          examples:
+            example1:
+              summary: バイナリ形式（推奨）
+              value: .../format/?file=binary
+            example2:
+              summary: Base64文字列形式（2.5.0以降非推奨）
+              value: .../format/
       responses:
         '200':
-          description: Success
+          description: |
+            Success <br>
+            ※クエリパラメータにfile=binaryが含まれる場合は、ファイルはバイナリ形式で返されます。<br>
+            ※ファイル名は、HTTPヘッダーの"Content-Disposition"に含まれる"filename"を参照します。
           content:
+            application/octet-stream:
+              example: Binary data
             application/json:
               schema:
                 type: object
@@ -1006,10 +1033,8 @@ paths:
                     type: string
                     example: 000-00000
                   data:
-                    type: object
-                    properties:
-                      TABLE:
-                       $ref: '#/components/schemas/TABLE'
+                    type: string
+                    example: base64 string
                   message:
                     type: string
         '401':
@@ -1029,7 +1054,9 @@ paths:
     get:
       tags:
         - Menu Excel
-      description: 全件のExcelを取得する
+      description: |
+        全件のExcelを取得する<br>
+        ※ダウンロードするのファイルの形式指定が2種類あります。
       operationId: getExcelFilter
       x-openapi-router-controller: controllers.menu_excel_controller
       parameters:
@@ -1053,15 +1080,26 @@ paths:
             type: string
         - name: file
           in: query
-          description: ファイルデータの形式指定
+          description: ダウンロードするファイルの形式指定
           required: false
           schema:
             type: string
-          example: "?file=binary"
+          examples:
+            example1:
+              summary: バイナリ形式（推奨）
+              value: .../excel/?file=binary
+            example2:
+              summary: Base64文字列形式（2.5.0以降非推奨）
+              value: .../excel/
       responses:
         '200':
-          description: Success
+          description: |
+            Success <br>
+            ※クエリパラメータにfile=binaryが含まれる場合は、ファイルはバイナリ形式で返されます。<br>
+            ※ファイル名は、HTTPヘッダーの"Content-Disposition"に含まれる"filename"を参照します。
           content:
+            application/octet-stream:
+              example: Binary data
             application/json:
               schema:
                 type: object
@@ -1070,10 +1108,8 @@ paths:
                     type: string
                     example: 000-00000
                   data:
-                    type: object
-                    properties:
-                      TABLE:
-                       $ref: '#/components/schemas/TABLE'
+                    type: string
+                    example: base64 string
                   message:
                     type: string
         '401':
@@ -1091,7 +1127,9 @@ paths:
     post:
       tags:
         - Menu Excel
-      description: 検索条件を指定し、Excelを取得する
+      description: |
+        検索条件を指定し、Excelを取得する<br>
+        ※ダウンロードするのファイルの形式指定が2種類あります。
       operationId: postExcelFilter
       x-openapi-router-controller: controllers.menu_excel_controller
       parameters:
@@ -1115,20 +1153,33 @@ paths:
             type: string
         - name: file
           in: query
-          description: ファイルデータの形式指定
+          description: ダウンロードするファイルの形式指定
           required: false
           schema:
             type: string
-          example: "?file=binary"
+          examples:
+            example1:
+              summary: バイナリ形式（推奨）
+              value: .../excel/?file=binary
+            example2:
+              summary: Base64文字列形式（2.5.0以降非推奨）
+              value: .../excel/
       requestBody:
         content:
           application/json:
             schema:
               description: 検索条件を設定
+              type: object
+              example: {"discard":{"NORMAL":"0"},"column_name":{"LIST":["op01"]}}
       responses:
         '200':
-          description: Success
+          description: |
+            Success <br>
+            ※クエリパラメータにfile=binaryが含まれる場合は、ファイルはバイナリ形式で返されます。<br>
+            ※ファイル名は、HTTPヘッダーの"Content-Disposition"に含まれる"filename"を参照します。
           content:
+            application/octet-stream:
+              example: Binary data
             application/json:
               schema:
                 type: object
@@ -1137,10 +1188,8 @@ paths:
                     type: string
                     example: 000-00000
                   data:
-                    type: object
-                    properties:
-                      TABLE:
-                       $ref: '#/components/schemas/TABLE'
+                    type: string
+                    example: base64 string
                   message:
                     type: string
         '401':
@@ -1159,7 +1208,9 @@ paths:
     post:
       tags:
         - Menu Excel
-      description: Excelでレコードを登録/更新/廃止/復活する
+      description: |
+        Excelでレコードを登録/更新/廃止/復活する<br>
+        ※ver2.5.0以降では、multipart/form-dataでのリクエストを推奨
       operationId: postExcelMaintenance
       x-openapi-router-controller: controllers.menu_excel_controller
       parameters:
@@ -1185,17 +1236,17 @@ paths:
         content:
           application/json:
             schema:
-              description: 検索条件を設定
+              type: object
+            example:
+              excel: "base64 string"
           multipart/form-data:
             schema:
-              description: 検索条件を設定
-              type: object
-              properties:
-                excel:
-                  description:
-                    excelファイルアップロードの対象を指定。
-                  type: string
-                  format: binary
+              example: |
+                ----------------------------XXXXXX
+                Content-Disposition: form-data; name="excel"; filename="xxxxx.xlsx"
+                Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+                (binary content of the file)
+                ----------------------------XXXXXX--
       responses:
         '200':
           description: Success
@@ -1210,8 +1261,17 @@ paths:
                   data:
                     type: object
                     properties:
-                      TABLE:
-                       $ref: '#/components/schemas/TABLE'
+                      Discard:
+                        type: number
+                      IdList:
+                        type: array
+                        example: []
+                      Register:
+                        type: number
+                      Restore:
+                        type: number
+                      Update:
+                        type: number
                   message:
                     type: string
         '401':
@@ -1231,7 +1291,9 @@ paths:
     get:
       tags:
         - Menu Excel
-      description: 変更履歴のExcelを取得する
+      description: |
+        変更履歴のExcelを取得する<br>
+        ※ダウンロードするのファイルの形式指定が2種類あります。
       operationId: getExcelJournal
       x-openapi-router-controller: controllers.menu_excel_controller
       parameters:
@@ -1255,15 +1317,26 @@ paths:
             type: string
         - name: file
           in: query
-          description: ファイルデータの形式指定
+          description: ダウンロードするファイルの形式指定
           required: false
           schema:
             type: string
-          example: "?file=binary"
+          examples:
+            example1:
+              summary: バイナリ形式（推奨）
+              value: .../journal/?file=binary
+            example2:
+              summary: Base64文字列形式（2.5.0以降非推奨）
+              value: .../journal/
       responses:
         '200':
-          description: Success
+          description: |
+            Success <br>
+            ※クエリパラメータにfile=binaryが含まれる場合は、ファイルはバイナリ形式で返されます。<br>
+            ※ファイル名は、HTTPヘッダーの"Content-Disposition"に含まれる"filename"を参照します。
           content:
+            application/octet-stream:
+              example: Binary data
             application/json:
               schema:
                 type: object
@@ -1272,10 +1345,8 @@ paths:
                     type: string
                     example: 000-00000
                   data:
-                    type: object
-                    properties:
-                      TABLE:
-                       $ref: '#/components/schemas/TABLE'
+                    type: string
+                    example: base64 string
                   message:
                     type: string
         '401':
@@ -3161,7 +3232,9 @@ paths:
     get:
       tags:
         - Conductor Controll
-      description: Conductor作業の投入データ
+      description: |
+        Conductor作業の投入データ<br>
+        ※ダウンロードするのファイルの形式指定が2種類あります。
       operationId: getConductorInputData
       x-openapi-router-controller: controllers.conductor_controll_controller
       parameters:
@@ -3195,11 +3268,22 @@ paths:
           required: false
           schema:
             type: string
-          example: "?file=binary"
+          examples:
+            example1:
+              summary: バイナリ形式（推奨）
+              value: .../input_data/?file=binary
+            example2:
+              summary: Base64文字列形式(2.5.0以降非推奨)
+              value: .../input_data/
       responses:
         '200':
-          description: Success
+          description: |
+            Success <br>
+            ※クエリパラメータにfile=binaryが含まれる場合は、ファイルはバイナリ形式で返されます。<br>
+            ※ファイル名は、HTTPヘッダーの"Content-Disposition"に含まれる"filename"を参照します。
           content:
+            application/octet-stream:
+              example: Binary data
             application/json:
               schema:
                 type: object
@@ -3235,7 +3319,9 @@ paths:
     get:
       tags:
         - Conductor Controll
-      description: Conductor作業の結果データ
+      description: |
+        Conductor作業の結果データ<br>
+        ※ダウンロードするのファイルの形式指定が2種類あります。
       operationId: getConductorResultData
       x-openapi-router-controller: controllers.conductor_controll_controller
       parameters:
@@ -3269,11 +3355,22 @@ paths:
           required: false
           schema:
             type: string
-          example: "?file=binary"
+          examples:
+            example1:
+              summary: バイナリ形式（推奨）
+              value: .../result_data/?file=binary
+            example2:
+              summary: Base64文字列形式(2.5.0以降非推奨)
+              value: .../result_data/
       responses:
         '200':
-          description: Success
+          description: |
+            Success <br>
+            ※クエリパラメータにfile=binaryが含まれる場合は、ファイルはバイナリ形式で返されます。<br>
+            ※ファイル名は、HTTPヘッダーの"Content-Disposition"に含まれる"filename"を参照します。
           content:
+            application/octet-stream:
+              example: Binary data
             application/json:
               schema:
                 type: object
@@ -4236,7 +4333,9 @@ paths:
     post:
       tags:
         - Export Import
-      description: メニューインポートのアップロード
+      description: |
+        メニューインポートのアップロード<br>
+        ※ver2.5.0以降では、multipart/form-dataでのリクエストを推奨
       operationId: postMenuImportUpload
       x-openapi-router-controller: controllers.export_import_controller
       parameters:
@@ -4257,6 +4356,10 @@ paths:
           application/json:
             schema:
               type: object
+            example:
+              file:
+                name: "ita_exportdata_XXXXXXXXXXXX.kym"
+                base64: "base64 string"
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/MENU_UPLOAD_FORM'
@@ -4526,7 +4629,9 @@ paths:
     post:
       tags:
         - Export Import
-      description: Excel一括インポートのアップロード
+      description: |
+        Excel一括インポートのアップロード<br>
+        ※ver2.5.0以降では、multipart/form-dataでのリクエストを推奨
       operationId: postExcelBulkUpload
       x-openapi-router-controller: controllers.export_import_controller
       parameters:
@@ -4546,10 +4651,11 @@ paths:
         content:
           application/json:
             schema:
-              description: 検索条件を設定
-              properties:
-                rest_key_name:
-                  $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+              type: object
+            example:
+              zipfile:
+                name: "ITA_FILES_XXXXXXXXXXXX.zip"
+                base64: "base64 string"
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/EXCEL_BULK_UPLOAD_FORM'
@@ -4994,7 +5100,9 @@ paths:
     post:
       tags:
         - Compare Controll
-      description: 比較実行ファイル出力
+      description: |
+        比較実行ファイル出力<br>
+        ※ダウンロードするのファイルの形式指定が2種類あります。
       operationId: postCompareExecuteOutput
       x-openapi-router-controller: controllers.compare_controll_controller
       parameters:
@@ -5022,7 +5130,13 @@ paths:
           required: false
           schema:
             type: string
-          example: "?file=binary"
+          examples:
+            example1:
+              summary: バイナリ形式（推奨）
+              value: .../output/?file=binary
+            example2:
+              summary: Base64文字列形式(2.5.0以降非推奨)
+              value: .../output/
       requestBody:
         content:
           application/json:
@@ -5789,7 +5903,9 @@ paths:
     post:
       tags:
         - Terraform Cloud EP
-      description: 連携しているTerraform Cloud/EnterpriseからPolicyコードをダウンロードする
+      description: |
+        連携しているTerraform Cloud/EnterpriseからPolicyコードをダウンロードする<br>
+        ※ダウンロードするのファイルの形式指定が2種類あります。
       operationId: getTerraformPolicyFile
       x-openapi-router-controller: controllers.terraform_cloud_ep_controller
       parameters:
@@ -5819,11 +5935,17 @@ paths:
             type: string
         - name: file
           in: query
-          description: ファイルデータの形式指定
+          description: ダウンロードするファイルの形式指定
           required: false
           schema:
             type: string
-          example: "?file=binary"
+          examples:
+            example1:
+              summary: バイナリ形式
+              value: .../download/{policy_name}/?file=binary
+            example2:
+              summary: Base64文字列形式（2.5.0以降非推奨）
+              value: .../download/{policy_name}/
       requestBody:
         content:
           application/json:
@@ -5835,8 +5957,13 @@ paths:
                   example: "/api/v2/policies/pol-xxxxxxxxxx/download"
       responses:
         '200':
-          description: Success
+          description: |
+            Success <br>
+            ※クエリパラメータにfile=binaryが含まれる場合は、ファイルはバイナリ形式で返されます。<br>
+            ※ファイル名は、HTTPヘッダーの"Content-Disposition"に含まれる"filename"を参照します。
           content:
+            application/octet-stream:
+              example: Binary data
             application/json:
               schema:
                 type: object
@@ -5846,6 +5973,13 @@ paths:
                     example: 000-00000
                   data:
                     type: object
+                    properties:
+                      file:
+                        type: string
+                        example: base64 string
+                      file_name:
+                        type: string
+
                   message:
                     type: string
         '401':
@@ -6836,7 +6970,7 @@ components:
           properties:
             rest_key_name:
               type: string
-              example: base64 encode file
+              example: base64 encode file（empty string if ?file=no）
 
     MAINTENANCE_PARAMETER_P:
       type: object
@@ -7093,20 +7227,20 @@ components:
               }
 
     MENU_UPLOAD_FORM:
-      type: object
-      properties:
-        file:
-          description: インポート対象のkymファイルを指定。
-          type: string
-          format: binary
+      example: |
+        ----------------------------XXXXXXXXXXXXX
+        Content-Disposition: form-data; name="ita_exportdata_XXXXXXXXXXXX.kym"; filename="ita_exportdata_XXXXXXXXXXXX.kym"
+        Content-Type: application/octet-stream
+        (binary content of the file)
+        ----------------------------XXXXXXXXXXXXX--
 
     EXCEL_BULK_UPLOAD_FORM:
-      type: object
-      properties:
-        zipfile:
-          description: インポート対象をまとめたzipファイルを指定。
-          type: string
-          format: binary
+      example: |
+        ----------------------------XXXXXXXXXXXXX
+        Content-Disposition: form-data; name="ITA_FILES_XXXXXXXXXXXXXXXXX.zip"; filename="ITA_FILES_XXXXXXXXXXXXXXXXX.zip"
+        Content-Type: application/x-zip-compressed
+        (binary content of the file)
+        ----------------------------XXXXXXXXXXXXX--
 
     ApplyParameterTypeA:
       type: array

@@ -569,7 +569,7 @@ def get_agent_version(objdbca, body):
 
     return result
 
-def update_ansible_agent_status_file(organization_id, workspace_id, body):
+def update_ansible_agent_status_file(organization_id, workspace_id, body, ws_db):
     """
         作業中通知
         ARGS:
@@ -586,15 +586,15 @@ def update_ansible_agent_status_file(organization_id, workspace_id, body):
     # 作業状態通知受信ファイルを空更新する
     for execution_no in legacy:
         file_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "/tmp/ansible_agent_status_file.txt"
-        update_timestamp(file_path)
+        update_timestamp(ws_db, "legacy", execution_no)
 
     for execution_no in pioneer:
         file_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/pioneer/" + execution_no + "/tmp/ansible_agent_status_file.txt"
-        update_timestamp(file_path)
+        update_timestamp(ws_db, "pioneer", execution_no)
 
     for execution_no in legacy_role:
         file_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy_role/" + execution_no + "/tmp/ansible_agent_status_file.txt"
-        update_timestamp(file_path)
+        update_timestamp(ws_db, "legacy_role", execution_no)
 
     return True
 
@@ -743,18 +743,17 @@ def tmp_shutil_move(gztar_path, tmp_base_path):
         g.applogger.info("move failed. gztar_path={}, tmp_base_path={}".format(gztar_path, tmp_base_path))
         raise e
 
-@file_read_retry
-def update_timestamp(file_path):
-    try:
-        if os.path.exists(file_path):
-            # 更新日時変更
-            with open(file_path , "w") as fd:
-                pass
-            g.applogger.debug(f"{file_path=}")
-            return True
-        else:
-            g.applogger.info(f"open failed. file={file_path=}")
-            return False
-    except Exception as e:
-        g.applogger.info(f"Failed to update file. ({file_path})")
-        raise e
+def update_timestamp(ws_db, driver_name, execution_no):
+    # 各driverのテーブル
+    if driver_name == "legacy":
+        t_exec_sts_inst = "T_ANSL_EXEC_STS_INST"
+    elif driver_name == "pioneer":
+        t_exec_sts_inst = "T_ANSP_EXEC_STS_INST"
+    elif driver_name == "legacy_role":
+        t_exec_sts_inst = "T_ANSR_EXEC_STS_INST"
+    update_date = {
+        'EXECUTION_NO': execution_no
+    }
+    ws_db.db_transaction_start()
+    ws_db.table_update(t_exec_sts_inst, update_date, 'EXECUTION_NO', False, True)
+    ws_db.db_transaction_end(True)

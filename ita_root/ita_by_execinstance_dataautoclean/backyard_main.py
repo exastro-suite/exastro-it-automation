@@ -118,12 +118,6 @@ class MainFunctions():
 
             self.ws_db.db_commit()
 
-            # トランザクション終了
-            FREE_LOG = g.appmsg.get_api_message("MSG-100015")
-            g.applogger.debug(FREE_LOG)
-
-            self.ws_db.db_transaction_end(True)
-
             if self.warning_flag == 0:
                 # [処理]プロシージャ終了(正常)
                 FREE_LOG = g.appmsg.get_api_message("MSG-100003")
@@ -140,12 +134,6 @@ class MainFunctions():
             g.applogger.debug(FREE_LOG)
 
             self.ws_db.db_rollback()
-
-            # トランザクション終了
-            FREE_LOG = g.appmsg.get_api_message("MSG-100015")
-            g.applogger.debug(FREE_LOG)
-
-            self.ws_db.db_transaction_end(False)
 
             # プロシージャ終了(異常)
             FREE_LOG = g.appmsg.get_api_message("MSG-100010")
@@ -419,24 +407,25 @@ class MainFunctions():
         FREE_LOG = g.appmsg.get_api_message("MSG-100008", [DelList["TABLE_NAME"]])
         g.applogger.debug(FREE_LOG)
 
-        sql = '''DELETE
-                 FROM
-                   `{}`
-                 WHERE
-                   {} in ({})
-              '''.format(DelList['TABLE_NAME'], DelList['PKEY_NAME'], PkeyString)
+        # max_allowed_packetの取得
+        _sql = "show variables like 'max_allowed_packet';"
+        _show_variables = self.ws_db.sql_execute(_sql)
+        max_allowed_packet = _show_variables[0]['Value'] if _show_variables[0]['Variable_name'] == 'max_allowed_packet' else 30000
+        g.max_allowed_packet = max_allowed_packet
 
-        rows = self.ws_db.sql_execute(sql)
+        # 分割処理で削除
+        n = len(PkeyList) if int(g.max_allowed_packet) >= 40 * 40 * len(PkeyList) else int(g.max_allowed_packet) / 40 / 40
+        for i in range(0, len(PkeyList), int(n)):
+          _prepared_list = ','.join(list(map(lambda a:"%s", PkeyList[i: int(i+n)])))
+          sql = f"DELETE FROM `{DelList['TABLE_NAME']}` WHERE `{DelList['PKEY_NAME']}` in ({_prepared_list})"
+          self.ws_db.sql_execute(sql,PkeyList[i: int(i+n)])
 
         if DelList['HISTORY_TABLE_FLAG'] == '1':
-            sql = '''DELETE
-                     FROM
-                       `{}`
-                     WHERE
-                       {} in ({})
-                  '''.format(DelList['TABLE_NAME_JNL'], DelList['PKEY_NAME'], PkeyString)
-
-            rows = self.ws_db.sql_execute(sql)
+          n = len(PkeyList) if int(g.max_allowed_packet) >= 40 * 40 * len(PkeyList) else int(g.max_allowed_packet) / 40 / 40
+          for i in range(0, len(PkeyList), int(n)):
+            _prepared_list_jnl = ','.join(list(map(lambda a:"%s", PkeyList[i: int(i+n)])))
+            sql = f"DELETE FROM `{DelList['TABLE_NAME_JNL']}` WHERE `{DelList['PKEY_NAME']}` in ({_prepared_list_jnl})"
+            self.ws_db.sql_execute(sql,PkeyList[i: int(i+n)])
 
             # [処理] テーブルから保管期限切れレコードの物理削除(テーブル名:{})
             FREE_LOG = g.appmsg.get_api_message("MSG-100008", [DelList["TABLE_NAME_JNL"]])
@@ -444,7 +433,7 @@ class MainFunctions():
 
     def PhysicalDeleteDBbyOperationDelete(self, DelList):
         """
-          削除されているオペレーションに紐づいているオペレーションのレコードを削除
+          削除されているオペレーションに紐づいているメニューのレコードを削除
           Arguments:
             DelList: 削除対象のメニュー情報
           Returns:
@@ -473,14 +462,11 @@ class MainFunctions():
                         g.applogger.debug(FREE_LOG)
                         shutil.rmtree(DelPath)
 
-            sql = '''DELETE
-                    FROM
-                    `{}`
-                    WHERE
-                    {} in ({})
-                '''.format(DelList['TABLE_NAME'], DelList['PKEY_NAME'], PkeyString)
-
-            rows = self.ws_db.sql_execute(sql)
+            n = len(PkeyList) if int(g.max_allowed_packet) >= 40 * 40 * len(PkeyList) else int(g.max_allowed_packet) / 40 / 40
+            for i in range(0, len(PkeyList), int(n)):
+              _prepared_list_mr= ','.join(list(map(lambda a:"%s", PkeyList[i: int(i+n)])))
+              sql = f"DELETE FROM `{DelList['TABLE_NAME']}` WHERE `{DelList['PKEY_NAME']}` in ({_prepared_list_mr})"
+              self.ws_db.sql_execute(sql,PkeyList[i: int(i+n)])
 
             #	[処理] 削除されたオペレーションに紐づいているレコードの物理削除(テーブル名:{})
             FREE_LOG = g.appmsg.get_api_message("MSG-100022", [DelList["TABLE_NAME"]])

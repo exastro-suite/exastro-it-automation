@@ -80,7 +80,7 @@ class FileUploadColumn(Column):
         # ファイル名正規表現　カンマとダブルクォートとタブとスラッシュと改行以外の文字
         preg_match = r"^[^,\"\t\/\r\n]*$"
 
-        if val is not None:
+        if not val:
 
             # 禁止拡張子
             forbidden_extension_arry = self.objdbca.table_select("T_COMN_SYSTEM_CONFIG", "WHERE CONFIG_ID = %s", bind_value_list=['FORBIDDEN_UPLOAD'])  # noqa:E501

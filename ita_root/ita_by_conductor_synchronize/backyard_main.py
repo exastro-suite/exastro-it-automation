@@ -20,6 +20,8 @@ from common_libs.conductor.classes.exec_util import *  # noqa: F403
 
 import sys
 import traceback
+import os
+import glob
 backyard_name = 'ita_by_conductor_synchronize'
 
 
@@ -264,6 +266,29 @@ def backyard_main(organization_id, workspace_id):
                 g.applogger.info(msg)
             finally:
                 execute_conductor_cnt = execute_conductor_cnt + 1
+
+                #__conductor_workflowdir__(/storage/<organzation_id>/<workspace_id>/driver/conductor配下)を削除
+                sql = "SELECT `STATUS_ID` FROM `T_COMN_CONDUCTOR_INSTANCE` WHERE `CONDUCTOR_INSTANCE_ID` = %s"
+                res = objdbca.sql_execute(sql, [conductor_instance_id])
+                end_status = res[0]['STATUS_ID']
+
+                #ステータスが6:正常終了、7:異常終了、8:警告終了、9:緊急停止、11:想定外エラーになっていたら削除
+                if end_status in ['6', '7', '8', '9', '11']:
+                    file_in_dir = glob.glob(os.path.join(conductor_storage_path,"*"))
+                    if len(file_in_dir) == 0:
+                        continue
+                    for file in file_in_dir:
+                        @file_read_retry
+                        def conductor_storage_path_file_remove():
+                            try:
+                                os.remove(file)
+                                return True
+                            except Exception as e:
+                                g.applogger.info("remove failed. file_path={}".format(file))
+                                t = traceback.format_exc()
+                                g.applogger.info(arrange_stacktrace_format(t))
+                                return False
+                        conductor_storage_path_file_remove()
 
             tmp_msg = g.appmsg.get_log_message("BKY-41005", ['End', conductor_instance_id])
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405

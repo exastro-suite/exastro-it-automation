@@ -140,7 +140,7 @@
         Input Value [default: /home/cloud-user/exastro ]:
 
         ⑧使用するAnsible-builder　Ansible-runnerを指定してください。
-        　償版を利用する場合は、リポジトリ有効化したうえで、2を指定してください。
+        　有償版を利用する場合は、リポジトリ有効化したうえで、2を指定してください。
         Select which Ansible-builder and/or Ansible-runner to use(1, 2) [1=Ansible 2=Red Hat Ansible Automation Platform] :
         Input Value [default: 1 ]:
 

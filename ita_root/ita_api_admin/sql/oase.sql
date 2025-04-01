@@ -366,20 +366,6 @@ CREATE TABLE T_OASE_EVENT_COLLECTION_PROGRESS
     PRIMARY KEY(EVENT_COLLECTION_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_OASE_EVENT_COLLECTION_PROGRESS_JNL
-(
-    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
-    JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
-    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
-    EVENT_COLLECTION_ID             VARCHAR(40),                                -- イベント収集ID
-    EVENT_COLLECTION_SETTINGS_ID    VARCHAR(40),                                -- イベント収集設定ID
-    FETCHED_TIME                    INT,                                        -- 経過時間
-    NOTE                            TEXT,                                       -- 備考
-    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
-    LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
-    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
-    PRIMARY KEY(JOURNAL_SEQ_NO)
-)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 
 

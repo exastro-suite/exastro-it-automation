@@ -1170,37 +1170,37 @@ class CICD_GrandChildWorkflow():
             filter_dict = {'DIALOG_TYPE_ID': row['M_DIALOG_TYPE_ID'], 'OS_TYPE_ID': row['M_OS_TYPE_ID']}
             linkname = {'DIALOG_TYPE_ID': row['M_DIALOG_TYPE_NAME'], 'OS_TYPE_ID': row['M_OS_TYPE_NAME']}
             obj_make_param = CICDMakeParamPioneer('T_ANSP_MATL_COLL', 'DIALOG_MATTER_ID', 'DIALOG_MATTER_FILE', 'dialog_files')
-            file_paths = {"dialog_files": tgtFilePath}
+            file_paths = {"dialog_file": tgtFilePath}
 
         elif materialType == TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_ROLE:
             filter_dict = {'ROLE_PACKAGE_NAME': linkname}
             obj_make_param = CICDMakeParamRole('T_ANSR_MATL_COLL', 'ROLE_PACKAGE_ID', 'ROLE_PACKAGE_FILE', 'role_package_list')
-            file_paths = {"role_package_list": tgtFilePath}
+            file_paths = {"zip_format_role_package_file": tgtFilePath}
 
         elif materialType == TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_CONTENT:
             filter_dict = {'CONTENTS_FILE_VARS_NAME': linkname}
             obj_make_param = CICDMakeParamContent('T_ANSC_CONTENTS_FILE', 'CONTENTS_FILE_ID', 'CONTENTS_FILE', 'file_list')
-            file_paths = {"file_list": tgtFilePath}
+            file_paths = {"files": tgtFilePath}
 
         elif materialType == TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_TEMPLATE:
             filter_dict = {'ANS_TEMPLATE_VARS_NAME': linkname}
             obj_make_param = CICDMakeParamTemplate('T_ANSC_TEMPLATE_FILE', 'ANS_TEMPLATE_ID', 'ANS_TEMPLATE_FILE', 'template_list')
-            file_paths = {"template_list": tgtFilePath}
+            file_paths = {"template_files": tgtFilePath}
 
         elif materialType == TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_MODULE:
             filter_dict = {'MODULE_MATTER_NAME': linkname}
             obj_make_param = CICDMakeParamModule('T_TERE_MODULE', 'MODULE_MATTER_ID', 'MODULE_MATTER_FILE', 'module_files_terraform_cloud_ep')
-            file_paths = {"module_files_terraform_cloud_ep": tgtFilePath}
+            file_paths = {"module_file": tgtFilePath}
 
         elif materialType == TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_POLICY:
             filter_dict = {'POLICY_NAME': linkname}
             obj_make_param = CICDMakeParamPolicy('T_TERE_POLICY', 'POLICY_ID', 'POLICY_MATTER_FILE', 'policy_list_terraform_cloud_ep')
-            file_paths = {"policy_list_terraform_cloud_ep": tgtFilePath}
+            file_paths = {"policy_file": tgtFilePath}
 
         elif materialType == TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_MODULE_CLI:
             filter_dict = {'MODULE_MATTER_NAME': linkname}
             obj_make_param = CICDMakeParamModuleCLI('T_TERC_MODULE', 'MODULE_MATTER_ID', 'MODULE_MATTER_FILE', 'module_files_terraform_cli')
-            file_paths = {"module_files_terraform_cli": tgtFilePath}
+            file_paths = {"module_file": tgtFilePath}
 
         if obj_make_param is None:
             return True, True

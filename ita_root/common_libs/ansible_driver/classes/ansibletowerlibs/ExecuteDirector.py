@@ -637,6 +637,10 @@ class ExecuteDirector():
         result_code = True
         tgtHostList = []
         for credential in TowerHostList:
+            # 制御ノードには転送しない
+            if credential['node_type'] == AnscConst.DF_CONTROL_NODE:
+                g.applogger.debug(f"[Trace] Skip MaterialsTransferToTower due to control node. {credential=}")
+                continue
 
             tgtHostList.append(credential['host_name'])  # ログ用
             ###########################################################
@@ -1121,6 +1125,15 @@ class ExecuteDirector():
         rows = self.dbAccess.sql_execute(sql)
 
         chkobj = AuthTypeParameterRequiredCheck()
+
+        # 有効なノードの構成（制御, 実行・ハイブリッド）を取得
+        _nodetype_list = [row.get('ANSTWR_ISOLATED_TYPE') for row in rows if 'ANSTWR_ISOLATED_TYPE' in row]
+        _all_node_num = len(_nodetype_list)
+        _ex_node_num = _nodetype_list.count("1")
+        _ct_node_num = _nodetype_list.count("0")
+        _ne_node_num = _nodetype_list.count(None)
+        g.applogger.info(f"[Trace] node type count: {_all_node_num}(ct={_ct_node_num}, ex={_ex_node_num}, none={_ne_node_num})")
+
         for row in rows:
             # sshポート番号のデフォルト値設定
             if not row['ANSTWR_PORT']:
@@ -1128,11 +1141,22 @@ class ExecuteDirector():
             else:
                 ssh_port_str = str(row['ANSTWR_PORT'])
 
-            if 'ANSTWR_ISOLATED_TYPE' in row and row['ANSTWR_ISOLATED_TYPE'] is not None and row['ANSTWR_ISOLATED_TYPE'] == 1:
+            if 'ANSTWR_ISOLATED_TYPE' in row and row['ANSTWR_ISOLATED_TYPE'] is not None and row['ANSTWR_ISOLATED_TYPE'] == "1":
                 node_type = AnscConst.DF_EXECUTE_NODE
 
             else:
                 node_type = AnscConst.DF_CONTROL_NODE
+
+            # AACホスト一覧の構成の状態により、資材転送の制御を行う
+            # execution_node: True(ハイブリッド・実行), False:(制御) : (n,x,y >= 1)
+            # 1. ノード数=(x+y): 制御=x, 実行=y => execution_nodeの設定値のまま扱う
+            # 2. ノード数=n:     制御=n, 実行=0 => 資材転送対象にする(ハイブリッド・実行ノードとして扱う)
+            # 3. ノード数=n:     制御=0, 実行=n => 不正な構成
+
+            # Execution node=Trueのノードが無い場合、資材転送対象にする
+            if _ex_node_num == 0:
+                node_type = AnscConst.DF_EXECUTE_NODE
+                g.applogger.info(f"[Trace] Only control nodes, so treat as execution nodes.({row['ANSTWR_HOST_ID']}")
 
             username = row['ANSTWR_LOGIN_USER']
             password = "undefine"

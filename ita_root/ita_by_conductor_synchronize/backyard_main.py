@@ -22,6 +22,7 @@ import sys
 import traceback
 import os
 import glob
+import shutil
 backyard_name = 'ita_by_conductor_synchronize'
 
 
@@ -281,7 +282,10 @@ def backyard_main(organization_id, workspace_id):
                         @file_read_retry
                         def conductor_storage_path_file_remove():
                             try:
-                                os.remove(file)
+                                if os.path.isdir(file):
+                                    shutil.rmtree(file)
+                                else:
+                                    os.remove(file)
                                 return True
                             except Exception as e:
                                 g.applogger.info("remove failed. file_path={}".format(file))

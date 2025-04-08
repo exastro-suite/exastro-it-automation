@@ -224,6 +224,7 @@ def arrange_stacktrace_format(t):
     Returns:
         (str)
     """
+    return t
     retStr = ""
 
     exception_block_arr = t.split('Traceback (most recent call last):\n')

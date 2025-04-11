@@ -74,8 +74,11 @@ class MultiSelectIDColumn(IDColumn):
         msg = ''
         rest_name = self.get_rest_key_name()
 
-        if not (val.startswith("[") and val.endswith("]")):
-            val = json.dumps([f"{val}"])
+        if val is not str:
+            pass
+        else:
+            if not (val.startswith("[") and val.endswith("]")):
+                val = json.dumps([f"{val}"])
 
         option['entry_parameter']['parameter'][rest_name] = val
 

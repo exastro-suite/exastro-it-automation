@@ -94,7 +94,7 @@ def conductor_regularly_valid(objdbca, objtable, option):  # noqa: C901
 
     if (period) and (interval):
         # 間隔 のパターンチェック（1～99）
-        interval_valida_rule = '[1-9]|[1-9][0-9]'
+        interval_valida_rule = '[1-9]|[1-9][0-9]|[1-9][0-9][0-9]|1[0-3][0-9][0-9]|14[0-3][0-9]'
         if re.fullmatch(interval_valida_rule, interval) is None:
             msg.append(g.appmsg.get_api_message("MSG-40031"))
 

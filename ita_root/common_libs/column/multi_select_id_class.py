@@ -74,11 +74,15 @@ class MultiSelectIDColumn(IDColumn):
         msg = ''
         rest_name = self.get_rest_key_name()
 
+        # Noneか配列が文字列化されたもののみ扱う
         if val is not str:
             pass
         else:
             if not (val.startswith("[") and val.endswith("]")):
-                val = json.dumps([f"{val}"])
+                try:
+                    val = json.dumps([f"{val}"])
+                except Exception:
+                    return False, msg, option, val
 
         option['entry_parameter']['parameter'][rest_name] = val
 

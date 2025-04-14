@@ -82,6 +82,7 @@ class MultiSelectIDColumn(IDColumn):
                 try:
                     val = json.dumps([f"{val}"])
                 except Exception:
+                    msg = g.appmsg.get_api_message('499-01701')
                     return False, msg, option, val
 
         option['entry_parameter']['parameter'][rest_name] = val

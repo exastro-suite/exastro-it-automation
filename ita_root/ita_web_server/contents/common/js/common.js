@@ -640,20 +640,16 @@ date: function( date, format ) {
 ##################################################
 */
 getPathname: function(){
-    if ( iframeFlag ) {
-        return ( new URL( window.parent.location ) ).pathname;
-    } else {
-        return ( new URL( document.location ) ).pathname;
-    }
+    return ( new URL( document.location ) ).pathname;
 },
+/*
 /*
 ##################################################
    URLパラメータ
 ##################################################
 */
 getParams: function() {
-    const location = ( iframeFlag )? new URL( window.parent.location ): new URL( document.location );
-    const searchParams = location.searchParams.entries();
+    const searchParams = ( new URL( document.location ) ).searchParams.entries();
     const params = {};
     for ( const [ key, val ] of searchParams ) {
         params[ key ] = val;
@@ -3336,14 +3332,7 @@ gotoErrPage: function( message ) {
             } else {
                 window.alert('Unknown error.');
             }
-            const params = cmn.getParams();
-            if ( params.debug !== 'true') {
-                if ( iframeFlag ) {
-                    window.parent.parent.location.href = './system_error/';
-                } else {
-                    window.location.href = './system_error/';
-                }
-            }
+            window.location.href = './system_error/';
         }
     } else {
         if ( message ) {

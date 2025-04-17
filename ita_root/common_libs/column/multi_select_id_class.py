@@ -74,8 +74,16 @@ class MultiSelectIDColumn(IDColumn):
         msg = ''
         rest_name = self.get_rest_key_name()
 
-        if not (val.startswith("[") and val.endswith("]")):
-            val = json.dumps([f"{val}"])
+        # Noneか配列が文字列化されたもののみ扱う
+        if val is not str:
+            pass
+        else:
+            if not (val.startswith("[") and val.endswith("]")):
+                try:
+                    val = json.dumps([f"{val}"])
+                except Exception:
+                    msg = g.appmsg.get_api_message('499-01701')
+                    return False, msg, option, val
 
         option['entry_parameter']['parameter'][rest_name] = val
 

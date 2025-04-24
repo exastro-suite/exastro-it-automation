@@ -1907,8 +1907,18 @@ def restoreFiles(workspace_path, uploadfiles_dir):
 def replace_role_name(workspace_id, export_workspace_id, param, rest_key_name="role_name"):
     # 「_エクスポート元ワークスペース名-admin」を「_インポート先ワークスペース名-admin」に置換する
     search_str = '_' + export_workspace_id + '-admin'
+    ansible_execution_agent_search_str = '_' + export_workspace_id + '-ansible-execution-agent'
+    oase_agent_search_str = '_' + export_workspace_id + '-oase-agent'
+    # adminロール置換
     if param[rest_key_name] == search_str:
         param[rest_key_name] = '_' + workspace_id + '-admin'
+    # ansible実行エージェントロール置換
+    if param[rest_key_name] == ansible_execution_agent_search_str:
+        param[rest_key_name] = '_' + workspace_id + '-ansible-execution-agent'
+    # OASEエージェントロール置換
+    if param[rest_key_name] == oase_agent_search_str:
+        param[rest_key_name] = '_' + workspace_id + '-oase-agent'
+
     return param
 
 

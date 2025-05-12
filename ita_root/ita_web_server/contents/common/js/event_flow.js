@@ -816,7 +816,6 @@ updateCanvas( initFlag = false ) {
             er.setEvents();
         }
 
-        //er.history = dummy;
         if (history.errorIgnored == true) {
             // エラーを無視した場合は、イベント情報の更新をしない
             er.ignoreErrorCount += 1
@@ -824,7 +823,7 @@ updateCanvas( initFlag = false ) {
             er.ignoreErrorCount = undefined // エラーを無視した回数をリセット
             er.history = history;
         }
-        // er.history = history;
+
         er.controller = null;
         er.updateDate = Date.now();
 

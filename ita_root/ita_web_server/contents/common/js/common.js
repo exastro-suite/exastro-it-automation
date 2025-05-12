@@ -217,7 +217,7 @@ getRestApiUrl: function( url, orgId = organization_id, wsId = workspace_id ) {
    データ読み込み
 ##################################################
 */
-fetch: function( url, token, method = 'GET', data, option = {} ) {
+fetch: function( url, token, method = 'GET', data, option = {}, ignoreError=false, ignoreErrorCount=0 ) {
 
     if ( !token ) {
         token = ( cmmonAuthFlag )? CommonAuth.getToken():
@@ -227,6 +227,9 @@ fetch: function( url, token, method = 'GET', data, option = {} ) {
     let errorCount = 0;
 
     const fetchController = ( option.controller )? option.controller: controller;
+
+    // エラー無視回数の上限設定
+    const ignoreErrorLimit = 120;
 
     const f = function( u ){
         return new Promise(function( resolve, reject ){
@@ -281,6 +284,10 @@ fetch: function( url, token, method = 'GET', data, option = {} ) {
                         });
                     } else {
                         errorCount++;
+                        if (response.status == 500 && ignoreError == true && ignoreErrorCount < ignoreErrorLimit) { // エラーを無視
+                            resolve({errorIgnored: true});
+                            return
+                        }
                         response.json().then(function( json ){
                             cmn.responseError( response.status, json, fetchController, option ).then(function( result ){
                                 reject( result );

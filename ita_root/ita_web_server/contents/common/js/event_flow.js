@@ -803,7 +803,12 @@ updateCanvas( initFlag = false ) {
         start_time: fn.date( er.loadStart, 'yyyy/MM/dd HH:mm:ss'),
         end_time: fn.date( er.loadEnd, 'yyyy/MM/dd HH:mm:ss')
     };
-    fn.fetch('/oase/event_flow/history/', null, 'POST', postData, { controller: er.controller } ).then(function( history ){
+
+    if (er.ignoreErrorCount == undefined) {
+        er.ignoreErrorCount = 0
+    }
+
+    fn.fetch('/oase/event_flow/history/', null, 'POST', postData, { controller: er.controller }, true, er.ignoreErrorCount ).then(function( history ){
         if ( history === undefined ) return;
 
         if ( initFlag ) {
@@ -812,7 +817,14 @@ updateCanvas( initFlag = false ) {
         }
 
         //er.history = dummy;
-        er.history = history;
+        if (history.errorIgnored == true) {
+            // エラーを無視した場合は、イベント情報の更新をしない
+            er.ignoreErrorCount += 1
+        } else {
+            er.ignoreErrorCount = undefined // エラーを無視した回数をリセット
+            er.history = history;
+        }
+        // er.history = history;
         er.controller = null;
         er.updateDate = Date.now();
 

@@ -985,7 +985,14 @@ class loadTable():
                                         if objcolumn.__class__.__name__ == "NumColumn":
                                             convert_search_conf = {}
                                             for k, v in search_conf.items():
-                                                convert_search_conf[k] = int(v)
+                                                try:
+                                                    convert_search_conf[k] = int(v)
+                                                except:
+                                                    status_code = '499-00201'
+                                                    msg_tmp = {0: {}}
+                                                    msg_tmp[0][search_key] = [g.appmsg.get_api_message("MSG-00002", ["整数", v])]
+                                                    msg = json.dumps(msg_tmp, ensure_ascii=False)
+                                                    raise AppException("499-00201", [msg], [msg])
                                             filter_querys.append(objcolumn.get_filter_query(search_mode, convert_search_conf))
                                         # 小数カラムの場合は検索する値をfloat型に変換する
                                         elif objcolumn.__class__.__name__ == "FloatColumn":
@@ -994,7 +1001,14 @@ class loadTable():
                                                 if float(v) == 0:
                                                     convert_search_conf[k] = v
                                                 else:
-                                                    convert_search_conf[k] = float(v)
+                                                    try:
+                                                        convert_search_conf[k] = float(v)
+                                                    except:
+                                                        status_code = '499-00201'
+                                                        msg_tmp = {0: {}}
+                                                        msg_tmp[0][search_key] = [g.appmsg.get_api_message("MSG-00002", ["少数", v])]
+                                                        msg = json.dumps(msg_tmp, ensure_ascii=False)
+                                                        raise AppException("499-00201", [msg], [msg])
                                             filter_querys.append(objcolumn.get_filter_query(search_mode, convert_search_conf))
                                         else:
                                             filter_querys.append(objcolumn.get_filter_query(search_mode, search_conf))

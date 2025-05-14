@@ -1006,7 +1006,7 @@ class loadTable():
                                                     except:
                                                         status_code = '499-00201'
                                                         msg_tmp = {0: {}}
-                                                        msg_tmp[0][search_key] = [g.appmsg.get_api_message("MSG-00002", ["少数", v])]
+                                                        msg_tmp[0][search_key] = [g.appmsg.get_api_message("MSG-00002", ["小数", v])]
                                                         msg = json.dumps(msg_tmp, ensure_ascii=False)
                                                         raise AppException("499-00201", [msg], [msg])
                                             filter_querys.append(objcolumn.get_filter_query(search_mode, convert_search_conf))

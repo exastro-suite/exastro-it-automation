@@ -170,6 +170,7 @@ def collection_logic(sqliteDB, organization_id, workspace_id, exastro_api):
         try:
             sqliteDB.db_connect.execute("BEGIN")
             sqliteDB.insert_events(events, event_collection_result_list)
+            sqliteDB.db_connect.commit()
             # イベントが1件以上なら、イベントの中身・取得時間・最終取得時間をsqliteに保存する
             if len(events) != 0:
                 g.applogger.debug(g.appmsg.get_log_message("AGT-10014", []))
@@ -270,6 +271,7 @@ def collection_logic(sqliteDB, organization_id, workspace_id, exastro_api):
                 try:
                     sqliteDB.db_connect.execute("BEGIN")
                     sqliteDB.update_sent_flag(table_name, data_list)
+                    sqliteDB.db_connect.commit()
                 except AppException as e:  # noqa E405
                     sqliteDB.db_connect.rollback()
                     app_exception(e)
@@ -335,8 +337,10 @@ def collection_logic(sqliteDB, organization_id, workspace_id, exastro_api):
         try:
             sqliteDB.db_connect.execute("BEGIN")
             sqliteDB.delete_unnecessary_records({"events": to_delete_events_rowids, "sent_timestamp": to_delete_timestamp_rowids})
+            sqliteDB.db_connect.commit()
             g.applogger.debug(g.appmsg.get_log_message("AGT-10023", []))
         except AppException as e:  # noqa F405
+            sqliteDB.db_connect.rollback()
             app_exception(e)
 
     return

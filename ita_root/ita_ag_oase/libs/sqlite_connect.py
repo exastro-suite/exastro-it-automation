@@ -63,24 +63,34 @@ class sqliteConnect:
         )
 
     def insert_events(self, events, event_collection_result_list):
-        sql_proc_unit_num = os.environ.get("SQL_INSERT_PROC_UNIT_NUM", 500) # バルクインサートするレコード数の単位
+        sql_proc_unit_num = int(os.environ.get("SQL_INSERT_PROC_UNIT_NUM")) # バルクインサートするレコード数の単位
         rec_count = 0 # バルクインサートの単位内でレコードカウント
         rec_num = 0 # 全件のレコードカウント
         rec_end = len(events)
-        event_group = []  # バルクインサートするレコードのリスト
+        event_data_group = []  # バルクインサートするレコードのリスト
 
         timestamp_info = []
         processed = set()
         try:
             for event in events:
-                event_group.append(event)
+                # データの加工
+                # イベントがメールの場合、message_idが必ずあるため、message_idを保存（メール重複取得防止のため）
+                unique_id = None
+                if "message_id" in event:
+                    unique_id = event["message_id"]
+                elif "_exastro_oase_event_id" in event:
+                    unique_id = event["_exastro_oase_event_id"]
+
+                event_data = (event["_exastro_event_collection_settings_name"], unique_id, json.dumps(event), event["_exastro_fetched_time"], False)
+
+                event_data_group.append(event_data)
                 rec_count = rec_count + 1
                 rec_num = rec_num + 1
 
                 if rec_count == sql_proc_unit_num or rec_num == rec_end:
                     # バルクインサート
-                    self.insert_event(event_group)
-                    event_group = []
+                    self.insert_event(event_data_group)
+                    event_data_group = []
                     rec_count = 0
 
                 # sent_timestampテーブルにデータを重複して保存しないようにリストを作成
@@ -116,7 +126,7 @@ class sqliteConnect:
             raise AppException("AGT-10027", [e, info])
 
     def update_sent_flag(self, table_name, data_list):
-        sql_proc_unit_num = os.environ.get("SQL_UPDATE_PROC_UNIT_NUM", 800)  # バルクアップデートするレコード数の単位
+        sql_proc_unit_num = int(os.environ.get("SQL_UPDATE_PROC_UNIT_NUM"))  # バルクアップデートするレコード数の単位
 
         try:
             for i in range(0, len(data_list), sql_proc_unit_num):
@@ -134,7 +144,7 @@ class sqliteConnect:
             raise AppException("AGT-10027", [e, data_list])
 
     def delete_unnecessary_records(self, dict):
-        sql_proc_unit_num = os.environ.get("SQL_DELETE_PROC_UNIT_NUM", 800)   # バルク削除するレコード数の単位
+        sql_proc_unit_num = int(os.environ.get("SQL_DELETE_PROC_UNIT_NUM"))   # バルク削除するレコード数の単位
 
         try:
             for table_name, record_info in dict.items():
@@ -150,26 +160,12 @@ class sqliteConnect:
             g.applogger.info('delete_unnecessary_records error')
             raise AppException("AGT-10027", [e, rowid_list])
 
-    def insert_event(self, event_group):
+    def insert_event(self, event_data_group):
         table_name = "events"
-        unique_id = None
-
-        data = []
-
-        for event in event_group:
-            # イベントがメールの場合、message_idが必ずあるため、message_idを保存（メール重複取得防止のため）
-            if "message_id" in event:
-                unique_id = event["message_id"]
-            elif "_exastro_oase_event_id" in event:
-                unique_id = event["_exastro_oase_event_id"]
-
-            event_string = json.dumps(event)
-
-            data.append((event["_exastro_event_collection_settings_name"], unique_id, event_string, event["_exastro_fetched_time"], False))
 
         self.db_cursor.executemany(
             f"INSERT INTO {table_name} (event_collection_settings_name, id, event, fetched_time, sent_flag) VALUES (?, ?, ?, ?, ?)",
-            data
+            event_data_group
         )
 
     def insert_sent_timestamp(self, id, fetched_time):

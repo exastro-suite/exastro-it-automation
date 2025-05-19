@@ -63,7 +63,7 @@ class sqliteConnect:
         )
 
     def insert_events(self, events, event_collection_result_list):
-        sql_proc_unit_num = int(os.environ.get("SQL_INSERT_PROC_UNIT_NUM")) # バルクインサートするレコード数の単位
+        sql_proc_unit_num = int(os.environ.get("SQL_INSERT_PROC_UNIT_NUM", 100)) # バルクインサートするレコード数の単位
         rec_count = 0 # バルクインサートの単位内でレコードカウント
         rec_num = 0 # 全件のレコードカウント
         rec_end = len(events)
@@ -126,7 +126,7 @@ class sqliteConnect:
             raise AppException("AGT-10027", [e, info])
 
     def update_sent_flag(self, table_name, data_list):
-        sql_proc_unit_num = int(os.environ.get("SQL_UPDATE_PROC_UNIT_NUM"))  # バルクアップデートするレコード数の単位
+        sql_proc_unit_num = int(os.environ.get("SQL_UPDATE_PROC_UNIT_NUM", 100))  # バルクアップデートするレコード数の単位
 
         try:
             for i in range(0, len(data_list), sql_proc_unit_num):
@@ -144,7 +144,7 @@ class sqliteConnect:
             raise AppException("AGT-10027", [e, data_list])
 
     def delete_unnecessary_records(self, dict):
-        sql_proc_unit_num = int(os.environ.get("SQL_DELETE_PROC_UNIT_NUM"))   # バルク削除するレコード数の単位
+        sql_proc_unit_num = int(os.environ.get("SQL_DELETE_PROC_UNIT_NUM", 100))   # バルク削除するレコード数の単位
 
         try:
             for table_name, record_info in dict.items():

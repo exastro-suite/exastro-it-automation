@@ -28,7 +28,7 @@ class DBConnectWs(DBConnectCommon):
 
     _workspace_id = ""
 
-    def __init__(self, workspace_id=None, organization_id=None):
+    def __init__(self, workspace_id=None, organization_id=None, mode_ss=None):
         """
         constructor
 
@@ -62,7 +62,7 @@ class DBConnectWs(DBConnectCommon):
         self._db = connect_info['DB_DATABASE']
 
         # connect database
-        self.db_connect()
+        self.db_connect(mode_ss=mode_ss)
 
     def __del__(self):
         """

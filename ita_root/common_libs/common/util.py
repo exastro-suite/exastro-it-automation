@@ -224,6 +224,7 @@ def arrange_stacktrace_format(t):
     Returns:
         (str)
     """
+    return t
     retStr = ""
 
     exception_block_arr = t.split('Traceback (most recent call last):\n')
@@ -722,7 +723,7 @@ def get_user_name(user_id):
 
 def get_all_execution_limit(limit_key):
     """
-    システム全体の同時実行数最大値取得
+    システム全体の設定値取得
 
     Returns:
         limit値
@@ -744,7 +745,7 @@ def get_all_execution_limit(limit_key):
     if request_response.status_code != 200:
         raise AppException('999-00005', [api_url, response_data])
 
-    # システム全体の同時実行数最大値取得
+    # システム全体の設定値取得
     limit = 0
     for record in response_data['data']:
         if record["key"] == limit_key:
@@ -829,6 +830,68 @@ def get_org_upload_file_size_limit(organization_id):
         g.ORG_UPLOAD_FILE_SIZE_LIMIT = org_upload_file_size_limit
 
     return org_upload_file_size_limit
+
+
+def get_org_menu_export_import_buffer_size(organization_id):
+    """
+    Organization毎のメニューエクスポート・インポートのバッファサイズの取得
+
+    Returns:
+        org_limit:
+            メニューエクスポート・インポートのバッファサイズ
+    """
+
+    org_limit = None
+
+    # 対象データのキー
+    s_limit_key = 'ita.system.menu_export_import.buffer_size'
+    g_limit_key = "ORG_MENU_EXPORT_IMPORT_BUFFER_SIZE"
+    limit_key = 'ita.organization.menu_export_import.buffer_size'
+
+    # システムの設定値の取得
+    system_size_limit = get_all_execution_limit(s_limit_key)
+    # システムの設定値が正の整数値でない場合は、固定値を使用
+    try:
+        system_size_limit = int(system_size_limit)
+        if system_size_limit < 0:
+            raise ValueError(f"Failed to get {s_limit_key} value, converted to numeric value.")
+    except Exception as e:
+        g.applogger.info(e)
+        system_size_limit = 100000
+
+    if g_limit_key in g:
+        org_limit = g.get(g_limit_key)
+    else:
+        host_name = os.environ.get('PLATFORM_API_HOST')
+        port = os.environ.get('PLATFORM_API_PORT')
+
+        header_para = {
+            "Content-Type": "application/json",
+            "User-Id": "dummy",
+            "Roles": "dummy",
+            "Language": g.get('LANGUAGE')
+        }
+
+        # API呼出
+        api_url = "http://{}:{}/internal-api/{}/platform/limits".format(host_name, port, organization_id)
+        request_response = requests.get(api_url, headers=header_para)
+
+        response_data = json.loads(request_response.text)
+        if request_response.status_code != 200:
+            raise AppException('999-00005', [api_url, response_data])
+
+        # Organization毎のメニューエクスポート・インポートのレコードバッファサイズ取得
+        org_limit = response_data["data"].get(limit_key, system_size_limit)
+
+        # システムの設定値以下であれば、リソースプランの値使用
+        org_limit = org_limit if system_size_limit > org_limit else system_size_limit
+
+        # gに値を設定しておく
+        setattr(g, g_limit_key, org_limit)
+
+        del request_response, response_data
+
+    return org_limit
 
 
 def create_dirs(config_file_path, dest_dir):

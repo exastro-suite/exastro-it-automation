@@ -164,7 +164,6 @@ background-color: #60C60D;
 background-color: var(--accentColor100);
 }
 
-
 .input:focus {
 background-color: var(--focusBackgroundColor);
 border-color: var(--focusColor);
@@ -326,6 +325,10 @@ opacity: 0;
 background-color: var(--mainColor80);
 background-image: linear-gradient( rgba(255,255,255,.2), rgba(255,255,255,0) );
 border-color: var(--mainColor100);
+}
+.checkbox:disabled ~ .checkboxLabel {
+opacity: .3;
+cursor: no-drop;
 }
 .checkboxTextOneOrMore .checkboxText:checked ~ .checkboxTextLabel > .checkboxTextMark {
 background-color: var(--mainColor10);
@@ -2602,6 +2605,7 @@ overflow: hidden;
 max-width: 640px;
 white-space: pre;
 text-overflow: ellipsis;
+text-align: left;
 }
 .tHeadFilterNone .filterNone,
 .tBodyAutoInput {
@@ -2631,10 +2635,27 @@ position: sticky;
 z-index: 10;
 left: 0;
 }
-.tHeadLeftSticky {
+.tHeadRightSticky,
+.tBodyRightSticky {
+position: sticky;
+z-index: 10;
+right: -1px;
+}
+.tHeadRightSticky {
+box-shadow: -1px 0 0 0 var(--mainColor100);
+}
+.tHeadFilter.tHeadRightSticky {
+box-shadow: -1px 0 0 0 var(--black50);
+}
+.tBodyRightSticky {
+box-shadow: -1px 0 0 0 var(--mainColor40);
+}
+.tHeadLeftSticky,
+.tHeadRightSticky {
 background-color: var(--mainColor60);
 }
-.tBodyLeftSticky {
+.tBodyLeftSticky,
+.tBodyRightSticky {
 z-index: 5;
 }
 .tBodyTrRowSelect {
@@ -4978,9 +4999,11 @@ margin-bottom: 8px;
 .commonParagraph {
 margin-bottom: 8px; padding: 8px;
 border-left: 4px solid rgba( 0,0,0,.2 );
+text-align: left;
 line-height: 1.5;
 letter-spacing: .5px;
 word-break: break-all;
+white-space: normal;
 font-size: 12px;
 }
 .commonParagraph:last-child {
@@ -5433,6 +5456,7 @@ width: auto; min-width: auto;
 display: none;
 }
 .commonInputTable .period_T,
+.commonInputTable[data-type="period_0"] .period_0,
 .commonInputTable[data-type="period_1"] .period_1,
 .commonInputTable[data-type="period_2"] .period_2,
 .commonInputTable[data-type="period_3"] .period_3,
@@ -5441,11 +5465,19 @@ display: none;
 .commonInputTable[data-type="period_6"] .period_6 {
 display: table-row;
 }
+.commonInputTable[data-type="period_0"] .period_T,
 .commonInputTable[data-type="period_1"] .period_T {
 display: none;
 }
 .scheduleNote {
 resize: vertical;
+}
+.scheduleWeekCheckboxWrap {
+    display: inline-flex;
+    flex-wrap: wrap;
+}
+.scheduleWeekCheckboxWrap .checkboxTextWrap {
+    flex: 0 0 auto;
 }
 
 /*
@@ -5588,6 +5620,45 @@ margin: 0 auto;
 .noData .tableHorizontal .tableWrap,
 .noData.noFilter .tableWrap  {
 display: none!important;
+}
+.tableSettingListHeader {
+display: flex;
+gap: 8px;
+margin-bottom: 8px;
+}
+.tableSettingListHeader > p {
+margin-bottom: 0!important;
+}
+.tableSettingListNote {
+flex: 1 1 auto;
+}
+.tableSettingListNoteLeft,
+.tableSettingListNoteRight {
+flex: 0 0 36px;
+text-align: center;
+padding: 0;
+display: flex;
+justify-content: center;
+align-items: center;
+font-size: 16px;
+border: 1px solid rgba(0, 0, 0, .2);
+border-radius: 4px;
+}
+.tableSettingListNoteRight {
+margin-right: 8px;
+}
+.tableSettingItemName {
+display: flex;
+gap: 8px;
+}
+.tableSettingItemName .checkboxTextWrap {
+flex: 1 1 auto;
+}
+.tableSettingItemFixed {
+flex: 0 0 36px;
+display: flex;
+justify-content: center;
+align-items: center;
 }
 /*
 ##################################################
@@ -5816,6 +5887,26 @@ background-color: #444;
 box-shadow: 0 0 4px rgba( 0,0,0,.5 ) inset,
           0 0 8px rgba( 0,0,0,.2 ),
           0 0 0 2px #666;
+}
+/*
+##################################################
+    Masked font
+##################################################
+*/
+@font-face {
+    font-family: 'exastro-masked-font';
+    src:
+        url('../fonts/exastro-masked-font.ttf') format('truetype'),
+        url('../fonts/exastro-masked-font.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+    font-display: block;
+}
+.mask {
+    font-family: 'exastro-masked-font' !important;
+    font-size: 5px!important;
+    line-height: 22px;
+    letter-spacing: 3.5px;
 }
 /*
 ##################################################

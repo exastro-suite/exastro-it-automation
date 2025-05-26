@@ -15,7 +15,7 @@ ARG USERNAME=app_user
 ARG GROUPNAME=app_user
 ARG APP_PATH=/exastro
 
-FROM    registry.access.redhat.com/ubi8/ubi-init as common_build
+FROM    registry.access.redhat.com/ubi9/ubi-init:9.4 as common_build
 ARG USERNAME
 ARG GROUPNAME
 ARG APP_PATH
@@ -27,14 +27,16 @@ ENV STORAGEPATH=/storage/
 ENV CONTAINER_BASE=docker
 ENV DEFAULT_LOCAL_TMP=/tmp
 ENV SERVICE_NAME=ita-by-ansible-execute
+ENV CHILD_PROCESS_RETRY_LIMIT=10
 ENV ANSIBLE_AGENT_NON_COMMUNICATION_DETECTION_TIME=600
 
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
     dnf install -y \
     gcc \
-    python39 \
-    python39-devel \
-    python39-mod_wsgi \
+    python3.12 \
+    python3.12-devel \
+    python3.12-pip \
+    python3.12-mod_wsgi \
     langpacks-en \
     wget \
     zip \
@@ -43,10 +45,14 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
     git \
 &&  curl -L https://storage.googleapis.com/kubernetes-release/release/v1.24.3/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
 &&  chmod +x /usr/local/bin/kubectl \
-&&  pip3.9 install poetry==1.6.0 \
+&&  pip3.12 install poetry==1.8.4 \
 &&  poetry config virtualenvs.create false \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
+
+RUN alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 1000000 \
+&&  alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 31200 \
+&&  alternatives --set python3 /usr/bin/python3.12
 
 WORKDIR $APP_PATH
 
@@ -82,7 +88,8 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
 &&  curl -L https://github.com/docker/compose/releases/download/v2.5.0/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose \
 &&  chmod +x /usr/local/bin/docker-compose \
 &&  usermod -G wheel $USERNAME \
-&&  echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+&&  echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers \
+&&  echo "%${GROUPNAME} ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
     poetry install --with develop_build
@@ -99,6 +106,8 @@ COPY ./ita_root/ita_by_ansible_execute/ $APP_PATH/
 COPY ./ita_root/common_libs/ $APP_PATH/common_libs/
 COPY ./ita_root/messages/ $APP_PATH/messages/
 COPY ./ita_root/backyard/ $APP_PATH/backyard/
+
+ENTRYPOINT ["bash", "./backyard/entrypoint.sh"]
 
 #
 # Build for production

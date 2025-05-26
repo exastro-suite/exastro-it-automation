@@ -1246,7 +1246,9 @@ def _get_target_datas(objdbca, compare_config, options):
                 operation_date = compare_config.get("parameter").get("base_date_2")
 
             if operation_date:
-                filter_parameter.setdefault("base_datetime", {"RANGE": {"END": operation_date}})
+                operation_date_add = operation_date + ".999999" # issue2445 リクエストにマイクロ秒がないために検索対象からもれてしまうケースがあるため、リクエストの秒代全てがヒットするようにする
+                filter_parameter.setdefault("base_datetime", {"RANGE": {"END": operation_date_add}})
+
             # set host
             if host_filter_flg is True:
                 filter_parameter.setdefault("host_name", {"LIST": accept_host_list})

@@ -40,6 +40,8 @@ def conductor_regularly_valid(objdbca, objtable, option):  # noqa: C901
     REGULARLY_PERIOD_ID_MONTH_DAY_OF_WEEK = '5'
     # 周期　月末
     REGULARLY_PERIOD_ID_END_OF_MONTH = '6'
+    # 周期　分
+    REGULARLY_PERIOD_ID_MINUTES = '7'
 
     # 作業期間 チェック --------------------------------------------------
     start_date = str(entry_parameter.get('start_date') or '').strip()
@@ -92,13 +94,13 @@ def conductor_regularly_valid(objdbca, objtable, option):  # noqa: C901
 
     if (period) and (interval):
         # 間隔 のパターンチェック（1～99）
-        interval_valida_rule = '[1-9]|[1-9][0-9]'
+        interval_valida_rule = '[1-9]|[1-9][0-9]|[1-9][0-9][0-9]|1[0-3][0-9][0-9]|14[0-3][0-9]'
         if re.fullmatch(interval_valida_rule, interval) is None:
             msg.append(g.appmsg.get_api_message("MSG-40031"))
 
         not_need_items = {}
         # 周期　時 の入力チェック
-        if period == REGULARLY_PERIOD_ID_TIME:
+        if period in [REGULARLY_PERIOD_ID_TIME, REGULARLY_PERIOD_ID_MINUTES]:
             # 入力不要項目をセット（週番号、曜日、日、時間）
             not_need_items = {
                 'week_number': week_number,
@@ -175,7 +177,7 @@ def conductor_regularly_valid(objdbca, objtable, option):  # noqa: C901
         # 周期の不正、入力チェックは必須項目チェック、カラムクラスチェックで行う
 
         # 時間 のパターンチェック（hh:mm:ss、0なしは許容しない）
-        if period != REGULARLY_PERIOD_ID_TIME:
+        if period not in [REGULARLY_PERIOD_ID_TIME, REGULARLY_PERIOD_ID_MINUTES]:
             time = time.strip()
             if time:
                 time_validation_rule = '((0|1)[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]'

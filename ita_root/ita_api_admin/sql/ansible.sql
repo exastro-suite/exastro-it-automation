@@ -444,6 +444,38 @@ CREATE TABLE T_ANSC_AGENT
 
 
 
+-- 20113 グローバル変数（センシティブ）管理
+CREATE TABLE T_ANSC_GLOBAL_VAR_SENSITIVE
+(
+    GBL_VARS_NAME_ID                VARCHAR(40),                                -- 項番
+    VARS_NAME                       VARCHAR(255),                               -- グローバル変数名
+    VARS_ENTRY                      TEXT,                                       -- 具体値
+    VARS_DESCRIPTION                TEXT,                                       -- 変数名説明
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(GBL_VARS_NAME_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+CREATE TABLE T_ANSC_GLOBAL_VAR_SENSITIVE_JNL
+(
+    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
+    JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
+    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
+    GBL_VARS_NAME_ID                VARCHAR(40),                                -- 項番
+    VARS_NAME                       VARCHAR(255),                               -- グローバル変数名
+    VARS_ENTRY                      TEXT,                                       -- 具体値
+    VARS_DESCRIPTION                TEXT,                                       -- 変数名説明
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(JOURNAL_SEQ_NO)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
 -- 20201 Legacy Movemnet一覧
 CREATE VIEW V_ANSL_MOVEMENT AS
 SELECT 
@@ -659,7 +691,7 @@ CREATE TABLE T_ANSL_VALUE
     SYSTEM_ID                       VARCHAR(40),                                -- ホスト
     MVMT_VAR_LINK_ID                VARCHAR(40),                                -- 変数名
     SENSITIVE_FLAG                  VARCHAR(2),                                 -- Sensitive設定
-    VARS_ENTRY                      TEXT,                                       -- 値
+    VARS_ENTRY                      LONGTEXT,                                   -- 値
     VARS_ENTRY_FILE                 VARCHAR(255),                               -- ファイル
     ASSIGN_SEQ                      INT,                                        -- 代入順序
     VARS_ENTRY_USE_TPFVARS          VARCHAR(1),                                 -- テンプレート変数使用有無
@@ -1042,7 +1074,7 @@ CREATE TABLE T_ANSP_VALUE
     SYSTEM_ID                       VARCHAR(40),                                -- ホスト
     MVMT_VAR_LINK_ID                VARCHAR(40),                                -- 変数名
     SENSITIVE_FLAG                  VARCHAR(2),                                 -- Sensitive設定
-    VARS_ENTRY                      TEXT,                                       -- 値
+    VARS_ENTRY                      LONGTEXT,                                   -- 値
     VARS_ENTRY_FILE                 VARCHAR(255),                               -- ファイル
     ASSIGN_SEQ                      INT,                                        -- 代入順序
     VARS_ENTRY_USE_TPFVARS          VARCHAR(1),                                 -- テンプレート変数使用有無
@@ -1417,7 +1449,7 @@ CREATE TABLE T_ANSR_VALUE
     MVMT_VAR_LINK_ID                VARCHAR(40),                                -- 変数名
     COL_SEQ_COMBINATION_ID          VARCHAR(40),                                -- メンバー変数名
     SENSITIVE_FLAG                  VARCHAR(2),                                 -- Sensitive設定
-    VARS_ENTRY                      TEXT,                                       -- 値
+    VARS_ENTRY                      LONGTEXT,                                   -- 値
     VARS_ENTRY_FILE                 VARCHAR(255),                               -- ファイル
     ASSIGN_SEQ                      INT,                                        -- 代入順序
     VARS_ENTRY_USE_TPFVARS          VARCHAR(1),                                 -- テンプレート変数使用有無
@@ -2833,6 +2865,7 @@ CREATE INDEX IND_T_ANSP_EXEC_STS_INST_01      ON T_ANSP_EXEC_STS_INST(DISUSE_FLA
 CREATE INDEX IND_T_ANSC_TWR_INSTANCE_GROUP_01 ON T_ANSC_TWR_INSTANCE_GROUP(DISUSE_FLAG);
 CREATE INDEX IND_T_ANSC_TWR_ORGANIZATION_01   ON T_ANSC_TWR_ORGANIZATION(DISUSE_FLAG);
 CREATE INDEX `IND_T_CMDB_f7a294e8-a7a7-4d03-8a76-e2f910db55d7_01` ON `T_CMDB_f7a294e8-a7a7-4d03-8a76-e2f910db55d7`(DISUSE_FLAG);
+CREATE INDEX IND_T_ANSC_GLOBAL_VAR_SENSITIVE_01 ON T_ANSC_GLOBAL_VAR_SENSITIVE(DISUSE_FLAG);
 
 
 

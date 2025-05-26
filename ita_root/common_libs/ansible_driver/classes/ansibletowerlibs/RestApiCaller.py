@@ -118,7 +118,7 @@ class RestApiCaller():
         # Proxy設定
         ################################
         if 'address' in self.proxySetting and self.proxySetting['address']:
-            address = self.proxySetting['address']
+            address = re.sub('(http|https)://', '', self.proxySetting['address'])
             if 'port' in self.proxySetting and self.proxySetting['port']:
                 address = '%s:%s' % (address, self.proxySetting['port'])
 
@@ -153,8 +153,8 @@ class RestApiCaller():
 
             req = urllib.request.Request(url, data=data, headers=headers, method=method)
             if 'address' in self.proxySetting and self.proxySetting['address']:
-                req.set_proxy(self.proxySetting['address'], 'http')
-                req.set_proxy(self.proxySetting['address'], 'https')
+                req.set_proxy(address, 'https')
+                req.set_proxy(address, 'https')
 
             try:
                 RestTimeout = getAACRestAPITimoutVaule()

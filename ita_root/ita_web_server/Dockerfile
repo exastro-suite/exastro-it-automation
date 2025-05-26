@@ -15,7 +15,7 @@ ARG USERNAME=app_user
 ARG GROUPNAME=app_user
 ARG APP_PATH=/exastro
 
-FROM    registry.access.redhat.com/ubi8/ubi-init
+FROM    registry.access.redhat.com/ubi9/ubi-init:9.4
 
 ARG USERNAME
 ARG GROUPNAME

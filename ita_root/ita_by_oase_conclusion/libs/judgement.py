@@ -28,9 +28,23 @@ class Judgement:
         self.LabelMasterDict = getLabelGroup(wsDb)
 
     def getFilterMatch(self, FilterRow):
-        # フィルターに引っかかったイベントを返す
-        # 単一イベントのときのみ、Trueを返す
+        """指定フィルターに合致するイベントを取得します / Gets events that match the specified filter.
+
+        Args:
+            FilterRow (_type_): フィルター
+
+        Returns:
+            boolean: True = 合致イベントあり / False = 合致イベントなし
+            Optional[Union[List[ObjectId], ObjectId]]: 合致したイベント（0件=None / 1件=ObjectId / 2件以上=List[ObjectId]）/ 検索方法がユニークだが複数合致した場合=None
+        """
+
+        # フィルターに合致したイベントを返す
+
+        # イベント検索用のパラメータ
         EventJudgList = []
+
+        # 検索方法（1はユニーク、2はキューイング）
+        search_condition_Id = FilterRow["SEARCH_CONDITION_ID"]
 
         if type(FilterRow["FILTER_CONDITION_JSON"]) is str:
             filter_condition_json = json.loads(FilterRow.get('FILTER_CONDITION_JSON'))
@@ -42,8 +56,8 @@ class Judgement:
             LabelKeyId = str(LabelRow['label_name'])
             LabelValue = str(LabelRow['condition_value'])
             LabelCondition = str(LabelRow['condition_type'])
-            tmp_msg = g.appmsg.get_log_message("BKY-90041", [LabelKeyId, LabelValue, LabelCondition])
-            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+            # tmp_msg = g.appmsg.get_log_message("BKY-90041", [LabelKeyId, LabelValue, LabelCondition])
+            # g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
             # ルールキーからルールラベル名を取得
             LabelKeyName = getIDtoLabelName(self.LabelMasterDict, LabelKeyId)
@@ -51,14 +65,26 @@ class Judgement:
             # ラベリングされたイベントからデータを抜出す条件設定
             EventJudgList.append(self.makeEventJudgList(LabelKeyName, LabelValue, LabelCondition))
 
-        ret, UseEventIdList = self.EventJudge(EventJudgList)
-        if ret is False:
-            return False, UseEventIdList
+        ret, UsedEventIdList = self.EventJudge(EventJudgList, search_condition_Id)
+        if search_condition_Id == '1' and ret is True and type(UsedEventIdList) is list and len(UsedEventIdList) > 1:
+            # 検索方法がユニークでかつ複数件イベントが合致した時は先頭の１件のみ対象とする
+            # 以外は読み捨てる
+            return True, UsedEventIdList[0]
+        else:
+            return ret, UsedEventIdList
 
-        return True, UseEventIdList[0]
 
-    def EventJudge(self, EventJudgList):
-        # イベント 検索
+    def EventJudge(self, EventJudgList, search_condition_Id):
+        """指定のラベル条件に合致するイベントを返します / Returns events that match the specified label condition.
+
+        Args:
+            EventJudgList (list[dict]): ラベル条件
+
+        Returns:
+            boolean: True = 合致イベントあり / False = 合致イベントなし
+            Optional[Union[List[ObjectId], ObjectId]]: 合致したイベント（0件=None / 1件=ObjectId / 2件以上=List[ObjectId]）
+        """
+        # イベント 検索　Searching for events JSON:{}
         tmp_msg = g.appmsg.get_log_message("BKY-90042", [str(EventJudgList)])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
@@ -67,18 +93,18 @@ class Judgement:
             # 対象イベントなし
             tmp_msg = g.appmsg.get_log_message("BKY-90043", [str(UsedEventIdList)])
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-            return False, ""
+            return False, None
         elif len(UsedEventIdList) == 1:
             # 対象イベントあり
             tmp_msg = g.appmsg.get_log_message("BKY-90044", [str(UsedEventIdList)])
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-            return True, UsedEventIdList
+            return True, UsedEventIdList[0]
         else:
             # 対象イベント 複数あり
             tmp_msg = g.appmsg.get_log_message("BKY-90045", [str(UsedEventIdList)])
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             # 対象イベントが複数ある場合は[ObjectId('aaa'), ObjectId('bbb'), …]の形式で返す
-            return False, UsedEventIdList
+            return True, UsedEventIdList
 
     def makeEventJudgList(self, LabelName, LabelValue, LabelCondition):
         return {"LabelKey": LabelName, "LabelValue": LabelValue, "LabelCondition": LabelCondition}
@@ -273,42 +299,9 @@ class Judgement:
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             return False, {}
 
-        if type(IncidentDict[FilterId]) is list:
-        # フィルターに複数マッチ
-            tmp_msg = g.appmsg.get_log_message("BKY-90059", [FilterId])
-            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-            # 取得しておいた「フィルター管理」から対象フィルターの検索方法をチェック
-            filterRow = filterIDMap[FilterId]
-            search_condition_Id = filterRow["SEARCH_CONDITION_ID"]
-
-            if search_condition_Id == '1':
-                # 検索方法がユニークの場合
-                # 一意のイベントしか許可しないのでFalseを返す
-                return False, {}
-            else:
-                # 検索方法がキューイングの場合
-                # 一番古いイベントの情報を返す
-                ret, EventRow = self.EventObj.get_events(IncidentDict[FilterId][0])
-                if ret is False:
-                    tmp_msg = g.appmsg.get_log_message("BKY-90043", [FilterId])
-                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-                    return False, {}
-
-                if str(EventRow['labels']['_exastro_evaluated']) == '0':
-                    return True, EventRow
-                else:
-                    tmp_msg = g.appmsg.get_log_message("BKY-90060", [FilterId])
-                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-                    return False, {}
-
-        # フィルターに単一マッチ
-        ret, EventRow = self.EventObj.get_events(IncidentDict[FilterId])
-        if ret is False:
-            tmp_msg = g.appmsg.get_log_message("BKY-90043", [FilterId])
-            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-            return False, {}
-
-        if str(EventRow['labels']['_exastro_evaluated']) == '0':
+        # 未評価のイベントを取得
+        ret, EventRow = self.get_first_unevaluated_event(IncidentDict, FilterId)
+        if ret is True:
             return True, EventRow
         else:
             tmp_msg = g.appmsg.get_log_message("BKY-90060", [FilterId])
@@ -437,3 +430,53 @@ class Judgement:
         #     return False
 
         return True
+
+    def exists_unevaluated_event(self, IncidentDict, FilterId):
+        """指定フィルターに未評価のイベントが存在するかを返します / Returns whether there are any unevaluated events for the specified filter
+
+        Args:
+            IncidentDict (_type_): _description_
+            FilterId (_type_): _description_
+
+        Returns:
+            boolean: True=exists event, False=not exists event
+        """
+        ret, EventRow = self.get_first_unevaluated_event(IncidentDict, FilterId)
+        return ret
+
+
+    def get_first_unevaluated_event(self, IncidentDict, FilterId):
+        """指定フィルターの最初の未評価イベントを返します / Returns the first unevaluated event for the specified filter
+
+        Args:
+            IncidentDict (_type_): _description_
+            FilterId (_type_): _description_
+
+        Returns:
+            boolean: True=exists event, False=not exists event
+            Optional[dict]: EventRow (not exists event=None)
+        """
+        if FilterId not in IncidentDict:
+            return False, None
+
+        if type(IncidentDict[FilterId]) is list:
+            # 複数件イベントが存在する時は、先頭から未評価のイベントを探して
+            # 未評価のイベントがイベントが見つかったら、それを返す
+            for event_id in IncidentDict[FilterId]:
+                ret, EventRow = self.EventObj.get_events(event_id)
+                if ret is True \
+                and EventRow['labels']['_exastro_evaluated'] == '0' \
+                and EventRow['labels']['_exastro_timeout'] == '0' \
+                and EventRow['labels']['_exastro_undetected'] == '0':
+                    return True, EventRow
+        else:
+            # １件のイベントの場合、該当イベントが未評価イベントの場合、それを返す
+            ret, EventRow = self.EventObj.get_events(IncidentDict[FilterId])
+            if ret is True \
+            and EventRow['labels']['_exastro_evaluated'] == '0' \
+            and EventRow['labels']['_exastro_timeout'] == '0' \
+            and EventRow['labels']['_exastro_undetected'] == '0':
+                return True, EventRow
+
+        # 未評価イベントが見つからなかった場合
+        return False, None

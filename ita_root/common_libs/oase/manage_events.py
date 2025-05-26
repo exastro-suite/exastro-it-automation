@@ -127,6 +127,21 @@ class ManageEvents:
     def count_events(self):
         return len(self.labeled_events_dict)
 
+    def count_unevaluated_events(self):
+        """未評価イベントの総数を返します / Returns the total number of unevaluated events
+
+        Returns:
+            int: 未評価イベントの総数
+        """
+        count = 0
+        for event_id, event in self.labeled_events_dict.items():
+            if event['labels']['_exastro_evaluated'] == '0' \
+            and event['labels']['_exastro_timeout'] == '0' \
+            and event['labels']['_exastro_undetected'] == '0':
+                count += 1
+
+        return count
+
     def append_event(self, event):
         self.labeled_events_dict[event["_id"]] = event
 
@@ -171,21 +186,12 @@ class ManageEvents:
         """
         unused_event_ids = []
 
+        # incident_dictに登録されているイベントをfilter_match_listに格納する
         filter_match_list = []
         for filter_id, id_value in incident_dict.items():
             if type(id_value) is list:
-            # フィルターに複数ヒットした場合はlist型で入っている
-                filterRow = filterIDMap[filter_id]
-                search_condition_Id = filterRow["SEARCH_CONDITION_ID"]
-
-                if search_condition_Id == '1':
-                    # ユニークの場合
-                    pass
-                else:
-                    # キューイングの場合
-                    filter_match_list += id_value
+                filter_match_list += id_value
             else:
-            # フィルターに単一イベントしか引っかかっていない場合
                 filter_match_list.append(id_value)
 
         for event_id, event in self.labeled_events_dict.items():

@@ -99,9 +99,11 @@ def getRuleList(wsDb, sort_bv_priority=False):
 def getFilterIDMap(wsDb):
     filterList = wsDb.table_select(oaseConst.T_OASE_FILTER, 'WHERE DISUSE_FLAG = %s AND AVAILABLE_FLAG = %s', [0, 1])
     if not filterList:
+        # No records to process. Table: {}
         tmp_msg = g.appmsg.get_log_message("BKY-90009", [oaseConst.T_OASE_FILTER])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         return False
+    # Acquired filter management. Items: {}
     tmp_msg = g.appmsg.get_log_message("BKY-90010", [str(len(filterList))])
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 

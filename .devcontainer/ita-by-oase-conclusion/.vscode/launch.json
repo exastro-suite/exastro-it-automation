@@ -1,53 +1,94 @@
 {
-    // IntelliSense を使用して利用可能な属性を学べます。
-    // 既存の属性の説明をホバーして表示します。
-    // 詳細情報は次を確認してください: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
-      {
-        "name": "Python: Flask",
-        "type": "python",
-        "request": "launch",
-        "program": "/exastro/backyard/backyard_init.py",
-        "env": {
-            "FLASK_APP": "/exastro/backyard/backyard_init.py"
-        },
-        "cwd": "/exastro",
-        "pathMappings": [
-          {
-            "localRoot": "${workspaceFolder}/ita_root/ita_by_oase_conclusion",
-            "remoteRoot": "/exastro"
-          },
-        ],
-        "args": [
-            "run",
-            "--no-debugger"
-        ],
-        "jinja": true,
-        "justMyCode": true,
-        "noDebug": true,
+  // IntelliSense を使用して利用可能な属性を学べます。
+  // 既存の属性の説明をホバーして表示します。
+  // 詳細情報は次を確認してください: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python: backyard_init (Loop)",
+      "type": "python",
+      "request": "launch",
+      "program": "/exastro/backyard/backyard_init.py",
+      "env": {
+          "FLASK_APP": "/exastro/backyard/backyard_init.py"
       },
-      {
-        "name": "[DEBUG] Python: Flask",
-        "type": "python",
-        "request": "launch",
-        "program": "/exastro/backyard/backyard_init.py",
-        "env": {
-            "FLASK_APP": "/exastro/backyard/backyard_init.py"
+      "cwd": "/exastro",
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/ita_root/ita_by_oase_conclusion",
+          "remoteRoot": "/exastro"
         },
-        "cwd": "/exastro",
-        "pathMappings": [
-          {
-            "localRoot": "${workspaceFolder}/ita_root/ita_by_oase_conclusion",
-            "remoteRoot": "/exastro"
-          },
-        ],
-        "args": [
-            "run",
-            "--no-debugger"
-        ],
-        "jinja": true,
-        "justMyCode": true
-      }
-  ]
+      ],
+      "args": [
+          "9999999"
+      ],
+      "jinja": true,
+      "justMyCode": true,
+      "noDebug": true,
+    },
+    {
+      "name": "Python: backyard_init (No Loop)",
+      "type": "python",
+      "request": "launch",
+      "program": "/exastro/backyard/backyard_init.py",
+      "env": {
+          "FLASK_APP": "/exastro/backyard/backyard_init.py"
+      },
+      "cwd": "/exastro",
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/ita_root/ita_by_oase_conclusion",
+          "remoteRoot": "/exastro"
+        },
+      ],
+      "args": [
+          "1"
+      ],
+      "jinja": true,
+      "justMyCode": true,
+      "noDebug": true,
+    },
+    {
+      "name": "[DEBUG] Python: backyard_init (Loop)",
+      "type": "python",
+      "request": "launch",
+      "program": "/exastro/backyard/backyard_init.py",
+      "env": {
+          "FLASK_APP": "/exastro/backyard/backyard_init.py"
+      },
+      "cwd": "/exastro",
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/ita_root/ita_by_oase_conclusion",
+          "remoteRoot": "/exastro"
+        },
+      ],
+      "args": [
+          "9999999"
+      ],
+      "jinja": true,
+      "justMyCode": true
+    },
+    {
+      "name": "[DEBUG] Python: backyard_init (No Loop)",
+      "type": "python",
+      "request": "launch",
+      "program": "/exastro/backyard/backyard_init.py",
+      "env": {
+          "FLASK_APP": "/exastro/backyard/backyard_init.py"
+      },
+      "cwd": "/exastro",
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/ita_root/ita_by_oase_conclusion",
+          "remoteRoot": "/exastro"
+        },
+      ],
+      "args": [
+          "1"
+      ],
+      "jinja": true,
+      "justMyCode": true
+    }
+]
 }

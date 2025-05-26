@@ -898,13 +898,14 @@ services:
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.vscode_extensions/ita-by-oase-conclusion/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-oase-conclusion/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
       - HTTPS_PROXY=${HTTPS_PROXY}
       - https_proxy=${HTTPS_PROXY}
-      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api,ita-api-oase-receiver
-      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api,ita-api-oase-receiver
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api,platform-auth,ita-api-oase-receiver
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api,platform-auth,ita-api-oase-receiver
       - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
       - SSL_CERT_DIR=/etc/ssl/certs
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt

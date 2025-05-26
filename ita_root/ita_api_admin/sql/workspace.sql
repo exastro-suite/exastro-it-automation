@@ -137,6 +137,7 @@ CREATE TABLE T_COMN_MENU_TABLE_LINK
     ROW_UPDATE_FLAG                 VARCHAR(2),                                 -- 更新許可フラグ
     ROW_DISUSE_FLAG                 VARCHAR(2),                                 -- 廃止許可フラグ
     ROW_REUSE_FLAG                  VARCHAR(2),                                 -- 復活許可フラグ
+    ROW_DELETE_FLAG                 VARCHAR(2),                                 -- 削除許可フラグ
     SUBSTITUTION_VALUE_LINK_FLAG    VARCHAR(2),                                 -- 代入値自動登録対象フラグ
     LOCK_TABLE                      TEXT,                                       -- ロック対象テーブル
     UNIQUE_CONSTRAINT               TEXT,                                       -- 組み合わせ一意制約
@@ -170,6 +171,7 @@ CREATE TABLE T_COMN_MENU_TABLE_LINK_JNL
     ROW_UPDATE_FLAG                 VARCHAR(2),                                 -- 更新許可フラグ
     ROW_DISUSE_FLAG                 VARCHAR(2),                                 -- 廃止許可フラグ
     ROW_REUSE_FLAG                  VARCHAR(2),                                 -- 復活許可フラグ
+    ROW_DELETE_FLAG                 VARCHAR(2),                                 -- 削除許可フラグ
     SUBSTITUTION_VALUE_LINK_FLAG    VARCHAR(2),                                 -- 代入値自動登録対象フラグ
     LOCK_TABLE                      TEXT,                                       -- ロック対象テーブル
     UNIQUE_CONSTRAINT               TEXT,                                       -- 組み合わせ一意制約

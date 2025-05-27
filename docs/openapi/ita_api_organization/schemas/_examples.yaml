@@ -17,3 +17,6 @@ MENU_UPLOAD_FORM:
 
 EXCEL_BULK_UPLOAD_FORM:
   $ref: "./_example/excel.bulk.upload.form.yaml"
+
+menu.maintenance.all.yaml:
+  $ref: "./_example/menu.maintenance.all.yaml"

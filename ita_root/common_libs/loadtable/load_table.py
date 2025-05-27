@@ -33,6 +33,7 @@ CMD_REGISTER = 'Register'
 CMD_UPDATE = 'Update'
 CMD_RESTORE = 'Restore'
 CMD_DISCARD = 'Discard'
+CMD_DELETE = 'Delete'
 
 # メッセージ種別
 MSG_LEVEL_DEBUG = 'DEBUG'

@@ -27,4 +27,9 @@ properties:
         example: base64 encode file
   type:
     type: string
-    example: Register/Update
+    enum:
+      - Register
+      - Update
+      - Restore
+      - Discard
+      - Delete

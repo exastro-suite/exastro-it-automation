@@ -42,9 +42,16 @@ post:
       application/json:
         schema:
           description: 登録/更新/廃止/復活するidとレコードの値を設定
-          items: {
-            $ref: '../schemas/maintenance.parameters.yaml',
-          }
+          type: array
+          items:
+            allOf:
+              - $ref: '../schemas/maintenance.parameters.yaml'
+              - required:
+                  - parameter
+                  - type
+        examples:
+          example:
+            $ref: '../schemas/_example/menu.maintenance.all.yaml'
       multipart/form-data:
         schema:
           $ref: '../schemas/maintenance.all.form.yaml'

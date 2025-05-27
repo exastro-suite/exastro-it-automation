@@ -288,28 +288,45 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
 
                             if ret is True:
                                 for UsedFilterId in UsedFilterIdList:
-                                    if filterIDMap[UsedFilterId]["SEARCH_CONDITION_ID"] == '1':
-                                        # ユニークのフィルターに既にイベントがあるかを設定
-                                        exists_unique_fillter_events = judgeObj.exists_unevaluated_event(IncidentDict, UsedFilterId)
-                                    else:
-                                        # ユニークのフィルターではないのでFalseを設定
-                                        exists_unique_fillter_events = False
+                                    # Registering link between conclusion event filter and event. FILTER_ID: {} EVENT_ID: {}
+                                    tmp_msg = g.appmsg.get_log_message("BKY-90022", [UsedFilterId, ConclusionEventRow['_id']])
 
-                                    if exists_unique_fillter_events is True:
-                                        # ユニークのフィルターで既にイベントを持っているためIncidentDictに追加しない
-                                        pass
-                                    else:
-                                        # Registering link between conclusion event filter and event. FILTER_ID: {} EVENT_ID: {}
-                                        tmp_msg = g.appmsg.get_log_message("BKY-90022", [UsedFilterId, ConclusionEventRow['_id']])
-                                        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                                    if UsedFilterId in IncidentDict:
+                                        if len(IncidentDict[UsedFilterId]) > 0:
+                                            if filterIDMap[UsedFilterId]["SEARCH_CONDITION_ID"] == '1':
+                                            # ユニークのフィルターに既にイベントがある場合
+                                                judged_events = [] # 何かしら判定済みのイベントのリスト
+                                                unevaluated_events = [] # 未評価のイベントのリスト
+                                                for event_id in IncidentDict[UsedFilterId]:
+                                                    ret, EventRow = EventObj.get_events(event_id)
+                                                    if ret is True:
+                                                        if EventRow['labels']['_exastro_evaluated'] == '0' \
+                                                        and EventRow['labels']['_exastro_timeout'] == '0' \
+                                                        and EventRow['labels']['_exastro_undetected'] == '0':
+                                                            unevaluated_events.append(event_id)
+                                                        else:
+                                                            judged_events.append(event_id)
+                                                    else:
+                                                        # 見つからないものは破棄
+                                                        pass
 
-                                        if UsedFilterId in IncidentDict:
-                                            if type(IncidentDict[UsedFilterId]) is list:
-                                                IncidentDict[UsedFilterId].append(ConclusionEventRow['_id'])
+                                                if len(unevaluated_events) == 0:
+                                                # 判定済みのものしかなかったので、結論イベントを追加する
+                                                    IncidentDict[UsedFilterId] = judged_events + [ConclusionEventRow['_id']]
+                                                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                                                else:
+                                                    IncidentDict[UsedFilterId] = judged_events
                                             else:
-                                                IncidentDict[UsedFilterId] = [IncidentDict[UsedFilterId], ConclusionEventRow['_id']]
+                                            # キューイングの場合
+                                                IncidentDict[UsedFilterId].append(ConclusionEventRow['_id'])
+                                                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                                         else:
-                                            IncidentDict[UsedFilterId] = ConclusionEventRow['_id']
+                                        # 未知にするので追加しない
+                                            pass
+                                    else:
+                                    # 初めてフィルターにかかった
+                                        IncidentDict[UsedFilterId] = [ConclusionEventRow['_id']]
+                                        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
                                     EventObj.append_event(ConclusionEventRow)
                                     newIncident_Flg = True

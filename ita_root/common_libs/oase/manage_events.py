@@ -188,11 +188,9 @@ class ManageEvents:
 
         # incident_dictに登録されているイベントをfilter_match_listに格納する
         filter_match_list = []
-        for filter_id, id_value in incident_dict.items():
-            if type(id_value) is list:
-                filter_match_list += id_value
-            else:
-                filter_match_list.append(id_value)
+        for filter_id, id_value_list in incident_dict.items():
+            if len(id_value_list) > 0:
+                filter_match_list += id_value_list
 
         for event_id, event in self.labeled_events_dict.items():
             # タイムアウトしたイベントは登録されているのでスキップ

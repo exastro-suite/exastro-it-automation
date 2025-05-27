@@ -15,7 +15,7 @@
 post:
   tags:
     - Menu MaintenanceAll
-  description: レコードを一括で登録/更新/廃止/復活する
+  description: レコードを一括で登録/更新/廃止/復活/物理削除する
   operationId: maintenanceAll
   x-openapi-router-controller: controllers.menu_maintenance_all_controller
   parameters:
@@ -41,7 +41,7 @@ post:
     content:
       application/json:
         schema:
-          description: 登録/更新/廃止/復活するidとレコードの値を設定
+          description: 登録/更新/廃止/復活/物理削除するidとレコードの値を設定
           type: array
           items:
             allOf:

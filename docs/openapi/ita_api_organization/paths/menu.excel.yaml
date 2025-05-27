@@ -1,0 +1,164 @@
+#   Copyright 2025 NEC Corporation
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+get:
+  tags:
+    - Menu Excel
+  description: |
+    全件のExcelを取得する<br>
+    ※ダウンロードするのファイルの形式指定が2種類あります。
+  operationId: getExcelFilter
+  x-openapi-router-controller: controllers.menu_excel_controller
+  parameters:
+    - name: organization_id
+      in: path
+      description: OrganizationID
+      required: true
+      schema:
+        type: string
+    - name: workspace_id
+      in: path
+      description: WorkspaceID
+      required: true
+      schema:
+        type: string
+    - name: menu
+      in: path
+      description: メニュー名
+      required: true
+      schema:
+        type: string
+    - name: file
+      in: query
+      description: ダウンロードするファイルの形式指定
+      required: false
+      schema:
+        type: string
+      examples:
+        example1:
+          summary: バイナリ形式（推奨）
+          value: .../excel/?file=binary
+        example2:
+          summary: Base64文字列形式（2.5.0以降非推奨）
+          value: .../excel/
+  responses:
+    '200':
+      description: |
+        Success <br>
+        ※クエリパラメータにfile=binaryが含まれる場合は、ファイルはバイナリ形式で返されます。<br>
+        ※ファイル名は、HTTPヘッダーの"Content-Disposition"に含まれる"filename"を参照します。
+      content:
+        application/octet-stream:
+          example: Binary data
+        application/json:
+          schema:
+            allOf:
+              - $ref: '../schemas/response.ok.yaml'
+              - type: object
+                properties:
+                  data:
+                    type: string
+                    example: base64 string
+    '401':
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/error.template.yaml'
+    '500':
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/error.template.yaml'
+post:
+  tags:
+    - Menu Excel
+  description: |
+    検索条件を指定し、Excelを取得する<br>
+    ※ダウンロードするのファイルの形式指定が2種類あります。
+  operationId: postExcelFilter
+  x-openapi-router-controller: controllers.menu_excel_controller
+  parameters:
+    - name: organization_id
+      in: path
+      description: OrganizationID
+      required: true
+      schema:
+        type: string
+    - name: workspace_id
+      in: path
+      description: WorkspaceID
+      required: true
+      schema:
+        type: string
+    - name: menu
+      in: path
+      description: メニュー名
+      required: true
+      schema:
+        type: string
+    - name: file
+      in: query
+      description: ダウンロードするファイルの形式指定
+      required: false
+      schema:
+        type: string
+      examples:
+        example1:
+          summary: バイナリ形式（推奨）
+          value: .../excel/?file=binary
+        example2:
+          summary: Base64文字列形式（2.5.0以降非推奨）
+          value: .../excel/
+  requestBody:
+    content:
+      application/json:
+        schema:
+          description: 検索条件を設定
+          type: object
+          example: {"discard":{"NORMAL":"0"},"column_name":{"LIST":["op01"]}}
+  responses:
+    '200':
+      description: |
+        Success <br>
+        ※クエリパラメータにfile=binaryが含まれる場合は、ファイルはバイナリ形式で返されます。<br>
+        ※ファイル名は、HTTPヘッダーの"Content-Disposition"に含まれる"filename"を参照します。
+      content:
+        application/octet-stream:
+          example: Binary data
+        application/json:
+          schema:
+            type: object
+            properties:
+              result:
+                type: string
+                example: 000-00000
+              data:
+                type: string
+                example: base64 string
+              message:
+                type: string
+    '401':
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/error.template.yaml'
+    '500':
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/error.template.yaml'

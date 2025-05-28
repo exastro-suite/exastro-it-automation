@@ -26,6 +26,10 @@ ENV STORAGEPATH=/storage/
 ENV SERVICE_NAME=ita-ag-oase
 ENV USER_ID=ita-ag-oase
 
+ENV SQL_INSERT_PROC_UNIT_NUM=100
+ENV SQL_UPDATE_PROC_UNIT_NUM=100
+ENV SQL_DELETE_PROC_UNIT_NUM=100
+
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
     dnf install -y \
     gcc \

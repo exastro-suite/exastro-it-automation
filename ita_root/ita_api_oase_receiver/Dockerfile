@@ -30,6 +30,7 @@ ENV APACHE_TIMEOUT          300
 ENV APACHE_USERNAME         $USERNAME
 ENV APACHE_GROUPNAME        $GROUPNAME
 ENV SERVICE_NAME=ita-api-oase-receiver
+ENV EVENT_COLLECTION_PROGRESS_TTL   72
 
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
     dnf install -y \

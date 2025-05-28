@@ -315,13 +315,14 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
                                                     IncidentDict[UsedFilterId] = judged_events + [ConclusionEventRow['_id']]
                                                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                                                 else:
+                                                # 複数合致することになるので、未評価のもの（結論イベント含む）は破棄する→未知におとす予定
                                                     IncidentDict[UsedFilterId] = judged_events
                                             else:
                                             # キューイングの場合
                                                 IncidentDict[UsedFilterId].append(ConclusionEventRow['_id'])
                                                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                                         else:
-                                        # 未知にするので追加しない
+                                        # 空配列。既に未知判定（ユニーク検索かつ複数イベント合致）されているため、結論イベントも破棄する→未知におとす予定
                                             pass
                                     else:
                                     # 初めてフィルターにかかった

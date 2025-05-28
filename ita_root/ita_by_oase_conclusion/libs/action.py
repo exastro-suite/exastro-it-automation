@@ -245,7 +245,13 @@ class Action():
             label_key_name = getIDtoLabelName(labelMaster, setting["label_key"])
             # label_valueに変数ブロックが含まれている場合、jinja2テンプレートで値を変換
             template = Template(setting["label_value"])
-            label_value = template.render(A=event_A_labels, B=event_B_labels)
+            try:
+                label_value = template.render(A=event_A_labels, B=event_B_labels)
+            except Exception as e:
+                t = traceback.format_exc()
+                g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
+
+                label_value = "CONCLUSION LABELS jinja2TEMPLATE ERROR ({})".format(e)
 
             ab_merged_labels[label_key_name] = label_value
             setting_only_labels[label_key_name] = label_value

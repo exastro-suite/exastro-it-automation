@@ -12,6 +12,7 @@
 # limitations under the License.
 #
 
+from flask import g
 from common_libs.common.exception import AppException
 
 
@@ -52,7 +53,6 @@ class loadCollection():
             mariadb_table_name = self.load_table.get_table_name()
             mondodb_collection_name = self.wsMongo.get_collection_name(mariadb_table_name)
             collection = self.wsMongo.create_collection(mondodb_collection_name)
-
             where_str = collection.create_where(parameter, objdbca)
 
             # MongoDB向けの記法に変換が必要なため、DBから取得した値はそのまま利用しない
@@ -65,14 +65,11 @@ class loadCollection():
 
             # 2.4.0暫定対応
             if mode in ['mongo']:
-                tmp_result = (self.wsMongo.collection(mondodb_collection_name).find(where_str))
-
+                # g.applogger.info(f"{where_str=}")
+                tmp_result = self.wsMongo.collection(mondodb_collection_name).find(filter=where_str)
                 result_list = collection.create_result(tmp_result, objdbca)
-
             elif mode in ['mongo_count']:
-                tmp_result = (self.wsMongo.collection(mondodb_collection_name)
-                              .count_documents(where_str))
-
+                tmp_result = self.wsMongo.collection(mondodb_collection_name).count_documents(where_str)
                 result_list = tmp_result
 
         except AppException as e:

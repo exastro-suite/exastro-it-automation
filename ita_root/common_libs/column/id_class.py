@@ -304,18 +304,14 @@ class IDColumn(Column):
 
                     if len(str_where) != 0:
                         conjunction = 'or'
-                    bindvalue = json.dumps(bindvalue)
                     bindkey = "__{}__{}__".format(self.get_col_name(), listno)
                     bindkeys.append(bindkey)
                     bindvalues.setdefault(bindkey, bindvalue)
                     listno = listno + 1
-                    str_where = str_where + ' ' + conjunction + ' JSON_CONTAINS(`{}`, {}, "$.{}")'.format(
-                        self.get_col_name(),
-                        bindkey,
-                        self.get_rest_key_name()
-                    )
-                if len(str_where) != 0:
-                    str_where = '(' + str_where + ')'
+
+                if bindkeys != []:
+                    str_where = str_where + f" {conjunction} JSON_UNQUOTE(JSON_EXTRACT(`{self.get_col_name()}`, '$.{self.get_rest_key_name()}'))"
+                    str_where = str_where + f" IN ( {','.join(bindkeys)} )"
             else:
                 for bindvalue in tmp_conf:
 

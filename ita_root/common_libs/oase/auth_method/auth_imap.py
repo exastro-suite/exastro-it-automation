@@ -85,7 +85,7 @@ class IMAPAuthClient(APIClientCommon):
             mailbox = self.client.select_folder(self.mailbox_name)  # noqa F841
 
             # 最後の取得時間以降に受信したメールのIDを取得
-            datetime_obj = datetime.datetime.utcfromtimestamp(self.last_fetched_timestamp)
+            datetime_obj = datetime.datetime.fromtimestamp(self.last_fetched_timestamp)
             target_datetime = datetime_obj.strftime("%d-%b-%Y")
             message_ids = self.client.search(["SINCE", target_datetime])
 

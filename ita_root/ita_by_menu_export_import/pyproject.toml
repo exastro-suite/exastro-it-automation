@@ -18,6 +18,7 @@ pycryptodome = ">=0.0.0"
 cryptography = ">=0.0.0"
 pymongo = ">=0.0.0"
 pandas = ">=0.0.0"
+psutil = "^7.0.0"
 
 [tool.poetry.group.first_install.dependencies]
 certifi = ">=0.0.0"

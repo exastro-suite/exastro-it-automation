@@ -26,6 +26,8 @@ ENV LANGUAGE=en
 ENV STORAGEPATH=/storage/
 ENV SERVICE_NAME=ita-by-oase-conclusion
 
+ENV EVALUATE_LATENT_INFINITE_LOOP_LIMIT=1000
+
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
     dnf install -y \
     gcc \
@@ -67,13 +69,16 @@ ARG APP_PATH
 
 
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
-    dnf install -y \
+    dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo \
+    &&  dnf install -y \
     sudo \
     git \
     vim \
     diffutils \
     bind-utils \
     iputils \
+    docker-ce-cli \
+    jq \
 &&  usermod -G wheel $USERNAME \
 &&  echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers \
 &&  echo "%${GROUPNAME} ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers

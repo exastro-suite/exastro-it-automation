@@ -213,7 +213,7 @@ CREATE TABLE T_COMN_MENU_COLUMN_LINK
     REQUIRED_ITEM                   VARCHAR(2),                                 -- 一意制約フラグ
     AUTOREG_HIDE_ITEM               VARCHAR(2),                                 -- 選択対象外フラグ
     AUTOREG_ONLY_ITEM               VARCHAR(2),                                 -- 代入値自動登録選択項目フラグ
-    INITIAL_VALUE                   TEXT,                                       -- 初期値
+    INITIAL_VALUE                   LONGTEXT,                                   -- 初期値
     VALIDATE_OPTION                 TEXT,                                       -- バリデーション値
     VALIDATE_REG_EXP                TEXT,                                       -- 正規表現バリデーション
     BEFORE_VALIDATE_REGISTER        TEXT,                                       -- 個別バリデーション前
@@ -258,7 +258,7 @@ CREATE TABLE T_COMN_MENU_COLUMN_LINK_JNL
     REQUIRED_ITEM                   VARCHAR(2),                                 -- 一意制約フラグ
     AUTOREG_HIDE_ITEM               VARCHAR(2),                                 -- 選択対象外フラグ
     AUTOREG_ONLY_ITEM               VARCHAR(2),                                 -- 代入値自動登録選択項目フラグ
-    INITIAL_VALUE                   TEXT,                                       -- 初期値
+    INITIAL_VALUE                   LONGTEXT,                                   -- 初期値
     VALIDATE_OPTION                 TEXT,                                       -- バリデーション値
     VALIDATE_REG_EXP                TEXT,                                       -- 正規表現バリデーション
     BEFORE_VALIDATE_REGISTER        TEXT,                                       -- 個別バリデーション前
@@ -595,16 +595,16 @@ CREATE TABLE T_COMN_AAC_EXECUTION_ENVIRONMENT
 
 
 -- メニューグルーブメニュー結合ビュー
-CREATE VIEW V_COMN_MENU_GROUP_MENU_PULLDOWN AS 
-SELECT 
+CREATE VIEW V_COMN_MENU_GROUP_MENU_PULLDOWN AS
+SELECT
   TBL_1.*,
   CONCAT(TBL_2.MENU_GROUP_NAME_JA,':',TBL_1.MENU_NAME_JA) MENU_GROUP_NAME_PULLDOWN_JA,
   CONCAT(TBL_2.MENU_GROUP_NAME_EN,':',TBL_1.MENU_NAME_EN) MENU_GROUP_NAME_PULLDOWN_EN
 FROM
   T_COMN_MENU TBL_1
   LEFT JOIN T_COMN_MENU_GROUP TBL_2 ON (TBL_1.MENU_GROUP_ID = TBL_2.MENU_GROUP_ID);
-CREATE VIEW V_COMN_MENU_GROUP_MENU_PULLDOWN_JNL AS 
-SELECT 
+CREATE VIEW V_COMN_MENU_GROUP_MENU_PULLDOWN_JNL AS
+SELECT
   TBL_1.*,
   CONCAT(TBL_2.MENU_GROUP_NAME_JA,':',TBL_1.MENU_NAME_JA) MENU_GROUP_NAME_PULLDOWN_JA,
   CONCAT(TBL_2.MENU_GROUP_NAME_EN,':',TBL_1.MENU_NAME_EN) MENU_GROUP_NAME_PULLDOWN_EN

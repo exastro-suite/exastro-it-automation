@@ -227,11 +227,17 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
 
                     prepared_list = []
                     trg_count = sql.count('__ROLE_ID__')
+                    ansible_execution_agent_trg_count = sql.count('__ANSIBLE_EXECUTION_AGENT_ROLE_ID__')
+                    oase_agent_trg_count = sql.count('__OASE_AGENT_ROLE_ID__')
                     if trg_count > 0:
                         prepared_list = list(map(lambda a: role_id, range(trg_count)))
                         sql = ws_db.prepared_val_escape(sql).replace('\'__ROLE_ID__\'', '%s')
-                        # print(sql)
-                        # print(prepared_list)
+                    if ansible_execution_agent_trg_count > 0:
+                        agent_role_id = f'_{workspace_id}-ansible-execution-agent'
+                        sql = sql.replace('\'__ANSIBLE_EXECUTION_AGENT_ROLE_ID__\'', f'\'{agent_role_id}\'')
+                    if 'oase' not in no_install_driver and oase_agent_trg_count > 0:
+                        agent_role_id = f'_{workspace_id}-oase-agent'
+                        sql = sql.replace('\'__OASE_AGENT_ROLE_ID__\'', f'\'{agent_role_id}\'')
 
                     ws_db.sql_execute(sql, prepared_list)
             ws_db.db_commit()

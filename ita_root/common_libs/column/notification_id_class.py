@@ -34,5 +34,7 @@ class NotificationIDColumn(MultiSelectIDColumn):
         """
         values = Notification.fetch_notification_destination_dict()
 
+        self.data_list_set_flg = True
+
         return values
 

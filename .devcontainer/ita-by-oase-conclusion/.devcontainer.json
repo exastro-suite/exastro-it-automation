@@ -35,6 +35,31 @@
 			"--aggressive", "--aggressive"
 		]
 	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"donjayamanne.python-extension-pack",
+				"ms-python.vscode-pylance",
+				"ms-ceintl.vscode-language-pack-ja",
+				"ms-vscode.references-view",
+				"eamodio.gitlens",
+				"mhutchie.git-graph",
+				"redhat.vscode-yaml",
+				"hediet.vscode-drawio",
+				"oderwat.indent-rainbow",
+				"aaron-bond.better-comments",
+				//"sonarsource.sonarlint-vscode",
+				"mechatroner.rainbow-csv",
+				"ryu1kn.partial-diff",
+				"pkief.material-icon-theme",
+				// "mtxr.sqltools",
+				// "mtxr.sqltools-driver-mysql",
+				"mitchdenny.ecdc",
+				"snyk-security.snyk-vulnerability-scanner",
+				"humao.rest-client"
+			]
+		}
+	},
 	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": [
 		"donjayamanne.python-extension-pack",
@@ -54,7 +79,8 @@
 		// "mtxr.sqltools",
 		// "mtxr.sqltools-driver-mysql",
 		"mitchdenny.ecdc",
-		"snyk-security.snyk-vulnerability-scanner"
+		"snyk-security.snyk-vulnerability-scanner",
+		"humao.rest-client"
 	],
 	// // Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [

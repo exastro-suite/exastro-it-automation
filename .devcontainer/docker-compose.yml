@@ -194,7 +194,7 @@ services:
 
   ita-mongodb:
     image: mongo:6.0.7
-    entrypoint: ["mongod","--config","/etc/mongo/mongod.conf"]
+    # entrypoint: ["mongod","--config","/etc/mongo/mongod.conf"]
     # healthcheck:
     #   test: echo 'db.runCommand("ping").ok' | mongosh mongodb://127.0.0.1:27017/test || exit 1
     #   interval: 3s
@@ -206,10 +206,10 @@ services:
     ports:
       - "0.0.0.0:27017:27017"
     volumes:
-      - ../ita_root/ita_mongodb/conf/mongod.conf:/etc/mongo/mongod.conf
+      # - ../ita_root/ita_mongodb/conf/mongod.conf:/etc/mongo/mongod.conf
       # - ../ita_root/ita_mongodb/logs:/root/logs
       - ../.volumes/ita-mongodb/data:/data/db
-      - ../.volumes/ita-mongodb/configdb:/data/configdb
+      # - ../.volumes/ita-mongodb/configdb:/data/configdb
     networks:
       - exastro
     profiles:
@@ -926,6 +926,11 @@ services:
       - ORG_COMMON_UPLOAD_FILE_LIMIT_DESCRIPTION=${ORG_COMMON_UPLOAD_FILE_LIMIT_DESCRIPTION}
       - ORG_COMMON_UPLOAD_FILE_LIMIT_MAX=${ORG_COMMON_UPLOAD_FILE_LIMIT_MAX}
       - ORG_COMMON_UPLOAD_FILE_LIMIT_DEFAULT=${ORG_COMMON_UPLOAD_FILE_LIMIT_DEFAULT}
+      - SYSTEM_MENU_EXPORT_IMPORT_BUFFER_SIZE=${SYSTEM_MENU_EXPORT_IMPORT_BUFFER_SIZE}
+      - SYSTEM_MENU_EXPORT_IMPORT_BUFFER_SIZE_DESCRIPTION=${SYSTEM_MENU_EXPORT_IMPORT_BUFFER_SIZE_DESCRIPTION}
+      - ORG_MENU_EXPORT_IMPORT_BUFFER_SIZE_DESCRIPTION=${ORG_MENU_EXPORT_IMPORT_BUFFER_SIZE_DESCRIPTION}
+      - ORG_MENU_EXPORT_IMPORT_BUFFER_SIZE_MAX=${ORG_MENU_EXPORT_IMPORT_BUFFER_SIZE_MAX}
+      - ORG_MENU_EXPORT_IMPORT_BUFFER_SIZE_DEFAULT=${ORG_MENU_EXPORT_IMPORT_BUFFER_SIZE_DEFAULT}
       - MONGO_OPTION_SSL=${MONGO_OPTION_SSL:-FALSE}
       - MONGO_SCHEME=${MONGO_SCHEME:-mongodb}
       - MONGO_HOST=${MONGO_HOST-ita-mongodb}

@@ -34,7 +34,7 @@ class DBConnectCommon:
     _is_transaction = False  # state of transaction
     _COLUMN_NAME_TIMESTAMP = 'LAST_UPDATE_TIMESTAMP'
 
-    def __init__(self):
+    def __init__(self, mode_ss=None):
         """
         constructor
         """
@@ -48,7 +48,7 @@ class DBConnectCommon:
         self._db_passwd = ky_encrypt(os.environ.get('DB_PASSWORD'))
 
         # connect database
-        self.db_connect()
+        self.db_connect(mode_ss=mode_ss)
 
     def __del__(self):
         """
@@ -56,7 +56,7 @@ class DBConnectCommon:
         """
         self.db_disconnect()
 
-    def db_connect(self):
+    def db_connect(self, mode_ss=None):
         """
         connect database
 
@@ -67,6 +67,7 @@ class DBConnectCommon:
             return True
 
         try:
+            _cursorclass = pymysql.cursors.SSDictCursor if mode_ss is True else pymysql.cursors.DictCursor
             self._db_con = pymysql.connect(
                 host=self._host,
                 port=self._port,
@@ -75,7 +76,7 @@ class DBConnectCommon:
                 database=self._db,
                 charset='utf8mb4',
                 collation='utf8mb4_general_ci',
-                cursorclass=pymysql.cursors.DictCursor,
+                cursorclass=_cursorclass,
                 local_infile = True,
             )
         except pymysql.Error as e:
@@ -615,6 +616,50 @@ class DBConnectCommon:
             'NO_INSTALL_DRIVER': g.db_connect_info.get('NO_INSTALL_DRIVER')
         }
 
+    def sql_execute_cursor(self, sql, bind_value_list=[]):
+        """
+        execute sql:cursor
+
+        Arguments:
+            sql: sql statement ex."SELECT * FROM table_name WHERE name = %s and number = %s"
+            bind_value_list: list or tuple or dict ex.["hoge taro", 5]
+        Returns:
+            db_cursor: self._db_con.cursor()
+        """
+        db_cursor = self._db_con.cursor()
+
+        # escape
+        if len(bind_value_list) == 0:
+            sql = self.prepared_val_escape(sql)
+        else:
+            # convert list→tupple
+            if isinstance(bind_value_list, list):
+                bind_value_list = tuple(bind_value_list)
+
+        try:
+            db_cursor.execute(sql, bind_value_list)
+            self.__sql_debug(db_cursor, sql, bind_value_list)
+        except pymysql.Error as e:
+            last_executed = sql % (bind_value_list)
+            if self._db_con.open is True and db_cursor is not None and db_cursor._executed is not None:
+                last_executed = db_cursor._executed
+            raise AppException("999-00003", [self._db, last_executed, e])
+        return db_cursor
+
+    def table_select_cursor(self, table_name, where_str="", bind_value_list=[]):
+        """
+        select table:cursor
+
+        Arguments:
+            table_name: table name
+            where_str: sql statement of WHERE sentence ex."WHERE name = %s and number = %s"
+            bind_value_list: value list ex.["hoge taro", 5]
+        Returns:
+            db_cursor: self._db_con.cursor()
+        """
+        where_str = " {}".format(where_str) if where_str else ""
+        sql = "SELECT * FROM `{}`{}".format(table_name, where_str)
+        return self.sql_execute_cursor(sql, bind_value_list)
 
 class DBConnectCommonRoot(DBConnectCommon):
     """

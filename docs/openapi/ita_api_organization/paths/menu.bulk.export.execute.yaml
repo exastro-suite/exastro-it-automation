@@ -1,0 +1,86 @@
+#   Copyright 2025 NEC Corporation
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+post:
+  tags:
+    - Export Import
+  description: メニュー一括エクスポート実行
+  operationId: executeMenuBulkExport
+  x-openapi-router-controller: controllers.export_import_controller
+  parameters:
+    - name: organization_id
+      in: path
+      description: OrganizationID
+      required: true
+      schema:
+        type: string
+    - name: workspace_id
+      in: path
+      description: WorkspaceID
+      required: true
+      schema:
+        type: string
+  requestBody:
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            mode:
+              type: string
+              example:
+                "1: 環境移行 / 2: 時刻指定"
+            specified_timestamp:
+              type: string
+              example:
+                "YYYY/MM/DD hh:mm"
+            abolished_type:
+              type: string
+              example:
+                "1: 廃止を含む / 2: 廃止を除く"
+            journal_type:
+              type: string
+              example:
+                "1: 履歴あり / 2: 履歴なし"
+            menu:
+              items: {}
+              example: ["system_settings", "menu_group_list", "menu_list", "<menu_name_rest 1>", "<menu_name_rest 2>"]
+  responses:
+    '200':
+      description: Success
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '../schemas/response.ok.yaml'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      execution_no:
+                        type: string
+                        example: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    '401':
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/error.template.yaml'
+    '500':
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/error.template.yaml'

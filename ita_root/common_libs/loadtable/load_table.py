@@ -34,6 +34,7 @@ CMD_REGISTER = 'Register'
 CMD_UPDATE = 'Update'
 CMD_RESTORE = 'Restore'
 CMD_DISCARD = 'Discard'
+CMD_DELETE = 'Delete'
 
 # メッセージ種別
 MSG_LEVEL_DEBUG = 'DEBUG'
@@ -71,6 +72,7 @@ COLNAME_ROW_INSERT_FLAG = 'ROW_INSERT_FLAG'
 COLNAME_ROW_UPDATE_FLAG = 'ROW_UPDATE_FLAG'
 COLNAME_ROW_DISUSE_FLAG = 'ROW_DISUSE_FLAG'
 COLNAME_ROW_REUSE_FLAG = 'ROW_REUSE_FLAG'
+COLNAME_ROW_DELETE_FLAG = 'ROW_DELETE_FLAG'
 COLNAME_SHEET_TYPE = 'SHEET_TYPE'
 COLNAME_HISTORY_TABLE_FLAG = 'HISTORY_TABLE_FLAG'
 
@@ -169,6 +171,7 @@ class loadTable():
             CMD_UPDATE: 0,
             CMD_RESTORE: 0,
             CMD_DISCARD: 0,
+            CMD_DELETE: 0,
         }
         # 履歴共通カラム
         self.jnl_colname = {
@@ -1323,7 +1326,7 @@ class loadTable():
         # 実行種別簡易判定、補完 (パラメータ内にPK無し:登録,有:更新)
         target_uuid_key = self.get_rest_key(primary_key)
 
-        if cmd_type not in [CMD_REGISTER, CMD_UPDATE, CMD_DISCARD, CMD_RESTORE]:
+        if cmd_type not in [CMD_REGISTER, CMD_UPDATE, CMD_DISCARD, CMD_RESTORE, CMD_DELETE]:
             # 実行種別エラー
             retBool = False
             status_code = 'MSG-00027'
@@ -2202,6 +2205,8 @@ class loadTable():
                 authority_val = menuinfo.get(COLNAME_ROW_DISUSE_FLAG)
             elif cmd_type == CMD_RESTORE:
                 authority_val = menuinfo.get(COLNAME_ROW_REUSE_FLAG)
+            elif cmd_type == CMD_DELETE:
+                authority_val = menuinfo.get(COLNAME_ROW_DELETE_FLAG)
 
             # authority_val = "2"
             if authority_val != "1":

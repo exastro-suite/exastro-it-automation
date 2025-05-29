@@ -111,7 +111,7 @@ class loadTable():
         REST
             filter:   一覧データ取得、検索条件による絞り込み
             maintenance:   登録、更新(更新、廃止、復活)処理
-            maintenance_all:   登録、更新(更新、廃止、復活)の複合処理
+            maintenance_all:   登録、更新(更新、廃止、復活、物理削除)の複合処理
 
     """
 
@@ -169,6 +169,7 @@ class loadTable():
             CMD_UPDATE: 0,
             CMD_RESTORE: 0,
             CMD_DISCARD: 0,
+            CMD_DELETE: 0,
         }
         # 履歴共通カラム
         self.jnl_colname = {
@@ -1199,7 +1200,7 @@ class loadTable():
             RESTAPI[filter]:メニューのレコード取得
             ARGS:
                 parameters:パラメータ
-                file_paths: 登録/更新/廃止/復活するファイルのパス
+                file_paths: 登録/更新/廃止/復活/物理削除するファイルのパス
             RETRUN:
                 status_code, result, msg,
         """
@@ -1232,6 +1233,7 @@ class loadTable():
                 tmp_result = self.objdbca.table_lock([self.get_table_name()])
 
             file_index = 0
+            delete_paths = []
             for tmp_parameters in list_parameters:
                 cmd_type = tmp_parameters.get("type")
 
@@ -1240,6 +1242,7 @@ class loadTable():
                     record_file_paths = {}
                 else:
                     record_file_paths = file_paths.get(file_index, {})
+                print(f"{record_file_paths=}")
 
                 # テーブル情報（カラム、PK取得）
                 column_list = self.get_column_list()
@@ -1622,6 +1625,8 @@ class loadTable():
                     result = self.objdbca.table_update(self.get_table_name(), colname_parameter, primary_key, history_flg)
                 elif cmd_type == CMD_RESTORE:
                     result = self.objdbca.table_update(self.get_table_name(), colname_parameter, primary_key, history_flg)
+                elif cmd_type == CMD_DELETE:
+                    result = self.objdbca.table_delete(self.get_table_name(), colname_parameter, primary_key)
 
             result_uuid = ''
             result_uuid_jnl = ''

@@ -422,15 +422,15 @@ class Action():
 
                 if menu == "conductor_class_edit":
                     check_items[menu]["sheet_type"] = ["14", "15"]
-                    check_items[menu]["privilege"]  = ["1", "2"]
+                    check_items[menu]["privilege"]  = ["1", "2", "3"]
 
                 elif menu == "operation_list":
                     check_items[menu]["sheet_type"] = ["0", ]
-                    check_items[menu]["privilege"]  = ["1", ]
+                    check_items[menu]["privilege"]  = ["1", "3"]
 
                 elif menu in specify_menu_list:
                     check_items[menu]["sheet_type"] = ["0", "1", "2", "3", "4"]
-                    check_items[menu]["privilege"]  = ["1", ]
+                    check_items[menu]["privilege"]  = ["1", "3"]
 
             # トランザクション開始
             self.wsDb.db_transaction_start()

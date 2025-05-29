@@ -619,7 +619,7 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca, path
             ret_role_menu_link = objdbca.table_select('T_COMN_MENU_TABLE_LINK', 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s ORDER BY MENU_ID', [menuId, 0])
 
             for record in ret_role_menu_link:
-                if record["ROW_INSERT_FLAG"] == "0" and record["ROW_UPDATE_FLAG"] == "0" and record["ROW_DISUSE_FLAG"] == "0" and record["ROW_REUSE_FLAG"] == "0":
+                if record["ROW_INSERT_FLAG"] == "0" and record["ROW_UPDATE_FLAG"] == "0" and record["ROW_DISUSE_FLAG"] == "0" and record["ROW_REUSE_FLAG"] == "0" and record["ROW_DELETE_FLAG"] == "0":
                     # 権限エラー
                     msgstr = g.appmsg.get_api_message("MSG-30033")
                     menuInfo["error"] = msgstr

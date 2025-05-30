@@ -92,12 +92,6 @@ COLNAME_AFTER_VALIDATE_REGISTER = 'AFTER_VALIDATE_REGISTER'
 COLNAME_COLUMN_DISP_SEQ = 'COLUMN_DISP_SEQ'
 COLNAME_SAVE_TYPE = 'SAVE_TYPE'
 
-COLUMN_CLASS_FILE_UPLOAD = 'FileUploadColumn'
-COLUMN_CLASS_FILE_UPLOAD_ENCRYPT = 'FileUploadEncryptColumn'
-
-FILE_PATH_NAME = 'file_path'
-JNL_FILE_PATH_NAME = 'old_file_path'
-
 # maintenance/filter 構造キー
 REST_PARAMETER_KEYNAME = 'parameter'
 REST_FILE_KEYNAME = 'file'
@@ -1324,13 +1318,13 @@ class loadTable():
 
             # ファイルカラムのチェック
             # Check file columns
-            if self.get_col_class_name(rest_key) in [COLUMN_CLASS_FILE_UPLOAD, COLUMN_CLASS_FILE_UPLOAD_ENCRYPT]:
+            if self.get_col_class_name(rest_key) in ['FileUploadColumn', 'FileUploadEncryptColumn']:
                 # レコード単位にフォルダを削除する
                 # Delete folder by record
                 for delete_key in type_delete_keys:
                     delete_paths = get_upload_file_path(g.WORKSPACE_ID, self.get_menu_id(), delete_key, rest_key, 'val', None)
 
-                    delete_path = os.path.dirname(delete_paths.get(FILE_PATH_NAME))
+                    delete_path = os.path.dirname(delete_paths.get('file_path'))
                     # 該当のパスが存在した場合は、削除する(エラーは無視する)
                     if os.path.exists(delete_path):
                         try:

@@ -241,6 +241,10 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
     while True:
         # レベル毎のループ -----
         for TargetLevel in JudgeLevelList:
+            # Level{} Rule verdict Started
+            tmp_msg = g.appmsg.get_log_message("BKY-90017", [TargetLevel, 'Started'])
+            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
             newIncidentCount[TargetLevel] = 0
 
             # イベント数が減らずにループしている回数のカウンタを初期化する（無限ループ対策用）
@@ -248,10 +252,9 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
 
             # 各レベルに対応したルール抽出
             TargetRuleList = judgeObj.TargetRuleExtraction(TargetLevel, ruleList, FiltersUsedinRulesDict, IncidentDict)
+            g.applogger.debug(addline_msg('TargetRuleList={}'.format(TargetRuleList)))  # noqa: F405
 
             newIncident_Flg = True
-            tmp_msg = g.appmsg.get_log_message("BKY-90017", [TargetLevel, 'Started'])
-            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
             # レベル毎の結論イベント未発生確認のループ -----
             while newIncident_Flg is True:
@@ -281,7 +284,7 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
                             ConclusionEventRow = EventObj.add_local_label(ConclusionEventRow, oaseConst.DF_LOCAL_LABLE_NAME, oaseConst.DF_LOCAL_LABLE_STATUS, oaseConst.DF_PROC_EVENT)
 
                             # 結論イベントに対応するフィルタ確認
-                            ret, UsedFilterIdList = judgeObj.ConclusionLabelUsedInFilter(action_log_row["CONCLUSION_EVENT_LABELS"], filterIDMap)
+                            ret, UsedFilterIdList = judgeObj.ConclusionLabelUsedInFilter(ConclusionEventRow["labels"], filterIDMap)
                             # Verifying conclusion event filters{}
                             tmp_msg = g.appmsg.get_log_message("BKY-90021", [str(ret)])
                             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405

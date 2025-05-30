@@ -1885,6 +1885,7 @@
     "MSG-140013": "The drivers installed in the exported environment are not installed in the current environment. Check the installed drivers before trying again. ({})",
     "MSG-140014": "The version of the KYM file is invalid.",
     "MSG-140015": "The version of the exported environment is newer than the current environment and could not be imported. Check the version before trying again. (KYM file:{},ITA:{})",
+    "MSG-150001": "Failed to delete file. ({0})",
     "BKY-00001": "-",
     "BKY-00002": "-",
     "BKY-00003": "-",

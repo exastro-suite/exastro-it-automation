@@ -363,7 +363,7 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
                         loops_without_events_reduction += 1
 
                     if loops_without_events_reduction > len(ruleList) or newIncidentCount[TargetLevel] > evaluate_latent_infinite_loop_limit:
-                        # 未判定イベントがルールの倍数回以上で変わらない、もしくは一定回数以上繰り返した場合は抜ける
+                        # 未判定イベントがルールの回数以上で変わらない、もしくは一定回数以上繰り返した場合は抜ける
                         # ※無限ループ（ルール⇒結論イベント⇒ルール）の発生を回避するための条件
                         # Reached maximum amount of loops.
                         tmp_msg = g.appmsg.get_log_message("BKY-90025", [])

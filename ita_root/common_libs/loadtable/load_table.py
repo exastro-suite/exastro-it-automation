@@ -1437,8 +1437,8 @@ class loadTable():
                     current_parameter, current_file, current_file_path = self.convert_colname_restkey(current_row, target_uuid, '', 'input', base64_file_flg=False, file_path_flg=True)
                     # 更新系の追い越し判定
                     self.chk_lastupdatetime(target_uuid, current_parameter, entry_parameter)
-                    if import_mode is False:
-                        # 更新系処理の場合、廃止フラグから処理種別判定、変更
+                    if import_mode is False and cmd_type != CMD_DELETE:
+                        # 更新系処理の場合、廃止フラグから処理種別判定、変更(物理削除時は除く)
                         cmd_type = self.convert_cmd_type(cmd_type, target_uuid, current_row, entry_parameter)
                     # 履歴の一括取得
                     target_jnls = self.get_target_jnl_uuids(target_uuid)
@@ -1664,6 +1664,8 @@ class loadTable():
             # rest_key → カラム名に変換
             colname_parameter = self.convert_restkey_colname(entry_parameter, current_row)
 
+            g.applogger.debug(f"{cmd_type=}:{self.get_table_name()=}")
+
             if import_mode is True:
                 # 登録・更新処理
                 if cmd_type == CMD_REGISTER:
@@ -1696,6 +1698,15 @@ class loadTable():
                     'msg': result,
                 }
                 self.set_message(dict_msg, g.appmsg.get_api_message("MSG-00004", []), MSG_LEVEL_ERROR)
+            elif cmd_type == CMD_DELETE:
+                # 物理削除の場合は、ジャーナルへの書き込みは無いのでそのために処理を分ける
+                # In the case of physical deletion, there is no writing to the journal, so the processing is divided for that purpose.
+                result_uuid = colname_parameter.get(primary_key)
+                # 主キーのカラム名をitem_name_restに変更
+                # Change primary key column name to item_name_rest
+                temp_rows = {primary_key: colname_parameter.get(primary_key)}
+                tmp_result = self.convert_colname_restkey(temp_rows)
+                result = tmp_result[0]
             else:
                 result_uuid = result[0].get(primary_key)
                 if history_flg is True:
@@ -2356,6 +2367,11 @@ class loadTable():
             RETRUN:
                 cmd_type
         """
+
+        # 物理削除時はそのままの値を返却する
+        # When physically deleting, return the same value.
+        if cmd_type == CMD_DELETE:
+            return cmd_type
 
         # 廃止フラグによる、処理種別判定
         if "discard" in entry_parameter:

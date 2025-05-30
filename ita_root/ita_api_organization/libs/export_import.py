@@ -170,8 +170,8 @@ def get_excel_bulk_export_list(objdbca, organization_id, workspace_id):
         menu_id_list.append(record.get('MENU_ID'))
 
     # 『ロール-メニュー紐付管理』テーブルから対象のデータを取得
-    # 自分のロールが「メンテナンス可」,「閲覧のみ」
-    ret_role_menu_link = objdbca.table_select(t_comn_role_menu_link, 'WHERE MENU_ID IN %s AND ROLE_ID IN %s AND PRIVILEGE IN %s AND DISUSE_FLAG = %s ORDER BY MENU_ID', [menu_id_list, role_id_list, [1, 2], 0])
+    # 自分のロールが「メンテナンス可」,「閲覧のみ」,「管理者」
+    ret_role_menu_link = objdbca.table_select(t_comn_role_menu_link, 'WHERE MENU_ID IN %s AND ROLE_ID IN %s AND PRIVILEGE IN %s AND DISUSE_FLAG = %s ORDER BY MENU_ID', [menu_id_list, role_id_list, [1, 2, 3], 0])
 
     # ロールまで絞った対象メニューIDを再リスト化
     menu_id_list = []
@@ -607,10 +607,10 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca, path
                 parent_list["disp_seq"] = parent_menu_group_info["DISP_SEQ"]
 
             # 『ロール-メニュー紐付管理』テーブルから対象のデータを取得
-            # 自分のロールが「メンテナンス可」
+            # 自分のロールが「メンテナンス可」,「管理者」
             ret_role_menu_link = objdbca.table_select("T_COMN_ROLE_MENU_LINK", 'WHERE MENU_ID = %s AND ROLE_ID IN %s AND DISUSE_FLAG = %s', [menuId, role_id_list, 0])
             for record in ret_role_menu_link:
-                if record["PRIVILEGE"] != "1":
+                if record["PRIVILEGE"] not in ["1", "3"]:
                     # 権限エラー
                     msgstr = g.appmsg.get_api_message("MSG-30033")
                     menuInfo["error"] = msgstr
@@ -619,7 +619,7 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca, path
             ret_role_menu_link = objdbca.table_select('T_COMN_MENU_TABLE_LINK', 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s ORDER BY MENU_ID', [menuId, 0])
 
             for record in ret_role_menu_link:
-                if record["ROW_INSERT_FLAG"] == "0" and record["ROW_UPDATE_FLAG"] == "0" and record["ROW_DISUSE_FLAG"] == "0" and record["ROW_REUSE_FLAG"] == "0":
+                if record["ROW_INSERT_FLAG"] == "0" and record["ROW_UPDATE_FLAG"] == "0" and record["ROW_DISUSE_FLAG"] == "0" and record["ROW_REUSE_FLAG"] == "0" and record["ROW_DELETE_FLAG"] == "0":
                     # 権限エラー
                     msgstr = g.appmsg.get_api_message("MSG-30033")
                     menuInfo["error"] = msgstr

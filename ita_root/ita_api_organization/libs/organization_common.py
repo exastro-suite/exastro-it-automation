@@ -180,7 +180,7 @@ def check_auth_menu(menu, wsdb_istc=None):
         menu: menu_name_rest
         wsdb_istc: (class)DBConnectWs Instance
     Returns:
-        (str) PRIVILEGE value [1: メンテナンス可, 2: 閲覧のみ]
+        (str) PRIVILEGE value [1: メンテナンス可, 2: 閲覧のみ, 3: 管理者]
     """
     if not wsdb_istc:
         wsdb_istc = DBConnectWs(g.get('WORKSPACE_ID'))  # noqa: F405
@@ -202,7 +202,7 @@ def check_auth_menu(menu, wsdb_istc=None):
     res = False
     for data in data_list:
         privilege = data['PRIVILEGE']
-        if privilege == '1':
+        if privilege in ['1', '3']:
             return privilege
         res = privilege
 
@@ -251,7 +251,7 @@ def get_auth_menus(menu_rest_names, wsdb_istc=None):
 
         if len(menu_list[menu_id]) == 0:
             menu_list[menu_id] = data
-        elif not data['PRIVILEGE'] and int(data['PRIVILEGE']) > int(menu_list[menu_id]['PRIVILEGE']):
+        elif not data['PRIVILEGE'] and int(data['PRIVILEGE']) == 2 and int(menu_list[menu_id]['PRIVILEGE']) in [1, 3]:
             menu_list[menu_id] = data
 
     return menu_list.values()

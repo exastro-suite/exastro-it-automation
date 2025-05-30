@@ -866,6 +866,8 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
         row_update_flag = "1"
         row_disuse_flag = "1"
         row_reuse_flag = "1"
+        # 削除許可フラグはデフォルト不許可
+        row_delete_flag = "0"
         substitution_value_link_flag = "0"
         if menu_group_col_name == "MENU_GROUP_ID_SUBST":
             row_insert_flag = "0"
@@ -951,6 +953,7 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
                 "ROW_UPDATE_FLAG": row_update_flag,
                 "ROW_DISUSE_FLAG": row_disuse_flag,
                 "ROW_REUSE_FLAG": row_reuse_flag,
+                "ROW_DELETE_FLAG": row_delete_flag,
                 "SUBSTITUTION_VALUE_LINK_FLAG": substitution_value_link_flag,
                 "UNIQUE_CONSTRAINT": unique_constraint,
                 "LOCK_TABLE": None,
@@ -991,6 +994,7 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
                 "ROW_UPDATE_FLAG": row_update_flag,
                 "ROW_DISUSE_FLAG": row_disuse_flag,
                 "ROW_REUSE_FLAG": row_reuse_flag,
+                "ROW_DELETE_FLAG": row_delete_flag,
                 "SUBSTITUTION_VALUE_LINK_FLAG": substitution_value_link_flag,
                 "UNIQUE_CONSTRAINT": unique_constraint,
                 "DISUSE_FLAG": "0",

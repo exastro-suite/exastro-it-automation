@@ -6103,6 +6103,9 @@ components:
         row_reuse_flag:
           type: boolean
           description: 復活許可フラグ
+        row_delete_flag:
+          type: boolean
+          description: 削除許可フラグ
         login_necessity:
           type: boolean
           description: 認証有無

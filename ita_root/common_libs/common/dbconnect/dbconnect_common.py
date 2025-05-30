@@ -326,9 +326,6 @@ class DBConnectCommon:
             value_list = list(data.values())
 
             sql = "INSERT INTO `{}` ({}) VALUES ({})".format(table_name, ','.join(column_list), ','.join(prepared_list))
-            # print(data)
-            # print(sql)
-            # print(value_list)
             res = self.sql_execute(sql, value_list)
             if res is False:
                 is_last_res = False
@@ -348,9 +345,6 @@ class DBConnectCommon:
             value_list = list(history_data.values())
 
             sql = "INSERT INTO `{}` ({}) VALUES ({})".format(history_table_name, ','.join(column_list), ','.join(prepared_list))
-            # print(history_data)
-            # print(sql)
-            # print(value_list)
             res = self.sql_execute(sql, value_list)
             if res is False:
                 is_last_res = False
@@ -391,9 +385,6 @@ class DBConnectCommon:
             # key値もbindように最後に値を付加する
             value_list.append(primary_key_value)
             sql = "UPDATE `{}` SET {} WHERE `{}`=%s".format(table_name, ','.join(prepared_list), primary_key_name)
-            # print(data)
-            # print(f"{sql=}")
-            # print(f"{value_list=}")
             res = self.sql_execute(sql, value_list)
             if res is False:
                 is_last_res = False
@@ -419,9 +410,6 @@ class DBConnectCommon:
             value_list = list(history_data.values())
 
             sql = "INSERT INTO `{}` ({}) VALUES ({})".format(history_table_name, ','.join(column_list), ','.join(prepared_list))
-            # print(history_data)
-            # print(sql)
-            # print(value_list)
             res = self.sql_execute(sql, value_list)
             if res is False:
                 is_last_res = False
@@ -454,9 +442,6 @@ class DBConnectCommon:
             primary_key_value = data[primary_key_name]
 
             sql = "DELETE FROM `{}` WHERE `{}`=%s".format(table_name, primary_key_name)
-            # print(data)
-            # print(sql)
-            # print(value_list)
             res = self.sql_execute(sql, [primary_key_value])
             if res is False:
                 is_last_res = False
@@ -465,9 +450,6 @@ class DBConnectCommon:
             history_table_name = table_name + "_JNL"
 
             sql = "DELETE FROM `{}` WHERE `{}`=%s".format(history_table_name, primary_key_name)
-            # print(history_data)
-            # print(sql)
-            # print(value_list)
             res = self.sql_execute(sql, [primary_key_value])
             if res is False:
                 is_last_res = False

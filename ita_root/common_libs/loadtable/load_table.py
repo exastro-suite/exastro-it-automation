@@ -1202,7 +1202,7 @@ class loadTable():
             RESTAPI[filter]:メニューのレコード取得
             ARGS:
                 parameters:パラメータ
-                file_paths: 登録/更新/廃止/復活/物理削除するファイルのパス
+                file_paths: 登録/更新/廃止/復活するファイルのパス
             RETRUN:
                 status_code, result, msg,
         """
@@ -1235,7 +1235,7 @@ class loadTable():
                 tmp_result = self.objdbca.table_lock([self.get_table_name()])
 
             file_index = 0
-            delete_paths = []
+            type_delete_keys = []
             for tmp_parameters in list_parameters:
                 cmd_type = tmp_parameters.get("type")
 
@@ -1244,7 +1244,6 @@ class loadTable():
                     record_file_paths = {}
                 else:
                     record_file_paths = file_paths.get(file_index, {})
-                print(f"{record_file_paths=}")
 
                 # テーブル情報（カラム、PK取得）
                 column_list = self.get_column_list()
@@ -1254,6 +1253,11 @@ class loadTable():
                     target_uuid = parameters.get(REST_PARAMETER_KEYNAME).get(target_uuid_key)
                 else:
                     target_uuid = ''
+
+                # 削除対象がある場合は、レコード削除後にフォルダを削除するため、キー値を保存する
+                # If there is a deletion target, save the key value to delete the folder after deleting the record.
+                if cmd_type == CMD_DELETE:
+                    type_delete_keys.append(target_uuid)
 
                 # maintenance呼び出し
                 tmp_result = self.exec_maintenance(parameters, target_uuid, cmd_type, record_file_paths=record_file_paths)
@@ -1268,6 +1272,12 @@ class loadTable():
                 # コミット
                 self.objdbca.db_transaction_end(True)
                 tmp_data = self.get_exec_count()
+
+                # 削除対象があった場合は、削除対象のキーごとのフォルダも削除する
+                # If there is a deletion target, also delete the folder for each key to be deleted.
+                if len(type_delete_keys) > 0:
+                    self.file_delete(parameters, type_delete_keys)
+
             elif self.get_error_message_count() > 0:
                 # ロールバック トランザクション終了
                 self.objdbca.db_transaction_end(False)
@@ -1288,6 +1298,53 @@ class loadTable():
         result = tmp_data
 
         return status_code, result, msg,
+
+
+    def file_delete(self, parameters, type_delete_keys):
+        """ファイルの物理削除 / Physical deletion of files
+
+        Args:
+            parameters (dict): Column情報
+            type_delete_keys (array): 対象となるレコードのuuid群
+
+        Return:
+            bool : 正常終了 Normal end True / 異常終了 Abnormal end False
+        """
+
+        # Column情報からファイルカラムの情報を抜き出す
+        # Extract file column information from Column information
+        entry_parameter = parameters.get(REST_PARAMETER_KEYNAME)
+        for rest_key, rest_val in list(entry_parameter.items()):
+
+            # ファイルカラムのチェック
+            # Check file columns
+            if self.get_col_class_name(rest_key) in ['FileUploadColumn', 'FileUploadEncryptColumn']:
+                # レコード単位にフォルダを削除する
+                # Delete folder by record
+                for delete_key in type_delete_keys:
+                    delete_paths = get_upload_file_path(g.WORKSPACE_ID, self.get_menu_id(), delete_key, rest_key, 'val', None)
+
+                    delete_path = os.path.dirname(delete_paths.get('file_path'))
+                    # 該当のパスが存在した場合は、削除する(エラーは無視する)
+                    if os.path.exists(delete_path):
+                        try:
+                            shutil.rmtree(delete_path)
+                        except Exception as e:
+                            # 失敗時はユーザーに削除できなかった内容を返却する(手動による削除を促すため)
+                            # In case of failure, return the content that could not be deleted to the user (to encourage manual deletion)
+                            print_exception_msg(e)
+                            status_code = 'MSG-150001'
+                            msg_args = [rest_key]
+                            msg = g.appmsg.get_api_message(status_code, msg_args)
+                            dict_msg = {
+                                'status_code': status_code,
+                                'msg_args': msg_args,
+                                'msg': msg,
+                            }
+                            self.set_message(dict_msg, rest_key, MSG_LEVEL_ERROR)
+
+        return True
+
 
     # [maintenance]:メニューのレコード操作
     def exec_maintenance(self, parameters, target_uuid='', cmd_type='', pk_use_flg=False, auth_check=True, inner_mode=False, force_conv=False, import_mode=False, record_file_paths={}):
@@ -1380,8 +1437,8 @@ class loadTable():
                     current_parameter, current_file, current_file_path = self.convert_colname_restkey(current_row, target_uuid, '', 'input', base64_file_flg=False, file_path_flg=True)
                     # 更新系の追い越し判定
                     self.chk_lastupdatetime(target_uuid, current_parameter, entry_parameter)
-                    if import_mode is False:
-                        # 更新系処理の場合、廃止フラグから処理種別判定、変更
+                    if import_mode is False and cmd_type != CMD_DELETE:
+                        # 更新系処理の場合、廃止フラグから処理種別判定、変更(物理削除時は除く)
                         cmd_type = self.convert_cmd_type(cmd_type, target_uuid, current_row, entry_parameter)
                     # 履歴の一括取得
                     target_jnls = self.get_target_jnl_uuids(target_uuid)
@@ -1607,6 +1664,8 @@ class loadTable():
             # rest_key → カラム名に変換
             colname_parameter = self.convert_restkey_colname(entry_parameter, current_row)
 
+            g.applogger.debug(f"{cmd_type=}:{self.get_table_name()=}")
+
             if import_mode is True:
                 # 登録・更新処理
                 if cmd_type == CMD_REGISTER:
@@ -1639,6 +1698,15 @@ class loadTable():
                     'msg': result,
                 }
                 self.set_message(dict_msg, g.appmsg.get_api_message("MSG-00004", []), MSG_LEVEL_ERROR)
+            elif cmd_type == CMD_DELETE:
+                # 物理削除の場合は、ジャーナルへの書き込みは無いのでそのために処理を分ける
+                # In the case of physical deletion, there is no writing to the journal, so the processing is divided for that purpose.
+                result_uuid = colname_parameter.get(primary_key)
+                # 主キーのカラム名をitem_name_restに変更
+                # Change primary key column name to item_name_rest
+                temp_rows = {primary_key: colname_parameter.get(primary_key)}
+                tmp_result = self.convert_colname_restkey(temp_rows)
+                result = tmp_result[0]
             else:
                 result_uuid = result[0].get(primary_key)
                 if history_flg is True:
@@ -2299,6 +2367,11 @@ class loadTable():
             RETRUN:
                 cmd_type
         """
+
+        # 物理削除時はそのままの値を返却する
+        # When physically deleting, return the same value.
+        if cmd_type == CMD_DELETE:
+            return cmd_type
 
         # 廃止フラグによる、処理種別判定
         if "discard" in entry_parameter:

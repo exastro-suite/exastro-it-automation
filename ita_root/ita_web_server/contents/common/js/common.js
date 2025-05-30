@@ -419,16 +419,19 @@ systemErrorAlert: function() {
 */
 editFlag: function( menuInfo ) {
     const flag  = {};
+    const privilege_edit_true = ['1', '3'];
+
     flag.initFilter = ( menuInfo.initial_filter_flg === '1')? true: false;
     flag.autoFilter = ( menuInfo.auto_filter_flg === '1')? true: false;
     flag.history = ( menuInfo.history_table_flag === '1')? true: false;
 
-    flag.privilege = ( menuInfo.privilege === '1')? true: false;
-    flag.insert = ( menuInfo.privilege === '1')? ( menuInfo.row_insert_flag === '1')? true: false: false;
-    flag.update = ( menuInfo.privilege === '1')? ( menuInfo.row_update_flag === '1')? true: false: false;
-    flag.disuse = ( menuInfo.privilege === '1')? ( menuInfo.row_disuse_flag === '1')? true: false: false;
-    flag.reuse = ( menuInfo.privilege === '1')? ( menuInfo.row_reuse_flag === '1')? true: false: false;
-    flag.edit = ( menuInfo.privilege === '1')? ( menuInfo.row_insert_flag === '1' && menuInfo.row_update_flag === '1')? true: false: false;
+    flag.privilege = ( privilege_edit_true.includes(menuInfo.privilege))? true: false;
+    flag.insert = ( privilege_edit_true.includes(menuInfo.privilege))? ( menuInfo.row_insert_flag === '1')? true: false: false;
+    flag.update = ( privilege_edit_true.includes(menuInfo.privilege))? ( menuInfo.row_update_flag === '1')? true: false: false;
+    flag.disuse = ( privilege_edit_true.includes(menuInfo.privilege))? ( menuInfo.row_disuse_flag === '1')? true: false: false;
+    flag.reuse = ( privilege_edit_true.includes(menuInfo.privilege))? ( menuInfo.row_reuse_flag === '1')? true: false: false;
+    flag.edit = ( privilege_edit_true.includes(menuInfo.privilege))? ( menuInfo.row_insert_flag === '1' && menuInfo.row_update_flag === '1')? true: false: false;
+    flag.delete = ( privilege_edit_true.includes(menuInfo.privilege))? ( menuInfo.row_delete_flag === '1')? true: false: false;
 
     return flag;
 },

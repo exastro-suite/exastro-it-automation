@@ -143,6 +143,13 @@ class ManageEvents:
         return count
 
     def append_event(self, event):
+        self.add_local_label(
+            event,
+            oaseConst.DF_LOCAL_LABLE_NAME,
+            oaseConst.DF_LOCAL_LABLE_STATUS,
+            oaseConst.DF_PROC_EVENT
+        )
+        # キャッシュに保存
         self.labeled_events_dict[event["_id"]] = event
 
     def get_events(self, event_id):

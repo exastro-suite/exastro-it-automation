@@ -280,8 +280,8 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
                             # アクションが設定されていない場合・・・すぐに結論イベントを出す
                             # 結論イベントの登録
                             ret, ConclusionEventRow = InsertConclusionEvent(EventObj, ruleInfo, UseEventIdList, action_log_row['CONCLUSION_EVENT_LABELS'])
-                            # 結論イベントに処理で必要なラベル情報を追加
-                            ConclusionEventRow = EventObj.add_local_label(ConclusionEventRow, oaseConst.DF_LOCAL_LABLE_NAME, oaseConst.DF_LOCAL_LABLE_STATUS, oaseConst.DF_PROC_EVENT)
+                            # キャッシュに保存
+                            EventObj.append_event(ConclusionEventRow)
 
                             # 結論イベントに対応するフィルタ確認
                             ret, UsedFilterIdList = judgeObj.ConclusionLabelUsedInFilter(ConclusionEventRow["labels"], filterIDMap)
@@ -332,7 +332,6 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
                                         IncidentDict[UsedFilterId] = [ConclusionEventRow['_id']]
                                         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-                                    EventObj.append_event(ConclusionEventRow)
                                     newIncident_Flg = True
 
                             # 評価結果の更新（完了）

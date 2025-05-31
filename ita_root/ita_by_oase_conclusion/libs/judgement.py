@@ -435,8 +435,8 @@ class Judgement:
                         (LabelKeyName == cLabelKeyName and LabelValue != cLabelValue and LabelCondition == oaseConst.DF_TEST_NE):
                     LabelHit = True
                     LabelHitCount += 1
-                    tmp_msg = g.appmsg.get_log_message("BKY-90067", [LabelKeyName, LabelValue])
-                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                    # tmp_msg = g.appmsg.get_log_message("BKY-90067", [LabelKeyName, LabelValue])
+                    # g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     break
 
             if LabelHit is True:

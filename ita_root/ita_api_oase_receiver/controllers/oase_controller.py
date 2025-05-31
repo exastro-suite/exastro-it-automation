@@ -14,7 +14,6 @@
 
 from flask import g
 
-import json
 import datetime
 
 from common_libs.common import *  # noqa: F403
@@ -125,6 +124,10 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
         events = []
         # 保存する、収集単位（ベント収集設定ID×取得時間（fetched_time）のリストを作る）
         collection_group_list = []
+        # 保存できないイベント情報のメッセージを格納
+        not_available_event_msg_list = []
+        # エラーレスポンスを返す場合
+        is_err_res = False
 
         # eventsデータを取り出す
         event_group_list = body["events"]
@@ -132,32 +135,46 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
             # event_collection_settings_nameもしくは、event_collection_settings_idは必須
             if "event_collection_settings_name" in event_group:
                 event_collection_settings_name = event_group["event_collection_settings_name"]
-                event_collection_settings = wsDb.table_select(oaseConst.T_OASE_EVENT_COLLECTION_SETTINGS, "WHERE EVENT_COLLECTION_SETTINGS_NAME = %s AND DISUSE_FLAG = 0", [event_collection_settings_name])  # noqa: E501
-                # 存在しないevent_collection_settings_name
+                event_collection_settings = wsDb.table_select(oaseConst.T_OASE_EVENT_COLLECTION_SETTINGS, "WHERE EVENT_COLLECTION_SETTINGS_NAME = %s", [event_collection_settings_name])  # noqa: E501
+                # 受信したデータに不備があるため、イベントは保存されませんでした。({})
                 if len(event_collection_settings) == 0:
-                    msg_code = "499-01801"
-                    msg = g.appmsg.get_log_message(msg_code)
+                    is_err_res = True
+                    msg = g.appmsg.get_log_message("499-01801", [f"{event_collection_settings_name=}"])
+                    not_available_event_msg_list.append(msg)
+                    g.applogger.info(msg)
+                    continue
+                # 設定が廃止済みのため、イベントは保存されませんでした。({})
+                elif event_collection_settings[0]['DISUSE_FLAG'] == '1':
+                    msg = g.appmsg.get_log_message("499-01827", [f"{event_collection_settings_name=}"])
+                    not_available_event_msg_list.append(msg)
                     g.applogger.info(msg)
                     continue
 
                 event_collection_settings_id = event_collection_settings[0]["EVENT_COLLECTION_SETTINGS_ID"]
             elif "event_collection_settings_id" in event_group:
                 event_collection_settings_id = event_group["event_collection_settings_id"]
-                event_collection_settings = wsDb.table_select(oaseConst.T_OASE_EVENT_COLLECTION_SETTINGS, "WHERE EVENT_COLLECTION_SETTINGS_ID = %s AND DISUSE_FLAG = 0", [event_collection_settings_id])  # noqa: E501
-                # 存在しないevent_collection_settings_id
+                event_collection_settings = wsDb.table_select(oaseConst.T_OASE_EVENT_COLLECTION_SETTINGS, "WHERE EVENT_COLLECTION_SETTINGS_ID = %s", [event_collection_settings_id])  # noqa: E501
+                # 受信したデータに不備があるため、イベントは保存されませんでした。({})
                 if len(event_collection_settings) == 0:
-                    msg_code = "499-01801"
-                    msg = g.appmsg.get_log_message(msg_code)
+                    msg = g.appmsg.get_log_message("499-01801", [f"{event_collection_settings_id=}"])
+                    is_err_res = True
+                    not_available_event_msg_list.append(msg)
+                    g.applogger.info(msg)
+                    continue
+                # 設定が廃止済みのため、イベントは保存されませんでした。({})
+                elif event_collection_settings[0]['DISUSE_FLAG'] == '1':
+                    msg = g.appmsg.get_log_message("499-01827", [f"{event_collection_settings_id=}"])
+                    not_available_event_msg_list.append(msg)
                     g.applogger.info(msg)
                     continue
 
                 event_collection_settings_name = event_collection_settings[0]["EVENT_COLLECTION_SETTINGS_NAME"]
             else:
-                # event_collection_settings_idもしくはevent_collection_settings_nameが必要です
-                msg = "'event_collection_settings_name' or 'event_collection_settings_id' is a required property - 'events.0'"
-                g.applogger.info(msg)
-                msg_code = "499-01801"
-                msg = g.appmsg.get_log_message(msg_code)
+                # 受信したデータに不備があるため、イベントは保存されませんでした。({})
+                # # event_collection_settings_idもしくはevent_collection_settings_nameが必要です
+                is_err_res = True
+                msg = g.appmsg.get_log_message("499-01801", ["'event_collection_settings_name' or 'event_collection_settings_id' is a required property - 'events.0'"])
+                not_available_event_msg_list.append(msg)
                 g.applogger.info(msg)
                 continue
 
@@ -182,9 +199,9 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
                     # リストに格納
                     collection_group_list.append(collection_group_data)
                 else:
-                    # 送られてきたfetched_timeは最新ではないため保存されませんでした。(最新のfetched_time:{}, イベント:{}）
-                    msg_code = "499-01818"
-                    msg = g.appmsg.get_log_message(msg_code, [last_fetched_time, event_group])
+                    # fetched_timeが最新ではないため、イベントは保存されませんでした。(イベント収集設定id:{}, 最新のfetched_time:{}）
+                    msg = g.appmsg.get_log_message("499-01818", [event_collection_settings_id, collection_group_data["FETCHED_TIME"], last_fetched_time])
+                    not_available_event_msg_list.append(msg)
                     g.applogger.info(msg)
                     continue
 
@@ -207,28 +224,49 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
                     single_event['_exastro_end_time'] = end_time
 
                 # 未来の削除用に生成時刻をもたせておく
-                single_event['_exastro_created_at'] = datetime.datetime.utcnow()
+                single_event['_exastro_created_at'] = datetime.datetime.now(datetime.timezone.utc)
 
                 # 辞書化したイベントをリストに格納
                 events.append(single_event)
 
-
         if len(events) == 0:
-            # "eventsデータが取得できませんでした。"
-            msg_code = "499-01802"
-            raise AppException(msg_code)
+            # 保存可能なeventsデータがありません。（{}）
+            if is_err_res is False:
+                msg = g.appmsg.get_log_message("499-01802", [", ".join(not_available_event_msg_list)])
+                g.applogger.info(msg)
+                return not_available_event_msg_list,
+            else:
+                # 不正データ受信と判断し、エラーレスポンス
+                raise AppException("499-01802", [", ".join(not_available_event_msg_list)], [", ".join(not_available_event_msg_list)])
 
         # ラベリングしてMongoDBに保存
         label_event(wsDb, wsMongo, events)  # noqa: F841
 
         # MySQLにイベント収集設定IDとfetched_timeを保存する処理を行う
         wsDb.db_transaction_start()
-        ret = wsDb.table_insert(oaseConst.T_OASE_EVENT_COLLECTION_PROGRESS, collection_group_list, "EVENT_COLLECTION_ID", True)  # noqa: F841
+        insert_data_list = wsDb.table_insert(oaseConst.T_OASE_EVENT_COLLECTION_PROGRESS, collection_group_list, "EVENT_COLLECTION_ID", False)  # noqa: F841
         wsDb.db_transaction_end(True)
+
+        # T_OASE_EVENT_COLLECTION_PROGRESSにinsertしたデータのEVENT_COLLECTION_SETTINGS_IDを抽出
+        event_collection_settings_id_list = []
+        event_collection_settings_id_list = [insert_data['EVENT_COLLECTION_SETTINGS_ID'] for insert_data in insert_data_list if insert_data['EVENT_COLLECTION_SETTINGS_ID'] not in event_collection_settings_id_list]
+
+        # T_OASE_EVENT_COLLECTION_PROGRESSの古いデータを削除
+        # 挿入したデータのEVENT_COLLECTION_SETTINGS_IDの中で、指定の期間を過ぎたものを抽出し、あれば削除
+        event_collections_progress_ttl = int(float(os.getenv("EVENT_COLLECTION_PROGRESS_TTL", 72)) * 60 * 60)
+        fetched_time_limit = int(datetime.datetime.now().timestamp()) - event_collections_progress_ttl
+
+        values_list = [fetched_time_limit] + event_collection_settings_id_list
+        ret = wsDb.table_count(oaseConst.T_OASE_EVENT_COLLECTION_PROGRESS, "WHERE `FETCHED_TIME` < %s and `EVENT_COLLECTION_SETTINGS_ID` in ({})".format(','.join(["%s"]*len(event_collection_settings_id_list))), values_list)  # noqa: F841
+
+        if ret > 0:
+            wsDb.db_transaction_start()
+            ret = wsDb.table_permanent_delete(oaseConst.T_OASE_EVENT_COLLECTION_PROGRESS, "WHERE `FETCHED_TIME` < %s and `EVENT_COLLECTION_SETTINGS_ID` in ({})".format(','.join(["%s"]*len(event_collection_settings_id_list))), values_list)  # noqa: F841
+            wsDb.db_transaction_end(True)
 
     finally:
         wsDb.db_transaction_end(False)
         wsDb.db_disconnect()
         wsMongo.disconnect()
 
-    return '',
+    return not_available_event_msg_list,

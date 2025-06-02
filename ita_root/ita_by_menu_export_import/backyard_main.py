@@ -2225,7 +2225,7 @@ def import_table_and_data(
                     objmenu, file_path_info[menu_name_rest + '_JNL'] = _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_rest + '_JNL', menu_id, table_name + "_JNL", dp_mode)
                 else:
                     # ワークスペースのDB(ita_ws_*)にインポート[インポート用の一時作業DB(ita_sd_*)から]
-                    objmenu, file_path_info[menu_name_rest + '_JNL'] = _export_sandboxdb_bulk_register_maindb(objdbca, ws_db_sb, objmenu, workspace_id, execution_no_path, menu_name_rest + '_JNL', menu_id, table_name + "_JNL", file_path_info, dp_mode)
+                    objmenu, [] = _export_sandboxdb_bulk_register_maindb(objdbca, ws_db_sb, objmenu, workspace_id, execution_no_path, menu_name_rest + '_JNL', menu_id, table_name + "_JNL", file_path_info, dp_mode)
                 rpt.set_time(f"{menu_name_rest}:  register data jnl")
             rpt.set_time(f"{menu_name_rest}: register data")
             if ws_db_sb is None:
@@ -2233,7 +2233,7 @@ def import_table_and_data(
                 objmenu, file_path_info[menu_name_rest] = _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name, dp_mode)
             else:
                 # ワークスペースのDB(ita_ws_*)にインポート[インポート用の一時作業DB(ita_sd_*)から]
-                objmenu, file_path_info[menu_name_rest + '_JNL'] = _export_sandboxdb_bulk_register_maindb(objdbca, ws_db_sb, objmenu, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name, file_path_info, dp_mode)
+                objmenu, [] = _export_sandboxdb_bulk_register_maindb(objdbca, ws_db_sb, objmenu, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name, file_path_info, dp_mode)
             rpt.set_time(f"{menu_name_rest}: register data")
         else:
             g.applogger.info(f"{menu_name_rest} import recode 0.")

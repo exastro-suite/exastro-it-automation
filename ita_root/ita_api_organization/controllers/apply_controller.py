@@ -69,15 +69,15 @@ def post_apply_parameter(organization_id, workspace_id, body=None, **kwargs):  #
 
         if menu == "conductor_class_edit":
             check_items[menu]["sheet_type"] = ["14", "15"]
-            check_items[menu]["privilege"]  = ["1", "2", "3"]
+            check_items[menu]["privilege"]  = ["0", "1", "2"]
 
         elif menu == "operation_list":
             check_items[menu]["sheet_type"] = ["0", ]
-            check_items[menu]["privilege"]  = ["1", "3"]
+            check_items[menu]["privilege"]  = ["0", "1"]
 
         elif menu in specify_menu_list:
             check_items[menu]["sheet_type"] = ["0", "1", "2", "3", "4"]
-            check_items[menu]["privilege"]  = ["1", "3"]
+            check_items[menu]["privilege"]  = ["0", "1"]
 
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405

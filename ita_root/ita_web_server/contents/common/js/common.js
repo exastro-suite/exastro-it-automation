@@ -419,7 +419,7 @@ systemErrorAlert: function() {
 */
 editFlag: function( menuInfo ) {
     const flag  = {};
-    const privilege_edit_true = ['1', '3'];
+    const privilege_edit_true = ['0', '1'];
 
     flag.initFilter = ( menuInfo.initial_filter_flg === '1')? true: false;
     flag.autoFilter = ( menuInfo.auto_filter_flg === '1')? true: false;

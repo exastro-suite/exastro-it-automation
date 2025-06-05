@@ -2,7 +2,7 @@
 
 # Global values
 # not quate strings
-@org-user-id = admin
+@org-user-id = test_user
 @org-user-pw = password
 @base_org_url = http://platform-auth:{{org-mng-port}}
 @organization_id = org1
@@ -95,7 +95,7 @@ content-type: application/json
 ]
 
 ###
-# ロールメニュー紐付管理(role_menu_link_list)で管理者権限に変更する
+# ロールメニュー紐付管理(role_menu_link_list)でメンテナンス可＋削除可権限に変更する
 
 # @name get_role_menu_link_operation_list
 POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/ita/menu/role_menu_link_list/filter/?file=no
@@ -122,7 +122,7 @@ content-type: application/json
       "uuid": "10201",
       "role_name": "_ws1-admin",
       "menu_name": "基本コンソール:オペレーション一覧",
-      "associate": "管理者",
+      "associate": "メンテナンス可＋削除可",
       "remarks": null,
       "last_update_date_time": "{{ludt_opelist}}"
     },
@@ -158,7 +158,7 @@ content-type: application/json
     "parameter": {
       "discard": "0",
       "uuid": "10203",
-      "associate": "管理者",
+      "associate": "メンテナンス可＋削除可",
       "last_update_date_time": "{{ludt_menu_table_link}}"
     },
     "file": {

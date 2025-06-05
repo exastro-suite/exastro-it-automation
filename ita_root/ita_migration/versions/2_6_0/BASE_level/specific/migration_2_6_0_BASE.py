@@ -80,8 +80,8 @@ def main(work_dir_path, db_conn):
                 "id": "ita.organization.common.maintenance_records_limit",
                 "informations": {
                     "description": os.environ.get('ORG_COMMON_MAINTENANCE_RECORDS_LIMIT_DESCRIPTION'),
-                    "max": os.environ.get('ORG_COMMON_MAINTENANCE_RECORDS_LIMIT_MAX'),
-                    "default": os.environ.get('ORG_COMMON_MAINTENANCE_RECORDS_LIMIT_DEFAULT')
+                    "max": int(os.environ.get('ORG_COMMON_MAINTENANCE_RECORDS_LIMIT_MAX')),
+                    "default": int(os.environ.get('ORG_COMMON_MAINTENANCE_RECORDS_LIMIT_DEFAULT'))
                 }
             }
         ]

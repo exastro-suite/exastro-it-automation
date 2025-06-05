@@ -21,7 +21,7 @@ import secrets
 import string
 import base64
 import codecs
-from pathlib import Path
+import pathlib
 import pytz
 import datetime
 import re
@@ -339,8 +339,12 @@ def file_read_retry(func):
     """
     file_read_retry
         ファイルストレージへの書き込み直後の読み込みが遅い場合向けの対策
+        Measures to take when reading is slow immediately after writing to file storage
+
         「FileNotFoundError: [Errno 2] No such file or directory」が出るため、リトライを行う
-        デコレーター関数
+        "FileNotFoundError: [Errno 2] No such file or directory" appears, so retry.
+
+        デコレーター関数 / decorator function
         ・file_encodeの中に例をあげています
     """
     #
@@ -356,10 +360,16 @@ def file_read_retry(func):
                     break
             except Exception as e:
                 # raiseしたくない場合は、funcの中でログを出力し、（エラーを抑止して）Falseを返却してください
-                t = traceback.format_exc()
-                g.applogger.info(arrange_stacktrace_format(t))
                 if i == max:
+                    # 最後のログ出力のみ、stacktraceを出力
+                    # Output stacktrace only the last log output
+                    t = traceback.format_exc()
+                    g.applogger.info(arrange_stacktrace_format(t))
                     raise e
+                else:
+                    # retry分は、メッセージのみを出力
+                    # For retry minutes, only the message is output
+                    g.applogger.info(print_exception_msg(e))
 
             if i == max:
                 break
@@ -367,6 +377,7 @@ def file_read_retry(func):
             i = i + 1
 
     return wrapper
+
 
 def file_decode(file_path):
     """
@@ -404,6 +415,54 @@ def file_decode(file_path):
 
     text_decrypt = ky_decrypt(text)
     return base64.b64encode(text_decrypt.encode()).decode()
+
+
+@file_read_retry
+def dir_remove(remove_dir):
+    """ディレクトリ削除 / Delete directory
+
+    Args:
+        remove_dir (str): directory
+
+    Raises:
+        e: Exception
+    """
+
+    try:
+        if os.path.isdir(remove_dir):
+            # delete mode true to file delete
+            shutil.rmtree(remove_dir)
+    except FileNotFoundError as e:
+        # 通常は発生しないがアクセス遅延で発生した場合を考慮、ただしエラーとはしない
+        # Consider cases where this does not normally occur, but occur due to access delay, but do not treat it as an error.
+        g.applogger.info(f"FileNotFoundError(dir):{remove_dir}")
+        pass
+
+
+@file_read_retry
+def file_remove(remove_file, delete_mode = True):
+    """_summary_
+
+    Args:
+        remove_file (str): 削除ファイルパス delete file path
+        delete_mode (bool): 削除モード delete mode True(default): File to delete, False: File to 0Byte
+    """
+
+    try:
+        if os.path.isfile(remove_file):
+            # delete mode true to file delete
+            if delete_mode:
+                os.remove(remove_file)
+            else:
+                # delete mode false to file 0byte touch
+                p_delete = pathlib.Path(remove_file)
+                with p_delete.open(mode='w') as f:
+                    f.write('')
+    except FileNotFoundError as e:
+        # 通常は発生しないがアクセス遅延で発生した場合を考慮、ただしエラーとはしない
+        # Consider cases where this does not normally occur, but occur due to access delay, but do not treat it as an error.
+        g.applogger.info(f"FileNotFoundError(file):{remove_file}")
+        pass
 
 
 def get_upload_file_path(workspace_id, menu_id, uuid, column_name_rest, file_name, uuid_jnl):

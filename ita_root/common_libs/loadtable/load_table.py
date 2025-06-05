@@ -13,11 +13,13 @@
 #
 
 import sys
+import inspect
 import datetime
 import textwrap
 import json
 import importlib
 import traceback
+import pathlib
 import copy
 import re
 import gc
@@ -1220,6 +1222,26 @@ class loadTable():
         tmp_data = None
         err_result = {}
         err_all = {}
+
+        # ファイルの物理削除事前処理
+        # File physical deletion preprocessing
+        if not self.file_delete(list_parameters, False):
+            # 集約エラーメッセージ(JSON化)
+            # Aggregate error message (JSONization)
+            status_code, msg = self.get_error_message_str()
+
+        # ファイルの削除で失敗した場合は、エラーで返答する
+        # If file deletion fails, respond with an error
+        if self.get_error_message_count() > 0:
+            return status_code, result, msg,
+
+        # エラーを初期化
+        # Initialize the error (to set the line number from 1 since there have been no errors up to this point)
+        self.err_message = {}
+
+        # エラーメッセージ初回保存(1から始まるRequestBodyの番号用)
+        self.set_error_message()
+
         try:
             # トランザクション開始
             self.objdbca.db_transaction_start()
@@ -1235,7 +1257,6 @@ class loadTable():
                 tmp_result = self.objdbca.table_lock([self.get_table_name()])
 
             file_index = 0
-            type_delete_keys = []
             for tmp_parameters in list_parameters:
                 cmd_type = tmp_parameters.get("type")
 
@@ -1254,11 +1275,6 @@ class loadTable():
                 else:
                     target_uuid = ''
 
-                # 削除対象がある場合は、レコード削除後にフォルダを削除するため、キー値を保存する
-                # If there is a deletion target, save the key value to delete the folder after deleting the record.
-                if cmd_type == CMD_DELETE:
-                    type_delete_keys.append(target_uuid)
-
                 # maintenance呼び出し
                 tmp_result = self.exec_maintenance(parameters, target_uuid, cmd_type, record_file_paths=record_file_paths)
 
@@ -1273,10 +1289,12 @@ class loadTable():
                 self.objdbca.db_transaction_end(True)
                 tmp_data = self.get_exec_count()
 
-                # 削除対象があった場合は、削除対象のキーごとのフォルダも削除する
-                # If there is a deletion target, also delete the folder for each key to be deleted.
-                if len(type_delete_keys) > 0:
-                    self.file_delete(parameters, type_delete_keys)
+                # ファイルの物理削除処理
+                # Physical file deletion process
+                if not self.dir_delete(list_parameters):
+                    # 集約エラーメッセージ(JSON化)
+                    # Aggregate error message (JSONization)
+                    status_code, msg = self.get_error_message_str()
 
             elif self.get_error_message_count() > 0:
                 # ロールバック トランザクション終了
@@ -1299,51 +1317,194 @@ class loadTable():
 
         return status_code, result, msg,
 
-
-    def file_delete(self, parameters, type_delete_keys):
-        """ファイルの物理削除 / Physical deletion of files
+    def file_delete(self, list_parameters, delete_mode=False, error_break=True):
+        """ファイルの物理削除前処理 / File physical deletion preprocessing
 
         Args:
-            parameters (dict): Column情報
-            type_delete_keys (array): 対象となるレコードのuuid群
+            list_parameters (dict): 引数情報 argument information
+            delete_mode (bool): 削除モード delete mode True: File to delete, False: File to 0Byte
+            error_break (bool): エラー時即時返却 Immediate return in case of error True / False
 
         Return:
             bool : 正常終了 Normal end True / 異常終了 Abnormal end False
         """
 
-        # Column情報からファイルカラムの情報を抜き出す
-        # Extract file column information from Column information
-        entry_parameter = parameters.get(REST_PARAMETER_KEYNAME)
-        for rest_key, rest_val in list(entry_parameter.items()):
+        g.applogger.debug(f"### func:{inspect.currentframe().f_code.co_name}")
+        g.applogger.debug(f"{list_parameters=}:{delete_mode=}")
 
-            # ファイルカラムのチェック
-            # Check file columns
-            if self.get_col_class_name(rest_key) in ['FileUploadColumn', 'FileUploadEncryptColumn']:
-                # レコード単位にフォルダを削除する
-                # Delete folder by record
-                for delete_key in type_delete_keys:
-                    delete_paths = get_upload_file_path(g.WORKSPACE_ID, self.get_menu_id(), delete_key, rest_key, 'val', None)
+        # エラーを初期化
+        # Initialize the error (to set the line number from 1 since there have been no errors up to this point)
+        self.err_message = {}
+
+        # エラーメッセージ初回保存(1から始まるRequestBodyの番号用)
+        self.set_error_message()
+
+        ret = True
+        # 件数分処理
+        # Process by number of item
+        for tmp_parameters in list_parameters:
+            cmd_type = tmp_parameters.get("type")
+
+            # 物理削除以外は処理しない
+            # Does not process anything other than physical deletion
+            if cmd_type != CMD_DELETE:
+                # エラーメッセージ保存(行番号の確保用)
+                # Save error message (For securing line numbers)
+                self.set_error_message()
+                continue
+
+            # キー値取得
+            # Get a key
+            primary_key = self.get_primary_key()
+            target_uuid_key = self.get_rest_key(primary_key)
+            if REST_PARAMETER_KEYNAME in tmp_parameters:
+                target_uuid = tmp_parameters.get(REST_PARAMETER_KEYNAME).get(target_uuid_key)
+            else:
+                continue
+
+            # Column情報からファイルカラムの情報を抜き出す
+            # Extract file column information from Column information
+            for rest_key in self.get_restkey_list():
+                # ファイルカラムのチェック
+                # Check file columns
+                if self.get_col_class_name(rest_key) in ['FileUploadColumn', 'FileUploadEncryptColumn']:
+
+                    # ファイルは、履歴フォルダに実態があるため、履歴の情報から削除を実施する
+                    # The file is actually in the history folder, so delete it from the history information.
+
+                    # 履歴の一括取得
+                    # Batch history acquisition
+                    target_jnls = self.get_target_jnl_uuids(target_uuid)
+                    for target_jnl in target_jnls:
+                        g.applogger.debug(f"(jnl){target_jnl=}")
+                        data_json = target_jnl.get("DATA_JSON")
+                        if data_json:
+                            json_rows = json.loads(data_json)
+                            target_uuid_jnl = target_jnl.get(COLNAME_JNL_SEQ_NO)
+                            data_file_path = json_rows.get(rest_key)
+                            g.applogger.debug(f"(jnl){data_file_path=}")
+
+                            # ファイル名が無い場合は、アップロードされたファイルなしとして、処理を継続しない
+                            # If there is no file name, it is assumed that no file has been uploaded and processing does not continue.
+                            if data_file_path is None:
+                                continue
+
+                            delete_paths = get_upload_file_path(g.WORKSPACE_ID, self.get_menu_id(), target_uuid, rest_key, data_file_path, target_uuid_jnl)
+                            delete_path = delete_paths.get('old_file_path')
+                            g.applogger.debug(f"(jnl){delete_path=}")
+
+                            try:
+                                # 履歴のファイル削除
+                                # Delete history files
+                                util.file_remove(delete_path, delete_mode)
+                            except Exception as e:
+                                # 失敗時はユーザーに削除できなかった内容を返却する(手動による削除を促すため)
+                                # In case of failure, return the content that could not be deleted to the user (to encourage manual deletion)
+                                g.applogger.error(f"(jnl){delete_mode=}:{delete_path=}")
+                                print_exception_msg(e)
+                                status_code = 'MSG-150001'
+                                msg_args = [rest_key]
+                                msg = g.appmsg.get_api_message(status_code, msg_args)
+                                dict_msg = {
+                                    'status_code': status_code,
+                                    'msg_args': msg_args,
+                                    'msg': msg,
+                                }
+                                self.set_message(dict_msg, target_uuid, MSG_LEVEL_ERROR)
+                                # 一度でも失敗があれば False を返却する
+                                # Returns False if there is even one failure
+                                ret = False
+
+            # エラーメッセージ保存(行番号の確保用)
+            # Save error message (For securing line numbers)
+            self.set_error_message()
+
+            # エラー時即時返却の場合は、終了する
+            if error_break and not ret:
+                break
+
+        return ret
+
+    def dir_delete(self, list_parameters):
+        """ディレクトリの物理削除処理 / Directory physical deletion preprocessing
+
+        Args:
+            list_parameters (dict): 引数情報 argument information
+
+        Return:
+            bool : 正常終了 Normal end True / 異常終了 Abnormal end False
+        """
+
+        g.applogger.debug(f"### func:{inspect.currentframe().f_code.co_name}")
+        g.applogger.debug(f"{list_parameters=}")
+
+        # エラーを初期化
+        # Initialize the error (to set the line number from 1 since there have been no errors up to this point)
+        self.err_message = {}
+
+        # エラーメッセージ初回保存(1から始まるRequestBodyの番号用)
+        self.set_error_message()
+
+        ret = True
+        # 件数分処理
+        # Process by number of item
+        for tmp_parameters in list_parameters:
+            cmd_type = tmp_parameters.get("type")
+
+            # 物理削除以外は処理しない
+            # Does not process anything other than physical deletion
+            if cmd_type != CMD_DELETE:
+                # エラーメッセージ保存(行番号の確保用)
+                # Save error message (For securing line numbers)
+                self.set_error_message()
+                continue
+
+            # キー値取得
+            # Get a key
+            primary_key = self.get_primary_key()
+            target_uuid_key = self.get_rest_key(primary_key)
+            if REST_PARAMETER_KEYNAME in tmp_parameters:
+                target_uuid = tmp_parameters.get(REST_PARAMETER_KEYNAME).get(target_uuid_key)
+            else:
+                target_uuid = ''
+
+            # Column情報からファイルカラムの情報を抜き出す
+            # Extract file column information from Column information
+            for rest_key in self.get_restkey_list():
+                # ファイルカラムのチェック
+                # Check file columns
+                if self.get_col_class_name(rest_key) in ['FileUploadColumn', 'FileUploadEncryptColumn']:
+                    delete_paths = get_upload_file_path(g.WORKSPACE_ID, self.get_menu_id(), target_uuid, rest_key, 'val', None)
 
                     delete_path = os.path.dirname(delete_paths.get('file_path'))
-                    # 該当のパスが存在した場合は、削除する(エラーは無視する)
-                    if os.path.exists(delete_path):
-                        try:
-                            shutil.rmtree(delete_path)
-                        except Exception as e:
-                            # 失敗時はユーザーに削除できなかった内容を返却する(手動による削除を促すため)
-                            # In case of failure, return the content that could not be deleted to the user (to encourage manual deletion)
-                            print_exception_msg(e)
-                            status_code = 'MSG-150001'
-                            msg_args = [rest_key]
-                            msg = g.appmsg.get_api_message(status_code, msg_args)
-                            dict_msg = {
-                                'status_code': status_code,
-                                'msg_args': msg_args,
-                                'msg': msg,
-                            }
-                            self.set_message(dict_msg, rest_key, MSG_LEVEL_ERROR)
+                    g.applogger.debug(f"{delete_path=}")
+                    # ディレクトリ削除
+                    # Delete directory
+                    try:
+                        dir_remove(delete_path)
+                    except Exception as e:
+                        # 失敗時はユーザーに削除できなかった内容を返却する(手動による削除を促すため)
+                        # In case of failure, return the content that could not be deleted to the user (to encourage manual deletion)
+                        g.applogger.error(f"{delete_path=}")
+                        print_exception_msg(e)
+                        status_code = 'MSG-150001'
+                        msg_args = [rest_key]
+                        msg = g.appmsg.get_api_message(status_code, msg_args)
+                        dict_msg = {
+                            'status_code': status_code,
+                            'msg_args': msg_args,
+                            'msg': msg,
+                        }
+                        self.set_message(dict_msg, target_uuid, MSG_LEVEL_ERROR)
+                        # 一度でも失敗があれば False を返却する
+                        # Returns False if there is even one failure
+                        ret = False
 
-        return True
+            # エラーメッセージ保存(行番号の確保用)
+            # Save error message (For securing line numbers)
+            self.set_error_message()
+
+        return ret
 
 
     # [maintenance]:メニューのレコード操作
@@ -1664,7 +1825,7 @@ class loadTable():
             # rest_key → カラム名に変換
             colname_parameter = self.convert_restkey_colname(entry_parameter, current_row)
 
-            g.applogger.debug(f"{cmd_type=}:{self.get_table_name()=}")
+            g.applogger.debug(f"{cmd_type=}:{self.get_table_name()=}:{colname_parameter=}")
 
             if import_mode is True:
                 # 登録・更新処理

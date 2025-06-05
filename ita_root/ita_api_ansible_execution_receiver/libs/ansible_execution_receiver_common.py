@@ -172,7 +172,7 @@ def check_auth_menu(menu, wsdb_istc=None):
         menu: menu_name_rest
         wsdb_istc: (class)DBConnectWs Instance
     Returns:
-        (str) PRIVILEGE value [0: 管理者, 1: メンテナンス可, 2: 閲覧のみ]
+        (str) PRIVILEGE value [0: メンテナンス可＋削除可, 1: メンテナンス可, 2: 閲覧のみ]
     """
     if not wsdb_istc:
         wsdb_istc = DBConnectWs(g.get('WORKSPACE_ID'))  # noqa: F405

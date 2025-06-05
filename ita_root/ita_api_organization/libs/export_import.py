@@ -170,7 +170,7 @@ def get_excel_bulk_export_list(objdbca, organization_id, workspace_id):
         menu_id_list.append(record.get('MENU_ID'))
 
     # 『ロール-メニュー紐付管理』テーブルから対象のデータを取得
-    # 自分のロールが「メンテナンス可」,「閲覧のみ」,「管理者」
+    # 自分のロールが「メンテナンス可」,「閲覧のみ」,「メンテナンス可＋削除可」
     ret_role_menu_link = objdbca.table_select(t_comn_role_menu_link, 'WHERE MENU_ID IN %s AND ROLE_ID IN %s AND PRIVILEGE IN %s AND DISUSE_FLAG = %s ORDER BY MENU_ID', [menu_id_list, role_id_list, [0, 1, 2], 0])
 
     # ロールまで絞った対象メニューIDを再リスト化
@@ -607,7 +607,7 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca, path
                 parent_list["disp_seq"] = parent_menu_group_info["DISP_SEQ"]
 
             # 『ロール-メニュー紐付管理』テーブルから対象のデータを取得
-            # 自分のロールが「メンテナンス可」,「管理者」
+            # 自分のロールが「メンテナンス可」,「メンテナンス可＋削除可」
             ret_role_menu_link = objdbca.table_select("T_COMN_ROLE_MENU_LINK", 'WHERE MENU_ID = %s AND ROLE_ID IN %s AND DISUSE_FLAG = %s', [menuId, role_id_list, 0])
             for record in ret_role_menu_link:
                 if record["PRIVILEGE"] not in ["0", "1"]:

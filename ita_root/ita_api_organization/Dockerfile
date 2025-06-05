@@ -78,13 +78,16 @@ ARG GROUPNAME
 ARG APP_PATH
 
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
-    dnf install -y \
+    dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo \
+&&  dnf install -y \
     sudo \
     git \
     vim \
     diffutils \
     bind-utils \
     iputils \
+    docker-ce-cli \
+    jq \
 &&  dnf module install -y nodejs:18/common \
 &&  npm config set registry http://registry.npmjs.org/ \
 &&  npm install -g @apidevtools/swagger-cli \

@@ -84,6 +84,15 @@ def maintenance_all(organization_id, workspace_id, menu, body=None, **kwargs):  
             api_msg_args = [request_content_type]
             raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
+        # コマンドタイプ削除を含むパラメータの場合、メンテナンス可＋削除可能権限を所持してない場合はエラーとする
+        for tmp_parameters in parameters:
+            cmd_type = tmp_parameters.get("type")
+            if cmd_type == 'Delete' and privilege != '0':
+                status_code = "401-00001"
+                log_msg_args = [menu]
+                api_msg_args = [menu]
+                raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
+
         result_data = menu_maintenance_all.rest_maintenance_all(objdbca, menu, parameters, file_paths)
     except Exception as e:
         raise e

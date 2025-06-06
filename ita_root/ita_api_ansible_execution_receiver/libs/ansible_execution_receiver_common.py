@@ -190,13 +190,20 @@ def check_auth_menu(menu, wsdb_istc=None):
     """).strip().format(",".join(prepared_list))
 
     data_list = wsdb_istc.sql_execute(query_str, [menu, *role_id_list])
+    privileges = list(set([data['PRIVILEGE'] for data in data_list]))
 
     res = False
-    for data in data_list:
-        privilege = data['PRIVILEGE']
-        if privilege in ['0', '1']:
-            return privilege
-        res = privilege
+    # 強い権限から判定し結果を返す
+    if '0' in privileges:
+        return '0'
+    elif '1' in privileges:
+        return '1'
+    elif '2' in privileges:
+        return '2'
+    else:
+        # 対象の権限以外の場合、最後の値を返す
+        outside_privilege = [x for x in privileges if x not in ['0', '1', '2']]
+        res = outside_privilege[-1]
 
     if not res:
         log_msg_args = [menu]

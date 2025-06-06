@@ -884,7 +884,17 @@ paths:
           type: string
       - name: menu
         in: path
-        description: メニュー名
+        description: |
+          メニュー名
+
+          （一例）
+
+          * 標準メニュー:
+            * `operation_list` : オペレーション一覧 / Operation list
+          * パラメータシート、データシート:
+            * `rest_name` : 登録したrest名
+          * 作業管理:
+            * `execution_list_ansible_legacy` : ansible legacy 作業履歴 / execution list
         required: true
         style: simple
         explode: false
@@ -903,8 +913,12 @@ paths:
                   - parameter
                   - type
             examples:
-              example:
-                $ref: "#/components/examples/menu.maintenance.all.yaml"
+              menu:operation_list:
+                $ref: "#/components/examples/menu.maintenance.all.operation_list.yaml"
+              menu:rest_name:
+                $ref: "#/components/examples/menu.maintenance.all.data_sheet.yaml"
+              menu:execution_list_ansible_legacy:
+                $ref: "#/components/examples/menu.maintenance.all.execution_list_ansible_legacy.yaml"
           multipart/form-data:
             schema:
               $ref: "#/components/schemas/MAINTENANCE_ALL_FORM"
@@ -7380,6 +7394,104 @@ components:
       - parameter:
           file_id: string
         type: Delete
+    menu.maintenance.all.operation_list.yaml:
+      description: example maintenance all request body in the operation list menu
+      value: |
+        [
+          {
+            "parameter": {
+                "discard": "0",
+                "environment": null,
+                "language": "ja",
+                "last_run_date": null,
+                "last_update_date_time": "2025/06/05 13:56:58.567068",
+                "last_updated_user": "user",
+                "operation_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+                "operation_name": "example",
+                "remarks": null,
+                "scheduled_date_for_execution": "2025/06/05 13:54:33"
+            },
+            "type": "Update"
+          },
+          {
+            "parameter": {
+                "discard": "0",
+                "environment": null,
+                "language": "ja",
+                "last_run_date": null,
+                "last_update_date_time": "2025/06/05 13:56:58.567068",
+                "last_updated_user": "user",
+                "operation_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+                "operation_name": "example",
+                "remarks": null,
+                "scheduled_date_for_execution": "2025/06/05 13:54:33"
+            },
+            "type": "Update"
+          },
+          {
+            "parameter": {
+                "last_update_date_time": "2025/06/05 13:56:58.567068",
+                "operation_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            },
+            "type": "Delete"
+          }
+        ]
+    menu.maintenance.all.data_sheet.yaml:
+      description: example maintenance all request body in the data sheet / prameter
+        sheet menu
+      value: |
+        [
+          {
+            "parameter": {
+                "discard": "0",
+                "item_1": "string",
+                "item_2": 1,
+                "item_3": null,
+                "item_4": "example.json",
+                "item_5": "example.txt",
+                "last_update_date_time": "2025/06/05 11:22:35.443578",
+                "last_updated_user": "user",
+                "remarks": null,
+                "uuid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            },
+            "type": "Update"
+          },
+          {
+            "parameter": {
+                "discard": "0",
+                "item_1": "string",
+                "item_2": 1,
+                "item_3": null,
+                "item_4": "example.json",
+                "item_5": "example.txt",
+                "last_update_date_time": "2025/06/05 11:22:35.443578",
+                "last_updated_user": "user",
+                "remarks": null,
+                "uuid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            },
+            "type": "Update"
+          },
+          {
+            "parameter": {
+                "last_update_date_time": "2025/06/05 11:22:35.443578",
+                "uuid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            },
+            "type": "Delete"
+          }
+        ]
+    menu.maintenance.all.execution_list_ansible_legacy.yaml:
+      description: example maintenance all request body in the execution list ansible_legacy
+        menu
+      value: |
+        [
+          {
+            "parameter": {
+                "execution_no": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+                "last_update_date_time": "2025/06/05 16:40:11.846538"
+            },
+            "type": "Delete"
+          }
+        ]
   securitySchemes:
     BearerAuth:
       type: http

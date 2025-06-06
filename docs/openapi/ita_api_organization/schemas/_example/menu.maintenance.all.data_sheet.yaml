@@ -1,0 +1,55 @@
+#   Copyright 2025 NEC Corporation
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+description: example maintenance all request body in the data sheet / prameter sheet menu
+value: |
+  [
+    {
+      "parameter": {
+          "discard": "0",
+          "item_1": "string",
+          "item_2": 1,
+          "item_3": null,
+          "item_4": "example.json",
+          "item_5": "example.txt",
+          "last_update_date_time": "2025/06/05 11:22:35.443578",
+          "last_updated_user": "user",
+          "remarks": null,
+          "uuid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+      },
+      "type": "Update"
+    },
+    {
+      "parameter": {
+          "discard": "0",
+          "item_1": "string",
+          "item_2": 1,
+          "item_3": null,
+          "item_4": "example.json",
+          "item_5": "example.txt",
+          "last_update_date_time": "2025/06/05 11:22:35.443578",
+          "last_updated_user": "user",
+          "remarks": null,
+          "uuid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+      },
+      "type": "Update"
+    },
+    {
+      "parameter": {
+          "last_update_date_time": "2025/06/05 11:22:35.443578",
+          "uuid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+      },
+      "type": "Delete"
+    }
+  ]

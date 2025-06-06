@@ -12,20 +12,14 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-MENU_UPLOAD_FORM:
-  $ref: "./_example/menu.upload.form.yaml"
-
-EXCEL_BULK_UPLOAD_FORM:
-  $ref: "./_example/excel.bulk.upload.form.yaml"
-
-menu.maintenance.all.yaml:
-  $ref: "./_example/menu.maintenance.all.yaml"
-
-menu.maintenance.all.operation_list.yaml:
-  $ref: "./_example/menu.maintenance.all.operation_list.yaml"
-
-menu.maintenance.all.data_sheet.yaml:
-  $ref: "./_example/menu.maintenance.all.data_sheet.yaml"
-
-menu.maintenance.all.execution_list_ansible_legacy.yaml:
-  $ref: "./_example/menu.maintenance.all.execution_list_ansible_legacy.yaml"
+description: example maintenance all request body in the execution list ansible_legacy menu
+value: |
+  [
+    {
+      "parameter": {
+          "execution_no": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+          "last_update_date_time": "2025/06/05 16:40:11.846538"
+      },
+      "type": "Delete"
+    }
+  ]

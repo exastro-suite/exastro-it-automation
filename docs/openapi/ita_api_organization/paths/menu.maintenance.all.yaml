@@ -60,11 +60,11 @@ post:
                   - parameter
                   - type
         examples:
-          menu-operation_list:
+          menu:operation_list:
             $ref: '../schemas/_example/menu.maintenance.all.operation_list.yaml'
-          menu-rest_name:
+          menu:rest_name:
             $ref: '../schemas/_example/menu.maintenance.all.data_sheet.yaml'
-          menu-execution_list_ansible_legacy:
+          menu:execution_list_ansible_legacy:
             $ref: '../schemas/_example/menu.maintenance.all.execution_list_ansible_legacy.yaml'
       multipart/form-data:
         schema:

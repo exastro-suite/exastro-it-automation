@@ -33,7 +33,17 @@ post:
         type: string
     - name: menu
       in: path
-      description: メニュー名
+      description: |
+        メニュー名
+
+        （一例）
+
+        * 標準メニュー:
+          * `operation_list` : オペレーション一覧 / Operation list
+        * パラメータシート、データシート:
+          * `rest_name` : 登録したrest名
+        * 作業管理:
+          * `execution_list_ansible_legacy` : ansible legacy 作業履歴 / execution list
       required: true
       schema:
         type: string
@@ -50,8 +60,12 @@ post:
                   - parameter
                   - type
         examples:
-          example:
-            $ref: '../schemas/_example/menu.maintenance.all.yaml'
+          menu-operation_list:
+            $ref: '../schemas/_example/menu.maintenance.all.operation_list.yaml'
+          menu-rest_name:
+            $ref: '../schemas/_example/menu.maintenance.all.data_sheet.yaml'
+          menu-execution_list_ansible_legacy:
+            $ref: '../schemas/_example/menu.maintenance.all.execution_list_ansible_legacy.yaml'
       multipart/form-data:
         schema:
           $ref: '../schemas/maintenance.all.form.yaml'

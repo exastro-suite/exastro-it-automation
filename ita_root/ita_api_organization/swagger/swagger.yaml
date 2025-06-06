@@ -884,7 +884,16 @@ paths:
           type: string
       - name: menu
         in: path
-        description: メニュー名
+        description: |
+          メニュー名
+
+          * 標準メニュー:
+            * `a` : xxxxxx
+            * `b` : xxxxxx
+            * `c` : xxxxxx
+            * `d` : xxxxxx
+          * 作業管理:
+            * `e` : xxxxxx
         required: true
         style: simple
         explode: false
@@ -903,7 +912,11 @@ paths:
                   - parameter
                   - type
             examples:
-              example:
+              menu-a:
+                $ref: "#/components/examples/menu.maintenance.all.yaml"
+              menu-b:
+                $ref: "#/components/examples/menu.maintenance.all.yaml"
+              menu-c:
                 $ref: "#/components/examples/menu.maintenance.all.yaml"
           multipart/form-data:
             schema:
@@ -6450,7 +6463,7 @@ components:
           type: string
       example:
         result: 000-00000
-        data: 0.80082819046101150206595775671303272247314453125
+        data: 0.8008281904610115
         message: message
     inline_response_200_6:
       allOf:

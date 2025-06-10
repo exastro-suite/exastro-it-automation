@@ -850,6 +850,35 @@ def get_org_execution_limit(limit_key):
     return limit_list
 
 
+def _get_platform_limits(organization_id):
+    """
+    Organization毎の各種上限取得
+
+    Returns:
+        response_data: Organization毎の各種上限
+    """
+
+    host_name = os.environ.get('PLATFORM_API_HOST')
+    port = os.environ.get('PLATFORM_API_PORT')
+    header_para = {
+        "Content-Type": "application/json",
+        "User-Id": "dummy",
+        "Roles": "dummy",
+        "Language": g.get('LANGUAGE')
+    }
+    # API呼出
+    api_url = "http://{}:{}/internal-api/{}/platform/limits".format(host_name, port, organization_id)
+    request_response = requests.get(api_url, headers=header_para)
+
+    if request_response.status_code != 200:
+        raise AppException('999-00005', [api_url, response_data])
+
+    response_data = json.loads(request_response.text)
+    del request_response
+
+    return response_data
+
+
 def get_org_upload_file_size_limit(organization_id):
     """
     Organization毎のアップロードファイルサイズ上限取得
@@ -858,37 +887,48 @@ def get_org_upload_file_size_limit(organization_id):
         org_upload_file_size_limit: Organization毎のアップロードファイルサイズ上限
     """
 
-    if 'ORG_UPLOAD_FILE_SIZE_LIMIT' in g:
-        org_upload_file_size_limit = g.get('ORG_UPLOAD_FILE_SIZE_LIMIT')
+    # 対象データのキー
+    g_limit_key = "ORG_UPLOAD_FILE_SIZE_LIMIT"
+    limit_key = 'ita.organization.common.upload_file_size_limit'
 
+    if g_limit_key in g:
+        org_limit = g.get(g_limit_key)
     else:
-        host_name = os.environ.get('PLATFORM_API_HOST')
-        port = os.environ.get('PLATFORM_API_PORT')
-        limit_key = 'ita.organization.common.upload_file_size_limit'
+        response_data = _get_platform_limits(organization_id)
 
-        header_para = {
-            "Content-Type": "application/json",
-            "User-Id": "dummy",
-            "Roles": "dummy",
-            "Language": g.get('LANGUAGE')
-        }
-
-        # API呼出
-        api_url = "http://{}:{}/internal-api/{}/platform/limits".format(host_name, port, organization_id)
-        request_response = requests.get(api_url, headers=header_para)
-
-        response_data = json.loads(request_response.text)
-
-        if request_response.status_code != 200:
-            raise AppException('999-00005', [api_url, response_data])
-
-        # Organization毎のアップロードファイルサイズ上限取得
-        org_upload_file_size_limit = response_data["data"][limit_key]
+        org_limit = response_data["data"][limit_key]
+        del response_data
 
         # gに値を設定しておく
-        g.ORG_UPLOAD_FILE_SIZE_LIMIT = org_upload_file_size_limit
+        setattr(g, g_limit_key, org_limit)
 
-    return org_upload_file_size_limit
+    return org_limit
+
+
+def get_org_maintenance_records_limit(organization_id):
+    """
+    Organizationごとの処理される保守レコードの最大数取得
+
+    Returns:
+        org_limit: Organizationごとの処理される保守レコードの最大数
+    """
+
+    # 対象データのキー
+    g_limit_key = "ORG_MAINTENANCE_RECORDS_LIMIT"
+    limit_key = 'ita.organization.common.maintenance_records_limit'
+
+    if g_limit_key in g:
+        org_limit = g.get(g_limit_key)
+    else:
+        response_data = _get_platform_limits(organization_id)
+
+        org_limit = response_data["data"][limit_key]
+        del response_data
+
+        # gに値を設定しておく
+        setattr(g, g_limit_key, org_limit)
+
+    return org_limit
 
 
 def get_org_menu_export_import_buffer_size(organization_id):
@@ -921,34 +961,17 @@ def get_org_menu_export_import_buffer_size(organization_id):
     if g_limit_key in g:
         org_limit = g.get(g_limit_key)
     else:
-        host_name = os.environ.get('PLATFORM_API_HOST')
-        port = os.environ.get('PLATFORM_API_PORT')
-
-        header_para = {
-            "Content-Type": "application/json",
-            "User-Id": "dummy",
-            "Roles": "dummy",
-            "Language": g.get('LANGUAGE')
-        }
-
-        # API呼出
-        api_url = "http://{}:{}/internal-api/{}/platform/limits".format(host_name, port, organization_id)
-        request_response = requests.get(api_url, headers=header_para)
-
-        response_data = json.loads(request_response.text)
-        if request_response.status_code != 200:
-            raise AppException('999-00005', [api_url, response_data])
+        response_data = _get_platform_limits(organization_id)
 
         # Organization毎のメニューエクスポート・インポートのレコードバッファサイズ取得
         org_limit = response_data["data"].get(limit_key, system_size_limit)
+        del response_data
 
         # システムの設定値以下であれば、リソースプランの値使用
         org_limit = org_limit if system_size_limit > org_limit else system_size_limit
 
         # gに値を設定しておく
         setattr(g, g_limit_key, org_limit)
-
-        del request_response, response_data
 
     return org_limit
 

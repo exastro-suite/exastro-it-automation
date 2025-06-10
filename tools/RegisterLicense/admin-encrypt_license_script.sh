@@ -14,17 +14,17 @@ EXASTRO_USERNAME=""
 EXASTRO_PASSWORD=""
 
 ### VARIABLES
-ITAC_PROTCOL=""
-ITAC_HOST=""
-ITAC_PORT=""
-ITAC_EXASTRO_ORG_ID=""
-ITAC_EXASTRO_WS_ID=""
-ITAC_REFRESH_TOKEN=""
+ITA_PROTCOL=""
+ITA_HOST=""
+ITA_PORT=""
+ITA_EXASTRO_ORG_ID=""
+ITA_EXASTRO_WS_ID=""
+ITA_REFRESH_TOKEN=""
 AAH_CONTAINER_IMAGE_REGISTRY=""
 
 ### SYSTEM
 # DEPLOY_FLG="a"
-LOG_FILE="${HOME}/itac-admin-encrypt_license_script.log"
+LOG_FILE="${HOME}/exastro-admin-encrypt_license_script.log"
 
 HTTP_STATUS=""
 RESPONSE_BODY=""
@@ -35,7 +35,7 @@ ENCRYPTED_TEXT=""
 # MAIN FUNCTION
 ##############################################
 main() {
-    info "Process of ITAC-Admin-EncryptLicenseScript has Started"
+    info "Process of Exastro-Admin-EncryptLicenseScript has Started"
 
     info "check the required commands (jq openssl curl)"
     required_commands=("jq" "openssl" "curl")
@@ -49,8 +49,8 @@ main() {
 
     setup
 
-    # ITAC接続情報の確認
-    get_itac_connection_info
+    # ITA接続情報の確認
+    get_ita_connection_info
     ret=$?
     if [ $ret -ne 0 ]; then
         exit 1
@@ -58,12 +58,12 @@ main() {
 
     data=$(echo "${API_RTN}" | jq -r '.[0].parameter')
 
-    ITAC_PROTCOL=$(echo "${data}" | jq -r '.protocol')
-    ITAC_HOST=$(echo "${data}" | jq -r '.host')
-    ITAC_PORT=$(echo "${data}" | jq -r '.port')
-    ITAC_EXASTRO_ORG_ID=$(echo "${data}" | jq -r '.organization_id')
-    ITAC_EXASTRO_WS_ID=$(echo "${data}" | jq -r '.workspace_id')
-    ITAC_REFRESH_TOKEN=$(echo "${data}" | jq -r '.refresh_token')
+    ITA_PROTCOL=$(echo "${data}" | jq -r '.protocol')
+    ITA_HOST=$(echo "${data}" | jq -r '.host')
+    ITA_PORT=$(echo "${data}" | jq -r '.port')
+    ITA_EXASTRO_ORG_ID=$(echo "${data}" | jq -r '.organization_id')
+    ITA_EXASTRO_WS_ID=$(echo "${data}" | jq -r '.workspace_id')
+    ITA_REFRESH_TOKEN=$(echo "${data}" | jq -r '.refresh_token')
     AAH_CONTAINER_IMAGE_REGISTRY=$(echo "${data}" | jq -r '.aah_container_image_registry')
 
     # ライセンス情報管理メニューを取得
@@ -80,7 +80,7 @@ main() {
         exit 0
     fi
 
-    tmp_file_basepath="/tmp/ITAC-Admin-EncryptLicenseScript"
+    tmp_file_basepath="/tmp/Exastro-Admin-EncryptLicenseScript"
     info "mkdir ${tmp_file_basepath}"
     if ! mkdir -p "${tmp_file_basepath}"; then
         error "Erro occurred in crating ${tmp_file_basepath}"
@@ -96,7 +96,7 @@ main() {
         customer_name=$(echo "$license_record" | jq -r '.customer_name')
         refresh_token=$(echo "$license_record" | jq -r '.refresh_token')
         if [ "${refresh_token}" = "null" ]; then
-            refresh_token="${ITAC_REFRESH_TOKEN}"
+            refresh_token="${ITA_REFRESH_TOKEN}"
         fi
         passphrase=$(echo "$license_record" | jq -r '.passphrase')
         aap_register_flg=$(echo "$license_record" | jq -r '.aap_register_flg')
@@ -231,12 +231,12 @@ main() {
 
         cat << EOF > "${tmp_file_fullpath}"
 KANRI_ID=${kanri_id}
-ITAC_PROTCOL=${ITAC_PROTCOL}
-ITAC_HOST=${ITAC_HOST}
-ITAC_PORT=${ITAC_PORT}
-ITAC_EXASTRO_ORG_ID=${ITAC_EXASTRO_ORG_ID}
-ITAC_EXASTRO_WS_ID=${ITAC_EXASTRO_WS_ID}
-ITAC_REFRESH_TOKEN=${refresh_token}
+ITA_PROTCOL=${ITA_PROTCOL}
+ITA_HOST=${ITA_HOST}
+ITA_PORT=${ITA_PORT}
+ITA_EXASTRO_ORG_ID=${ITA_EXASTRO_ORG_ID}
+ITA_EXASTRO_WS_ID=${ITA_EXASTRO_WS_ID}
+ITA_REFRESH_TOKEN=${refresh_token}
 AAH_CONTAINER_IMAGE_REGISTRY=${AAH_CONTAINER_IMAGE_REGISTRY}
 PASSPHRASE=${passphrase}
 AAP_REGISTER_FLG=${aap_register_flg}
@@ -272,7 +272,7 @@ EOF
     fi
 
     echo ""
-    info "Process of ITAC-Admin-EncryptLicenseScript is END"
+    info "Process of Exastro-Admin-EncryptLicenseScript is END"
 }
 
 
@@ -363,11 +363,11 @@ _EOF_
     done
 }
 
-### GET ITAC CONNECTION INFOMATION
-get_itac_connection_info() {
-    info "...Try to get ITAC connection infomation"
+### GET ITA CONNECTION INFOMATION
+get_ita_connection_info() {
+    info "...Try to get ITA connection infomation"
 
-    URL="$EXASTRO_URL/api/$EXASTRO_ORG_ID/workspaces/$EXASTRO_WS_ID/ita/menu/ITAC-ConnectionInfomation/filter/?file=no"
+    URL="$EXASTRO_URL/api/$EXASTRO_ORG_ID/workspaces/$EXASTRO_WS_ID/ita/menu/ITA-ConnectionInfomation/filter/?file=no"
     JSON_BODY='{"discard":{"NORMAL":"0"}}'
 
     post_json_api "$URL" "$JSON_BODY"
@@ -376,12 +376,12 @@ get_itac_connection_info() {
         API_RTN=$(echo "${RESPONSE_BODY}" | jq -r '.data')
 
         if [ "${API_RTN}" != "[]" ]; then
-            info "Get 'ITAC Connection Infomation' Successfully"
+            info "Get 'ITA Connection Infomation' Successfully"
             return 0
         fi
     fi
 
-    error "Failed to get 'ITAC Connection Infomation' (status_code=${HTTP_STATUS} response=${RESPONSE_BODY})"
+    error "Failed to get 'ITA Connection Infomation' (status_code=${HTTP_STATUS} response=${RESPONSE_BODY})"
     return 1
 }
 

@@ -241,6 +241,7 @@ AAH_CONTAINER_IMAGE_REGISTRY=${AAH_CONTAINER_IMAGE_REGISTRY}
 PASSPHRASE=${passphrase}
 AAP_REGISTER_FLG=${aap_register_flg}
 AAH_LOGIN_FLG=${aah_login_flg}
+REPO_LIST=rhel-9-for-x86_64-baseos-rpms,rhel-9-for-x86_64-appstream-rpms,ansible-automation-platform-2.5-for-rhel-9-x86_64-rpms
 EOF
 
         ret=$?
@@ -365,7 +366,7 @@ _EOF_
 
 ### GET ITA CONNECTION INFOMATION
 get_ita_connection_info() {
-    info "...Try to get ITA connection infomation"
+    info "...Try to get ITA Connection Infomation"
 
     URL="$EXASTRO_URL/api/$EXASTRO_ORG_ID/workspaces/$EXASTRO_WS_ID/ita/menu/ITA-ConnectionInfomation/filter/?file=no"
     JSON_BODY='{"discard":{"NORMAL":"0"}}'

@@ -157,7 +157,7 @@
 			"uniqued": "0",
 			"column_class": "SingleTextColumn",
 			"column_class_id": "1",
-			"description": "ITAC接続情報に設定されているものを上書きします。",
+			"description": "ITA接続情報に設定されているものを上書きします。",
 			"remarks": "",
 			"column_group": null,
 			"display_order": 8,

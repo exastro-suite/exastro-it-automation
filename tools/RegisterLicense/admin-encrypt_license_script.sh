@@ -48,6 +48,7 @@ main() {
     done
 
     setup
+    info "Encyrpt license process has Started"
 
     # ITA接続情報の確認
     get_ita_connection_info
@@ -273,7 +274,7 @@ EOF
     fi
 
     echo ""
-    info "Process of Exastro-Admin-EncryptLicenseScript is END"
+    info "Process of Exastro-Admin-EncryptLicenseScript has End"
 }
 
 
@@ -506,8 +507,7 @@ post_json_api() {
         -d "${JSON_BODY}")
     API_RTN=$?
     if [ $API_RTN -ne 0 ]; then
-        error "curl command failed"
-        error "{$CURL_OUTPUT}"
+        error "curl command failed ({$CURL_OUTPUT})"
         return 1
     fi
 

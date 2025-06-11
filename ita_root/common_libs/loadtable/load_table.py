@@ -1596,9 +1596,8 @@ class loadTable():
                     target_uuid = current_row.get(primary_key)
                     target_uuid_jnl = current_row.get(COLNAME_JNL_SEQ_NO)
                     current_parameter, current_file, current_file_path = self.convert_colname_restkey(current_row, target_uuid, '', 'input', base64_file_flg=False, file_path_flg=True)
-                    if cmd_type != CMD_DELETE:
-                       # 更新系の追い越し判定(物理削除時は除く)
-                        self.chk_lastupdatetime(target_uuid, current_parameter, entry_parameter)
+                    # 更新系の追い越し判定
+                    self.chk_lastupdatetime(target_uuid, current_parameter, entry_parameter)
                     if import_mode is False and cmd_type != CMD_DELETE:
                         # 更新系処理の場合、廃止フラグから処理種別判定、変更(物理削除時は除く)
                         cmd_type = self.convert_cmd_type(cmd_type, target_uuid, current_row, entry_parameter)

@@ -31,22 +31,21 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
     podman-docker \
     gcc \
     openssh-clients \
-    python3.12 \
-    python3.12-devel \
-    python3.12-pip \
     langpacks-en \
     wget \
     zip \
     unzip \
-
-&&  pip3.12 install poetry==1.8.4 \
+    python3.11 \
+    python3.11-devel \
+    python3.11-mod_wsgi \
+    python3.11-pip \
+&&  alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 1000000 \
+&&  alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 100 \
+&&  alternatives --set python3 /usr/bin/python3.11 \
+&&  pip3.11 install poetry==1.8.4 \
 &&  poetry config virtualenvs.create false \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
-
-RUN alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 1000000 \
-&&  alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 31200 \
-&&  alternatives --set python3 /usr/bin/python3.12
 
 WORKDIR $APP_PATH
 

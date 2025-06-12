@@ -548,7 +548,8 @@ def get_agent_version(objdbca, body):
             "AGENT_NAME": agent_name,
             "VERSION": version,
             "STATUS_ID": result["version_diff"],
-            "DISUSE_FLAG": "0"
+            "DISUSE_FLAG": "0",
+            "LAST_UPDATE_USER": g.USER_ID,
         }
         ret = objdbca.table_insert("T_ANSC_AGENT", data_list, "ROW_ID", False)
         if ret is False:
@@ -558,7 +559,8 @@ def get_agent_version(objdbca, body):
         data_list = {
             "AGENT_NAME": agent_name,
             "VERSION": version,
-            "STATUS_ID": result["version_diff"]
+            "STATUS_ID": result["version_diff"],
+            "LAST_UPDATE_USER": g.USER_ID,
         }
         ret = objdbca.table_update("T_ANSC_AGENT", data_list, "AGENT_NAME", False)
         if ret is False:

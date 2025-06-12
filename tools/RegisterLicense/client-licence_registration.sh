@@ -200,3 +200,4 @@ load_setting_file
 get_license_information
 register_aap_license
 login_to_aah
+info "Process completed successfully."

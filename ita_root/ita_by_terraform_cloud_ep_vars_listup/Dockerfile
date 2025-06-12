@@ -29,21 +29,20 @@ ENV SERVICE_NAME=ita-by-terraform-cloud-ep-vars-listup
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
     dnf install -y \
     gcc \
-    python3.12 \
-    python3.12-devel \
-    python3.12-pip \
-    python3.12-mod_wsgi \
     langpacks-en \
     wget \
     unzip \
-&&  pip3.12 install poetry==1.8.4 \
+    python3.11 \
+    python3.11-devel \
+    python3.11-mod_wsgi \
+    python3.11-pip \
+&&  alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 1000000 \
+&&  alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 100 \
+&&  alternatives --set python3 /usr/bin/python3.11 \
+&&  pip3.11 install poetry==1.8.4 \
 &&  poetry config virtualenvs.create false \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
-
-RUN alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 1000000 \
-&&  alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 31200 \
-&&  alternatives --set python3 /usr/bin/python3.12
 
 WORKDIR $APP_PATH
 
@@ -65,13 +64,16 @@ ARG GROUPNAME
 ARG APP_PATH
 
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
-    dnf install -y \
+    dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo \
+&&  dnf install -y \
     sudo \
     git \
     vim \
     diffutils \
     bind-utils \
     iputils \
+    docker-ce-cli \
+    jq \
 &&  usermod -G wheel $USERNAME \
 &&  echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers \
 &&  echo "%${GROUPNAME} ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers

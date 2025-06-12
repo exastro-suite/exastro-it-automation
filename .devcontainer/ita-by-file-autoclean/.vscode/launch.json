@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
       {
-        "name": "Python: Flask",
+        "name": "Python: backyard_init (No Loop)",
         "type": "python",
         "request": "launch",
         "program": "/exastro/backyard/backyard_init.py",
@@ -20,15 +20,14 @@
           },
         ],
         "args": [
-            "run",
-            "--no-debugger"
+            "1"
         ],
         "jinja": true,
         "justMyCode": true,
         "noDebug": true,
       },
       {
-        "name": "[DEBUG] Python: Flask",
+        "name": "[DEBUG] Python: backyard_init (No Loop)",
         "type": "python",
         "request": "launch",
         "program": "/exastro/backyard/backyard_init.py",
@@ -43,8 +42,7 @@
           },
         ],
         "args": [
-            "run",
-            "--no-debugger"
+          "1"
         ],
         "jinja": true,
         "justMyCode": true

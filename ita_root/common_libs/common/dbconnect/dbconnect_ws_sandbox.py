@@ -29,7 +29,7 @@ class DBConnectWsSandbox(DBConnectWs):
 
     _workspace_id = ""
 
-    def __init__(self, user=None, passwd=None, database=None):
+    def __init__(self, user=None, passwd=None, database=None, mode_ss=None):
         """
         constructor
 
@@ -64,4 +64,4 @@ class DBConnectWsSandbox(DBConnectWs):
         self._db = connect_info['DB_DATABASE'] if database is None else database
 
         # connect database
-        self.db_connect()
+        self.db_connect(mode_ss=mode_ss)

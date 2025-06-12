@@ -1137,7 +1137,7 @@ def _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_
         except Exception as e:
             trace_msg = traceback.format_exc()
             g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(trace_msg)))
-            raise e
+            raise
         finally:
             os.remove(csv_path) if os.path.isfile(csv_path) else None
             os.remove(json_path) if os.path.isfile(json_path) else None
@@ -1162,10 +1162,7 @@ def _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_
         # 「<table_name>_DATA」を使用するものの分岐
         if (mode):
             #「<table_name>_DATA」の処理
-            try:
-                _bulk_register_data_exec(data_file_json)
-            except Exception as e:
-                raise e
+            _bulk_register_data_exec(data_file_json)
 
             _item_all_count += len(data_file_json)
             _buffer_item = []
@@ -1187,15 +1184,10 @@ def _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_
                         _id_list =  [jsd["parameter"].get(pk_name) for jsd in data_file_json if "parameter" in jsd]
                         if "parameter" in each_item and each_item["parameter"][pk_name] not in _id_list:
                             _buffer_item.append(each_item)
-                            if "parameter" in each_item and each_item["parameter"][pk_name] not in _id_list:
-                                _buffer_item.append(each_item)
 
                     if (_item_count >= buffer_size):
                         g.applogger.debug("_item_count over buffer_size ({}/{})".format(str(_item_count), str(buffer_size)))
-                        try:
-                            _bulk_register_data_exec(_buffer_item)
-                        except Exception as e:
-                            raise e
+                        _bulk_register_data_exec(_buffer_item)
 
                         _buffer_item = []
                         _item_count = 0
@@ -1211,10 +1203,7 @@ def _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_
                     if "parameter" in each_item and each_item["parameter"][pk_name] not in _id_list:
                         _buffer_item.append(each_item)
 
-                try:
-                    _bulk_register_data_exec(_buffer_item)
-                except Exception as e:
-                    raise e
+                _bulk_register_data_exec(_buffer_item)
 
                 _item_all_count += len(_buffer_item)
                 _buffer_item = []
@@ -1238,10 +1227,7 @@ def _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_
 
                 if (_item_count >= buffer_size):
                     g.applogger.debug("_item_count over buffer_size ({}/{})".format(str(_item_count), str(buffer_size)))
-                    try:
-                        _bulk_register_data_exec(_buffer_item)
-                    except Exception as e:
-                        raise e
+                    _bulk_register_data_exec(_buffer_item)
 
                     # ループ前に初期化
                     _buffer_item = []
@@ -1252,10 +1238,7 @@ def _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_
 
             if (_item_count > 0):
                 g.applogger.debug("_item_count not over buffer_size ({}/{})".format(str(_item_count), str(buffer_size)))
-                try:
-                    _bulk_register_data_exec(_buffer_item)
-                except Exception as e:
-                    raise e
+                _bulk_register_data_exec(_buffer_item)
 
                 _item_all_count += len(_buffer_item)
 
@@ -1282,20 +1265,14 @@ def _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_
 
         # _DATAファイルの追加
         if os.path.isfile(execution_no_path + '/' + menu_name_rest) is True:
-            try:
-                _item_all_count, file_info_list = _bulk_register_data_read(True, json_sql_data)
-            except Exception as e:
-                raise e
+            _item_all_count, file_info_list = _bulk_register_data_read(True, json_sql_data)
 
     else:
         # DATAファイル確認
         if os.path.isfile(execution_no_path + '/' + menu_name_rest) is False:
             # 対象ファイルなし
             raise AppException("MSG-140003", [menu_name_rest], [menu_name_rest])
-        try:
-            _item_all_count, file_info_list = _bulk_register_data_read()
-        except Exception as e:
-            raise e
+        _item_all_count, file_info_list = _bulk_register_data_read()
 
         g.applogger.debug(addline_msg('{}'.format(f"{menu_name_rest}, {table_name}, {_item_all_count}")))  # noqa: F405
         if _item_all_count == 0:
@@ -3407,10 +3384,7 @@ def _bulk_register_file(objdbca, objmenu, execution_no_path, menu_name_rest, fil
         _item_count = 0
         # 「<table_name>_DATA」を使用するものの分岐
         if (mode):
-            try:
-                _bulk_register_file_exec(data_file_json)
-            except Exception as e:
-                raise e
+            _bulk_register_file_exec(data_file_json)
 
             with open(execution_no_path + '/' + menu_name_rest, "rb") as file_obj:
                 _buffer_item = []
@@ -3425,14 +3399,9 @@ def _bulk_register_file(objdbca, objmenu, execution_no_path, menu_name_rest, fil
                         _id_list =  [jsd["parameter"].get(pk_name) for jsd in data_file_json if "parameter" in jsd]
                         if "parameter" in each_item and each_item["parameter"][pk_name] not in _id_list:
                             _buffer_item.append(each_item)
-                            if "parameter" in each_item and each_item["parameter"][pk_name] not in _id_list:
-                                _buffer_item.append(each_item)
 
                     if (_item_count >= buffer_size):
-                        try:
-                            _bulk_register_file_exec(_buffer_item)
-                        except Exception as e:
-                            raise e
+                        _bulk_register_file_exec(_buffer_item)
 
                         _buffer_item = []
                         _item_count = 0
@@ -3448,10 +3417,7 @@ def _bulk_register_file(objdbca, objmenu, execution_no_path, menu_name_rest, fil
                     if "parameter" in each_item and each_item["parameter"][pk_name] not in _id_list:
                         _buffer_item.append(each_item)
 
-                try:
-                    _bulk_register_file_exec(_buffer_item)
-                except Exception as e:
-                    raise e
+                _bulk_register_file_exec(_buffer_item)
 
                 _buffer_item = []
                 _item_count = 0
@@ -3467,10 +3433,7 @@ def _bulk_register_file(objdbca, objmenu, execution_no_path, menu_name_rest, fil
 
                 if (_item_count >= buffer_size):
                     g.applogger.debug("_item_count over buffer_size ({}/{})".format(str(_item_count), str(buffer_size)))
-                    try:
-                        _bulk_register_file_exec(_buffer_item)
-                    except Exception as e:
-                        raise e
+                    _bulk_register_file_exec(_buffer_item)
 
                     # ループ前に初期化
                     _buffer_item = []
@@ -3479,10 +3442,7 @@ def _bulk_register_file(objdbca, objmenu, execution_no_path, menu_name_rest, fil
 
             if (_item_count > 0):
                 g.applogger.debug("_item_count not over buffer_size ({}/{})".format(str(_item_count), str(buffer_size)))
-                try:
-                    _bulk_register_file_exec(_buffer_item)
-                except Exception as e:
-                    raise e
+                _bulk_register_file_exec(_buffer_item)
 
                 _buffer_item = []
                 _item_count = 0
@@ -3507,20 +3467,14 @@ def _bulk_register_file(objdbca, objmenu, execution_no_path, menu_name_rest, fil
 
         # _DATAファイルの追加
         if os.path.isfile(execution_no_path + '/' + menu_name_rest) is True:
-            try:
-                _bulk_register_file_read(True, json_sql_data)
-            except Exception as e:
-                raise e
+            _bulk_register_file_read(True, json_sql_data)
 
     else:
         # DATAファイル確認
         if os.path.isfile(execution_no_path + '/' + menu_name_rest) is False:
             # 対象ファイルなし
             raise AppException("MSG-140003", [menu_name_rest], [menu_name_rest])
-        try:
-            _bulk_register_file_read()
-        except Exception as e:
-            raise e
+        _bulk_register_file_read()
 
 
 def clear_uploadfiles_for_exclusion(objdbca, target_menus):

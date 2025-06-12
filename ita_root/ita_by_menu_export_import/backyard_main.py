@@ -3206,18 +3206,14 @@ def _export_sandboxdb_bulk_register_maindb(objdbca, ws_db_sb, objmenu, workspace
         # 処理上限件数毎にレコードを取得
         _cursor = ws_db_sb.table_select_cursor(table_name)
         with _cursor as _cur:
-            ck_count = 0
             while True:
                 sb_rows = _cur.fetchmany(int(record_buffer_size))
                 g.applogger.debug("[timestamp={}] select cursor ({}/{})@{}".format(str(get_iso_datetime()), str(len(sb_rows)), str(record_buffer_size),table_name))
                 if len(sb_rows) == 0:
                     # データ0件の為、break
-                    g.applogger.debug("[timestamp={}] select cursor (zerobreak@{})".format(str(get_iso_datetime()), table_name))
-                    if ck_count == 0:
-                        g.applogger.debug("[timestamp={}] This Table is Nonce Execute (zerobreak?@{})".format(str(get_iso_datetime()), table_name))
+                    g.applogger.debug("[timestamp={}] select cursor (break@{})".format(str(get_iso_datetime()), table_name))
                     break
 
-                ck_count += 1
                 with open(json_path, 'w') as f :
                     json.dump(sb_rows, f, ensure_ascii=False, indent=4, default=json_serial)
 

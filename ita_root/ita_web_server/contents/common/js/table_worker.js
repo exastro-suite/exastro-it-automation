@@ -37,13 +37,14 @@ constructor() {
 */
 message( data ) {
     const tw = this;
-    
+
     tw.data = data;
-    
+    fn.consoleOutput('data='+data);
+
     switch ( tw.data.type ) {
         case 'filter': {
             fn.fetch( tw.data.rest.url, tw.data.rest.token, 'POST', tw.data.rest.filter ).then(function( result ){
-                tw.result = result;   
+                tw.result = result;
                 tw.sort();
                 tw.setDiscardIdList();
                 tw.postPageData();
@@ -108,6 +109,13 @@ message( data ) {
             tw.sort();
             tw.postPageData();
         break;
+        case 'delete':
+            fn.consoleOutput('tw.data.tableData='+tw.data.tableData);
+            tw.result = tw.data.tableData;
+            // tw.sort();
+            tw.postPageData();
+            // tw.postSelectPageData();
+        break;
     }
 }
 /*
@@ -117,7 +125,7 @@ message( data ) {
 */
 setPagingStatus( list ) {
     const tw = this;
-    
+
     // フィルタ結果件数
     tw.data.paging.num = list.length;
     // 最大ページ数
@@ -143,7 +151,7 @@ setPagingStatus( list ) {
 */
 sort() {
     const tw = this;
-    
+
     for ( const sort of tw.data.sort ) {
         for ( const order in sort ) {
             const name = sort[ order ],
@@ -151,7 +159,7 @@ sort() {
             tw.result.sort(function( a, b ){
                 let paramA = fn.cv( a.parameter[ name ], ''),
                     paramB = fn.cv( b.parameter[ name ], '');
-                
+
                 if ( fn.typeof( paramA ) === 'object' ||  fn.typeof( paramA ) === 'array' ||
                      fn.typeof( paramB ) === 'object' ||  fn.typeof( paramB ) === 'array') {
                     try {
@@ -171,7 +179,7 @@ sort() {
                         paramB = String( paramB );
                     }
                 }
-                
+
                 if ( paramA < paramB ) {
                     return flag;
                 } else if ( paramA > paramB ) {
@@ -190,13 +198,15 @@ sort() {
 */
 postPageData() {
     const tw = this;
-    
+
     tw.setPagingStatus( tw.result );
-    
+    fn.consoleOutput('tw.data.type='+tw.data.type);
+    fn.consoleOutput('tw.data.order='+tw.data.order);
+
     self.postMessage({
         type: tw.data.type,
         result: tw.result.slice( tw.data.paging.startPageNum, tw.data.paging.endPageNum ),
-        discard: tw.data.discard, 
+        discard: tw.data.discard,
         paging: tw.data.paging,
         order: tw.data.order
     });
@@ -213,7 +223,7 @@ postSelectData() {
         const id = String( val.parameter[ tw.data.idName ] );
         return tw.data.select.indexOf( id ) !== -1;
     });
-    
+
     self.postMessage({
         type: tw.data.type,
         selectData: filter
@@ -237,12 +247,12 @@ postError( result ) {
 */
 postSelectPageData() {
     const tw = this;
-    
+
     tw.result = tw.result.filter(function( val ){
         const id = String( val.parameter[ tw.data.idName ] );
         return tw.data.select.indexOf( id ) !== -1;
     });
-    
+
     tw.postPageData();
 }
 /*
@@ -252,7 +262,7 @@ postSelectPageData() {
 */
 duplicatSelectData() {
     const tw = this;
-    
+
     const newData = [];
     const exclusion = ['last_update_date_time', 'last_updated_user']; // 複製しない項目
     const exclusionColumn = ['FileUploadEncryptColumn']; // 複製しないカラムタイプ
@@ -293,14 +303,14 @@ duplicatSelectData() {
                     parameters[ key ] = null;
                 }
             }
-            console.log(files);
+            fn.consoleOutput(files);
             newData.unshift({
                 file: files,
                 parameter: parameters
             });
         }
-    });    
-    
+    });
+
     if ( tw.data.type === 'changeEditDup') {
         tw.result = newData;
     } else {
@@ -322,7 +332,7 @@ checkColumnType( key ) {
 
             if ( rest === key ) {
                 return data.column_type;
-            }                        
+            }
         }
     }
     return null;
@@ -375,7 +385,7 @@ historyDiff() {
 */
 deleteSelectData() {
     const tw = this;
-    
+
     for( const rowId of tw.data.select ) {
         const index = tw.result.findIndex(function( val ){
             const id = val.parameter[ tw.data.idName ];
@@ -395,18 +405,18 @@ deleteSelectData() {
 */
 setDiscardIdList() {
     const tw = this;
-    
+
     const filter = tw.result.filter(function( val ){
         return val.parameter.discard === '1';
-    });    
-    
+    });
+
     tw.data.discard = filter.map(function( val ){
         if ( val.parameter.discard === '1') {
             return val.parameter[ tw.data.idName ];
         } else {
             return null;
         }
-    });    
+    });
 }
 /*
 ##################################################
@@ -446,7 +456,7 @@ search() {
             tw.result = JSON.parse(JSON.stringify( tw.originalData ));
         }
     }
-}   
+}
 
 }
 

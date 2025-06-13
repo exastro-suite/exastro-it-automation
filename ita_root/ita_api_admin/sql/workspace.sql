@@ -383,7 +383,7 @@ CREATE TABLE T_COMN_OPERATION_JNL
 -- Movement一覧
 CREATE TABLE T_COMN_MOVEMENT
 (
-    MOVEMENT_ID                     VARCHAR(40),                                -- ＭovemenID
+    MOVEMENT_ID                     VARCHAR(40),                                -- MovemenID
     MOVEMENT_NAME                   VARCHAR(255),                               -- Movemen名
     ITA_EXT_STM_ID                  VARCHAR(2),                                 -- オーケストレータ
     TIME_LIMIT                      INT,                                        -- 遅延タイマー
@@ -410,7 +410,7 @@ CREATE TABLE T_COMN_MOVEMENT_JNL
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
-    MOVEMENT_ID                     VARCHAR(40),                                -- ＭovemenID
+    MOVEMENT_ID                     VARCHAR(40),                                -- MovemenID
     MOVEMENT_NAME                   VARCHAR(255),                               -- Movemen名
     ITA_EXT_STM_ID                  VARCHAR(2),                                 -- オーケストレータ
     TIME_LIMIT                      INT,                                        -- 遅延タイマー

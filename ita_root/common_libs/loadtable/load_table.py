@@ -984,32 +984,86 @@ class loadTable():
 
                                         # 整数カラムの場合は検索する値をint型に変換する
                                         if objcolumn.__class__.__name__ == "NumColumn":
-                                            convert_search_conf = {}
-                                            for k, v in search_conf.items():
+                                            if search_mode == 'RANGE':
+                                                convert_search_conf = {}
+                                                for k, v in search_conf.items():
+                                                    try:
+                                                        convert_search_conf[k] = int(v)
+                                                    except:
+                                                        status_code = '499-00201'
+                                                        msg_tmp = {0: {}}
+                                                        msg_tmp[0][search_key] = [g.appmsg.get_api_message("MSG-00002", ["int", v])]
+                                                        msg = json.dumps(msg_tmp, ensure_ascii=False)
+                                                        raise AppException("499-00201", [msg], [msg])
+
+                                            elif search_mode == 'LIST':
+                                                convert_search_conf = []
+                                                for v in search_conf:
+                                                    try:
+                                                        convert_search_conf.append(int(v))
+                                                    except:
+                                                        status_code = '499-00201'
+                                                        msg_tmp = {0: {}}
+                                                        msg_tmp[0][search_key] = [g.appmsg.get_api_message("MSG-00002", ["int", v])]
+                                                        msg = json.dumps(msg_tmp, ensure_ascii=False)
+                                                        raise AppException("499-00201", [msg], [msg])
+
+                                            elif search_mode == 'NORMAL':
                                                 try:
-                                                    convert_search_conf[k] = int(v)
+                                                    convert_search_conf = int(search_conf)
                                                 except:
                                                     status_code = '499-00201'
                                                     msg_tmp = {0: {}}
-                                                    msg_tmp[0][search_key] = [g.appmsg.get_api_message("MSG-00002", ["int", v])]
+                                                    msg_tmp[0][search_key] = [g.appmsg.get_api_message("MSG-00002", ["int", search_conf])]
                                                     msg = json.dumps(msg_tmp, ensure_ascii=False)
                                                     raise AppException("499-00201", [msg], [msg])
+
                                             filter_querys.append(objcolumn.get_filter_query(search_mode, convert_search_conf))
                                         # 小数カラムの場合は検索する値をfloat型に変換する
                                         elif objcolumn.__class__.__name__ == "FloatColumn":
-                                            convert_search_conf = {}
-                                            for k, v in search_conf.items():
-                                                if float(v) == 0:
-                                                    convert_search_conf[k] = v
-                                                else:
+                                            if search_mode == 'RANGE':
+                                                convert_search_conf = {}
+                                                for k, v in search_conf.items():
                                                     try:
-                                                        convert_search_conf[k] = float(v)
+                                                        if float(v) == 0:
+                                                            convert_search_conf[k] = v
+                                                        else:
+                                                            convert_search_conf[k] = float(v)
                                                     except:
                                                         status_code = '499-00201'
                                                         msg_tmp = {0: {}}
                                                         msg_tmp[0][search_key] = [g.appmsg.get_api_message("MSG-00002", ["float", v])]
                                                         msg = json.dumps(msg_tmp, ensure_ascii=False)
                                                         raise AppException("499-00201", [msg], [msg])
+
+                                            elif search_mode == 'LIST':
+                                                convert_search_conf = []
+                                                for v in search_conf:
+                                                    try:
+                                                        if float(v) == 0:
+                                                            convert_search_conf.append(v)
+                                                        else:
+                                                            convert_search_conf.append(float(v))
+                                                    except:
+                                                        status_code = '499-00201'
+                                                        msg_tmp = {0: {}}
+                                                        msg_tmp[0][search_key] = [g.appmsg.get_api_message("MSG-00002", ["float", v])]
+                                                        msg = json.dumps(msg_tmp, ensure_ascii=False)
+                                                        raise AppException("499-00201", [msg], [msg])
+
+                                            elif search_mode == 'NORMAL':
+                                                try:
+                                                    if float(search_conf) == 0:
+                                                        convert_search_conf = search_conf
+                                                    else:
+                                                        convert_search_conf = float(search_conf)
+                                                except:
+                                                    status_code = '499-00201'
+                                                    msg_tmp = {0: {}}
+                                                    msg_tmp[0][search_key] = [g.appmsg.get_api_message("MSG-00002", ["float", search_conf])]
+                                                    msg = json.dumps(msg_tmp, ensure_ascii=False)
+                                                    raise AppException("499-00201", [msg], [msg])
+
                                             filter_querys.append(objcolumn.get_filter_query(search_mode, convert_search_conf))
                                         else:
                                             filter_querys.append(objcolumn.get_filter_query(search_mode, search_conf))
@@ -2553,24 +2607,62 @@ class loadTable():
 
                                         # 整数カラムの場合は検索する値をint型に変換する
                                         if objcolumn.__class__.__name__ == "NumColumn":
-                                            convert_search_conf = {}
-                                            for k, v in search_conf.items():
-                                                if str.isnumeric(v):
-                                                    if int(v) == 0:
-                                                        convert_search_conf[k] = v
+                                            if search_mode == 'RANGE':
+                                                convert_search_conf = {}
+                                                for k, v in search_conf.items():
+                                                    if str.isnumeric(v):
+                                                        if int(v) == 0:
+                                                            convert_search_conf[k] = v
+                                                        else:
+                                                            convert_search_conf[k] = int(v)
                                                     else:
-                                                        convert_search_conf[k] = int(v)
+                                                        convert_search_conf[k] = v
+
+                                            elif search_mode == 'LIST':
+                                                convert_search_conf = []
+                                                for v in search_conf:
+                                                    if str.isnumeric(v):
+                                                        if int(v) == 0:
+                                                            convert_search_conf.append(v)
+                                                        else:
+                                                            convert_search_conf.append(int(v))
+                                                    else:
+                                                        convert_search_conf.append(v)
+
+                                            elif search_mode == 'NORMAL':
+                                                if str.isnumeric(search_conf):
+                                                    if int(search_conf) == 0:
+                                                        convert_search_conf = search_conf
+                                                    else:
+                                                        convert_search_conf = int(search_conf)
                                                 else:
-                                                    convert_search_conf[k] = v
+                                                    convert_search_conf = search_conf
+
                                             filter_querys.append(objcolumn.get_filter_query(search_mode, convert_search_conf))
                                         # 小数カラムの場合は検索する値をfloat型に変換する
                                         elif objcolumn.__class__.__name__ == "FloatColumn":
-                                            convert_search_conf = {}
-                                            for k, v in search_conf.items():
-                                                if float(v) == 0:
-                                                    convert_search_conf[k] = v
+                                            if search_mode == 'RANGE':
+                                                convert_search_conf = {}
+                                                for k, v in search_conf.items():
+                                                    if float(v) == 0:
+                                                        convert_search_conf[k] = v
+                                                    else:
+                                                        convert_search_conf[k] = float(v)
+
+                                            elif search_mode == 'LIST':
+                                                convert_search_conf = []
+                                                for v in search_conf:
+                                                    if float(v) == 0:
+                                                        convert_search_conf.append(v)
+                                                    else:
+                                                        convert_search_conf.append(float(v))
+
+                                            elif search_mode == 'NORMAL':
+                                                if float(search_conf) == 0:
+                                                    convert_search_conf = search_conf
                                                 else:
-                                                    convert_search_conf[k] = float(v)
+                                                    convert_search_conf = float(search_conf)
+
                                             filter_querys.append(objcolumn.get_filter_query(search_mode, convert_search_conf))
                                         else:
                                             filter_querys.append(objcolumn.get_filter_query(search_mode, search_conf))
@@ -2758,24 +2850,62 @@ class bulkLoadTable(loadTable):
 
                                         # 整数カラムの場合は検索する値をint型に変換する
                                         if objcolumn.__class__.__name__ == "NumColumn":
-                                            convert_search_conf = {}
-                                            for k, v in search_conf.items():
-                                                if str.isnumeric(v):
-                                                    if int(v) == 0:
-                                                        convert_search_conf[k] = v
+                                            if search_mode == 'RANGE':
+                                                convert_search_conf = {}
+                                                for k, v in search_conf.items():
+                                                    if str.isnumeric(v):
+                                                        if int(v) == 0:
+                                                            convert_search_conf[k] = v
+                                                        else:
+                                                            convert_search_conf[k] = int(v)
                                                     else:
-                                                        convert_search_conf[k] = int(v)
+                                                        convert_search_conf[k] = v
+
+                                            elif search_mode == 'LIST':
+                                                convert_search_conf = []
+                                                for v in search_conf:
+                                                    if str.isnumeric(v):
+                                                        if int(v) == 0:
+                                                            convert_search_conf.append(v)
+                                                        else:
+                                                            convert_search_conf.append(int(v))
+                                                    else:
+                                                        convert_search_conf.append(v)
+
+                                            elif search_mode == 'NORMAL':
+                                                if str.isnumeric(search_conf):
+                                                    if int(search_conf) == 0:
+                                                        convert_search_conf = search_conf
+                                                    else:
+                                                        convert_search_conf = int(search_conf)
                                                 else:
-                                                    convert_search_conf[k] = v
+                                                    convert_search_conf = search_conf
+
                                             filter_querys.append(objcolumn.get_filter_query(search_mode, convert_search_conf))
                                         # 小数カラムの場合は検索する値をfloat型に変換する
                                         elif objcolumn.__class__.__name__ == "FloatColumn":
-                                            convert_search_conf = {}
-                                            for k, v in search_conf.items():
-                                                if float(v) == 0:
-                                                    convert_search_conf[k] = v
+                                            if search_mode == 'RANGE':
+                                                convert_search_conf = {}
+                                                for k, v in search_conf.items():
+                                                    if float(v) == 0:
+                                                        convert_search_conf[k] = v
+                                                    else:
+                                                        convert_search_conf[k] = float(v)
+
+                                            elif search_mode == 'LIST':
+                                                convert_search_conf = []
+                                                for v in search_conf:
+                                                    if float(v) == 0:
+                                                        convert_search_conf.append(v)
+                                                    else:
+                                                        convert_search_conf.append(float(v))
+
+                                            elif search_mode == 'NORMAL':
+                                                if float(search_conf) == 0:
+                                                    convert_search_conf = search_conf
                                                 else:
-                                                    convert_search_conf[k] = float(v)
+                                                    convert_search_conf = float(search_conf)
+
                                             filter_querys.append(objcolumn.get_filter_query(search_mode, convert_search_conf))
                                         else:
                                             filter_querys.append(objcolumn.get_filter_query(search_mode, search_conf))

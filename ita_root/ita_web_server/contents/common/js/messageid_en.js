@@ -910,6 +910,7 @@ export function messageid_en() {
         'FTE00101' : "Warning",
         'FTE00102' : 'If you want to continue, please enter <span style="font-weight: bold;">{0}</span>.',
         'FTE00103' : 'Please enter <span style="font-weight: bold;">{0}</span>.',
+        'FTE10104': 'Deletion successful',
 
         // Parameter collection
         'FTE11001': 'Parameter mode',

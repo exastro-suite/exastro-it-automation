@@ -2829,6 +2829,43 @@ errorModal: function( errors, pageName, info ) {
 },
 /*
 ##################################################
+    削除成功モーダル
+##################################################
+*/
+resultDeleteModal: function( result ) {
+    return new Promise(function( resolve ){
+        const funcs = {};
+        funcs.ok = function(){
+            dialog.close();
+            resolve( true );
+        };
+        const config = {
+            mode: 'modeless',
+            position: 'center',
+            header: {
+                title: getMessage.FTE10104
+            },
+            width: '480px',
+            footer: {
+                button: { ok: { text: getMessage.FTE10043, action: 'normal'}}
+            }
+        };
+        const html = []
+
+        const listOrder = ['Delete'];
+        for ( const key of listOrder ) {
+              html.push(`<dl class="resultList resultType${key}">`
+                  + `<dt class="resultType">${key}</dt>`
+                  + `<dd class="resultNumber">${result[key]}</dd>`
+              + `</dl>`);
+        }
+
+        const dialog = new Dialog( config, funcs );
+        dialog.open(`<div class="resultContainer">${html.join('')}</div>`);
+    });
+},
+/*
+##################################################
    Common events
 ##################################################
 */

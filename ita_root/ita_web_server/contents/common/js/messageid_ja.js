@@ -915,6 +915,7 @@ export function messageid_ja() {
         'FTE10101' : "注意",                // 最終実行確認メッセージ文言１
         'FTE10102' : '続行する場合は <span style="font-weight: bold;">{0}</span> と入力してください。',  // 最終実行確認メッセージ文言２
         'FTE10103' : '<span style="font-weight: bold;">{0}</span> と入力してください',                  // 最終実行確認メッセージ文言３
+        'FTE10104': '削除成功',
 
         // パラメータ集
         'FTE11001': 'パラメータモード',

@@ -559,6 +559,8 @@ setInitSort() {
 setTable( mode ) {
     const tb = this;
 
+    fn.consoleOutput('start');
+
     // パーツテーブル
     if ( tb.partsFlag ) {
         tb.setPartsTable( mode );
@@ -5265,6 +5267,7 @@ editOk() {
     formData = new FormData(),
     editDataParam = [],
     paramLength = editData.length;
+    fn.consoleOutput("editData=" + fn.jsonStringify(editData));
 
     for ( let i = 0; i < paramLength; i++ ) {
         const item = editData[i];
@@ -5397,13 +5400,36 @@ deleteConfirmation() {
                     case 'tableOk':
                         $button.prop('disabled', true );
                         modalTable.workStart('table', 0 );
-                        tb.deleteMessage();
-                    break;
+                        tb.deleteMessage().then(function(){
+                            fn.consoleOutput('deleteMessage close');
+                            $button.prop('disabled', false );
+                            modal.close().then( function(){
+                                end();
+                                fn.resultDeleteModal( result ).then(function(){
+                                    // Session Timeoutの設定を戻す
+                                    if ( fn.getCmmonAuthFlag() ) {
+                                        CommonAuth.tokenRefreshPermanently( false );
+                                    } else if ( window.parent && window.parent.tokenRefreshPermanently ) {
+                                        window.parent.tokenRefreshPermanently( false );
+                                    }
+                                    resolve();
+                                });
+                            });
+                        }).catch(function( result ){
+                            modal.close().then( function(){
+                                end();
+                                if ( result !== null ) {
+                                    tb.editError( result );
+                                }
+                                resolve();
+                            });
+                        });
+                        break;
                     case 'tableCancel':
                         modal.close();
                         end();
                         resolve();
-                    break;
+                        break;
                 }
             }
         });
@@ -5420,79 +5446,29 @@ deleteMessage() {
 
     fn.consoleOutput("[CALL] confirm_delete");
 
-    fn.deleteConfirmMessage(
-        getMessage.FTE10097,
-        null,
-        null,
-        getMessage.FTE10098,
-        "delete",
-        () => {
-            // disabled_button();
-            // show_progress();
+    return new Promise(function( resolve, reject ){
 
-            // // APIを呼出す
-            // call_api_promise({
-            //     type: "DELETE",
-            //     url: api_conf.api.workspaces.delete.replace(/{organization_id}/g, CommonAuth.getRealm()).replace(/{workspace_id}/g, workspace_id),
-            //     headers: {
-            //         Authorization: "Bearer " + CommonAuth.getToken(),
-            //     },
-            // }).then(() => {
-            //     // 一覧の再取得
-            //     return call_api_promise_get_workspaces();
-            // }).then((result) => {
-            //     // 一覧の再描画
-            //     display_main(result.data);
-            //     enabled_button();
-            //     hide_progress();
-            //     alertMessage(getText("000-80018", "処理結果"), getText("000-82007", "ワークスペースを削除しました。"));
-            // }).catch(() => {
-            //     enabled_button();
-            //     hide_progress();
-            // });
-
-            tb.deleteApply.call( tb ).then(function( result ){
-                modal.close().then( function(){
-                    end();
-                    fn.resultModal( result ).then(function(){
-                        // Session Timeoutの設定を戻す
-                        if ( fn.getCmmonAuthFlag() ) {
-                            CommonAuth.tokenRefreshPermanently( false );
-                        } else if ( window.parent && window.parent.tokenRefreshPermanently ) {
-                            window.parent.tokenRefreshPermanently( false );
-                        }
-
-                        tb.changeViewMode.call( tb );
-                        resolve();
-                    });
-                });
-            }).catch(function( result ){
-                modal.close().then( function(){
-                    end();
-                    if ( result !== null ) {
-                        tb.editError( result );
-                    }
+        fn.deleteConfirmMessage(
+            getMessage.FTE10097,
+            null,
+            null,
+            getMessage.FTE10098,
+            "delete",
+            () => {
+                tb.deleteApply.call( tb ).then(function( result ){
+                    fn.consoleOutput('deleteMessage end');
                     resolve();
+                }).catch(function( result ){
+                    fn.consoleOutput('deleteMessage result='+result);
+                    reject( result );
                 });
-            });
-// // APIを呼出す
-//             call_api_promise({
-//                 type: "DELETE",
-//                 url: api_conf.api.workspaces.delete.replace(/{organization_id}/g, CommonAuth.getRealm()).replace(/{workspace_id}/g, workspace_id),
-//                 headers: {
-//                     Authorization: "Bearer " + CommonAuth.getToken(),
-//                 },
-//             }).then(() => {
-//                 hide_progress();
-//                 alertMessage(getText("000-80018", "処理結果"), getText("000-82007", "ワークスペースを削除しました。"),
-//                     () => {
-//                         window.location.href = location_conf.href.workspaces.list.replace(/{organization_id}/g, CommonAuth.getRealm());
-//                     });
-//             }).catch(() => {
-//                 hide_progress();
-//             });
-        }
-    );
+            },
+            () => {
+                fn.consoleOutput('onCancel');
+                resolve();
+            }
+        );
+    });
 }
 
 /*
@@ -5513,6 +5489,7 @@ deleteApply() {
     const deleteData = [];
 
     fn.consoleOutput('tb.select.view='+tb.select.view);
+    fn.consoleOutput('tb.idNameRest='+tb.idNameRest);
     for ( const id of tb.select.view ) {
 
         const itemData = {
@@ -5522,13 +5499,13 @@ deleteApply() {
             return String( data.parameter[ tb.idNameRest ] ) === String( id );
         });
         if ( findData ) {
-            fn.consoleOutput("findData=" + findData);
-
+            fn.consoleOutput("findData=" + JSON.stringify(findData));
             fn.consoleOutput("tb.data.regiColumnKeys=" + tb.data.regiColumnKeys);
 
             if ( !tb.data.regiColumnKeys ) tb.data.regiColumnKeys = tb.data.columnKeys;
             itemData.type = 'Delete';
-            itemData.parameter[ columnNameRest ] = setData('parameter');
+            itemData.parameter[ tb.idNameRest ]  = id;
+            itemData.parameter[ 'last_update_date_time' ]  = findData.parameter[ 'last_update_date_time' ];
 
             deleteData.push( itemData );
         }
@@ -5547,16 +5524,7 @@ deleteApply() {
             parameter: item.parameter,
             type: item.type
         });
-
-        // ファイルをFormDataに追加
-        // Parameter No. + . + Rest Name Key
-        for ( const key in item.file ) {
-            if ( item.parameter[ key ] !== undefined && item.parameter[ key ] !== null ) {
-                formData.append(`${i}.${key}`, item.file[ key ] );
-            }
-        }
     }
-
     // パラメータをFormDataに追加
     formData.append('json_parameters', fn.jsonStringify( deleteDataParam ) );
 

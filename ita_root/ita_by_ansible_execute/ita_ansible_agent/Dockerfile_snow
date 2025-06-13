@@ -23,18 +23,17 @@ ARG WORK_PATH
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
     dnf install -y \
     openssh-clients \
-    python3.12 \
-    python3.12-devel \
-    python3.12-pip \
     sshpass \
-&&  pip3.12 install poetry==1.8.4 \
+    python3.11 \
+    python3.11-devel \
+    python3.11-pip \
+&&  alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 1000000 \
+&&  alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 100 \
+&&  alternatives --set python3 /usr/bin/python3.11 \
+&&  pip3.11 install poetry==1.8.4 \
 &&  poetry config virtualenvs.create false \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
-
-RUN alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 1000000 \
-&&  alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 31200 \
-&&  alternatives --set python3 /usr/bin/python3.12
 
 WORKDIR $WORK_PATH
 
@@ -69,7 +68,7 @@ ARG USERNAME
 ARG GROUPNAME
 
 RUN --mount=type=secret,id=host_certificate_file,mode=0444,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
-    ansible-galaxy collection install servicenow.servicenow && pip3.12 install --upgrade pysnow
+    ansible-galaxy collection install servicenow.servicenow && pip3.11 install --upgrade pysnow
 
 USER $USERNAME
 

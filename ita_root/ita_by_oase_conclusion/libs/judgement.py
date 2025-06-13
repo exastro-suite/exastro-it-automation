@@ -140,9 +140,12 @@ class Judgement:
 
     def TargetRuleExtraction(self, TargetLevel, RuleList, FiltersUsedinRulesDict, IncidentDict):
         TargetRuleList = []
+        TargetRuleIdList = []
         FilterList = []
 
+        # g.applogger.debug(addline_msg('{}'.format("TargetRuleExtraction")))
         for RuleRow in RuleList:
+            # g.applogger.debug('RULE_ID={}'.format(RuleRow['RULE_ID']))
             hit = True
             FilterList = []
             FilterList.append(RuleRow['FILTER_A'])
@@ -151,6 +154,7 @@ class Judgement:
 
             for FilterId in FilterList:
                 if FilterId not in FiltersUsedinRulesDict:
+                    # Target filter is not registered RULE_ID {} FILTER_ID {}>>
                     tmp_msg = g.appmsg.get_log_message("BKY-90046", [RuleRow['RULE_ID'], FilterId])
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     hit = False
@@ -162,21 +166,26 @@ class Judgement:
 
                 # ルール抽出対象: 複数のルールで使用しているフィルタで優先順位が最上位のルール※2の場合
                 elif TargetLevel == "Level2":
+                    # g.applogger.debug('FilterId({})=Level2'.format(FilterId))
                     # で優先順位が最上位のルールか判定
                     if FiltersUsedinRulesDict[FilterId]['rule_id'] != RuleRow['RULE_ID']:
+                        # g.applogger.debug('FilterId({})=Level2 hit=False'.format(FilterId))
                         hit = False
 
                 # ルール抽出対象: 複数のルールで使用しているフィルタでタイムアウトを迎えるフィルタを使用しているルール※3の場合
                 elif TargetLevel == "Level3":
                     if FilterId not in IncidentDict:
+                        # Target event not found RULE_ID {} FILTER_ID {}>>
                         tmp_msg = g.appmsg.get_log_message("BKY-90047", [RuleRow['RULE_ID'], FilterId])
                         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                         hit = False
+                        break
                     else:
                         if len(IncidentDict[FilterId]) == 0:
                             # イベント配列に空がセットされている場合（検索方法がユニークで複数合致した場合）
                             # 下のループは通らない
                             hit = False
+                            break
                         for event_id in IncidentDict[FilterId]:
                             ret, EventRow = self.EventObj.get_events(event_id)
 
@@ -190,13 +199,26 @@ class Judgement:
                                 or EventRow['labels']['_exastro_timeout'] != '0' \
                                 or EventRow['labels']['_exastro_undetected'] != '0':
                                     # 判定済みは無視
+                                    # g.applogger.debug('FilterId({}), event_id({})=Level3 hit=False1'.format(FilterId, event_id))
                                     hit = False
                                     continue
 
+                                if FilterId == RuleRow['FILTER_B'] and hit is True:
+                                    # FILTER_Aのフィルタがタイムアウトを迎えていることを確認済み(hit = True)
+                                    break
+
+                                if FiltersUsedinRulesDict[FilterId]['rule_id'] in TargetRuleIdList:
+                                    # 自分より優先順位の高いルールが、既に使われる予定
+                                    # g.applogger.debug('FilterId({}), event_id({})=Level3 hit=False2'.format(FilterId, event_id))
+                                    hit = False
+                                    break
+
                                 if EventRow[oaseConst.DF_LOCAL_LABLE_NAME][oaseConst.DF_LOCAL_LABLE_STATUS] != oaseConst.DF_POST_PROC_TIMEOUT_EVENT:
+                                    # g.applogger.debug('FilterId({}), event_id({})=Level3 hit=False3'.format(FilterId, event_id))
                                     hit = False
                                 else:
                                     hit = True
+                                    # g.applogger.debug('FilterId({}), event_id({})=Level3 True'.format(FilterId, event_id))
                                     break
 
             if TargetLevel == "Level2":
@@ -208,6 +230,7 @@ class Judgement:
                             hit = True
                             break
             if hit is True:
+                TargetRuleIdList.append(RuleRow['RULE_ID'])
                 TargetRuleList.append(RuleRow)
 
         return TargetRuleList
@@ -215,6 +238,7 @@ class Judgement:
     def RuleJudge(self, RuleRow, IncidentDict, actionIdList, filterIDMap):
         UseEventIdList = []
 
+        # Rule verdict process started RULE_ID:{} RULE_NAME:{} FILTER_A:{} FILTER_OPERATOR:{} FILTER_B:{}
         tmp_msg = g.appmsg.get_log_message("BKY-90050", [RuleRow['RULE_ID'], RuleRow['RULE_NAME'], RuleRow['FILTER_A'], RuleRow['FILTER_OPERATOR'], RuleRow['FILTER_B']])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         # ルール内のフィルタ条件判定用辞書初期化
@@ -362,21 +386,23 @@ class Judgement:
             return True
         return False
 
-    def ConclusionLabelUsedInFilter(self, ConclusionLablesStr, filterIDMap):
+    def ConclusionLabelUsedInFilter(self, ConclusionLablesDict, filterIDMap):
         UsedFilterIdList = []
-        # ConclusionLablesStr = "{'labels': {'httpd': 'down', 'server': 'web01'}}"
+        # ConclusionLablesDict = {'httpd': 'down', 'server': 'web01'}  # labelsプロパティの中身
 
-        ConclusionLablesDict = json.loads(ConclusionLablesStr)["labels"]
+        # Conclusion event Verdict JSON: {}
         tmp_msg = g.appmsg.get_log_message("BKY-90065", [str(ConclusionLablesDict)])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         for FilterId, FilterRow in filterIDMap.items():
             ret = self.ConclusionFilterJudge(ConclusionLablesDict, FilterRow)
             if ret is True:
+                # Filter matched FilterId: {}
                 tmp_msg = g.appmsg.get_log_message("BKY-90063", [FilterId])
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 UsedFilterIdList.append(FilterId)
             else:
+                # Filter did not match FilterId: {}
                 tmp_msg = g.appmsg.get_log_message("BKY-90064", [FilterId])
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
@@ -399,8 +425,9 @@ class Judgement:
             LabelKeyName = getIDtoLabelName(self.LabelMasterDict, LabelRow['label_name'])
             LabelValue = LabelRow['condition_value']
             LabelCondition = str(LabelRow['condition_type'])
-            tmp_msg = g.appmsg.get_log_message("BKY-90066", [LabelKeyName, LabelValue, LabelCondition])
-            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+            # # FILTER_CONDITION_JSON FilterName:{} FilterValues:{} FilterCondition:{}
+            # tmp_msg = g.appmsg.get_log_message("BKY-90066", [LabelKeyName, LabelValue, LabelCondition])
+            # g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
             LabelHit = False
             for cLabelKeyName, cLabelValue in ConclusionLablesDict.items():
@@ -408,28 +435,23 @@ class Judgement:
                         (LabelKeyName == cLabelKeyName and LabelValue != cLabelValue and LabelCondition == oaseConst.DF_TEST_NE):
                     LabelHit = True
                     LabelHitCount += 1
-                    tmp_msg = g.appmsg.get_log_message("BKY-90067", [LabelKeyName, LabelValue])
-                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                    # tmp_msg = g.appmsg.get_log_message("BKY-90067", [LabelKeyName, LabelValue])
+                    # g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     break
 
             if LabelHit is True:
-                tmp_msg = g.appmsg.get_log_message("BKY-90068", [])
-                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                pass
+                # tmp_msg = g.appmsg.get_log_message("BKY-90068", []) # Label matched
+                # g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             else:
-                tmp_msg = g.appmsg.get_log_message("BKY-90069", [])
-                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                # tmp_msg = g.appmsg.get_log_message("BKY-90069", []) # Label did not match
+                # g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 break
 
         if LabelHitCount != len(filter_condition_json):
             tmp_msg = g.appmsg.get_log_message("BKY-90070", [])
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             return False
-
-        # # 結論ラベル数＞フィルタラベル数の場合
-        # if LabelHitCount != len(ConclusionLablesDict):
-        #     tmp_msg = g.appmsg.get_log_message("BKY-90071", [])
-        #     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        #     return False
 
         return True
 

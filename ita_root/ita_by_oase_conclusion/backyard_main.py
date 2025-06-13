@@ -241,6 +241,10 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
     while True:
         # レベル毎のループ -----
         for TargetLevel in JudgeLevelList:
+            # Level{} Rule verdict Started
+            tmp_msg = g.appmsg.get_log_message("BKY-90017", [TargetLevel, 'Started'])
+            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
             newIncidentCount[TargetLevel] = 0
 
             # イベント数が減らずにループしている回数のカウンタを初期化する（無限ループ対策用）
@@ -248,10 +252,9 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
 
             # 各レベルに対応したルール抽出
             TargetRuleList = judgeObj.TargetRuleExtraction(TargetLevel, ruleList, FiltersUsedinRulesDict, IncidentDict)
+            g.applogger.debug(addline_msg('TargetRuleList={}'.format(TargetRuleList)))  # noqa: F405
 
             newIncident_Flg = True
-            tmp_msg = g.appmsg.get_log_message("BKY-90017", [TargetLevel, 'Started'])
-            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
             # レベル毎の結論イベント未発生確認のループ -----
             while newIncident_Flg is True:
@@ -277,11 +280,11 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
                             # アクションが設定されていない場合・・・すぐに結論イベントを出す
                             # 結論イベントの登録
                             ret, ConclusionEventRow = InsertConclusionEvent(EventObj, ruleInfo, UseEventIdList, action_log_row['CONCLUSION_EVENT_LABELS'])
-                            # 結論イベントに処理で必要なラベル情報を追加
-                            ConclusionEventRow = EventObj.add_local_label(ConclusionEventRow, oaseConst.DF_LOCAL_LABLE_NAME, oaseConst.DF_LOCAL_LABLE_STATUS, oaseConst.DF_PROC_EVENT)
+                            # キャッシュに保存
+                            EventObj.append_event(ConclusionEventRow)
 
                             # 結論イベントに対応するフィルタ確認
-                            ret, UsedFilterIdList = judgeObj.ConclusionLabelUsedInFilter(action_log_row["CONCLUSION_EVENT_LABELS"], filterIDMap)
+                            ret, UsedFilterIdList = judgeObj.ConclusionLabelUsedInFilter(ConclusionEventRow["labels"], filterIDMap)
                             # Verifying conclusion event filters{}
                             tmp_msg = g.appmsg.get_log_message("BKY-90021", [str(ret)])
                             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -329,7 +332,6 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
                                         IncidentDict[UsedFilterId] = [ConclusionEventRow['_id']]
                                         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-                                    EventObj.append_event(ConclusionEventRow)
                                     newIncident_Flg = True
 
                             # 評価結果の更新（完了）
@@ -360,7 +362,7 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
                         loops_without_events_reduction += 1
 
                     if loops_without_events_reduction > len(ruleList) or newIncidentCount[TargetLevel] > evaluate_latent_infinite_loop_limit:
-                        # 未判定イベントがルールの倍数回以上で変わらない、もしくは一定回数以上繰り返した場合は抜ける
+                        # 未判定イベントがルールの回数以上で変わらない、もしくは一定回数以上繰り返した場合は抜ける
                         # ※無限ループ（ルール⇒結論イベント⇒ルール）の発生を回避するための条件
                         # Reached maximum amount of loops.
                         tmp_msg = g.appmsg.get_log_message("BKY-90025", [])

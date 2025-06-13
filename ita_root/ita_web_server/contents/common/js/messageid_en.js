@@ -223,6 +223,11 @@ export function messageid_en() {
         'FTE00185' : "Download",
         'FTE00186' : function( statusCode ){return `An error occurred while registering the data. (${statusCode})`},
         'FTE00187' : 'Regular execution of weekly tasks assumes Sunday as the start of the week. Recurrence schedules are calculated based on settings.',
+        'FTE00188' : "Delete",
+        'FTE00189' : "Delete",
+        'FTE00190' : "Delete confirmation",
+        'FTE00191' : "Delete",
+        'FTE00192' : "Return to list",
 
         // Create parameter sheet
         'FTE01001' : "Item",
@@ -898,6 +903,14 @@ export function messageid_en() {
         'FTE10094': 'Filter reset',
         'FTE10095': 'Due to maintenance, the newly registered Conductor and each driver work execution, Parameter sheet create, Menu export/import, Bulk excel export/import will not be executed.',
         'FTE10096': 'Due to maintenance, data cannot be registered/updated/deleted. In addition, it is not possible to execute the work of Conductor and each driver, Parameter sheet create, Menu export/import, and Bulk excel export/import.',
+        'FTE00097' : "Confirmation of execution",
+        'FTE00098' : "Deleted records/files will no longer be accessible.",
+        'FTE00099' : "Yes, delete",
+        'FTE00100' : "Cancel",
+        'FTE00101' : "Warning",
+        'FTE00102' : 'If you want to continue, please enter <span style="font-weight: bold;">{0}</span>.',
+        'FTE00103' : 'Please enter <span style="font-weight: bold;">{0}</span>.',
+        'FTE10104': 'Deletion successful',
 
         // Parameter collection
         'FTE11001': 'Parameter mode',

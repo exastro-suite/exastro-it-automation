@@ -42,7 +42,8 @@
 スクリプトを実行するユーザーは下記の条件を満たしている必要があります。
 - 一般ユーザー
 - sudoコマンドが利用可能
-- スクリプトと同じディレクトリにログファイルを書き込む権限があること
+- スクリプトと同じディレクトリにログファイルをを書き込む権限があること
+- 後にAnsible実行エージェントをインストールするユーザーと同一であること
 
 ### 禁止事項
 - 既にライセンスの種類が違う状態でAnsible実行エージェントが稼働している環境で、スクリプトを利用することはできません。
@@ -55,7 +56,7 @@
 
     下記コマンドでシェルスクリプトを取得します。
     ```
-    wget https://raw.githubusercontent.com/exastro-suite/exastro-it-automation/refs/heads/2.6/tools/RegisterLicense/client-licence_registration.sh
+    wget https://raw.githubusercontent.com/exastro-suite/exastro-it-automation/refs/heads/2.6/tools/RegisterLicense/client-license_registration.sh
     ```
 
 - 設定ファイル配置

@@ -27,7 +27,6 @@ services:
       - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
-      - /var/run/docker.sock:/var/run/docker.sock
       - ../.vscode_extensions/ita-api-organization/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-api-organization/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
       - /var/run/docker.sock:/var/run/docker.sock

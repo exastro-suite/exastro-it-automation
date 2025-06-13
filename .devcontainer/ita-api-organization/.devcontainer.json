@@ -15,16 +15,16 @@
 					}
 				},
 				"terminal.integrated.defaultProfile.linux": "bash",
-
+		
 				// git menu setting
 				"git.allowNoVerifyCommit": true,
-
+		
 				// python extension setting
 				"python.linting.pylintEnabled": false,
 				"python.linting.flake8Enabled": true,
-
+		
 				"python.linting.lintOnSave": true,
-
+		
 				"python.linting.flake8Args": [
 					"--ignore=W293, W504",
 					"--max-line-length=250",
@@ -36,10 +36,10 @@
 					"--ignore=W293, W504",
 					"--max-line-length=250",
 					"--max-complexity=20",
-				],
+				],				
 
 				"python.formatting.provider": "autopep8",
-
+		
 				"python.formatting.autopep8Args": [
 					"--aggressive", "--aggressive",
 				],
@@ -96,11 +96,11 @@
 		// git menu setting
 		"git.allowNoVerifyCommit": true,
 
-				// python extension setting
-				"python.linting.pylintEnabled": false,
-				"python.linting.flake8Enabled": true,
+		// python extension setting
+		"python.linting.pylintEnabled": false,
+		"python.linting.flake8Enabled": true,
 
-				"python.linting.lintOnSave": true,
+		"python.linting.lintOnSave": true,
 
 		"python.linting.flake8Args": [
 			"--ignore=W293, W504",
@@ -113,9 +113,9 @@
 			"--ignore=W293, W504",
 			"--max-line-length=250",
 			"--max-complexity=20",
-		],
+		],				
 
-				"python.formatting.provider": "autopep8",
+		"python.formatting.provider": "autopep8",
 
 		"python.formatting.autopep8Args": [
 			"--aggressive", "--aggressive",

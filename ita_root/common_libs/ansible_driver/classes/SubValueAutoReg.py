@@ -985,7 +985,7 @@ class SubValueAutoReg():
                                                         continue
 
                                                 # TPF/CPF変数カラム判定
-                                                if col_data['REF_TABLE_NAME'] in VariableColumnAry and col_data['REF_COL_NAME'] in VariableColumnAry[col_data['REF_TABLE_NAME']]:
+                                                if col_data['REF_TABLE_NAME'] in VariableColumnAry and col_data['REF_COL_NAME'] in VariableColumnAry[col_data['REF_TABLE_NAME']] and col_val is not None:
                                                     if 'ID変換失敗' not in col_val and 'Failed to exchange ID' not in col_val:
                                                         col_val = "'{{ " + col_val + " }}'"
                                                     else:

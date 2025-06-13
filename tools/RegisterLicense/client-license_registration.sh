@@ -62,7 +62,7 @@ get_license_information() {
     # アクセストークン取得
     local token_response
     token_response=$(
-        curl -s -X POST "$base_url/auth/realms/$ITA_EXASTRO_ORG_ID/protocol/openid-connect/token" \
+        curl -s -X POST -k "$base_url/auth/realms/$ITA_EXASTRO_ORG_ID/protocol/openid-connect/token" \
             -d "client_id=_$ITA_EXASTRO_ORG_ID-api" \
             -d "grant_type=refresh_token" \
             -d "refresh_token=$ITA_REFRESH_TOKEN" \
@@ -167,10 +167,14 @@ login_to_aah() {
 
         # ログアウト
         info "Logging out from Ansible Automation Hub (AAH) container image registry"
-        if podman logout "$AAH_CONTAINER_IMAGE_REGISTRY"; then
-            :
-        else
+        podman logout "$AAH_CONTAINER_IMAGE_REGISTRY"
+        local exit_code=$?
+        if [  "$exit_code" -eq 125 ]; then
+            warn "Not logged in."
+        elif [  "$exit_code" -eq 1 ]; then
             error "Logout failed."
+        else
+            info "Logged out successfully."
         fi
 
         # ログイン情報複合化

@@ -989,7 +989,7 @@ class loadTable():
                                                 for k, v in search_conf.items():
                                                     try:
                                                         convert_search_conf[k] = int(v)
-                                                    except:
+                                                    except: # NOSONAR : 20250613 To prevent interruptions to processing
                                                         status_code = '499-00201'
                                                         msg_tmp = {0: {}}
                                                         msg_tmp[0][search_key] = [g.appmsg.get_api_message("MSG-00002", ["int", v])]
@@ -1001,7 +1001,7 @@ class loadTable():
                                                 for v in search_conf:
                                                     try:
                                                         convert_search_conf.append(int(v))
-                                                    except:
+                                                    except: # NOSONAR : 20250613 To prevent interruptions to processing
                                                         status_code = '499-00201'
                                                         msg_tmp = {0: {}}
                                                         msg_tmp[0][search_key] = [g.appmsg.get_api_message("MSG-00002", ["int", v])]
@@ -1011,7 +1011,7 @@ class loadTable():
                                             elif search_mode == 'NORMAL':
                                                 try:
                                                     convert_search_conf = int(search_conf)
-                                                except:
+                                                except: # NOSONAR : 20250613 To prevent interruptions to processing
                                                     status_code = '499-00201'
                                                     msg_tmp = {0: {}}
                                                     msg_tmp[0][search_key] = [g.appmsg.get_api_message("MSG-00002", ["int", search_conf])]
@@ -1029,7 +1029,7 @@ class loadTable():
                                                             convert_search_conf[k] = v
                                                         else:
                                                             convert_search_conf[k] = float(v)
-                                                    except:
+                                                    except: # NOSONAR : 20250613 To prevent interruptions to processing
                                                         status_code = '499-00201'
                                                         msg_tmp = {0: {}}
                                                         msg_tmp[0][search_key] = [g.appmsg.get_api_message("MSG-00002", ["float", v])]
@@ -1044,7 +1044,7 @@ class loadTable():
                                                             convert_search_conf.append(v)
                                                         else:
                                                             convert_search_conf.append(float(v))
-                                                    except:
+                                                    except: # NOSONAR : 20250613 To prevent interruptions to processing
                                                         status_code = '499-00201'
                                                         msg_tmp = {0: {}}
                                                         msg_tmp[0][search_key] = [g.appmsg.get_api_message("MSG-00002", ["float", v])]
@@ -1057,7 +1057,7 @@ class loadTable():
                                                         convert_search_conf = search_conf
                                                     else:
                                                         convert_search_conf = float(search_conf)
-                                                except:
+                                                except: # NOSONAR : 20250613 To prevent interruptions to processing
                                                     status_code = '499-00201'
                                                     msg_tmp = {0: {}}
                                                     msg_tmp[0][search_key] = [g.appmsg.get_api_message("MSG-00002", ["float", search_conf])]

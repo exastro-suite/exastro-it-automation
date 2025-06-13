@@ -15,16 +15,19 @@
 					}
 				},
 				"terminal.integrated.defaultProfile.linux": "bash",
-		
+
 				// git menu setting
 				"git.allowNoVerifyCommit": true,
-		
+
 				// python extension setting
+				"python.interpreterPath": "/usr/bin/python3",
+				"python.defaultInterpreterPath": "/usr/bin/python3",
+
 				"python.linting.pylintEnabled": false,
 				"python.linting.flake8Enabled": true,
-		
+
 				"python.linting.lintOnSave": true,
-		
+
 				"python.linting.flake8Args": [
 					"--ignore=W293, W504",
 					"--max-line-length=250",
@@ -36,10 +39,10 @@
 					"--ignore=W293, W504",
 					"--max-line-length=250",
 					"--max-complexity=20",
-				],				
+				],
 
 				"python.formatting.provider": "autopep8",
-		
+
 				"python.formatting.autopep8Args": [
 					"--aggressive", "--aggressive",
 				],
@@ -78,6 +81,9 @@
 				"mitchdenny.ecdc",
 				"snyk-security.snyk-vulnerability-scanner",
 				"humao.rest-client",
+				"bmalehorn.shell-syntax",
+				"foxundermoon.shell-format",
+				"timonwong.shellcheck",
 			],
 		}
 	},
@@ -94,6 +100,9 @@
 		"git.allowNoVerifyCommit": true,
 
 		// python extension setting
+		"python.interpreterPath": "/usr/bin/python3",
+		"python.defaultInterpreterPath": "/usr/bin/python3",
+
 		"python.linting.pylintEnabled": false,
 		"python.linting.flake8Enabled": true,
 
@@ -110,7 +119,7 @@
 			"--ignore=W293, W504",
 			"--max-line-length=250",
 			"--max-complexity=20",
-		],				
+		],
 
 		"python.formatting.provider": "autopep8",
 
@@ -152,6 +161,9 @@
 		"mitchdenny.ecdc",
 		"snyk-security.snyk-vulnerability-scanner",
 		"humao.rest-client",
+		"bmalehorn.shell-syntax",
+		"foxundermoon.shell-format",
+		"timonwong.shellcheck",
 	],
 	// // Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [

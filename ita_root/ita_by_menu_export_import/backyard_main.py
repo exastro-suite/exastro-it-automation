@@ -1190,7 +1190,7 @@ def _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_
                             _buffer_item.append(each_item)
 
                     if (_item_count >= buffer_size):
-                        g.applogger.debug("_item_count over buffer_size ({}/{})".format(str(_item_count), str(buffer_size)))
+                        g.applogger.info("_item_count over buffer_size ({}/{})".format(str(_item_count), str(buffer_size)))
                         _bulk_register_data_exec(_buffer_item)
 
                         _buffer_item = []
@@ -1198,7 +1198,7 @@ def _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_
             del ijson_generator
 
             if (_item_count > 0):
-                g.applogger.debug("_item_count not over buffer_size ({}/{})".format(str(_item_count), str(buffer_size)))
+                g.applogger.info("_item_count not over buffer_size ({}/{})".format(str(_item_count), str(buffer_size)))
                 ret_t_comn_menu_column_link = objdbca.table_select(t_comn_menu_column_link, 'WHERE MENU_ID = %s AND COL_NAME = %s', [menu_id, pk])  # noqa: E501
                 pk_name = ret_t_comn_menu_column_link[0].get('COLUMN_NAME_REST') if len(ret_t_comn_menu_column_link) != 0 \
                     else None
@@ -1230,7 +1230,7 @@ def _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_
                 _buffer_item.append(each_item)
 
                 if (_item_count >= buffer_size):
-                    g.applogger.debug("_item_count over buffer_size ({}/{})".format(str(_item_count), str(buffer_size)))
+                    g.applogger.info("_item_count over buffer_size ({}/{})".format(str(_item_count), str(buffer_size)))
                     _bulk_register_data_exec(_buffer_item)
 
                     # ループ前に初期化
@@ -1241,7 +1241,7 @@ def _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_
             del ijson_generator
 
             if (_item_count > 0):
-                g.applogger.debug("_item_count not over buffer_size ({}/{})".format(str(_item_count), str(buffer_size)))
+                g.applogger.info("_item_count not over buffer_size ({}/{})".format(str(_item_count), str(buffer_size)))
                 _bulk_register_data_exec(_buffer_item)
 
                 _item_all_count += len(_buffer_item)
@@ -3212,10 +3212,10 @@ def _export_sandboxdb_bulk_register_maindb(objdbca, ws_db_sb, objmenu, workspace
         with _cursor as _cur:
             while True:
                 sb_rows = _cur.fetchmany(int(record_buffer_size))
-                g.applogger.debug("[timestamp={}] select cursor ({}/{})@{}".format(str(get_iso_datetime()), str(len(sb_rows)), str(record_buffer_size),table_name))
+                g.applogger.info("[timestamp={}] select cursor ({}/{})@{}".format(str(get_iso_datetime()), str(len(sb_rows)), str(record_buffer_size),table_name))
                 if len(sb_rows) == 0:
                     # データ0件の為、break
-                    g.applogger.debug("[timestamp={}] select cursor (break@{})".format(str(get_iso_datetime()), table_name))
+                    g.applogger.info("[timestamp={}] select cursor (break@{})".format(str(get_iso_datetime()), table_name))
                     break
 
                 with open(json_path, 'w') as f :
@@ -3401,6 +3401,7 @@ def _bulk_register_file(objdbca, objmenu, execution_no_path, menu_name_rest, fil
                             _buffer_item.append(each_item)
 
                     if (_item_count >= buffer_size):
+                        g.applogger.info("_item_count over buffer_size ({}/{})".format(str(_item_count), str(buffer_size)))
                         _bulk_register_file_exec(_buffer_item)
 
                         _buffer_item = []
@@ -3417,6 +3418,7 @@ def _bulk_register_file(objdbca, objmenu, execution_no_path, menu_name_rest, fil
                     if "parameter" in each_item and each_item["parameter"][pk_name] not in _id_list:
                         _buffer_item.append(each_item)
 
+                g.applogger.info("_item_count not over buffer_size ({}/{})".format(str(_item_count), str(buffer_size)))
                 _bulk_register_file_exec(_buffer_item)
 
                 _buffer_item = []
@@ -3432,7 +3434,7 @@ def _bulk_register_file(objdbca, objmenu, execution_no_path, menu_name_rest, fil
                 _buffer_item.append(each_item)
 
                 if (_item_count >= buffer_size):
-                    g.applogger.debug("_item_count over buffer_size ({}/{})".format(str(_item_count), str(buffer_size)))
+                    g.applogger.info("_item_count over buffer_size ({}/{})".format(str(_item_count), str(buffer_size)))
                     _bulk_register_file_exec(_buffer_item)
 
                     # ループ前に初期化
@@ -3441,7 +3443,7 @@ def _bulk_register_file(objdbca, objmenu, execution_no_path, menu_name_rest, fil
             del ijson_generator
 
             if (_item_count > 0):
-                g.applogger.debug("_item_count not over buffer_size ({}/{})".format(str(_item_count), str(buffer_size)))
+                g.applogger.info("_item_count not over buffer_size ({}/{})".format(str(_item_count), str(buffer_size)))
                 _bulk_register_file_exec(_buffer_item)
 
                 _buffer_item = []

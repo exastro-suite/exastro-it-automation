@@ -20,6 +20,9 @@
 				"git.allowNoVerifyCommit": true,
 
 				// python extension setting
+				"python.interpreterPath": "/usr/bin/python3",
+				"python.defaultInterpreterPath": "/usr/bin/python3",
+
 				"python.linting.pylintEnabled": false,
 				"python.linting.flake8Enabled": true,
 
@@ -96,9 +99,12 @@
 				// git menu setting
 				"git.allowNoVerifyCommit": true,
 
-				// python extension setting
-				"python.linting.pylintEnabled": false,
-				"python.linting.flake8Enabled": true,
+		// python extension setting
+		"python.interpreterPath": "/usr/bin/python3",
+		"python.defaultInterpreterPath": "/usr/bin/python3",
+
+		"python.linting.pylintEnabled": false,
+		"python.linting.flake8Enabled": true,
 
 				"python.linting.lintOnSave": true,
 

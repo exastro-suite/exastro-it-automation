@@ -259,6 +259,7 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
         _show_variables = objdbca.sql_execute(_sql)
         max_allowed_packet = _show_variables["max_allowed_packet"] if "max_allowed_packet" in _show_variables else 30000
         g.max_allowed_packet = max_allowed_packet
+        objdbca.db_disconnect()
 
         execution_no = str(record.get('EXECUTION_NO'))
         file_name = str(record.get('FILE_NAME'))
@@ -314,6 +315,8 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
         if not os.path.isdir(backupsql_dir):
             os.makedirs(backupsql_dir)
             g.applogger.debug("made backup_dir")
+
+        db_reconnention(objdbca) if objdbca else None
         menu_id_list = backup_table(objdbca, backupsql_path, menu_name_rest_list)
 
         backupfile_dir = workspace_path + "/tmp/driver/import_menu/uploadfiles"
@@ -322,6 +325,7 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
             g.applogger.debug("made backupfile_dir")
         fileBackup(backupfile_dir, uploadfiles_dir, menu_id_list)
 
+        db_reconnention(objdbca) if objdbca else None
         # KYMとITAのバージョン＋ドライバ情報取得、処理分岐
         import_info = get_import_config(execution_no_path)
         kym_version = import_info['kym_version']

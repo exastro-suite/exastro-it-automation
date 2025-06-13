@@ -1239,9 +1239,6 @@ class loadTable():
         # Initialize the error (to set the line number from 1 since there have been no errors up to this point)
         self.err_message = {}
 
-        # エラーメッセージ初回保存(1から始まるRequestBodyの番号用)
-        self.set_error_message()
-
         try:
             # トランザクション開始
             self.objdbca.db_transaction_start()
@@ -1335,9 +1332,6 @@ class loadTable():
         # エラーを初期化
         # Initialize the error (to set the line number from 1 since there have been no errors up to this point)
         self.err_message = {}
-
-        # エラーメッセージ初回保存(1から始まるRequestBodyの番号用)
-        self.set_error_message()
 
         ret = True
         # 件数分処理
@@ -1441,9 +1435,6 @@ class loadTable():
         # エラーを初期化
         # Initialize the error (to set the line number from 1 since there have been no errors up to this point)
         self.err_message = {}
-
-        # エラーメッセージ初回保存(1から始まるRequestBodyの番号用)
-        self.set_error_message()
 
         ret = True
         # 件数分処理

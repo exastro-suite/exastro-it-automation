@@ -48,7 +48,7 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
 &&  alternatives --set python3 /usr/bin/python3.11 \
 &&  pip3.11 install poetry==1.8.4 \
 &&  poetry config virtualenvs.create false \
-&&  curl -L https://storage.googleapis.com/kubernetes-release/release/v1.24.3/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
+&&  curl -L https://storage.googleapis.com/kubernetes-release/release/v1.33.1/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
 &&  chmod +x /usr/local/bin/kubectl \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
@@ -83,8 +83,8 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
     diffutils \
     bind-utils \
     iputils \
-&&  curl -fsSL https://get.docker.com/builds/Linux/x86_64/docker-17.05.0-ce.tgz | tar -xzC /usr/local/bin --strip=1 docker/docker \
-&&  curl -L https://github.com/docker/compose/releases/download/v2.5.0/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose \
+&&  curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-18.06.3-ce.tgz | tar -xzC /usr/local/bin --strip=1 docker/docker \
+&&  curl -L https://github.com/docker/compose/releases/download/v2.37.1/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose \
 &&  chmod +x /usr/local/bin/docker-compose \
 &&  usermod -G wheel $USERNAME \
 &&  echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers \

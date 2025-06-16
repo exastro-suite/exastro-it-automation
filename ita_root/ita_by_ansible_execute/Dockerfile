@@ -83,7 +83,7 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
     diffutils \
     bind-utils \
     iputils \
-&&  curl -fsSL https://get.docker.com/builds/Linux/x86_64/docker-18.06.3-ce.tgz | tar -xzC /usr/local/bin --strip=1 docker/docker \
+&&  curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-18.06.3-ce.tgz | tar -xzC /usr/local/bin --strip=1 docker/docker \
 &&  curl -L https://github.com/docker/compose/releases/download/v2.37.1/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose \
 &&  chmod +x /usr/local/bin/docker-compose \
 &&  usermod -G wheel $USERNAME \

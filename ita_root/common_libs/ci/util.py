@@ -45,6 +45,8 @@ def wrapper_job(main_logic, organization_id=None, workspace_id=None, loop_count=
     max = int(loop_count) if is_child_ps is False else 1
 
     while True:
+        g.applogger.info("Backyard job has started")
+
         # get organization_info_list
         if is_child_ps is False:
             organization_info_list = common_db.table_select("T_COMN_ORGANIZATION_DB_INFO", "WHERE `DISUSE_FLAG`=0 ORDER BY `LAST_UPDATE_TIMESTAMP`")
@@ -219,6 +221,8 @@ def wrapper_job_all_org(main_logic, loop_count=500):
         # get organization_info_list
         # job for organization
         try:
+            g.applogger.info("Backyard job has started")
+
             main_logic_exec = None
 
             g.applogger.debug(f"wrapper_job_all_org loop=[{count}]")

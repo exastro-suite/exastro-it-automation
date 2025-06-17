@@ -18,6 +18,8 @@ import re
 import calendar
 import traceback
 import json
+import time
+import os
 from common_libs.conductor.classes.exec_util import ConductorExecuteLibs
 from common_libs.loadtable import *  # noqa: F403
 from common_libs.common.util import get_exastro_platform_users
@@ -289,6 +291,10 @@ def backyard_main(organization_id, workspace_id):  # noqa: C901
                     objdbca.db_transaction_end(False)
 
         # ConductorとOperationの復活チェック################
+
+        # ハングアップ監視用に時刻を出力する
+        with open(os.environ.get('FILE_PATH_LIVENESS'), 'w') as f:
+            f.write(str(int(time.time())))
 
     finally:
         objdbca.db_disconnect()

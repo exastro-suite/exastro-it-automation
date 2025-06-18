@@ -702,9 +702,9 @@ setTable( mode ) {
                         case 'tableDelete':
                             $button.prop('disabled', true );
                             tb.deleteConfirmation.call( tb ).then(function(){
-                                fn.consoleOutput('tableDelete disabled false');
                                 $button.prop('disabled', false );
                             });
+
                         break;
                         // ドライラン
                         case 'tableDryrun':
@@ -3497,6 +3497,11 @@ setTbody() {
             tb.checkSelectStatus();
         }
 
+        if ( tb.mode === 'view'){
+            fn.consoleOutput('button settings');
+            tb.viewModeMenuCheck();
+        }
+
         if ( tb.option.dataType === 'n') tb.filterDownloadButtonCheck();
         tb.stickyWidth();
     }
@@ -5400,18 +5405,19 @@ deleteConfirmation() {
                     case 'tableOk':
                         $button.prop('disabled', true );
                         modalTable.workStart('table', 0 );
-                        tb.deleteMessage().then(function(){
+                        tb.deleteMessage().then(function(result){
                             fn.consoleOutput('deleteMessage close');
                             $button.prop('disabled', false );
                             modal.close().then( function(){
                                 end();
-                                fn.resultDeleteModal( result ).then(function(){
+                                fn.resultDeleteModal(result).then(function(){
                                     // Session Timeoutの設定を戻す
                                     if ( fn.getCmmonAuthFlag() ) {
                                         CommonAuth.tokenRefreshPermanently( false );
                                     } else if ( window.parent && window.parent.tokenRefreshPermanently ) {
                                         window.parent.tokenRefreshPermanently( false );
                                     }
+                                    tb.changeViewMode.call( tb );
                                     resolve();
                                 });
                             });
@@ -5457,7 +5463,7 @@ deleteMessage() {
             () => {
                 tb.deleteApply.call( tb ).then(function( result ){
                     fn.consoleOutput('deleteMessage end');
-                    resolve();
+                    resolve( result );
                 }).catch(function( result ){
                     fn.consoleOutput('deleteMessage result='+result);
                     reject( result );
@@ -5722,6 +5728,7 @@ editError( error ) {
     let editRowNum;
     const auto_input = '<span class="tBodyAutoInput"></span>';
 
+    // if ( fn.typeof( errorMessage ) === 'array') {
     for ( const item in errorMessage ) {
         newRowNum = parseInt(item);
         for ( const error in errorMessage[item] ) {
@@ -5752,6 +5759,19 @@ editError( error ) {
                         + `</tr>`);
                     }
                 }
+            }
+            else{
+                let name = '';
+                let body = fn.cv( errorArray, '?', true );
+                body = body.replace(/\r?\n/g, '<br>');
+                editRowNum = '<span class="tBodyAutoInput"></span>';
+                errorHtml.push(`<tr class="tBodyTr tr">`
+                    + (( tb.partsFlag )? ``:fn.html.cell( auto_input, ['tBodyTh', 'tBodyLeftSticky'], 'th') )
+                    + (( tb.partsFlag )? ``:fn.html.cell( editRowNum, ['tBodyTh', 'tBodyErrorId'], 'th') )
+                    + fn.html.cell( name, 'tBodyTh', 'th')
+                    + fn.html.cell( body, 'tBodyTd')
+                + `</tr>`);
+                fn.consoleOutput('errorArray='+errorArray);
             }
         }
     }

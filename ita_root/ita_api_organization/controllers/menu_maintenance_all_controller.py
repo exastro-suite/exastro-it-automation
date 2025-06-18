@@ -98,8 +98,8 @@ def maintenance_all(organization_id, workspace_id, menu, body=None, **kwargs):  
         if org_maintenance_records_limit is not None:
             if len(parameters) > org_maintenance_records_limit:
                 status_code = "499-00223"
-                log_msg_args = []
-                api_msg_args = []
+                log_msg_args = [org_maintenance_records_limit]
+                api_msg_args = [org_maintenance_records_limit]
                 raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
         result_data = menu_maintenance_all.rest_maintenance_all(objdbca, menu, parameters, file_paths)

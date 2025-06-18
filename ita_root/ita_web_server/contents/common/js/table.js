@@ -5348,6 +5348,7 @@ deleteConfirmation() {
 
     tb.setTable('view');
     fn.consoleOutput("tb.select.view=" + tb.select.view);
+    tb.$.errorMessage.empty();
 
     return new Promise(function( resolve ){
 
@@ -5404,7 +5405,6 @@ deleteConfirmation() {
                     // 削除
                     case 'tableOk':
                         $button.prop('disabled', true );
-                        modalTable.workStart('table', 0 );
                         tb.deleteMessage().then(function(result){
                             fn.consoleOutput('deleteMessage close');
                             $button.prop('disabled', false );
@@ -5463,7 +5463,7 @@ deleteMessage() {
             () => {
                 tb.deleteApply.call( tb ).then(function( result ){
                     fn.consoleOutput('deleteMessage end');
-                    resolve( result );
+                    resolve();
                 }).catch(function( result ){
                     fn.consoleOutput('deleteMessage result='+result);
                     reject( result );
@@ -5715,6 +5715,7 @@ editError( error ) {
         };
         errorMessage['0'][key] = error.message;
     }
+    fn.consoleOutput('errorMessage='+errorMessage);
 
     //一意のキーの値を取り出す
     const param = error.data.map(function(result) {
@@ -5728,7 +5729,6 @@ editError( error ) {
     let editRowNum;
     const auto_input = '<span class="tBodyAutoInput"></span>';
 
-    // if ( fn.typeof( errorMessage ) === 'array') {
     for ( const item in errorMessage ) {
         newRowNum = parseInt(item);
         for ( const error in errorMessage[item] ) {
@@ -5792,6 +5792,8 @@ editError( error ) {
             + errorHtml.join('')
         + `</tbody>`
     + `</table>`;
+
+    fn.consoleOutput('errorTable='+errorTable);
 
     if ( tb.partsFlag ) {
         return errorTable;

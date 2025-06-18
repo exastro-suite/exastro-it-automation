@@ -1178,8 +1178,6 @@ def _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_
                 ijson_generator = ijson.items(file_obj, "item", use_float=True)
 
                 for each_item in ijson_generator:
-                    _item_count += 1
-                    _item_all_count += 1
 
                     ret_t_comn_menu_column_link = objdbca.table_select(t_comn_menu_column_link, 'WHERE MENU_ID = %s AND COL_NAME = %s', [menu_id, pk])  # noqa: E501
                     pk_name = ret_t_comn_menu_column_link[0].get('COLUMN_NAME_REST') if len(ret_t_comn_menu_column_link) != 0 \
@@ -1188,6 +1186,8 @@ def _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_
                         _id_list =  [jsd["parameter"].get(pk_name) for jsd in data_file_json if "parameter" in jsd]
                         if "parameter" in each_item and each_item["parameter"][pk_name] not in _id_list:
                             _buffer_item.append(each_item)
+                            _item_count += 1
+                            _item_all_count += 1
 
                     if (_item_count >= buffer_size):
                         g.applogger.info("_item_count over buffer_size ({}/{})".format(str(_item_count), str(buffer_size)))
@@ -1199,13 +1199,6 @@ def _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_
 
             if (_item_count > 0):
                 g.applogger.info("_item_count not over buffer_size ({}/{})".format(str(_item_count), str(buffer_size)))
-                ret_t_comn_menu_column_link = objdbca.table_select(t_comn_menu_column_link, 'WHERE MENU_ID = %s AND COL_NAME = %s', [menu_id, pk])  # noqa: E501
-                pk_name = ret_t_comn_menu_column_link[0].get('COLUMN_NAME_REST') if len(ret_t_comn_menu_column_link) != 0 \
-                    else None
-                if pk_name:
-                    _id_list =  [jsd["parameter"].get(pk_name) for jsd in data_file_json if "parameter" in jsd]
-                    if "parameter" in each_item and each_item["parameter"][pk_name] not in _id_list:
-                        _buffer_item.append(each_item)
 
                 _bulk_register_data_exec(_buffer_item)
 
@@ -3390,7 +3383,6 @@ def _bulk_register_file(objdbca, objmenu, execution_no_path, menu_name_rest, fil
                 _buffer_item = []
                 ijson_generator = ijson.items(file_obj, "item", use_float=True)
                 for each_item in ijson_generator:
-                    _item_count += 1
 
                     ret_t_comn_menu_column_link = objdbca.table_select(t_comn_menu_column_link, 'WHERE MENU_ID = %s AND COL_NAME = %s', [menu_id, pk])  # noqa: E501
                     pk_name = ret_t_comn_menu_column_link[0].get('COLUMN_NAME_REST') if len(ret_t_comn_menu_column_link) != 0 \
@@ -3399,6 +3391,7 @@ def _bulk_register_file(objdbca, objmenu, execution_no_path, menu_name_rest, fil
                         _id_list =  [jsd["parameter"].get(pk_name) for jsd in data_file_json if "parameter" in jsd]
                         if "parameter" in each_item and each_item["parameter"][pk_name] not in _id_list:
                             _buffer_item.append(each_item)
+                            _item_count += 1
 
                     if (_item_count >= buffer_size):
                         g.applogger.info("_item_count over buffer_size ({}/{})".format(str(_item_count), str(buffer_size)))
@@ -3410,13 +3403,6 @@ def _bulk_register_file(objdbca, objmenu, execution_no_path, menu_name_rest, fil
             del ijson_generator
 
             if (_item_count > 0):
-                ret_t_comn_menu_column_link = objdbca.table_select(t_comn_menu_column_link, 'WHERE MENU_ID = %s AND COL_NAME = %s', [menu_id, pk])  # noqa: E501
-                pk_name = ret_t_comn_menu_column_link[0].get('COLUMN_NAME_REST') if len(ret_t_comn_menu_column_link) != 0 \
-                    else None
-                if pk_name:
-                    _id_list =  [jsd["parameter"].get(pk_name) for jsd in data_file_json if "parameter" in jsd]
-                    if "parameter" in each_item and each_item["parameter"][pk_name] not in _id_list:
-                        _buffer_item.append(each_item)
 
                 g.applogger.info("_item_count not over buffer_size ({}/{})".format(str(_item_count), str(buffer_size)))
                 _bulk_register_file_exec(_buffer_item)

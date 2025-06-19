@@ -1017,7 +1017,7 @@ theadHtml( filterFlag = true, filterHeaderFlag = true ) {
         html[0] = '';
         switch ( tb.mode ) {
             case 'view': {
-                if ( tb.flag.update ) {
+                if ( tb.flag.update || tb.flag.delete ) {
                     const selectButton = fn.html.button('', 'rowSelectButton');
                     html[0] += fn.html.cell( selectButton, ['tHeadTh', 'tHeadLeftSticky', 'tHeadRowSelect'], 'th', headRowspan );
                     tb.data.filterHeadColspan++;
@@ -3780,7 +3780,7 @@ tbodyHtml() {
                 if ( tb.flag.history ) {
                     viewMenu.push({ type: 'rowHistory', text: getMessage.FTE00057, action: 'history', id: rowId, className: 'tBodyRowMenuUi'});
                 }
-                if ( tb.flag.update ) {
+                if ( tb.flag.update || tb.flag.delete ) {
                     rowHtml.push( rowCheckInput() );
                 }
                 const viewMenuHtml = ( viewMenu.length )? tb.rowMenuHtml( viewMenu ): '<span class="tBodyAutoInput"></span>';

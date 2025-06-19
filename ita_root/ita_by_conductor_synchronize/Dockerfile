@@ -25,6 +25,8 @@ ENV EXECUTE_INTERVAL=1
 ENV LANGUAGE=en
 ENV STORAGEPATH=/storage/
 ENV SERVICE_NAME=ita-by-conductor-synchronize
+# ハングアップ監視用ファイル
+ENV FILE_PATH_LIVENESS=/tmp/liveness
 
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
     dnf install -y \

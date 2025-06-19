@@ -112,6 +112,10 @@ def wrapper_job(main_logic, organization_id=None, workspace_id=None, loop_count=
             # job for organization
             try:
                 organization_job(main_logic, organization_id, workspace_id)
+
+                # ハングアップ監視用に時刻を出力する
+                with open(os.environ.get('FILE_PATH_LIVENESS'), 'w') as f:
+                    f.write(str(int(time.time())))
             except AppException as e:
                 # catch - raise AppException("xxx-xxxxx", log_format)
                 print_exception_msg(e)
@@ -233,6 +237,10 @@ def wrapper_job_all_org(main_logic, loop_count=500):
 
             main_logic_exec = main_logic
             main_logic_exec(common_db)
+
+            # ハングアップ監視用に時刻を出力する
+            with open(os.environ.get('FILE_PATH_LIVENESS'), 'w') as f:
+                f.write(str(int(time.time())))
 
             common_db.db_disconnect()
         except AppException as e:

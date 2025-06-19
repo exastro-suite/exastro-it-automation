@@ -25,6 +25,8 @@ ENV EXECUTE_INTERVAL=1
 ENV LANGUAGE=en
 ENV STORAGEPATH=/storage/
 ENV SERVICE_NAME=ita-by-menu-export-import
+# ハングアップ監視用ファイル
+ENV FILE_PATH_LIVENESS=/tmp/liveness
 
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
     curl -LO https://dev.mysql.com/get/mysql80-community-release-el9-4.noarch.rpm \

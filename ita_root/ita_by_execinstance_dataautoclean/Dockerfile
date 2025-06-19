@@ -26,6 +26,8 @@ ENV LANGUAGE=en
 ENV STORAGEPATH=/storage/
 ENV GIT_DISCOVERY_ACROSS_FILESYSTEM=1
 ENV SERVICE_NAME=ita-by-execinstance-dataautoclean
+# ハングアップ監視用ファイル
+ENV FILE_PATH_LIVENESS=/tmp/liveness
 
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
     dnf install -y \

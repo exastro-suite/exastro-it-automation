@@ -5346,7 +5346,7 @@ editOk() {
 deleteConfirmation() {
     const tb = this;
 
-    tb.setTable('view');
+    // tb.setTable('view');
     fn.consoleOutput("tb.select.view=" + tb.select.view);
     tb.$.errorMessage.empty();
 
@@ -5421,6 +5421,9 @@ deleteConfirmation() {
                                         tb.changeViewMode.call( tb );
                                         resolve();
                                     });
+                                }
+                                else{
+                                    resolve();
                                 }
                             });
                         }).catch(function( result ){

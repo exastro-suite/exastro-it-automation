@@ -187,9 +187,9 @@ getCaller: function getCaller(stackIndex) {
 ##################################################
 */
 consoleOutput: function(log) {
-    var callerInfo = cmn.getCaller();
-    // 必要に応じて有効化することで確認可能
-    console.log(callerInfo.func + '(' + callerInfo.file + ')' + ' : ' + log);
+    // var callerInfo = cmn.getCaller();
+    // // 必要に応じて有効化することで確認可能
+    // console.log(callerInfo.func + '(' + callerInfo.file + ')' + ' : ' + log);
 },
 /*
 ##################################################

@@ -18,6 +18,8 @@ BASEDIR=$(realpath $(dirname "$0"))
 BASENAME=$(basename "$0")
 REPOROOT=$(realpath "${BASEDIR}/../..")
 
+DOCKER_COMMAND=$(which docker)
+
 CONTAINER_PREFIX="exastro"
 BACKUP_DIR="${BASEDIR}/backup-data"
 
@@ -43,11 +45,11 @@ echo "--------------------------------------------------------------------------
 
 echo
 echo "-- Start Container pause"
-sudo docker container pause ${CONTAINER_PREFIX}-keycloak-1
-sudo docker container pause ${CONTAINER_PREFIX}-platform-db-1
-sudo docker container pause ${CONTAINER_PREFIX}-ita-mariadb-1
-if [ "$(sudo docker ps -f name=${CONTAINER_PREFIX}-ita-mongodb-1 -q | wc -l)" -eq 1 ]; then
-    sudo docker container pause "${CONTAINER_PREFIX}-ita-mongodb-1"
+sudo ${DOCKER_COMMAND} container pause ${CONTAINER_PREFIX}-keycloak-1
+sudo ${DOCKER_COMMAND} container pause ${CONTAINER_PREFIX}-platform-db-1
+sudo ${DOCKER_COMMAND} container pause ${CONTAINER_PREFIX}-ita-mariadb-1
+if [ "$(sudo ${DOCKER_COMMAND} ps -f name=${CONTAINER_PREFIX}-ita-mongodb-1 -q | wc -l)" -eq 1 ]; then
+    sudo ${DOCKER_COMMAND} container pause "${CONTAINER_PREFIX}-ita-mongodb-1"
 fi
 
 echo
@@ -61,11 +63,11 @@ echo "tar command exit code($?)"
 
 echo
 echo "-- Start Container restart"
-sudo docker container restart ${CONTAINER_PREFIX}-ita-mariadb-1
-sudo docker container restart ${CONTAINER_PREFIX}-platform-db-1
-sudo docker container restart ${CONTAINER_PREFIX}-keycloak-1
-if [ "$(sudo docker ps -f name=${CONTAINER_PREFIX}-ita-mongodb-1 -q | wc -l)" -eq 1 ]; then
-    sudo docker container restart "${CONTAINER_PREFIX}-ita-mongodb-1"
+sudo ${DOCKER_COMMAND} container restart ${CONTAINER_PREFIX}-ita-mariadb-1
+sudo ${DOCKER_COMMAND} container restart ${CONTAINER_PREFIX}-platform-db-1
+sudo ${DOCKER_COMMAND} container restart ${CONTAINER_PREFIX}-keycloak-1
+if [ "$(sudo ${DOCKER_COMMAND} ps -f name=${CONTAINER_PREFIX}-ita-mongodb-1 -q | wc -l)" -eq 1 ]; then
+    sudo ${DOCKER_COMMAND} container restart "${CONTAINER_PREFIX}-ita-mongodb-1"
 fi
 
 echo "---------------------------------------------------------------------------------"

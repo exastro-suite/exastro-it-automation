@@ -17,6 +17,8 @@ import os
 import re
 import subprocess
 import shutil
+import io
+import jsonlines
 
 from flask import g
 from abc import ABC, abstractclassmethod
@@ -161,7 +163,15 @@ class DockerMode(AnsibleAgent):
             return False, {"function": "is_container_running", "return_code": cp.returncode, "stderr": cp.stderr}
 
         # 戻りをjsonデコードして、runningのものが一つだけ存在しているか確認
-        result_obj = json.loads(cp.stdout)
+
+        # docker-compose v2.21.0以降(jsonl形式)
+        stdout_io = io.StringIO(cp.stdout)
+        with jsonlines.Reader(stdout_io) as reader:
+            result_obj = [item for item in reader]
+
+        # # docker-compose v2.21.0未満
+        # result_obj = json.loads(cp.stdout)
+
         if len(result_obj) > 0 and result_obj[0]['State'] == "running":
             return True, result_obj
 
@@ -203,7 +213,15 @@ class DockerMode(AnsibleAgent):
             return True, "already not exists"
 
         # existedしているものを削除
-        result_obj = json.loads(cp.stdout)
+
+        # docker-compose v2.21.0以降(jsonl形式)
+        stdout_io = io.StringIO(cp.stdout)
+        with jsonlines.Reader(stdout_io) as reader:
+            result_obj = [item for item in reader]
+
+        # # docker-compose v2.21.0未満
+        # result_obj = json.loads(cp.stdout)
+
         if len(result_obj) > 0 and result_obj[0]['State'] in ['exited']:
             # docker-compose -p project rm -f
             command = ["/usr/local/bin/docker-compose", "-p", project_name, "rm", "-f"]

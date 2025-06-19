@@ -15,6 +15,7 @@
 database connection agnet module for ita-common-db on mariadb
 """
 import pymysql.cursors  # https://pymysql.readthedocs.io/en/latable_name/
+import pymysql
 import uuid
 import os
 import re
@@ -325,9 +326,6 @@ class DBConnectCommon:
             value_list = list(data.values())
 
             sql = "INSERT INTO `{}` ({}) VALUES ({})".format(table_name, ','.join(column_list), ','.join(prepared_list))
-            # print(data)
-            # print(sql)
-            # print(value_list)
             res = self.sql_execute(sql, value_list)
             if res is False:
                 is_last_res = False
@@ -347,9 +345,6 @@ class DBConnectCommon:
             value_list = list(history_data.values())
 
             sql = "INSERT INTO `{}` ({}) VALUES ({})".format(history_table_name, ','.join(column_list), ','.join(prepared_list))
-            # print(history_data)
-            # print(sql)
-            # print(value_list)
             res = self.sql_execute(sql, value_list)
             if res is False:
                 is_last_res = False
@@ -387,10 +382,9 @@ class DBConnectCommon:
             value_list = list(data.values())
             primary_key_value = data[primary_key_name]
 
-            sql = "UPDATE `{}` SET {} WHERE `{}` = '{}'".format(table_name, ','.join(prepared_list), primary_key_name, primary_key_value)
-            # print(data)
-            # print(sql)
-            # print(value_list)
+            # key値もbindように最後に値を付加する
+            value_list.append(primary_key_value)
+            sql = "UPDATE `{}` SET {} WHERE `{}`=%s".format(table_name, ','.join(prepared_list), primary_key_name)
             res = self.sql_execute(sql, value_list)
             if res is False:
                 is_last_res = False
@@ -403,7 +397,7 @@ class DBConnectCommon:
             add_data = self._get_history_table_data("UPDATE", timestamp)
 
             # re-get all column data
-            data = self.table_select(table_name, "WHERE `{}` = '{}'".format(primary_key_name, primary_key_value))
+            data = self.table_select(table_name, "WHERE `{}` = %s".format(primary_key_name), [primary_key_value])
             if len(data) == 0:
                 return False
             data = dict(data[0])
@@ -416,15 +410,54 @@ class DBConnectCommon:
             value_list = list(history_data.values())
 
             sql = "INSERT INTO `{}` ({}) VALUES ({})".format(history_table_name, ','.join(column_list), ','.join(prepared_list))
-            # print(history_data)
-            # print(sql)
-            # print(value_list)
             res = self.sql_execute(sql, value_list)
             if res is False:
                 is_last_res = False
                 break
 
         return data_list if is_last_res is True else is_last_res
+
+
+    def table_delete(self, table_name, data_list, primary_key_name):
+        """
+        delete table
+
+        Arguments:
+            data_list (dict): data list for delete ex.[{primary_key_name:"{uuid}"}]
+            table_name (str): delete table name
+            primary_key_name (str): primary key column name
+
+        Returns:
+            delete failure: (bool)False
+        """
+        if isinstance(data_list, dict):
+            data_list = [data_list]
+
+        is_last_res = True
+        for data in data_list:
+
+            # make sql statement
+            prepared_list = list(map(lambda k: "`" + k + "`=%s", data.keys()))
+            value_list = list(data.values())
+            primary_key_value = data[primary_key_name]
+
+            sql = "DELETE FROM `{}` WHERE `{}`=%s".format(table_name, primary_key_name)
+            res = self.sql_execute(sql, [primary_key_value])
+            if res is False:
+                is_last_res = False
+
+            # delete history table
+            history_table_name = table_name + "_JNL"
+
+            sql = "DELETE FROM `{}` WHERE `{}`=%s".format(history_table_name, primary_key_name)
+            res = self.sql_execute(sql, [primary_key_value])
+            if res is False:
+                is_last_res = False
+
+        # １回でも失敗したらFalseを返却
+        # If it fails even once, return False
+        return is_last_res
+
 
     def table_permanent_delete(self, table_name, where_str="", bind_value_list=[], is_delete_history=False):
         """

@@ -472,6 +472,7 @@ setup() {
         }
     }
 
+    fn.consoleOutput("tb.mode="+tb.mode);
     // モード別
     switch ( tb.mode ) {
         case 'view': case 'edit':
@@ -557,6 +558,8 @@ setInitSort() {
 */
 setTable( mode ) {
     const tb = this;
+
+    fn.consoleOutput('start');
 
     // パーツテーブル
     if ( tb.partsFlag ) {
@@ -648,12 +651,16 @@ setTable( mode ) {
                     menuList.Main.push({ button: { className: 'tableAdvance',icon: 'detail', text: getMessage.FTE00007, type: 'tableParameter', action: 'positive', minWidth: '160px', disabled: true }});
                 }
                 if ( tb.mode === 'view') {
+                    fn.consoleOutput('view mode menu create');
                     // 権限チェック
                     if ( tb.flag.insert ) {
                         menuList.Main.push({ button: { icon: 'plus', text: getMessage.FTE00008, type: 'tableNew', action: 'positive', minWidth: '200px'}});
                     }
                     if ( tb.flag.update ) {
                         menuList.Main.push({ button: { icon: 'edit', text: getMessage.FTE00009, type: 'tableEdit', action: 'positive', minWidth: '200px', 'disabled': true }});
+                    }
+                    if ( tb.flag.delete ) {
+                        menuList.Main.push({ button: { icon: 'trash', text: getMessage.FTE00188, type: 'tableDelete', action: 'danger', minWidth: '200px', 'disabled': true }});
                     }
                     if ( menuList.Main.length === 0 ) {
                         menuList.Main.push({ message: { text: getMessage.FTE00010 }});
@@ -690,6 +697,14 @@ setTable( mode ) {
                         // 編集モード（新規登録）
                         case 'tableNew':
                             tb.changeEdtiMode.call( tb, 'changeEditRegi');
+                        break;
+                        // 削除確認
+                        case 'tableDelete':
+                            $button.prop('disabled', true );
+                            tb.deleteConfirmation.call( tb ).then(function(){
+                                $button.prop('disabled', false );
+                            });
+
                         break;
                         // ドライラン
                         case 'tableDryrun':
@@ -797,6 +812,7 @@ setTable( mode ) {
                         case 'tableOk':
                             $button.prop('disabled', true );
                             tb.reflectEdits.call( tb ).then(function(){
+                                fn.consoleOutput('disabled false');
                                 $button.prop('disabled', false );
                             });
                         break;
@@ -937,6 +953,20 @@ setTable( mode ) {
                 }
             });
         } break;
+        case 'delete': {
+            const menuList = {
+                Main: [
+                    { button: { className: 'tableApply', type: 'tableOk', icon: 'trash', text: getMessage.FTE00191, action: 'danger', minWidth: '200px', disabled: true }},
+                    { button: { type: 'tableCancel', icon: 'arrow01_left', text: getMessage.FTE00192, action: 'normal'}, separate: true}
+                ],
+            };
+            tb.$.header.html( fn.html.operationMenu( menuList ) );
+            fn.consoleOutput("option.data=" + tb.option.data);
+
+            tb.workStart('delete');
+            // tb.workerPost('delete', tb.option );
+            tb.workerPost('delete', tb.option.data );
+        } break;
         case 'parameter': {
             tb.requestTbody();
         } break;
@@ -957,6 +987,8 @@ setTable( mode ) {
 */
 theadHtml( filterFlag = true, filterHeaderFlag = true ) {
     const tb = this;
+
+    fn.consoleOutput('start');
 
     const info = tb.info,
           groupInfo = info.column_group_info,
@@ -1016,6 +1048,9 @@ theadHtml( filterFlag = true, filterHeaderFlag = true ) {
                 html[0] += fn.html.cell(getMessage.FTE00034, ['tHeadTh', 'tHeadLeftSticky'], 'th', headRowspan );
                 html[0] += fn.html.cell(getMessage.FTE00035, ['tHeadTh'], 'th', headRowspan );
                 html[0] += fn.html.cell(getMessage.FTE00036, ['tHeadTh'], 'th', headRowspan );
+            } break;
+            case 'delete': {
+                html[0] += fn.html.cell(getMessage.FTE00033, ['tHeadTh', 'tHeadLeftSticky'], 'th', headRowspan );
             } break;
         }
     }
@@ -1494,6 +1529,8 @@ getFileData( id, name, type ) {
 */
 setTableEvents() {
     const tb = this;
+
+    fn.consoleOutput('tb.mode='+tb.mode);
 
     /*
     ------------------------------
@@ -2324,6 +2361,7 @@ setTableEvents() {
 
         // 行選択チェックボックス
         tb.$.tbody.on('change', '.tBodyRowCheck', function(){
+
             if ( !tb.checkWork ) {
                 const $check = $( this ),
                       checked = $check.prop('checked'),
@@ -2398,6 +2436,8 @@ setTableEvents() {
                 } else if ( tb.mode === 'select') {
                     tb.selectModeMenuCheck();
                     tb.$.container.trigger(`${tb.id}selectChange`);
+                } else if ( tb.mode === 'view') {
+                    tb.viewModeMenuCheck();
                 }
             }
         });
@@ -2713,6 +2753,14 @@ selectModeMenuCheck() {
 }
 /*
 ##################################################
+   確定用のメニューボタン活性・非活性
+##################################################
+*/
+applyButtonCheck( flag ) {
+    this.$.header.find('.tableApply').prop('disabled', flag );
+}
+/*
+##################################################
    編集モードのメニューボタン活性・非活性
 ##################################################
 */
@@ -2764,6 +2812,27 @@ editModeMenuCheck() {
         $button.filter('[data-type="tableDiscard"]').prop('disabled', discardFlag );
         $button.filter('[data-type="tableRestore"]').prop('disabled', restoreFlag );
     }
+}
+
+/*
+##################################################
+   一覧表示時のメニューボタン活性・非活性
+##################################################
+*/
+viewModeMenuCheck() {
+    const tb = this;
+
+    const selectCount = tb.select[tb.mode].length;
+
+    let deleteDisable = true;
+
+    if ( selectCount !== 0 ) deleteDisable = false;
+
+    fn.consoleOutput('deleteDisable='+deleteDisable);
+    const $button = tb.$.header.find('.operationMenuButton');
+    // 削除ボタン
+    $button.filter('[data-type="tableDelete"]').prop('disabled', deleteDisable );
+
 }
 /*
 ##################################################
@@ -3168,6 +3237,7 @@ async workerPost( type, data ) {
         sort: tb.sort,
         idName: tb.idNameRest
     };
+    fn.consoleOutput('type='+type+'; data='+data);
 
     // 送信タイプ別
     switch ( type ) {
@@ -3247,6 +3317,9 @@ async workerPost( type, data ) {
         case 'search':
             post.searchText = data.text;
             post.searchKeys = data.keys;
+        break;
+        case 'delete':
+            post.tableData = data;
         break;
     }
     tb.worker.postMessage( post );
@@ -3358,6 +3431,8 @@ setWorkerEvent() {
 setTbody() {
     const tb = this;
 
+    fn.consoleOutput('tb.mode='+tb.mode);
+
     if ( !tb.flag.initFilter ) {
         tb.$.container.removeClass('initFilterStandBy');
     }
@@ -3382,6 +3457,8 @@ setTbody() {
         }
         if ( tb.mode === 'diff' ) {
             tb.advanceButtonCheck( false );
+        } else if ( tb.mode === 'delete' ) {
+            tb.applyButtonCheck( false );
         }
     }
 
@@ -3418,6 +3495,11 @@ setTbody() {
 
         if ( ( tb.mode === 'select' && tb.params.selectType === 'multi') || tb.mode === 'edit' || tb.mode === 'view') {
             tb.checkSelectStatus();
+        }
+
+        if ( tb.mode === 'view'){
+            fn.consoleOutput('button settings');
+            tb.viewModeMenuCheck();
         }
 
         if ( tb.option.dataType === 'n') tb.filterDownloadButtonCheck();
@@ -3734,6 +3816,13 @@ tbodyHtml() {
                     rowHtml.push( rowCheckInput('check') );
                 }
             break;
+            case 'delete': {
+                const typeText = {
+                    delete: getMessage.FTE00189
+                };
+                const type = fn.html.span(`editType ${tb.option.type[rowId]}`, typeText[ tb.option.type[rowId] ]);
+                rowHtml.push( fn.html.cell( type, ['tBodyLeftSticky', 'tBodyRowEditType', 'tBodyTh'], 'th') );
+            } break;
         }
 
         for ( const columnKey of tb.data.columnKeys ) {
@@ -3807,6 +3896,8 @@ cellHtml( item, columnKey, journal ) {
             }
         case 'diff':
             return fn.html.cell( tb.editConfirmCellHtml( item, columnKey ), className, cellType, 1, 1, columnAttr );
+        case 'delete':
+            return fn.html.cell( tb.viewCellHtml( item, columnKey ), className, cellType, 1, 1, columnAttr );
     }
 }
 /*
@@ -5181,6 +5272,7 @@ editOk() {
     formData = new FormData(),
     editDataParam = [],
     paramLength = editData.length;
+    fn.consoleOutput("editData=" + fn.jsonStringify(editData));
 
     for ( let i = 0; i < paramLength; i++ ) {
         const item = editData[i];
@@ -5235,6 +5327,248 @@ editOk() {
                         reject( null );
                     } else {
                         result.data = editData;
+                        reject( result );
+                        //バリデーションエラー
+                        alert(getMessage.FTE00068);
+                    }
+                } else {
+                    reject( null );
+                }
+            });
+    });
+}
+/*
+##################################################
+   Delete confirmation (list)
+   削除確認(一覧)
+##################################################
+*/
+deleteConfirmation() {
+    const tb = this;
+
+    tb.setTable('view');
+    fn.consoleOutput("tb.select.view=" + tb.select.view);
+    tb.$.errorMessage.empty();
+
+    return new Promise(function( resolve ){
+
+        // 表示用データ
+        const selectData = {
+            data: [],
+            type: {}
+        };
+        for ( const id of tb.select.view ) {
+
+            const findData = tb.data.body.find(function( data ){
+                return String( data.parameter[ tb.idNameRest ] ) === String( id );
+            });
+            if ( findData ) {
+                fn.consoleOutput("findData=" + findData);
+                selectData.data.push( findData );
+                selectData.type[id] = 'delete';
+            }
+        }
+        fn.consoleOutput("selectData=" + selectData);
+
+        // モーダル表示
+        const config = {
+            mode: 'modeless',
+            className: 'deleteConfirmationModal',
+            position: 'center',
+            width: 'auto',
+            header: {
+                title: getMessage.FTE00190,
+            }
+        };
+
+        let
+        modalTable = new DataTable('DT', 'delete', tb.info, tb.params, selectData ),
+        modal = new Dialog( config );
+
+        modal.open( modalTable.setup() );
+
+        // カラムキー
+        tb.data.regiColumnKeys = modalTable.data.columnKeys;
+
+        const end = function(){
+            modalTable.worker.terminate();
+            modal = null;
+            modalTable = null;
+        };
+
+        // メニューボタン
+        modalTable.$.header.find('.itaButton').on('click', function(){
+            if ( !tb.checkWork ) {
+                const $button = $( this ),
+                    type = $button.attr('data-type');
+                switch ( type ) {
+                    // 削除
+                    case 'tableOk':
+                        $button.prop('disabled', true );
+                        tb.deleteMessage().then(function(result){
+                            fn.consoleOutput('deleteMessage close');
+                            $button.prop('disabled', false );
+                            modal.close().then( function(){
+                                end();
+                                if (result !== undefined){
+                                    fn.resultDeleteModal(result).then(function(){
+                                        // Session Timeoutの設定を戻す
+                                        if ( fn.getCmmonAuthFlag() ) {
+                                            CommonAuth.tokenRefreshPermanently( false );
+                                        } else if ( window.parent && window.parent.tokenRefreshPermanently ) {
+                                            window.parent.tokenRefreshPermanently( false );
+                                        }
+                                        tb.changeViewMode.call( tb );
+                                        resolve();
+                                    });
+                                }
+                            });
+                        }).catch(function( result ){
+                            modal.close().then( function(){
+                                end();
+                                if ( result !== null ) {
+                                    tb.editError( result );
+                                }
+                                resolve();
+                            });
+                        });
+                        break;
+                    case 'tableCancel':
+                        modal.close();
+                        end();
+                        resolve();
+                        break;
+                }
+            }
+        });
+    });
+}
+/*
+##################################################
+   Delete confirmation message
+   削除実行確認メッセージ
+##################################################
+*/
+deleteMessage() {
+    const tb = this;
+
+    fn.consoleOutput("[CALL] confirm_delete");
+
+    return new Promise(function( resolve, reject ){
+
+        fn.deleteConfirmMessage(
+            getMessage.FTE10097,
+            null,
+            null,
+            getMessage.FTE10098,
+            "delete",
+            () => {
+                tb.deleteApply.call( tb ).then(function( result ){
+                    fn.consoleOutput('deleteMessage end');
+                    resolve( result );
+                }).catch(function( result ){
+                    fn.consoleOutput('deleteMessage result='+result);
+                    reject( result );
+                });
+            },
+            () => {
+                fn.consoleOutput('onCancel');
+                resolve();
+            }
+        );
+    });
+}
+
+/*
+##################################################
+   delete Apply ( Modal )
+   削除データを編集し、削除実行
+##################################################
+*/
+deleteApply() {
+    const tb = this;
+
+    // tb.data.editOrder = [];
+
+    // エラーリセット
+    tb.$.container.removeClass('tableError');
+    tb.$.errorMessage.empty();
+
+    const deleteData = [];
+
+    fn.consoleOutput('tb.select.view='+tb.select.view);
+    fn.consoleOutput('tb.idNameRest='+tb.idNameRest);
+    for ( const id of tb.select.view ) {
+
+        const itemData = {
+            parameter: {}
+        };
+        const findData = tb.data.body.find(function( data ){
+            return String( data.parameter[ tb.idNameRest ] ) === String( id );
+        });
+        if ( findData ) {
+            fn.consoleOutput("findData=" + JSON.stringify(findData));
+            fn.consoleOutput("tb.data.regiColumnKeys=" + tb.data.regiColumnKeys);
+
+            if ( !tb.data.regiColumnKeys ) tb.data.regiColumnKeys = tb.data.columnKeys;
+            itemData.type = 'Delete';
+            itemData.parameter[ tb.idNameRest ]  = id;
+            itemData.parameter[ 'last_update_date_time' ]  = findData.parameter[ 'last_update_date_time' ];
+
+            deleteData.push( itemData );
+        }
+    }
+
+    // パラメータとファイルを分ける
+    const
+    formData = new FormData(),
+    deleteDataParam = [],
+    paramLength = deleteData.length;
+
+    for ( let i = 0; i < paramLength; i++ ) {
+        const item = deleteData[i];
+        // パラメータ
+        deleteDataParam.push({
+            parameter: item.parameter,
+            type: item.type
+        });
+    }
+    // パラメータをFormDataに追加
+    formData.append('json_parameters', fn.jsonStringify( deleteDataParam ) );
+
+    return new Promise(async function( resolve, reject ){
+        // アップロードの間はSession Timeoutしないように設定
+        if ( fn.getCmmonAuthFlag() ) {
+            CommonAuth.tokenRefreshPermanently( true );
+        } else if ( window.parent && window.parent.tokenRefreshPermanently ) {
+            window.parent.tokenRefreshPermanently( true );
+        }
+
+        // トークンを強制リフレッシュ
+        try {
+            if ( fn.getCmmonAuthFlag() ) {
+                await CommonAuth.refreshTokenForce();
+            } else if ( window.parent && window.parent.refreshTokenForce ) {
+                await window.parent.refreshTokenForce();
+            }
+        } catch ( e ) {
+            window.console.error( error );
+            if ( error.message ) alert( error.message );
+            reject( null );
+            return;
+        }
+
+        fn.xhr( tb.rest.maintenance, formData )
+            .then(function( result ){
+                resolve( result );
+            })
+            .catch(function( result ){
+                if ( fn.typeof( result ) === 'object') {
+                    if ( result.result && result.result.match(/^498/) ) {
+                        if ( fn.typeof( result.message ) === 'string') alert( result.message );
+                        reject( null );
+                    } else {
+                        result.data = deleteData;
                         reject( result );
                         //バリデーションエラー
                         alert(getMessage.FTE00068);
@@ -5383,6 +5717,7 @@ editError( error ) {
         };
         errorMessage['0'][key] = error.message;
     }
+    fn.consoleOutput('errorMessage='+errorMessage);
 
     //一意のキーの値を取り出す
     const param = error.data.map(function(result) {
@@ -5427,6 +5762,19 @@ editError( error ) {
                     }
                 }
             }
+            else{
+                let name = '';
+                let body = fn.cv( errorArray, '?', true );
+                body = body.replace(/\r?\n/g, '<br>');
+                editRowNum = '<span class="tBodyAutoInput"></span>';
+                errorHtml.push(`<tr class="tBodyTr tr">`
+                    + (( tb.partsFlag )? ``:fn.html.cell( auto_input, ['tBodyTh', 'tBodyLeftSticky'], 'th') )
+                    + (( tb.partsFlag )? ``:fn.html.cell( editRowNum, ['tBodyTh', 'tBodyErrorId'], 'th') )
+                    + fn.html.cell( name, 'tBodyTh', 'th')
+                    + fn.html.cell( body, 'tBodyTd')
+                + `</tr>`);
+                fn.consoleOutput('errorArray='+errorArray);
+            }
         }
     }
 
@@ -5446,6 +5794,8 @@ editError( error ) {
             + errorHtml.join('')
         + `</tbody>`
     + `</table>`;
+
+    fn.consoleOutput('errorTable='+errorTable);
 
     if ( tb.partsFlag ) {
         return errorTable;

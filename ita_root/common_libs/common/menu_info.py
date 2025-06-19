@@ -95,6 +95,7 @@ def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, 
     row_update_flag = menu_table_link_record[0].get('ROW_UPDATE_FLAG')
     row_disuse_flag = menu_table_link_record[0].get('ROW_DISUSE_FLAG')
     row_reuse_flag = menu_table_link_record[0].get('ROW_REUSE_FLAG')
+    row_delete_flag = menu_table_link_record[0].get('ROW_DELETE_FLAG')
 
     # 『メニューグループ管理』テーブルから対象のデータを取得
     ret = objdbca.table_select(t_common_menu_group, 'WHERE MENU_GROUP_ID = %s AND DISUSE_FLAG = %s', [menu_group_id, 0])
@@ -130,6 +131,7 @@ def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, 
         'row_update_flag': row_update_flag,
         'row_disuse_flag': row_disuse_flag,
         'row_reuse_flag': row_reuse_flag,
+        'row_delete_flag': row_delete_flag,
         'login_necessity': login_necessity,
         'auto_filter_flg': auto_filter_flg,
         'initial_filter_flg': initial_filter_flg,
@@ -405,6 +407,7 @@ def collect_custom_menu_info(objdbca, menu, menu_record, privilege, custom_file_
         'row_update_flag': None,
         'row_disuse_flag': None,
         'row_reuse_flag': None,
+        'row_delete_flag': None,
         'login_necessity': login_necessity,
         'auto_filter_flg': auto_filter_flg,
         'initial_filter_flg': initial_filter_flg,

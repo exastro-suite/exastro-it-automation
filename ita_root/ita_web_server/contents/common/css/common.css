@@ -2827,6 +2827,9 @@ border-color: #FFDD00;
 .editType.restore  {
 border-color: #0078DC;
 }
+.editType.delete  {
+border-color: #C80000;
+}
 .noSelect,
 .tableEditInputSelectValue,
 .tableEditInputMultipleSelectValue {
@@ -3609,6 +3612,9 @@ background-color: #FFDD00;
 }
 .resultTypeRestore .resultType::before {
 background-color: #0078DC;
+}
+.resultTypeDelete .resultType::before {
+background-color: #C80000;
 }
 .resultNumber {
 display: table-cell;
@@ -5963,3 +5969,21 @@ box-shadow: 0 0 4px rgba( 0,0,0,.5 ) inset,
 .icon-sort_asc:before{content:"\e952"}.icon-sort_desc:before{content:"\e953"}.icon-mouse:before{content:"\e954"}.icon-mouse_left:before{content:"\e955"}
 .icon-mouse_right:before{content:"\e959"}.icon-mouse_wheel:before{content:"\e95a"}.icon-compare:before{content:"\e95d"}.icon-export:before{content: "\e95e"}
 .icon-import:before{content: "\e95f"}.icon-rule:before{content: "\e960"}.icon-rhombus:before{content: "\e961"}
+
+.caution_head {
+  color: red;
+  font-weight: bold;
+  font-size: 22px;
+}
+.caution_head:before {
+  font-family: 'exastro-ui-icons' !important;
+  color: orangered;
+  content: "\e94b";
+  font-size: 26px;
+  margin-right: 5px;
+}
+
+.caution_message {
+  color: red;
+  font-weight: bold;
+}

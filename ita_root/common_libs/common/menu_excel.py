@@ -1766,7 +1766,7 @@ def execute_excel_maintenance(
 
 def create_upload_parameters(connexion_request, organization_id, workspace_id):
     """
-    create_maintenance_parameters
+    create_upload_parameters
         Use connexion.request
             - application/json
             - multipart/form-data

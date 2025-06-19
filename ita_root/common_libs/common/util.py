@@ -21,7 +21,7 @@ import secrets
 import string
 import base64
 import codecs
-from pathlib import Path
+import pathlib
 import pytz
 import datetime
 import re
@@ -339,8 +339,12 @@ def file_read_retry(func):
     """
     file_read_retry
         ファイルストレージへの書き込み直後の読み込みが遅い場合向けの対策
+        Measures to take when reading is slow immediately after writing to file storage
+
         「FileNotFoundError: [Errno 2] No such file or directory」が出るため、リトライを行う
-        デコレーター関数
+        "FileNotFoundError: [Errno 2] No such file or directory" appears, so retry.
+
+        デコレーター関数 / decorator function
         ・file_encodeの中に例をあげています
     """
     #
@@ -356,10 +360,16 @@ def file_read_retry(func):
                     break
             except Exception as e:
                 # raiseしたくない場合は、funcの中でログを出力し、（エラーを抑止して）Falseを返却してください
-                t = traceback.format_exc()
-                g.applogger.info(arrange_stacktrace_format(t))
                 if i == max:
+                    # 最後のログ出力のみ、stacktraceを出力
+                    # Output stacktrace only the last log output
+                    t = traceback.format_exc()
+                    g.applogger.info(arrange_stacktrace_format(t))
                     raise e
+                else:
+                    # retry分は、メッセージのみを出力
+                    # For retry minutes, only the message is output
+                    g.applogger.info(print_exception_msg(e))
 
             if i == max:
                 break
@@ -367,6 +377,7 @@ def file_read_retry(func):
             i = i + 1
 
     return wrapper
+
 
 def file_decode(file_path):
     """
@@ -406,6 +417,54 @@ def file_decode(file_path):
     return base64.b64encode(text_decrypt.encode()).decode()
 
 
+@file_read_retry
+def dir_remove(remove_dir):
+    """ディレクトリ削除 / Delete directory
+
+    Args:
+        remove_dir (str): directory
+
+    Raises:
+        e: Exception
+    """
+
+    try:
+        if os.path.isdir(remove_dir):
+            # delete mode true to file delete
+            shutil.rmtree(remove_dir)
+    except FileNotFoundError as e:
+        # 通常は発生しないがアクセス遅延で発生した場合を考慮、ただしエラーとはしない
+        # Consider cases where this does not normally occur, but occur due to access delay, but do not treat it as an error.
+        g.applogger.info(f"FileNotFoundError(dir):{remove_dir}")
+        pass
+
+
+@file_read_retry
+def file_remove(remove_file, delete_mode = True):
+    """_summary_
+
+    Args:
+        remove_file (str): 削除ファイルパス delete file path
+        delete_mode (bool): 削除モード delete mode True(default): File to delete, False: File to 0Byte
+    """
+
+    try:
+        if os.path.isfile(remove_file):
+            # delete mode true to file delete
+            if delete_mode:
+                os.remove(remove_file)
+            else:
+                # delete mode false to file 0byte touch
+                p_delete = pathlib.Path(remove_file)
+                with p_delete.open(mode='w') as f:
+                    f.write('')
+    except FileNotFoundError as e:
+        # 通常は発生しないがアクセス遅延で発生した場合を考慮、ただしエラーとはしない
+        # Consider cases where this does not normally occur, but occur due to access delay, but do not treat it as an error.
+        g.applogger.info(f"FileNotFoundError(file):{remove_file}")
+        pass
+
+
 def get_upload_file_path(workspace_id, menu_id, uuid, column_name_rest, file_name, uuid_jnl):
     """
     Get filepath
@@ -421,11 +480,11 @@ def get_upload_file_path(workspace_id, menu_id, uuid, column_name_rest, file_nam
         filepath
     """
     organization_id = g.get("ORGANIZATION_ID")
-    file_path = "/storage/{}/{}/uploadfiles/{}/{}/{}/{}".format(organization_id, workspace_id, menu_id, column_name_rest, uuid, file_name)
+    file_path = os.path.join(os.environ.get('STORAGEPATH'), organization_id, workspace_id, 'uploadfiles', menu_id, column_name_rest, uuid, file_name)
     old_file_path = ""
     if uuid_jnl is not None:
         if len(uuid_jnl) > 0:
-            old_file_path = "/storage/{}/{}/uploadfiles/{}/{}/{}/old/{}/{}".format(organization_id, workspace_id, menu_id, column_name_rest, uuid, uuid_jnl, file_name)  # noqa: E501
+            old_file_path = os.path.join(os.environ.get('STORAGEPATH'), organization_id, workspace_id, 'uploadfiles', menu_id, column_name_rest, uuid, 'old', uuid_jnl, file_name)  # noqa: E501
 
     return {"file_path": file_path, "old_file_path": old_file_path}
 
@@ -791,6 +850,35 @@ def get_org_execution_limit(limit_key):
     return limit_list
 
 
+def _get_platform_limits(organization_id):
+    """
+    Organization毎の各種上限取得
+
+    Returns:
+        response_data: Organization毎の各種上限
+    """
+
+    host_name = os.environ.get('PLATFORM_API_HOST')
+    port = os.environ.get('PLATFORM_API_PORT')
+    header_para = {
+        "Content-Type": "application/json",
+        "User-Id": "dummy",
+        "Roles": "dummy",
+        "Language": g.get('LANGUAGE')
+    }
+    # API呼出
+    api_url = "http://{}:{}/internal-api/{}/platform/limits".format(host_name, port, organization_id)
+    request_response = requests.get(api_url, headers=header_para)
+
+    if request_response.status_code != 200:
+        raise AppException('999-00005', [api_url, response_data])
+
+    response_data = json.loads(request_response.text)
+    del request_response
+
+    return response_data
+
+
 def get_org_upload_file_size_limit(organization_id):
     """
     Organization毎のアップロードファイルサイズ上限取得
@@ -799,37 +887,48 @@ def get_org_upload_file_size_limit(organization_id):
         org_upload_file_size_limit: Organization毎のアップロードファイルサイズ上限
     """
 
-    if 'ORG_UPLOAD_FILE_SIZE_LIMIT' in g:
-        org_upload_file_size_limit = g.get('ORG_UPLOAD_FILE_SIZE_LIMIT')
+    # 対象データのキー
+    g_limit_key = "ORG_UPLOAD_FILE_SIZE_LIMIT"
+    limit_key = 'ita.organization.common.upload_file_size_limit'
 
+    if g_limit_key in g:
+        org_limit = g.get(g_limit_key)
     else:
-        host_name = os.environ.get('PLATFORM_API_HOST')
-        port = os.environ.get('PLATFORM_API_PORT')
-        limit_key = 'ita.organization.common.upload_file_size_limit'
+        response_data = _get_platform_limits(organization_id)
 
-        header_para = {
-            "Content-Type": "application/json",
-            "User-Id": "dummy",
-            "Roles": "dummy",
-            "Language": g.get('LANGUAGE')
-        }
-
-        # API呼出
-        api_url = "http://{}:{}/internal-api/{}/platform/limits".format(host_name, port, organization_id)
-        request_response = requests.get(api_url, headers=header_para)
-
-        response_data = json.loads(request_response.text)
-
-        if request_response.status_code != 200:
-            raise AppException('999-00005', [api_url, response_data])
-
-        # Organization毎のアップロードファイルサイズ上限取得
-        org_upload_file_size_limit = response_data["data"][limit_key]
+        org_limit = response_data["data"][limit_key]
+        del response_data
 
         # gに値を設定しておく
-        g.ORG_UPLOAD_FILE_SIZE_LIMIT = org_upload_file_size_limit
+        setattr(g, g_limit_key, org_limit)
 
-    return org_upload_file_size_limit
+    return org_limit
+
+
+def get_org_maintenance_records_limit(organization_id):
+    """
+    Organizationごとの処理される保守レコードの最大数取得
+
+    Returns:
+        org_limit: Organizationごとの処理される保守レコードの最大数
+    """
+
+    # 対象データのキー
+    g_limit_key = "ORG_MAINTENANCE_RECORDS_LIMIT"
+    limit_key = 'ita.organization.common.maintenance_records_limit'
+
+    if g_limit_key in g:
+        org_limit = g.get(g_limit_key)
+    else:
+        response_data = _get_platform_limits(organization_id)
+
+        org_limit = response_data["data"][limit_key]
+        del response_data
+
+        # gに値を設定しておく
+        setattr(g, g_limit_key, org_limit)
+
+    return org_limit
 
 
 def get_org_menu_export_import_buffer_size(organization_id):
@@ -862,34 +961,17 @@ def get_org_menu_export_import_buffer_size(organization_id):
     if g_limit_key in g:
         org_limit = g.get(g_limit_key)
     else:
-        host_name = os.environ.get('PLATFORM_API_HOST')
-        port = os.environ.get('PLATFORM_API_PORT')
-
-        header_para = {
-            "Content-Type": "application/json",
-            "User-Id": "dummy",
-            "Roles": "dummy",
-            "Language": g.get('LANGUAGE')
-        }
-
-        # API呼出
-        api_url = "http://{}:{}/internal-api/{}/platform/limits".format(host_name, port, organization_id)
-        request_response = requests.get(api_url, headers=header_para)
-
-        response_data = json.loads(request_response.text)
-        if request_response.status_code != 200:
-            raise AppException('999-00005', [api_url, response_data])
+        response_data = _get_platform_limits(organization_id)
 
         # Organization毎のメニューエクスポート・インポートのレコードバッファサイズ取得
         org_limit = response_data["data"].get(limit_key, system_size_limit)
+        del response_data
 
         # システムの設定値以下であれば、リソースプランの値使用
         org_limit = org_limit if system_size_limit > org_limit else system_size_limit
 
         # gに値を設定しておく
         setattr(g, g_limit_key, org_limit)
-
-        del request_response, response_data
 
     return org_limit
 

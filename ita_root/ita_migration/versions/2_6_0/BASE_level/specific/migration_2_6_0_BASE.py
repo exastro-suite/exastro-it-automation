@@ -19,6 +19,10 @@ import requests
 
 def main(work_dir_path, db_conn):
 
+    #############################################################################
+    # Organization毎のメニューエクスポート・インポートのレコード操作上限値の設定
+    # Organizationのファイルアップロードサイズ最大値の設定
+    #############################################################################
     g.applogger.info(f"migration_2_6_0_BASE - main: {work_dir_path=}, {db_conn=}.")
 
     #############################################################################
@@ -58,16 +62,7 @@ def main(work_dir_path, db_conn):
     else:
         g.applogger.info(f"[Trace] URL=[{api_url}], StatusCode=[{request_response.status_code}], Response-[{str(response_data)}]")
 
-    #############################################################################
-    # Organization毎のメニューエクスポート・インポートのレコード操作上限値の設定
-    #############################################################################
-    g.applogger.info("[Trace] migration_2_6_0_BASE")
-    host_name = os.environ.get('PLATFORM_API_HOST')
-    port = os.environ.get('PLATFORM_API_PORT')
-    header_para = {
-        "Content-Type": "application/json",
-        "User-Id": "dummy",
-    }
+    # API呼出
     api_url = "http://{}:{}//internal-api/platform/plan_items".format(host_name, port)
 
     # ENVから値を取得
@@ -80,6 +75,14 @@ def main(work_dir_path, db_conn):
                     "max": int(os.environ.get('ORG_MENU_EXPORT_IMPORT_BUFFER_SIZE_MAX')),
                     "default": int(os.environ.get('ORG_MENU_EXPORT_IMPORT_BUFFER_SIZE_DEFAULT')),
                 }
+            },
+            {
+                "id": "ita.organization.common.maintenance_records_limit",
+                "informations": {
+                    "description": os.environ.get('ORG_COMMON_MAINTENANCE_RECORDS_LIMIT_DESCRIPTION'),
+                    "max": int(os.environ.get('ORG_COMMON_MAINTENANCE_RECORDS_LIMIT_MAX')),
+                    "default": int(os.environ.get('ORG_COMMON_MAINTENANCE_RECORDS_LIMIT_DEFAULT'))
+                }
             }
         ]
         data_encode = json.dumps(data)
@@ -87,6 +90,9 @@ def main(work_dir_path, db_conn):
         g.applogger.info(f"[Trace] data.informations.description : os.environ.get('ORG_MENU_EXPORT_IMPORT_BUFFER_SIZE_DESCRIPTION')={os.environ.get('ORG_MENU_EXPORT_IMPORT_BUFFER_SIZE_DESCRIPTION')}")
         g.applogger.info(f"[Trace] data.informations.max : os.environ.get('ORG_MENU_EXPORT_IMPORT_BUFFER_SIZE_MAX')={os.environ.get('ORG_MENU_EXPORT_IMPORT_BUFFER_SIZE_MAX')}")
         g.applogger.info(f"[Trace] data.informations.default : os.environ.get('ORG_MENU_EXPORT_IMPORT_BUFFER_SIZE_DEFAULT')={os.environ.get('ORG_MENU_EXPORT_IMPORT_BUFFER_SIZE_DEFAULT')}")
+        g.applogger.info(f"[Trace] data.informations.description : os.environ.get('ORG_COMMON_MAINTENANCE_RECORDS_LIMIT_DESCRIPTION')={os.environ.get('ORG_COMMON_MAINTENANCE_RECORDS_LIMIT_DESCRIPTION')}")
+        g.applogger.info(f"[Trace] data.informations.max : os.environ.get('ORG_COMMON_MAINTENANCE_RECORDS_LIMIT_MAX')={os.environ.get('ORG_COMMON_MAINTENANCE_RECORDS_LIMIT_MAX')}")
+        g.applogger.info(f"[Trace] data.informations.default : os.environ.get('ORG_COMMON_MAINTENANCE_RECORDS_LIMIT_DEFAULT')={os.environ.get('ORG_COMMON_MAINTENANCE_RECORDS_LIMIT_DEFAULT')}")
         raise Exception(f'PARAMETER ENCODE ERROR. URL=[{api_url}], Exception={e}')  # NOSONAR : 20250522 To prevent interruptions to processing
 
     g.applogger.info(f"[Trace] data=[{data_encode}]")

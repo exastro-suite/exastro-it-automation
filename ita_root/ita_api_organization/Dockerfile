@@ -87,6 +87,9 @@ dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce
     iputils \
     docker-ce-cli \
     jq \
+&&  dnf module install -y nodejs:18/common \
+&&  npm config set registry http://registry.npmjs.org/ \
+&&  npm install -g @apidevtools/swagger-cli \
 &&  usermod -G wheel $USERNAME \
 &&  echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers \
 &&  echo "%${GROUPNAME} ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers

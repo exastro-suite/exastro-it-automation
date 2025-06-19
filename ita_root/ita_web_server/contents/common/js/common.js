@@ -151,6 +151,48 @@ getUiVersion: function() {
 },
 /*
 ##################################################
+   呼び出し元のfunction情報を返す
+##################################################
+*/
+getCaller: function getCaller(stackIndex) {
+    var callerInfo = {};
+    var saveLimit = Error.stackTraceLimit;
+    var savePrepare = Error.prepareStackTrace;
+
+    stackIndex = (stackIndex - 0) || 1;
+
+    Error.stackTraceLimit = stackIndex + 1;
+    Error.captureStackTrace(this, getCaller);
+
+    Error.prepareStackTrace = function (_, stack) {
+        var caller = stack[stackIndex];
+        callerInfo.file = caller.getFileName();
+        callerInfo.line = caller.getLineNumber();
+        var func = caller.getFunctionName();
+        if (func) {
+            callerInfo.func = func;
+        }
+        else{
+            callerInfo.func = 'unknown';
+        }
+    };
+    this.stack;
+    Error.stackTraceLimit = saveLimit;
+    Error.prepareStackTrace = savePrepare;
+    return callerInfo;
+},
+/*
+##################################################
+   console log に出力
+##################################################
+*/
+consoleOutput: function(log) {
+    var callerInfo = cmn.getCaller();
+    // 必要に応じて有効化することで確認可能
+    console.log(callerInfo.func + '(' + callerInfo.file + ')' + ' : ' + log);
+},
+/*
+##################################################
    script, styleの読み込み
 ##################################################
 */
@@ -419,16 +461,21 @@ systemErrorAlert: function() {
 */
 editFlag: function( menuInfo ) {
     const flag  = {};
+    const privilege_edit_true = ['0', '1'];
+    const privilege_delete_true = ['0'];
+
     flag.initFilter = ( menuInfo.initial_filter_flg === '1')? true: false;
     flag.autoFilter = ( menuInfo.auto_filter_flg === '1')? true: false;
     flag.history = ( menuInfo.history_table_flag === '1')? true: false;
 
-    flag.privilege = ( menuInfo.privilege === '1')? true: false;
-    flag.insert = ( menuInfo.privilege === '1')? ( menuInfo.row_insert_flag === '1')? true: false: false;
-    flag.update = ( menuInfo.privilege === '1')? ( menuInfo.row_update_flag === '1')? true: false: false;
-    flag.disuse = ( menuInfo.privilege === '1')? ( menuInfo.row_disuse_flag === '1')? true: false: false;
-    flag.reuse = ( menuInfo.privilege === '1')? ( menuInfo.row_reuse_flag === '1')? true: false: false;
-    flag.edit = ( menuInfo.privilege === '1')? ( menuInfo.row_insert_flag === '1' && menuInfo.row_update_flag === '1')? true: false: false;
+    flag.privilege = ( privilege_edit_true.includes(menuInfo.privilege))? true: false;
+    flag.privilegeAndDelete = ( privilege_delete_true.includes(menuInfo.privilege))? true: false;
+    flag.insert = ( privilege_edit_true.includes(menuInfo.privilege))? ( menuInfo.row_insert_flag === '1')? true: false: false;
+    flag.update = ( privilege_edit_true.includes(menuInfo.privilege))? ( menuInfo.row_update_flag === '1')? true: false: false;
+    flag.disuse = ( privilege_edit_true.includes(menuInfo.privilege))? ( menuInfo.row_disuse_flag === '1')? true: false: false;
+    flag.reuse = ( privilege_edit_true.includes(menuInfo.privilege))? ( menuInfo.row_reuse_flag === '1')? true: false: false;
+    flag.edit = ( privilege_edit_true.includes(menuInfo.privilege))? ( menuInfo.row_insert_flag === '1' && menuInfo.row_update_flag === '1')? true: false: false;
+    flag.delete = ( privilege_delete_true.includes(menuInfo.privilege))? ( menuInfo.row_delete_flag === '1')? true: false: false;
 
     return flag;
 },
@@ -650,6 +697,24 @@ getPathname: function(){
     return ( new URL( document.location ) ).pathname;
 },
 /*
+##################################################
+   String format
+##################################################
+*/
+strFormat: function(formatString, ...args){
+    let text = formatString;
+
+    try {
+        for(var i = 0; i < args.length; i++){
+            // {0}, {1}..に埋め込む変数を第3引数以降（args）で指定した文字列に置き換える
+            // Replace the variables embedded in {0}, {1}.. with the strings specified in the third and subsequent arguments (args)
+            text = text.replace('{' + i + '}', args[i]);
+        }
+    } catch(e) {
+        console.log( e.message );
+    }
+    return text;
+},
 /*
 ##################################################
    URLパラメータ
@@ -2763,6 +2828,117 @@ errorModal: function( errors, pageName, info ) {
         dialog.open(`<div class="errorContainer">${html}</div>`);
     });
 
+},
+/*
+##################################################
+    削除成功モーダル
+##################################################
+*/
+resultDeleteModal: function( result ) {
+    return new Promise(function( resolve ){
+        const funcs = {};
+        funcs.ok = function(){
+            dialog.close();
+            resolve( true );
+        };
+        const config = {
+            mode: 'modeless',
+            position: 'center',
+            header: {
+                title: getMessage.FTE10104
+            },
+            width: '480px',
+            footer: {
+                button: { ok: { text: getMessage.FTE10043, action: 'normal'}}
+            }
+        };
+        const html = []
+
+        const listOrder = ['Delete'];
+        for ( const key of listOrder ) {
+              html.push(`<dl class="resultList resultType${key}">`
+                  + `<dt class="resultType">${key}</dt>`
+                  + `<dd class="resultNumber">${result[key]}</dd>`
+              + `</dl>`);
+        }
+
+        const dialog = new Dialog( config, funcs );
+        dialog.open(`<div class="resultContainer">${html.join('')}</div>`);
+    });
+},
+/*
+##################################################
+   Common events
+##################################################
+*/
+deleteConfirmMessage: function(title, message, deleteResources, cautionMessage, input, onOk = null, onCancel = null) {
+
+    const dialog = new Dialog({
+        mode: 'modeless',
+        position: 'center',
+        width: 'auto',
+        header: {
+            title: title,
+        },
+        footer: {
+            button: {
+                ok: { text: '<span class="iconButtonIcon icon icon-trash"></span>' + getMessage.FTE10099, action: "danger" },
+                cancel: { text: getMessage.FTE10100, action: "normal" }
+            }
+        },
+    },
+    {
+        ok: function() {
+            if($(dialog.$.dbody).find(".confirm_yes").val() != input) {
+                $(dialog.$.dbody).find(".validate_error").css("display", "");
+                $(dialog.$.dbody).find(".confirm_yes").focus();
+                return;
+            }
+            dialog.close();
+            if(onOk !== null) {
+                onOk();
+            }
+        },
+        cancel: function() {
+            dialog.close();
+            if(onCancel !== null) {
+                onCancel();
+            }
+        }
+    });
+
+    let content = "";
+    content += '<div class="alertMessage" style="margin-left: 30px; margin-right: 30px;">'
+    if(message != null && message != "" ) {
+        content += message + '<br>';
+    }
+    if(deleteResources != null && deleteResources != "" ) {
+            if((typeof deleteResources) == "string") {
+            content += '<ul style="list-style-type:disc; padding-left:30px; background-color: #FFFFEE;"><li>' + fn.cv(deleteResources, "", true) + '</li></ul>'
+        } else {
+            content += '<div style="max-height: 200px; overflow: auto;">'
+            content += '<ul style="list-style-type:disc; padding-left:30px; background-color: #FFFFEE;">' + deleteResources.map((value, i) => { return '<li>' + fn.cv(value, "", true) + '</li>'; }).join("") + '</ul>'
+            content += '</div>'
+        }
+    }
+    if(cautionMessage != null && cautionMessage != "" ) {
+        let cautionHead = getMessage.FTE10101;
+        content += '<span class="caution_head">' + cautionHead + '</span><br>'
+
+        if((typeof cautionMessage) == "string") {
+            content += '<ul style="list-style-type:disc; padding-left:30px; background-color: #FFFFEE;"><li class="caution_message">' + fn.cv(cautionMessage, "", true) + '</li></ul>'
+        } else {
+            content += '<div style="max-height: 200px; overflow: auto;">'
+            content += '<ul style="list-style-type:disc; padding-left:30px; background-color: #FFFFEE;">' + cautionMessage.map((value, i) => { return '<li class="caution_message">' + fn.cv(value, "", true) + '</li>'; }).join("") + '</ul>'
+            content += '</div>'
+        }
+    }
+    content += '<hr>' + cmn.strFormat(getMessage.FTE10102, fn.cv(input, "", true)) + '<br>'
+    content += '<input class="confirm_yes inputText input" type="text" maxlength="' + input.length + '">'
+    content += '<span class="validate_error" style="display:none;">' + cmn.strFormat(getMessage.FTE10103, fn.cv(input, "", true)) + '</span>'
+    content += '</div>';
+
+    dialog.open(content);
 },
 /*
 ##################################################

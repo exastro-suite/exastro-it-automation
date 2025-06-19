@@ -5410,16 +5410,18 @@ deleteConfirmation() {
                             $button.prop('disabled', false );
                             modal.close().then( function(){
                                 end();
-                                fn.resultDeleteModal(result).then(function(){
-                                    // Session Timeoutの設定を戻す
-                                    if ( fn.getCmmonAuthFlag() ) {
-                                        CommonAuth.tokenRefreshPermanently( false );
-                                    } else if ( window.parent && window.parent.tokenRefreshPermanently ) {
-                                        window.parent.tokenRefreshPermanently( false );
-                                    }
-                                    tb.changeViewMode.call( tb );
-                                    resolve();
-                                });
+                                if (result !== undefined){
+                                    fn.resultDeleteModal(result).then(function(){
+                                        // Session Timeoutの設定を戻す
+                                        if ( fn.getCmmonAuthFlag() ) {
+                                            CommonAuth.tokenRefreshPermanently( false );
+                                        } else if ( window.parent && window.parent.tokenRefreshPermanently ) {
+                                            window.parent.tokenRefreshPermanently( false );
+                                        }
+                                        tb.changeViewMode.call( tb );
+                                        resolve();
+                                    });
+                                }
                             });
                         }).catch(function( result ){
                             modal.close().then( function(){
@@ -5463,7 +5465,7 @@ deleteMessage() {
             () => {
                 tb.deleteApply.call( tb ).then(function( result ){
                     fn.consoleOutput('deleteMessage end');
-                    resolve();
+                    resolve( result );
                 }).catch(function( result ){
                     fn.consoleOutput('deleteMessage result='+result);
                     reject( result );

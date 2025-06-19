@@ -45,10 +45,6 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
 
-RUN alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 1000000 \
-&&  alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 31200 \
-&&  alternatives --set python3 /usr/bin/python3.12
-
 WORKDIR $APP_PATH
 
 COPY ./ita_root/ita_by_terraform_cloud_ep_execute/pyproject.toml ./ita_root/ita_by_terraform_cloud_ep_execute/poetry.lock $APP_PATH/

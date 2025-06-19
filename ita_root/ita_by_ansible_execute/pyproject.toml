@@ -20,6 +20,7 @@ ansible = ">=0.0.0"
 kubernetes = ">=0.0.0"
 pycryptodome = ">=0.0.0"
 cryptography = ">=0.0.0"
+jsonlines = ">=0.0.0"
 
 
 [tool.poetry.group.first_install.dependencies]

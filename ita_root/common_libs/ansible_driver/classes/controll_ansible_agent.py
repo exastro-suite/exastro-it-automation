@@ -206,7 +206,7 @@ class DockerMode(AnsibleAgent):
         """
         # docker-compose -p project ps
         project_name = self.get_unique_name(execution_no)
-        command = ["/usr/local/bin/docker-compose", "-p", project_name, "ps", "--format", "json"]
+        command = ["/usr/local/bin/docker-compose", "-p", project_name, "ps", "--format", "json", "-a"]
 
         cp = subprocess.run(command, capture_output=True, text=True)
         if cp.returncode != 0:

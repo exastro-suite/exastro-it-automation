@@ -5346,7 +5346,6 @@ editOk() {
 deleteConfirmation() {
     const tb = this;
 
-    // tb.setTable('view');
     fn.consoleOutput("tb.select.view=" + tb.select.view);
     tb.$.errorMessage.empty();
 

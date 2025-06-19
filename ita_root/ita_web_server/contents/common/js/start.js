@@ -22,9 +22,9 @@
 
 let getMessage;
 (function () {
-    const ui = new CommonUi();
-    ui.init().then(function(){
-        CommonAuth.onAuthSuccess(() => {
+    CommonAuth.onAuthSuccess(() => {
+        const ui = new CommonUi();
+        ui.init().then(function(){
             ui.setUi();
         });
     });

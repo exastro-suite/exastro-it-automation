@@ -292,10 +292,6 @@ def backyard_main(organization_id, workspace_id):  # noqa: C901
 
         # ConductorとOperationの復活チェック################
 
-        # ハングアップ監視用に時刻を出力する
-        with open(os.environ.get('FILE_PATH_LIVENESS'), 'w') as f:
-            f.write(str(int(time.time())))
-
     finally:
         objdbca.db_disconnect()
 

@@ -465,6 +465,20 @@ def file_remove(remove_file, delete_mode = True):
         pass
 
 
+def safe_path_join(base, *paths):
+    """パス結合 : Path Join
+
+    Args:
+        base (str): base path
+
+    Returns:
+        str: join path
+    """
+
+    path_parts = [p for p in (base, *paths) if p is not None]
+    return os.path.join(*path_parts)
+
+
 def get_upload_file_path(workspace_id, menu_id, uuid, column_name_rest, file_name, uuid_jnl):
     """
     Get filepath
@@ -480,11 +494,11 @@ def get_upload_file_path(workspace_id, menu_id, uuid, column_name_rest, file_nam
         filepath
     """
     organization_id = g.get("ORGANIZATION_ID")
-    file_path = os.path.join(os.environ.get('STORAGEPATH'), organization_id, workspace_id, 'uploadfiles', menu_id, column_name_rest, uuid, file_name)
+    file_path = safe_path_join(os.environ.get('STORAGEPATH'), organization_id, workspace_id, 'uploadfiles', menu_id, column_name_rest, uuid, file_name)
     old_file_path = ""
     if uuid_jnl is not None:
         if len(uuid_jnl) > 0:
-            old_file_path = os.path.join(os.environ.get('STORAGEPATH'), organization_id, workspace_id, 'uploadfiles', menu_id, column_name_rest, uuid, 'old', uuid_jnl, file_name)  # noqa: E501
+            old_file_path = safe_path_join(os.environ.get('STORAGEPATH'), organization_id, workspace_id, 'uploadfiles', menu_id, column_name_rest, uuid, 'old', uuid_jnl, file_name)  # noqa: E501
 
     return {"file_path": file_path, "old_file_path": old_file_path}
 

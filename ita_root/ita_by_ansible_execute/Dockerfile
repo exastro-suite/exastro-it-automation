@@ -48,7 +48,7 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
 &&  alternatives --set python3 /usr/bin/python3.11 \
 &&  pip3.11 install poetry==1.8.4 \
 &&  poetry config virtualenvs.create false \
-&&  curl -L https://storage.googleapis.com/kubernetes-release/release/v1.33.1/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
+&&  curl -L https://dl.k8s.io/release/v1.33.1/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
 &&  chmod +x /usr/local/bin/kubectl \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME

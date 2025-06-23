@@ -235,8 +235,6 @@ services:
 
     networks:
       - exastro
-    profiles:
-      - ita-oase
 
 networks:
   exastro:

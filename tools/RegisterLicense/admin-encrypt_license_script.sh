@@ -122,6 +122,7 @@ main() {
 
         # 廃止じゃないレコード
         if [ "${disuse_flg}" -eq 0 ]; then
+            # 暗号化済み
             if [ "${enc_flg}" -eq 1 ]; then
                 info "already encrypted"
                 info "...skipping"

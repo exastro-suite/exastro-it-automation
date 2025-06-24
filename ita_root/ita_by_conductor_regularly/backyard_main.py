@@ -659,6 +659,7 @@ def calc_period_month_day(next_execution_date, start_date, interval, pattern_tim
         if value is False:
             return calcd_next_date
 
+    # 有効な日付かどうかチェックする関数
     def check_date(year, month, day):
         try:
             tmp_date = datetime.date(year, month, day)  # noqa: F841
@@ -666,6 +667,7 @@ def calc_period_month_day(next_execution_date, start_date, interval, pattern_tim
         except ValueError:
             return False
 
+    # （年, 月, 日, 時間）より日時を生成する関数
     def generate_datetime(year, month, day, time):
         if check_date(year, month, day):
             datetime_str = f"{year}-{month}-{day} {time}"
@@ -679,12 +681,14 @@ def calc_period_month_day(next_execution_date, start_date, interval, pattern_tim
         month_num = start_date.month
 
         check_bool = check_date(year_num, month_num, pattern_day)
+        # 日時が有効でない場合は、有効になるまで間隔（月）を足す
         while check_bool is False:
             month_num += interval
             check_bool = check_date(year_num, month_num, pattern_day)
 
         start_date_pattern_added = generate_datetime(year_num, month_num, pattern_day, pattern_time)
 
+        # 割り出された日時が開始日時より過去の場合は、未来になるまで間隔（月）を足す
         if check_bool and start_date > current_datetime:
             if start_date_pattern_added > start_date:
                 calcd_next_date = start_date_pattern_added
@@ -706,9 +710,12 @@ def calc_period_month_day(next_execution_date, start_date, interval, pattern_tim
                         return None
                 calcd_next_date = added_time
 
+        # 割り出された日時が開始日時より未来の場合
         else:
             loop_check_date = start_date_pattern_added
             added_time = start_date_pattern_added
+
+            # 現在日時より未来になるまで間隔（月）を足す
             while current_datetime > added_time:
                 month_num += interval
                 if month_num > 12:
@@ -728,6 +735,7 @@ def calc_period_month_day(next_execution_date, start_date, interval, pattern_tim
         loop_check_date = next_execution_date
         added_time = next_execution_date
         year_num = next_execution_date.year
+        # 前回実行月に間隔（月）を足す
         month_num = next_execution_date.month + interval
         if month_num > 12:
             year_num += 1
@@ -736,6 +744,7 @@ def calc_period_month_day(next_execution_date, start_date, interval, pattern_tim
         while check_bool is False:
             month_num += interval
             check_bool = check_date(year_num, month_num, pattern_day)
+        # 足された月を用いて日時を算出
         added_time = generate_datetime(year_num, month_num, pattern_day, pattern_time)
         if loop_check_date >= added_time:
             calcd_next_date = None
@@ -746,9 +755,11 @@ def calc_period_month_day(next_execution_date, start_date, interval, pattern_tim
     if stop_start_date and stop_end_date:
         if calcd_next_date >= stop_start_date and stop_end_date >= calcd_next_date:
             loop_check_date = calcd_next_date
+            month_num = calcd_next_date.month
+            # 作業停止終了日時より未来になるまで、指定の間隔（月）を足す
             while stop_end_date >= calcd_next_date:
                 year_num = calcd_next_date.year
-                month_num = calcd_next_date.month + interval
+                month_num += interval
                 if month_num > 12:
                     year_num += 1
                     month_num = month_num - 12
@@ -780,6 +791,7 @@ def calc_period_month_DoW_num(next_execution_date, start_date, interval, pattern
         if value is False:
             return calcd_next_date
 
+    # (年, 月, 第n週, 時)より日時を算出する関数
     def generate_datetime(year, month, nth, DoW, time):
         try:
             days = calendar.monthrange(year, month)[1]  # 月の日数を取得
@@ -814,11 +826,13 @@ def calc_period_month_DoW_num(next_execution_date, start_date, interval, pattern
             return calcd_next_date
 
         if start_date > current_datetime:
+            # 算出された日時が開始日時より大きい場合は、そのまま次回実行日時となる
             if start_date_pattern_added > start_date:
                 calcd_next_date = start_date_pattern_added
             else:
                 loop_check_date = start_date_pattern_added
                 added_time = start_date_pattern_added
+                # 開始日時より未来になるまで間隔（月）を足す
                 while start_date > added_time:
                     month_num += interval
                     if month_num > 12:
@@ -833,11 +847,13 @@ def calc_period_month_DoW_num(next_execution_date, start_date, interval, pattern
         else:
             loop_check_date = start_date_pattern_added
             added_time = start_date_pattern_added
+            # 現在日時より未来になるまで間隔（月）を足す
             while current_datetime > added_time:
                 month_num += interval
                 if month_num > 12:
                     year_num += 1
                     month_num = month_num - 12
+                # 足された月を用いて日時を算出
                 added_time = generate_datetime(year_num, month_num, pattern_week_num, pattern_DoW, pattern_time)
                 if loop_check_date > added_time or added_time is None:
                     calcd_next_date = None
@@ -847,6 +863,7 @@ def calc_period_month_DoW_num(next_execution_date, start_date, interval, pattern
     else:
         loop_check_date = next_execution_date
         year_num = next_execution_date.year
+        # 前回実行月に間隔（月）を足す
         month_num = next_execution_date.month + interval
         if month_num > 12:
             year_num += 1
@@ -863,7 +880,8 @@ def calc_period_month_DoW_num(next_execution_date, start_date, interval, pattern
             loop_check_date = calcd_next_date
             added_time = calcd_next_date
             year_num = calcd_next_date.year
-            month_num = calcd_next_date.month + interval
+            month_num = calcd_next_date.month
+            # 作業停止終了日時より未来になるまで、指定の間隔（月）を足す
             while stop_end_date >= added_time:
                 month_num += interval
                 if month_num > 12:
@@ -887,6 +905,7 @@ def calc_period_end_of_month(next_execution_date, start_date, interval, pattern_
         if value is False:
             return calcd_next_date
 
+    # (年, 月, 時)より日時を算出する関数
     def generate_datetime(year, month, time):
         try:
             last_day_of_month = calendar.monthrange(year, month)[1]
@@ -905,11 +924,13 @@ def calc_period_end_of_month(next_execution_date, start_date, interval, pattern_
             return calcd_next_date
 
         if start_date > current_datetime:
+            # 算出された日時が開始日時より大きい場合は、そのまま次回実行日時となる
             if start_date_pattern_added > start_date:
                 calcd_next_date = start_date_pattern_added
             else:
                 loop_check_date = start_date_pattern_added
                 added_time = start_date_pattern_added
+                # 開始日時より未来になるまで間隔（月）を足す
                 while start_date > added_time:
                     month_num += interval
                     if month_num > 12:
@@ -924,6 +945,7 @@ def calc_period_end_of_month(next_execution_date, start_date, interval, pattern_
         else:
             loop_check_date = start_date_pattern_added
             added_time = start_date_pattern_added
+            # 現在日時より未来になるまで間隔（月）を足す
             while current_datetime > added_time:
                 month_num += interval
                 if month_num > 12:
@@ -939,10 +961,12 @@ def calc_period_end_of_month(next_execution_date, start_date, interval, pattern_
         loop_check_date = next_execution_date
         added_time = next_execution_date
         year_num = next_execution_date.year
+        # 前回実行月に間隔（月）を足す
         month_num = next_execution_date.month + interval
         if month_num > 12:
             year_num += 1
             month_num = month_num - 12
+        # 足された月を用いて日時を算出
         added_time = generate_datetime(year_num, month_num, pattern_time)
         if loop_check_date > added_time or added_time is None:
             calcd_next_date = None
@@ -955,7 +979,8 @@ def calc_period_end_of_month(next_execution_date, start_date, interval, pattern_
             loop_check_date = calcd_next_date
             added_time = calcd_next_date
             year_num = calcd_next_date.year
-            month_num = calcd_next_date.month + interval
+            month_num = calcd_next_date.month
+            # 作業停止終了日時を越えるまで、指定の間隔（月）を足す
             while stop_end_date >= added_time:
                 month_num += interval
                 if month_num > 12:

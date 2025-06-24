@@ -106,6 +106,7 @@ main() {
         echo ""
 
         disuse_flg=$(echo "$license_record" | jq -r '.discard')
+        enc_flg=$(echo "$license_record" | jq -r '.enc_flg')
         kanri_id=$(echo "$license_record" | jq -r '.uuid')
         customer_name=$(echo "$license_record" | jq -r '.customer_name')
         refresh_token=$(echo "$license_record" | jq -r '.refresh_token')
@@ -119,61 +120,75 @@ main() {
 
         info "[${customer_name}] In the processing of encrypting license"
 
-        if [ "${aap_register_flg}" -ne 1 ] && [ "${aah_login_flg}" -ne 1 ]; then
-            warn "Ntohing to do. Because Both flags(aap_register_flg and aah_login_flg) are set to 0 (kanri_id=${kanri_id})"
-            info "...skipping"
-            continue
-        fi
+        # 廃止じゃないレコード
+        if [ "${disuse_flg}" -eq 0 ]; then
+            # 暗号化済み
+            if [ "${enc_flg}" -eq 1 ]; then
+                info "already encrypted"
+                info "...skipping"
+                continue
+            fi
+            # 暗号化対象がない
+            if [ "${aap_register_flg}" -ne 1 ] && [ "${aah_login_flg}" -ne 1 ]; then
+                warn "Ntohing to do. Because Both flags(aap_register_flg and aah_login_flg) are set to 0 (kanri_id=${kanri_id})"
+                info "...skipping"
+                continue
+            fi
 
-        # ecnrypt license
-        if [ "${aap_register_flg}" -eq 1 ]; then
-            aap_activationkey="$(echo "$license_record" | jq -r '.aap_activationkey')"
-            if [ "${aap_activationkey}" = "null" ]; then
-                warn "Value( aap_activationkey ) is empty (kanri_id=${kanri_id})"
-                info "...skipping"
-                continue
+            # ecnrypt license
+            if [ "${aap_register_flg}" -eq 1 ]; then
+                # 暗号化対象
+                aap_activationkey="$(echo "$license_record" | jq -r '.aap_activationkey')"
+                if [ "${aap_activationkey}" = "null" ]; then
+                    warn "Value( aap_activationkey ) is empty (kanri_id=${kanri_id})"
+                    info "...skipping"
+                    continue
+                fi
+                openssl_ecnrypt "${aap_activationkey}" "${passphrase}"
+                encrypted_aap_activationkey="${ENCRYPTED_TEXT}"
+            else
+                encrypted_aap_activationkey=""
             fi
-            openssl_ecnrypt "${aap_activationkey}" "${passphrase}"
-            encrypted_aap_activationkey="${ENCRYPTED_TEXT}"
-        else
-            encrypted_aap_activationkey=""
-        fi
-        if [ "${aap_register_flg}" -eq 1 ]; then
-            aap_orgid="$(echo "$license_record" | jq -r '.aap_orgid')"
-            if [ "${aap_orgid}" = "null" ]; then
-                warn "Value( aap_orgid ) is empty (kanri_id=${kanri_id})"
-                info "...skipping"
-                continue
+            if [ "${aap_register_flg}" -eq 1 ]; then
+                # 暗号化対象
+                aap_orgid="$(echo "$license_record" | jq -r '.aap_orgid')"
+                if [ "${aap_orgid}" = "null" ]; then
+                    warn "Value( aap_orgid ) is empty (kanri_id=${kanri_id})"
+                    info "...skipping"
+                    continue
+                fi
+                openssl_ecnrypt "${aap_orgid}" "${passphrase}"
+                encrypted_aap_orgid="${ENCRYPTED_TEXT}"
+            else
+                encrypted_aap_orgid=""
             fi
-            openssl_ecnrypt "${aap_orgid}" "${passphrase}"
-            encrypted_aap_orgid="${ENCRYPTED_TEXT}"
-        else
-            encrypted_aap_orgid=""
-        fi
 
-        if [ "${aah_login_flg}" -eq 1 ]; then
-            aah_username="$(echo "$license_record" | jq -r '.aah_username')"
-            if [ "${aah_username}" = "null" ]; then
-                warn "Value( aah_username ) is empty (kanri_id=${kanri_id})"
-                info "...skipping"
-                continue
+            if [ "${aah_login_flg}" -eq 1 ]; then
+                # 暗号化対象
+                aah_username="$(echo "$license_record" | jq -r '.aah_username')"
+                if [ "${aah_username}" = "null" ]; then
+                    warn "Value( aah_username ) is empty (kanri_id=${kanri_id})"
+                    info "...skipping"
+                    continue
+                fi
+                openssl_ecnrypt "${aah_username}" "${passphrase}"
+                encrypted_aah_username="${ENCRYPTED_TEXT}"
+            else
+                encrypted_aah_username=""
             fi
-            openssl_ecnrypt "${aah_username}" "${passphrase}"
-            encrypted_aah_username="${ENCRYPTED_TEXT}"
-        else
-            encrypted_aah_username=""
-        fi
-        if [ "${aah_login_flg}" -eq 1 ]; then
-            aah_password="$(echo "$license_record" | jq -r '.aah_password')"
-            if [ "${aah_password}" = "null" ]; then
-                warn "Value( aah_password ) is empty (kanri_id=${kanri_id})"
-                info "...skipping"
-                continue
+            if [ "${aah_login_flg}" -eq 1 ]; then
+                # 暗号化対象
+                aah_password="$(echo "$license_record" | jq -r '.aah_password')"
+                if [ "${aah_password}" = "null" ]; then
+                    warn "Value( aah_password ) is empty (kanri_id=${kanri_id})"
+                    info "...skipping"
+                    continue
+                fi
+                openssl_ecnrypt "${aah_password}" "${passphrase}"
+                encrypted_aah_password="${ENCRYPTED_TEXT}"
+            else
+                encrypted_aah_password=""
             fi
-            openssl_ecnrypt "${aah_password}" "${passphrase}"
-            encrypted_aah_password="${ENCRYPTED_TEXT}"
-        else
-            encrypted_aah_password=""
         fi
 
         # 暗号化済ライセンス情報取得用メニューに暗号化した情報を反映する
@@ -202,8 +217,9 @@ main() {
                         continue
                     fi
                 done
-                continue
             fi
+            info "...skipping"
+            continue
         else
             # 新規登録（廃止になっている場合は再登録）
             if [ "${encrypted_license_records}" = "[]" ]; then
@@ -405,7 +421,8 @@ get_license_management() {
     info "...Try to get License Management"
 
     URL="$EXASTRO_URL/api/$EXASTRO_ORG_ID/workspaces/$EXASTRO_WS_ID/ita/menu/LicenseManagement/filter/?file=no"
-    JSON_BODY='{"enc_flg":{"LIST":[0,2]}}'
+    # JSON_BODY='{"enc_flg":{"LIST":[0,2]}}'
+    JSON_BODY=''
 
     post_json_api "$URL" "$JSON_BODY"
     ret=$?
@@ -565,7 +582,7 @@ post_form_api() {
 openssl_ecnrypt() {
     local text="$1"
     local passphrase="$2"
-    ENCRYPTED_TEXT=$(echo "${text}" | openssl enc -e -aes-256-cbc -pbkdf2 -iter 100 -base64 -k "${passphrase}")
+    ENCRYPTED_TEXT=$(echo -n "${text}" | openssl enc -e -aes-256-cbc -pbkdf2 -iter 100 -base64 -k "${passphrase}")
 }
 
 check_command() {

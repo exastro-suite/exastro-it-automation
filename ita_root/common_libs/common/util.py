@@ -225,41 +225,41 @@ def arrange_stacktrace_format(t):
         (str)
     """
     return t
-    retStr = ""
+    # retStr = ""
 
-    exception_block_arr = t.split('Traceback (most recent call last):\n')
-    # exception_block = exception_block_arr[1]  # most deep exception called
-    exception_block_index = 0
-    for exception_block in exception_block_arr:
-        exception_block = re.sub(r'\n\nDuring handling of the above exception, another exception occurred:\n\n', '', exception_block.strip())
-        if exception_block[0:4] != 'File':
-            continue
+    # exception_block_arr = t.split('Traceback (most recent call last):\n')
+    # # exception_block = exception_block_arr[1]  # most deep exception called
+    # exception_block_index = 0
+    # for exception_block in exception_block_arr:
+    #     exception_block = re.sub(r'\n\nDuring handling of the above exception, another exception occurred:\n\n', '', exception_block.strip())
+    #     if exception_block[0:4] != 'File':
+    #         continue
 
-        retStr = retStr + "\n{} : exception block".format(exception_block_index)
-        exception_block_index = exception_block_index + 1
+    #     retStr = retStr + "\n{} : exception block".format(exception_block_index)
+    #     exception_block_index = exception_block_index + 1
 
-        trace_block_arr = re.split('File ', exception_block)
-        for trace_block in trace_block_arr:
-            row_arr = re.split('\n', str(trace_block.strip()))
-            row_index = 0
-            row_str = ""
-            length = len(row_arr) - 1
-            if length == 0:
-                continue
+    #     trace_block_arr = re.split('File ', exception_block)
+    #     for trace_block in trace_block_arr:
+    #         row_arr = re.split('\n', str(trace_block.strip()))
+    #         row_index = 0
+    #         row_str = ""
+    #         length = len(row_arr) - 1
+    #         if length == 0:
+    #             continue
 
-            for row in row_arr:
+    #         for row in row_arr:
 
-                if row_index == 0:
-                    row_str = "\n -> " + row
-                elif row_index == 1:
-                    row_str = row_str + ", " + row.strip()
-                    retStr = retStr + row_str
-                elif row_index == 2:
-                    retStr = retStr + "\n " + row.strip()
+    #             if row_index == 0:
+    #                 row_str = "\n -> " + row
+    #             elif row_index == 1:
+    #                 row_str = row_str + ", " + row.strip()
+    #                 retStr = retStr + row_str
+    #             elif row_index == 2:
+    #                 retStr = retStr + "\n " + row.strip()
 
-                row_index = row_index + 1
+    #             row_index = row_index + 1
 
-    return retStr
+    # return retStr
 
 
 def file_encode(file_path):

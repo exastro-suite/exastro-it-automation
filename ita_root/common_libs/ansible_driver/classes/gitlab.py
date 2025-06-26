@@ -168,6 +168,8 @@ class GitLabAgent:
 
     def create_personal_access_tokens(self, user_id, username):
         # https://docs.gitlab.com/ee/api/users.html#create-a-personal-access-token
+        # ↓
+        # https://docs.gitlab.com/api/user_tokens/#create-a-personal-access-token-for-a-user
         payload = {
             "user_id": user_id,
             "name": username,

@@ -15,8 +15,10 @@ LOG_FILE="${HOME}/exastro-installation.log"
 EXASTRO_UNAME=$(id -u -n)
 EXASTRO_UID=$(id -u)
 EXASTRO_GID=1000
+#### インストーラー自身のバージョン（インストールできる資材のバージョンを制御するため）
 AGENT_INSTALLER_VERSION=2.6.0
-AGENT_INSTALLER_VNC=20501
+#### AGENT_INSTALLER_VERSIONと揃っていること
+AGENT_INSTALLER_VNC=20600
 
 POETRY_VERSION=1.6.0
 

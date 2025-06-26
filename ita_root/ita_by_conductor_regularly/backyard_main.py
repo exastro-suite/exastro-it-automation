@@ -615,7 +615,7 @@ def calc_period_week(next_execution_date, start_date, interval, pattern_time, pa
             calcd_next_date = execution_date_week_days[0]
         else:
             for date in execution_date_week_days:
-                if date >= next_execution_date:
+                if date > next_execution_date:
                     calcd_next_date = date
                     break
 

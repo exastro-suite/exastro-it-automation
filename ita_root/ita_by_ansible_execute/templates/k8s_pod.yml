@@ -15,7 +15,7 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: it-ansible-agent-{{ unique_name }}
+  name: {{ unique_name }}
 spec:
   containers:
   - name: it-ansible-agent

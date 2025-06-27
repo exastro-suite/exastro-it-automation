@@ -60,7 +60,7 @@ class AnsibleAgent(ABC):
         """
         コンテナを特定するためのユニークな文字列を生成する
         """
-        return "%s_%s_%s" % (self._organization_id, self._workspace_id, execution_no)
+        return f"ita-ansible-agent-{execution_no}"
 
     @abstractclassmethod
     def container_clean(self, ansConstObj, execution_no):

@@ -318,11 +318,13 @@ def backyard_main(organization_id, workspace_id):
                     msg += "\n"
                     idx = 0
                     file_err_msg = ""
+                    err_msg_flag = False
                     msg_result = []
                     msg_result.append(g.appmsg.get_api_message('MSG-30004'))
                     msg_result.append(g.appmsg.get_api_message('MSG-30005'))
                     msg_result.append(g.appmsg.get_api_message('MSG-30007'))
                     msg_result.append(g.appmsg.get_api_message('MSG-30006'))
+                    msg_result.append(g.appmsg.get_api_message('MSG-30037'))
                     msg_result.append(g.appmsg.get_api_message('MSG-30034'))
                     if "登録" not in aryRetBody and "Register" not in aryRetBody:
                         if type(aryRetBody) is str and aryRetBody == "499-00402":
@@ -332,9 +334,10 @@ def backyard_main(organization_id, workspace_id):
                         else:
                             # バリデーションエラー時はエラー内容しか返ってこないので、各処理を0件で登録
                             tmp_result = aryRetBody
-                            aryRetBody = {msg_result[0]: 0, msg_result[1]: 0, msg_result[2]: 0, msg_result[3]: 0, msg_result[4]: len(aryRetBody)}
+                            err_msg_flag = True
+                            aryRetBody = {msg_result[0]: 0, msg_result[1]: 0, msg_result[2]: 0, msg_result[3]: 0, msg_result[4]: 0, msg_result[5]: len(aryRetBody)}
                     else:
-                        aryRetBody[msg_result[4]] = 0
+                        aryRetBody[msg_result[5]] = 0
 
                     if len(aryRetBody) > 0:
                         for name, ct in aryRetBody.items():
@@ -343,7 +346,7 @@ def backyard_main(organization_id, workspace_id):
                             msg += msg_result[idx] + ":    " + str(ct) + strErrCountExplainTail + "\n"
                             idx += 1
 
-                        if aryRetBody[msg_result[4]] != 0:
+                        if err_msg_flag:
                             for value in tmp_result.values():
                                 for key, err_msg in value.items():
                                     msg += str(key) + ": " + str(err_msg) + "\n"

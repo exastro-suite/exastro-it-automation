@@ -133,11 +133,9 @@ def before_request_handler():
             # g.applogger.set_user_setting(ws_db)
             ws_db.db_disconnect()
     except AppException as e:
-        print_exception_msg(e)
         # catch - raise AppException("xxx-xxxxx", log_format, msg_format)
         return app_exception_response(e)
     except Exception as e:
-        print_exception_msg(e)
         # catch - other all error
         return exception_response(e)
 

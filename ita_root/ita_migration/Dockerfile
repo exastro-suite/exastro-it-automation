@@ -22,6 +22,9 @@ ARG APP_PATH
 ENV PYTHONPATH=/exastro/
 ENV LANGUAGE=en
 ENV STORAGEPATH=/storage/
+ENV DB_CONNECT_TIMEOUT=10
+ENV DB_CONNECT_RETRY_SLEEP_TIME=0.5
+ENV DB_CONNECT_RETRY_LIMIT=2
 
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
     dnf install -y \

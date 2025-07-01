@@ -29,7 +29,7 @@ class DBConnectWsSandbox(DBConnectWs):
 
     _workspace_id = ""
 
-    def __init__(self, user=None, passwd=None, database=None, mode_ss=None):
+    def __init__(self, user=None, passwd=None, database=None, mode_ss=None, retry=None):
         """
         constructor
 
@@ -58,10 +58,9 @@ class DBConnectWsSandbox(DBConnectWs):
 
         self._host = connect_info['DB_HOST']
         self._port = int(connect_info['DB_PORT'])
-
         self._db_user = connect_info['DB_USER'] if user is None else user
         self._db_passwd = connect_info['DB_PASSWORD'] if passwd is None else passwd
         self._db = connect_info['DB_DATABASE'] if database is None else database
 
         # connect database
-        self.db_connect(mode_ss=mode_ss)
+        self.db_connect(mode_ss=mode_ss, retry = retry)

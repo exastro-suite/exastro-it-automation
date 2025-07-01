@@ -62,7 +62,7 @@ class DBConnectWs(DBConnectCommon):
         self._db = connect_info['DB_DATABASE']
 
         # connect database
-        self.db_connect(mode_ss=mode_ss, retry = retry)
+        self.db_connect(mode_ss=mode_ss, retry=retry)
 
     def __del__(self):
         """

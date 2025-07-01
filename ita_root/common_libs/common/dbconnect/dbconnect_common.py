@@ -29,8 +29,10 @@ from common_libs.common.util import get_timestamp, ky_decrypt, ky_encrypt, gener
 
 def connect_retry(db_connect):
     def wrapper(*args, **kwargs):
-        retry = kwargs["retry"]
+        # retryしたときのインターバル
         sleep_time = float(os.environ.get("DB_CONNECT_RETRY_SLEEP_TIME", 0.5))
+        # retry回数 優先順位は、db_connectに直接引数としてコードで指定がある場合 -> 環境変数 -> コードのデフォルト値
+        retry = kwargs["retry"] if "retry" in kwargs else None
         retry_limit = int(os.environ.get("DB_CONNECT_RETRY_LIMIT", 2)) if retry is None else retry
         retry_count = 0
 

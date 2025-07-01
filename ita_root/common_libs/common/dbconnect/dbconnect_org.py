@@ -171,7 +171,7 @@ class DBConnectOrgRoot(DBConnectOrg):
         self._db_passwd = connect_info['DB_ADMIN_PASSWORD']
 
         # connect database
-        self.db_connect(retry = retry)
+        self.db_connect(retry=retry)
 
     def __del__(self):
         """

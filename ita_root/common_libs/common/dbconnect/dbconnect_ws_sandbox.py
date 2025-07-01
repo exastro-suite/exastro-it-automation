@@ -63,4 +63,4 @@ class DBConnectWsSandbox(DBConnectWs):
         self._db = connect_info['DB_DATABASE'] if database is None else database
 
         # connect database
-        self.db_connect(mode_ss=mode_ss, retry = retry)
+        self.db_connect(mode_ss=mode_ss, retry=retry)

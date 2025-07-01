@@ -12,16 +12,16 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 from flask import g
-import traceback
 from common_libs.common.dbconnect import *
 from common_libs.api import api_filter_admin
-from common_libs.common.exception import AppException
 
 @api_filter_admin
 def internal_health_check_liveness():
-    common_db_root = DBConnectCommonRoot()  # noqa: F405
-    organization_info_list = common_db_root.sql_execute("SELECT 1 AS DATA", [])
-    common_db_root.db_disconnect()
+    try:
+        common_db_root = DBConnectCommonRoot()  # noqa: F405
+        common_db_root.sql_execute("SELECT 1 AS DATA", [])
+    finally:
+        common_db_root.db_disconnect()
 
     return g.appmsg.get_api_message("000-00000"),
 

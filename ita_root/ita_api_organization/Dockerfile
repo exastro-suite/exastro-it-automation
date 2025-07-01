@@ -29,6 +29,9 @@ ENV APACHE_SOCKET_DIR       /var/run_$USERNAME/httpd/socket
 ENV APACHE_TIMEOUT          300
 ENV APACHE_USERNAME         $USERNAME
 ENV APACHE_GROUPNAME        $GROUPNAME
+ENV DB_CONNECT_TIMEOUT=10
+ENV DB_CONNECT_RETRY_SLEEP_TIME=0.5
+ENV DB_CONNECT_RETRY_LIMIT=2
 ENV SERVICE_NAME=ita-api-organization
 
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \

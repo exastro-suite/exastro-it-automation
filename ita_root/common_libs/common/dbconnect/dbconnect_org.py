@@ -19,8 +19,8 @@ import pymysql.cursors  # https://pymysql.readthedocs.io/en/latable_name/
 
 from flask import g
 
-from .dbconnect_common import DBConnectCommon
-from common_libs.common.exception import AppException
+from .dbconnect_common import DBConnectCommon, connect_retry
+from common_libs.common.exception import AppException, DBException
 from common_libs.common.util import ky_decrypt
 
 
@@ -29,7 +29,7 @@ class DBConnectOrg(DBConnectCommon):
     database connection agnet class for organization-db on mariadb
     """
 
-    def __init__(self, organization_id=None):
+    def __init__(self, organization_id=None, retry=None):
         """
         constructor
         """
@@ -64,7 +64,7 @@ class DBConnectOrg(DBConnectCommon):
         self._no_install_driver = connect_info.get('NO_INSTALL_DRIVER')
 
         # connect database
-        self.db_connect()
+        self.db_connect(retry=retry)
 
     def __del__(self):
         """
@@ -147,7 +147,7 @@ class DBConnectOrgRoot(DBConnectOrg):
     database connection root user agnet class for organization-db on mariadb
     """
 
-    def __init__(self, organization_id=None):
+    def __init__(self, organization_id=None, retry=None):
         """
         constructor
         """
@@ -171,7 +171,7 @@ class DBConnectOrgRoot(DBConnectOrg):
         self._db_passwd = connect_info['DB_ADMIN_PASSWORD']
 
         # connect database
-        self.db_connect()
+        self.db_connect(retry = retry)
 
     def __del__(self):
         """
@@ -179,7 +179,8 @@ class DBConnectOrgRoot(DBConnectOrg):
         """
         self.db_disconnect()
 
-    def db_connect(self):
+    @connect_retry
+    def db_connect(self, retry=None):
         """
         connect database
 
@@ -197,10 +198,11 @@ class DBConnectOrgRoot(DBConnectOrg):
                 passwd=ky_decrypt(self._db_passwd),
                 charset='utf8mb4',
                 collation='utf8mb4_general_ci',
-                cursorclass=pymysql.cursors.DictCursor
+                cursorclass=pymysql.cursors.DictCursor,
+                connect_timeout=self.connect_timeout
             )
         except pymysql.Error as e:
-            raise AppException("999-00002", ["ORGANIZATION_ID=" + self.organization_id, e])
+            raise DBException("ORGANIZATION_ID=" + self.organization_id, e)
 
         return True
 

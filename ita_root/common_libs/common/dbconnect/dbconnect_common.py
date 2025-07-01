@@ -19,12 +19,51 @@ import pymysql
 import uuid
 import os
 import re
+import time
 
 from flask import g
 
-from common_libs.common.exception import AppException
+from common_libs.common.exception import AppException, DBException
 from common_libs.common.util import get_timestamp, ky_decrypt, ky_encrypt, generate_secrets
 
+
+def connect_retry(db_connect):
+    def wrapper(*args, **kwargs):
+        retry = kwargs["retry"]
+        sleep_time = float(os.environ.get("DB_CONNECT_RETRY_SLEEP_TIME", 0.5))
+        retry_limit = int(os.environ.get("DB_CONNECT_RETRY_LIMIT", 2)) if retry is None else retry
+        retry_count = 0
+
+        while True:
+            try:
+                retBool = db_connect(*args, **kwargs)
+
+                if retBool is True:
+                    g.dbConnectError = False
+                    break
+            except DBException as e:
+                apl_msg_arg = e.args[0]
+                error_code = e.args[1]  # DBのエラーコード
+
+                retry_error_list = [
+                    -2, # Name or service not known
+                    2003 # Can't connect to MySQL server (timed out / Connection refused)
+                ]
+                if error_code in retry_error_list:
+                    if retry_count == retry_limit:
+                        g.dbConnectError = True
+                        raise AppException("999-00002", [apl_msg_arg, e])
+
+                    g.applogger.warning(e)
+                    retry_count += 1
+
+                    time.sleep(sleep_time)
+                    continue
+
+                g.dbConnectError = True
+                raise AppException("999-00002", [apl_msg_arg, e])
+
+    return wrapper
 
 class DBConnectCommon:
     """
@@ -35,7 +74,10 @@ class DBConnectCommon:
     _is_transaction = False  # state of transaction
     _COLUMN_NAME_TIMESTAMP = 'LAST_UPDATE_TIMESTAMP'
 
-    def __init__(self, mode_ss=None):
+    connect_timeout = int(os.environ.get("DB_CONNECT_TIMEOUT", 10))
+    retry = None
+
+    def __init__(self, mode_ss=None, retry=None):
         """
         constructor
         """
@@ -49,7 +91,7 @@ class DBConnectCommon:
         self._db_passwd = ky_encrypt(os.environ.get('DB_PASSWORD'))
 
         # connect database
-        self.db_connect(mode_ss=mode_ss)
+        self.db_connect(mode_ss=mode_ss, retry=retry)
 
     def __del__(self):
         """
@@ -57,7 +99,8 @@ class DBConnectCommon:
         """
         self.db_disconnect()
 
-    def db_connect(self, mode_ss=None):
+    @connect_retry
+    def db_connect(self, mode_ss=None, retry=None):
         """
         connect database
 
@@ -78,10 +121,11 @@ class DBConnectCommon:
                 charset='utf8mb4',
                 collation='utf8mb4_general_ci',
                 cursorclass=_cursorclass,
-                local_infile = True,
+                local_infile=True,
+                connect_timeout=self.connect_timeout,
             )
         except pymysql.Error as e:
-            raise AppException("999-00002", [self._db, e])
+            raise DBException(self._db, e)
 
         return True
 
@@ -698,7 +742,7 @@ class DBConnectCommonRoot(DBConnectCommon):
     """
     database connection agnet class on mariadb
     """
-    def __init__(self):
+    def __init__(self, retry=None):
         """
         constructor
         """
@@ -711,9 +755,10 @@ class DBConnectCommonRoot(DBConnectCommon):
         self._db_passwd = os.environ.get('DB_ADMIN_PASSWORD')
 
         # connect database
-        self.db_connect()
+        self.db_connect(retry=retry)
 
-    def db_connect(self):
+    @connect_retry
+    def db_connect(self, retry=None):
         """
         connect database
 
@@ -731,9 +776,10 @@ class DBConnectCommonRoot(DBConnectCommon):
                 passwd=self._db_passwd,
                 charset='utf8mb4',
                 collation='utf8mb4_general_ci',
-                cursorclass=pymysql.cursors.DictCursor
+                cursorclass=pymysql.cursors.DictCursor,
+                connect_timeout=self.connect_timeout,
             )
         except pymysql.Error as e:
-            raise AppException("999-00002", [f"{self._host}:{self._port}", e])
+            raise DBException(f"{self._host}:{self._port}", e)
 
         return True

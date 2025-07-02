@@ -860,6 +860,11 @@ class ExecuteDirector():
         result_code = True
         tgtHostList = []
         for credential in TowerHostList:
+            # 制御ノードから取得しない
+            if credential['node_type'] == AnscConst.DF_CONTROL_NODE:
+                g.applogger.debug(f"[Trace] Skip ResultFileTransfer from control node. {credential=}")
+                continue
+
             tgtHostList.append(credential['host_name'])  # ログ用
             ########################################################################################################
             # ITA作業ディレクトリ配下のconductorディレクトリをITAに転送

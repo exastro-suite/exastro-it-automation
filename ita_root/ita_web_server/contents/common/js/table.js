@@ -3075,7 +3075,7 @@ requestTbody() {
             // ホスト指定でオペレーションのみの場合はIDに__nohost_を入れて表示しない
             if ( tb.option.parameterHostList &&
             (
-                ( tb.option.parameterHostList.length && tb.option.parameterSheetType === '3') ||
+                ( tb.option.parameterSheetType === '3') ||
                 ( tb.option.parameterHostList.length === 0 && tb.option.parameterSheetType !== '3')
             ) ) {
                 tb.filterParams.uuid = {
@@ -4076,9 +4076,9 @@ viewCellHtml( item, columnKey, journal ) {
 
         // パラメータ集用
         case 'ParameterCollectionSheetType':
-            if ( value === '1') {
+            if ( value === '1' || value === '4' ) {
                 return getMessage.FTE11041;
-            } else if ( value === '3') {
+            } else if ( value === '3' ) {
                 return getMessage.FTE11042;
             } else {
                 return '';

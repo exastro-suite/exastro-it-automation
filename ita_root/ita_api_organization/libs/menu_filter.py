@@ -208,11 +208,6 @@ def get_history_file_path(objdbca, menu, uuid, column, journal_uuid):
     if len(result) == 0:
         return None
 
-    # columnの値がなければNone
-    file_name = result[0].get('parameter').get(column)
-    if file_name is None:
-        return None
-
     # 履歴テーブルがない場合はNone
     menu_info = objmenu.get_menu_info()
     if menu_info.get('MENUINFO').get('HISTORY_TABLE_FLAG') != '1':

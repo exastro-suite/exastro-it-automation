@@ -157,7 +157,6 @@ class BaseTable():
             AND `TAB_A`.`ROW_UPDATE_FLAG` = {iudr_flg}
             AND `TAB_A`.`ROW_DISUSE_FLAG` = {iudr_flg}
             AND `TAB_A`.`ROW_REUSE_FLAG` = {iudr_flg}
-            AND `TAB_A`.`ROW_DELETE_FLAG` = {iudr_flg}
             AND `TAB_A`.`DISUSE_FLAG` = 0
             AND `TAB_B`.`DISUSE_FLAG` = 0
         """).format(iudr_flg=self.iudr_flg).strip()

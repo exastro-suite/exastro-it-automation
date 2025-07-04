@@ -3075,13 +3075,12 @@ requestTbody() {
             // ホスト指定でオペレーションのみの場合はIDに__nohost_を入れて表示しない
             if ( tb.option.parameterHostList &&
             (
-                ( tb.option.parameterSheetType === '3') ||
                 ( tb.option.parameterHostList.length === 0 && tb.option.parameterSheetType !== '3')
             ) ) {
                 tb.filterParams.uuid = {
                     NORMAL: '__nohost__'
                 }
-            } else {
+            } else if ( tb.option.parameterSheetType !== '3' ) {
                 tb.filterParams.host_name = {
                     LIST: tb.getNameList( tb.option.parameterHostList )
                 }

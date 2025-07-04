@@ -1356,11 +1356,11 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
             menu_id_sql = " SELECT * FROM `T_COMN_MENU_GROUP` WHERE `DISUSE_FLAG` <> 1 AND `MENU_GROUP_ID` = %s "
             t_comn_menu_group_record = objdbca.sql_execute(menu_id_sql, [menu_group_id])
             menu_group_name_dict = {}
-            for record in t_comn_menu_group_record:
-                menu_group_id = record.get('MENU_GROUP_ID')
-                menu_group_name_dict['MENU_GROUP_NAME_JA'] = record.get('MENU_GROUP_NAME_JA')
-                menu_group_name_dict['MENU_GROUP_NAME_EN'] = record.get('MENU_GROUP_NAME_EN')
-                menu_group_name_dict['DISP_SEQ'] = record.get('DISP_SEQ')
+            for _record in t_comn_menu_group_record:
+                menu_group_id = _record.get('MENU_GROUP_ID')
+                menu_group_name_dict['MENU_GROUP_NAME_JA'] = _record.get('MENU_GROUP_NAME_JA')
+                menu_group_name_dict['MENU_GROUP_NAME_EN'] = _record.get('MENU_GROUP_NAME_EN')
+                menu_group_name_dict['DISP_SEQ'] = _record.get('DISP_SEQ')
                 menu_group_id_dict[menu_group_id] = menu_group_name_dict
 
         parent_menus_data_path = dir_path + '/PARENT_MENU_GROUPS'
@@ -1415,9 +1415,9 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
         t_comn_menu_record = objdbca.sql_execute(menu_id_sql, [menu_list])
         menu_id_dict = {}
         menu_id_list = []
-        for record in t_comn_menu_record:
-            menu_id = record.get('MENU_ID')
-            menu_name_rest = record.get('MENU_NAME_REST')
+        for _record in t_comn_menu_record:
+            menu_id = _record.get('MENU_ID')
+            menu_name_rest = _record.get('MENU_NAME_REST')
             menu_id_list.append(menu_id)
             menu_id_dict[menu_id] = menu_name_rest
 
@@ -1425,16 +1425,16 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
         t_comn_menu_table_link_record = objdbca.sql_execute(table_name_sql, [menu_id_list])
         table_name_list = []
         table_definition_id_list = []
-        for record in t_comn_menu_table_link_record:
-            table_definition_id_list.append(record.get('TABLE_DEFINITION_ID'))
-            table_name = record.get('TABLE_NAME')
+        for _record in t_comn_menu_table_link_record:
+            table_definition_id_list.append(_record.get('TABLE_DEFINITION_ID'))
+            table_name = _record.get('TABLE_NAME')
             table_name_list.append(table_name)
-            history_table_flag = record.get('HISTORY_TABLE_FLAG')
+            history_table_flag = _record.get('HISTORY_TABLE_FLAG')
             if history_table_flag == '1':
                 table_name_list.append(table_name + '_JNL')
 
             if table_name.startswith('T_CMDB'):
-                view_name = record.get('VIEW_NAME')
+                view_name = _record.get('VIEW_NAME')
                 if view_name is not None:
                     show_create_sql = 'SHOW CREATE VIEW `%s` ' % (view_name)
                     rec = objdbca.sql_execute(show_create_sql, [])
@@ -1570,8 +1570,8 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
         # 対象レコードの最終更新日時を取得
         export_import_sql = " SELECT * FROM `T_MENU_EXPORT_IMPORT` WHERE `DISUSE_FLAG` <> 1 AND `EXECUTION_NO` = %s "
         t_menu_export_import_record = objdbca.sql_execute(export_import_sql, [execution_no])
-        for record in t_menu_export_import_record:
-            last_update_taimestamp = record.get('LAST_UPDATE_TIMESTAMP')
+        for _record in t_menu_export_import_record:
+            last_update_taimestamp = _record.get('LAST_UPDATE_TIMESTAMP')
         del t_menu_export_import_record
         # ファイル名更新用パラメータを作成
         parameters = {
@@ -1684,12 +1684,18 @@ def _collect_files(objmenu, dir_path, menu, parameters, fileup_columns=[]):
                 continue
 
             # ファイルをコピー or 複合化して配置
-            os.makedirs(tmp_dir_path, exist_ok=True)
-            g.applogger.info(addline_msg('{}'.format(f'{_pd["class_name"]} src={entity_path} dst={tmp_file_path}')))
-            g.applogger.info(addline_msg('{}'.format(f'Copy src file. {os.path.isfile(entity_path)} {entity_path}')))
-            shutil.copyfile(entity_path, tmp_file_path) if _pd['class_name'] == "FileUploadColumn" else None
-            file_decode_upload_file(entity_path, tmp_file_path) if _pd['class_name'] == "FileUploadEncryptColumn" else None
-            g.applogger.info(addline_msg('{}'.format(f'Copy dst file. {os.path.isfile(tmp_file_path)} {tmp_file_path}')))
+            try:
+                if not entity_path:
+                    raise Exception("src file path is empty")
+                os.makedirs(tmp_dir_path, exist_ok=True)
+                g.applogger.info(addline_msg('{}'.format(f'{_pd["class_name"]} src={entity_path} dst={tmp_file_path}')))
+                g.applogger.info(addline_msg('{}'.format(f'Copy src file. {os.path.isfile(entity_path)} {entity_path}')))
+                shutil.copyfile(entity_path, tmp_file_path) if _pd['class_name'] == "FileUploadColumn" else None
+                file_decode_upload_file(entity_path, tmp_file_path) if _pd['class_name'] == "FileUploadEncryptColumn" else None
+                g.applogger.info(addline_msg('{}'.format(f'Copy dst file. {os.path.isfile(tmp_file_path)} {tmp_file_path}')))
+            except Exception as e:
+                g.applogger.error(f'file copy failed. parameter={_p} class_name={_pd["class_name"]}, src={entity_path}, dst={tmp_file_path}')
+                raise e
 
     del objmenu, parameters
 
@@ -3346,20 +3352,24 @@ def _bulk_register_file(objdbca, objmenu, execution_no_path, menu_name_rest, fil
                     os.remove(tmp_f_src) if os.path.isfile(tmp_f_src) else None
                     os.remove(f_src) if jnl_flg and os.path.isfile(f_src) else None
 
-                    # upload_file
-                    if _jfv['class_name'] == "FileUploadEncryptColumn":
-                        objsr = storage_read()
-                        objsr.open(tmp_f_entity, mode="rb")
-                        tmp_f_entity_f = base64.b64encode(objsr.read()).decode()
-                        objsr.close()
-                        encrypt_upload_file(f_src, tmp_f_entity_f, mode="w")
-                    else:
-                        shutil.copyfile(tmp_f_entity, f_src)
+                    try:
+                        # upload_file
+                        if _jfv['class_name'] == "FileUploadEncryptColumn":
+                            objsr = storage_read()
+                            objsr.open(tmp_f_entity, mode="rb")
+                            tmp_f_entity_f = base64.b64encode(objsr.read()).decode()
+                            objsr.close()
+                            encrypt_upload_file(f_src, tmp_f_entity_f, mode="w")
+                        else:
+                            shutil.copyfile(tmp_f_entity, f_src)
 
-                    # symlink
-                    if os.path.isfile(f_src):
-                        os.unlink(f_dst) if os.path.islink(f_dst) else None
-                        os.symlink(f_src, f_dst)
+                        # symlink
+                        if os.path.isfile(f_src):
+                            os.unlink(f_dst) if os.path.islink(f_dst) else None
+                            os.symlink(f_src, f_dst)
+                    except Exception as e:
+                        g.applogger.error(f'file copy, create symbolic link failed. parameter={_jfd} class_name={_jfv["class_name"]}, src={tmp_f_entity}, dst={f_src}')
+                        raise e
         _json_f_data = []
 
     # データ読取共通処理

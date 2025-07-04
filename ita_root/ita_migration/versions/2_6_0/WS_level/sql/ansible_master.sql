@@ -36,6 +36,12 @@ UPDATE T_COMN_MENU_COLUMN_LINK_JNL  SET VALIDATE_OPTION = '{
 
 
 -- -----------------------------------------------------------------------------
+-- - ▼openprj3584
+-- -----------------------------------------------------------------------------
+UPDATE T_COMN_MENU_TABLE_LINK SET BEFORE_VALIDATE_REGISTER = NULL, LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE TABLE_DEFINITION_ID = '20112';
+UPDATE T_COMN_MENU_TABLE_LINK_JNL SET BEFORE_VALIDATE_REGISTER = NULL, LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE JOURNAL_SEQ_NO = '20112';
+
+-- -----------------------------------------------------------------------------
 -- - ▼Issue #2548
 -- -----------------------------------------------------------------------------
 

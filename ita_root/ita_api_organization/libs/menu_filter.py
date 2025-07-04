@@ -241,11 +241,20 @@ def get_history_file_path(objdbca, menu, uuid, column, journal_uuid):
         tmp_journal_id = sort_data.get('journal_id')
         if match_flg is True or tmp_journal_id == journal_uuid:
             match_flg = True
+            if sort_data[column] is None:
+                # ファイルカラムにデータが無い場合
+                msg = g.appmsg.get_api_message("MSG-30026", [])
+                raise AppException("499-00201", [msg], [msg])
 
             tmp_file_path = objcol.get_file_data_path(sort_data[column], uuid, tmp_journal_id, False)
             if os.path.isfile(tmp_file_path):
                 file_path = tmp_file_path
                 break
+            else:
+                # ファイルが存在しない場合
+                g.applogger.info(f"File not found: {tmp_file_path}")
+                msg = g.appmsg.get_api_message("MSG-30032", [])
+                raise AppException("499-00201", [msg], [msg])
 
     return file_path
 

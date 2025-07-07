@@ -464,7 +464,7 @@ class DBConnectCommon:
         return data_list if is_last_res is True else is_last_res
 
 
-    def table_delete(self, table_name, data_list, primary_key_name):
+    def table_delete(self, table_name, data_list, primary_key_name, is_register_history=False):
         """
         delete table
 
@@ -472,6 +472,7 @@ class DBConnectCommon:
             data_list (dict): data list for delete ex.[{primary_key_name:"{uuid}"}]
             table_name (str): delete table name
             primary_key_name (str): primary key column name
+            is_register_history (bool): is register history table (default: False)
 
         Returns:
             delete failure: (bool)False
@@ -491,6 +492,11 @@ class DBConnectCommon:
             res = self.sql_execute(sql, [primary_key_value])
             if res is False:
                 is_last_res = False
+
+            # 履歴無しの場合は、履歴テーブル削除は実行しない
+            # If there is no history, history table deletion is not executed.
+            if not is_register_history:
+                continue
 
             # delete history table
             history_table_name = table_name + "_JNL"

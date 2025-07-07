@@ -94,6 +94,8 @@ COLNAME_AFTER_VALIDATE_REGISTER = 'AFTER_VALIDATE_REGISTER'
 COLNAME_COLUMN_DISP_SEQ = 'COLUMN_DISP_SEQ'
 COLNAME_SAVE_TYPE = 'SAVE_TYPE'
 
+COLNAME_FILE_UPLOAD_PLACE = 'FILE_UPLOAD_PLACE'
+
 # maintenance/filter 構造キー
 REST_PARAMETER_KEYNAME = 'parameter'
 REST_FILE_KEYNAME = 'file'
@@ -1387,6 +1389,8 @@ class loadTable():
         # Initialize the error (to set the line number from 1 since there have been no errors up to this point)
         self.err_message = {}
 
+        history_flg = self.get_history_flg()
+
         ret = True
         # 件数分処理
         # Process by number of item
@@ -1417,29 +1421,111 @@ class loadTable():
                 # Check file columns
                 if self.get_col_class_name(rest_key) in ['FileUploadColumn', 'FileUploadEncryptColumn']:
 
-                    # ファイルは、履歴フォルダに実態があるため、履歴の情報から削除を実施する
-                    # The file is actually in the history folder, so delete it from the history information.
+                    # 履歴無しの場合は、履歴ファイル削除は実行しない
+                    # If there is no history, history file deletion is not executed.
+                    if history_flg:
+                        # ファイルは、履歴フォルダに実態があるため、履歴の情報から削除を実施する
+                        # The file is actually in the history folder, so delete it from the history information.
 
-                    # 履歴の一括取得
-                    # Batch history acquisition
-                    target_jnls = self.get_target_jnl_uuids(target_uuid)
-                    for target_jnl in target_jnls:
-                        g.applogger.debug(f"(jnl){target_jnl=}")
-                        data_json = target_jnl.get("DATA_JSON")
-                        if data_json:
-                            json_rows = json.loads(data_json)
-                            target_uuid_jnl = target_jnl.get(COLNAME_JNL_SEQ_NO)
-                            data_file_path = json_rows.get(rest_key)
-                            g.applogger.debug(f"(jnl){data_file_path=}")
+                        # 履歴の一括取得
+                        # Batch history acquisition
+                        target_jnls = self.get_target_jnl_uuids(target_uuid)
+                        col_name = self.get_col_name(rest_key)
+
+                        for target_jnl in target_jnls:
+                            g.applogger.debug(f"(jnl){rest_key=}:{col_name=}")
+
+                            if target_jnl:
+                                target_uuid_jnl = target_jnl.get(COLNAME_JNL_SEQ_NO)
+                                # カラム名がDATA_JSON(パラメータシート作成機能により作られたメニューのカラム)の場合
+                                # If the column name is DATA_JSON (menu column created by the parameter sheet creation function
+                                if col_name == "DATA_JSON":
+                                    data_json = target_jnl.get(col_name)
+                                    if data_json:
+                                        json_row = json.loads(data_json)
+                                        file_name = json_row.get(rest_key)
+                                    else:
+                                        file_name = None
+                                else:
+                                    file_name = target_jnl.get(col_name)
+                                g.applogger.debug(f"(jnl){file_name=}")
+
+                                # ファイル名が無い場合は、アップロードされたファイルなしとして、処理を継続しない
+                                # If there is no file name, it is assumed that no file has been uploaded and processing does not continue.
+                                if file_name is None:
+                                    continue
+
+                                exists_ret = self.get_objcol(rest_key).get(COLNAME_FILE_UPLOAD_PLACE)
+                                # 格納先の実フォルダ側を削除する
+                                # Delete the real folder of the storage destination
+                                if not exists_ret:
+                                    delete_paths = get_upload_file_path(g.WORKSPACE_ID, self.get_menu_id(), target_uuid, rest_key, file_name, target_uuid_jnl)   # noqa:F405
+                                else:
+                                    delete_paths = get_upload_file_path_specify(g.WORKSPACE_ID, exists_ret, target_uuid, file_name, target_uuid_jnl)   # noqa:F405
+
+                                delete_path = delete_paths.get('old_file_path')
+                                g.applogger.debug(f"(jnl){exists_ret=}:{delete_path=}")
+
+                                try:
+                                    # 履歴のファイル削除
+                                    # Delete history files
+                                    util.file_remove(delete_path, delete_mode)
+                                except Exception as e:
+                                    # 失敗時はユーザーに削除できなかった内容を返却する(手動による削除を促すため)
+                                    # In case of failure, return the content that could not be deleted to the user (to encourage manual deletion)
+                                    g.applogger.error(f"(jnl){delete_mode=}:{delete_path=}")
+                                    print_exception_msg(e)
+                                    status_code = 'MSG-150001'
+                                    msg_args = [rest_key]
+                                    msg = g.appmsg.get_api_message(status_code, msg_args)
+                                    dict_msg = {
+                                        'status_code': status_code,
+                                        'msg_args': msg_args,
+                                        'msg': msg,
+                                    }
+                                    self.set_message(dict_msg, target_uuid, MSG_LEVEL_ERROR)
+                                    # 一度でも失敗があれば False を返却する
+                                    # Returns False if there is even one failure
+                                    ret = False
+
+                    else:
+                        # data_json = self.get_objtable()
+                        # g.applogger.debug(f"{data_json=}")
+                        # if data_json:
+
+                        target_rows = self.get_target_rows(target_uuid)
+                        for target_row in target_rows:
+                            col_name = self.get_col_name(rest_key)
+                            g.applogger.debug(f"{col_name=}:{target_row=}")
+
+                            # カラム名がDATA_JSON(パラメータシート作成機能により作られたメニューのカラム)の場合
+                            # If the column name is DATA_JSON (menu column created by the parameter sheet creation function
+                            if col_name == "DATA_JSON":
+                                data_json = target_row.get(col_name)
+                                if data_json:
+                                    json_rows = json.loads(data_json)
+                                    file_name = json_rows.get(rest_key)
+                                else:
+                                    file_name = None
+                            else:
+                                file_name = target_row.get(col_name)
+
+                            g.applogger.debug(f"{rest_key=}:{col_name=}:{file_name=}")
 
                             # ファイル名が無い場合は、アップロードされたファイルなしとして、処理を継続しない
                             # If there is no file name, it is assumed that no file has been uploaded and processing does not continue.
-                            if data_file_path is None:
+                            if file_name is None:
                                 continue
 
-                            delete_paths = get_upload_file_path(g.WORKSPACE_ID, self.get_menu_id(), target_uuid, rest_key, data_file_path, target_uuid_jnl)
-                            delete_path = delete_paths.get('old_file_path')
-                            g.applogger.debug(f"(jnl){delete_path=}")
+                            exists_ret = self.get_objcol(rest_key).get(COLNAME_FILE_UPLOAD_PLACE)
+                            # 格納先の実フォルダ側を削除する
+                            # Delete the real folder of the storage destination
+                            if not exists_ret:
+                                delete_paths = get_upload_file_path(g.WORKSPACE_ID, self.get_menu_id(), target_uuid, rest_key, file_name, '')   # noqa:F405
+                            else:
+                                delete_paths = get_upload_file_path_specify(g.WORKSPACE_ID, exists_ret, target_uuid, file_name, '')   # noqa:F405
+                            delete_path = delete_paths.get('file_path')
+                            g.applogger.debug(f"{exists_ret=}:{delete_path=}")
 
                             try:
                                 # 履歴のファイル削除
@@ -1448,7 +1534,7 @@ class loadTable():
                             except Exception as e:
                                 # 失敗時はユーザーに削除できなかった内容を返却する(手動による削除を促すため)
                                 # In case of failure, return the content that could not be deleted to the user (to encourage manual deletion)
-                                g.applogger.error(f"(jnl){delete_mode=}:{delete_path=}")
+                                g.applogger.error(f"{delete_mode=}:{delete_path=}")
                                 print_exception_msg(e)
                                 status_code = 'MSG-150001'
                                 msg_args = [rest_key]
@@ -1519,10 +1605,16 @@ class loadTable():
                 # ファイルカラムのチェック
                 # Check file columns
                 if self.get_col_class_name(rest_key) in ['FileUploadColumn', 'FileUploadEncryptColumn']:
-                    delete_paths = get_upload_file_path(g.WORKSPACE_ID, self.get_menu_id(), target_uuid, rest_key, 'val', None)
+                    exists_ret = self.get_objcol(rest_key).get(COLNAME_FILE_UPLOAD_PLACE)
+                    # 格納先の実フォルダ側を削除する
+                    # Delete the real folder of the storage destination
+                    if not exists_ret:
+                        delete_paths = get_upload_file_path(g.WORKSPACE_ID, self.get_menu_id(), target_uuid, rest_key, 'val', None)   # noqa:F405
+                    else:
+                        delete_paths = get_upload_file_path_specify(g.WORKSPACE_ID, exists_ret, target_uuid, 'val', None)   # noqa:F405
 
                     delete_path = os.path.dirname(delete_paths.get('file_path'))
-                    g.applogger.debug(f"{delete_path=}")
+                    g.applogger.debug(f"{exists_ret=}:{delete_path=}")
                     # ディレクトリ削除
                     # Delete directory
                     try:
@@ -1893,7 +1985,7 @@ class loadTable():
                 elif cmd_type == CMD_RESTORE:
                     result = self.objdbca.table_update(self.get_table_name(), colname_parameter, primary_key, history_flg)
                 elif cmd_type == CMD_DELETE:
-                    result = self.objdbca.table_delete(self.get_table_name(), colname_parameter, primary_key)
+                    result = self.objdbca.table_delete(self.get_table_name(), colname_parameter, primary_key, history_flg)
 
             result_uuid = ''
             result_uuid_jnl = ''

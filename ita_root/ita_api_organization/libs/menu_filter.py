@@ -252,9 +252,7 @@ def get_history_file_path(objdbca, menu, uuid, column, journal_uuid):
                 break
             else:
                 # ファイルが存在しない場合
-                g.applogger.info(f"File not found: {tmp_file_path}")
-                msg = g.appmsg.get_api_message("MSG-30032", [])
-                raise AppException("499-00201", [msg], [msg])
+                raise AppException("999-00014", [tmp_file_path], [tmp_file_path])
 
     return file_path
 

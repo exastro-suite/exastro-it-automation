@@ -205,6 +205,7 @@
     "999-00003": "System Error",
     "999-00004": "System Error",
     "999-00005": "System Error",
+    "999-00014": "System Error",
     "999-99999": "System Error",
     "MSG-00001": "Failed to exchange ID. ({})",
     "MSG-00002": "The value format ({}) is invalid.( input value: {})",

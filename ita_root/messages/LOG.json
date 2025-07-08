@@ -198,6 +198,7 @@
     "999-00003": "[Database Error] Database({}) SQL:{}, {}",
     "999-00004": "[Gitlab Error] request failed : {}",
     "999-00005": "Failed to connect to ExastroPlatform. URL=({}). Response=({}).",
+    "999-00014": "File Not Found: {}",
     "999-99999": "※stack trace",
     "MSG-00005": "Processing was canceled because the record was updated from another session. (Target ID: {})",
     "MSG-00006": "The combination is incorrect. (Combination: {}, Target ID: {})",

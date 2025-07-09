@@ -41,6 +41,11 @@ def external_valid_menu_before(objdbca, objtable, option):
     retBool = True
     msg = []
 
+    # 削除時はチェックしない
+    # Do not check when deleting
+    if option.get("cmd_type") == "Delete":
+        return retBool, msg, option
+
     # 対象のメニューは更新の操作のみ実施可能なため「cmd_type」はチェックしない
 
     file_path = option.get('entry_parameter', {}).get('file_path', {}).get('template_file')

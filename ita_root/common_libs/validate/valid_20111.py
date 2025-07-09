@@ -19,6 +19,11 @@ def external_valid_menu_before(objdbca, objtable, option):
     retBool = True
     msg = []
 
+    # 削除時はチェックしない
+    # Do not check when deleting
+    if option.get("cmd_type") == "Delete":
+        return retBool, msg, option
+
     target_lang = g.LANGUAGE if g.LANGUAGE is not None else "ja"
     if target_lang == "ja":
         lang_col_name = "COLUMN_NAME_JA"

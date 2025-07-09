@@ -33,6 +33,12 @@ def external_valid_menu_before(objdbca, objtable, option):
     """
     retBool = True
     msg = ''
+
+    # 削除時はチェックしない
+    # Do not check when deleting
+    if option.get("cmd_type") == "Delete":
+        return retBool, msg, option
+
     ret_str_body = ''
     # entry_parameterはUI入力ベースの情報
     # current_parameterはDBに登録済みの情報

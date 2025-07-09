@@ -21,7 +21,12 @@ def external_valid_menu_before(objdbca, objtable, option):
     data_list = {"LOADED_FLG": "0", "ROW_ID": "204"}
     primary_key_name = "ROW_ID"
     objdbca.table_update(table_name, data_list, primary_key_name, False)
-    
+
+    # 削除時はチェックしない
+    # Do not check when deleting
+    if option.get("cmd_type") == "Delete":
+        return retBool, msg, option
+
     # 登録および更新の際ロールパッケージ名取得
     if option["cmd_type"] == "Register" or option["cmd_type"] == "Update":
         role_id = option["entry_parameter"]["parameter"]["role_package_name_role_name"]
@@ -37,7 +42,7 @@ def external_valid_menu_before(objdbca, objtable, option):
 def external_valid_menu_after(objdbca, objtable, option):
     retBool = True
     msg = ''
-    
+
     # ----同一Movementに複数のロールパッケージが登録されていないか判定
     if option["cmd_type"] == "Register" or option["cmd_type"] == "Update" or option["cmd_type"] == "Restore":
         table_name = "T_ANSR_MVMT_MATL_LINK"

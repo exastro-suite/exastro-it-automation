@@ -29,6 +29,20 @@ def external_valid_menu_before(objdbca, objtable, option):
     retBool = True
     msg = ''
 
+    # 削除時はチェックしない
+    # Do not check when deleting
+    if option.get("cmd_type") == "Delete":
+        # バックヤード起動フラグ設定
+        table_name = "T_COMN_PROC_LOADED_LIST"
+        data_list = {"LOADED_FLG": "0", "ROW_ID": "204"}
+        primary_key_name = "ROW_ID"
+        ret = objdbca.table_update(table_name, data_list, primary_key_name, False)
+        if ret is False:
+            msg = g.appmsg.get_api_message("MSG-10888", [os.path.basename(inspect.currentframe().f_code.co_filename), inspect.currentframe().f_lineno])
+            retBool = False
+
+        return retBool, msg, option
+
     # 入力値取得
     entry_parameter = option.get('entry_parameter').get('parameter')
     current_parameter = option.get('current_parameter').get('parameter')

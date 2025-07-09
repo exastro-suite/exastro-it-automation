@@ -30,6 +30,11 @@ def external_valid_menu_before(objdbca, objtable, option):
     msg = []
     cmd_type = option.get('cmd_type')
 
+    # 削除時はチェックしない
+    # Do not check when deleting
+    if option.get("cmd_type") == "Delete":
+        return retBool, msg, option
+
     # 廃止の場合、バリデーションチェックを行わない。
     if cmd_type == 'Discard':
         return retBool, msg, option,

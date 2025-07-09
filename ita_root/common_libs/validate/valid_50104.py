@@ -24,6 +24,12 @@ def menu_column_valid(objdbca, objtable, option):
     lang = g.get('LANGUAGE')
     retBool = True
     msg = ''
+
+    # 削除時はチェックしない
+    # Do not check when deleting
+    if option.get("cmd_type") == "Delete":
+        return retBool, msg, option
+
     menu_name_rest = objtable.get('MENUINFO').get('MENU_NAME_REST')
     entry_parameter = option.get('entry_parameter').get('parameter')
     column_class = entry_parameter.get("column_class")

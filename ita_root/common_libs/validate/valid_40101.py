@@ -27,6 +27,11 @@ def compare_validate(objdbca, objtable, option):
     retBool = True
     msg = ""
 
+    # 削除時はチェックしない
+    # Do not check when deleting
+    if option.get("cmd_type") == "Delete":
+        return retBool, msg, option
+
     language = g.get('LANGUAGE').upper()
     cmd_type = option.get('cmd_type')
     if cmd_type != "Discard":

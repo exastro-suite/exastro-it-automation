@@ -11,6 +11,11 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+
+#
+#   When modifying this file, please also modify the configmap definition in the exastro-helm repository.
+#   本ファイルに修正を行い際は、exastro-helmリポジトリのconfigmap定義も修正を行うこと
+#
 ---
 apiVersion: v1
 kind: Pod

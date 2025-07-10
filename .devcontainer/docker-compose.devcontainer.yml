@@ -29,6 +29,7 @@ services:
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.vscode_extensions/ita-api-organization/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-api-organization/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
@@ -65,6 +66,7 @@ services:
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.vscode_extensions/ita-api-admin/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-api-admin/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
@@ -107,6 +109,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_ansible_execute/common_libs:cached
@@ -125,13 +128,14 @@ services:
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.vscode_extensions/ita-by-ansible-execute/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-ansible-execute/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
       - HTTPS_PROXY=${HTTPS_PROXY}
       - https_proxy=${HTTPS_PROXY}
-      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,192.168.141.90,platform-api
-      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,192.168.141.90,platform-api
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
       - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
       - SSL_CERT_DIR=/etc/ssl/certs
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
@@ -141,6 +145,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_ansible_legacy_role_vars_listup/common_libs:cached
@@ -159,6 +164,7 @@ services:
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.vscode_extensions/ita-by-ansible-legacy-role-vars-listup/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-ansible-legacy-role-vars-listup/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
@@ -175,6 +181,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_ansible_legacy_vars_listup/common_libs:cached
@@ -193,6 +200,7 @@ services:
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.vscode_extensions/ita-by-ansible-legacy-vars-listup/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-ansible-legacy-vars-listup/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
@@ -209,6 +217,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_ansible_pioneer_vars_listup/common_libs:cached
@@ -227,6 +236,7 @@ services:
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.vscode_extensions/ita-by-ansible-pioneer-vars-listup/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-ansible-pioneer-vars-listup/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
@@ -243,6 +253,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_ansible_towermaster_sync/common_libs:cached
@@ -261,6 +272,7 @@ services:
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.vscode_extensions/ita-by-ansible-towermaster-sync/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-ansible-towermaster-sync/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
@@ -277,6 +289,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_collector/common_libs:cached
@@ -295,6 +308,7 @@ services:
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.vscode_extensions/ita-by-collector/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-collector/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
@@ -311,6 +325,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_conductor_synchronize/common_libs:cached
@@ -329,6 +344,7 @@ services:
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.vscode_extensions/ita-by-conductor-synchronize/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-conductor-synchronize/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
@@ -345,6 +361,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_conductor_regularly/common_libs:cached
@@ -363,6 +380,7 @@ services:
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.vscode_extensions/ita-by-conductor-regularly/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-conductor-regularly/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
@@ -379,6 +397,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_menu_create/common_libs:cached
@@ -397,6 +416,7 @@ services:
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.vscode_extensions/ita-by-menu-create/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-menu-create/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
@@ -413,6 +433,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_menu_export_import/common_libs:cached
@@ -434,6 +455,7 @@ services:
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.vscode_extensions/ita-by-menu-export-import/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-menu-export-import/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
@@ -450,6 +472,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_excel_export_import/common_libs:cached
@@ -468,6 +491,7 @@ services:
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.vscode_extensions/ita-by-excel-export-import/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-excel-export-import/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
@@ -484,6 +508,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_terraform_cloud_ep_execute/common_libs:cached
@@ -502,6 +527,7 @@ services:
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.vscode_extensions/ita-by-terraform-cloud-ep-execute/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-terraform-cloud-ep-execute/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
@@ -518,6 +544,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_terraform_cloud_ep_vars_listup/common_libs:cached
@@ -536,6 +563,7 @@ services:
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.vscode_extensions/ita-by-terraform-cloud-ep-vars-listup/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-terraform-cloud-ep-vars-listup/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
@@ -552,6 +580,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_terraform_cli_execute/common_libs:cached
@@ -570,6 +599,7 @@ services:
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.vscode_extensions/ita-by-terraform-cli-execute/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-terraform-cli-execute/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
@@ -586,6 +616,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_terraform_cli_vars_listup/common_libs:cached
@@ -604,6 +635,7 @@ services:
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.vscode_extensions/ita-by-terraform-cli-vars-listup/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-terraform-cli-vars-listup/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
@@ -620,6 +652,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_hostgroup_split/common_libs:cached
@@ -638,6 +671,7 @@ services:
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.vscode_extensions/ita-by-hostgroup-split/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-hostgroup-split/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
@@ -654,6 +688,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_cicd_for_iac/common_libs:cached
@@ -672,6 +707,7 @@ services:
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.vscode_extensions/ita-by-cicd-for-iac/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-cicd-for-iac/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
@@ -688,6 +724,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_execinstance_dataautoclean/common_libs:cached
@@ -706,6 +743,7 @@ services:
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.vscode_extensions/ita-by-execinstance-dataautoclean/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-execinstance-dataautoclean/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
@@ -722,6 +760,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_file_autoclean/common_libs:cached
@@ -740,6 +779,7 @@ services:
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.vscode_extensions/ita-by-file-autoclean/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-file-autoclean/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
@@ -772,6 +812,7 @@ services:
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.vscode_extensions/ita-migration/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-migration/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
@@ -808,6 +849,7 @@ services:
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.vscode_extensions/ita-api-ansible-execution-receiver/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-api-ansible-execution-receiver/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
@@ -843,6 +885,7 @@ services:
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.vscode_extensions/ita-api-oase-receiver/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-api-oase-receiver/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
@@ -860,6 +903,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_oase_conclusion/common_libs:cached
@@ -878,13 +922,14 @@ services:
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.vscode_extensions/ita-by-oase-conclusion/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-oase-conclusion/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
       - HTTPS_PROXY=${HTTPS_PROXY}
       - https_proxy=${HTTPS_PROXY}
-      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api,ita-api-oase-receiver
-      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api,ita-api-oase-receiver
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api,platform-auth,ita-api-oase-receiver
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api,platform-auth,ita-api-oase-receiver
       - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
       - SSL_CERT_DIR=/etc/ssl/certs
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
@@ -924,6 +969,7 @@ services:
       target: develop_build
       secrets:
         - host_certificate_file
+    entrypoint: /bin/sh -c "while :; do sleep 1000; done"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_ag_oase/common_libs:cached
@@ -942,6 +988,7 @@ services:
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.vscode_extensions/ita-ag-oase/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-ag-oase/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}

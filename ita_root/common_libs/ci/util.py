@@ -45,6 +45,11 @@ def wrapper_job(main_logic, organization_id=None, workspace_id=None, loop_count=
     max = int(loop_count) if is_child_ps is False else 1
 
     while True:
+        g.ORGANIZATION_ID = None
+        g.WORKSPACE_ID = None
+        g.applogger.set_env_message()
+        g.applogger.info("Backyard job has started")
+
         # get organization_info_list
         if is_child_ps is False:
             organization_info_list = common_db.table_select("T_COMN_ORGANIZATION_DB_INFO", "WHERE `DISUSE_FLAG`=0 ORDER BY `LAST_UPDATE_TIMESTAMP`")
@@ -119,6 +124,10 @@ def wrapper_job(main_logic, organization_id=None, workspace_id=None, loop_count=
                 print_exception_msg(e)
                 exception(e)
 
+        # ハングアップ監視用に時刻を出力する
+        with open(os.environ.get('FILE_PATH_LIVENESS'), 'w') as f:
+            f.write(str(int(time.time())))
+
         if count >= max:
             common_db.db_disconnect()
             break
@@ -149,6 +158,8 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
         # set applogger.set_level: default:INFO / Use ITA_DB config value
         # set_service_loglevel()
 
+        g.WORKSPACE_ID = None
+        g.applogger.set_env_message()
         workspace_id = workspace_info['WORKSPACE_ID']
 
         g.WORKSPACE_ID = workspace_id
@@ -179,6 +190,9 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
             if allow_proc(organization_id, workspace_id) is True:
                 main_logic_exec = main_logic
                 main_logic_exec(organization_id, workspace_id)
+                # ハングアップ監視用に時刻を出力する
+                with open(os.environ.get('FILE_PATH_LIVENESS'), 'w') as f:
+                    f.write(str(int(time.time())))
                 del main_logic_exec
         except AppException as e:
             # catch - raise AppException("xxx-xxxxx", log_format)
@@ -190,7 +204,6 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
             exception(e)
 
         # delete environment of workspace
-        g.pop('WORKSPACE_ID')
         g.db_connect_info.pop("WSDB_HOST")
         g.db_connect_info.pop("WSDB_PORT")
         g.db_connect_info.pop("WSDB_USER")
@@ -200,7 +213,6 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
         g.db_connect_info.pop("WS_MONGO_DATABASE")
         g.db_connect_info.pop("WS_MONGO_USER")
         g.db_connect_info.pop("WS_MONGO_PASSWORD")
-        # print("")
 
 
 def wrapper_job_all_org(main_logic, loop_count=500):
@@ -219,6 +231,13 @@ def wrapper_job_all_org(main_logic, loop_count=500):
         # get organization_info_list
         # job for organization
         try:
+            g.ORGANIZATION_ID = None
+            g.WORKSPACE_ID = None
+            g.applogger.set_env_message()
+            g.applogger.info("Backyard job has started")
+
+            main_logic_exec = None
+
             g.applogger.debug(f"wrapper_job_all_org loop=[{count}]")
             common_db = DBConnectCommon()  # noqa: F405
 
@@ -227,6 +246,10 @@ def wrapper_job_all_org(main_logic, loop_count=500):
 
             main_logic_exec = main_logic
             main_logic_exec(common_db)
+
+            # ハングアップ監視用に時刻を出力する
+            with open(os.environ.get('FILE_PATH_LIVENESS'), 'w') as f:
+                f.write(str(int(time.time())))
 
             common_db.db_disconnect()
         except AppException as e:
@@ -558,6 +581,10 @@ def set_service_loglevel(common_db=None):
                 # is loglevel
                 if loglevel is None:
                     raise Exception()
+    except AppException as e:
+        print_exception_msg(e)
+        if "SERVICE_LOGLEVEL_FLG" in g:
+            g.SERVICE_LOGLEVEL_FLG = None
     except Exception:
         t = traceback.format_exc()
         g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))

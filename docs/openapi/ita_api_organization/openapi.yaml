@@ -1,0 +1,310 @@
+#   Copyright 2025 NEC Corporation
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+openapi: 3.0.3
+info:
+  title: Exastro IT Automation API
+  description: Exastro IT Automation API
+  version: "2.5"
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+
+servers:
+  - url: "https://{host}"
+    description: API endpoint
+    variables:
+      host:
+        default: localhost
+  - url: "http://{host}"
+    description: API endpoint
+    variables:
+      host:
+        default: localhost
+  - url: "{protocol}://{host}:{port}"
+    description: API endpoint (Development)
+    variables:
+      protocol:
+        enum:
+          - http
+          - https
+        default: https
+      host:
+        default: localhost
+      port:
+        default: '30080'
+
+tags:
+  - name: Menu Info
+    description: メニュー情報の取得 / Get menu information
+  - name: Menu Filter
+    description: レコードの取得 / Get records
+  - name: Menu Maintenance
+    description: レコードの操作（登録/更新/廃止/復活/物理削除） / Record operations (register/update/abolish/restore/physical delete)
+  - name: Menu MaintenanceAll
+    description: レコードの一括操作（登録/更新/廃止/復活/物理削除） / Bulk record operations (register/update/abolish/restore/physical delete)
+  - name: Menu Excel
+    description: Excelの取得・操作 / Get and operate Excel
+  - name: User Info
+    description: ユーザ情報の取得 / Get user information
+  - name: System Info
+    description: ITAの情報取得 / Get ITA information
+  - name: Menu Create
+    description: パラメータシート作成機能 / Parameter sheet creation function
+  - name: Conductor Controll
+    description: Conductorの情報取得・操作 / Get and operate Conductor information
+  - name: Driver Controll
+    description: Driverの情報取得・操作 / Get and operate Driver information
+  - name: Export Import
+    description: データのエクスポート・インポート / Export and import data
+  - name: Compare Controll
+    description: 比較の情報取得・操作 / Get and operate comparison information
+  - name: Terraform Cloud EP
+    description: Terraform Cloud/Enterpriseとの連携 / Integration with Terraform Cloud/Enterprise
+  - name: CI/CD for IaC
+    description: CI/CD for IaCの操作 / CI/CD for IaC operations
+  - name: OASE
+    description: OASE用 / For OASE
+  - name: Apply
+    description: パラメータ適用 / Apply parameters
+  - name: InternalHealthCheckService
+    description: ヘルスチェックに関する操作(内部用) / Health check operations (internal use)
+
+paths:
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/:
+      $ref: './paths/menu.info.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/column/:
+      $ref: './paths/menu.info.column.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/pulldown/:
+      $ref: './paths/menu.info.pulldown.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/search/candidates/{column}/:
+      $ref: './paths/menu.info.search.candidates.column.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/filter/count/:
+      $ref: './paths/menu.filter.count.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/filter/:
+      $ref: './paths/menu.filter.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/filter/journal/{uuid}/:
+      $ref: './paths/menu.filter.journal.id.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/{uuid}/{column}/file/:
+      $ref: './paths/menu.id.column.file.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/{uuid}/{column}/file/journal/{journal_uuid}/:
+      $ref: './paths/menu.id.column.file.journal.id.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/maintenance/:
+      $ref: './paths/menu.maintenance.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/maintenance/{uuid}/:
+      $ref: './paths/menu.maintenance.id.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/maintenance/all/:
+      $ref: './paths/menu.maintenance.all.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/excel/format/:
+      $ref: './paths/menu.excel.format.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/excel/:
+      $ref: './paths/menu.excel.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/excel/maintenance/:
+      $ref: './paths/menu.excel.maintenance.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/excel/journal/:
+      $ref: './paths/menu.excel.journal.yaml'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/user/:
+      $ref: './paths/user.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/user/menus/:
+      $ref: './paths/user.menus.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/user/menus/panels/:
+      $ref: './paths/user.menus.panels.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/user/table_settings/:
+      $ref: './paths/user.table_settings.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/user/dashboard/:
+      $ref: './paths/user.dashboard.yaml'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/version/:
+      $ref: './paths/version.yaml'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/create/define/execute/:
+      $ref: './paths/create.define.execute.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/create/define/:
+      $ref: './paths/create.define.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/create/define/{menu_create}/:
+      $ref: './paths/create.define.id.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/create/define/pulldown/initial/{menu}/{column}/:
+      $ref: './paths/create.define.pulldown.initial.id.column.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/create/define/reference/item/{menu}/{column}/:
+      $ref: './paths/create.define.reference.item.id.column.yaml'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/parameter_collection/:
+      $ref: './paths/menu.parameter_collection.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/parameter_collection/filter_data/:
+      $ref: './paths/menu.parameter_collection.filter_data.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/parameter_collection/filter_data/{uuid}:
+      $ref: './paths/menu.parameter_collection.filter_data.id.yaml'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/class/info/:
+      $ref: './paths/menu.conductor.class.info.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/class/{conductor_class_id}/:
+      $ref: './paths/menu.conductor.class.id.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/class/maintenance/:
+      $ref: './paths/menu.conductor.class.maintenance.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/class/maintenance/{conductor_class_id}/:
+      $ref: './paths/menu.conductor.class.maintenance.id.yaml'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/execute/info/:
+      $ref: './paths/menu.conductor.execute.info.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/execute/filter/{target}/:
+      $ref: './paths/menu.conductor.execute.filter.target.yaml'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/execute/filter/{target}/search/candidates/{column}/:
+      $ref: './paths/menu.conductor.execute.filter.target.search.candidates.column.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/execute/class/info/:
+      $ref: './paths/menu.conductor.execute.class.info.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/execute/class/{conductor_class_id}/:
+      $ref: './paths/menu.conductor.execute.class.id.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/execute/:
+      $ref: './paths/menu.conductor.execute.yaml'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/info/{conductor_instance_id}/:
+      $ref: './paths/menu.conductor.info.id.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/{conductor_instance_id}/:
+      $ref: './paths/menu.conductor.id.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/{conductor_instance_id}/cancel/:
+      $ref: './paths/menu.conductor.id.cancel.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/{conductor_instance_id}/scram/:
+      $ref: './paths/menu.conductor.id.scram.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/{conductor_instance_id}/node/{node_instance_id}/relese/:
+      $ref: './paths/menu.conductor.id.node.id.relese.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/{conductor_instance_id}/input_data/:
+      $ref: './paths/menu.conductor.id.input_data.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/{conductor_instance_id}/result_data/:
+      $ref: './paths/menu.conductor.id.result_data.yaml'
+
+  # Driver Controll
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/execute/:
+      $ref: './paths/menu.driver.execute.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/execute_dry_run/:
+      $ref: './paths/menu.driver.execute_dry_run.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/execute_check_parameter/:
+      $ref: './paths/menu.driver.execute_check_parameter.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/execute_delete_resource/:
+      $ref: './paths/menu.driver.execute_delete_resource.yaml'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/{execution_no}/:
+      $ref: './paths/menu.driver.no.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/{execution_no}/populated_data:
+      $ref: './paths/menu.driver.no.populated_data.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/{execution_no}/result_data:
+      $ref: './paths/menu.driver.no.result_data.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/{execution_no}/cancel/:
+      $ref: './paths/menu.driver.no.cancel.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/{execution_no}/scram/:
+      $ref: './paths/menu.driver.no.scram.yaml'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/execute/info/:
+      $ref: './paths/menu.driver.execute.info.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/execute/filter/{target}/:
+      $ref: './paths/menu.driver.execute.filter.target.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/execute/filter/{target}/search/candidates/{column}/:
+      $ref: './paths/menu.driver.execute.filter.target.search.candidates.column.yaml'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/export/info/:
+      $ref: './paths/menu.export.info.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/bulk/export/execute/:
+      $ref: './paths/menu.bulk.export.execute.yaml'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/import/upload/:
+      $ref: './paths/menu.import.upload.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/import/execute/:
+      $ref: './paths/menu.import.execute.yaml'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/excel/bulk/export/info/:
+      $ref: './paths/excel.bulk.export.info.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/excel/bulk/export/execute/:
+      $ref: './paths/excel.bulk.export.execute.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/excel/bulk/upload/:
+      $ref: './paths/excel.bulk.upload.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/excel/bulk/import/execute/:
+      $ref: './paths/excel.bulk.import.execute.yaml'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/info/:
+      $ref: './paths/menu.compare.info.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/info/:
+      $ref: './paths/menu.compare.execute.info.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/filter/{target}/:
+      $ref: './paths/menu.compare.execute.filter.target.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/filter/{target}/search/candidates/{column}/:
+      $ref: './paths/menu.compare.execute.filter.target.search.candidates.column.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/:
+      $ref: './paths/menu.compare.execute.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/output/:
+      $ref: './paths/menu.compare.execute.output.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/file/:
+      $ref: './paths/menu.compare.execute.file.yaml'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/:
+      $ref: './paths/terraform.organization.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/{tf_organization_name}/:
+      $ref: './paths/terraform.organization.name.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/{tf_organization_name}/check/:
+      $ref: './paths/terraform.organization.name.check.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/workspace/:
+      $ref: './paths/terraform.workspace.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/workspace/{tf_organization_name}/:
+      $ref: './paths/terraform.workspace.name.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/workspace/{tf_organization_name}/{tf_workspace_name}/:
+      $ref: './paths/terraform.workspace.name.name.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/{tf_organization_name}/{tf_workspace_name}/check/:
+      $ref: './paths/terraform.organization.name.name.check.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policy/:
+      $ref: './paths/terraform.policy.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policy/{tf_organization_name}/download/{policy_name}/:
+      $ref: './paths/terraform.policy.name.download.name.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policy/{tf_organization_name}/delete/{policy_name}/:
+      $ref: './paths/terraform.policy.name.delete.name.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policyset/:
+      $ref: './paths/terraform.policyset.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policyset/{tf_organization_name}/delete/{policy_set_name}/:
+      $ref: './paths/terraform.policyset.name.delete.name.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policyset/{tf_organization_name}/relationship/{policy_set_name}/workspace/{tf_workspace_name}/:
+      $ref: './paths/terraform.policyset.name.relationship.name.workspace.name.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policyset/{tf_organization_name}/relationship/{policy_set_name}/policy/{policy_name}/:
+      $ref: './paths/terraform.policyset.name.relationship.name.policy.name.yaml'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/cicd_for_iac/resume/repository/{uuid}/:
+      $ref: './paths/cicd_for_iac.resume.repository.id.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/cicd_for_iac/resume/file_link/{uuid}/:
+      $ref: './paths/cicd_for_iac.resume.file_link.id.yaml'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/oase/filter/{menu}/:
+      $ref: './paths/oase.filter.menu.yaml'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/oase/event_flow/history/:
+      $ref: './paths/oase.event_flow.history.yaml'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/apply/:
+      $ref: './paths/apply.yaml'
+
+  /internal-api/health-check/liveness:
+      $ref: './paths/internal-api.health-check.liveness.yaml'
+  /internal-api/health-check/readiness:
+      $ref: './paths/internal-api.health-check.readiness.yaml'
+
+components:
+  schemas:
+    $ref: './schemas/_schemas.yaml'
+  examples:
+    $ref: './schemas/_examples.yaml'
+  securitySchemes:
+    $ref: './schemas/_securitySchemes.yaml'
+  responses:
+    UnauthorizedError:
+      description: Access token is missing or invalid
+
+security:
+- BearerAuth: []
+- BasicAuth: []

@@ -12,6 +12,11 @@ def conductor_class_validate(objdbca, objtable, option):
     retBool = True
     msg = ''
 
+    # 削除時はチェックしない
+    # Do not check when deleting
+    if option.get("cmd_type") == "Delete":
+        return retBool, msg, option
+
     target_rest_name = 'setting'
     entry_parameter = option.get('entry_parameter')
     tmp_parameter = entry_parameter.get('parameter')

@@ -19,7 +19,7 @@ handlers:
     stream: ext://sys.stdout
 loggers:
   fileAppLogger:
-    level: ERROR
+    level: INFO
     handlers: [myfile]
     propagate: no
   stdAppLogger:

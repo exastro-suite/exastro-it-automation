@@ -19,6 +19,11 @@ def external_valid_menu_before(objdbca, objtable, option):
     retBool = True
     msg = ''
 
+    # 削除時はチェックしない
+    # Do not check when deleting
+    if option.get("cmd_type") == "Delete":
+        return retBool, msg, option
+
     if option["cmd_type"] == "Discard" or option["cmd_type"] == "Restore":
 
         # 更新前のレコードから、各カラムの値を取得

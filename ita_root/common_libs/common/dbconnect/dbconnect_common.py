@@ -15,15 +15,57 @@
 database connection agnet module for ita-common-db on mariadb
 """
 import pymysql.cursors  # https://pymysql.readthedocs.io/en/latable_name/
+import pymysql
 import uuid
 import os
 import re
+import time
 
 from flask import g
 
-from common_libs.common.exception import AppException
+from common_libs.common.exception import AppException, DBException
 from common_libs.common.util import get_timestamp, ky_decrypt, ky_encrypt, generate_secrets
 
+
+def connect_retry(db_connect):
+    def wrapper(*args, **kwargs):
+        # retryしたときのインターバル
+        sleep_time = float(os.environ.get("DB_CONNECT_RETRY_SLEEP_TIME", 0.5))
+        # retry回数 優先順位は、db_connectに直接引数としてコードで指定がある場合 -> 環境変数 -> コードのデフォルト値
+        retry = kwargs["retry"] if "retry" in kwargs else None
+        retry_limit = int(os.environ.get("DB_CONNECT_RETRY_LIMIT", 2)) if retry is None else retry
+        retry_count = 0
+
+        while True:
+            try:
+                retBool = db_connect(*args, **kwargs)
+
+                if retBool is True:
+                    g.dbConnectError = False
+                    break
+            except DBException as e:
+                apl_msg_arg = e.args[0]
+                error_code = e.args[1]  # DBのエラーコード
+
+                retry_error_list = [
+                    -2, # Name or service not known
+                    2003 # Can't connect to MySQL server (timed out / Connection refused)
+                ]
+                if error_code in retry_error_list:
+                    if retry_count == retry_limit:
+                        g.dbConnectError = True
+                        raise AppException("999-00002", [apl_msg_arg, e])
+
+                    g.applogger.warning(e)
+                    retry_count += 1
+
+                    time.sleep(sleep_time)
+                    continue
+
+                g.dbConnectError = True
+                raise AppException("999-00002", [apl_msg_arg, e])
+
+    return wrapper
 
 class DBConnectCommon:
     """
@@ -34,7 +76,10 @@ class DBConnectCommon:
     _is_transaction = False  # state of transaction
     _COLUMN_NAME_TIMESTAMP = 'LAST_UPDATE_TIMESTAMP'
 
-    def __init__(self):
+    connect_timeout = int(os.environ.get("DB_CONNECT_TIMEOUT", 10))
+    retry = None
+
+    def __init__(self, mode_ss=None, retry=None):
         """
         constructor
         """
@@ -48,7 +93,7 @@ class DBConnectCommon:
         self._db_passwd = ky_encrypt(os.environ.get('DB_PASSWORD'))
 
         # connect database
-        self.db_connect()
+        self.db_connect(mode_ss=mode_ss, retry=retry)
 
     def __del__(self):
         """
@@ -56,7 +101,8 @@ class DBConnectCommon:
         """
         self.db_disconnect()
 
-    def db_connect(self):
+    @connect_retry
+    def db_connect(self, mode_ss=None, retry=None):
         """
         connect database
 
@@ -67,6 +113,7 @@ class DBConnectCommon:
             return True
 
         try:
+            _cursorclass = pymysql.cursors.SSDictCursor if mode_ss is True else pymysql.cursors.DictCursor
             self._db_con = pymysql.connect(
                 host=self._host,
                 port=self._port,
@@ -75,11 +122,12 @@ class DBConnectCommon:
                 database=self._db,
                 charset='utf8mb4',
                 collation='utf8mb4_general_ci',
-                cursorclass=pymysql.cursors.DictCursor,
-                local_infile = True,
+                cursorclass=_cursorclass,
+                local_infile=True,
+                connect_timeout=self.connect_timeout,
             )
         except pymysql.Error as e:
-            raise AppException("999-00002", [self._db, e])
+            raise DBException(self._db, e)
 
         return True
 
@@ -324,9 +372,6 @@ class DBConnectCommon:
             value_list = list(data.values())
 
             sql = "INSERT INTO `{}` ({}) VALUES ({})".format(table_name, ','.join(column_list), ','.join(prepared_list))
-            # print(data)
-            # print(sql)
-            # print(value_list)
             res = self.sql_execute(sql, value_list)
             if res is False:
                 is_last_res = False
@@ -346,9 +391,6 @@ class DBConnectCommon:
             value_list = list(history_data.values())
 
             sql = "INSERT INTO `{}` ({}) VALUES ({})".format(history_table_name, ','.join(column_list), ','.join(prepared_list))
-            # print(history_data)
-            # print(sql)
-            # print(value_list)
             res = self.sql_execute(sql, value_list)
             if res is False:
                 is_last_res = False
@@ -386,10 +428,9 @@ class DBConnectCommon:
             value_list = list(data.values())
             primary_key_value = data[primary_key_name]
 
-            sql = "UPDATE `{}` SET {} WHERE `{}` = '{}'".format(table_name, ','.join(prepared_list), primary_key_name, primary_key_value)
-            # print(data)
-            # print(sql)
-            # print(value_list)
+            # key値もbindように最後に値を付加する
+            value_list.append(primary_key_value)
+            sql = "UPDATE `{}` SET {} WHERE `{}`=%s".format(table_name, ','.join(prepared_list), primary_key_name)
             res = self.sql_execute(sql, value_list)
             if res is False:
                 is_last_res = False
@@ -402,7 +443,7 @@ class DBConnectCommon:
             add_data = self._get_history_table_data("UPDATE", timestamp)
 
             # re-get all column data
-            data = self.table_select(table_name, "WHERE `{}` = '{}'".format(primary_key_name, primary_key_value))
+            data = self.table_select(table_name, "WHERE `{}` = %s".format(primary_key_name), [primary_key_value])
             if len(data) == 0:
                 return False
             data = dict(data[0])
@@ -415,15 +456,60 @@ class DBConnectCommon:
             value_list = list(history_data.values())
 
             sql = "INSERT INTO `{}` ({}) VALUES ({})".format(history_table_name, ','.join(column_list), ','.join(prepared_list))
-            # print(history_data)
-            # print(sql)
-            # print(value_list)
             res = self.sql_execute(sql, value_list)
             if res is False:
                 is_last_res = False
                 break
 
         return data_list if is_last_res is True else is_last_res
+
+
+    def table_delete(self, table_name, data_list, primary_key_name, is_register_history=False):
+        """
+        delete table
+
+        Arguments:
+            data_list (dict): data list for delete ex.[{primary_key_name:"{uuid}"}]
+            table_name (str): delete table name
+            primary_key_name (str): primary key column name
+            is_register_history (bool): is register history table (default: False)
+
+        Returns:
+            delete failure: (bool)False
+        """
+        if isinstance(data_list, dict):
+            data_list = [data_list]
+
+        is_last_res = True
+        for data in data_list:
+
+            # make sql statement
+            prepared_list = list(map(lambda k: "`" + k + "`=%s", data.keys()))
+            value_list = list(data.values())
+            primary_key_value = data[primary_key_name]
+
+            sql = "DELETE FROM `{}` WHERE `{}`=%s".format(table_name, primary_key_name)
+            res = self.sql_execute(sql, [primary_key_value])
+            if res is False:
+                is_last_res = False
+
+            # 履歴無しの場合は、履歴テーブル削除は実行しない
+            # If there is no history, history table deletion is not executed.
+            if not is_register_history:
+                continue
+
+            # delete history table
+            history_table_name = table_name + "_JNL"
+
+            sql = "DELETE FROM `{}` WHERE `{}`=%s".format(history_table_name, primary_key_name)
+            res = self.sql_execute(sql, [primary_key_value])
+            if res is False:
+                is_last_res = False
+
+        # １回でも失敗したらFalseを返却
+        # If it fails even once, return False
+        return is_last_res
+
 
     def table_permanent_delete(self, table_name, where_str="", bind_value_list=[], is_delete_history=False):
         """
@@ -615,12 +701,56 @@ class DBConnectCommon:
             'NO_INSTALL_DRIVER': g.db_connect_info.get('NO_INSTALL_DRIVER')
         }
 
+    def sql_execute_cursor(self, sql, bind_value_list=[]):
+        """
+        execute sql:cursor
+
+        Arguments:
+            sql: sql statement ex."SELECT * FROM table_name WHERE name = %s and number = %s"
+            bind_value_list: list or tuple or dict ex.["hoge taro", 5]
+        Returns:
+            db_cursor: self._db_con.cursor()
+        """
+        db_cursor = self._db_con.cursor()
+
+        # escape
+        if len(bind_value_list) == 0:
+            sql = self.prepared_val_escape(sql)
+        else:
+            # convert list→tupple
+            if isinstance(bind_value_list, list):
+                bind_value_list = tuple(bind_value_list)
+
+        try:
+            db_cursor.execute(sql, bind_value_list)
+            self.__sql_debug(db_cursor, sql, bind_value_list)
+        except pymysql.Error as e:
+            last_executed = sql % (bind_value_list)
+            if self._db_con.open is True and db_cursor is not None and db_cursor._executed is not None:
+                last_executed = db_cursor._executed
+            raise AppException("999-00003", [self._db, last_executed, e])
+        return db_cursor
+
+    def table_select_cursor(self, table_name, where_str="", bind_value_list=[]):
+        """
+        select table:cursor
+
+        Arguments:
+            table_name: table name
+            where_str: sql statement of WHERE sentence ex."WHERE name = %s and number = %s"
+            bind_value_list: value list ex.["hoge taro", 5]
+        Returns:
+            db_cursor: self._db_con.cursor()
+        """
+        where_str = " {}".format(where_str) if where_str else ""
+        sql = "SELECT * FROM `{}`{}".format(table_name, where_str)
+        return self.sql_execute_cursor(sql, bind_value_list)
 
 class DBConnectCommonRoot(DBConnectCommon):
     """
     database connection agnet class on mariadb
     """
-    def __init__(self):
+    def __init__(self, retry=None):
         """
         constructor
         """
@@ -633,9 +763,10 @@ class DBConnectCommonRoot(DBConnectCommon):
         self._db_passwd = os.environ.get('DB_ADMIN_PASSWORD')
 
         # connect database
-        self.db_connect()
+        self.db_connect(retry=retry)
 
-    def db_connect(self):
+    @connect_retry
+    def db_connect(self, retry=None):
         """
         connect database
 
@@ -653,9 +784,10 @@ class DBConnectCommonRoot(DBConnectCommon):
                 passwd=self._db_passwd,
                 charset='utf8mb4',
                 collation='utf8mb4_general_ci',
-                cursorclass=pymysql.cursors.DictCursor
+                cursorclass=pymysql.cursors.DictCursor,
+                connect_timeout=self.connect_timeout,
             )
         except pymysql.Error as e:
-            raise AppException("999-00002", [f"{self._host}:{self._port}", e])
+            raise DBException(f"{self._host}:{self._port}", e)
 
         return True

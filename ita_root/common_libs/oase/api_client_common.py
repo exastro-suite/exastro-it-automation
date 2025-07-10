@@ -112,11 +112,15 @@ class APIClientCommon:
                             parameter[key] = list(map(search_reserved_variable, value))
                         elif value_type is str:
                             parameter[key] = replace_reserved_variable(value)
+                        else:
+                            parameter[key] = value
                     return parameter
                 elif parameter_type is list:
                     return list(map(search_reserved_variable, parameter))
                 elif parameter_type is str:
                     return replace_reserved_variable(parameter)
+                else:
+                    return parameter
 
             self.parameter = search_reserved_variable(self.parameter)
 

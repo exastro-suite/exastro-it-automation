@@ -31,6 +31,11 @@ def compare_detail_validate(objdbca, objtable, option):
     retBool = True
     msg = ""
 
+    # 削除時はチェックしない
+    # Do not check when deleting
+    if option.get("cmd_type") == "Delete":
+        return retBool, msg, option
+
     cmd_type = option.get('cmd_type')
     if cmd_type != "Discard":
         entry_parameter = option.get("entry_parameter").get("parameter")

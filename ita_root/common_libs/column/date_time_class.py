@@ -95,9 +95,11 @@ class DateTimeColumn(Column):
         # YYYY/MM/DD hh:mmの場合OK、:ssを補完
         elif re.match(r'^[0-9]{4}/[0-9]{2}/[0-9]{2} [0-9]{2}:[0-9]{2}$', val) is not None:
             val = val + ':00'
+            retBool = True
         # YYYY/MM/DDの場合OK、:hh:mm:ssを補完
         elif re.match(r'^[0-9]{4}/[0-9]{2}/[0-9]{2}$', val) is not None:
             val = val + ' 00:00:00'
+            retBool = True
         else:
             msg = g.appmsg.get_api_message("MSG-00002", [self.format_for_log, val])
             retBool = False
@@ -160,6 +162,9 @@ class DateTimeColumn(Column):
             retBool = True
         # YYYY/MM/DDの場合OK
         elif re.match(r'^[0-9]{4}/(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01])$', val) is not None:
+            retBool = True
+        # YYYY/MM/DD hh:mm:ss.××××××の場合OK
+        elif re.match(r'^[0-9]{4}/(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01]) ([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9].[0-9][0-9][0-9][0-9][0-9][0-9]$', val) is not None:
             retBool = True
         else:
             retBool = False

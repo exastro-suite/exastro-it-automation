@@ -2,6 +2,9 @@ openapi: 3.0.3
 info:
   title: Exastro IT Automation API
   description: Exastro IT Automation API
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
   version: "2.5"
 servers:
 - url: "https://{host}"
@@ -26,42 +29,46 @@ servers:
       default: localhost
     port:
       default: "30080"
-
+# security:
+# - BearerAuth: []
+# - BasicAuth: []
 tags:
 - name: Menu Info
-  description: メニュー情報の取得
+  description: メニュー情報の取得 / Get menu information
 - name: Menu Filter
-  description: レコードの取得
+  description: レコードの取得 / Get records
 - name: Menu Maintenance
-  description: レコードの操作（登録/更新/廃止/復活/物理削除）
+  description: レコードの操作（登録/更新/廃止/復活/物理削除） / Record operations (register/update/abolish/restore/physical
+    delete)
 - name: Menu MaintenanceAll
-  description: レコードの一括操作（登録/更新/廃止/復活/物理削除）
+  description: レコードの一括操作（登録/更新/廃止/復活/物理削除） / Bulk record operations (register/update/abolish/restore/physical
+    delete)
 - name: Menu Excel
-  description: Excelの取得・操作
+  description: Excelの取得・操作 / Get and operate Excel
 - name: User Info
-  description: ユーザ情報の取得
+  description: ユーザ情報の取得 / Get user information
 - name: System Info
-  description: ITAの情報取得
+  description: ITAの情報取得 / Get ITA information
 - name: Menu Create
-  description: パラメータシート作成機能
+  description: パラメータシート作成機能 / Parameter sheet creation function
 - name: Conductor Controll
-  description: Conductorの情報取得・操作
+  description: Conductorの情報取得・操作 / Get and operate Conductor information
 - name: Driver Controll
-  description: Driverの情報取得・操作
+  description: Driverの情報取得・操作 / Get and operate Driver information
 - name: Export Import
-  description: データのエクスポート・インポート
+  description: データのエクスポート・インポート / Export and import data
 - name: Compare Controll
-  description: 比較の情報取得・操作
+  description: 比較の情報取得・操作 / Get and operate comparison information
 - name: Terraform Cloud EP
-  description: Terraform Cloud/Enterpriseとの連携
+  description: Terraform Cloud/Enterpriseとの連携 / Integration with Terraform Cloud/Enterprise
 - name: CI/CD for IaC
-  description: CI/CD for IaCの操作
+  description: CI/CD for IaCの操作 / CI/CD for IaC operations
 - name: OASE
-  description: OASE用
+  description: OASE用 / For OASE
 - name: Apply
-  description: パラメータ適用
+  description: パラメータ適用 / Apply parameters
 - name: InternalHealthCheckService
-  description: ヘルスチェックに関する操作(内部用)
+  description: ヘルスチェックに関する操作(内部用) / Health check operations (internal use)
 paths:
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/:
     get:
@@ -367,7 +374,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_4"
+                $ref: "#/components/schemas/inline_response_200_5"
         "401":
           description: Unauthorized
           content:
@@ -433,7 +440,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_5"
+                $ref: "#/components/schemas/inline_response_200_6"
         "401":
           description: Unauthorized
           content:
@@ -503,7 +510,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_5"
+                $ref: "#/components/schemas/inline_response_200_7"
         "401":
           description: Unauthorized
           content:
@@ -570,7 +577,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_5"
+                $ref: "#/components/schemas/inline_response_200_6"
         "401":
           description: Unauthorized
           content:
@@ -637,7 +644,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_5"
+                $ref: "#/components/schemas/inline_response_200_6"
         "401":
           description: Unauthorized
           content:
@@ -712,7 +719,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_5"
+                $ref: "#/components/schemas/inline_response_200_6"
         "401":
           description: Unauthorized
           content:
@@ -771,7 +778,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_6"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -838,7 +845,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_6"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -856,7 +863,7 @@ paths:
     post:
       tags:
       - Menu MaintenanceAll
-      description: レコードを一括で登録/更新/廃止/復活する
+      description: レコードを一括で登録/更新/廃止/復活/物理削除する
       operationId: maintenance_all
       parameters:
       - name: organization_id
@@ -877,7 +884,17 @@ paths:
           type: string
       - name: menu
         in: path
-        description: メニュー名
+        description: |
+          メニュー名
+
+          （一例）
+
+          * 標準メニュー:
+            * `operation_list` : オペレーション一覧 / Operation list
+          * パラメータシート、データシート:
+            * `rest_name` : 登録したrest名
+          * 作業管理:
+            * `execution_list_ansible_legacy` : ansible legacy 作業履歴 / execution list
         required: true
         style: simple
         explode: false
@@ -888,9 +905,20 @@ paths:
           application/json:
             schema:
               type: array
-              description: 登録/更新/廃止/復活するidとレコードの値を設定
+              description: 登録/更新/廃止/復活/物理削除するidとレコードの値を設定
               items:
-                $ref: "#/components/schemas/MAINTENANCE_PARAMETERS"
+                allOf:
+                - $ref: "#/components/schemas/MAINTENANCE_PARAMETERS"
+                - required:
+                  - parameter
+                  - type
+            examples:
+              menu:operation_list:
+                $ref: "#/components/examples/menu.maintenance.all.operation_list.yaml"
+              menu:rest_name:
+                $ref: "#/components/examples/menu.maintenance.all.data_sheet.yaml"
+              menu:execution_list_ansible_legacy:
+                $ref: "#/components/examples/menu.maintenance.all.execution_list_ansible_legacy.yaml"
           multipart/form-data:
             schema:
               $ref: "#/components/schemas/MAINTENANCE_ALL_FORM"
@@ -900,7 +928,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_6"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -973,7 +1001,7 @@ paths:
               example: Binary data
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_7"
+                $ref: "#/components/schemas/inline_response_200_8"
         "401":
           description: Unauthorized
           content:
@@ -1046,7 +1074,7 @@ paths:
               example: Binary data
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_7"
+                $ref: "#/components/schemas/inline_response_200_8"
         "401":
           description: Unauthorized
           content:
@@ -1130,7 +1158,7 @@ paths:
               example: Binary data
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_7"
+                $ref: "#/components/schemas/inline_response_200_9"
         "401":
           description: Unauthorized
           content:
@@ -1198,7 +1226,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_8"
+                $ref: "#/components/schemas/inline_response_200_10"
         "401":
           description: Unauthorized
           content:
@@ -1271,7 +1299,7 @@ paths:
               example: Binary data
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_7"
+                $ref: "#/components/schemas/inline_response_200_8"
         "401":
           description: Unauthorized
           content:
@@ -1314,7 +1342,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_9"
+                $ref: "#/components/schemas/inline_response_200_11"
         "401":
           description: Unauthorized
           content:
@@ -1357,7 +1385,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_10"
+                $ref: "#/components/schemas/inline_response_200_12"
         "401":
           description: Unauthorized
           content:
@@ -1400,7 +1428,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_11"
+                $ref: "#/components/schemas/inline_response_200_13"
         "401":
           description: Unauthorized
           content:
@@ -1449,7 +1477,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_12"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -1492,7 +1520,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_12"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -1540,7 +1568,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_12"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -1583,7 +1611,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_13"
+                $ref: "#/components/schemas/inline_response_200_14"
         "401":
           description: Unauthorized
           content:
@@ -1631,7 +1659,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_12"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -1674,7 +1702,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_12"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -1725,7 +1753,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_12"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -1784,7 +1812,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_12"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -1843,7 +1871,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_12"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -1886,7 +1914,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_14"
+                $ref: "#/components/schemas/inline_response_200_15"
         "401":
           description: Unauthorized
           content:
@@ -1929,7 +1957,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_15"
+                $ref: "#/components/schemas/inline_response_200_16"
         "401":
           description: Unauthorized
           content:
@@ -1977,7 +2005,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_16"
+                $ref: "#/components/schemas/inline_response_200_17"
         "401":
           description: Unauthorized
           content:
@@ -2028,7 +2056,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_16"
+                $ref: "#/components/schemas/inline_response_200_18"
         "401":
           description: Unauthorized
           content:
@@ -2079,7 +2107,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_17"
+                $ref: "#/components/schemas/inline_response_200_19"
         "401":
           description: Unauthorized
           content:
@@ -2138,7 +2166,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_6"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -2195,7 +2223,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_12"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -2260,7 +2288,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_12"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -2311,7 +2339,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_18"
+                $ref: "#/components/schemas/inline_response_200_20"
         "401":
           description: Unauthorized
           content:
@@ -2375,7 +2403,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_5"
+                $ref: "#/components/schemas/inline_response_200_6"
         "401":
           description: Unauthorized
           content:
@@ -2493,7 +2521,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_17"
+                $ref: "#/components/schemas/inline_response_200_19"
         "401":
           description: Unauthorized
           content:
@@ -2552,7 +2580,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_6"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -2608,7 +2636,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_12"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -2667,7 +2695,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_17"
+                $ref: "#/components/schemas/inline_response_200_19"
         "401":
           description: Unauthorized
           content:
@@ -2726,7 +2754,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_19"
+                $ref: "#/components/schemas/inline_response_200_21"
         "401":
           description: Unauthorized
           content:
@@ -2790,7 +2818,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_12"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -2854,7 +2882,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_12"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -2926,7 +2954,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_12"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -3007,7 +3035,7 @@ paths:
               example: Binary data
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_20"
+                $ref: "#/components/schemas/inline_response_200_22"
         "401":
           description: Unauthorized
           content:
@@ -3088,7 +3116,7 @@ paths:
               example: Binary data
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_21"
+                $ref: "#/components/schemas/inline_response_200_23"
         "401":
           description: Unauthorized
           content:
@@ -3144,7 +3172,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_22"
+                $ref: "#/components/schemas/inline_response_200_24"
         "401":
           description: Unauthorized
           content:
@@ -3202,7 +3230,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_22"
+                $ref: "#/components/schemas/inline_response_200_24"
         "401":
           description: Unauthorized
           content:
@@ -3258,7 +3286,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_22"
+                $ref: "#/components/schemas/inline_response_200_24"
         "401":
           description: Unauthorized
           content:
@@ -3314,7 +3342,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_22"
+                $ref: "#/components/schemas/inline_response_200_24"
         "401":
           description: Unauthorized
           content:
@@ -3373,7 +3401,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_12"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -3432,7 +3460,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_12"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -3491,7 +3519,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_12"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -3550,7 +3578,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_12"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -3609,7 +3637,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_12"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -3660,7 +3688,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_23"
+                $ref: "#/components/schemas/inline_response_200_25"
         "401":
           description: Unauthorized
           content:
@@ -3724,7 +3752,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_5"
+                $ref: "#/components/schemas/inline_response_200_6"
         "401":
           description: Unauthorized
           content:
@@ -3834,7 +3862,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_24"
+                $ref: "#/components/schemas/inline_response_200_26"
         "401":
           description: Unauthorized
           content:
@@ -3882,7 +3910,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_25"
+                $ref: "#/components/schemas/inline_response_200_27"
         "401":
           description: Unauthorized
           content:
@@ -3932,14 +3960,17 @@ paths:
                 base64: base64 string
           multipart/form-data:
             schema:
-              $ref: "#/components/schemas/MENU_UPLOAD_FORM"
+              type: object
+            examples:
+              form-data:
+                $ref: "#/components/examples/MENU_UPLOAD_FORM"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_26"
+                $ref: "#/components/schemas/inline_response_200_28"
         "401":
           description: Unauthorized
           content:
@@ -3987,7 +4018,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_25"
+                $ref: "#/components/schemas/inline_response_200_27"
         "401":
           description: Unauthorized
           content:
@@ -4128,7 +4159,10 @@ paths:
                 base64: base64 string
           multipart/form-data:
             schema:
-              $ref: "#/components/schemas/EXCEL_BULK_UPLOAD_FORM"
+              type: object
+            examples:
+              form-data:
+                $ref: "#/components/examples/EXCEL_BULK_UPLOAD_FORM"
       responses:
         "200":
           description: Success
@@ -4234,7 +4268,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_6"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -4285,7 +4319,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_27"
+                $ref: "#/components/schemas/inline_response_200_29"
         "401":
           description: Unauthorized
           content:
@@ -4349,7 +4383,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_5"
+                $ref: "#/components/schemas/inline_response_200_6"
         "401":
           description: Unauthorized
           content:
@@ -4472,7 +4506,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_6"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -4545,7 +4579,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_28"
+                $ref: "#/components/schemas/inline_response_200_30"
         "401":
           description: Unauthorized
           content:
@@ -4609,7 +4643,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_6"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -4652,7 +4686,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_6"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -4699,7 +4733,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_6"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -4750,7 +4784,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_6"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -4805,7 +4839,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_6"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -4856,7 +4890,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_6"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -4899,7 +4933,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_6"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -4955,7 +4989,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_6"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -5014,7 +5048,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_6"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -5077,7 +5111,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_6"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -5136,7 +5170,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_6"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -5179,7 +5213,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_6"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -5265,7 +5299,7 @@ paths:
               example: Binary data
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_29"
+                $ref: "#/components/schemas/inline_response_200_31"
         "401":
           description: Unauthorized
           content:
@@ -5324,7 +5358,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_6"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -5367,7 +5401,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_6"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -5426,7 +5460,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_6"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -5493,7 +5527,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_6"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -5560,7 +5594,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_6"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -5611,7 +5645,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_12"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -5662,7 +5696,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_12"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -5713,7 +5747,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_5"
+                $ref: "#/components/schemas/inline_response_200_6"
         "401":
           description: Unauthorized
           content:
@@ -5768,7 +5802,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_5"
+                $ref: "#/components/schemas/inline_response_200_7"
         "401":
           description: Unauthorized
           content:
@@ -5816,7 +5850,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_30"
+                $ref: "#/components/schemas/inline_response_200_32"
         "401":
           description: Unauthorized
           content:
@@ -5864,7 +5898,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_12"
+                $ref: "#/components/schemas/responseOk"
         "401":
           description: Unauthorized
           content:
@@ -5890,7 +5924,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_31"
+                $ref: "#/components/schemas/responseOk"
         default:
           description: An unexpected error response.
           content:
@@ -5910,7 +5944,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/inline_response_200_31"
+                $ref: "#/components/schemas/responseOk"
         default:
           description: An unexpected error response.
           content:
@@ -5947,14 +5981,6 @@ components:
           columns:
             type: array
             items: {}
-        example:
-          parent_column_group_name: parent_column_group_name
-          columns:
-          - ""
-          - ""
-          parent_column_group_id: parent_column_group_id
-          column_group_id: column_group_id
-          column_group_name: column_group_name
       description: "カラムグループの並び順でg1, g2, g3...というkey名に格納される"
     COLUMN_INFO:
       type: object
@@ -6033,31 +6059,6 @@ components:
           after_validate_register:
             type: object
             description: 個別バリデーション(後)
-        example:
-          initial_value: initial_value
-          column_disp_seq: 6
-          required_item: 2
-          ref_table_name: ref_table_name
-          save_type: save_type
-          column_name: column_name
-          unique_item: 5
-          description: description
-          input_item: 5
-          before_validate_register: {}
-          col_name: col_name
-          column_name_rest: column_name_rest
-          column_id: column_id
-          ref_multi_lang: ref_multi_lang
-          validate_option: {}
-          ref_pkey_name: ref_pkey_name
-          auto_input: 1
-          view_item: view_item
-          ref_col_name: ref_col_name
-          column_group_id: column_group_id
-          after_validate_register: {}
-          column_type: 0
-          column_group_name: column_group_name
-          ref_sort_conditions: ref_sort_conditions
       description: "column_disp_seqの順番で、c1, c2, c3...というkey名に格納される"
     MENU_INFO:
       type: object
@@ -6116,6 +6117,9 @@ components:
         row_reuse_flag:
           type: boolean
           description: 復活許可フラグ
+        row_delete_flag:
+          type: boolean
+          description: 削除許可フラグ
         login_necessity:
           type: boolean
           description: 認証有無
@@ -6144,36 +6148,6 @@ components:
           type: array
           description: メニュー表示用のカラムおよびカラムグループの並び順
           items: {}
-      example:
-        sheet_type: sheet_type
-        history_table_flag: true
-        row_update_flag: true
-        web_print_limit: 7
-        initial_filter_flg: true
-        columns:
-        - ""
-        - ""
-        row_reuse_flag: true
-        vertical: true
-        row_insert_flag: true
-        privilege: 2
-        row_disuse_flag: true
-        table_name: table_name
-        parent_menu_group_name: parent_menu_group_name
-        menu_name: menu_name
-        menu_group_name: menu_group_name
-        auto_filter_flg: true
-        menu_id: menu_id
-        view_name: view_name
-        web_print_confirm: 9
-        pk_column_name_rest: pk_column_name_rest
-        sort_key: sort_key
-        parent_menu_group_id: parent_menu_group_id
-        menu_group_id: menu_group_id
-        xls_print_limit: 3
-        menu_info: menu_info
-        inherit: true
-        login_necessity: true
     ERROR_TEMPLATE:
       type: object
       properties:
@@ -6224,7 +6198,12 @@ components:
           $ref: "#/components/schemas/MAINTENANCE_PARAMETERS_file"
         type:
           type: string
-          example: Register/Update
+          enum:
+          - Register
+          - Update
+          - Restore
+          - Discard
+          - Delete
     MAINTENANCE_FORM:
       type: object
       properties:
@@ -6291,25 +6270,6 @@ components:
           - id: string
             name: string
           items: {}
-      example:
-        node_status:
-        - id: string
-          name: string
-        node_type:
-        - id: string
-          name: string
-        conductor_status:
-        - id: string
-          name: string
-        movement:
-        - id: string
-          name: string
-        operation:
-        - id: string
-          name: string
-        conductors:
-        - id: string
-          name: string
     CONDUCTOR_INFO_DICT:
       type: object
       properties:
@@ -6349,25 +6309,6 @@ components:
             conductor_id1: conductor_name1
             conductor_id2: conductor_name2
           items: {}
-      example:
-        node_status:
-          status_id1: status_name1
-          status_id2: status_name2
-        node_type:
-          node_type_id1: node_type_name1
-          node_type_id2: node_type_name2
-        conductor_status:
-          status_id1: status_name1
-          status_id2: status_name2
-        movement:
-          movement_id1: movement_name1
-          movement_id2: movement_name2
-        operation:
-          operation_id1: operation_name1
-          operation_id2: operation_name2
-        conductor:
-          conductor_id1: conductor_name1
-          conductor_id2: conductor_name2
     CONDUCTOR_RESULT:
       type: object
       properties:
@@ -6407,54 +6348,11 @@ components:
         remarks:
           type: string
           example: 備考
-      example:
-        operation_name: オペレーション名
-        status_id: ステータスID
-        time_start: 開始日時
-        execution_log: 実行ログ
-        execution_user: 作業実行ユーザー
-        abort_execute_flag: 緊急停止フラグ
-        conductor_name: Conductor名
-        operation_id: オペレーションID
-        time_end: 終了日時
-        time_book: 予約日時
-        remarks: 備考
-        conductor_instance_id: ConductorインスタンスID
     NODE_RESULT:
       type: object
       properties:
         node_name:
           $ref: "#/components/schemas/NODE_RESULT_node_name"
-      example:
-        node_name:
-          operation_name: オペレーション名
-          status_file: ステータスファイル
-          node_type: Node種別
-          status_id: ステータスID
-          time_start: 開始日時
-          node_name: Node名
-          skip: スキップ
-          operation_id: オペレーションID
-          time_end: 終了日時
-          remarks: 備考
-          node_instance_id: NodeインスタンスID
-          jump:
-            menu_id: メニューID
-            execution_id: 作業ID
-    MENU_UPLOAD_FORM:
-      example: |
-        ----------------------------XXXXXXXXXXXXX
-        Content-Disposition: form-data; name="ita_exportdata_XXXXXXXXXXXX.kym"; filename="ita_exportdata_XXXXXXXXXXXX.kym"
-        Content-Type: application/octet-stream
-        (binary content of the file)
-        ----------------------------XXXXXXXXXXXXX--
-    EXCEL_BULK_UPLOAD_FORM:
-      example: |
-        ----------------------------XXXXXXXXXXXXX
-        Content-Disposition: form-data; name="ITA_FILES_XXXXXXXXXXXXXXXXX.zip"; filename="ITA_FILES_XXXXXXXXXXXXXXXXX.zip"
-        Content-Type: application/x-zip-compressed
-        (binary content of the file)
-        ----------------------------XXXXXXXXXXXXX--
     ApplyParameterTypeA:
       type: array
       items:
@@ -6475,170 +6373,86 @@ components:
       properties:
         rest_key_name:
           $ref: "#/components/schemas/ApplyParameterTypeC_rest_key_name"
+    responseOk:
+      title: A successful base response.
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          type: boolean
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data: true
+        message: message
     inline_response_200:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          $ref: "#/components/schemas/inline_response_200_data"
-        message:
-          type: string
-      example:
-        result: 000-00000
-        data:
-          column_group_info:
-            key:
-              parent_column_group_name: parent_column_group_name
-              columns:
-              - ""
-              - ""
-              parent_column_group_id: parent_column_group_id
-              column_group_id: column_group_id
-              column_group_name: column_group_name
-          menu_info:
-            sheet_type: sheet_type
-            history_table_flag: true
-            row_update_flag: true
-            web_print_limit: 7
-            initial_filter_flg: true
-            columns:
-            - ""
-            - ""
-            row_reuse_flag: true
-            vertical: true
-            row_insert_flag: true
-            privilege: 2
-            row_disuse_flag: true
-            table_name: table_name
-            parent_menu_group_name: parent_menu_group_name
-            menu_name: menu_name
-            menu_group_name: menu_group_name
-            auto_filter_flg: true
-            menu_id: menu_id
-            view_name: view_name
-            web_print_confirm: 9
-            pk_column_name_rest: pk_column_name_rest
-            sort_key: sort_key
-            parent_menu_group_id: parent_menu_group_id
-            menu_group_id: menu_group_id
-            xls_print_limit: 3
-            menu_info: menu_info
-            inherit: true
-            login_necessity: true
-          column_info:
-            key:
-              initial_value: initial_value
-              column_disp_seq: 6
-              required_item: 2
-              ref_table_name: ref_table_name
-              save_type: save_type
-              column_name: column_name
-              unique_item: 5
-              description: description
-              input_item: 5
-              before_validate_register: {}
-              col_name: col_name
-              column_name_rest: column_name_rest
-              column_id: column_id
-              ref_multi_lang: ref_multi_lang
-              validate_option: {}
-              ref_pkey_name: ref_pkey_name
-              auto_input: 1
-              view_item: view_item
-              ref_col_name: ref_col_name
-              column_group_id: column_group_id
-              after_validate_register: {}
-              column_type: 0
-              column_group_name: column_group_name
-              ref_sort_conditions: ref_sort_conditions
-        message: message
+      allOf:
+      - $ref: "#/components/schemas/responseOk"
+      - type: object
+        properties:
+          data:
+            $ref: "#/components/schemas/inline_response_200_data"
     inline_response_200_1:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          type: array
-          example:
-          - column1
-          - column2
-          - column3
-          items: {}
-        message:
-          type: string
-      example:
-        result: 000-00000
-        data:
-        - column1
-        - column2
-        - column3
-        message: message
+      allOf:
+      - $ref: "#/components/schemas/responseOk"
+      - type: object
+        properties:
+          data:
+            type: array
+            example:
+            - column1
+            - column2
+            - column3
+            items: {}
     inline_response_200_2:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          type: array
-          example:
-            IDColumn1:
-              id1: name1
-              id2: name2
-              id3: name3
-            IDColumn2:
-              id1: name1
-              id2: name2
-              id3: name3
-            IDColumn3:
-              id1: name1
-              id2: name2
-              id3: name3
-          items: {}
-        message:
-          type: string
-      example:
-        result: 000-00000
-        data:
-          IDColumn1:
-            id1: name1
-            id2: name2
-            id3: name3
-          IDColumn2:
-            id1: name1
-            id2: name2
-            id3: name3
-          IDColumn3:
-            id1: name1
-            id2: name2
-            id3: name3
-        message: message
+      allOf:
+      - $ref: "#/components/schemas/responseOk"
+      - type: object
+        properties:
+          data:
+            type: array
+            example:
+              IDColumn1:
+                id1: name1
+                id2: name2
+                id3: name3
+              IDColumn2:
+                id1: name1
+                id2: name2
+                id3: name3
+              IDColumn3:
+                id1: name1
+                id2: name2
+                id3: name3
+            items: {}
     inline_response_200_3:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          type: array
-          example:
-            id1: name1
-            id2: name2
-            id3: name3
-          items: {}
-        message:
-          type: string
-      example:
-        result: 000-00000
-        data:
-          id1: name1
-          id2: name2
-          id3: name3
-        message: message
+      allOf:
+      - $ref: "#/components/schemas/responseOk"
+      - type: object
+        properties:
+          data:
+            type: array
+            example:
+              id1: name1
+              id2: name2
+              id3: name3
+            items: {}
     inline_response_200_4:
+      allOf:
+      - $ref: "#/components/schemas/responseOk"
+      - type: object
+        properties:
+          data:
+            type: number
+    filter_count_body:
+      properties:
+        rest_key_name:
+          $ref: "#/components/schemas/FILTER_REQUEST_PARAMETERS"
+      description: 検索条件を設定
+    inline_response_200_5:
       type: object
       properties:
         result:
@@ -6652,12 +6466,21 @@ components:
         result: 000-00000
         data: 0.80082819046101150206595775671303272247314453125
         message: message
-    filter_count_body:
+    inline_response_200_6:
+      allOf:
+      - $ref: "#/components/schemas/responseOk"
+      - type: object
+        properties:
+          data:
+            type: array
+            items:
+              $ref: "#/components/schemas/FILTER_PARAMETERS"
+    menu_filter_body:
       properties:
         rest_key_name:
           $ref: "#/components/schemas/FILTER_REQUEST_PARAMETERS"
       description: 検索条件を設定
-    inline_response_200_5:
+    inline_response_200_7:
       type: object
       properties:
         result:
@@ -6681,11 +6504,6 @@ components:
           parameter:
             rest_key_name: rest_key_name
         message: message
-    menu_filter_body:
-      properties:
-        rest_key_name:
-          $ref: "#/components/schemas/FILTER_REQUEST_PARAMETERS"
-      description: 検索条件を設定
     menu_maintenance_body:
       properties:
         parameter:
@@ -6693,20 +6511,6 @@ components:
         file:
           $ref: "#/components/schemas/MAINTENANCE_PARAMETER_F"
       description: 登録する値を設定
-    inline_response_200_6:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          type: object
-        message:
-          type: string
-      example:
-        result: 000-00000
-        data: {}
-        message: message
     maintenance_uuid_body:
       properties:
         parameter:
@@ -6714,7 +6518,15 @@ components:
         file:
           $ref: "#/components/schemas/MAINTENANCE_PARAMETER_F"
       description: 更新する値を設定。廃止/復活は廃止フラグを更新することで実施。
-    inline_response_200_7:
+    inline_response_200_8:
+      allOf:
+      - $ref: "#/components/schemas/responseOk"
+      - type: object
+        properties:
+          data:
+            type: string
+            example: base64 string
+    inline_response_200_9:
       type: object
       properties:
         result:
@@ -6725,367 +6537,118 @@ components:
           example: base64 string
         message:
           type: string
-    inline_response_200_8:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          $ref: "#/components/schemas/inline_response_200_8_data"
-        message:
-          type: string
-      example:
-        result: 000-00000
-        data:
-          Register: 6.02745618307040320615897144307382404804229736328125
-          Discard: 0.80082819046101150206595775671303272247314453125
-          Update: 5.962133916683182377482808078639209270477294921875
-          Restore: 1.46581298050294517310021547018550336360931396484375
-          IdList: []
-        message: message
-    inline_response_200_9:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          $ref: "#/components/schemas/inline_response_200_9_data"
-        message:
-          type: string
-          example: SUCCESS
-      example:
-        result: 000-00000
-        data:
-          user_id: id-xxxxxxxx
-          user_name: User Name
-          roles:
-          - role1
-          - role2
-          - role3
-          table_settings: {}
-          workspaces:
-          - workspace1
-          - workspace2
-          - workspace3
-        message: SUCCESS
     inline_response_200_10:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          $ref: "#/components/schemas/inline_response_200_10_data"
-        message:
-          type: string
-          example: SUCCESS
-      example:
-        result: 000-00000
-        data:
-          menu_groups:
-          - disp_seq: 10
-            id: "101"
-            parent_id: ""
-            menu_group_name: メニューグループ1
-            menus:
-            - disp_seq: 10
-              id: "10101"
-              menu_name: メニュー1
-              menu_name_rest: menu_1
-            - disp_seq: 20
-              id: "10102"
-              menu_name: メニュー2
-              menu_name_rest: menu_2
-            - disp_seq: 30
-              id: "10103"
-              menu_name: メニュー3
-              menu_name_rest: menu_3
-          - disp_seq: 20
-            id: "102"
-            parent_id: "101"
-            menu_group_name: メニューグループ2
-            menus:
-            - disp_seq: 10
-              id: "10104"
-              menu_name: メニュー4
-              menu_name_rest: menu_4
-            - disp_seq: 20
-              id: "10105"
-              menu_name: メニュー5
-              menu_name_rest: menu_5
-            - disp_seq: 30
-              id: "10106"
-              menu_name: メニュー6
-              menu_name_rest: menu_6
-          - disp_seq: 30
-            id: "103"
-            parent_id: "101"
-            menu_group_name: メニューグループ3
-            menus:
-            - disp_seq: 10
-              id: "10107"
-              menu_name: メニュー7
-              menu_name_rest: menu_7
-            - disp_seq: 20
-              id: "10108"
-              menu_name: メニュー8
-              menu_name_rest: menu_8
-            - disp_seq: 30
-              id: "10109"
-              menu_name: メニュー9
-              menu_name_rest: menu_9
-        message: SUCCESS
+      allOf:
+      - $ref: "#/components/schemas/responseOk"
+      - type: object
+        properties:
+          data:
+            $ref: "#/components/schemas/inline_response_200_10_data"
     inline_response_200_11:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          type: object
-          additionalProperties:
+      allOf:
+      - $ref: "#/components/schemas/responseOk"
+      - type: object
+        properties:
+          data:
+            $ref: "#/components/schemas/inline_response_200_11_data"
+          message:
             type: string
-            properties:
-              panelFileEncoded:
-                description: メニューグループの画像ファイルをbase64エンコードした値
-          description: メニューグループIDがkeyになる
-        message:
-          type: string
-          example: SUCCESS
-      example:
-        result: 000-00000
-        data:
-          key: data
-        message: SUCCESS
+            example: SUCCESS
     inline_response_200_12:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          type: boolean
-        message:
-          type: string
-      example:
-        result: 000-00000
-        data: true
-        message: message
+      allOf:
+      - $ref: "#/components/schemas/responseOk"
+      - type: object
+        properties:
+          data:
+            $ref: "#/components/schemas/inline_response_200_12_data"
+          message:
+            type: string
+            example: SUCCESS
     inline_response_200_13:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          type: object
-          example:
-            version: string
-            installed_driver:
-            - string
-            - string
-        message:
-          type: string
-      example:
-        result: 000-00000
-        data:
-          version: string
-          installed_driver:
-          - string
-          - string
-        message: message
+      allOf:
+      - $ref: "#/components/schemas/responseOk"
+      - type: object
+        properties:
+          data:
+            type: object
+            additionalProperties:
+              type: string
+              properties:
+                panelFileEncoded:
+                  description: メニューグループの画像ファイルをbase64エンコードした値
+            description: メニューグループIDがkeyになる
+          message:
+            type: string
+            example: SUCCESS
     inline_response_200_14:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          type: array
-          example:
-            operation: []
-            host: []
-            hostgroup: []
-            parameter_sheet: []
-          items: {}
-        message:
-          type: string
-      example:
-        result: 000-00000
-        data:
-          operation: []
-          host: []
-          hostgroup: []
-          parameter_sheet: []
-        message: message
+      allOf:
+      - $ref: "#/components/schemas/responseOk"
+      - type: object
+        properties:
+          data:
+            type: object
+            example:
+              version: string
+              installed_driver:
+              - string
+              - string
     inline_response_200_15:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          type: array
-          example:
-            uuid: xxx
-            filter_name: xxx
-            filter_json: xxx
-          items: {}
-        message:
-          type: string
-      example:
-        result: 000-00000
-        data:
-          uuid: xxx
-          filter_name: xxx
-          filter_json: xxx
-        message: message
+      allOf:
+      - $ref: "#/components/schemas/responseOk"
+      - type: object
+        properties:
+          data:
+            type: array
+            example:
+              operation: []
+              host: []
+              hostgroup: []
+              parameter_sheet: []
+            items: {}
     inline_response_200_16:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        message:
-          type: string
-      example:
-        result: 000-00000
-        message: message
+      allOf:
+      - $ref: "#/components/schemas/responseOk"
+      - type: object
+        properties:
+          data:
+            type: array
+            example:
+              uuid: xxx
+              filter_name: xxx
+              filter_json: xxx
+            items: {}
     inline_response_200_17:
       type: object
       properties:
         result:
           type: string
           example: 000-00000
-        data:
-          $ref: "#/components/schemas/inline_response_200_17_data"
         message:
           type: string
       example:
         result: 000-00000
-        data:
-          dict:
-            node_status:
-              status_id1: status_name1
-              status_id2: status_name2
-            node_type:
-              node_type_id1: node_type_name1
-              node_type_id2: node_type_name2
-            conductor_status:
-              status_id1: status_name1
-              status_id2: status_name2
-            movement:
-              movement_id1: movement_name1
-              movement_id2: movement_name2
-            operation:
-              operation_id1: operation_name1
-              operation_id2: operation_name2
-            conductor:
-              conductor_id1: conductor_name1
-              conductor_id2: conductor_name2
-          list:
-            node_status:
-            - id: string
-              name: string
-            node_type:
-            - id: string
-              name: string
-            conductor_status:
-            - id: string
-              name: string
-            movement:
-            - id: string
-              name: string
-            operation:
-            - id: string
-              name: string
-            conductors:
-            - id: string
-              name: string
         message: message
     inline_response_200_18:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          $ref: "#/components/schemas/inline_response_200_18_data"
-        message:
-          type: string
-      example:
-        result: 000-00000
-        data:
-          operation_list: null
-          conductor_list:
-            column_group_info:
-              key:
-                parent_column_group_name: parent_column_group_name
-                columns:
-                - ""
-                - ""
-                parent_column_group_id: parent_column_group_id
-                column_group_id: column_group_id
-                column_group_name: column_group_name
-            menu_info:
-              sheet_type: sheet_type
-              history_table_flag: true
-              row_update_flag: true
-              web_print_limit: 7
-              initial_filter_flg: true
-              columns:
-              - ""
-              - ""
-              row_reuse_flag: true
-              vertical: true
-              row_insert_flag: true
-              privilege: 2
-              row_disuse_flag: true
-              table_name: table_name
-              parent_menu_group_name: parent_menu_group_name
-              menu_name: menu_name
-              menu_group_name: menu_group_name
-              auto_filter_flg: true
-              menu_id: menu_id
-              view_name: view_name
-              web_print_confirm: 9
-              pk_column_name_rest: pk_column_name_rest
-              sort_key: sort_key
-              parent_menu_group_id: parent_menu_group_id
-              menu_group_id: menu_group_id
-              xls_print_limit: 3
-              menu_info: menu_info
-              inherit: true
-              login_necessity: true
-            column_info:
-              key:
-                initial_value: initial_value
-                column_disp_seq: 6
-                required_item: 2
-                ref_table_name: ref_table_name
-                save_type: save_type
-                column_name: column_name
-                unique_item: 5
-                description: description
-                input_item: 5
-                before_validate_register: {}
-                col_name: col_name
-                column_name_rest: column_name_rest
-                column_id: column_id
-                ref_multi_lang: ref_multi_lang
-                validate_option: {}
-                ref_pkey_name: ref_pkey_name
-                auto_input: 1
-                view_item: view_item
-                ref_col_name: ref_col_name
-                column_group_id: column_group_id
-                after_validate_register: {}
-                column_type: 0
-                column_group_name: column_group_name
-                ref_sort_conditions: ref_sort_conditions
-        message: message
+      allOf:
+      - $ref: "#/components/schemas/responseOk"
+      - type: object
+        properties:
+          data:
+            type: object
+    inline_response_200_19:
+      allOf:
+      - $ref: "#/components/schemas/responseOk"
+      - type: object
+        properties:
+          data:
+            $ref: "#/components/schemas/inline_response_200_19_data"
+    inline_response_200_20:
+      allOf:
+      - $ref: "#/components/schemas/responseOk"
+      - type: object
+        properties:
+          data:
+            $ref: "#/components/schemas/inline_response_200_20_data"
     filter_target_body:
       properties:
         rest_key_name:
@@ -7104,70 +6667,27 @@ components:
         conductor_data:
           type: object
       description: 作業実行するConductorの構成情報
-    inline_response_200_19:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          $ref: "#/components/schemas/inline_response_200_19_data"
-        message:
-          type: string
-      example:
-        result: 000-00000
-        data:
-          node:
-            node_name:
-              operation_name: オペレーション名
-              status_file: ステータスファイル
-              node_type: Node種別
-              status_id: ステータスID
-              time_start: 開始日時
-              node_name: Node名
-              skip: スキップ
-              operation_id: オペレーションID
-              time_end: 終了日時
-              remarks: 備考
-              node_instance_id: NodeインスタンスID
-              jump:
-                menu_id: メニューID
-                execution_id: 作業ID
-          conductor:
-            operation_name: オペレーション名
-            status_id: ステータスID
-            time_start: 開始日時
-            execution_log: 実行ログ
-            execution_user: 作業実行ユーザー
-            abort_execute_flag: 緊急停止フラグ
-            conductor_name: Conductor名
-            operation_id: オペレーションID
-            time_end: 終了日時
-            time_book: 予約日時
-            remarks: 備考
-            conductor_instance_id: ConductorインスタンスID
-          conductor_class: {}
-        message: message
-    inline_response_200_20:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          $ref: "#/components/schemas/inline_response_200_20_data"
-        message:
-          type: string
     inline_response_200_21:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          $ref: "#/components/schemas/inline_response_200_21_data"
-        message:
-          type: string
+      allOf:
+      - $ref: "#/components/schemas/responseOk"
+      - type: object
+        properties:
+          data:
+            $ref: "#/components/schemas/inline_response_200_21_data"
+    inline_response_200_22:
+      allOf:
+      - $ref: "#/components/schemas/responseOk"
+      - type: object
+        properties:
+          data:
+            $ref: "#/components/schemas/inline_response_200_22_data"
+    inline_response_200_23:
+      allOf:
+      - $ref: "#/components/schemas/responseOk"
+      - type: object
+        properties:
+          data:
+            $ref: "#/components/schemas/inline_response_200_23_data"
     driver_execute_body:
       type: object
       properties:
@@ -7179,23 +6699,15 @@ components:
           type: string
           example: YYYY/MM/DD hh:mm
       description: 作業実行するDriverの構成情報
-    inline_response_200_22:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          type: object
-          example:
-            execution_no: string
-        message:
-          type: string
-      example:
-        result: 000-00000
-        data:
-          execution_no: string
-        message: message
+    inline_response_200_24:
+      allOf:
+      - $ref: "#/components/schemas/responseOk"
+      - type: object
+        properties:
+          data:
+            type: object
+            example:
+              execution_no: string
     driver_execute_dry_run_body:
       type: object
       properties:
@@ -7224,125 +6736,25 @@ components:
         tf_workspace_name:
           type: string
       description: 作業実行するDriverの構成情報
-    inline_response_200_23:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          $ref: "#/components/schemas/inline_response_200_23_data"
-        message:
-          type: string
-      example:
-        result: 000-00000
-        data:
-          operation_list: null
-          movement_list:
-            column_group_info:
-              key:
-                parent_column_group_name: parent_column_group_name
-                columns:
-                - ""
-                - ""
-                parent_column_group_id: parent_column_group_id
-                column_group_id: column_group_id
-                column_group_name: column_group_name
-            menu_info:
-              sheet_type: sheet_type
-              history_table_flag: true
-              row_update_flag: true
-              web_print_limit: 7
-              initial_filter_flg: true
-              columns:
-              - ""
-              - ""
-              row_reuse_flag: true
-              vertical: true
-              row_insert_flag: true
-              privilege: 2
-              row_disuse_flag: true
-              table_name: table_name
-              parent_menu_group_name: parent_menu_group_name
-              menu_name: menu_name
-              menu_group_name: menu_group_name
-              auto_filter_flg: true
-              menu_id: menu_id
-              view_name: view_name
-              web_print_confirm: 9
-              pk_column_name_rest: pk_column_name_rest
-              sort_key: sort_key
-              parent_menu_group_id: parent_menu_group_id
-              menu_group_id: menu_group_id
-              xls_print_limit: 3
-              menu_info: menu_info
-              inherit: true
-              login_necessity: true
-            column_info:
-              key:
-                initial_value: initial_value
-                column_disp_seq: 6
-                required_item: 2
-                ref_table_name: ref_table_name
-                save_type: save_type
-                column_name: column_name
-                unique_item: 5
-                description: description
-                input_item: 5
-                before_validate_register: {}
-                col_name: col_name
-                column_name_rest: column_name_rest
-                column_id: column_id
-                ref_multi_lang: ref_multi_lang
-                validate_option: {}
-                ref_pkey_name: ref_pkey_name
-                auto_input: 1
-                view_item: view_item
-                ref_col_name: ref_col_name
-                column_group_id: column_group_id
-                after_validate_register: {}
-                column_type: 0
-                column_group_name: column_group_name
-                ref_sort_conditions: ref_sort_conditions
-        message: message
+    inline_response_200_25:
+      allOf:
+      - $ref: "#/components/schemas/responseOk"
+      - type: object
+        properties:
+          data:
+            $ref: "#/components/schemas/inline_response_200_25_data"
     filter_target_body_1:
       properties:
         rest_key_name:
           $ref: "#/components/schemas/FILTER_REQUEST_PARAMETERS"
       description: 検索条件を設定
-    inline_response_200_24:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          $ref: "#/components/schemas/inline_response_200_24_data"
-        message:
-          type: string
-      example:
-        result: 000-00000
-        data:
-          menu_groups:
-          - disp_seq: "10"
-            id: "101"
-            menu_group_name: 管理コンソール
-            menus:
-              items:
-                disp_seq: 10
-                id: "10101"
-                menu_name: システム設定
-                menu_name_rest: system_settings
-          - disp_seq: "10"
-            id: "101"
-            menu_group_name: 管理コンソール
-            menus:
-              items:
-                disp_seq: 10
-                id: "10101"
-                menu_name: システム設定
-                menu_name_rest: system_settings
-        message: message
+    inline_response_200_26:
+      allOf:
+      - $ref: "#/components/schemas/responseOk"
+      - type: object
+        properties:
+          data:
+            $ref: "#/components/schemas/inline_response_200_26_data"
     export_execute_body:
       type: object
       properties:
@@ -7367,73 +6779,20 @@ components:
           - <menu_name_rest 1>
           - <menu_name_rest 2>
           items: {}
-    inline_response_200_25:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          $ref: "#/components/schemas/inline_response_200_25_data"
-        message:
-          type: string
-      example:
-        result: 000-00000
-        data:
-          execution_no: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-        message: message
-    inline_response_200_26:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          $ref: "#/components/schemas/inline_response_200_26_data"
-        message:
-          type: string
-      example:
-        result: 000-00000
-        data:
-          mode: "1: 環境移行 / 2: 時刻指定"
-          upload_id: xxxxxxxxxxxxxxxxxxxxxxxx
-          import_list:
-            menu_groups:
-            - disp_seq: 10
-              id: "101"
-              menu_group_name: 管理コンソール
-              menu_group_name_en: Management Console
-              menu_group_name_ja: 管理コンソール
-              menus:
-                items:
-                  type: object
-                  example:
-                    disp_seq: 10
-                    id: "10101"
-                    menu_name: システム設定
-                    menu_name_en: System settings
-                    menu_name_ja: システム設定
-                    menu_name_rest: system_settings
-            - disp_seq: 10
-              id: "101"
-              menu_group_name: 管理コンソール
-              menu_group_name_en: Management Console
-              menu_group_name_ja: 管理コンソール
-              menus:
-                items:
-                  type: object
-                  example:
-                    disp_seq: 10
-                    id: "10101"
-                    menu_name: システム設定
-                    menu_name_en: System settings
-                    menu_name_ja: システム設定
-                    menu_name_rest: system_settings
-          file_name: ita_exportdata_yyyymmddhhiiss.kym
-          specified_time: YYYY/MM/DD hh:mm
-          abolished_type: "1: 廃止を含む / 2: 廃止を除く"
-          journal_type: "1: 履歴あり / 2: 履歴なし"
-        message: message
+    inline_response_200_27:
+      allOf:
+      - $ref: "#/components/schemas/responseOk"
+      - type: object
+        properties:
+          data:
+            $ref: "#/components/schemas/inline_response_200_27_data"
+    inline_response_200_28:
+      allOf:
+      - $ref: "#/components/schemas/responseOk"
+      - type: object
+        properties:
+          data:
+            $ref: "#/components/schemas/inline_response_200_28_data"
     import_execute_body:
       type: object
       properties:
@@ -7462,87 +6821,13 @@ components:
         rest_key_name:
           $ref: "#/components/schemas/FILTER_REQUEST_PARAMETERS"
       description: 検索条件を設定
-    inline_response_200_27:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          $ref: "#/components/schemas/inline_response_200_27_data"
-        message:
-          type: string
-      example:
-        result: 000-00000
-        data:
-          device_list: null
-          compare_list:
-            column_group_info:
-              key:
-                parent_column_group_name: parent_column_group_name
-                columns:
-                - ""
-                - ""
-                parent_column_group_id: parent_column_group_id
-                column_group_id: column_group_id
-                column_group_name: column_group_name
-            menu_info:
-              sheet_type: sheet_type
-              history_table_flag: true
-              row_update_flag: true
-              web_print_limit: 7
-              initial_filter_flg: true
-              columns:
-              - ""
-              - ""
-              row_reuse_flag: true
-              vertical: true
-              row_insert_flag: true
-              privilege: 2
-              row_disuse_flag: true
-              table_name: table_name
-              parent_menu_group_name: parent_menu_group_name
-              menu_name: menu_name
-              menu_group_name: menu_group_name
-              auto_filter_flg: true
-              menu_id: menu_id
-              view_name: view_name
-              web_print_confirm: 9
-              pk_column_name_rest: pk_column_name_rest
-              sort_key: sort_key
-              parent_menu_group_id: parent_menu_group_id
-              menu_group_id: menu_group_id
-              xls_print_limit: 3
-              menu_info: menu_info
-              inherit: true
-              login_necessity: true
-            column_info:
-              key:
-                initial_value: initial_value
-                column_disp_seq: 6
-                required_item: 2
-                ref_table_name: ref_table_name
-                save_type: save_type
-                column_name: column_name
-                unique_item: 5
-                description: description
-                input_item: 5
-                before_validate_register: {}
-                col_name: col_name
-                column_name_rest: column_name_rest
-                column_id: column_id
-                ref_multi_lang: ref_multi_lang
-                validate_option: {}
-                ref_pkey_name: ref_pkey_name
-                auto_input: 1
-                view_item: view_item
-                ref_col_name: ref_col_name
-                column_group_id: column_group_id
-                after_validate_register: {}
-                column_type: 0
-                column_group_name: column_group_name
-                ref_sort_conditions: ref_sort_conditions
-        message: message
+    inline_response_200_29:
+      allOf:
+      - $ref: "#/components/schemas/responseOk"
+      - type: object
+        properties:
+          data:
+            $ref: "#/components/schemas/inline_response_200_29_data"
     filter_target_body_2:
       properties:
         rest_key_name:
@@ -7580,22 +6865,13 @@ components:
           items:
             example: host_name
       description: 比較条件を設定
-    inline_response_200_28:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          $ref: "#/components/schemas/inline_response_200_28_data"
-        message:
-          type: string
-      example:
-        result: 000-00000
-        data:
-          file_name: "{compare_name}_YYYY/MMDDhhmmss.xlsx"
-          file_data: Compare result base64 string
-        message: message
+    inline_response_200_30:
+      allOf:
+      - $ref: "#/components/schemas/responseOk"
+      - type: object
+        properties:
+          data:
+            $ref: "#/components/schemas/inline_response_200_30_data"
     execute_file_body:
       properties:
         compare:
@@ -7650,16 +6926,13 @@ components:
           type: string
           example: /api/v2/policies/pol-xxxxxxxxxx/download
       description: policyコードのダウンロードパスを記載
-    inline_response_200_29:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          $ref: "#/components/schemas/inline_response_200_29_data"
-        message:
-          type: string
+    inline_response_200_31:
+      allOf:
+      - $ref: "#/components/schemas/responseOk"
+      - type: object
+        properties:
+          data:
+            $ref: "#/components/schemas/inline_response_200_31_data"
     filter_menu_body:
       properties:
         rest_key_name:
@@ -7683,23 +6956,16 @@ components:
           type: boolean
           example: false
       description: 検索条件を指定
-    inline_response_200_30:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          type: array
-          example: []
-          items:
-            $ref: "#/components/schemas/inline_response_200_30_data"
-        message:
-          type: string
-      example:
-        result: 000-00000
-        data: []
-        message: message
+    inline_response_200_32:
+      allOf:
+      - $ref: "#/components/schemas/responseOk"
+      - type: object
+        properties:
+          data:
+            type: array
+            example: []
+            items:
+              $ref: "#/components/schemas/inline_response_200_32_data"
     ita_apply_body:
       type: object
       properties:
@@ -7720,21 +6986,6 @@ components:
           - $ref: "#/components/schemas/ApplyParameterTypeC"
           - $ref: "#/components/schemas/ApplyParameterTypeD"
       description: 適用するパラメータ情報および作業実行するConductorの構成情報
-    inline_response_200_31:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          type: string
-          example: ""
-        message:
-          type: string
-      example:
-        result: 000-00000
-        data: ""
-        message: message
     FILTER_REQUEST_PARAMETERS_RANGE:
       type: object
       properties:
@@ -7804,21 +7055,6 @@ components:
           example:
             menu_id: メニューID
             execution_id: 作業ID
-      example:
-        operation_name: オペレーション名
-        status_file: ステータスファイル
-        node_type: Node種別
-        status_id: ステータスID
-        time_start: 開始日時
-        node_name: Node名
-        skip: スキップ
-        operation_id: オペレーションID
-        time_end: 終了日時
-        remarks: 備考
-        node_instance_id: NodeインスタンスID
-        jump:
-          menu_id: メニューID
-          execution_id: 作業ID
     ApplyParameterTypeA_inner:
       type: object
       properties:
@@ -7877,73 +7113,7 @@ components:
           $ref: "#/components/schemas/COLUMN_INFO"
         menu_info:
           $ref: "#/components/schemas/MENU_INFO"
-      example:
-        column_group_info:
-          key:
-            parent_column_group_name: parent_column_group_name
-            columns:
-            - ""
-            - ""
-            parent_column_group_id: parent_column_group_id
-            column_group_id: column_group_id
-            column_group_name: column_group_name
-        menu_info:
-          sheet_type: sheet_type
-          history_table_flag: true
-          row_update_flag: true
-          web_print_limit: 7
-          initial_filter_flg: true
-          columns:
-          - ""
-          - ""
-          row_reuse_flag: true
-          vertical: true
-          row_insert_flag: true
-          privilege: 2
-          row_disuse_flag: true
-          table_name: table_name
-          parent_menu_group_name: parent_menu_group_name
-          menu_name: menu_name
-          menu_group_name: menu_group_name
-          auto_filter_flg: true
-          menu_id: menu_id
-          view_name: view_name
-          web_print_confirm: 9
-          pk_column_name_rest: pk_column_name_rest
-          sort_key: sort_key
-          parent_menu_group_id: parent_menu_group_id
-          menu_group_id: menu_group_id
-          xls_print_limit: 3
-          menu_info: menu_info
-          inherit: true
-          login_necessity: true
-        column_info:
-          key:
-            initial_value: initial_value
-            column_disp_seq: 6
-            required_item: 2
-            ref_table_name: ref_table_name
-            save_type: save_type
-            column_name: column_name
-            unique_item: 5
-            description: description
-            input_item: 5
-            before_validate_register: {}
-            col_name: col_name
-            column_name_rest: column_name_rest
-            column_id: column_id
-            ref_multi_lang: ref_multi_lang
-            validate_option: {}
-            ref_pkey_name: ref_pkey_name
-            auto_input: 1
-            view_item: view_item
-            ref_col_name: ref_col_name
-            column_group_id: column_group_id
-            after_validate_register: {}
-            column_type: 0
-            column_group_name: column_group_name
-            ref_sort_conditions: ref_sort_conditions
-    inline_response_200_8_data:
+    inline_response_200_10_data:
       type: object
       properties:
         Discard:
@@ -7951,19 +7121,15 @@ components:
         IdList:
           type: array
           example: []
+          items:
+            type: string
         Register:
           type: number
         Restore:
           type: number
         Update:
           type: number
-      example:
-        Register: 6.02745618307040320615897144307382404804229736328125
-        Discard: 0.80082819046101150206595775671303272247314453125
-        Update: 5.962133916683182377482808078639209270477294921875
-        Restore: 1.46581298050294517310021547018550336360931396484375
-        IdList: []
-    inline_response_200_9_data:
+    inline_response_200_11_data:
       type: object
       properties:
         roles:
@@ -7982,19 +7148,7 @@ components:
           - workspace3
         table_settings:
           type: object
-      example:
-        user_id: id-xxxxxxxx
-        user_name: User Name
-        roles:
-        - role1
-        - role2
-        - role3
-        table_settings: {}
-        workspaces:
-        - workspace1
-        - workspace2
-        - workspace3
-    inline_response_200_10_data:
+    inline_response_200_12_data:
       type: object
       properties:
         menu_groups:
@@ -8050,181 +7204,21 @@ components:
               id: "10109"
               menu_name: メニュー9
               menu_name_rest: menu_9
-      example:
-        menu_groups:
-        - disp_seq: 10
-          id: "101"
-          parent_id: ""
-          menu_group_name: メニューグループ1
-          menus:
-          - disp_seq: 10
-            id: "10101"
-            menu_name: メニュー1
-            menu_name_rest: menu_1
-          - disp_seq: 20
-            id: "10102"
-            menu_name: メニュー2
-            menu_name_rest: menu_2
-          - disp_seq: 30
-            id: "10103"
-            menu_name: メニュー3
-            menu_name_rest: menu_3
-        - disp_seq: 20
-          id: "102"
-          parent_id: "101"
-          menu_group_name: メニューグループ2
-          menus:
-          - disp_seq: 10
-            id: "10104"
-            menu_name: メニュー4
-            menu_name_rest: menu_4
-          - disp_seq: 20
-            id: "10105"
-            menu_name: メニュー5
-            menu_name_rest: menu_5
-          - disp_seq: 30
-            id: "10106"
-            menu_name: メニュー6
-            menu_name_rest: menu_6
-        - disp_seq: 30
-          id: "103"
-          parent_id: "101"
-          menu_group_name: メニューグループ3
-          menus:
-          - disp_seq: 10
-            id: "10107"
-            menu_name: メニュー7
-            menu_name_rest: menu_7
-          - disp_seq: 20
-            id: "10108"
-            menu_name: メニュー8
-            menu_name_rest: menu_8
-          - disp_seq: 30
-            id: "10109"
-            menu_name: メニュー9
-            menu_name_rest: menu_9
-    inline_response_200_17_data:
+    inline_response_200_19_data:
       type: object
       properties:
         list:
           $ref: "#/components/schemas/CONDUCTOR_INFO_LIST"
         dict:
           $ref: "#/components/schemas/CONDUCTOR_INFO_DICT"
-      example:
-        dict:
-          node_status:
-            status_id1: status_name1
-            status_id2: status_name2
-          node_type:
-            node_type_id1: node_type_name1
-            node_type_id2: node_type_name2
-          conductor_status:
-            status_id1: status_name1
-            status_id2: status_name2
-          movement:
-            movement_id1: movement_name1
-            movement_id2: movement_name2
-          operation:
-            operation_id1: operation_name1
-            operation_id2: operation_name2
-          conductor:
-            conductor_id1: conductor_name1
-            conductor_id2: conductor_name2
-        list:
-          node_status:
-          - id: string
-            name: string
-          node_type:
-          - id: string
-            name: string
-          conductor_status:
-          - id: string
-            name: string
-          movement:
-          - id: string
-            name: string
-          operation:
-          - id: string
-            name: string
-          conductors:
-          - id: string
-            name: string
-    inline_response_200_18_data:
+    inline_response_200_20_data:
       type: object
       properties:
         conductor_list:
           $ref: "#/components/schemas/inline_response_200_data"
         operation_list:
           $ref: "#/components/schemas/inline_response_200_data"
-      example:
-        operation_list: null
-        conductor_list:
-          column_group_info:
-            key:
-              parent_column_group_name: parent_column_group_name
-              columns:
-              - ""
-              - ""
-              parent_column_group_id: parent_column_group_id
-              column_group_id: column_group_id
-              column_group_name: column_group_name
-          menu_info:
-            sheet_type: sheet_type
-            history_table_flag: true
-            row_update_flag: true
-            web_print_limit: 7
-            initial_filter_flg: true
-            columns:
-            - ""
-            - ""
-            row_reuse_flag: true
-            vertical: true
-            row_insert_flag: true
-            privilege: 2
-            row_disuse_flag: true
-            table_name: table_name
-            parent_menu_group_name: parent_menu_group_name
-            menu_name: menu_name
-            menu_group_name: menu_group_name
-            auto_filter_flg: true
-            menu_id: menu_id
-            view_name: view_name
-            web_print_confirm: 9
-            pk_column_name_rest: pk_column_name_rest
-            sort_key: sort_key
-            parent_menu_group_id: parent_menu_group_id
-            menu_group_id: menu_group_id
-            xls_print_limit: 3
-            menu_info: menu_info
-            inherit: true
-            login_necessity: true
-          column_info:
-            key:
-              initial_value: initial_value
-              column_disp_seq: 6
-              required_item: 2
-              ref_table_name: ref_table_name
-              save_type: save_type
-              column_name: column_name
-              unique_item: 5
-              description: description
-              input_item: 5
-              before_validate_register: {}
-              col_name: col_name
-              column_name_rest: column_name_rest
-              column_id: column_id
-              ref_multi_lang: ref_multi_lang
-              validate_option: {}
-              ref_pkey_name: ref_pkey_name
-              auto_input: 1
-              view_item: view_item
-              ref_col_name: ref_col_name
-              column_group_id: column_group_id
-              after_validate_register: {}
-              column_type: 0
-              column_group_name: column_group_name
-              ref_sort_conditions: ref_sort_conditions
-    inline_response_200_19_data:
+    inline_response_200_21_data:
       type: object
       properties:
         conductor_class:
@@ -8233,38 +7227,7 @@ components:
           $ref: "#/components/schemas/CONDUCTOR_RESULT"
         node:
           $ref: "#/components/schemas/NODE_RESULT"
-      example:
-        node:
-          node_name:
-            operation_name: オペレーション名
-            status_file: ステータスファイル
-            node_type: Node種別
-            status_id: ステータスID
-            time_start: 開始日時
-            node_name: Node名
-            skip: スキップ
-            operation_id: オペレーションID
-            time_end: 終了日時
-            remarks: 備考
-            node_instance_id: NodeインスタンスID
-            jump:
-              menu_id: メニューID
-              execution_id: 作業ID
-        conductor:
-          operation_name: オペレーション名
-          status_id: ステータスID
-          time_start: 開始日時
-          execution_log: 実行ログ
-          execution_user: 作業実行ユーザー
-          abort_execute_flag: 緊急停止フラグ
-          conductor_name: Conductor名
-          operation_id: オペレーションID
-          time_end: 終了日時
-          time_book: 予約日時
-          remarks: 備考
-          conductor_instance_id: ConductorインスタンスID
-        conductor_class: {}
-    inline_response_200_20_data:
+    inline_response_200_22_data:
       type: object
       properties:
         file_name:
@@ -8273,7 +7236,7 @@ components:
         file_data:
           type: string
           example: All movement input data zip base64 string
-    inline_response_200_21_data:
+    inline_response_200_23_data:
       type: object
       properties:
         file_name:
@@ -8282,82 +7245,14 @@ components:
         file_data:
           type: string
           example: All movement result data zip base64 string
-    inline_response_200_23_data:
+    inline_response_200_25_data:
       type: object
       properties:
         movement_list:
           $ref: "#/components/schemas/inline_response_200_data"
         operation_list:
           $ref: "#/components/schemas/inline_response_200_data"
-      example:
-        operation_list: null
-        movement_list:
-          column_group_info:
-            key:
-              parent_column_group_name: parent_column_group_name
-              columns:
-              - ""
-              - ""
-              parent_column_group_id: parent_column_group_id
-              column_group_id: column_group_id
-              column_group_name: column_group_name
-          menu_info:
-            sheet_type: sheet_type
-            history_table_flag: true
-            row_update_flag: true
-            web_print_limit: 7
-            initial_filter_flg: true
-            columns:
-            - ""
-            - ""
-            row_reuse_flag: true
-            vertical: true
-            row_insert_flag: true
-            privilege: 2
-            row_disuse_flag: true
-            table_name: table_name
-            parent_menu_group_name: parent_menu_group_name
-            menu_name: menu_name
-            menu_group_name: menu_group_name
-            auto_filter_flg: true
-            menu_id: menu_id
-            view_name: view_name
-            web_print_confirm: 9
-            pk_column_name_rest: pk_column_name_rest
-            sort_key: sort_key
-            parent_menu_group_id: parent_menu_group_id
-            menu_group_id: menu_group_id
-            xls_print_limit: 3
-            menu_info: menu_info
-            inherit: true
-            login_necessity: true
-          column_info:
-            key:
-              initial_value: initial_value
-              column_disp_seq: 6
-              required_item: 2
-              ref_table_name: ref_table_name
-              save_type: save_type
-              column_name: column_name
-              unique_item: 5
-              description: description
-              input_item: 5
-              before_validate_register: {}
-              col_name: col_name
-              column_name_rest: column_name_rest
-              column_id: column_id
-              ref_multi_lang: ref_multi_lang
-              validate_option: {}
-              ref_pkey_name: ref_pkey_name
-              auto_input: 1
-              view_item: view_item
-              ref_col_name: ref_col_name
-              column_group_id: column_group_id
-              after_validate_register: {}
-              column_type: 0
-              column_group_name: column_group_name
-              ref_sort_conditions: ref_sort_conditions
-    inline_response_200_24_data:
+    inline_response_200_26_data:
       type: object
       properties:
         menu_groups:
@@ -8374,35 +7269,13 @@ components:
                   id: "10101"
                   menu_name: システム設定
                   menu_name_rest: system_settings
-      example:
-        menu_groups:
-        - disp_seq: "10"
-          id: "101"
-          menu_group_name: 管理コンソール
-          menus:
-            items:
-              disp_seq: 10
-              id: "10101"
-              menu_name: システム設定
-              menu_name_rest: system_settings
-        - disp_seq: "10"
-          id: "101"
-          menu_group_name: 管理コンソール
-          menus:
-            items:
-              disp_seq: 10
-              id: "10101"
-              menu_name: システム設定
-              menu_name_rest: system_settings
-    inline_response_200_25_data:
+    inline_response_200_27_data:
       type: object
       properties:
         execution_no:
           type: string
           example: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-      example:
-        execution_no: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-    inline_response_200_26_data_import_list:
+    inline_response_200_28_data_import_list:
       properties:
         menu_groups:
           type: array
@@ -8424,39 +7297,7 @@ components:
                     menu_name_en: System settings
                     menu_name_ja: システム設定
                     menu_name_rest: system_settings
-      example:
-        menu_groups:
-        - disp_seq: 10
-          id: "101"
-          menu_group_name: 管理コンソール
-          menu_group_name_en: Management Console
-          menu_group_name_ja: 管理コンソール
-          menus:
-            items:
-              type: object
-              example:
-                disp_seq: 10
-                id: "10101"
-                menu_name: システム設定
-                menu_name_en: System settings
-                menu_name_ja: システム設定
-                menu_name_rest: system_settings
-        - disp_seq: 10
-          id: "101"
-          menu_group_name: 管理コンソール
-          menu_group_name_en: Management Console
-          menu_group_name_ja: 管理コンソール
-          menus:
-            items:
-              type: object
-              example:
-                disp_seq: 10
-                id: "10101"
-                menu_name: システム設定
-                menu_name_en: System settings
-                menu_name_ja: システム設定
-                menu_name_rest: system_settings
-    inline_response_200_26_data:
+    inline_response_200_28_data:
       type: object
       properties:
         upload_id:
@@ -8478,122 +7319,15 @@ components:
           type: string
           example: "1: 履歴あり / 2: 履歴なし"
         import_list:
-          $ref: "#/components/schemas/inline_response_200_26_data_import_list"
-      example:
-        mode: "1: 環境移行 / 2: 時刻指定"
-        upload_id: xxxxxxxxxxxxxxxxxxxxxxxx
-        import_list:
-          menu_groups:
-          - disp_seq: 10
-            id: "101"
-            menu_group_name: 管理コンソール
-            menu_group_name_en: Management Console
-            menu_group_name_ja: 管理コンソール
-            menus:
-              items:
-                type: object
-                example:
-                  disp_seq: 10
-                  id: "10101"
-                  menu_name: システム設定
-                  menu_name_en: System settings
-                  menu_name_ja: システム設定
-                  menu_name_rest: system_settings
-          - disp_seq: 10
-            id: "101"
-            menu_group_name: 管理コンソール
-            menu_group_name_en: Management Console
-            menu_group_name_ja: 管理コンソール
-            menus:
-              items:
-                type: object
-                example:
-                  disp_seq: 10
-                  id: "10101"
-                  menu_name: システム設定
-                  menu_name_en: System settings
-                  menu_name_ja: システム設定
-                  menu_name_rest: system_settings
-        file_name: ita_exportdata_yyyymmddhhiiss.kym
-        specified_time: YYYY/MM/DD hh:mm
-        abolished_type: "1: 廃止を含む / 2: 廃止を除く"
-        journal_type: "1: 履歴あり / 2: 履歴なし"
-    inline_response_200_27_data:
+          $ref: "#/components/schemas/inline_response_200_28_data_import_list"
+    inline_response_200_29_data:
       type: object
       properties:
         compare_list:
           $ref: "#/components/schemas/inline_response_200_data"
         device_list:
           $ref: "#/components/schemas/inline_response_200_data"
-      example:
-        device_list: null
-        compare_list:
-          column_group_info:
-            key:
-              parent_column_group_name: parent_column_group_name
-              columns:
-              - ""
-              - ""
-              parent_column_group_id: parent_column_group_id
-              column_group_id: column_group_id
-              column_group_name: column_group_name
-          menu_info:
-            sheet_type: sheet_type
-            history_table_flag: true
-            row_update_flag: true
-            web_print_limit: 7
-            initial_filter_flg: true
-            columns:
-            - ""
-            - ""
-            row_reuse_flag: true
-            vertical: true
-            row_insert_flag: true
-            privilege: 2
-            row_disuse_flag: true
-            table_name: table_name
-            parent_menu_group_name: parent_menu_group_name
-            menu_name: menu_name
-            menu_group_name: menu_group_name
-            auto_filter_flg: true
-            menu_id: menu_id
-            view_name: view_name
-            web_print_confirm: 9
-            pk_column_name_rest: pk_column_name_rest
-            sort_key: sort_key
-            parent_menu_group_id: parent_menu_group_id
-            menu_group_id: menu_group_id
-            xls_print_limit: 3
-            menu_info: menu_info
-            inherit: true
-            login_necessity: true
-          column_info:
-            key:
-              initial_value: initial_value
-              column_disp_seq: 6
-              required_item: 2
-              ref_table_name: ref_table_name
-              save_type: save_type
-              column_name: column_name
-              unique_item: 5
-              description: description
-              input_item: 5
-              before_validate_register: {}
-              col_name: col_name
-              column_name_rest: column_name_rest
-              column_id: column_id
-              ref_multi_lang: ref_multi_lang
-              validate_option: {}
-              ref_pkey_name: ref_pkey_name
-              auto_input: 1
-              view_item: view_item
-              ref_col_name: ref_col_name
-              column_group_id: column_group_id
-              after_validate_register: {}
-              column_type: 0
-              column_group_name: column_group_name
-              ref_sort_conditions: ref_sort_conditions
-    inline_response_200_28_data:
+    inline_response_200_30_data:
       type: object
       properties:
         file_name:
@@ -8602,10 +7336,7 @@ components:
         file_data:
           type: string
           example: Compare result base64 string
-      example:
-        file_name: "{compare_name}_YYYY/MMDDhhmmss.xlsx"
-        file_data: Compare result base64 string
-    inline_response_200_29_data:
+    inline_response_200_31_data:
       type: object
       properties:
         file:
@@ -8613,7 +7344,7 @@ components:
           example: base64 string
         file_name:
           type: string
-    inline_response_200_30_data:
+    inline_response_200_32_data:
       type: object
       properties:
         datetime:
@@ -8630,6 +7361,137 @@ components:
   responses:
     UnauthorizedError:
       description: Access token is missing or invalid
+  examples:
+    MENU_UPLOAD_FORM:
+      value: |
+        Content-Disposition: form-data; name="ita_exportdata_XXXXXXXXXXXX.kym"; filename="ita_exportdata_XXXXXXXXXXXX.kym"
+        Content-Type: application/octet-stream
+        (binary content of the file)
+    EXCEL_BULK_UPLOAD_FORM:
+      value: |
+        Content-Disposition: form-data; name="ITA_FILES_XXXXXXXXXXXXXXXXX.zip"; filename="ITA_FILES_XXXXXXXXXXXXXXXXX.zip"
+        Content-Type: application/x-zip-compressed
+        (binary content of the file)
+    menu.maintenance.all.yaml:
+      description: example requestBody of maintenance all
+      value:
+      - parameter:
+          discard: "0"
+          file_embedded_variable_name: string
+          file_id: string
+          files: string
+          last_update_date_time: 2025/01/01 10:00:00.000000
+          last_updated_user: string
+        type: Register
+      - parameter:
+          discard: "0"
+          file_embedded_variable_name: string
+          file_id: string
+          files: string
+          last_update_date_time: 2025/01/01 10:00:00.000000
+          last_updated_user: string
+        type: Update
+      - parameter:
+          file_id: string
+        type: Delete
+    menu.maintenance.all.operation_list.yaml:
+      description: example maintenance all request body in the operation list menu
+      value: |
+        [
+          {
+            "parameter": {
+                "discard": "0",
+                "environment": null,
+                "language": "ja",
+                "last_run_date": null,
+                "last_update_date_time": "2025/06/05 13:56:58.567068",
+                "last_updated_user": "user",
+                "operation_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+                "operation_name": "example",
+                "remarks": null,
+                "scheduled_date_for_execution": "2025/06/05 13:54:33"
+            },
+            "type": "Update"
+          },
+          {
+            "parameter": {
+                "discard": "0",
+                "environment": null,
+                "language": "ja",
+                "last_run_date": null,
+                "last_update_date_time": "2025/06/05 13:56:58.567068",
+                "last_updated_user": "user",
+                "operation_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+                "operation_name": "example",
+                "remarks": null,
+                "scheduled_date_for_execution": "2025/06/05 13:54:33"
+            },
+            "type": "Update"
+          },
+          {
+            "parameter": {
+                "last_update_date_time": "2025/06/05 13:56:58.567068",
+                "operation_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            },
+            "type": "Delete"
+          }
+        ]
+    menu.maintenance.all.data_sheet.yaml:
+      description: example maintenance all request body in the data sheet / prameter
+        sheet menu
+      value: |
+        [
+          {
+            "parameter": {
+                "discard": "0",
+                "item_1": "string",
+                "item_2": 1,
+                "item_3": null,
+                "item_4": "example.json",
+                "item_5": "example.txt",
+                "last_update_date_time": "2025/06/05 11:22:35.443578",
+                "last_updated_user": "user",
+                "remarks": null,
+                "uuid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            },
+            "type": "Update"
+          },
+          {
+            "parameter": {
+                "discard": "0",
+                "item_1": "string",
+                "item_2": 1,
+                "item_3": null,
+                "item_4": "example.json",
+                "item_5": "example.txt",
+                "last_update_date_time": "2025/06/05 11:22:35.443578",
+                "last_updated_user": "user",
+                "remarks": null,
+                "uuid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            },
+            "type": "Update"
+          },
+          {
+            "parameter": {
+                "last_update_date_time": "2025/06/05 11:22:35.443578",
+                "uuid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            },
+            "type": "Delete"
+          }
+        ]
+    menu.maintenance.all.execution_list_ansible_legacy.yaml:
+      description: example maintenance all request body in the execution list ansible_legacy
+        menu
+      value: |
+        [
+          {
+            "parameter": {
+                "execution_no": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+                "last_update_date_time": "2025/06/05 16:40:11.846538"
+            },
+            "type": "Delete"
+          }
+        ]
   securitySchemes:
     BearerAuth:
       type: http

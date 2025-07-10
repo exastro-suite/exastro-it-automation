@@ -17,6 +17,12 @@ def external_valid_menu_after(objdbca, objtable, option):
     retBool = True
     msg = ''
     cmd_type = option.get('cmd_type')
+
+    # 削除時はチェックしない
+    # Do not check when deleting
+    if option.get("cmd_type") == "Delete":
+        return retBool, msg, option
+
     if cmd_type == 'Discard':
         return retBool, msg, option,
     current_parameter = option.get('current_parameter', {}).get('parameter')
@@ -90,6 +96,11 @@ def external_valid_menu_before(objdbca, objtable, option):  # noqa: C901
     retBool = True
     msg = ''
     cmd_type = option.get('cmd_type')
+
+    # 削除時はチェックしない
+    # Do not check when deleting
+    if option.get("cmd_type") == "Delete":
+        return retBool, msg, option
 
     # 廃止の場合、バリデーションチェックを行わない。
     if cmd_type == 'Discard':

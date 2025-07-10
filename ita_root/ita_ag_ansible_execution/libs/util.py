@@ -122,7 +122,7 @@ def retry_api_call(exastro_api, endpoint, mode="json" ,method="POST", body=None,
     """
     status_code = None
     response = None
-    retry=1
+
     for t in range(int(retry)):
         try:
             if mode == "json":
@@ -227,7 +227,7 @@ def post_notification_execution(organization_id, workspace_id, exastro_api, body
     status_code, response = retry_api_call(exastro_api, endpoint, mode="json", method="POST", body=body, retry=retry)
     return status_code, response
 
-def get_execution_populated_data(organization_id, workspace_id, exastro_api, execution_no, body=None, query=None, retry=3):
+def get_execution_populated_data(organization_id, workspace_id, exastro_api, execution_no, body=None, query=None, retry=5):
     """
         投入データ取得: agent_child_main
     Args:
@@ -265,7 +265,7 @@ def post_update_execution_status(organization_id, workspace_id, exastro_api, exe
     status_code, response = retry_api_call(exastro_api, endpoint, mode="json", method="POST", body=body, query=query, retry=retry)
     return status_code, response
 
-def post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body=None, query=None, form_data=None, retry=3):
+def post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body=None, query=None, form_data=None, retry=5):
     """
         作業状態通知(ファイル): 結果データ受け取り・更新 : agent_child_main
     Args:

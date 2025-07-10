@@ -2438,7 +2438,7 @@ def collect_parameter_list(objdbca):
             if menu_table_link_data.get('MENU_ID') == role_menu_link_data.get('MENU_ID'):
                 privilege = role_menu_link_data.get('PRIVILEGE')
                 match_flg = True
-                if privilege == '1':
+                if privilege in ['0', '1']:
                     break
         # ロール-メニュー紐付管理に存在しない場合は対象外
         if match_flg is False:

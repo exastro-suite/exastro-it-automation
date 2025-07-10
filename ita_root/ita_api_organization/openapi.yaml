@@ -6905,6 +6905,9 @@ components:
         row_reuse_flag:
           description: 復活許可フラグ
           type: boolean
+        row_delete_flag:
+          description: 削除許可フラグ
+          type: boolean
         login_necessity:
           description: 認証有無
           type: boolean

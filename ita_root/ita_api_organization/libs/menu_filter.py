@@ -208,11 +208,6 @@ def get_history_file_path(objdbca, menu, uuid, column, journal_uuid):
     if len(result) == 0:
         return None
 
-    # columnの値がなければNone
-    file_name = result[0].get('parameter').get(column)
-    if file_name is None:
-        return None
-
     # 履歴テーブルがない場合はNone
     menu_info = objmenu.get_menu_info()
     if menu_info.get('MENUINFO').get('HISTORY_TABLE_FLAG') != '1':
@@ -242,15 +237,35 @@ def get_history_file_path(objdbca, menu, uuid, column, journal_uuid):
     objcol = objmenu.get_columnclass(column)
     match_flg = False
     file_path = None
-    for sort_data in jounal_sort_list:
+    file_name = ""
+    for index, sort_data in enumerate(jounal_sort_list):
         tmp_journal_id = sort_data.get('journal_id')
         if match_flg is True or tmp_journal_id == journal_uuid:
-            match_flg = True
 
+            if match_flg is False:
+                file_name = sort_data[column]
+
+            # 連続する同名ファイルに実体がない場合はシステムエラー
+            if file_name != sort_data[column]:
+                raise AppException("999-00014", [tmp_file_path], [tmp_file_path])
+
+            # ファイルパス取得
             tmp_file_path = objcol.get_file_data_path(sort_data[column], uuid, tmp_journal_id, False)
+
+            match_flg = True
+            if sort_data[column] is None:
+                # ファイルカラムにデータが無い場合
+                msg = g.appmsg.get_api_message("MSG-30026", [])
+                raise AppException("499-00201", [msg], [msg])
+
+            # 対象のファイルが見つかった場合はループを抜ける
             if os.path.isfile(tmp_file_path):
                 file_path = tmp_file_path
                 break
+
+            # 履歴の最後のレコードまでファイルの実体が無い場合はシステムエラー
+            elif index == len(jounal_sort_list) - 1:
+                raise AppException("999-00014", [tmp_file_path], [tmp_file_path])
 
     return file_path
 

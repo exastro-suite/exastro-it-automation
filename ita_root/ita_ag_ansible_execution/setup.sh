@@ -15,8 +15,10 @@ LOG_FILE="${HOME}/exastro-installation.log"
 EXASTRO_UNAME=$(id -u -n)
 EXASTRO_UID=$(id -u)
 EXASTRO_GID=1000
-AGENT_INSTALLER_VERSION=2.5.1
-AGENT_INSTALLER_VNC=20501
+#### インストーラー自身のバージョン（インストールできる資材のバージョンを制御するため）
+AGENT_INSTALLER_VERSION=2.6.0
+#### AGENT_INSTALLER_VERSIONと揃っていること
+AGENT_INSTALLER_VNC=20600
 
 POETRY_VERSION=1.6.0
 
@@ -68,10 +70,19 @@ dnf_install_list_rhel8=(
     "python3-requests"
 )
 dnf_install_list_rhel9=(
+    # "python3.11"
+    # "python3.11-pip"
     "python3-requests"
 )
 dnf_install_list_almaLinux8=(
     "podman-docker"
+    # "python3.11"
+    # "python3.11-pip"
+)
+dnf_install_list_almaLinux9=(
+    "podman-docker"
+    # "python3.11"
+    # "python3.11-pip"
 )
 
 # install source_path src->dst
@@ -322,6 +333,9 @@ get_system_info() {
         if [ $(expr "${VERSION_ID}" : "^8\..*") != 0 ]; then
             DEP_PATTERN="AlmaLinux8"
         fi
+        if [ $(expr "${VERSION_ID}" : "^9\..*") != 0 ]; then
+            DEP_PATTERN="AlmaLinux9"
+        fi
     elif [ "${OS_NAME}" = "Ubuntu" ]; then
         if [ $(expr "${VERSION_ID}" : "^20\..*") != 0 ]; then
             DEP_PATTERN="Ubuntu20"
@@ -379,6 +393,8 @@ check_system() {
         RHEL9 )
             ;;
         AlmaLinux8 )
+            ;;
+        AlmaLinux9 )
             ;;
         Ubuntu20 )
             ;;
@@ -524,7 +540,7 @@ installation_container_engine() {
     info "Installing container engine..."
     if [ "${DEP_PATTERN}" = "RHEL8" ] || [ "${DEP_PATTERN}" = "RHEL9" ]; then
         installation_podman_on_rhel8
-    elif [ "${DEP_PATTERN}" = "AlmaLinux8" ]; then
+    elif [ "${DEP_PATTERN}" = "AlmaLinux8" ] || [ "${DEP_PATTERN}" = "AlmaLinux9" ]; then
         installation_docker_on_alamalinux8
     # elif [ "${DEP_PATTERN}" = "Ubuntu20" ]; then
     #     installation_docker_on_ubuntu
@@ -723,6 +739,9 @@ dnf_install(){
         AlmaLinux8 )
             dnf_install_almaLinux8
             ;;
+        AlmaLinux9 )
+            dnf_install_almaLinux9
+            ;;
         # Ubuntu20 )
         #     ;;
         # Ubuntu22 )
@@ -756,6 +775,11 @@ dnf_install_rhel9(){
 dnf_install_almaLinux8(){
     install_list=(${dnf_install_list_common[@]})
     install_list+=(${dnf_install_list_almaLinux8[@]})
+}
+
+dnf_install_almaLinux9(){
+    install_list=(${dnf_install_list_common[@]})
+    install_list+=(${dnf_install_list_almaLinux9[@]})
 }
 
 git_clone(){
@@ -1063,7 +1087,7 @@ install_agent_source(){
         sudo chmod 755 ${source_path}/${xadd_source_paths[${xadd_key}]}
     done
 
-    if [ "${DEP_PATTERN}" = "AlmaLinux8" ]; then
+    if [ "${DEP_PATTERN}" = "AlmaLinux8" ] || [ "${DEP_PATTERN}" = "AlmaLinux9" ]; then
         echo "${source_path}/agent/entrypoint.sh"
         sudo chcon -R -h -t bin_t "${source_path}/agent/entrypoint.sh"
     fi
@@ -1108,6 +1132,9 @@ install_agent_service(){
             install_agent_service_rhel8
             ;;
         AlmaLinux8 )
+            install_agent_service_almaLinux8
+            ;;
+        AlmaLinux9 )
             install_agent_service_almaLinux8
             ;;
         # Ubuntu20 )

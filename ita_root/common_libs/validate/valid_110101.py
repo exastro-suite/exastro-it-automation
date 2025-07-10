@@ -21,6 +21,12 @@ def agent_setting_valid(objdbca, objtable, option):
     AUTHORIZATION_HEADER = "authorization:"
     retBool = True
     msg = []
+
+    # 削除時はチェックしない
+    # Do not check when deleting
+    if option.get("cmd_type") == "Delete":
+        return retBool, msg, option
+
     cmd_type = option.get("cmd_type")
     entry_parameter = option.get('entry_parameter').get('parameter')
     LANG = g.LANGUAGE.upper()

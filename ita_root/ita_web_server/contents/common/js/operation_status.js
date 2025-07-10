@@ -186,10 +186,20 @@ class Status {
         if ( stopId.indexOf( op.info.status_id ) !== -1 ) return false;
 
         const cycle = fn.cv( op.info.status_monitoring_cycle, 3000 );
+        if (op.ignoreErrorCount == undefined) {
+            op.ignoreErrorCount = 0
+        }
 
         op.timerId = setTimeout( function(){
-            fn.fetch( op.rest.info ).then(function( info ){
-                op.info = info;
+            fn.fetch( op.rest.info, undefined, undefined, undefined, undefined, true, op.ignoreErrorCount ).then(function( info ){
+
+                if (info.errorIgnored == true) {
+                    // エラーを無視した場合は、Movement情報の更新をしない
+                    op.ignoreErrorCount += 1
+                } else {
+                    op.ignoreErrorCount = undefined // エラーを無視した回数をリセット
+                    op.info = info;
+                }
 
                 // 更新
                 op.operationStatusUpdate();

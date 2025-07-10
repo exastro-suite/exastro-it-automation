@@ -317,7 +317,7 @@ CREATE TABLE T_COMN_CONDUCTOR_REGULARLY_LIST
     REGULARLY_PERIOD_ID             VARCHAR(2),                                 -- 定期作業実行周期ID
     EXECUTION_INTERVAL              INT,                                        -- 実行間隔
     PATTERN_WEEK_NUMBER_ID          VARCHAR(2),                                 -- 実行週番号ID
-    PATTERN_DAY_OF_WEEK_ID          VARCHAR(2),                                 -- 実行曜日ID
+    PATTERN_DAY_OF_WEEK_ID          TEXT,                                       -- 実行曜日ID
     PATTERN_DAY                     INT,                                        -- 実行日
     PATTERN_TIME                    VARCHAR(9),                                 -- 実行時分
     EXECUTION_STOP_START_DATE       DATETIME(6),                                -- 実行停止期間の開始日付
@@ -346,7 +346,7 @@ CREATE TABLE T_COMN_CONDUCTOR_REGULARLY_LIST_JNL
     REGULARLY_PERIOD_ID             VARCHAR(2),                                 -- 定期作業実行周期ID
     EXECUTION_INTERVAL              INT,                                        -- 実行間隔
     PATTERN_WEEK_NUMBER_ID          VARCHAR(2),                                 -- 実行週番号ID
-    PATTERN_DAY_OF_WEEK_ID          VARCHAR(2),                                 -- 実行曜日ID
+    PATTERN_DAY_OF_WEEK_ID          TEXT,                                       -- 実行曜日ID
     PATTERN_DAY                     INT,                                        -- 実行日
     PATTERN_TIME                    VARCHAR(9),                                 -- 実行時分
     EXECUTION_STOP_START_DATE       DATETIME(6),                                -- 実行停止期間の開始日付
@@ -430,7 +430,7 @@ CREATE TABLE T_COMN_CONDUCTOR_REGULARLY_STATUS
 
 -- ConductorNodeインスタンスビュー
 CREATE VIEW V_COMN_CONDUCTOR_NODE_INSTANCE AS
-SELECT 
+SELECT
   TAB_A.*,
   TAB_B.OPERATION_ID
 FROM
@@ -438,7 +438,7 @@ FROM
   LEFT JOIN
   T_COMN_CONDUCTOR_INSTANCE TAB_B ON (TAB_A.CONDUCTOR_INSTANCE_ID = TAB_B.CONDUCTOR_INSTANCE_ID);
 CREATE VIEW V_COMN_CONDUCTOR_NODE_INSTANCE_JNL AS
-SELECT 
+SELECT
   TAB_A.*,
   TAB_B.OPERATION_ID
 FROM

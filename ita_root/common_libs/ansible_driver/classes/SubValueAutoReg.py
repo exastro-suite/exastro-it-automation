@@ -985,7 +985,7 @@ class SubValueAutoReg():
                                                         continue
 
                                                 # TPF/CPF変数カラム判定
-                                                if col_data['REF_TABLE_NAME'] in VariableColumnAry and col_data['REF_COL_NAME'] in VariableColumnAry[col_data['REF_TABLE_NAME']]:
+                                                if col_data['REF_TABLE_NAME'] in VariableColumnAry and col_data['REF_COL_NAME'] in VariableColumnAry[col_data['REF_TABLE_NAME']] and col_val is not None:
                                                     if 'ID変換失敗' not in col_val and 'Failed to exchange ID' not in col_val:
                                                         col_val = "'{{ " + col_val + " }}'"
                                                     else:
@@ -1777,7 +1777,7 @@ class SubValueAutoReg():
             # PasswordColumnかを判定
             key_sensitive_flg = AnscConst.DF_SENSITIVE_OFF
             value_sensitive_flg = AnscConst.DF_SENSITIVE_OFF
-            if data['COLUMN_CLASS'] == '8' or data['COLUMN_CLASS'] == '25' or data['COLUMN_CLASS'] == '26':
+            if data['COLUMN_CLASS'] == '8' or data['COLUMN_CLASS'] == '25' or data['COLUMN_CLASS'] == '26' or data['COLUMN_CLASS'] == '34':
                 value_sensitive_flg = AnscConst.DF_SENSITIVE_ON
 
             if data['TABLE_NAME'] not in inout_tabColNameToValAssRowList:
@@ -1980,7 +1980,7 @@ class SubValueAutoReg():
                 if jsonkey in json_cols_base_key:
                     objcolumn = obj_load_table.get_columnclass(jsonkey)
                     # ID → VALUE 変換処理不要ならVALUE変更無し
-                    if obj_load_table.get_col_class_name(jsonkey) in ['PasswordColumn']:
+                    if obj_load_table.get_col_class_name(jsonkey) in ['PasswordColumn', 'MultiPasswordColumn']:
                         if jsonval is not None:
                             pass
                     elif obj_load_table.get_col_class_name(jsonkey) in ['PasswordIDColumn', 'JsonPasswordIDColumn']:

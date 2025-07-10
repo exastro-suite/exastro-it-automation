@@ -20,6 +20,12 @@ from common_libs.common import *  # noqa: F403
 def external_valid_menu_before(objdbca, objtable, option):
     retBool = True
     msg = ''
+
+    # 削除時はチェックしない
+    # Do not check when deleting
+    if option.get("cmd_type") == "Delete":
+        return retBool, msg, option
+
     # ファイルがある場合バリデーションチェック
     if 'custom_menu_item' in option["entry_parameter"]["parameter"] and 'custom_menu_item' in option["entry_parameter"]["file_path"]:
         file_name = option["entry_parameter"]["parameter"]["custom_menu_item"]

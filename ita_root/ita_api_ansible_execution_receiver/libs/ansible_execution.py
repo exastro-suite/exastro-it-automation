@@ -548,7 +548,8 @@ def get_agent_version(objdbca, body):
             "AGENT_NAME": agent_name,
             "VERSION": version,
             "STATUS_ID": result["version_diff"],
-            "DISUSE_FLAG": "0"
+            "DISUSE_FLAG": "0",
+            "LAST_UPDATE_USER": g.USER_ID,
         }
         ret = objdbca.table_insert("T_ANSC_AGENT", data_list, "ROW_ID", False)
         if ret is False:
@@ -558,7 +559,8 @@ def get_agent_version(objdbca, body):
         data_list = {
             "AGENT_NAME": agent_name,
             "VERSION": version,
-            "STATUS_ID": result["version_diff"]
+            "STATUS_ID": result["version_diff"],
+            "LAST_UPDATE_USER": g.USER_ID,
         }
         ret = objdbca.table_update("T_ANSC_AGENT", data_list, "AGENT_NAME", False)
         if ret is False:
@@ -659,68 +661,63 @@ def create_file_path(connexion_request, tmp_path, execution_no):
     file_paths = {}
 
     # get parameters
-    if connexion_request.is_json:
-        # application/json
-        parameters = connexion_request.get_json()
-    elif connexion_request.form:
-        # multipart/form-data, application/x-www-form-urlencoded
-        # check key : json_parameters
-        if 'json_parameters' in connexion_request.form:
-            # json.loads
-            try:
-                parameters = json.loads(connexion_request.form['json_parameters'])
-            except Exception as e:   # noqa: E722
-                print_exception_msg(e)
+    # check key : json_parameters
+    if 'json_parameters' in connexion_request.form:
+        # json.loads
+        try:
+            parameters = json.loads(connexion_request.form['json_parameters'])
+        except Exception as e:   # noqa: E722
+            print_exception_msg(e)
 
-                parameters = connexion_request.form['json_parameters']
-                if isinstance(parameters, (list, dict)) is False:
-                    return False, [], file_paths
+            parameters = connexion_request.form['json_parameters']
+            if isinstance(parameters, (list, dict)) is False:
+                return False, [], file_paths
 
-            if parameters["driver_id"] == "legacy":
-                tmp_path = tmp_path + "/driver/ansible/legacy/" + execution_no
-            elif parameters["driver_id"] == "pioneer":
-                tmp_path = tmp_path + "/driver/ansible/pioneer" + execution_no
-            elif parameters["driver_id"] == "legacy_role":
-                tmp_path = tmp_path + "/driver/ansible/legacy_role" + execution_no
+        if parameters["driver_id"] == "legacy":
+            tmp_path = tmp_path + "/driver/ansible/legacy/" + execution_no
+        elif parameters["driver_id"] == "pioneer":
+            tmp_path = tmp_path + "/driver/ansible/pioneer" + execution_no
+        elif parameters["driver_id"] == "legacy_role":
+            tmp_path = tmp_path + "/driver/ansible/legacy_role" + execution_no
 
-            # set parameter['file'][rest_name]
-            if connexion_request.files:
-                # ファイルが保存できる容量があるか確認
-                file_size = connexion_request.headers.get("Content-Length")
-                file_size_str = f"{int(file_size):,} byte(s)"
-                storage = storage_base()
-                can_save, free_space = storage.validate_disk_space(file_size)
-                if can_save is False:
-                    status_code = "499-00222"
-                    log_msg_args = [file_size_str]
-                    api_msg_args = [file_size_str]
-                    raise AppException(status_code, log_msg_args, api_msg_args)
+        # set parameter['file'][rest_name]
+        if connexion_request.files:
+            # ファイルが保存できる容量があるか確認
+            file_size = connexion_request.headers.get("Content-Length")
+            file_size_str = f"{int(file_size):,} byte(s)"
+            storage = storage_base()
+            can_save, free_space = storage.validate_disk_space(file_size)
+            if can_save is False:
+                status_code = "499-00222"
+                log_msg_args = [file_size_str]
+                api_msg_args = [file_size_str]
+                raise AppException(status_code, log_msg_args, api_msg_args)
 
-                for _file_key in connexion_request.files:
-                    _file_data = connexion_request.files[_file_key]
-                    file_name = _file_data.filename
-                    if not os.path.exists(tmp_path):
-                        os.makedirs(tmp_path)
-                    file_path = os.path.join(tmp_path, file_name)
-                    file_paths[_file_key] = file_path
+            for _file_key in connexion_request.files:
+                _file_data = connexion_request.files[_file_key]
+                file_name = _file_data.filename
+                if not os.path.exists(tmp_path):
+                    os.makedirs(tmp_path)
+                file_path = os.path.join(tmp_path, file_name)
+                file_paths[_file_key] = file_path
 
-                    f = open(file_path, 'wb')
-                    while True:
-                        # fileの読み込み
-                        buf = _file_data.stream.read(1000000)
-                        if len(buf) == 0:
-                            break
-                        # yield buf
-                        # fileの書き込み
-                        f.write(buf)
-                    f.close()
+                f = open(file_path, 'wb')
+                while True:
+                    # fileの読み込み
+                    buf = _file_data.stream.read(1000000)
+                    if len(buf) == 0:
+                        break
+                    # yield buf
+                    # fileの書き込み
+                    f.write(buf)
+                f.close()
 
-        else:
-            return False, [], file_paths
+    else:
+        return False, [], file_paths
 
-        # check parameters
-        if len(parameters) == 0:
-            return False, [], file_paths
+    # check parameters
+    if len(parameters) == 0:
+        return False, [], file_paths
 
     return True, parameters, file_paths
 

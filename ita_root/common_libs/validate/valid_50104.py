@@ -24,6 +24,12 @@ def menu_column_valid(objdbca, objtable, option):
     lang = g.get('LANGUAGE')
     retBool = True
     msg = ''
+
+    # 削除時はチェックしない
+    # Do not check when deleting
+    if option.get("cmd_type") == "Delete":
+        return retBool, msg, option
+
     menu_name_rest = objtable.get('MENUINFO').get('MENU_NAME_REST')
     entry_parameter = option.get('entry_parameter').get('parameter')
     column_class = entry_parameter.get("column_class")
@@ -853,11 +859,9 @@ def menu_column_valid(objdbca, objtable, option):
             # アクセス許可チェック
             skip_check_auth_list = ["selection_1", "selection_2"]  # チェックスキップ対象のメニュー名(REST)
             if other_menu_name_rest not in skip_check_auth_list:
-                privilege = check_auth_menu(other_menu_name_rest, objdbca)
-                if not privilege:
-                    retBool = False
-                    msg = g.appmsg.get_api_message("MSG-20174", [])
-                    return retBool, msg, option
+                # アクセス許可がない場合、check_auth_menuで raise する
+                check_auth_menu(other_menu_name_rest, objdbca)
+
             # 指定した初期値のIDが指定可能なレコードであるかどうかをチェック
             if not 0 < len(return_values):
                 # DBエラー

@@ -113,12 +113,14 @@ def initial_settings_ansible(ws_db, body):
         if (menu_table_link['parameter']['row_insert_flag'] != 'False' or
             menu_table_link['parameter']['row_update_flag'] != 'False' or
             menu_table_link['parameter']['row_disuse_flag'] != 'False' or
-            menu_table_link['parameter']['row_reuse_flag'] != 'False'):      # noqa: E129
+            menu_table_link['parameter']['row_reuse_flag'] != 'False' or
+            menu_table_link['parameter']['row_delete_flag'] != 'False'):      # noqa: E129
 
             menu_table_link['parameter']['row_insert_flag'] = 'False'
             menu_table_link['parameter']['row_update_flag'] = 'False'
             menu_table_link['parameter']['row_disuse_flag'] = 'False'
             menu_table_link['parameter']['row_reuse_flag'] = 'False'
+            menu_table_link['parameter']['row_delete_flag'] = 'False'
             del menu_table_link['parameter']['last_updated_user']
 
             result = objmenu_mtll.exec_maintenance(menu_table_link, '20103', 'Update', False, False)
@@ -144,12 +146,15 @@ def initial_settings_ansible(ws_db, body):
         if (menu_table_link['parameter']['row_insert_flag'] != 'True' or
             menu_table_link['parameter']['row_update_flag'] != 'True' or
             menu_table_link['parameter']['row_disuse_flag'] != 'True' or
-            menu_table_link['parameter']['row_reuse_flag'] != 'True'):       # noqa: E129
+            menu_table_link['parameter']['row_reuse_flag'] != 'True' or
+            menu_table_link['parameter']['row_delete_flag'] != 'True'):       # noqa: E129
 
             menu_table_link['parameter']['row_insert_flag'] = 'True'
             menu_table_link['parameter']['row_update_flag'] = 'True'
             menu_table_link['parameter']['row_disuse_flag'] = 'True'
             menu_table_link['parameter']['row_reuse_flag'] = 'True'
+            # 削除許可フラグはデフォルト不許可にする
+            menu_table_link['parameter']['row_delete_flag'] = 'False'
             del menu_table_link['parameter']['last_updated_user']
 
             result = objmenu_mtll.exec_maintenance(menu_table_link, '20103', 'Update', False, False)

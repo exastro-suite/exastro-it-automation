@@ -2,10 +2,93 @@
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.231.6/containers/jekyll
 {
 	"name": "it-automation2 - ita-by-ansible-legacy-vars-listup",
-	"dockerComposeFile": ["../docker-compose.yml","../docker-compose.devcontainer.yml", "../docker-compose.platform.yml"],
+    "dockerComposeFile": ["../docker-compose.yml", "../docker-compose.agent.oase.yml", "../docker-compose.devcontainer.yml", "../docker-compose.platform.yml"],
 	"service": "ita-by-ansible-legacy-vars-listup",
 	// Set *default* container specific settings.json values on container create.
+	"customizations": {
+		"vscode": {
+			"settings": {
+				"files.trimTrailingWhitespace": true,
+				"terminal.integrated.profiles.linux": {
+					"bash": {
+						"path": "/bin/bash"
+					}
+				},
+				"terminal.integrated.defaultProfile.linux": "bash",
+
+				// git menu setting
+				"git.allowNoVerifyCommit": true,
+
+				// python extension setting
+				"python.interpreterPath": "/usr/bin/python3",
+				"python.defaultInterpreterPath": "/usr/bin/python3",
+
+				"python.linting.pylintEnabled": false,
+				"python.linting.flake8Enabled": true,
+
+				"python.linting.lintOnSave": true,
+
+				"python.linting.flake8Args": [
+					"--ignore=W293, W504",
+					"--max-line-length=250",
+					"--max-complexity=20",
+				],
+
+				"flake8.enabled": false,
+				"flake8.args": [
+					"--ignore=W293, W504",
+					"--max-line-length=250",
+					"--max-complexity=20",
+				],
+
+				"python.formatting.provider": "autopep8",
+
+				"python.formatting.autopep8Args": [
+					"--aggressive", "--aggressive",
+				],
+				// Rest Client setting
+				"rest-client.environmentVariables": {
+					"$shared": {
+						"sys-mng-port": "38001",
+						"org-mng-port": "38000"
+					}
+				},
+				"rest-client.decodeEscapedUnicodeCharacters": true
+			},
+			// Add the IDs of extensions you want installed when the container is created.
+			"extensions": [
+				"donjayamanne.python-extension-pack",
+				"ms-python.vscode-pylance",
+				"ms-ceintl.vscode-language-pack-ja",
+				"ms-vscode.references-view",
+				"ms-python.flake8",
+				"ms-python.black-formatter",
+				"eamodio.gitlens",
+				"mhutchie.git-graph",
+				"42crunch.vscode-openapi",
+				"arjun.swagger-viewer",
+				"redhat.vscode-yaml",
+				"adisreyaj.swagger-snippets",
+				"hediet.vscode-drawio",
+				"oderwat.indent-rainbow",
+				"aaron-bond.better-comments",
+				// "sonarsource.sonarlint-vscode",
+				"mechatroner.rainbow-csv",
+				"ryu1kn.partial-diff",
+				"pkief.material-icon-theme",
+				// "mtxr.sqltools",
+				// "mtxr.sqltools-driver-mysql",
+				"mitchdenny.ecdc",
+				"snyk-security.snyk-vulnerability-scanner",
+				"humao.rest-client",
+				"bmalehorn.shell-syntax",
+				"foxundermoon.shell-format",
+				"timonwong.shellcheck",
+			],
+		}
+	},
 	"settings": {
+		"files.trimTrailingWhitespace": true,
 		"terminal.integrated.profiles.linux": {
 			"bash": {
 				"path": "/bin/bash"
@@ -17,6 +100,9 @@
 		"git.allowNoVerifyCommit": true,
 
 		// python extension setting
+		"python.interpreterPath": "/usr/bin/python3",
+		"python.defaultInterpreterPath": "/usr/bin/python3",
+
 		"python.linting.pylintEnabled": false,
 		"python.linting.flake8Enabled": true,
 
@@ -24,7 +110,14 @@
 
 		"python.linting.flake8Args": [
 			"--ignore=W293, W504",
-			"--max-line-length=150",
+			"--max-line-length=250",
+			"--max-complexity=20",
+		],
+
+		"flake8.enabled": false,
+		"flake8.args": [
+			"--ignore=W293, W504",
+			"--max-line-length=250",
 			"--max-complexity=20",
 		],
 
@@ -33,6 +126,14 @@
 		"python.formatting.autopep8Args": [
 			"--aggressive", "--aggressive",
 		],
+		// Rest Client setting
+		"rest-client.environmentVariables": {
+			"$shared": {
+				"sys-mng-port": "38001",
+				"org-mng-port": "38000"
+			}
+		},
+		"rest-client.decodeEscapedUnicodeCharacters": true
 	},
 	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": [
@@ -40,13 +141,18 @@
 		"ms-python.vscode-pylance",
 		"ms-ceintl.vscode-language-pack-ja",
 		"ms-vscode.references-view",
+		"ms-python.flake8",
+		"ms-python.black-formatter",
 		"eamodio.gitlens",
 		"mhutchie.git-graph",
+		"42crunch.vscode-openapi",
+		"arjun.swagger-viewer",
 		"redhat.vscode-yaml",
+		"adisreyaj.swagger-snippets",
 		"hediet.vscode-drawio",
 		"oderwat.indent-rainbow",
 		"aaron-bond.better-comments",
-		//"sonarsource.sonarlint-vscode",
+		// "sonarsource.sonarlint-vscode",
 		"mechatroner.rainbow-csv",
 		"ryu1kn.partial-diff",
 		"pkief.material-icon-theme",
@@ -54,6 +160,10 @@
 		// "mtxr.sqltools-driver-mysql",
 		"mitchdenny.ecdc",
 		"snyk-security.snyk-vulnerability-scanner",
+		"humao.rest-client",
+		"bmalehorn.shell-syntax",
+		"foxundermoon.shell-format",
+		"timonwong.shellcheck",
 	],
 	// // Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [

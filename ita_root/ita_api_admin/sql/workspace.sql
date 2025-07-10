@@ -137,6 +137,7 @@ CREATE TABLE T_COMN_MENU_TABLE_LINK
     ROW_UPDATE_FLAG                 VARCHAR(2),                                 -- 更新許可フラグ
     ROW_DISUSE_FLAG                 VARCHAR(2),                                 -- 廃止許可フラグ
     ROW_REUSE_FLAG                  VARCHAR(2),                                 -- 復活許可フラグ
+    ROW_DELETE_FLAG                 VARCHAR(2),                                 -- 削除許可フラグ
     SUBSTITUTION_VALUE_LINK_FLAG    VARCHAR(2),                                 -- 代入値自動登録対象フラグ
     LOCK_TABLE                      TEXT,                                       -- ロック対象テーブル
     UNIQUE_CONSTRAINT               TEXT,                                       -- 組み合わせ一意制約
@@ -170,6 +171,7 @@ CREATE TABLE T_COMN_MENU_TABLE_LINK_JNL
     ROW_UPDATE_FLAG                 VARCHAR(2),                                 -- 更新許可フラグ
     ROW_DISUSE_FLAG                 VARCHAR(2),                                 -- 廃止許可フラグ
     ROW_REUSE_FLAG                  VARCHAR(2),                                 -- 復活許可フラグ
+    ROW_DELETE_FLAG                 VARCHAR(2),                                 -- 削除許可フラグ
     SUBSTITUTION_VALUE_LINK_FLAG    VARCHAR(2),                                 -- 代入値自動登録対象フラグ
     LOCK_TABLE                      TEXT,                                       -- ロック対象テーブル
     UNIQUE_CONSTRAINT               TEXT,                                       -- 組み合わせ一意制約
@@ -213,7 +215,7 @@ CREATE TABLE T_COMN_MENU_COLUMN_LINK
     REQUIRED_ITEM                   VARCHAR(2),                                 -- 一意制約フラグ
     AUTOREG_HIDE_ITEM               VARCHAR(2),                                 -- 選択対象外フラグ
     AUTOREG_ONLY_ITEM               VARCHAR(2),                                 -- 代入値自動登録選択項目フラグ
-    INITIAL_VALUE                   TEXT,                                       -- 初期値
+    INITIAL_VALUE                   LONGTEXT,                                   -- 初期値
     VALIDATE_OPTION                 TEXT,                                       -- バリデーション値
     VALIDATE_REG_EXP                TEXT,                                       -- 正規表現バリデーション
     BEFORE_VALIDATE_REGISTER        TEXT,                                       -- 個別バリデーション前
@@ -258,7 +260,7 @@ CREATE TABLE T_COMN_MENU_COLUMN_LINK_JNL
     REQUIRED_ITEM                   VARCHAR(2),                                 -- 一意制約フラグ
     AUTOREG_HIDE_ITEM               VARCHAR(2),                                 -- 選択対象外フラグ
     AUTOREG_ONLY_ITEM               VARCHAR(2),                                 -- 代入値自動登録選択項目フラグ
-    INITIAL_VALUE                   TEXT,                                       -- 初期値
+    INITIAL_VALUE                   LONGTEXT,                                   -- 初期値
     VALIDATE_OPTION                 TEXT,                                       -- バリデーション値
     VALIDATE_REG_EXP                TEXT,                                       -- 正規表現バリデーション
     BEFORE_VALIDATE_REGISTER        TEXT,                                       -- 個別バリデーション前
@@ -381,7 +383,7 @@ CREATE TABLE T_COMN_OPERATION_JNL
 -- Movement一覧
 CREATE TABLE T_COMN_MOVEMENT
 (
-    MOVEMENT_ID                     VARCHAR(40),                                -- ＭovemenID
+    MOVEMENT_ID                     VARCHAR(40),                                -- MovemenID
     MOVEMENT_NAME                   VARCHAR(255),                               -- Movemen名
     ITA_EXT_STM_ID                  VARCHAR(2),                                 -- オーケストレータ
     TIME_LIMIT                      INT,                                        -- 遅延タイマー
@@ -408,7 +410,7 @@ CREATE TABLE T_COMN_MOVEMENT_JNL
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
-    MOVEMENT_ID                     VARCHAR(40),                                -- ＭovemenID
+    MOVEMENT_ID                     VARCHAR(40),                                -- MovemenID
     MOVEMENT_NAME                   VARCHAR(255),                               -- Movemen名
     ITA_EXT_STM_ID                  VARCHAR(2),                                 -- オーケストレータ
     TIME_LIMIT                      INT,                                        -- 遅延タイマー
@@ -595,16 +597,16 @@ CREATE TABLE T_COMN_AAC_EXECUTION_ENVIRONMENT
 
 
 -- メニューグルーブメニュー結合ビュー
-CREATE VIEW V_COMN_MENU_GROUP_MENU_PULLDOWN AS 
-SELECT 
+CREATE VIEW V_COMN_MENU_GROUP_MENU_PULLDOWN AS
+SELECT
   TBL_1.*,
   CONCAT(TBL_2.MENU_GROUP_NAME_JA,':',TBL_1.MENU_NAME_JA) MENU_GROUP_NAME_PULLDOWN_JA,
   CONCAT(TBL_2.MENU_GROUP_NAME_EN,':',TBL_1.MENU_NAME_EN) MENU_GROUP_NAME_PULLDOWN_EN
 FROM
   T_COMN_MENU TBL_1
   LEFT JOIN T_COMN_MENU_GROUP TBL_2 ON (TBL_1.MENU_GROUP_ID = TBL_2.MENU_GROUP_ID);
-CREATE VIEW V_COMN_MENU_GROUP_MENU_PULLDOWN_JNL AS 
-SELECT 
+CREATE VIEW V_COMN_MENU_GROUP_MENU_PULLDOWN_JNL AS
+SELECT
   TBL_1.*,
   CONCAT(TBL_2.MENU_GROUP_NAME_JA,':',TBL_1.MENU_NAME_JA) MENU_GROUP_NAME_PULLDOWN_JA,
   CONCAT(TBL_2.MENU_GROUP_NAME_EN,':',TBL_1.MENU_NAME_EN) MENU_GROUP_NAME_PULLDOWN_EN

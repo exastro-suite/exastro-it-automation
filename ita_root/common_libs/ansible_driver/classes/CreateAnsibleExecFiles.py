@@ -336,6 +336,7 @@ class CreateAnsibleExecFiles():
         self.run_pattern_id = ""
         self.lv_objDBCA = ""
         self.lva_global_vars_list = {}
+        self.lva_global_sensitive_vars_list = {}
         self.lva_cpf_vars_list = {}
         self.lva_tpf_vars_list = {}
         self.lv_user_out_Dir = ""
@@ -623,7 +624,7 @@ class CreateAnsibleExecFiles():
             else:
                 # Tower(/var/lib/awx/projects)ディレクトリへのファイル転送パス退避
                 self.lv_conductor_instance_Dir = "{}/{}/{}/{}".format(self.getTowerProjectDirPath("ExastroPath"),
-                                                                      self.LC_ITA_TMP_DIR, self.LC_ITA_CONDUCTOR_DIR, ins_Path)
+                                                                    self.LC_ITA_TMP_DIR, self.LC_ITA_CONDUCTOR_DIR, ins_Path)
                 self.setTowerProjectsScpPath(self.AnscObj.DF_SCP_CONDUCTOR_TOWER_PATH, self.lv_conductor_instance_Dir)
 
                 ita_conductor_instance_Dir = "{}/{}".format(self.getAnsibleBaseDir('CONDUCTOR_STORAGE_PATH_ITA'), ins_Path)
@@ -789,7 +790,18 @@ class CreateAnsibleExecFiles():
             # ITAANSIBLEH-ERR-90235
             msgstr = g.appmsg.get_api_message("MSG-10458", [])
             self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                               str(inspect.currentframe().f_lineno), msgstr)
+                                str(inspect.currentframe().f_lineno), msgstr)
+            return False, mt_rolenames, mt_rolevars, mt_roleglobalvars, mt_role_rolepackage_id, mt_def_vars_list, mt_def_array_vars_list
+
+        # グローバル変数(センシティブ)管理からグローバル変数(センシティブ)の情報を取得
+        self.lva_global_sensitive_vars_list = {}
+        retAry = self.getDBGlobalSensitiveVarsMaster(self.lva_global_sensitive_vars_list)
+        ret = retAry[0]
+        self.lva_global_sensitive_vars_list = retAry[1]
+        if ret is False:
+            msgstr = g.appmsg.get_api_message("MSG-11015", [])
+            self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                                str(inspect.currentframe().f_lineno), msgstr)
             return False, mt_rolenames, mt_rolevars, mt_roleglobalvars, mt_role_rolepackage_id, mt_def_vars_list, mt_def_array_vars_list
 
         # ドライバ区分がLegacy-Roleの場合
@@ -922,7 +934,7 @@ class CreateAnsibleExecFiles():
                 chkObj = DefaultVarsFileAnalysis(self.lv_objMTS)
                 msgstr = ""
                 # ロールパッケージ内のPlaybookで定義しているグローバル変数がグローバル変数管理にあるか
-                retAry = chkObj.chkDefVarsListPlayBookGlobalVarsList(mt_roleglobalvars, self.lva_global_vars_list, msgstr)
+                retAry = chkObj.chkDefVarsListPlayBookGlobalVarsList(mt_roleglobalvars, self.lva_global_vars_list, self.lva_global_sensitive_vars_list, msgstr)
                 ret = retAry[0]
                 msgstr = retAry[1]
                 if ret is False:
@@ -1005,7 +1017,7 @@ class CreateAnsibleExecFiles():
                 chkObj = DefaultVarsFileAnalysis(self.lv_objMTS)
                 msgstr = ""
 
-                retAry = chkObj.chkDefVarsListPlayBookGlobalVarsList(temlate_ctl_gbl_vars_list, self.lva_global_vars_list, msgstr)
+                retAry = chkObj.chkDefVarsListPlayBookGlobalVarsList(temlate_ctl_gbl_vars_list, self.lva_global_vars_list, self.lva_global_sensitive_vars_list, msgstr)
                 ret = retAry[0]
                 msgstr = retAry[1]
                 if ret is False:
@@ -1330,6 +1342,13 @@ class CreateAnsibleExecFiles():
                 return False
 
         elif self.getAnsibleDriverID() == self.AnscObj.DF_PIONEER_DRIVER_ID:
+            # グローバル変数(センシティブ)をPasswordCoulumn変数一覧(Pioneer用)に追加
+            ret, ina_vault_vars, ina_vault_host_vars_file_list = \
+                self.addVaultVarsForGBLSensitive(ina_hosts, ina_vault_vars, ina_vault_host_vars_file_list)
+            if ret is False:
+                g.applogger.debug(f"Failed to add vars(AnsibleVault) {ina_vault_vars=} {ina_vault_host_vars_file_list=}")
+                return False
+
             # Pionner 暗号化が必要な変数のホスト変数ファイル作成
             if self.CreateVaultHostvarsfiles(ina_vault_host_vars_file_list, ina_host_vars, ina_hostinfolist) is False:
                 return False
@@ -1918,6 +1937,41 @@ class CreateAnsibleExecFiles():
                 NumPadding = 2
                 out_val = self.MultilineValueEdit(edit_val, NumPadding)
                 var_str += "{}: {}\n".format(var, out_val)
+
+                # グローバル変数の具体値にコピー変数があるか確認
+                retAry = self.LegacyRoleCheckConcreteValueIsVar(val,
+                                                                self.lv_legacy_Role_cpf_vars_list[in_host_name],
+                                                                self.lv_legacy_Role_tpf_vars_list[in_host_name])
+                ret = retAry[0]
+                self.lv_legacy_Role_cpf_vars_list[in_host_name] = retAry[1]
+                self.lv_legacy_Role_tpf_vars_list[in_host_name] = retAry[2]
+                if ret is False:
+                    continue
+
+            # グローバル変数(センシティブ)をホスト変数ファイルに登録する。
+            for var, val in self.lva_global_sensitive_vars_list.items():
+                # 作業パターンに紐づいているロール以外で使用しているグローバル変数を除外
+                if var not in self.lv_use_gbl_vars_list:
+                    continue
+
+                # 二重処理防止
+                if var in parent_vars_list:
+                    continue
+
+                parent_vars_list[var] = 0
+
+                # ansible-vaultで暗号化された文字列のインデントを調整
+                indento_sp4 = "".ljust(4)
+                login_pw_ansible_vault = ""
+                make_vaultpass = self.makeAnsibleVaultGBL(
+                    ky_decrypt(val),
+                    login_pw_ansible_vault,
+                    indento_sp4,
+                    var)
+                if make_vaultpass is False:
+                    return False
+                val = make_vaultpass
+                var_str += "{}: {}\n".format(var, val)
 
                 # グローバル変数の具体値にコピー変数があるか確認
                 retAry = self.LegacyRoleCheckConcreteValueIsVar(val,
@@ -5748,6 +5802,36 @@ class CreateAnsibleExecFiles():
                     out_val = self.MultilineValueEdit(edit_val, NumPadding)
                     var_str = var_str + "%s: %s\n" % (var, out_val)
 
+            # グローバル変数(センシティブ)をホスト変数ファイルに登録する。
+            for var, val in self.lva_global_sensitive_vars_list.items():
+                # Playbookで使用しているグローバル変数のみを対象にする。
+                if var in self.lv_use_gbl_vars_list:
+                    keystr = "{}_{}".format(in_host_name, var)
+                    if keystr in self.lv_parent_vars_list:
+                        continue
+                    self.lv_parent_vars_list[keystr] = 0
+
+                    if self.getAnsibleDriverID() == self.AnscObj.DF_PIONEER_DRIVER_ID:
+                        # rot13+base64で暗号化
+                        val = self.ky_pioneer_encrypt(val)
+                        var_str += "{}: {}\n".format(var, val)
+                    else:
+                        # ansible-vaultで暗号化された文字列のインデントを調整
+                        indento_sp4 = "".ljust(4)
+
+                        login_pw_ansible_vault = ""
+                        make_vaultpass = self.makeAnsibleVaultGBL(
+                            ky_decrypt(val),
+                            login_pw_ansible_vault,
+                            indento_sp4,
+                            var)
+                        if make_vaultpass is False:
+                            return False
+
+                        val = make_vaultpass
+                        var_str += "{}: {}\n".format(var, val)
+                    self.lv_vault_pass_list[var] = val
+
             # 変数の具体値に使用しているテンプレート変数の情報をホスト変数ファイルに出力
             if in_host_name in self.lv_tpf_vars_list:
                 for var, val in self.lv_tpf_vars_list[in_host_name].items():
@@ -5859,6 +5943,24 @@ class CreateAnsibleExecFiles():
                     out_val = self.MultilineValueEdit(edit_val, NumPadding)
 
                     var_str += "{}: {}\n".format(var, out_val)
+
+            # グローバル変数(センシティブ)をホスト変数ファイルに登録する。
+            for var, val in self.lva_global_sensitive_vars_list.items():
+                # Playbookで使用しているグローバル変数のみを対象にする。
+                if var in self.lv_use_gbl_vars_list:
+                    if self.getAnsibleDriverID() == self.AnscObj.DF_PIONEER_DRIVER_ID:
+                        # ansible-vaultで暗号化された文字列のインデントを調整
+                        indento_sp4 = "".ljust(4)
+                        login_pw_ansible_vault = ""
+                        make_vaultpass = self.makeAnsibleVaultGBL(
+                            ky_decrypt(val),
+                            login_pw_ansible_vault,
+                            indento_sp4,
+                            var)
+                        if make_vaultpass is False:
+                            return False
+                        val = make_vaultpass
+                        var_str += "{}: {}\n".format(var, val)
 
             # 変数の具体値に使用しているテンプレート変数の情報をホスト変数ファイルに出力
             if in_host_name in self.lv_tpf_vars_list:
@@ -6350,16 +6452,18 @@ class CreateAnsibleExecFiles():
                     if len(self.lva_global_vars_list) == 0:
                         msgstr = g.appmsg.get_api_message("MSG-10461", [])
                         self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                                           str(inspect.currentframe().f_lineno), msgstr)
+                                        str(inspect.currentframe().f_lineno), msgstr)
                         return False
 
-                    # Playbookから抜き出したグローバル変数がグローバル変数管理に登録されているか判定
+                    # Playbookから抜き出したグローバル変数がグローバル変数管理、グローバル変数(センシティブ)管理に登録されているか判定
                     for var_list in file_global_vars_list:
                         for line_no, var_name in var_list.items():
-                            if var_name not in self.lva_global_vars_list:
+                            if var_name in self.lva_global_vars_list or var_name in self.lva_global_sensitive_vars_list:
+                                pass
+                            else:
                                 msgstr = g.appmsg.get_api_message("MSG-10462", [os.path.basename(file_name), var_name])
                                 self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                                                   str(inspect.currentframe().f_lineno), msgstr)
+                                                str(inspect.currentframe().f_lineno), msgstr)
                                 result_code = False
                             # 対話ファイルで使用されているグローバル変数退避
                             self.lv_use_gbl_vars_list[var_name] = "1"
@@ -6658,7 +6762,9 @@ class CreateAnsibleExecFiles():
         # テンプレートに登録されているグローバル変数のデータベース登録確認
         if "1" in GBL_vars_info:
             for var_name, vaule in GBL_vars_info["1"].items():
-                if var_name not in self.lva_global_vars_list:
+                if var_name in self.lva_global_vars_list or var_name in self.lva_global_sensitive_vars_list:
+                    pass
+                else:
                     msgstr = g.appmsg.get_api_message("MSG-10463", [in_file_type_name, os.path.basename(in_child_playbook),
                                                       os.path.basename(templatefile), var_name])
                     self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
@@ -7515,10 +7621,12 @@ class CreateAnsibleExecFiles():
                                                    str(inspect.currentframe().f_lineno), msgstr)
                                 return False
 
-                            # 対話ファイルから抜き出したグローバル変数がグローバル変数管理に登録されているか判定
+                            # 対話ファイルから抜き出したグローバル変数がグローバル変数管理、グローバル変数(センシティブ)管理に登録されているか判定
                             for var_list in file_global_vars_list:
                                 for line_no, var_name in var_list.items():
-                                    if var_name not in self.lva_global_vars_list:
+                                    if var_name in self.lva_global_vars_list or var_name in self.lva_global_sensitive_vars_list:
+                                        pass
+                                    else:
                                         msgstr = g.appmsg.get_api_message("MSG-10460", [os.path.basename(file_name), var_name])
                                         self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
                                                            str(inspect.currentframe().f_lineno), msgstr)
@@ -7527,16 +7635,28 @@ class CreateAnsibleExecFiles():
                                     # 対話ファイルで使用されているグローバル変数退避
                                     self.lv_use_gbl_vars_list[var_name] = "1"
 
-                                    # グローバル変数の具体値を退避
-                                    globalvarSetTo.append({var_name: self.lva_global_vars_list[var_name]})
+                                    if var_name in self.lva_global_vars_list:
+                                        # グローバル変数の具体値を退避
+                                        globalvarSetTo.append({var_name: self.lva_global_vars_list[var_name]})
 
-                                    # 複数行具体値判定
-                                    ret = self.chkMultilineValue(self.lva_global_vars_list[var_name])
-                                    if ret is False:
-                                        msgstr = g.appmsg.get_api_message("MSG-10473", [var_name])
-                                        self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                                                           str(inspect.currentframe().f_lineno), msgstr)
-                                        return False
+                                        # 複数行具体値判定
+                                        ret = self.chkMultilineValue(self.lva_global_vars_list[var_name])
+                                        if ret is False:
+                                            msgstr = g.appmsg.get_api_message("MSG-10473", [var_name])
+                                            self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                                                            str(inspect.currentframe().f_lineno), msgstr)
+                                            return False
+                                    elif var_name in self.lva_global_sensitive_vars_list:
+                                        # グローバル変数（センシティブ）の具体値を << var_name >> として退避
+                                        # ansible_vaultの対応により、具体値を<< var_name >>とする
+                                        globalvarSetTo.append({var_name: f"<< {var_name} >>"})
+                                        # 複数行具体値判定
+                                        ret = self.chkMultilineValue(self.lva_global_sensitive_vars_list[var_name])
+                                        if ret is False:
+                                            msgstr = g.appmsg.get_api_message("MSG-10473", [var_name])
+                                            self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                                                            str(inspect.currentframe().f_lineno), msgstr)
+                                            return False
 
                     # copy変数を対話ファイルから抜出しファイル管理に登録されていることを確認する。
                     local_vars = []
@@ -10280,4 +10400,114 @@ class CreateAnsibleExecFiles():
 
         return result_code
 
+
+    def getDBGlobalSensitiveVarsMaster(self, mt_global_sensitive_vars_list):
+        """
+          グローバル変数(センシティブ)の情報をデータベースより取得
+          Arguments:
+            mt_global_vars_list: データベースより取得したグローバル変数(センシティブ)
+          Returns:
+            True
+        """
+        sql = '''
+                SELECT
+                    VARS_NAME,
+                    VARS_ENTRY
+                FROM
+                    T_ANSC_GLOBAL_VAR_SENSITIVE
+                WHERE
+                    DISUSE_FLAG = '0'
+                '''
+        # DBエラーはExceptionで呼び元に戻る
+        rows = self.lv_objDBCA.sql_execute(sql, [])
+        for row in rows:
+            if row['VARS_NAME'] not in mt_global_sensitive_vars_list:
+                mt_global_sensitive_vars_list[row['VARS_NAME']] = row['VARS_ENTRY']
+        return True, mt_global_sensitive_vars_list
+
+
+    def makeAnsibleVaultGBL(self, in_pass, in_vaultpass, in_indento, in_gbl_key):
+        """
+        指定文字列の暗号化及びインデント付加
+        Arguments:
+            in_pass: 暗号化する文字列
+            in_vaultpass: 暗号化した文字列
+            in_indento: 暗号化した文字列に付加するインデント
+            in_gbl_key: グローバル変数名
+        Returns:
+            False/暗号化された文字列
+        """
+        out_vaultpass = ""
+
+        obj = AnsibleVault()
+
+        if not in_vaultpass:
+
+            # パスワードが暗号化されているか判定
+            if in_pass in self.lv_vault_pass_list:
+                out_vaultpass = self.lv_vault_pass_list[in_pass]
+            else:
+                VaultPasswordFilePath = obj.CreateVaultPasswordFilePath()
+                # in_passはrot13+base64で複合化されている
+                if not self.lv_ans_if_info['ANSIBLE_VAULT_PASSWORD']:
+                    self.lv_ans_if_info['ANSIBLE_VAULT_PASSWORD'] = ky_encrypt(AnscConst.DF_ANSIBLE_VAULT_PASSWORD)
+                obj.CreateVaultPasswordFile(VaultPasswordFilePath, self.lv_ans_if_info['ANSIBLE_VAULT_PASSWORD'])
+                # AnsibleのPATHは指定無し
+                retAry = obj.Vault("",
+                                    self.getAnsibleExecuteUser(),
+                                    VaultPasswordFilePath,
+                                    in_pass,
+                                    "",
+                                    self.lv_engine_virtualenv_name,
+                                    True)
+                ret = retAry[0]
+                out_vaultpass = retAry[1]
+                if ret is False:
+                    # ansible-vault失敗
+                    msgstr = g.appmsg.get_api_message("MSG-10646", [in_gbl_key])
+                    self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                                        str(inspect.currentframe().f_lineno), msgstr)
+                    # 標準エラー出力を出力
+                    self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                                        str(inspect.currentframe().f_lineno), out_vaultpass)
+                    return False
+                self.lv_vault_pass_list[in_pass] = out_vaultpass
+            out_vaultpass = " !vault |" + out_vaultpass
+        else:
+            out_vaultpass = in_vaultpass
+
+        # ansible-vaultで暗号化された文字列のインデントを調整
+        out_vaultpass = obj.setValutPasswdIndento(out_vaultpass, in_indento)
+
+        return out_vaultpass
+
+    def addVaultVarsForGBLSensitive(self, hostlist, vault_vars, vault_host_vars_file_list):
+        """_summary_
+
+        Args:
+            hostlist:              機器一覧ホスト一覧
+                                    {SYSTEM_ID:HOST_NAME}, , ,
+            vault_vars:             グローバル変数（センシティブ）一覧(Pioneer用)
+                                    [ 変数名 ] = << 変数名 >>
+            ina_vault_host_vars_file_list:  グローバル変数（センシティブ）のみのホスト変数一覧(Pioneer用)
+                                            [ホスト名(IP)][ 変数名 ] = 具体値
+        Returns:
+            True, vault_vars, vault_host_vars_file_list
+        """
+        for _hk, _hv in hostlist.items():
+            for _gsk, _gsv in self.lva_global_sensitive_vars_list.items():
+                indento_sp4 = "".ljust(4)
+                login_pw_ansible_vault = ""
+                make_vaultpass = self.makeAnsibleVaultGBL(
+                    ky_decrypt(_gsv),
+                    login_pw_ansible_vault,
+                    indento_sp4,
+                    _gsv)
+                if make_vaultpass is False:
+                    return False, vault_vars, vault_host_vars_file_list
+                vault_vars.setdefault(_hv, {})
+                vault_host_vars_file_list.setdefault(_hv, {})
+                vault_vars[_hv][_gsk]= f"<< {_gsk} >>"
+                vault_host_vars_file_list[_hv][_gsk] = self.ky_pioneer_encrypt(ky_decrypt(_gsv))
+        return True, vault_vars, vault_host_vars_file_list
 

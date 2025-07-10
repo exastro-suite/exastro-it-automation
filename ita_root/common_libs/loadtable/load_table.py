@@ -13,13 +13,16 @@
 #
 
 import sys
+import inspect
 import datetime
 import textwrap
 import json
 import importlib
 import traceback
+import pathlib
 import copy
 import re
+import gc
 
 from flask import g
 from common_libs.column import *  # noqa: F403
@@ -33,6 +36,7 @@ CMD_REGISTER = 'Register'
 CMD_UPDATE = 'Update'
 CMD_RESTORE = 'Restore'
 CMD_DISCARD = 'Discard'
+CMD_DELETE = 'Delete'
 
 # メッセージ種別
 MSG_LEVEL_DEBUG = 'DEBUG'
@@ -70,6 +74,7 @@ COLNAME_ROW_INSERT_FLAG = 'ROW_INSERT_FLAG'
 COLNAME_ROW_UPDATE_FLAG = 'ROW_UPDATE_FLAG'
 COLNAME_ROW_DISUSE_FLAG = 'ROW_DISUSE_FLAG'
 COLNAME_ROW_REUSE_FLAG = 'ROW_REUSE_FLAG'
+COLNAME_ROW_DELETE_FLAG = 'ROW_DELETE_FLAG'
 COLNAME_SHEET_TYPE = 'SHEET_TYPE'
 COLNAME_HISTORY_TABLE_FLAG = 'HISTORY_TABLE_FLAG'
 
@@ -88,6 +93,8 @@ COLNAME_BEFORE_VALIDATE_REGISTER = 'BEFORE_VALIDATE_REGISTER'
 COLNAME_AFTER_VALIDATE_REGISTER = 'AFTER_VALIDATE_REGISTER'
 COLNAME_COLUMN_DISP_SEQ = 'COLUMN_DISP_SEQ'
 COLNAME_SAVE_TYPE = 'SAVE_TYPE'
+
+COLNAME_FILE_UPLOAD_PLACE = 'FILE_UPLOAD_PLACE'
 
 # maintenance/filter 構造キー
 REST_PARAMETER_KEYNAME = 'parameter'
@@ -110,7 +117,7 @@ class loadTable():
         REST
             filter:   一覧データ取得、検索条件による絞り込み
             maintenance:   登録、更新(更新、廃止、復活)処理
-            maintenance_all:   登録、更新(更新、廃止、復活)の複合処理
+            maintenance_all:   登録、更新(更新、廃止、復活、物理削除)の複合処理
 
     """
 
@@ -168,6 +175,7 @@ class loadTable():
             CMD_UPDATE: 0,
             CMD_RESTORE: 0,
             CMD_DISCARD: 0,
+            CMD_DELETE: 0,
         }
         # 履歴共通カラム
         self.jnl_colname = {
@@ -983,18 +991,86 @@ class loadTable():
 
                                         # 整数カラムの場合は検索する値をint型に変換する
                                         if objcolumn.__class__.__name__ == "NumColumn":
-                                            convert_search_conf = {}
-                                            for k, v in search_conf.items():
-                                                convert_search_conf[k] = int(v)
+                                            if search_mode == 'RANGE':
+                                                convert_search_conf = {}
+                                                for k, v in search_conf.items():
+                                                    try:
+                                                        convert_search_conf[k] = int(v)
+                                                    except: # NOSONAR : 20250613 To prevent interruptions to processing
+                                                        status_code = '499-00201'
+                                                        msg_tmp = {0: {}}
+                                                        msg_tmp[0][search_key] = [g.appmsg.get_api_message("MSG-00002", ["int", v])]
+                                                        msg = json.dumps(msg_tmp, ensure_ascii=False)
+                                                        raise AppException("499-00201", [msg], [msg])
+
+                                            elif search_mode == 'LIST':
+                                                convert_search_conf = []
+                                                for v in search_conf:
+                                                    try:
+                                                        convert_search_conf.append(int(v))
+                                                    except: # NOSONAR : 20250613 To prevent interruptions to processing
+                                                        status_code = '499-00201'
+                                                        msg_tmp = {0: {}}
+                                                        msg_tmp[0][search_key] = [g.appmsg.get_api_message("MSG-00002", ["int", v])]
+                                                        msg = json.dumps(msg_tmp, ensure_ascii=False)
+                                                        raise AppException("499-00201", [msg], [msg])
+
+                                            elif search_mode == 'NORMAL':
+                                                try:
+                                                    convert_search_conf = int(search_conf)
+                                                except: # NOSONAR : 20250613 To prevent interruptions to processing
+                                                    status_code = '499-00201'
+                                                    msg_tmp = {0: {}}
+                                                    msg_tmp[0][search_key] = [g.appmsg.get_api_message("MSG-00002", ["int", search_conf])]
+                                                    msg = json.dumps(msg_tmp, ensure_ascii=False)
+                                                    raise AppException("499-00201", [msg], [msg])
+
                                             filter_querys.append(objcolumn.get_filter_query(search_mode, convert_search_conf))
                                         # 小数カラムの場合は検索する値をfloat型に変換する
                                         elif objcolumn.__class__.__name__ == "FloatColumn":
-                                            convert_search_conf = {}
-                                            for k, v in search_conf.items():
-                                                if float(v) == 0:
-                                                    convert_search_conf[k] = v
-                                                else:
-                                                    convert_search_conf[k] = float(v)
+                                            if search_mode == 'RANGE':
+                                                convert_search_conf = {}
+                                                for k, v in search_conf.items():
+                                                    try:
+                                                        if float(v) == 0:
+                                                            convert_search_conf[k] = v
+                                                        else:
+                                                            convert_search_conf[k] = float(v)
+                                                    except: # NOSONAR : 20250613 To prevent interruptions to processing
+                                                        status_code = '499-00201'
+                                                        msg_tmp = {0: {}}
+                                                        msg_tmp[0][search_key] = [g.appmsg.get_api_message("MSG-00002", ["float", v])]
+                                                        msg = json.dumps(msg_tmp, ensure_ascii=False)
+                                                        raise AppException("499-00201", [msg], [msg])
+
+                                            elif search_mode == 'LIST':
+                                                convert_search_conf = []
+                                                for v in search_conf:
+                                                    try:
+                                                        if float(v) == 0:
+                                                            convert_search_conf.append(v)
+                                                        else:
+                                                            convert_search_conf.append(float(v))
+                                                    except: # NOSONAR : 20250613 To prevent interruptions to processing
+                                                        status_code = '499-00201'
+                                                        msg_tmp = {0: {}}
+                                                        msg_tmp[0][search_key] = [g.appmsg.get_api_message("MSG-00002", ["float", v])]
+                                                        msg = json.dumps(msg_tmp, ensure_ascii=False)
+                                                        raise AppException("499-00201", [msg], [msg])
+
+                                            elif search_mode == 'NORMAL':
+                                                try:
+                                                    if float(search_conf) == 0:
+                                                        convert_search_conf = search_conf
+                                                    else:
+                                                        convert_search_conf = float(search_conf)
+                                                except: # NOSONAR : 20250613 To prevent interruptions to processing
+                                                    status_code = '499-00201'
+                                                    msg_tmp = {0: {}}
+                                                    msg_tmp[0][search_key] = [g.appmsg.get_api_message("MSG-00002", ["float", search_conf])]
+                                                    msg = json.dumps(msg_tmp, ensure_ascii=False)
+                                                    raise AppException("499-00201", [msg], [msg])
+
                                             filter_querys.append(objcolumn.get_filter_query(search_mode, convert_search_conf))
                                         else:
                                             filter_querys.append(objcolumn.get_filter_query(search_mode, search_conf))
@@ -1202,6 +1278,23 @@ class loadTable():
         tmp_data = None
         err_result = {}
         err_all = {}
+
+        # ファイルの物理削除事前処理
+        # File physical deletion preprocessing
+        if not self.file_delete(list_parameters, False):
+            # 集約エラーメッセージ(JSON化)
+            # Aggregate error message (JSONization)
+            status_code, msg = self.get_error_message_str()
+
+        # ファイルの削除で失敗した場合は、エラーで返答する
+        # If file deletion fails, respond with an error
+        if self.get_error_message_count() > 0:
+            return status_code, result, msg,
+
+        # エラーを初期化
+        # Initialize the error (to set the line number from 1 since there have been no errors up to this point)
+        self.err_message = {}
+
         try:
             # トランザクション開始
             self.objdbca.db_transaction_start()
@@ -1248,6 +1341,14 @@ class loadTable():
                 # コミット
                 self.objdbca.db_transaction_end(True)
                 tmp_data = self.get_exec_count()
+
+                # ファイルの物理削除処理
+                # Physical file deletion process
+                if not self.dir_delete(list_parameters):
+                    # 集約エラーメッセージ(JSON化)
+                    # Aggregate error message (JSONization)
+                    status_code, msg = self.get_error_message_str()
+
             elif self.get_error_message_count() > 0:
                 # ロールバック トランザクション終了
                 self.objdbca.db_transaction_end(False)
@@ -1268,6 +1369,280 @@ class loadTable():
         result = tmp_data
 
         return status_code, result, msg,
+
+    def file_delete(self, list_parameters, delete_mode=False, error_break=True):
+        """ファイルの物理削除前処理 / File physical deletion preprocessing
+
+        Args:
+            list_parameters (dict): 引数情報 argument information
+            delete_mode (bool): 削除モード delete mode True: File to delete, False: File to 0Byte
+            error_break (bool): エラー時即時返却 Immediate return in case of error True / False
+
+        Return:
+            bool : 正常終了 Normal end True / 異常終了 Abnormal end False
+        """
+
+        g.applogger.debug(f"### func:{inspect.currentframe().f_code.co_name}")
+        g.applogger.debug(f"{list_parameters=}:{delete_mode=}")
+
+        # エラーを初期化
+        # Initialize the error (to set the line number from 1 since there have been no errors up to this point)
+        self.err_message = {}
+
+        history_flg = self.get_history_flg()
+
+        ret = True
+        # 件数分処理
+        # Process by number of item
+        for tmp_parameters in list_parameters:
+            cmd_type = tmp_parameters.get("type")
+
+            # 物理削除以外は処理しない
+            # Does not process anything other than physical deletion
+            if cmd_type != CMD_DELETE:
+                # エラーメッセージ保存(行番号の確保用)
+                # Save error message (For securing line numbers)
+                self.set_error_message()
+                continue
+
+            # キー値取得
+            # Get a key
+            primary_key = self.get_primary_key()
+            target_uuid_key = self.get_rest_key(primary_key)
+            if REST_PARAMETER_KEYNAME in tmp_parameters:
+                target_uuid = tmp_parameters.get(REST_PARAMETER_KEYNAME).get(target_uuid_key)
+            else:
+                continue
+
+            # Column情報からファイルカラムの情報を抜き出す
+            # Extract file column information from Column information
+            for rest_key in self.get_restkey_list():
+                # ファイルカラムのチェック
+                # Check file columns
+                if self.get_col_class_name(rest_key) in ['FileUploadColumn', 'FileUploadEncryptColumn']:
+
+                    # 履歴無しの場合は、履歴ファイル削除は実行しない
+                    # If there is no history, history file deletion is not executed.
+                    if history_flg:
+                        # ファイルは、履歴フォルダに実態があるため、履歴の情報から削除を実施する
+                        # The file is actually in the history folder, so delete it from the history information.
+
+                        # 履歴の一括取得
+                        # Batch history acquisition
+                        target_jnls = self.get_target_jnl_uuids(target_uuid)
+                        col_name = self.get_col_name(rest_key)
+
+                        for target_jnl in target_jnls:
+                            g.applogger.debug(f"(jnl){rest_key=}:{col_name=}")
+
+                            if target_jnl:
+                                target_uuid_jnl = target_jnl.get(COLNAME_JNL_SEQ_NO)
+                                # カラム名がDATA_JSON(パラメータシート作成機能により作られたメニューのカラム)の場合
+                                # If the column name is DATA_JSON (menu column created by the parameter sheet creation function
+                                if col_name == "DATA_JSON":
+                                    data_json = target_jnl.get(col_name)
+                                    if data_json:
+                                        json_row = json.loads(data_json)
+                                        file_name = json_row.get(rest_key)
+                                    else:
+                                        file_name = None
+                                else:
+                                    file_name = target_jnl.get(col_name)
+                                g.applogger.debug(f"(jnl){file_name=}")
+
+                                # ファイル名が無い場合は、アップロードされたファイルなしとして、処理を継続しない
+                                # If there is no file name, it is assumed that no file has been uploaded and processing does not continue.
+                                if file_name is None:
+                                    continue
+
+                                exists_ret = self.get_objcol(rest_key).get(COLNAME_FILE_UPLOAD_PLACE)
+                                # 格納先の実フォルダ側を削除する
+                                # Delete the real folder of the storage destination
+                                if not exists_ret:
+                                    delete_paths = get_upload_file_path(g.WORKSPACE_ID, self.get_menu_id(), target_uuid, rest_key, file_name, target_uuid_jnl)   # noqa:F405
+                                else:
+                                    delete_paths = get_upload_file_path_specify(g.WORKSPACE_ID, exists_ret, target_uuid, file_name, target_uuid_jnl)   # noqa:F405
+
+                                delete_path = delete_paths.get('old_file_path')
+                                g.applogger.debug(f"(jnl){exists_ret=}:{delete_path=}")
+
+                                try:
+                                    # 履歴のファイル削除
+                                    # Delete history files
+                                    util.file_remove(delete_path, delete_mode)
+                                except Exception as e:
+                                    # 失敗時はユーザーに削除できなかった内容を返却する(手動による削除を促すため)
+                                    # In case of failure, return the content that could not be deleted to the user (to encourage manual deletion)
+                                    g.applogger.error(f"(jnl){delete_mode=}:{delete_path=}")
+                                    print_exception_msg(e)
+                                    status_code = 'MSG-150001'
+                                    msg_args = [rest_key]
+                                    msg = g.appmsg.get_api_message(status_code, msg_args)
+                                    dict_msg = {
+                                        'status_code': status_code,
+                                        'msg_args': msg_args,
+                                        'msg': msg,
+                                    }
+                                    self.set_message(dict_msg, target_uuid, MSG_LEVEL_ERROR)
+                                    # 一度でも失敗があれば False を返却する
+                                    # Returns False if there is even one failure
+                                    ret = False
+
+                    else:
+                        # data_json = self.get_objtable()
+                        # g.applogger.debug(f"{data_json=}")
+                        # if data_json:
+
+                        target_rows = self.get_target_rows(target_uuid)
+                        for target_row in target_rows:
+                            col_name = self.get_col_name(rest_key)
+                            g.applogger.debug(f"{col_name=}:{target_row=}")
+
+                            # カラム名がDATA_JSON(パラメータシート作成機能により作られたメニューのカラム)の場合
+                            # If the column name is DATA_JSON (menu column created by the parameter sheet creation function
+                            if col_name == "DATA_JSON":
+                                data_json = target_row.get(col_name)
+                                if data_json:
+                                    json_rows = json.loads(data_json)
+                                    file_name = json_rows.get(rest_key)
+                                else:
+                                    file_name = None
+                            else:
+                                file_name = target_row.get(col_name)
+
+                            g.applogger.debug(f"{rest_key=}:{col_name=}:{file_name=}")
+
+                            # ファイル名が無い場合は、アップロードされたファイルなしとして、処理を継続しない
+                            # If there is no file name, it is assumed that no file has been uploaded and processing does not continue.
+                            if file_name is None:
+                                continue
+
+                            exists_ret = self.get_objcol(rest_key).get(COLNAME_FILE_UPLOAD_PLACE)
+                            # 格納先の実フォルダ側を削除する
+                            # Delete the real folder of the storage destination
+                            if not exists_ret:
+                                delete_paths = get_upload_file_path(g.WORKSPACE_ID, self.get_menu_id(), target_uuid, rest_key, file_name, '')   # noqa:F405
+                            else:
+                                delete_paths = get_upload_file_path_specify(g.WORKSPACE_ID, exists_ret, target_uuid, file_name, '')   # noqa:F405
+                            delete_path = delete_paths.get('file_path')
+                            g.applogger.debug(f"{exists_ret=}:{delete_path=}")
+
+                            try:
+                                # 履歴のファイル削除
+                                # Delete history files
+                                util.file_remove(delete_path, delete_mode)
+                            except Exception as e:
+                                # 失敗時はユーザーに削除できなかった内容を返却する(手動による削除を促すため)
+                                # In case of failure, return the content that could not be deleted to the user (to encourage manual deletion)
+                                g.applogger.error(f"{delete_mode=}:{delete_path=}")
+                                print_exception_msg(e)
+                                status_code = 'MSG-150001'
+                                msg_args = [rest_key]
+                                msg = g.appmsg.get_api_message(status_code, msg_args)
+                                dict_msg = {
+                                    'status_code': status_code,
+                                    'msg_args': msg_args,
+                                    'msg': msg,
+                                }
+                                self.set_message(dict_msg, target_uuid, MSG_LEVEL_ERROR)
+                                # 一度でも失敗があれば False を返却する
+                                # Returns False if there is even one failure
+                                ret = False
+
+            # エラーメッセージ保存(行番号の確保用)
+            # Save error message (For securing line numbers)
+            self.set_error_message()
+
+            # エラー時即時返却の場合は、終了する
+            if error_break and not ret:
+                break
+
+        return ret
+
+    def dir_delete(self, list_parameters):
+        """ディレクトリの物理削除処理 / Directory physical deletion preprocessing
+
+        Args:
+            list_parameters (dict): 引数情報 argument information
+
+        Return:
+            bool : 正常終了 Normal end True / 異常終了 Abnormal end False
+        """
+
+        g.applogger.debug(f"### func:{inspect.currentframe().f_code.co_name}")
+        g.applogger.debug(f"{list_parameters=}")
+
+        # エラーを初期化
+        # Initialize the error (to set the line number from 1 since there have been no errors up to this point)
+        self.err_message = {}
+
+        ret = True
+        # 件数分処理
+        # Process by number of item
+        for tmp_parameters in list_parameters:
+            cmd_type = tmp_parameters.get("type")
+
+            # 物理削除以外は処理しない
+            # Does not process anything other than physical deletion
+            if cmd_type != CMD_DELETE:
+                # エラーメッセージ保存(行番号の確保用)
+                # Save error message (For securing line numbers)
+                self.set_error_message()
+                continue
+
+            # キー値取得
+            # Get a key
+            primary_key = self.get_primary_key()
+            target_uuid_key = self.get_rest_key(primary_key)
+            if REST_PARAMETER_KEYNAME in tmp_parameters:
+                target_uuid = tmp_parameters.get(REST_PARAMETER_KEYNAME).get(target_uuid_key)
+            else:
+                target_uuid = ''
+
+            # Column情報からファイルカラムの情報を抜き出す
+            # Extract file column information from Column information
+            for rest_key in self.get_restkey_list():
+                # ファイルカラムのチェック
+                # Check file columns
+                if self.get_col_class_name(rest_key) in ['FileUploadColumn', 'FileUploadEncryptColumn']:
+                    exists_ret = self.get_objcol(rest_key).get(COLNAME_FILE_UPLOAD_PLACE)
+                    # 格納先の実フォルダ側を削除する
+                    # Delete the real folder of the storage destination
+                    if not exists_ret:
+                        delete_paths = get_upload_file_path(g.WORKSPACE_ID, self.get_menu_id(), target_uuid, rest_key, 'val', None)   # noqa:F405
+                    else:
+                        delete_paths = get_upload_file_path_specify(g.WORKSPACE_ID, exists_ret, target_uuid, 'val', None)   # noqa:F405
+
+                    delete_path = os.path.dirname(delete_paths.get('file_path'))
+                    g.applogger.debug(f"{exists_ret=}:{delete_path=}")
+                    # ディレクトリ削除
+                    # Delete directory
+                    try:
+                        dir_remove(delete_path)
+                    except Exception as e:
+                        # 失敗時はユーザーに削除できなかった内容を返却する(手動による削除を促すため)
+                        # In case of failure, return the content that could not be deleted to the user (to encourage manual deletion)
+                        g.applogger.error(f"{delete_path=}")
+                        print_exception_msg(e)
+                        status_code = 'MSG-150001'
+                        msg_args = [rest_key]
+                        msg = g.appmsg.get_api_message(status_code, msg_args)
+                        dict_msg = {
+                            'status_code': status_code,
+                            'msg_args': msg_args,
+                            'msg': msg,
+                        }
+                        self.set_message(dict_msg, target_uuid, MSG_LEVEL_ERROR)
+                        # 一度でも失敗があれば False を返却する
+                        # Returns False if there is even one failure
+                        ret = False
+
+            # エラーメッセージ保存(行番号の確保用)
+            # Save error message (For securing line numbers)
+            self.set_error_message()
+
+        return ret
+
 
     # [maintenance]:メニューのレコード操作
     def exec_maintenance(self, parameters, target_uuid='', cmd_type='', pk_use_flg=False, auth_check=True, inner_mode=False, force_conv=False, import_mode=False, record_file_paths={}):
@@ -1308,7 +1683,7 @@ class loadTable():
         # 実行種別簡易判定、補完 (パラメータ内にPK無し:登録,有:更新)
         target_uuid_key = self.get_rest_key(primary_key)
 
-        if cmd_type not in [CMD_REGISTER, CMD_UPDATE, CMD_DISCARD, CMD_RESTORE]:
+        if cmd_type not in [CMD_REGISTER, CMD_UPDATE, CMD_DISCARD, CMD_RESTORE, CMD_DELETE]:
             # 実行種別エラー
             retBool = False
             status_code = 'MSG-00027'
@@ -1360,8 +1735,8 @@ class loadTable():
                     current_parameter, current_file, current_file_path = self.convert_colname_restkey(current_row, target_uuid, '', 'input', base64_file_flg=False, file_path_flg=True)
                     # 更新系の追い越し判定
                     self.chk_lastupdatetime(target_uuid, current_parameter, entry_parameter)
-                    if import_mode is False:
-                        # 更新系処理の場合、廃止フラグから処理種別判定、変更
+                    if import_mode is False and cmd_type != CMD_DELETE:
+                        # 更新系処理の場合、廃止フラグから処理種別判定、変更(物理削除時は除く)
                         cmd_type = self.convert_cmd_type(cmd_type, target_uuid, current_row, entry_parameter)
                     # 履歴の一括取得
                     target_jnls = self.get_target_jnl_uuids(target_uuid)
@@ -1587,6 +1962,8 @@ class loadTable():
             # rest_key → カラム名に変換
             colname_parameter = self.convert_restkey_colname(entry_parameter, current_row)
 
+            g.applogger.debug(f"{cmd_type=}:{self.get_table_name()=}:{colname_parameter=}")
+
             if import_mode is True:
                 # 登録・更新処理
                 if cmd_type == CMD_REGISTER:
@@ -1607,6 +1984,8 @@ class loadTable():
                     result = self.objdbca.table_update(self.get_table_name(), colname_parameter, primary_key, history_flg)
                 elif cmd_type == CMD_RESTORE:
                     result = self.objdbca.table_update(self.get_table_name(), colname_parameter, primary_key, history_flg)
+                elif cmd_type == CMD_DELETE:
+                    result = self.objdbca.table_delete(self.get_table_name(), colname_parameter, primary_key, history_flg)
 
             result_uuid = ''
             result_uuid_jnl = ''
@@ -1617,6 +1996,15 @@ class loadTable():
                     'msg': result,
                 }
                 self.set_message(dict_msg, g.appmsg.get_api_message("MSG-00004", []), MSG_LEVEL_ERROR)
+            elif cmd_type == CMD_DELETE:
+                # 物理削除の場合は、ジャーナルへの書き込みは無いのでそのために処理を分ける
+                # In the case of physical deletion, there is no writing to the journal, so the processing is divided for that purpose.
+                result_uuid = colname_parameter.get(primary_key)
+                # 主キーのカラム名をitem_name_restに変更
+                # Change primary key column name to item_name_rest
+                temp_rows = {primary_key: colname_parameter.get(primary_key)}
+                tmp_result = self.convert_colname_restkey(temp_rows)
+                result = tmp_result[0]
             else:
                 result_uuid = result[0].get(primary_key)
                 if history_flg is True:
@@ -1796,7 +2184,7 @@ class loadTable():
                         if jsonkey in json_cols_base_key:
                             objcolumn = self.get_columnclass(jsonkey)
                             # ID → VALUE 変換処理不要ならVALUE変更無し
-                            if self.get_col_class_name(jsonkey) in ['PasswordColumn']:
+                            if self.get_col_class_name(jsonkey) in ['PasswordColumn', 'MultiPasswordColumn']:
                                 # 内部処理用
                                 if mode in ['input', 'export', 'export_jnl']:
                                     if jsonval is not None:
@@ -1875,7 +2263,7 @@ class loadTable():
                     objcolumn = self.get_columnclass(rest_key)
 
                     # ID → VALUE 変換処理不要ならVALUE変更無し
-                    if self.get_col_class_name(rest_key) in ['PasswordColumn']:
+                    if self.get_col_class_name(rest_key) in ['PasswordColumn', 'MultiPasswordColumn']:
                         # 内部処理用
                         if mode in ['input', 'export', 'export_jnl']:
                             if col_val is not None:
@@ -2187,6 +2575,8 @@ class loadTable():
                 authority_val = menuinfo.get(COLNAME_ROW_DISUSE_FLAG)
             elif cmd_type == CMD_RESTORE:
                 authority_val = menuinfo.get(COLNAME_ROW_REUSE_FLAG)
+            elif cmd_type == CMD_DELETE:
+                authority_val = menuinfo.get(COLNAME_ROW_DELETE_FLAG)
 
             # authority_val = "2"
             if authority_val != "1":
@@ -2275,6 +2665,11 @@ class loadTable():
             RETRUN:
                 cmd_type
         """
+
+        # 物理削除時はそのままの値を返却する
+        # When physically deleting, return the same value.
+        if cmd_type == CMD_DELETE:
+            return cmd_type
 
         # 廃止フラグによる、処理種別判定
         if "discard" in entry_parameter:
@@ -2538,24 +2933,62 @@ class loadTable():
 
                                         # 整数カラムの場合は検索する値をint型に変換する
                                         if objcolumn.__class__.__name__ == "NumColumn":
-                                            convert_search_conf = {}
-                                            for k, v in search_conf.items():
-                                                if str.isnumeric(v):
-                                                    if int(v) == 0:
-                                                        convert_search_conf[k] = v
+                                            if search_mode == 'RANGE':
+                                                convert_search_conf = {}
+                                                for k, v in search_conf.items():
+                                                    if str.isnumeric(v):
+                                                        if int(v) == 0:
+                                                            convert_search_conf[k] = v
+                                                        else:
+                                                            convert_search_conf[k] = int(v)
                                                     else:
-                                                        convert_search_conf[k] = int(v)
+                                                        convert_search_conf[k] = v
+
+                                            elif search_mode == 'LIST':
+                                                convert_search_conf = []
+                                                for v in search_conf:
+                                                    if str.isnumeric(v):
+                                                        if int(v) == 0:
+                                                            convert_search_conf.append(v)
+                                                        else:
+                                                            convert_search_conf.append(int(v))
+                                                    else:
+                                                        convert_search_conf.append(v)
+
+                                            elif search_mode == 'NORMAL':
+                                                if str.isnumeric(search_conf):
+                                                    if int(search_conf) == 0:
+                                                        convert_search_conf = search_conf
+                                                    else:
+                                                        convert_search_conf = int(search_conf)
                                                 else:
-                                                    convert_search_conf[k] = v
+                                                    convert_search_conf = search_conf
+
                                             filter_querys.append(objcolumn.get_filter_query(search_mode, convert_search_conf))
                                         # 小数カラムの場合は検索する値をfloat型に変換する
                                         elif objcolumn.__class__.__name__ == "FloatColumn":
-                                            convert_search_conf = {}
-                                            for k, v in search_conf.items():
-                                                if float(v) == 0:
-                                                    convert_search_conf[k] = v
+                                            if search_mode == 'RANGE':
+                                                convert_search_conf = {}
+                                                for k, v in search_conf.items():
+                                                    if float(v) == 0:
+                                                        convert_search_conf[k] = v
+                                                    else:
+                                                        convert_search_conf[k] = float(v)
+
+                                            elif search_mode == 'LIST':
+                                                convert_search_conf = []
+                                                for v in search_conf:
+                                                    if float(v) == 0:
+                                                        convert_search_conf.append(v)
+                                                    else:
+                                                        convert_search_conf.append(float(v))
+
+                                            elif search_mode == 'NORMAL':
+                                                if float(search_conf) == 0:
+                                                    convert_search_conf = search_conf
                                                 else:
-                                                    convert_search_conf[k] = float(v)
+                                                    convert_search_conf = float(search_conf)
+
                                             filter_querys.append(objcolumn.get_filter_query(search_mode, convert_search_conf))
                                         else:
                                             filter_querys.append(objcolumn.get_filter_query(search_mode, search_conf))
@@ -2687,7 +3120,7 @@ class bulkLoadTable(loadTable):
 
 
     # [filter]:メニューのレコード取得
-    def rest_export_filter(self, parameter, mode='nomal', abolished_type="1", journal_type="1"):
+    def rest_export_filter(self, parameter, mode='nomal', abolished_type="1", journal_type="1", return_cursor=False):
         """
             RESTAPI[filter]:メニューのレコード取得
             ARGS:
@@ -2719,7 +3152,7 @@ class bulkLoadTable(loadTable):
             # テーブル本体
 
             if mode in ['inner', 'export', 'nomal', 'excel', 'count']:
-                view_name = self.get_view_name()
+
                 table_name = self.get_table_name()
 
                 # シートタイプが「参照用(5, 6)」の場合、専用の検索条件生成処理
@@ -2743,27 +3176,66 @@ class bulkLoadTable(loadTable):
 
                                         # 整数カラムの場合は検索する値をint型に変換する
                                         if objcolumn.__class__.__name__ == "NumColumn":
-                                            convert_search_conf = {}
-                                            for k, v in search_conf.items():
-                                                if str.isnumeric(v):
-                                                    if int(v) == 0:
-                                                        convert_search_conf[k] = v
+                                            if search_mode == 'RANGE':
+                                                convert_search_conf = {}
+                                                for k, v in search_conf.items():
+                                                    if str.isnumeric(v):
+                                                        if int(v) == 0:
+                                                            convert_search_conf[k] = v
+                                                        else:
+                                                            convert_search_conf[k] = int(v)
                                                     else:
-                                                        convert_search_conf[k] = int(v)
+                                                        convert_search_conf[k] = v
+
+                                            elif search_mode == 'LIST':
+                                                convert_search_conf = []
+                                                for v in search_conf:
+                                                    if str.isnumeric(v):
+                                                        if int(v) == 0:
+                                                            convert_search_conf.append(v)
+                                                        else:
+                                                            convert_search_conf.append(int(v))
+                                                    else:
+                                                        convert_search_conf.append(v)
+
+                                            elif search_mode == 'NORMAL':
+                                                if str.isnumeric(search_conf):
+                                                    if int(search_conf) == 0:
+                                                        convert_search_conf = search_conf
+                                                    else:
+                                                        convert_search_conf = int(search_conf)
                                                 else:
-                                                    convert_search_conf[k] = v
+                                                    convert_search_conf = search_conf
+
                                             filter_querys.append(objcolumn.get_filter_query(search_mode, convert_search_conf))
                                         # 小数カラムの場合は検索する値をfloat型に変換する
                                         elif objcolumn.__class__.__name__ == "FloatColumn":
-                                            convert_search_conf = {}
-                                            for k, v in search_conf.items():
-                                                if float(v) == 0:
-                                                    convert_search_conf[k] = v
+                                            if search_mode == 'RANGE':
+                                                convert_search_conf = {}
+                                                for k, v in search_conf.items():
+                                                    if float(v) == 0:
+                                                        convert_search_conf[k] = v
+                                                    else:
+                                                        convert_search_conf[k] = float(v)
+
+                                            elif search_mode == 'LIST':
+                                                convert_search_conf = []
+                                                for v in search_conf:
+                                                    if float(v) == 0:
+                                                        convert_search_conf.append(v)
+                                                    else:
+                                                        convert_search_conf.append(float(v))
+
+                                            elif search_mode == 'NORMAL':
+                                                if float(search_conf) == 0:
+                                                    convert_search_conf = search_conf
                                                 else:
-                                                    convert_search_conf[k] = float(v)
+                                                    convert_search_conf = float(search_conf)
+
                                             filter_querys.append(objcolumn.get_filter_query(search_mode, convert_search_conf))
                                         else:
                                             filter_querys.append(objcolumn.get_filter_query(search_mode, search_conf))
+                                        del objcolumn
 
                 #  全件
                 where_str = ''
@@ -2798,7 +3270,7 @@ class bulkLoadTable(loadTable):
                 # 履歴テーブル
                 where_str = ''
                 bind_value_list = []
-                view_name = self.get_view_name_jnl()
+
                 table_name = self.get_table_name_jnl()
                 table_tab = ""
                 if abolished_type == "2":
@@ -2817,7 +3289,7 @@ class bulkLoadTable(loadTable):
                         status_code = '499-00102'
                         log_msg_args = []
                         api_msg_args = []
-                        # raise AppException(status_code, msg_ags)
+
                         raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
                 elif mode in ['jnl_all', 'export_jnl',]:
                     for k, v in parameter.items():
@@ -2832,124 +3304,216 @@ class bulkLoadTable(loadTable):
                             where_str += table_tab + k + ' = ' + "'" + v + "' "
 
 
-                target_uuid_key = self.get_rest_key(primary_key)
-
                 if mode not in ['jnl_all', 'excel_jnl_all', 'jnl_count_all', 'export_jnl']:
                     where_str = textwrap.dedent("""
                         where `{col_name}` IN ( %s )
                         ORDER BY `JOURNAL_REG_DATETIME` DESC
                     """).format(col_name=primary_key).strip()
-                else:
-                    where_str += textwrap.dedent("""
-                        ORDER BY {}`JOURNAL_REG_DATETIME` DESC
-                    """).format(table_tab).strip()
 
                 sort_key = self.get_sort_key()
                 if sort_key is not None:
                     str_orderby = ''
                     where_str = where_str + str_orderby
-
+            # 履歴テーブル: 廃止を含まない
             if abolished_type == "2" and mode == 'export_jnl'and self.get_history_flg():
+                # 1:履歴あり /　2:履歴なし
+                if journal_type == "1":
+                    query_str = textwrap.dedent("""
+                        SELECT `TAB_A`.* FROM `{}` `TAB_A`
+                        LEFT JOIN `{}` `TAB_B` ON ( `TAB_A`.`{}` = `TAB_B`.`{}` )
+                    """).format(self.get_table_name_jnl(),
+                                self.get_table_name(),
+                                self.get_primary_key(),
+                                self.get_primary_key()
+                    ).strip()
+                    query_str = query_str + " " + where_str
+                elif journal_type == "2":
+                    jnl_column_list = [
+                        COLNAME_JNL_SEQ_NO,
+                        COLNAME_JNL_REG_DATETIME,
+                        COLNAME_JNL_ACTION_CLASS
+                    ]
+                    jnl_column_list.extend(column_list)
+                    query_str = textwrap.dedent("""
+                        SELECT {column_list} FROM
+                            (
+                                SELECT
+                                    `TAB_A`.*,
+                                    ROW_NUMBER() OVER (
+                                        PARTITION BY {table_tab}`{col_name}`
+                                        ORDER BY {table_tab}`JOURNAL_REG_DATETIME` DESC
+                                    ) AS `luc`
+                                FROM
+                                    `{table_name_jnl}` as `TAB_A`
+                                LEFT JOIN `{table_name}` `TAB_B` ON ( `TAB_A`.`{col_name}` = `TAB_B`.`{col_name}` )
+                                {where_str}
+                            ) AS subq
+                        GROUP BY `{col_name}`
+                    """).format(
+                        table_name_jnl=self.get_table_name_jnl(),
+                        table_name= self.get_table_name(),
+                        column_list=f'{", ".join([f"`{_c}`" for _c in jnl_column_list])}',
+                        table_tab=table_tab,
+                        where_str=where_str,
+                        col_name=self.get_primary_key(),
+                    ).strip()
+                # fetchall / cursor
+                if not return_cursor:
+                    tmp_result = self.objdbca.sql_execute(query_str, bind_value_list)
+                else:
+                    g.applogger.debug(f"{query_str=}, {bind_value_list=}")
+                    tmp_result = self.objdbca.sql_execute_cursor(query_str, bind_value_list)
+                    return status_code, tmp_result, msg,
+            # 履歴テーブル: 廃止を含む、履歴なし
+            elif journal_type == "2" and mode == 'export_jnl'and self.get_history_flg():
+                jnl_column_list = [
+                    COLNAME_JNL_SEQ_NO,
+                    COLNAME_JNL_REG_DATETIME,
+                    COLNAME_JNL_ACTION_CLASS
+                ]
+                jnl_column_list.extend(column_list)
+                # 同一ROW_IDの最新の履歴のレコードのみ対象とする
                 query_str = textwrap.dedent("""
-                    SELECT `TAB_A`.* FROM `{}` `TAB_A`
-                    LEFT JOIN `{}` `TAB_B` ON ( `TAB_A`.`{}` = `TAB_B`.`{}` )
-                """).format(self.get_table_name_jnl(),
-                            self.get_table_name(),
-                            self.get_primary_key(),
-                            self.get_primary_key()
+                    SELECT {column_list} FROM
+                        (
+                            SELECT
+                                *,
+                                ROW_NUMBER() OVER (
+                                    PARTITION BY {table_tab}`{col_name}`
+                                    ORDER BY {table_tab}`JOURNAL_REG_DATETIME` DESC
+                                ) AS `luc`
+                            FROM
+                                `{table_name_jnl}`
+                        ) AS subq
+                    {where_str}
+                    GROUP BY {table_tab}`{col_name}`
+                """).format(
+                    table_name_jnl=self.get_table_name_jnl(),
+                    column_list=f'{", ".join([f"`{_c}`" for _c in jnl_column_list])}',
+                    table_tab=table_tab,
+                    where_str=where_str,
+                    col_name=self.get_primary_key(),
                 ).strip()
-                query_str = query_str + " " + where_str
-                tmp_result = self.objdbca.sql_execute(query_str, bind_value_list)
+                # データ取得
+                if not return_cursor:
+                    tmp_result = self.objdbca.sql_execute(query_str, bind_value_list)
+                else:
+                    g.applogger.debug(f"{query_str=}, {bind_value_list=}")
+                    tmp_result = self.objdbca.sql_execute_cursor(query_str, bind_value_list)
+                    return status_code, tmp_result, msg,
             else:
                 # データ取得
-                tmp_result = self.objdbca.table_select(table_name, where_str, bind_value_list)
+                if not return_cursor:
+                    tmp_result = self.objdbca.table_select(table_name, where_str, bind_value_list)
+                else:
+                    g.applogger.debug(f"{table_name=}, {where_str=}, {bind_value_list=}")
+                    tmp_result = self.objdbca.table_select_cursor(table_name, where_str, bind_value_list)
 
-            # 履歴無し時データ削除
-            if journal_type == "2":
-                _items = []
-                _tmp_result = []
-                _del_rec = []
-                for rows in tmp_result:
-                    _del_rec.append(rows) if rows[self.get_primary_key()] in _items \
-                        else  _items.append(rows[self.get_primary_key()]) or _tmp_result.append(rows)
-                tmp_result = _tmp_result
+                    return status_code, tmp_result, msg,
 
             # RESTパラメータへキー変換
             for rows in tmp_result:
-                target_uuid = rows.get(primary_key)
-                target_uuid_jnl = rows.get(COLNAME_JNL_SEQ_NO)
-                rest_parameter, rest_file, rest_file_path = self.convert_colname_restkey(rows, target_uuid, target_uuid_jnl, mode, force_export=True, journal_type=journal_type)
-                tmp_data = {}
-                tmp_data.setdefault(REST_PARAMETER_KEYNAME, rest_parameter)
-                tmp_data.setdefault(REST_FILE_KEYNAME, rest_file)
-                tmp_data.setdefault("file_path", rest_file_path)
-                result_list.append(tmp_data)
+                rest_parameter, rest_file, rest_file_path = self.convert_colname_restkey(rows, rows.get(primary_key), rows.get(COLNAME_JNL_SEQ_NO), mode, force_export=True, journal_type=journal_type)
+                result_list.append({REST_PARAMETER_KEYNAME: rest_parameter, REST_FILE_KEYNAME: rest_file, "file_path": rest_file_path})
+                del rest_parameter, rest_file, rest_file_path, rows
+            del tmp_result, parameter
 
         except AppException as e:
-            raise e
+            raise AppException(e)
         finally:
             result = result_list
+            del result_list
+            gc.collect()
         return status_code, result, msg,
 
 
-    def convert_colname_restkey(self, rows, target_uuid='', target_uuid_jnl='', mode='normal', force_export=False, journal_type='1'):
+    def convert_colname_restkey(self, rows, target_uuid='', target_uuid_jnl='', mode='normal', force_export=False, journal_type='1', file_path_flg=False):
         """
             Forked from loadTable.convert_colname_restkey
         """
-        if mode in [ 'export', 'export_jnl']:
-            return self.convert_colname_restkey_export(rows, target_uuid, target_uuid_jnl, mode, force_export, journal_type)
-        else:
-            return super().convert_colname_restkey(rows, target_uuid, target_uuid_jnl, mode, force_export)
+        return self.convert_colname_restkey_export(rows, target_uuid, target_uuid_jnl, journal_type) \
+            if mode in [ 'export', 'export_jnl'] \
+                else super().convert_colname_restkey(rows, target_uuid, target_uuid_jnl, mode, force_export)
+
+    def convert_filter_data(self, mode='nomal', abolished_type="1", journal_type="1", tmp_result=None):
+        """
+            RESTAPI[filter]:メニューのレコード取得
+            ARGS:
+                parameter:検索条件
+                mode
+                    export:内部処理用(IDColumn等は変換後の値、PasswordColumn等は復号化された状態で返却)
+                abolished_type
+                    "2": 「廃止を含まない」時の履歴データ取得用(本体のテーブルの廃止状態を参照してデータ取得)
+                journal_type
+                    "2": 最新以外の履歴データは出力対象としない。ファイルは、最新の履歴にあるものとみなして出力する。
+            RETURN:
+                status_code, result, msg,
+        """
+        status_code = '000-00000'  # 成功
+        msg = ''
+        result_list = []
+        try:
+            if tmp_result:
+                # テーブル情報（カラム、PK取得）
+                column_list, primary_key = (self.get_column_list(), self.get_primary_key())
+                # RESTパラメータへキー変換
+                for rows in tmp_result:
+                    rest_parameter, rest_file, rest_file_path = self.convert_colname_restkey(rows, rows.get(primary_key), rows.get(COLNAME_JNL_SEQ_NO), mode, force_export=True, journal_type=journal_type)
+                    result_list.append({REST_PARAMETER_KEYNAME: rest_parameter, REST_FILE_KEYNAME: rest_file, "file_path": rest_file_path})
+                    del rest_parameter, rest_file, rest_file_path, rows
+                del tmp_result, column_list, primary_key
+        except AppException as e:
+            raise AppException(e)
+        finally:
+            result = result_list
+            del result_list
+            gc.collect()
+        return status_code, result, msg,
 
 
-    def convert_colname_restkey_export(self, rows, target_uuid='', target_uuid_jnl='', mode='normal', force_export=False,  journal_type='1'):
+    def convert_colname_restkey_export(self, rows, target_uuid='', target_uuid_jnl='', journal_type='1'):
         """
             Forked from loadTable.convert_colname_restkey for Menu Export
         """
         rest_parameter = self.get_json_cols_base()
-        rest_file = {}
-        rest_file_path = {}
-        json_cols_base_key = list(rest_parameter.keys())
-        for col_name, col_val in rows.items():
-            # パラメータシート作成パラメータDATA_JSON構造
-            if col_name == 'DATA_JSON':
-                json_rows = col_val if col_val is None else json.loads(col_val)
-                if json_rows:
-                    for jsonkey, jsonval in json_rows.items():
-                        # 参照項目は出力対象外
-                        if len(re.findall('item_[0-9]*_ref_[0-9]*', jsonkey)) != 0:
-                            continue
-                        if jsonkey in json_cols_base_key:
-                            objcolumn = self.get_columnclass(jsonkey)
-                            # 値の複合化
-                            if self.get_col_class_name(jsonkey) in ['PasswordColumn', 'SensitiveSingleTextColumn', 'SensitiveMultiTextColumn']:
-                                jsonval = util.ky_decrypt(jsonval) if jsonval is not None else None
-                            rest_parameter[jsonkey] = jsonval
-                            # ファイル
-                            if self.get_col_class_name(jsonkey) in ['FileUploadColumn', 'FileUploadEncryptColumn']:
-                                objcolumn = self.get_columnclass(jsonkey)
-                                rest_file.setdefault(jsonkey, None)
-                                # ファイル情報取得
-                                file_path = objcolumn.get_file_path_info(jsonval, target_uuid, target_uuid_jnl, journal_type=journal_type)
-                                rest_file_path.setdefault(jsonkey, file_path)
-            else:
-                rest_key = self.get_rest_key(col_name)
-                if len(rest_key) > 0:
-                    # datetime型の変換対応
-                    col_val = '{}'.format(col_val.strftime('%Y/%m/%d %H:%M:%S.%f')) if isinstance(col_val, datetime.datetime) else col_val
-                    objcolumn = self.get_columnclass(rest_key)
+        rest_file, rest_file_path, json_cols_base_key = \
+            ({}, {}, list(rest_parameter.keys()))
+        # 保存形式で分割: カラムあり、JSON_DATA
+        json_rows = json.loads(rows['DATA_JSON']) if "DATA_JSON" in rows and rows['DATA_JSON'] is not None else None
+        kv_rows = {self.get_rest_key(ck): cv for ck, cv in rows.items() if self.get_rest_key(ck) != "" and ck != "DATA_JSON"}
+        del rows
 
-                    # 値の複合化
-                    if self.get_col_class_name(rest_key) in ['PasswordColumn', 'SensitiveSingleTextColumn', 'SensitiveMultiTextColumn']:
-                        col_val = util.ky_decrypt(col_val) if col_val is not None else None
-                    rest_parameter.setdefault(rest_key, col_val)
+        #  保存形式:JSON_DATA
+        if json_rows:
+            # 値の追加
+            [rest_parameter.update({jk: jv}) \
+                for jk, jv in json_rows.items() if jk in json_cols_base_key]
+            # 値の複合化
+            [rest_parameter.update({jk: util.ky_decrypt(jv) if jv is not None else None}) \
+                for jk, jv in json_rows.items() \
+                    if self.get_col_class_name(jk) in ['PasswordColumn', 'SensitiveSingleTextColumn', 'SensitiveMultiTextColumn']]
 
-                    # ファイル
-                    if self.get_col_class_name(rest_key) in ['FileUploadColumn', 'FileUploadEncryptColumn']:
-                        objcolumn = self.get_columnclass(rest_key)
-                        rest_file.setdefault(rest_key, None)
-                        # ファイル情報取得
-                        file_path = objcolumn.get_file_path_info(col_val, target_uuid, target_uuid_jnl, journal_type=journal_type)
-                        rest_file_path.setdefault(rest_key, file_path)
+            # ファイル、ファイル情報の追加
+            [rest_file.setdefault(jk, None) \
+                or rest_file_path.setdefault(jk, self.get_columnclass(jk).get_file_path_info(jv, target_uuid, target_uuid_jnl, journal_type=journal_type)) \
+                for jk, jv in json_rows.items() \
+                    if self.get_col_class_name(jk) in ['FileUploadColumn', 'FileUploadEncryptColumn']]
+
+        #  保存形式:カラムあり
+        if kv_rows:
+            # キー-値の追加、 datetime型の変換対応
+            [rest_parameter.setdefault(jk, '{}'.format(jv.strftime('%Y/%m/%d %H:%M:%S.%f')) if isinstance(jv, datetime.datetime) else jv) \
+                for jk, jv in kv_rows.items()]
+            # 値の複合化
+            [rest_parameter.update({jk: util.ky_decrypt(jv) if jv is not None else None}) \
+                for jk, jv in kv_rows.items() \
+                    if self.get_col_class_name(jk) in ['PasswordColumn', 'SensitiveSingleTextColumn', 'SensitiveMultiTextColumn']]
+            # ファイル、ファイル情報の追加
+            [rest_file.setdefault(jk, None) \
+                or rest_file_path.setdefault(jk, self.get_columnclass(jk).get_file_path_info(jv, target_uuid, target_uuid_jnl, journal_type=journal_type)) \
+                for jk, jv in kv_rows.items() \
+                    if self.get_col_class_name(jk) in ['FileUploadColumn', 'FileUploadEncryptColumn']]
+
+        del json_rows, kv_rows, json_cols_base_key,
 
         return rest_parameter, rest_file, rest_file_path

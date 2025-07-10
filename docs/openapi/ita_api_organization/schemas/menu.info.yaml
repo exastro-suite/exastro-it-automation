@@ -1,0 +1,101 @@
+#   Copyright 2025 NEC Corporation
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+type: object
+properties:
+  menu_info:
+    description: メニューの説明
+    type: string
+  menu_group_id:
+    description: メニューグループID
+    type: string
+  menu_group_name:
+    description: メニューグループの名称
+    type: string
+  parent_menu_group_id:
+    description: 親メニューグループID
+    type: string
+  parent_menu_group_name:
+    description: 親メニューグループの名称
+    type: string
+  menu_id:
+    description: メニューID
+    type: string
+  menu_name:
+    description: メニューの名称
+    type: string
+  sheet_type:
+    description: シートタイプ
+    type: string
+  history_table_flag:
+    description: 履歴テーブル有無
+    type: boolean
+  table_name:
+    description: テーブル名
+    type: string
+  view_name:
+    description: ビュー名
+    type: string
+  pk_column_name_rest:
+    description: PK項目名(REST）
+    type: string
+  inherit:
+    description: 継承フラグ
+    type: boolean
+  vertical:
+    description: 縦型フラグ
+    type: boolean
+  row_insert_flag:
+    description: 登録許可フラグ
+    type: boolean
+  row_update_flag:
+    description: 更新許可フラグ
+    type: boolean
+  row_disuse_flag:
+    description: 廃止許可フラグ
+    type: boolean
+  row_reuse_flag:
+    description: 復活許可フラグ
+    type: boolean
+  row_delete_flag:
+    description: 削除許可フラグ
+    type: boolean
+  login_necessity:
+    description: 認証有無
+    type: boolean
+  auto_filter_flg:
+    description: オートフィルタフラグ
+    type: boolean
+  initial_filter_flg:
+    description: 初回フィルタフラグ
+    type: boolean
+  web_print_limit:
+    description: Web表示最大行数
+    type: integer
+  web_print_confirm:
+    description: Web表示前確認行数
+    type: integer
+  xls_print_limit:
+    description: Excel出力最大行数
+    type: integer
+  sort_key:
+    description: ソートキー
+    type: string
+  privilege:
+    description: メニューに対する権限
+    type: integer
+  columns:
+    description: メニュー表示用のカラムおよびカラムグループの並び順
+    type: array
+    items: {}

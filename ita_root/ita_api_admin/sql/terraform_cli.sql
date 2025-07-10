@@ -315,7 +315,7 @@ CREATE TABLE T_TERC_VALUE
     MEMBER_VARS_ID                  VARCHAR(40),                                -- メンバー変数名(ID連携)
     ASSIGN_SEQ                      INT,                                        -- 代入順序
     SENSITIVE_FLAG                  VARCHAR(2),                                 -- Sensitive設定
-    VARS_ENTRY                      TEXT,                                       -- 具体値
+    VARS_ENTRY                      LONGTEXT,                                   -- 具体値
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)   ,                              -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -337,7 +337,7 @@ CREATE TABLE T_TERC_VALUE_JNL
     MEMBER_VARS_ID                  VARCHAR(40),                                -- メンバー変数名(ID連携)
     ASSIGN_SEQ                      INT,                                        -- 代入順序
     SENSITIVE_FLAG                  VARCHAR(2),                                 -- Sensitive設定
-    VARS_ENTRY                      TEXT,                                       -- 具体値
+    VARS_ENTRY                      LONGTEXT,                                   -- 具体値
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)   ,                              -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時

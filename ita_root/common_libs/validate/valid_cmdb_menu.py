@@ -23,6 +23,11 @@ def set_reference_value(objdbca, objtable, option):
     retBool = True
     msg = ''
 
+    # 削除時はチェックしない
+    # Do not check when deleting
+    if option.get("cmd_type") == "Delete":
+        return retBool, msg, option
+
     # カラムインフォを取得
     rest_key_name = option.get('rest_key_name')
     menu_name_rest = objtable.get('MENUINFO').get('MENU_NAME_REST')
@@ -53,6 +58,11 @@ def external_valid_menu_after(objdbca, objtable, option):
     retBool = True
     msg = ''
 
+    # 削除時はチェックしない
+    # Do not check when deleting
+    if option.get("cmd_type") == "Delete":
+        return retBool, msg, option, False
+
     # ホストグループ分割対象の分割対象メニューに該当するレコードがある場合、DIVIDED_FLG=0にする
     menu_id = objtable["MENUINFO"]['MENU_ID']
     target_rows = get_split_target_data(objdbca, menu_id)  # noqa: F405
@@ -68,6 +78,11 @@ def external_valid_menu_after(objdbca, objtable, option):
 def set_reference_operation(objdbca, objtable, option):
     retBool = True
     msg = ''
+
+    # 削除時はチェックしない
+    # Do not check when deleting
+    if option.get("cmd_type") == "Delete":
+        return retBool, msg, option, False
 
     # 参照先の対象を特定する
     rest_key_name = option.get('rest_key_name')

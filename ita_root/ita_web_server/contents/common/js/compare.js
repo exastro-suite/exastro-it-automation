@@ -507,14 +507,20 @@ setCompareResult( info ) {
             + '</thead>'
             + '<tbody class="tbody">';
 
+            const valueCheck = function( checkValue ){
+                if ( checkValue === null ) return `<span class="comparaNullValue">null</span>`;
+                return fn.cv( checkValue, '', true );
+            };
+
             // 項目出力
             for ( const col of cols ) {
-                const colName = fn.cv( col.col_name, '', true ),
-                      diff = compareData._data_diff_flg[ colName ];
+                const colName = fn.cv( col.col_name, '');
+                const escapeColName = fn.escape( colName );
+                const diff = compareData._data_diff_flg[ colName ];
                 if ( diff === null || diff === undefined) continue;
 
-                const t1Value = fn.cv( compareData.target_data_1[ colName ], '', true );
-                const t2Value = fn.cv( compareData.target_data_2[ colName ], '', true );
+                const t1Value = valueCheck( compareData.target_data_1[ colName ] );
+                const t2Value = valueCheck( compareData.target_data_2[ colName ] );
 
                 let filediff = compareData._file_compare_execute_flg[ colName ];
                 if ( fn.typeof( filediff ) !== 'boolean') filediff = undefined;
@@ -522,7 +528,7 @@ setCompareResult( info ) {
                 const diffFlag = ( col.file_flg )? ( diff || filediff )? true: false: diff;
 
                 html += `<tr class="tBodyTr tr${( !diffFlag )? ` differenceTr`: ``}">`
-                + `<th class="tBodyTh th"><div class="ci">${colName}</div></th>`
+                + `<th class="tBodyTh th"><div class="ci">${escapeColName}</div></th>`
                 + `<td class="tBodyTd td" data-flag="${diffFlag}"><div class="ci">`
                     + `<div class="compareItemDiffMark">${( diffFlag )? fn.html.icon('check'): fn.html.icon('minus')}</div>`
                 + `</div></td>`

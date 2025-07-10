@@ -38,6 +38,11 @@ def external_valid_menu_after(objdbca, objtable, option):
     for i in data_list:
         objdbca.table_update(table_name, i, primary_key_name, False)
 
+    # 削除時はチェックしない
+    # Do not check when deleting
+    if option.get("cmd_type") == "Delete":
+        return retBool, msg, option
+
     if option["cmd_type"] == "Discard" or option["cmd_type"] == "Restore":
         # ----更新前のレコードから、各カラムの値を取得
         strVarsList = option["current_parameter"]["parameter"]["variable_definition"]

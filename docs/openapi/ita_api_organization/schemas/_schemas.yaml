@@ -1,0 +1,76 @@
+#   Copyright 2025 NEC Corporation
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+TABLE:
+  $ref: "./table.yaml"
+
+COLUMN_GROUP_INFO:
+  $ref: "./column.group.info.yaml"
+
+COLUMN_INFO:
+  $ref: "./column.info.yaml"
+
+MENU_INFO:
+  $ref: "./menu.info.yaml"
+
+ERROR_TEMPLATE:
+  $ref: "./error.template.yaml"
+
+FILTER_REQUEST_PARAMETERS:
+  $ref: "./filter.request.parameters.yaml"
+
+FILTER_PARAMETERS:
+  $ref: "./filter.parameters.yaml"
+
+MAINTENANCE_PARAMETER_P:
+  $ref: "./maintenance.parameter.p.yaml"
+
+MAINTENANCE_PARAMETER_F:
+  $ref: "./maintenance.parameter.f.yaml"
+
+MAINTENANCE_PARAMETERS:
+  $ref: "./maintenance.parameters.yaml"
+
+MAINTENANCE_FORM:
+  $ref: "./maintenance.form.yaml"
+
+MAINTENANCE_ALL_FORM:
+  $ref: "./maintenance.all.form.yaml"
+
+CONDUCTOR_INFO_LIST:
+  $ref: "./conductor.info.list.yaml"
+
+CONDUCTOR_INFO_DICT:
+  $ref: "./conductor.info.dict.yaml"
+
+CONDUCTOR_RESULT:
+  $ref: "./conductor.result.yaml"
+
+NODE_RESULT:
+  $ref: "./node.result.yaml"
+
+ApplyParameterTypeA:
+  $ref: "./apply.parameter.type.a.yaml"
+
+ApplyParameterTypeB:
+  $ref: "./apply.parameter.type.b.yaml"
+
+ApplyParameterTypeC:
+  $ref: "./apply.parameter.type.c.yaml"
+
+ApplyParameterTypeD:
+  $ref: "./apply.parameter.type.d.yaml"
+
+responseOk:
+  $ref: "./response.ok.yaml"

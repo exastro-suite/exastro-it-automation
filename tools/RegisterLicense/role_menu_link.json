@@ -1,0 +1,11 @@
+[
+	{
+		"file": {},
+		"parameter": {
+			"associate": "閲覧のみ",
+			"menu_name": "入力用:暗号化済ライセンス情報取得用",
+			"remarks": null,
+			"role_name": "register_license_user"
+		}
+	}
+]

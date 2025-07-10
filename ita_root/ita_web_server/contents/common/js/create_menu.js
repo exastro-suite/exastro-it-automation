@@ -1129,7 +1129,7 @@ const getColumnHTML = function( columnData = {}, columnID = '') {
                     <!-- 最大バイト数 single -->
                     <tr class="single" title="${textEntities(getMessage.FTE01110,1)}">
                         <th class="half-cell"><span class="config-title">${getMessage.FTE01055 + fn.html.required()}</span></th>
-                        <td class="half-cell"><input class="input config-number max-byte" type="number" data-min="1" data-max="8192" value="${sv('single_string_maximum_bytes')}"${modeDisabled}></td>
+                        <td class="half-cell"><input class="input config-number max-byte" type="number" data-min="1" data-max="65536" value="${sv('single_string_maximum_bytes')}"${modeDisabled}></td>
                     </tr>
                     <!-- 正規表現 single -->
                     <tr class="single" title="${textEntities(getMessage.FTE01111,1)}">
@@ -1139,7 +1139,7 @@ const getColumnHTML = function( columnData = {}, columnID = '') {
                     <!-- 最大バイト数 multiple -->
                     <tr class="multiple" title="${textEntities(getMessage.FTE01110,1)}">
                         <th class="half-cell"><span class="config-title">${getMessage.FTE01055 + fn.html.required()}</span></th>
-                        <td class="half-cell"><input class="input config-number multiple-max-byte" type="number" data-min="1" data-max="8192" value="${sv('multi_string_maximum_bytes')}"${modeDisabled}></td>
+                        <td class="half-cell"><input class="input config-number multiple-max-byte" type="number" data-min="1" data-max="65536" value="${sv('multi_string_maximum_bytes')}"${modeDisabled}></td>
                     </tr>
                     <!-- 正規表現 multiple -->
                     <tr class="multiple" title="${textEntities(getMessage.FTE01111,1)}">
@@ -1147,7 +1147,7 @@ const getColumnHTML = function( columnData = {}, columnID = '') {
                         <td class="full-body"><input class="input config-text multiple-regex" type="text" value="${sv('multi_string_regular_expression')}"${modeDisabled}></td>
                     </tr>
                     <!-- 最大バイト数 link -->
-                    <tr class="link" title="${textEntities(getMessage.FTE01110,1)}">
+                    <tr class="link" title="${textEntities(getMessage.FTE01158,1)}">
                         <th class="half-cell"><span class="config-title">${getMessage.FTE01055 + fn.html.required()}</span></th>
                         <td class="half-cell"><input class="input config-number link-max-byte" type="number" data-min="1" data-max="8192" value="${sv('link_maximum_bytes')}"${modeDisabled}></td>
                     </tr>
@@ -1203,7 +1203,7 @@ const getColumnHTML = function( columnData = {}, columnID = '') {
                         </td>
                     </tr>
                     <!-- 最大バイト数 パスワード -->
-                    <tr class="password" title="${textEntities(getMessage.FTE01110,1)}">
+                    <tr class="password" title="${textEntities(getMessage.FTE01158,1)}">
                         <th class="full-head"><span class="config-title">${getMessage.FTE01055 + fn.html.required()}</span></th>
                         <td class="full-body"><input class="input config-number password-max-byte" type="number" data-min="1" data-max="8192" value="${sv('password_maximum_bytes')}"${modeDisabled}></td>
                     </tr>

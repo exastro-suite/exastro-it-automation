@@ -1,0 +1,95 @@
+#   Copyright 2025 NEC Corporation
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+post:
+  tags:
+    - OASE
+  description: 検索条件を指定し、イベントフローで扱う履歴情報（イベント履歴、アクション履歴）を取得する
+  operationId: postOASEHistory
+  x-openapi-router-controller: controllers.oase_controller
+  parameters:
+    - name: organization_id
+      in: path
+      description: OrganizationID
+      required: true
+      schema:
+        type: string
+    - name: workspace_id
+      in: path
+      description: WorkspaceID
+      required: true
+      schema:
+        type: string
+  requestBody:
+    content:
+      application/json:
+        schema:
+          description: 検索条件を指定
+          properties:
+            start_time:
+              type: string
+              format: date-time
+              example: "2017/07/21 17:32:28"
+            end_time:
+              type: string
+              format: date-time
+              example: "2017/07/21 17:32:28"
+            evaluted:
+              type: boolean
+              example: "true"
+            undetected:
+              type: boolean
+              example: "false"
+            timeouted:
+              type: boolean
+              example: "false"
+  responses:
+    '200':
+      description: Success
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '../schemas/response.ok.yaml'
+              - type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        datetime:
+                          type: string
+                          example: "2023-09-12 15:41:29"
+                        id:
+                          type: string
+                        item:
+                          type: object
+                          description: "イベント履歴かアクション履歴から取得した内容"
+                        type:
+                          type: string
+                          description: "取得元を判断するための文字列。イベント履歴：event, アクション履歴：action"
+                    example: []
+    '401':
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/error.template.yaml'
+    '500':
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/error.template.yaml'

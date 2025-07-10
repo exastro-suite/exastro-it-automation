@@ -19,6 +19,11 @@ def menu_column_group_valid(objdbca, objtable, option):
     retBool = True
     msg = ''
 
+    # 削除時はチェックしない
+    # Do not check when deleting
+    if option.get("cmd_type") == "Delete":
+        return retBool, msg, option
+
     user_env = g.LANGUAGE.upper()
     entry_parameter = option.get('entry_parameter').get('parameter')
     current_parameter = option.get('current_parameter').get('parameter')
@@ -45,7 +50,7 @@ def menu_column_group_valid(objdbca, objtable, option):
             else:
                 uuid = column_group_id
         where_str = "WHERE CREATE_COL_GROUP_ID = %s"
-        
+
         while True:
             bind_value_list = [parent_column_group]
             return_values = objdbca.table_select(table_name, where_str, bind_value_list)
@@ -76,20 +81,20 @@ def menu_column_group_valid(objdbca, objtable, option):
         if len(matcharray) > 0:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20013", [matcharray])
-    
+
     # 復活時、親カラムグループが廃止されていたらエラー
     if cmd_type == "Restore":
         where_str = "WHERE CREATE_COL_GROUP_ID = %s"
         current_parent_column_group = current_parameter.get("parent_column_group")
         bind_value_list = [current_parent_column_group]
         return_values = objdbca.table_select(table_name, where_str, bind_value_list)
-        
+
         if return_values:
             if return_values[0].get("DISUSE_FLAG") == "1":
                 retBool = False
                 msg = g.appmsg.get_api_message("MSG-20014", [return_values[0].get("CREATE_COL_GROUP_ID")])
     # ---------カラムグループ名---------
-    
+
     # ---------フルカラムグループ名---------
     if parent_column_group:
         where_str = "WHERE DISUSE_FLAG = '0' AND CREATE_COL_GROUP_ID = %s"
@@ -105,7 +110,7 @@ def menu_column_group_valid(objdbca, objtable, option):
         entry_parameter['parent_column_group'] = parent_column_group
         entry_parameter['full_column_group_name_ja'] = column_group_name_ja
         entry_parameter['full_column_group_name_en'] = column_group_name_en
-    
+
     if cmd_type == "Update":
         full_column_group_name_ja = entry_parameter['full_column_group_name_ja']
         full_column_group_name_en = entry_parameter['full_column_group_name_en']

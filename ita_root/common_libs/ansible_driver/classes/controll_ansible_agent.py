@@ -17,6 +17,8 @@ import os
 import re
 import subprocess
 import shutil
+import io
+import jsonlines
 
 from flask import g
 from abc import ABC, abstractclassmethod
@@ -58,7 +60,7 @@ class AnsibleAgent(ABC):
         """
         コンテナを特定するためのユニークな文字列を生成する
         """
-        return "%s_%s_%s" % (self._organization_id, self._workspace_id, execution_no)
+        return f"ita-ansible-agent-{execution_no}"
 
     @abstractclassmethod
     def container_clean(self, ansConstObj, execution_no):
@@ -161,7 +163,15 @@ class DockerMode(AnsibleAgent):
             return False, {"function": "is_container_running", "return_code": cp.returncode, "stderr": cp.stderr}
 
         # 戻りをjsonデコードして、runningのものが一つだけ存在しているか確認
-        result_obj = json.loads(cp.stdout)
+
+        # docker-compose v2.21.0以降(jsonl形式)
+        stdout_io = io.StringIO(cp.stdout)
+        with jsonlines.Reader(stdout_io) as reader:
+            result_obj = [item for item in reader]
+
+        # # docker-compose v2.21.0未満
+        # result_obj = json.loads(cp.stdout)
+
         if len(result_obj) > 0 and result_obj[0]['State'] == "running":
             return True, result_obj
 
@@ -196,14 +206,22 @@ class DockerMode(AnsibleAgent):
         """
         # docker-compose -p project ps
         project_name = self.get_unique_name(execution_no)
-        command = ["/usr/local/bin/docker-compose", "-p", project_name, "ps", "--format", "json"]
+        command = ["/usr/local/bin/docker-compose", "-p", project_name, "ps", "--format", "json", "-a"]
 
         cp = subprocess.run(command, capture_output=True, text=True)
         if cp.returncode != 0:
             return True, "already not exists"
 
         # existedしているものを削除
-        result_obj = json.loads(cp.stdout)
+
+        # docker-compose v2.21.0以降(jsonl形式)
+        stdout_io = io.StringIO(cp.stdout)
+        with jsonlines.Reader(stdout_io) as reader:
+            result_obj = [item for item in reader]
+
+        # # docker-compose v2.21.0未満
+        # result_obj = json.loads(cp.stdout)
+
         if len(result_obj) > 0 and result_obj[0]['State'] in ['exited']:
             # docker-compose -p project rm -f
             command = ["/usr/local/bin/docker-compose", "-p", project_name, "rm", "-f"]
@@ -260,7 +278,6 @@ class KubernetesMode(AnsibleAgent):
         host_mount_path_conductor = conductor_path
         container_mount_path_conductor = os.environ.get('STORAGEPATH') + conductor_path
         unique_name = self.get_unique_name(execution_no)
-        unique_name = re.sub(r'_', '-', unique_name).lower()
 
         # generate execute manifest
         fileSystemLoader = FileSystemLoader(searchpath="./templates")
@@ -347,8 +364,7 @@ class KubernetesMode(AnsibleAgent):
         """
         # create command string
         unique_name = self.get_unique_name(execution_no)
-        unique_name = re.sub(r'_', '-', unique_name).lower()
-        command = ["/usr/local/bin/kubectl", "get", "pod", 'ita-by-ansible-agent-' + unique_name, "-o", "json"]
+        command = ["/usr/local/bin/kubectl", "get", "pod", unique_name, "-o", "json"]
 
         cp = subprocess.run(' '.join(command), capture_output=True, shell=True, text=True)
         if cp.returncode != 0:

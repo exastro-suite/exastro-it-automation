@@ -20,18 +20,6 @@ content-type: application/json
 [
   {
     "parameter": {
-      "operation_id": "111111",
-      "operation_name": "ope1",
-      "remarks": "test",
-      "scheduled_date_for_execution": "2024/01/01 01:23:45",
-      "last_update_date_time": "2024/01/01 12:34:56.000000"
-    },
-    "file": {
-    },
-    "type": "Update"
-  },
-  {
-    "parameter": {
       "operation_name": "ope2",
       "remarks": "test",
       "scheduled_date_for_execution": "2024/01/01 01:23:45"
@@ -42,3 +30,174 @@ content-type: application/json
   }
 ]
 
+
+###
+# 登録したope2を取得
+
+# @name get_ope2
+POST  {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/ita/menu/{{menu}}/filter/?file=no
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "discard": {
+    "NORMAL":"0"
+  },
+  "operation_name": {
+    "NORMAL":"ope2"
+  }
+}
+
+###
+# ope2を更新する (先にGETすること )
+
+@operation_id = {{get_ope2.response.body.data.[0].parameter.operation_id}}
+@last_update_date_time_ope2 = {{get_ope2.response.body.data.[0].parameter.last_update_date_time}}
+
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/ita/menu/{{menu}}/maintenance/all
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+[
+  {
+    "parameter": {
+      "operation_id": "{{operation_id}}",
+      "operation_name": "ope2-rename-2",
+      "remarks": "test",
+      "scheduled_date_for_execution": "2024/01/01 01:23:45",
+      "last_update_date_time": "{{last_update_date_time_ope2}}"
+    },
+    "file": {
+    },
+    "type": "Update"
+  }
+]
+
+###
+# ope2を削除する (先にGETすること )
+
+@operation_id = {{get_ope2.response.body.data.[0].parameter.operation_id}}
+@last_update_date_time_ope2 = {{get_ope2.response.body.data.[0].parameter.last_update_date_time}}
+
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/ita/menu/{{menu}}/maintenance/all
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+[
+  {
+    "parameter": {
+      "operation_id": "{{operation_id}}"
+    },
+    "file": {
+    },
+    "type": "Delete"
+  }
+]
+
+###
+# ロールメニュー紐付管理(role_menu_link_list)でメンテナンス可＋削除可権限に変更する
+
+# @name get_role_menu_link_operation_list
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/ita/menu/role_menu_link_list/filter/?file=no
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "menu_name": {
+    "LIST":["基本コンソール:オペレーション一覧"]
+  }
+}
+
+###
+
+@ludt_opelist = {{get_role_menu_link_operation_list.response.body.data.[0].parameter.last_update_date_time}}
+
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/ita/menu/role_menu_link_list/maintenance/all
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+[
+  {
+    "parameter": {
+      "uuid": "10201",
+      "role_name": "_ws1-admin",
+      "menu_name": "基本コンソール:オペレーション一覧",
+      "associate": "メンテナンス可＋削除可",
+      "remarks": null,
+      "last_update_date_time": "{{ludt_opelist}}"
+    },
+    "file": {
+    },
+    "type": "Update"
+  }
+]
+
+###
+# ロールメニュー紐付管理(role_menu_link_list)で基本コンソール:メニュー-テーブル紐付管理を変更する
+# @name get_role_menu_link_menu_table_link
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/ita/menu/role_menu_link_list/filter/?file=no
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "menu_name": {
+    "LIST":["基本コンソール:メニュー-テーブル紐付管理"]
+  }
+}
+
+###
+
+@ludt_menu_table_link = {{get_role_menu_link_menu_table_link.response.body.data.[0].parameter.last_update_date_time}}
+
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/ita/menu/role_menu_link_list/maintenance/all
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+[
+  {
+    "parameter": {
+      "discard": "0",
+      "uuid": "10203",
+      "associate": "メンテナンス可＋削除可",
+      "last_update_date_time": "{{ludt_menu_table_link}}"
+    },
+    "file": {
+    },
+    "type": "Update"
+  }
+]
+
+###
+# メニュー-テーブル紐付管理でオペレーション一覧を削除可能に変更する
+# @name get_menu_table_link_list_operation_list
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/ita/menu/menu_table_link_list/filter/?file=no
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "menu_name": {
+    "LIST":["基本コンソール:オペレーション一覧"]
+  }
+}
+
+###
+
+@ludt_menu_table_link = {{get_menu_table_link_list_operation_list.response.body.data.[0].parameter.last_update_date_time}}
+
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/ita/menu/menu_table_link_list/maintenance/all
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+[
+  {
+    "parameter": {
+      "discard": "0",
+      "uuid": "10201",
+      "row_delete_flag": "True",
+      "last_update_date_time": "{{ludt_menu_table_link}}"
+    },
+    "file": {
+    },
+    "type": "Update"
+  }
+]

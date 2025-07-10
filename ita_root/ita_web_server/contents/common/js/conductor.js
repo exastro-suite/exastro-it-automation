@@ -3008,7 +3008,7 @@ createNode( nodeID ) {
 
     // Note
     let noteText = nodeData['note'];
-    if ( noteText !== undefined && noteText !== null ) {
+    if ( noteText !== undefined && noteText !== null && noteText !== '') {
         noteText = fn.escape( noteText, true );
         nodeHTML += '<div class="node-note note-open"><div class="node-note-inner"><p>' + noteText + '</p></div></div>';
     } else {
@@ -6662,12 +6662,21 @@ updateConductorStatus() {
     const cd = this;
 
     if ( cd.$.editor.is(':hidden') ) return;
+    if (cd.ignoreErrorCount == undefined) {
+      cd.ignoreErrorCount = 0
+    }
+    fn.fetch(`/menu/${cd.menu}/conductor/${cd.id}/`, undefined, undefined, undefined, undefined, true, cd.ignoreErrorCount ).then(function( conductorData ){
 
-    fn.fetch(`/menu/${cd.menu}/conductor/${cd.id}/`).then(function( conductorData ){
+      if (conductorData.errorIgnored == true) {
+        // エラーを無視した場合は、Couductor情報の更新をしない
+        cd.ignoreErrorCount += 1
+      } else {
+        cd.ignoreErrorCount = undefined // エラーを無視した回数をリセット
         cd.confirmation = {
             conductor: conductorData.conductor,
             node: conductorData.node
         };
+      }
         cd.conductorStatusUpdate();
     }).catch(function( error ){
         fn.commonErrorAlert( error );

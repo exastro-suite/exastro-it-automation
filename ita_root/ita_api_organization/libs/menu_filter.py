@@ -245,12 +245,12 @@ def get_history_file_path(objdbca, menu, uuid, column, journal_uuid):
             if match_flg is False:
                 file_name = sort_data[column]
 
-            # ファイルパス取得
-            tmp_file_path = objcol.get_file_data_path(sort_data[column], uuid, tmp_journal_id, False)
-
             # 連続する同名ファイルに実体がない場合はシステムエラー
             if file_name != sort_data[column]:
                 raise AppException("999-00014", [tmp_file_path], [tmp_file_path])
+
+            # ファイルパス取得
+            tmp_file_path = objcol.get_file_data_path(sort_data[column], uuid, tmp_journal_id, False)
 
             match_flg = True
             if sort_data[column] is None:
@@ -258,12 +258,13 @@ def get_history_file_path(objdbca, menu, uuid, column, journal_uuid):
                 msg = g.appmsg.get_api_message("MSG-30026", [])
                 raise AppException("499-00201", [msg], [msg])
 
+            # 対象のファイルが見つかった場合はループを抜ける
             if os.path.isfile(tmp_file_path):
                 file_path = tmp_file_path
                 break
 
             # 履歴の最後のレコードまでファイルの実体が無い場合はシステムエラー
-            if index == len(jounal_sort_list) - 1:
+            elif index == len(jounal_sort_list) - 1:
                 raise AppException("999-00014", [tmp_file_path], [tmp_file_path])
 
     return file_path

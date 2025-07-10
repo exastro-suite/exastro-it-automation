@@ -19,6 +19,11 @@ def menu_define_valid(objdbca, objtable, option):
     retBool = True
     msg = ''
 
+    # 削除時はチェックしない
+    # Do not check when deleting
+    if option.get("cmd_type") == "Delete":
+        return retBool, msg, option
+
     entry_parameter = option.get('entry_parameter').get('parameter')
     current_parameter = option.get('current_parameter').get('parameter')
     cmd_type = option.get("cmd_type")

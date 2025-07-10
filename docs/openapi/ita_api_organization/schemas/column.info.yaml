@@ -1,0 +1,90 @@
+#   Copyright 2025 NEC Corporation
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+description: column_disp_seqの順番で、c1, c2, c3...というkey名に格納される
+additionalProperties:
+  type: object
+  properties:
+    column_id:
+      description: 項目ID
+      type: string
+    column_name:
+      description: 表示用項目名
+      type: string
+    column_name_rest:
+      description: REST用項目名
+      type: string
+    column_group_id:
+      description: カラムグループID
+      type: string
+    column_group_name:
+      description: カラムグループ名
+      type: string
+    column_type:
+      description: カラムタイプ
+      type: integer
+    column_disp_seq:
+      description: 表示順
+      type: integer
+    description:
+      description: 項目説明
+      type: string
+    ref_table_name:
+      description: ID連携テーブル名
+      type: string
+    ref_pkey_name:
+      description: ID連携テーブルPK
+      type: string
+    ref_col_name:
+      description: ID連携項目名
+      type: string
+    ref_sort_conditions:
+      description: ID連携ソート条件
+      type: string
+    ref_multi_lang:
+      description: ID連携多言語対応有無
+      type: string
+    col_name:
+      description: データベース上のカラム名
+      type: string
+    save_type:
+      description: データベース上の保存形式
+      type: string
+    auto_input:
+      description: 自動入力フラグ
+      type: integer
+    input_item:
+      description: 入力対象フラグ
+      type: integer
+    view_item:
+      description: 出力対象フラグ
+      type: string
+    unique_item:
+      description: 必須入力フラグ
+      type: integer
+    required_item:
+      description: 一意制約フラグ
+      type: integer
+    initial_value:
+      description: 入力欄初期値
+      type: string
+    validate_option:
+      description: バリデーション値
+      type: object
+    before_validate_register:
+      description: 個別バリデーション(前)
+      type: object
+    after_validate_register:
+      description: 個別バリデーション(後)
+      type: object

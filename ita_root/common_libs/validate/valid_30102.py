@@ -22,6 +22,12 @@ def conductor_notice_valid(objdbca, objtable, option):  # noqa: C901
 
     retBool = True
     msg = []
+
+    # 削除時はチェックしない
+    # Do not check when deleting
+    if option.get("cmd_type") == "Delete":
+        return retBool, msg, option
+
     cmd_type = option.get("cmd_type")
     entry_parameter = option.get('entry_parameter').get('parameter')
     if cmd_type == "Restore":

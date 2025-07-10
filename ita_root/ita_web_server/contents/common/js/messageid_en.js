@@ -135,11 +135,11 @@ export function messageid_en() {
         'FTE00097' : "Item menu display",
         'FTE00098' : "Omit",
         'FTE00099' : "Show",
-        'FTE00100' : "Item Show/Hide",
+        'FTE00100' : "Item Show/Hide, Fixed left/right",
         'FTE00101' : "Set the display direction of the item.",
         'FTE00102' : "Set the display position of the filter. If the item display direction is horizontal, it will be fixed to the outside.",
         'FTE00103' : "Set the display method of the item menu.",
-        'FTE00104' : "Set Show/Hide for each item.",
+        'FTE00104' : "Set Show/Hide, Fixed left/right side for each item.",
         'FTE00105' : "Common setting",
         'FTE00106' : "Default",
         'FTE00107' : "Custom",
@@ -222,6 +222,12 @@ export function messageid_en() {
         'FTE00184' : "Editing reflected",
         'FTE00185' : "Download",
         'FTE00186' : function( statusCode ){return `An error occurred while registering the data. (${statusCode})`},
+        'FTE00187' : 'Regular execution of weekly tasks assumes Sunday as the start of the week. Recurrence schedules are calculated based on settings.',
+        'FTE00188' : "Delete",
+        'FTE00189' : "Delete",
+        'FTE00190' : "Delete confirmation",
+        'FTE00191' : "Delete",
+        'FTE00192' : "Return to list",
 
         // Create parameter sheet
         'FTE01001' : "Item",
@@ -333,7 +339,7 @@ export function messageid_en() {
         'FTE01107' : "Copy the item.",
         'FTE01108' : "Enter the number of repeats.\nInteger value from 2 to 99 can be entered.",
         'FTE01109' : "Selecte \"String\", \"Multi string\", \"Integer\", \"Decimal number\", \"Date\", \"Date/time\",\n\"Pull down selection\", \"Password\", \"File upload\", \"Link\" from the pulldown menu.",
-        'FTE01110' : "Enter the maximum number of bytes.\nThe maximum size is 8192 bytes.\nFor editing, it is possible to increase it from the original value.\nThe byte count of half-width alphanumeric characters are equivalent to the number of characters.\nFor full-width characters, the number of characters x 3 + 2 bytes is required.",
+        'FTE01110' : "Enter the maximum number of bytes.\nThe maximum size is 65536 bytes.\nFor editing, it is possible to increase it from the original value.\nThe byte count of half-width alphanumeric characters are equivalent to the number of characters.\nFor full-width characters, the number of characters x 3 + 2 bytes is required.",
         'FTE01111' : "If you want to check input values with regular expression, enter the regular expression.\nThe maximum size is 8192 bytes.\nExample: For half-width numeric items of 0 bytes or more: ^[0-9]*$\n For half-width alphanumeric characters of 1 byte or more: ^[a-zA-Z0-9]+$",
         'FTE01112' : "Enter the minimum value of the column.\nFor editing, it is possible to reduce it from the original value.\nInteger value from -2147483648 to 2147483647 can be entered.\nThe value will be -2147483648 if not entered.\nPlease enter value smaller than the maximum value.",
         'FTE01113' : "Enter the maximum value of the column.\nFor editing, it is possible to increase it from the original value.\nInteger value from -2147483648 to 2147483647 can be entered.\nThe value will be 2147483647 if not entered.\nPlease enter value larger than the minimum value.",
@@ -381,6 +387,7 @@ export function messageid_en() {
         'FTE01155' : function(id){ return `Duplicate ID（${id}）.`;},
         'FTE01156' : function(id){ return `ID（${id}） specified in columns was not found.`;},
         'FTE01157': 'Failed to load JSON.',
+        'FTE01158' : "Enter the maximum number of bytes.\nThe maximum size is 8192 bytes.\nFor editing, it is possible to increase it from the original value.\nThe byte count of half-width alphanumeric characters are equivalent to the number of characters.\nFor full-width characters, the number of characters x 3 + 2 bytes is required.",
 
         // Conductor
         'FTE02001' : "Conductor instance id is not yet set.",
@@ -896,6 +903,14 @@ export function messageid_en() {
         'FTE10094': 'Filter reset',
         'FTE10095': 'Due to maintenance, the newly registered Conductor and each driver work execution, Parameter sheet create, Menu export/import, Bulk excel export/import will not be executed.',
         'FTE10096': 'Due to maintenance, data cannot be registered/updated/deleted. In addition, it is not possible to execute the work of Conductor and each driver, Parameter sheet create, Menu export/import, and Bulk excel export/import.',
+        'FTE00097' : "Confirmation of execution",
+        'FTE00098' : "Deleted records/files will no longer be accessible.",
+        'FTE00099' : "Yes, delete",
+        'FTE00100' : "Cancel",
+        'FTE00101' : "Warning",
+        'FTE00102' : 'If you want to continue, please enter <span style="font-weight: bold;">{0}</span>.',
+        'FTE00103' : 'Please enter <span style="font-weight: bold;">{0}</span>.',
+        'FTE10104': 'Deletion successful',
 
         // Parameter collection
         'FTE11001': 'Parameter mode',

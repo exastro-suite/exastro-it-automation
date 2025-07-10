@@ -26,6 +26,10 @@ def check_loop(objdbca, objtable, option):
     retBool = True
     msg = ''
 
+    # 削除時はチェックしない
+    # Do not check when deleting
+    if option.get("cmd_type") == "Delete":
+        return retBool, msg, option
 
     # get option data
     cmd_type = option.get('cmd_type')

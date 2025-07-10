@@ -26,6 +26,11 @@ def external_valid_menu_before(objdbca, objtable, option):
     primary_key_name = "ROW_ID"
     objdbca.table_update(table_name, data_list, primary_key_name, False)
 
+    # 削除時はチェックしない
+    # Do not check when deleting
+    if option.get("cmd_type") == "Delete":
+        return retBool, msg, option
+
     # 入力値取得
     entry_parameter = option.get('entry_parameter').get('parameter')
     # current_parameter = option.get('current_parameter').get('parameter')

@@ -79,6 +79,12 @@ class MainFunctions():
         ret_bool = True
         OpeDelLists = []
 
+        # max_allowed_packetの取得
+        _sql = "show variables like 'max_allowed_packet';"
+        _show_variables = self.ws_db.sql_execute(_sql)
+        max_allowed_packet = _show_variables[0]['Value'] if _show_variables[0]['Variable_name'] == 'max_allowed_packet' else 30000
+        g.max_allowed_packet = max_allowed_packet
+
         ret_bool, OpeDelLists = self.getOpeDelMenuList(OpeDelLists)
 
         for DelList in OpeDelLists:
@@ -406,12 +412,6 @@ class MainFunctions():
         # [処理] テーブルから保管期限切れレコードの物理削除(テーブル名:{})
         FREE_LOG = g.appmsg.get_api_message("MSG-100008", [DelList["TABLE_NAME"]])
         g.applogger.debug(FREE_LOG)
-
-        # max_allowed_packetの取得
-        _sql = "show variables like 'max_allowed_packet';"
-        _show_variables = self.ws_db.sql_execute(_sql)
-        max_allowed_packet = _show_variables[0]['Value'] if _show_variables[0]['Variable_name'] == 'max_allowed_packet' else 30000
-        g.max_allowed_packet = max_allowed_packet
 
         # 分割処理で削除
         n = len(PkeyList) if int(g.max_allowed_packet) >= 40 * 40 * len(PkeyList) else int(g.max_allowed_packet) / 40 / 40

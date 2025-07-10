@@ -49,6 +49,16 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
+pytest.ini
+ita_root/**/tests/tmp/*
+ita_root/**/tests/temp/*
+!ita_root/**/tests/temp/.gitkeep
+ita_root/**/tests/storage/*
+!ita_root/**/tests/storage/.gitkeep
+/.private/
+
+# sonarlint
+.sonarlint/
 
 # Translations
 *.mo

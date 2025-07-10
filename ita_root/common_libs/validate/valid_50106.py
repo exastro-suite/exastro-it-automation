@@ -19,6 +19,11 @@ def menu_unique_constraint_valid(objdbca, objtable, option):
     retBool = True
     msg = ''
 
+    # 削除時はチェックしない
+    # Do not check when deleting
+    if option.get("cmd_type") == "Delete":
+        return retBool, msg, option
+
     entry_parameter = option.get('entry_parameter').get('parameter')
     menu_name = entry_parameter.get("menu_name")
     unique_constraint_item = entry_parameter.get("unique_constraint_item")

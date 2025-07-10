@@ -1,6 +1,6 @@
 
-# FROM    registry.access.redhat.com/ubi8/ubi-init as develop_build
-FROM almalinux:8 as develop_build
+# FROM    registry.access.redhat.com/ubi9/ubi-init as develop_build
+FROM almalinux:9.4 as develop_build
 
 # WORKDIR /etc/dnf.repos.d
 WORKDIR /etc/yum.repos.d
@@ -12,7 +12,8 @@ WORKDIR /
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
     yum -y install dovecot \
     postfix \
-    mailx \
+#    mailx \
+    s-nail \
     telnet \
     rsyslog \
     passwd \

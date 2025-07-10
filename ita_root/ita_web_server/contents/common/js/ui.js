@@ -1136,7 +1136,7 @@ userInfo() {
     // ユーザ情報確認
     if ( !mn.rest.user ) return;
 
-    const name = fn.cv( mn.rest.user.user_name, '', true ),
+    const name = fn.cv( CommonAuth.getUserName(), '', true ),
           id = fn.cv( mn.rest.user.user_id, '', true ),
           roles = fn.cv( mn.rest.user.roles, []);
 

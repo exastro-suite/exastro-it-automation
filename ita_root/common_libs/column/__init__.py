@@ -35,3 +35,4 @@ from .individual_dialog_column_class import IndividualDialogColumn  # noqa: F401
 from .filter_condition_dialog_column import FilterConditionSettingColumn  # noqa: F401
 from .conclusion_event_dialog_column import ConclusionEventSettingColumn  # noqa: F401
 from .execution_environment_definition_id_class import ExecutionEnvironmentDefinitionIDColumn  # noqa: F401
+from .multi_password_class import MultiPasswordColumn  # noqa: F401

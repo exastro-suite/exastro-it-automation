@@ -29,7 +29,7 @@ const fn = ( function() {
     'use strict';
 
     // バージョン
-    const version = '2.5.4';
+    const version = '2.6.0';
 
     // AbortController
     const controller = new AbortController();
@@ -151,6 +151,48 @@ getUiVersion: function() {
 },
 /*
 ##################################################
+   呼び出し元のfunction情報を返す
+##################################################
+*/
+getCaller: function getCaller(stackIndex) {
+    var callerInfo = {};
+    var saveLimit = Error.stackTraceLimit;
+    var savePrepare = Error.prepareStackTrace;
+
+    stackIndex = (stackIndex - 0) || 1;
+
+    Error.stackTraceLimit = stackIndex + 1;
+    Error.captureStackTrace(this, getCaller);
+
+    Error.prepareStackTrace = function (_, stack) {
+        var caller = stack[stackIndex];
+        callerInfo.file = caller.getFileName();
+        callerInfo.line = caller.getLineNumber();
+        var func = caller.getFunctionName();
+        if (func) {
+            callerInfo.func = func;
+        }
+        else{
+            callerInfo.func = 'unknown';
+        }
+    };
+    this.stack;
+    Error.stackTraceLimit = saveLimit;
+    Error.prepareStackTrace = savePrepare;
+    return callerInfo;
+},
+/*
+##################################################
+   console log に出力
+##################################################
+*/
+consoleOutput: function(log) {
+    // var callerInfo = cmn.getCaller();
+    // // 必要に応じて有効化することで確認可能
+    // console.log(callerInfo.func + '(' + callerInfo.file + ')' + ' : ' + log);
+},
+/*
+##################################################
    script, styleの読み込み
 ##################################################
 */
@@ -217,7 +259,7 @@ getRestApiUrl: function( url, orgId = organization_id, wsId = workspace_id ) {
    データ読み込み
 ##################################################
 */
-fetch: function( url, token, method = 'GET', data, option = {} ) {
+fetch: function( url, token, method = 'GET', data, option = {}, ignoreError=false, ignoreErrorCount=0 ) {
 
     if ( !token ) {
         token = ( cmmonAuthFlag )? CommonAuth.getToken():
@@ -227,6 +269,9 @@ fetch: function( url, token, method = 'GET', data, option = {} ) {
     let errorCount = 0;
 
     const fetchController = ( option.controller )? option.controller: controller;
+
+    // エラー無視回数の上限設定
+    const ignoreErrorLimit = 120;
 
     const f = function( u ){
         return new Promise(function( resolve, reject ){
@@ -277,15 +322,21 @@ fetch: function( url, token, method = 'GET', data, option = {} ) {
                             }
                         }).catch(function( error ){
                             cmn.systemErrorAlert();
+                            reject( error );
                         });
                     } else {
                         errorCount++;
+                        if (response.status == 500 && ignoreError == true && ignoreErrorCount < ignoreErrorLimit) { // エラーを無視
+                            resolve({errorIgnored: true});
+                            return
+                        }
                         response.json().then(function( json ){
                             cmn.responseError( response.status, json, fetchController, option ).then(function( result ){
                                 reject( result );
                             });
                         }).catch(function( error ){
                             cmn.systemErrorAlert();
+                            reject( error );
                         });
                     }
                 }
@@ -317,7 +368,7 @@ fetch: function( url, token, method = 'GET', data, option = {} ) {
 ##################################################
 */
 responseError: function( status, responseJson, fetchController, option = {}) {
-    return new Promise(function( resolve ){
+    return new Promise(function( resolve, reject ){
         switch ( status ) {
             // 呼び出し元に返す
             case 498: // メンテナンス中
@@ -348,6 +399,7 @@ responseError: function( status, responseJson, fetchController, option = {}) {
                     } else {
                         const message = ( responseJson && responseJson.message )? responseJson.message: '';
                         cmn.iframeMessage( message );
+                        resolve( null );
                     }
                 } else {
                     resolve( responseJson );
@@ -376,6 +428,7 @@ responseError: function( status, responseJson, fetchController, option = {}) {
                 } else {
                     const message = ( responseJson && responseJson.message )? responseJson.message: '';
                     cmn.iframeMessage( message );
+                    reject();
                 }
             break;
             // その他のエラー
@@ -384,6 +437,7 @@ responseError: function( status, responseJson, fetchController, option = {}) {
                 console.error( responseJson );
                 if ( option.dataRegistrationFlag !== true ) {
                     cmn.systemErrorAlert();
+                    reject();
                 } else {
                     status = fn.cv( status, 'Unknown');
                     alert( getMessage.FTE00186( status ) );
@@ -398,12 +452,7 @@ responseError: function( status, responseJson, fetchController, option = {}) {
 ##################################################
 */
 systemErrorAlert: function() {
-    if ( windowFlag ) {
-        cmn.gotoErrPage( getMessage.FTE10030 );
-    } else {
-        console.error( getMessage.FTE10030 );
-        throw new Error( getMessage.FTE10030 );
-    }
+    if ( windowFlag ) cmn.gotoErrPage( getMessage.FTE10030 );
 },
 /*
 ##################################################
@@ -412,16 +461,21 @@ systemErrorAlert: function() {
 */
 editFlag: function( menuInfo ) {
     const flag  = {};
+    const privilege_edit_true = ['0', '1'];
+    const privilege_delete_true = ['0'];
+
     flag.initFilter = ( menuInfo.initial_filter_flg === '1')? true: false;
     flag.autoFilter = ( menuInfo.auto_filter_flg === '1')? true: false;
     flag.history = ( menuInfo.history_table_flag === '1')? true: false;
 
-    flag.privilege = ( menuInfo.privilege === '1')? true: false;
-    flag.insert = ( menuInfo.privilege === '1')? ( menuInfo.row_insert_flag === '1')? true: false: false;
-    flag.update = ( menuInfo.privilege === '1')? ( menuInfo.row_update_flag === '1')? true: false: false;
-    flag.disuse = ( menuInfo.privilege === '1')? ( menuInfo.row_disuse_flag === '1')? true: false: false;
-    flag.reuse = ( menuInfo.privilege === '1')? ( menuInfo.row_reuse_flag === '1')? true: false: false;
-    flag.edit = ( menuInfo.privilege === '1')? ( menuInfo.row_insert_flag === '1' && menuInfo.row_update_flag === '1')? true: false: false;
+    flag.privilege = ( privilege_edit_true.includes(menuInfo.privilege))? true: false;
+    flag.privilegeAndDelete = ( privilege_delete_true.includes(menuInfo.privilege))? true: false;
+    flag.insert = ( privilege_edit_true.includes(menuInfo.privilege))? ( menuInfo.row_insert_flag === '1')? true: false: false;
+    flag.update = ( privilege_edit_true.includes(menuInfo.privilege))? ( menuInfo.row_update_flag === '1')? true: false: false;
+    flag.disuse = ( privilege_edit_true.includes(menuInfo.privilege))? ( menuInfo.row_disuse_flag === '1')? true: false: false;
+    flag.reuse = ( privilege_edit_true.includes(menuInfo.privilege))? ( menuInfo.row_reuse_flag === '1')? true: false: false;
+    flag.edit = ( privilege_edit_true.includes(menuInfo.privilege))? ( menuInfo.row_insert_flag === '1' && menuInfo.row_update_flag === '1')? true: false: false;
+    flag.delete = ( privilege_delete_true.includes(menuInfo.privilege))? ( menuInfo.row_delete_flag === '1')? true: false: false;
 
     return flag;
 },
@@ -643,14 +697,32 @@ getPathname: function(){
     return ( new URL( document.location ) ).pathname;
 },
 /*
+##################################################
+   String format
+##################################################
+*/
+strFormat: function(formatString, ...args){
+    let text = formatString;
+
+    try {
+        for(var i = 0; i < args.length; i++){
+            // {0}, {1}..に埋め込む変数を第3引数以降（args）で指定した文字列に置き換える
+            // Replace the variables embedded in {0}, {1}.. with the strings specified in the third and subsequent arguments (args)
+            text = text.replace('{' + i + '}', args[i]);
+        }
+    } catch(e) {
+        console.log( e.message );
+    }
+    return text;
+},
 /*
 ##################################################
    URLパラメータ
 ##################################################
 */
 getParams: function() {
-    const searchParams = ( new URL( document.location ) ).searchParams.entries(),
-          params = {};
+    const searchParams = ( new URL( document.location ) ).searchParams.entries();
+    const params = {};
     for ( const [ key, val ] of searchParams ) {
         params[ key ] = val;
     }
@@ -1966,33 +2038,45 @@ html: {
         return  input;
     },
     inputPassword: function( className, value, name, attrs = {}, option = {} ) {
-        const wrapClass = ['inputPasswordWrap'],
-              attr = inputCommon( value, name, attrs );
+        const wrapClass = ['inputPasswordWrap'];
+        const attr = inputCommon( value, name, attrs );
 
         className = classNameCheck( className, 'inputPassword input');
-        if ( option.widthAdjustment ) className.push('inputTextWidthAdjustment')
+        if ( option.widthAdjustment ) className.push('inputTextWidthAdjustment');
+        if ( option.textarea ) className.push('mask inputPasswordTextarea textareaAdjustment textarea');
         attr.push(`class="${className.join(' ')}"` );
 
-        let input = `<input type="password" ${attr.join(' ')} autocomplete="new-password">`;
-
-        if ( option.widthAdjustment ) {
-            input = ``
-            + `<div class="inputTextWidthAdjustmentWrap">`
-                + input
-                + `<div class="inputTextWidthAdjustmentText">${value}</div>`
+        let input = '';
+        if ( !option.textarea ) {
+            input = `<input type="password" ${attr.join(' ')} autocomplete="new-password">`;
+            if ( option.widthAdjustment ) {
+                input = ``
+                + `<div class="inputTextWidthAdjustmentWrap">`
+                    + input
+                    + `<div class="inputTextWidthAdjustmentText">${value}</div>`
+                + `</div>`;
+            }
+        } else {
+            input += `<div class="textareaAdjustmentWrap inputPasswordTextareaAdjustmentWrap">`
+                + `<textarea spellcheck="false" wrap="soft" ${attr.join(' ')}>${value}</textarea>`
+                + `<div class="mask textareaAdjustmentText textareaWidthAdjustmentText">${value}</div>`
+                + `<div class="mask textareaAdjustmentText textareaHeightAdjustmentText">${value}</div>`
             + `</div>`
         }
 
+
         // パスワード表示
         const eyeAttrs = { action: 'default'};
+        const passwordButtonClass = ['itaButton', 'inputPasswordToggleButton'];
         if ( attrs.disabled ) eyeAttrs.disabled = 'disabled';
+        if ( option.textarea ) passwordButtonClass.push('inputPasswordTextareaToggleButton');
         input = `<div class="inputPasswordBody">${input}</div>`
-        + `<div class="inputPasswordToggle">${cmn.html.button( cmn.html.icon('eye_close'), 'itaButton inputPasswordToggleButton', eyeAttrs )}</div>`;
+        + `<div class="inputPasswordToggle">${cmn.html.button( cmn.html.icon('eye_close'), passwordButtonClass.join(' '), eyeAttrs )}</div>`;
 
         // パスワード削除
         if ( option.deleteToggle ) {
-            const deleteClass = ['itaButton', 'inputPasswordDeleteToggleButton', 'popup'],
-                  deleteAttrs = { action: 'danger', title: getMessage.FTE10041 };
+            const deleteClass = ['itaButton', 'inputPasswordDeleteToggleButton', 'popup'];
+            const deleteAttrs = { action: 'danger', title: getMessage.FTE10041 };
             let iconName = 'cross';
 
             if ( attrs.disabled ) deleteAttrs.disabled = 'disabled';
@@ -2239,8 +2323,8 @@ html: {
     cell: function( element, className, type = 'td', rowspan = 1, colspan = 1, attrs = {}) {
         const attr = bindAttrs( attrs );
         attr.push(`class="${classNameCheck( className, type ).join(' ')}"`);
-        attr.push(`rowspan="${rowspan}"`);
-        attr.push(`colspan="${colspan}"`);
+        if ( rowspan !== 1 ) attr.push(`rowspan="${rowspan}"`);
+        if ( colspan !== 1 ) attr.push(`colspan="${colspan}"`);
         return ``
         + `<${type} ${attr.join(' ')}>`
             + `<div class="ci">${element}</div>`
@@ -2747,6 +2831,117 @@ errorModal: function( errors, pageName, info ) {
 },
 /*
 ##################################################
+    削除成功モーダル
+##################################################
+*/
+resultDeleteModal: function( result ) {
+    return new Promise(function( resolve ){
+        const funcs = {};
+        funcs.ok = function(){
+            dialog.close();
+            resolve( true );
+        };
+        const config = {
+            mode: 'modeless',
+            position: 'center',
+            header: {
+                title: getMessage.FTE10104
+            },
+            width: '480px',
+            footer: {
+                button: { ok: { text: getMessage.FTE10043, action: 'normal'}}
+            }
+        };
+        const html = []
+
+        const listOrder = ['Delete'];
+        for ( const key of listOrder ) {
+              html.push(`<dl class="resultList resultType${key}">`
+                  + `<dt class="resultType">${key}</dt>`
+                  + `<dd class="resultNumber">${result[key]}</dd>`
+              + `</dl>`);
+        }
+
+        const dialog = new Dialog( config, funcs );
+        dialog.open(`<div class="resultContainer">${html.join('')}</div>`);
+    });
+},
+/*
+##################################################
+   Common events
+##################################################
+*/
+deleteConfirmMessage: function(title, message, deleteResources, cautionMessage, input, onOk = null, onCancel = null) {
+
+    const dialog = new Dialog({
+        mode: 'modeless',
+        position: 'center',
+        width: 'auto',
+        header: {
+            title: title,
+        },
+        footer: {
+            button: {
+                ok: { text: '<span class="iconButtonIcon icon icon-trash"></span>' + getMessage.FTE10099, action: "danger" },
+                cancel: { text: getMessage.FTE10100, action: "normal" }
+            }
+        },
+    },
+    {
+        ok: function() {
+            if($(dialog.$.dbody).find(".confirm_yes").val() != input) {
+                $(dialog.$.dbody).find(".validate_error").css("display", "");
+                $(dialog.$.dbody).find(".confirm_yes").focus();
+                return;
+            }
+            dialog.close();
+            if(onOk !== null) {
+                onOk();
+            }
+        },
+        cancel: function() {
+            dialog.close();
+            if(onCancel !== null) {
+                onCancel();
+            }
+        }
+    });
+
+    let content = "";
+    content += '<div class="alertMessage" style="margin-left: 30px; margin-right: 30px;">'
+    if(message != null && message != "" ) {
+        content += message + '<br>';
+    }
+    if(deleteResources != null && deleteResources != "" ) {
+            if((typeof deleteResources) == "string") {
+            content += '<ul style="list-style-type:disc; padding-left:30px; background-color: #FFFFEE;"><li>' + fn.cv(deleteResources, "", true) + '</li></ul>'
+        } else {
+            content += '<div style="max-height: 200px; overflow: auto;">'
+            content += '<ul style="list-style-type:disc; padding-left:30px; background-color: #FFFFEE;">' + deleteResources.map((value, i) => { return '<li>' + fn.cv(value, "", true) + '</li>'; }).join("") + '</ul>'
+            content += '</div>'
+        }
+    }
+    if(cautionMessage != null && cautionMessage != "" ) {
+        let cautionHead = getMessage.FTE10101;
+        content += '<span class="caution_head">' + cautionHead + '</span><br>'
+
+        if((typeof cautionMessage) == "string") {
+            content += '<ul style="list-style-type:disc; padding-left:30px; background-color: #FFFFEE;"><li class="caution_message">' + fn.cv(cautionMessage, "", true) + '</li></ul>'
+        } else {
+            content += '<div style="max-height: 200px; overflow: auto;">'
+            content += '<ul style="list-style-type:disc; padding-left:30px; background-color: #FFFFEE;">' + cautionMessage.map((value, i) => { return '<li class="caution_message">' + fn.cv(value, "", true) + '</li>'; }).join("") + '</ul>'
+            content += '</div>'
+        }
+    }
+    content += '<hr>' + cmn.strFormat(getMessage.FTE10102, fn.cv(input, "", true)) + '<br>'
+    content += '<input class="confirm_yes inputText input" type="text" maxlength="' + input.length + '">'
+    content += '<span class="validate_error" style="display:none;">' + cmn.strFormat(getMessage.FTE10103, fn.cv(input, "", true)) + '</span>'
+    content += '</div>';
+
+    dialog.open(content);
+},
+/*
+##################################################
    Common events
 ##################################################
 */
@@ -2766,18 +2961,47 @@ setCommonEvents: function() {
 
     // パスワード表示・非表示切替
     $body.on('click', '.inputPasswordToggleButton', function(){
-        const $button = $( this ),
-              $input = $button.closest('.inputPasswordWrap').find('.inputPassword');
+        const $button = $( this );
+        const $input = $button.closest('.inputPasswordWrap').find('.inputPassword');
+        const textareaFlag = ( $button.is('.inputPasswordTextareaToggleButton') )? true: false;
 
         if ( !$button.is('.on') ) {
             $button.addClass('on');
             $button.find('.inner').html( cmn.html.icon('eye_open'));
-            $input.attr('type', 'text');
+            if ( textareaFlag ) {
+                $input.removeClass('mask');
+                $input.nextAll().removeClass('mask');
+            } else {
+                $input.attr('type', 'text');
+            }
         } else {
             $button.removeClass('on');
             $button.find('.inner').html( cmn.html.icon('eye_close'));
-            $input.attr('type', 'password');
+            if ( textareaFlag ) {
+                $input.addClass('mask');
+                $input.nextAll().addClass('mask');
+            } else {
+                $input.attr('type', 'password');
+            }
         }
+    });
+
+    // パスワードテキストエリアの入力をinputに反映
+    $body.on('change.inputPasswordTextarea', '.inputPasswordTextarea', function(){
+        const $textarea = $( this );
+        const val = $textarea.val();
+        const $input = $textarea.closest('.inputPasswordWrap').find('.inputPassword');
+
+        $input.val( val );
+    });
+
+    // パスワード入力をテキストエリアにも反映
+    $body.on('change.inputPasswordTextarea', '.inputPasswordToggleTextarea', function(){
+        const $input = $( this );
+        const val = $input.val();
+        const $textarea = $input.closest('.inputPasswordWrap').find('.inputPasswordTextarea');
+
+        $textarea.val( val );
     });
 
     // パスワード候補を初回クリックで出さないようにする

@@ -1,0 +1,58 @@
+#   Copyright 2025 NEC Corporation
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+type: object
+properties:
+  node_name:
+    type: object
+    properties:
+      node_instance_id:
+        type: string
+        example: NodeインスタンスID
+      node_name:
+        type: string
+        example: Node名
+      node_type:
+        type: string
+        example: Node種別
+      status_id:
+        type: string
+        example: ステータスID
+      status_file:
+        type: string
+        example: ステータスファイル
+      skip:
+        type: string
+        example: スキップ
+      remarks:
+        type: string
+        example: 備考
+      time_start:
+        type: string
+        example: 開始日時
+      time_end:
+        type: string
+        example: 終了日時
+      operation_id:
+        type: string
+        example: オペレーションID
+      operation_name:
+        type: string
+        example: オペレーション名
+      jump:
+        type: object
+        example: {
+          "menu_id": メニューID,
+          "execution_id": 作業ID
+        }

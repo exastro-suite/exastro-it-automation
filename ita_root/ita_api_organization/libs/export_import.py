@@ -170,8 +170,8 @@ def get_excel_bulk_export_list(objdbca, organization_id, workspace_id):
         menu_id_list.append(record.get('MENU_ID'))
 
     # 『ロール-メニュー紐付管理』テーブルから対象のデータを取得
-    # 自分のロールが「メンテナンス可」,「閲覧のみ」
-    ret_role_menu_link = objdbca.table_select(t_comn_role_menu_link, 'WHERE MENU_ID IN %s AND ROLE_ID IN %s AND PRIVILEGE IN %s AND DISUSE_FLAG = %s ORDER BY MENU_ID', [menu_id_list, role_id_list, [1, 2], 0])
+    # 自分のロールが「メンテナンス可」,「閲覧のみ」,「メンテナンス可＋削除可」
+    ret_role_menu_link = objdbca.table_select(t_comn_role_menu_link, 'WHERE MENU_ID IN %s AND ROLE_ID IN %s AND PRIVILEGE IN %s AND DISUSE_FLAG = %s ORDER BY MENU_ID', [menu_id_list, role_id_list, [0, 1, 2], 0])
 
     # ロールまで絞った対象メニューIDを再リスト化
     menu_id_list = []
@@ -607,10 +607,10 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca, path
                 parent_list["disp_seq"] = parent_menu_group_info["DISP_SEQ"]
 
             # 『ロール-メニュー紐付管理』テーブルから対象のデータを取得
-            # 自分のロールが「メンテナンス可」
+            # 自分のロールが「メンテナンス可」,「メンテナンス可＋削除可」
             ret_role_menu_link = objdbca.table_select("T_COMN_ROLE_MENU_LINK", 'WHERE MENU_ID = %s AND ROLE_ID IN %s AND DISUSE_FLAG = %s', [menuId, role_id_list, 0])
             for record in ret_role_menu_link:
-                if record["PRIVILEGE"] != "1":
+                if record["PRIVILEGE"] not in ["0", "1"]:
                     # 権限エラー
                     msgstr = g.appmsg.get_api_message("MSG-30033")
                     menuInfo["error"] = msgstr
@@ -619,7 +619,7 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca, path
             ret_role_menu_link = objdbca.table_select('T_COMN_MENU_TABLE_LINK', 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s ORDER BY MENU_ID', [menuId, 0])
 
             for record in ret_role_menu_link:
-                if record["ROW_INSERT_FLAG"] == "0" and record["ROW_UPDATE_FLAG"] == "0" and record["ROW_DISUSE_FLAG"] == "0" and record["ROW_REUSE_FLAG"] == "0":
+                if record["ROW_INSERT_FLAG"] == "0" and record["ROW_UPDATE_FLAG"] == "0" and record["ROW_DISUSE_FLAG"] == "0" and record["ROW_REUSE_FLAG"] == "0" and record["ROW_DELETE_FLAG"] == "0":
                     # 権限エラー
                     msgstr = g.appmsg.get_api_message("MSG-30033")
                     menuInfo["error"] = msgstr
@@ -1210,7 +1210,7 @@ def getMenuInfoByMenuId(menu_id, menuNameRest, objdbca=None):
         実行結果
     """
     sql = "SELECT "
-    sql += " T_COMN_MENU.MENU_ID, T_COMN_MENU.MENU_NAME_JA, T_COMN_MENU.MENU_GROUP_ID, T_COMN_MENU_GROUP.MENU_GROUP_NAME_JA, T_COMN_MENU_GROUP.MENU_GROUP_NAME_EN, "
+    sql += " T_COMN_MENU.MENU_ID, T_COMN_MENU.MENU_NAME_JA, T_COMN_MENU.MENU_NAME_EN, T_COMN_MENU.MENU_GROUP_ID, T_COMN_MENU_GROUP.MENU_GROUP_NAME_JA, T_COMN_MENU_GROUP.MENU_GROUP_NAME_EN, "
     sql += " T_COMN_MENU.DISP_SEQ, T_COMN_MENU_GROUP.PARENT_MENU_GROUP_ID, T_COMN_MENU_GROUP.DISP_SEQ AS GROUP_DISP_SEQ "
     sql += "FROM T_COMN_MENU "
     sql += "LEFT OUTER JOIN "
@@ -1338,9 +1338,6 @@ def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body, 
             # 作業用にコピー
             g.applogger.debug(f"shutil.copyfile({file_path}, {_tmp_upload_dir_name})")
             shutil.copy(file_path, _tmp_upload_dir_name)
-            # zip解凍
-            with tarfile.open(_tmp_file_path, 'r:gz') as tar:
-                tar.extractall(path=_tmp_upload_id_path)
         except Exception as e:
             # アップロードファイルのbase64変換～zip解凍時
             trace_msg = traceback.format_exc()
@@ -1349,7 +1346,7 @@ def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body, 
             api_msg_args = [path_data['file_name']]
             raise AppException("499-01503", log_msg_args, api_msg_args)  # noqa: F405
 
-        # zipファイルの中身を確認する
+        # zipファイルの中身を確認し、必要なファイルを展開する
         _check_zip_file(upload_id, organization_id, workspace_id)
 
         # インストールドライバと、kymのドライバ確認
@@ -1790,7 +1787,7 @@ def _create_import_list(objdbca, menu_name_rest_list):
 
 def _check_zip_file(upload_id, organization_id, workspace_id):
     """
-        zipファイルの中身を確認する
+        zipファイルの中身を確認し、必要なファイルを展開する
 
         args:
             upload_id: アップロードID
@@ -1802,20 +1799,22 @@ def _check_zip_file(upload_id, organization_id, workspace_id):
     # /storage配下のファイルアクセスを/tmp経由で行うモジュール
     file_read_text = storage_access.storage_read_text()
 
-    lst = os.listdir(uploadPath + upload_id)
-
     fileAry = []
-    for value in lst:
-        if not value == '.' and not value == '..':
-            path = os.path.join(uploadPath + upload_id, value)
-            if os.path.isdir(path):
-                dir_name = value
-                sublst = os.listdir(path)
-                for subvalue in sublst:
-                    if not subvalue == '.' and not subvalue == '..':
-                        fileAry.append(dir_name + "/" + subvalue)
-            else:
-                fileAry.append(value)
+    try:
+        with tarfile.open(uploadPath + fileName, 'r:gz') as tar:
+            for member_item in tar.getmembers():
+                member_item_name = member_item.name
+                # 2.4.2以前だと「./」から始まるファイル名が取得されるため削除
+                if member_item_name.startswith('./'):
+                    fileAry.append(member_item_name[2:])
+                else:
+                    fileAry.append(member_item_name)
+    except Exception as e:
+            trace_msg = traceback.format_exc()
+            g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(trace_msg)))
+            log_msg_args = [fileName]
+            api_msg_args = [fileName]
+            raise AppException("499-01503", log_msg_args, api_msg_args)  # noqa: F405
 
     if len(fileAry) == 0:
         if os.path.exists(uploadPath + fileName):
@@ -1829,7 +1828,7 @@ def _check_zip_file(upload_id, organization_id, workspace_id):
     # 必須ファイルの確認
     errCnt = 0
     errFlg = True
-    needleAry = ['MENU_NAME_REST_LIST', 'DP_INFO']
+    needleAry = ['MENU_NAME_REST_LIST', 'DP_INFO', 'VERSION', 'DRIVERS', 'MENU_GROUPS', 'PARENT_MENU_GROUPS']
     for value in fileAry:
         if value in needleAry:
             errFlg = False
@@ -1845,12 +1844,39 @@ def _check_zip_file(upload_id, organization_id, workspace_id):
         if os.path.exists(uploadPath + fileName):
             os.remove(uploadPath + fileName)
 
-        shutil.rmtree(uploadPath + upload_id)
-
         msgstr = g.appmsg.get_api_message("MSG-30030")
         log_msg_args = [msgstr]
         api_msg_args = [msgstr]
         raise AppException("499-00005", log_msg_args, api_msg_args)
+
+    targetfile_list = ['DP_INFO', 'VERSION', 'DRIVERS', 'MENU_GROUPS', 'PARENT_MENU_GROUPS']
+    importPath_id = importPath + upload_id
+    extract_memberAry = []
+    try:
+        # 展開先の親フォルダがなければ作成
+        if not os.path.exists(importPath):
+            os.makedirs(importPath)
+            os.chmod(importPath, 0o777)
+        # 展開先のフォルダがなければ作成
+        if not os.path.exists(importPath_id):
+            os.makedirs(importPath_id)
+            os.chmod(importPath_id, 0o777)
+        with tarfile.open(uploadPath + fileName, 'r:gz') as tar:
+            for member_item in tar.getmembers():
+                member_item_name = member_item.name
+                # 2.4.2以前だと「./」から始まるファイル名が取得されるため削除
+                if member_item_name.startswith('./'):
+                    member_item_name = member_item_name[2:]
+                # 展開対象のファイル名と一致すれば展開
+                if member_item_name in targetfile_list:
+                    extract_memberAry.append(member_item)
+            tar.extractall(path=importPath_id, members=extract_memberAry)
+    except Exception as e:
+        trace_msg = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(trace_msg)))
+        log_msg_args = [fileName]
+        api_msg_args = [fileName]
+        raise AppException("499-01503", log_msg_args, api_msg_args)  # noqa: F405
 
     # バージョン差異チェック
     common_db = DBConnectCommon()
@@ -1858,107 +1884,33 @@ def _check_zip_file(upload_id, organization_id, workspace_id):
     common_db.db_disconnect()
 
     export_version = ''
-    if os.path.isfile(uploadPath + upload_id + '/VERSION'):
+    if os.path.isfile(importPath + upload_id + '/VERSION'):
         # エクスポート時のバージョンを取得
-        export_version = file_read_text.read_text(uploadPath + upload_id + '/VERSION')
+        export_version = file_read_text.read_text(importPath + upload_id + '/VERSION')
 
     # バージョン確認
     ita_version = version_data["version"]
     kym_version = export_version
     # 2.5.0以下の場合
     if not (version.parse("2.5.0") <= version.parse(kym_version)):
-        shutil.rmtree(uploadPath + upload_id)
+        shutil.rmtree(importPath + upload_id)
         msgstr = g.appmsg.get_api_message("MSG-140012", [kym_version])
         log_msg_args = [msgstr]
         api_msg_args = [msgstr]
         raise AppException("499-00701", log_msg_args, api_msg_args)
     # KYM > ITAの場合
     if (version.parse(ita_version) < version.parse(kym_version)):
-        shutil.rmtree(uploadPath + upload_id)
+        shutil.rmtree(importPath + upload_id)
         raise AppException("499-01506", [kym_version, ita_version], [kym_version, ita_version])
 
-    # ファイル移動
-    if not os.path.exists(importPath):
-        os.makedirs(importPath)
-        os.chmod(importPath, 0o777)
-
     shutil.copy(uploadPath + fileName, importPath + fileName)
-    os.makedirs(importPath + upload_id)
-    os.chmod(importPath + upload_id, 0o777)
-    from_path = uploadPath + upload_id
-    to_path = importPath + '.'
-    cmd = "cp -frp " + from_path + ' ' + to_path
-    ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
-
-    errCnt = 0
-    declare_check_list = []
-    for value in fileAry:
-        file = importPath + upload_id + '/' + value
-        if not os.path.exists(file):
-            errCnt += 1
-            break
-
-        if not file == "":
-            tmpFileAry = file.split("/")
-            tmpFileName = tmpFileAry[len(tmpFileAry) - 1]
-            declare_check_list.append(tmpFileName)
-
-    declare_list = collections.Counter(declare_check_list)
-    for value in fileAry:
-        file = importPath + upload_id + '/' + value
-        if value.endswith(".xlsx"):
-            continue
-
-        if not os.path.exists(file):
-            errCnt += 1
-            break
-
-        if not file:
-            cmd = "rm -rf " + importPath + upload_id
-            ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
-            if ret.returncode != 0:
-                return False
-
-    if errCnt > 0:
-        if os.path.exists(uploadPath + fileName):
-            os.remove(uploadPath + fileName)
-
-        if os.path.exists(importPath + fileName):
-            os.remove(importPath + fileName)
-
-        cmd = "rm -rf " + uploadPath + upload_id + " 2>&1"
-        ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
-        if ret.returncode != 0:
-            msgstr = g.appmsg.get_api_message("MSG-30029")
-            log_msg_args = [msgstr]
-            api_msg_args = [msgstr]
-            raise AppException("499-00005", log_msg_args, api_msg_args)
-
-        cmd = "rm -rf " + importPath + upload_id + " 2>&1"
-        ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
-        if ret.returncode != 0:
-            msgstr = g.appmsg.get_api_message("MSG-30029")
-            log_msg_args = [msgstr]
-            api_msg_args = [msgstr]
-            raise AppException("499-00005", log_msg_args, api_msg_args)
-
-        msgstr = g.appmsg.get_api_message("MSG-30030")
-        log_msg_args = [msgstr]
-        api_msg_args = [msgstr]
-        raise AppException("499-00005", log_msg_args, api_msg_args)
-
     # アップロードファイル削除
     cmd = "rm " + uploadPath + fileName
     ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
     if ret.returncode != 0:
         raise AppException("499-01301", [], [])
 
-    cmd = "rm -rf " + uploadPath + upload_id + " 2>&1"
-    ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
-    if ret.returncode != 0:
-        raise AppException("499-01301", [], [])
-
-    return declare_list
+    return True
 
 def _collect_ita_version(common_db):
     """
@@ -2131,7 +2083,8 @@ def create_upload_parameters(connexion_request, key_name, organization_id, works
 
 
     else:
-        return False, {},
+        msg_args = [f"Content-Type: {connexion_request.content_type}"]
+        raise AppException("400-00001", msg_args, msg_args)
 
     return True, upload_data, path_data
 

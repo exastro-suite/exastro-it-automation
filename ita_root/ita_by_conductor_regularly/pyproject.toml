@@ -6,7 +6,7 @@ authors = ["Your Name <you@example.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.11"
 setuptools = ">=0.0.0"
 flask = "^2.0.0"
 requests = ">=0.0.0"
@@ -16,6 +16,7 @@ pymysql = ">=0.0.0"
 python-dotenv = ">=0.0.0"
 pycryptodome = ">=0.0.0"
 cryptography = ">=0.0.0"
+jsonlines = ">=0.0.0"
 
 
 [tool.poetry.group.first_install.dependencies]

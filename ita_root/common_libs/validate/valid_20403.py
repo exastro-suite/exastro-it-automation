@@ -48,6 +48,16 @@ def external_valid_menu_after(objDBCA, objtable, option):
     role_package_name = ""
     PkeyID = option['uuid']
 
+    # 削除時はチェックしない
+    # Do not check when deleting
+    if option.get("cmd_type") == "Delete":
+        table_name = "T_COMN_PROC_LOADED_LIST"
+        data_list = {"LOADED_FLG": "0", "ROW_ID": "204"}
+        primary_key_name = "ROW_ID"
+        objDBCA.table_update(table_name, data_list, primary_key_name, False)
+
+        return retBool, retStrBody, option
+
     if option["cmd_type"] in ["Register", "Update"]:
         role_package_name = option["entry_parameter"]["parameter"]["role_package_name"]
         if "zip_format_role_package_file" not in option["entry_parameter"]["file_path"]:

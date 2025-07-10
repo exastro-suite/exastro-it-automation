@@ -104,6 +104,7 @@ def main_logic(common_db):
         try:
             g.ORGANIZATION_ID = data["ORGANIZATION_ID"]
             g.WORKSPACE_ID = data["WORKSPACE_ID"]
+            g.applogger.set_env_message()
             g.applogger.debug("main_logic EXECUTION_NO=" + data["EXECUTION_NO"])
 
             crr_count += 1

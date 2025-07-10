@@ -45,6 +45,9 @@ def wrapper_job(main_logic, organization_id=None, workspace_id=None, loop_count=
     max = int(loop_count) if is_child_ps is False else 1
 
     while True:
+        g.ORGANIZATION_ID = None
+        g.WORKSPACE_ID = None
+        g.applogger.set_env_message()
         g.applogger.info("Backyard job has started")
 
         # get organization_info_list
@@ -155,6 +158,8 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
         # set applogger.set_level: default:INFO / Use ITA_DB config value
         # set_service_loglevel()
 
+        g.WORKSPACE_ID = None
+        g.applogger.set_env_message()
         workspace_id = workspace_info['WORKSPACE_ID']
 
         g.WORKSPACE_ID = workspace_id
@@ -199,7 +204,6 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
             exception(e)
 
         # delete environment of workspace
-        g.pop('WORKSPACE_ID')
         g.db_connect_info.pop("WSDB_HOST")
         g.db_connect_info.pop("WSDB_PORT")
         g.db_connect_info.pop("WSDB_USER")
@@ -209,7 +213,6 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
         g.db_connect_info.pop("WS_MONGO_DATABASE")
         g.db_connect_info.pop("WS_MONGO_USER")
         g.db_connect_info.pop("WS_MONGO_PASSWORD")
-        # print("")
 
 
 def wrapper_job_all_org(main_logic, loop_count=500):
@@ -228,6 +231,9 @@ def wrapper_job_all_org(main_logic, loop_count=500):
         # get organization_info_list
         # job for organization
         try:
+            g.ORGANIZATION_ID = None
+            g.WORKSPACE_ID = None
+            g.applogger.set_env_message()
             g.applogger.info("Backyard job has started")
 
             main_logic_exec = None

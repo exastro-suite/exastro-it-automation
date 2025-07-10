@@ -191,13 +191,13 @@ class AppLog:
         """
         msg = ""
 
-        if "ORGANIZATION_ID" in g:
+        if "ORGANIZATION_ID" in g and g.ORGANIZATION_ID:
             msg += "[ORGANIZATION_ID:{}]".format(g.ORGANIZATION_ID)
 
-        if "WORKSPACE_ID" in g:
+        if "WORKSPACE_ID" in g and g.WORKSPACE_ID:
             msg += "[WORKSPACE_ID:{}]".format(g.WORKSPACE_ID)
 
-        if "USER_ID" in g:
+        if "USER_ID" in g and g.USER_ID:
             msg += "[USER_ID:{}]".format(g.USER_ID)
 
         if self.__tag_message:

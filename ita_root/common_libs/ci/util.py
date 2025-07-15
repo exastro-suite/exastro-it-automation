@@ -558,6 +558,10 @@ def set_service_loglevel(common_db=None):
                 # is loglevel
                 if loglevel is None:
                     raise Exception()
+    except AppException as e:
+        print_exception_msg(e)
+        if "SERVICE_LOGLEVEL_FLG" in g:
+            g.SERVICE_LOGLEVEL_FLG = None
     except Exception:
         t = traceback.format_exc()
         g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))

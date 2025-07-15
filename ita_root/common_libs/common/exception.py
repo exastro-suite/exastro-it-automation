@@ -45,6 +45,29 @@ class AppException(Exception):
 
     # def __str__(self):
 
+class DBException(Exception):
+    """
+    exception class for Database
+    """
+    def __init__(self, *args):
+        """
+        constructor
+            make DBException args (app_msg_arg, db_error)
+        Arguments:
+            app_msg_arg: "ita application msg arg"
+            db_error: [error_code, error_msg]
+        """
+        if len(args) == 2:
+            app_msg_arg, db_error = args
+            db_error = eval(str(db_error))  # tupleに変換
+            db_error_code = db_error[0]
+            db_error_msg = db_error[1]
+        else:
+            return
+
+        # set args
+        self.args = app_msg_arg, db_error_code, db_error_msg
+
 
 class ValidationException(Exception):
     """

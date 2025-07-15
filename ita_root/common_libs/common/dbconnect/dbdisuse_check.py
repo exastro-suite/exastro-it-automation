@@ -25,6 +25,10 @@ def is_db_disuse():
          True:  database disuse
          False: database use
     '''
+    # DB接続エラーが発生中(あくまでworkspace等のdbがあるかのチェック用関数で、ない場合にログ抑止するのが目的なので、接続できない場合はあるものとして扱う)
+    if "dbConnectError" in g and g.dbConnectError is True:
+        return False
+
     organization_id = g.get('ORGANIZATION_ID')
     workspace_id = g.get('WORKSPACE_ID')
 

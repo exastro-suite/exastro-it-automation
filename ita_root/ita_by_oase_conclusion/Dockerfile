@@ -15,7 +15,7 @@ ARG USERNAME=app_user
 ARG GROUPNAME=app_user
 ARG APP_PATH=/exastro
 
-FROM    exastro/exastro-it-automation-by-menu-export-import:2.5.2 as common_build
+FROM    exastro/exastro-it-automation-by-oase-conclusion:2.5.2 as common_build
 ARG USERNAME
 ARG GROUPNAME
 ARG APP_PATH

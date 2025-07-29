@@ -611,8 +611,8 @@ class FileUploadColumn(Column):
             result = {}
             result["name"] = file_name
             result["class_name"] = self.class_name
-            result["dst"] = dir_path.replace(f"/storage/{organization_id}/{workspace_id}", "")
-            result["src"] = old_file_path.replace(f"/storage/{organization_id}/{workspace_id}", "")
+            result["dst"] = dir_path.replace(os.path.join(os.environ.get("STORAGEPATH"), organization_id, workspace_id), "")
+            result["src"] = old_file_path.replace(os.path.join(os.environ.get("STORAGEPATH"), organization_id, workspace_id), "")
             result["ori_dst"] = dir_path
             result["ori_src"] = old_file_path
             result["entity"] = entity_file_path if entity_file_path != "" else old_file_path

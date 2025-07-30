@@ -35,8 +35,8 @@ services:
       - http_proxy=${HTTP_PROXY}
       - HTTPS_PROXY=${HTTPS_PROXY}
       - https_proxy=${HTTPS_PROXY}
-      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-auth,platform-api,ita-api-oase-receiver
-      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-auth,platform-api,ita-api-oase-receiver
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-auth,platform-api,ita-api-oase-receiver,ita-api-ansible-execution-receiver
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-auth,platform-api,ita-api-oase-receiver,ita-api-ansible-execution-receiver
       - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
       - SSL_CERT_DIR=/etc/ssl/certs
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
@@ -72,8 +72,8 @@ services:
       - http_proxy=${HTTP_PROXY}
       - HTTPS_PROXY=${HTTPS_PROXY}
       - https_proxy=${HTTPS_PROXY}
-      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-auth,platform-api,ita-api-oase-receiver
-      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-auth,platform-api,ita-api-oase-receiver
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-auth,platform-api,ita-api-oase-receiver,ita-api-ansible-execution-receiver
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-auth,platform-api,ita-api-oase-receiver,ita-api-ansible-execution-receiver
       - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
       - SSL_CERT_DIR=/etc/ssl/certs
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt

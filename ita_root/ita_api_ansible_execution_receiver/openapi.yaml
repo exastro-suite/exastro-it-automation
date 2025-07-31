@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Exastro ITA Ansible Execution Receiver API
   description: Exastro ITA Ansible Execution Receiver API
-  version: "2.5"
+  version: "2.7.0"
 
 servers:
   - url: "https://{host}"

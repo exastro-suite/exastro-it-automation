@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Exastro IT Automation API (System Management)
   description: Exastro IT Automation API for System Manager
-  version: "2.5"
+  version: "2.7.0"
 
 servers:
   - url: "https://{host}"

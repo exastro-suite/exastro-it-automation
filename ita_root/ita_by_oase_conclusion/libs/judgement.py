@@ -14,6 +14,7 @@
 
 from flask import g
 import json
+import copy
 
 from common_libs.oase.const import oaseConst
 from libs.common_functions import addline_msg, getLabelGroup, getIDtoLabelName
@@ -111,16 +112,18 @@ class Judgement:
     def SummaryofFiltersUsedinRules(self, RuleList):
         # ルールで使用しているフィルタを集計
         # FiltersUsedinRulesDictの構造
-        # FiltersUsedinRulesDict[フィルタID] = { 'rule_id': RULE_ID, 'rule_priority': RULE_PRIORITY, 'count': フィルタ使用数 }
+        # FiltersUsedinRulesDict[フィルタID] = { 'rule_id': [RULE_ID], 'rule_priority': [RULE_PRIORITY], 'count': フィルタ使用数 }
         FiltersUsedinRulesDict = {}
         for RuleRow in RuleList:
             FilterA = RuleRow['FILTER_A']
             if FilterA in FiltersUsedinRulesDict:
+                FiltersUsedinRulesDict[FilterA]['rule_id'].append(RuleRow['RULE_ID'])
+                FiltersUsedinRulesDict[FilterA]['rule_priority'].append(RuleRow['RULE_PRIORITY'])
                 FiltersUsedinRulesDict[FilterA]['count'] += 1
             else:
                 FiltersUsedinRulesDict[FilterA] = {}
-                FiltersUsedinRulesDict[FilterA]['rule_id'] = RuleRow['RULE_ID']
-                FiltersUsedinRulesDict[FilterA]['rule_priority'] = RuleRow['RULE_PRIORITY']
+                FiltersUsedinRulesDict[FilterA]['rule_id'] = [RuleRow['RULE_ID']]
+                FiltersUsedinRulesDict[FilterA]['rule_priority'] = [RuleRow['RULE_PRIORITY']]
                 FiltersUsedinRulesDict[FilterA]['count'] = 1
 
             FilterB = RuleRow.get('FILTER_B')
@@ -129,16 +132,20 @@ class Judgement:
                 continue
 
             if FilterB in FiltersUsedinRulesDict:
+                FiltersUsedinRulesDict[FilterB]['rule_id'].append(RuleRow['RULE_ID'])
+                FiltersUsedinRulesDict[FilterB]['rule_priority'].append(RuleRow['RULE_PRIORITY'])
                 FiltersUsedinRulesDict[FilterB]['count'] += 1
             else:
                 FiltersUsedinRulesDict[FilterB] = {}
-                FiltersUsedinRulesDict[FilterB]['rule_id'] = RuleRow['RULE_ID']
-                FiltersUsedinRulesDict[FilterB]['rule_priority'] = RuleRow['RULE_PRIORITY']
+                FiltersUsedinRulesDict[FilterB]['rule_id'] = [RuleRow['RULE_ID']]
+                FiltersUsedinRulesDict[FilterB]['rule_priority'] = [RuleRow['RULE_PRIORITY']]
                 FiltersUsedinRulesDict[FilterB]['count'] = 1
 
         return FiltersUsedinRulesDict
 
-    def TargetRuleExtraction(self, TargetLevel, RuleList, FiltersUsedinRulesDict, IncidentDict):
+    def TargetRuleExtraction(self, TargetLevel, RuleList, _FiltersUsedinRulesDict, IncidentDict):
+        # _FiltersUsedinRulesDictをコピー
+        FiltersUsedinRulesDict = copy.deepcopy(_FiltersUsedinRulesDict)
         TargetRuleList = []
         TargetRuleIdList = []
         FilterList = []
@@ -147,10 +154,15 @@ class Judgement:
         for RuleRow in RuleList:
             # g.applogger.debug('RULE_ID={}'.format(RuleRow['RULE_ID']))
             hit = True
+            sp_ptn_01 = False # A → BのルールがあるときにAが来なくてBが来ているときの対処
             FilterList = []
             FilterList.append(RuleRow['FILTER_A'])
             if RuleRow.get('FILTER_B') is not None:
                 FilterList.append(RuleRow['FILTER_B'])
+
+                # A → B
+                if RuleRow['FILTER_OPERATOR'] == oaseConst.DF_OPE_ORDER:
+                    sp_ptn_01 = True
 
             for FilterId in FilterList:
                 if FilterId not in FiltersUsedinRulesDict:
@@ -163,12 +175,47 @@ class Judgement:
                 if TargetLevel == "Level1":
                     if FiltersUsedinRulesDict[FilterId]['count'] != 1:
                         hit = False
+                    # if FiltersUsedinRulesDict[FilterId]['count'] != 1 and _FiltersUsedinRulesDict[FilterId]['rule_id'][0] != RuleRow['RULE_ID']:
+                    #     hit = False
 
                 # ルール抽出対象: 複数のルールで使用しているフィルタで優先順位が最上位のルール※2の場合
                 elif TargetLevel == "Level2":
+                    # A → B
+                    if sp_ptn_01 is True:
+                        if FilterId == RuleRow['FILTER_A']:
+                            if FilterId not in IncidentDict or len(IncidentDict[FilterId]) == 0:
+                                # FILTER_Aのイベントはない
+                                sp_ptn_01 = True
+                            else:
+                                sp_ptn_01 = False
+                        elif FilterId == RuleRow['FILTER_B']:
+                            if FilterId not in IncidentDict or len(IncidentDict[FilterId]) == 0:
+                                sp_ptn_01 = False
+                            else:
+                                for event_id in IncidentDict[FilterId]:
+                                    ret, EventRow = self.EventObj.get_events(event_id)
+
+                                    if ret is False:
+                                        sp_ptn_01 = False
+                                    else:
+                                        if EventRow['labels']['_exastro_evaluated'] != '0' \
+                                        or EventRow['labels']['_exastro_timeout'] != '0' \
+                                        or EventRow['labels']['_exastro_undetected'] != '0':
+                                            continue
+                                        # FILTER_Bはイベントあり
+                                        sp_ptn_01 = True
+                                        break
+
+                            if sp_ptn_01 is True:
+                                # A → BのルールがあるときにAが来なくてBが来ているとき、該当ルールを無視して優先順位をくりあげる
+                                rule_index = FiltersUsedinRulesDict[FilterId]['rule_id'].index(RuleRow['RULE_ID'])
+                                FiltersUsedinRulesDict[FilterId]['rule_id'].pop(rule_index)
+                                FiltersUsedinRulesDict[FilterId]['rule_priority'].pop(rule_index)
+                                FiltersUsedinRulesDict[FilterId]['count'] -= 1
+
                     # g.applogger.debug('FilterId({})=Level2'.format(FilterId))
-                    # で優先順位が最上位のルールか判定
-                    if FiltersUsedinRulesDict[FilterId]['rule_id'] != RuleRow['RULE_ID']:
+                    # 優先順位が最上位のルールか判定
+                    if FiltersUsedinRulesDict[FilterId]['rule_id'][0] != RuleRow['RULE_ID']:
                         # g.applogger.debug('FilterId({})=Level2 hit=False'.format(FilterId))
                         hit = False
 
@@ -181,6 +228,15 @@ class Judgement:
                         hit = False
                         break
                     else:
+                        for rule_id in FiltersUsedinRulesDict[FilterId]['rule_id']:
+                            if rule_id == RuleRow['RULE_ID']:
+                                break
+                            if rule_id in TargetRuleIdList:
+                                # 自分より優先順位の高いルールが、既に使われる予定
+                                # g.applogger.debug('FilterId({}), event_id({})=Level3 hit=False1'.format(FilterId, event_id))
+                                hit = False
+                                break
+
                         if len(IncidentDict[FilterId]) == 0:
                             # イベント配列に空がセットされている場合（検索方法がユニークで複数合致した場合）
                             # 下のループは通らない
@@ -199,18 +255,12 @@ class Judgement:
                                 or EventRow['labels']['_exastro_timeout'] != '0' \
                                 or EventRow['labels']['_exastro_undetected'] != '0':
                                     # 判定済みは無視
-                                    # g.applogger.debug('FilterId({}), event_id({})=Level3 hit=False1'.format(FilterId, event_id))
+                                    # g.applogger.debug('FilterId({}), event_id({})=Level3 hit=False2'.format(FilterId, event_id))
                                     hit = False
                                     continue
 
                                 if FilterId == RuleRow['FILTER_B'] and hit is True:
                                     # FILTER_Aのフィルタがタイムアウトを迎えていることを確認済み(hit = True)
-                                    break
-
-                                if FiltersUsedinRulesDict[FilterId]['rule_id'] in TargetRuleIdList:
-                                    # 自分より優先順位の高いルールが、既に使われる予定
-                                    # g.applogger.debug('FilterId({}), event_id({})=Level3 hit=False2'.format(FilterId, event_id))
-                                    hit = False
                                     break
 
                                 if EventRow[oaseConst.DF_LOCAL_LABLE_NAME][oaseConst.DF_LOCAL_LABLE_STATUS] != oaseConst.DF_POST_PROC_TIMEOUT_EVENT:
@@ -224,9 +274,9 @@ class Judgement:
             if TargetLevel == "Level2":
                 if hit is True:
                     hit = False
-                    # フィルタを利用しているルールが複数ある事を確認
+                    # フィルタを利用しているルールが複数ある事を確認(オリジナルの辞書で確認)
                     for FilterId in FilterList:
-                        if FiltersUsedinRulesDict[FilterId]['count'] != 1:
+                        if _FiltersUsedinRulesDict[FilterId]['count'] != 1:
                             hit = True
                             break
             if hit is True:

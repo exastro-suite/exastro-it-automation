@@ -28,7 +28,7 @@ from common_libs.api import api_filter_admin
 from common_libs.common.dbconnect import *  # noqa: F403
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectOrg, MONGOConnectWs
 from common_libs.common.mongoconnect.const import Const as mongoConst
-from common_libs.common.util import ky_encrypt, ky_decrypt, get_timestamp, url_check, arrange_stacktrace_format, put_uploadfiles
+from common_libs.common.util import ky_encrypt, ky_decrypt, get_timestamp, url_check, arrange_stacktrace_format, put_uploadfiles, put_uploadfiles_jnl
 from common_libs.ansible_driver.classes.gitlab import GitLabAgent
 from common_libs.common.exception import AppException
 
@@ -666,15 +666,29 @@ def organization_update(organization_id, body=None):  # noqa: E501
         config_file_dict = {}
         if len(add_drivers) != 0:
             # files配下のconfigファイルを取得する
-            src_dir = os.path.join(os.environ.get('PYTHONPATH'), "files")
-            g.applogger.info(f"[Trace] src_dir={src_dir}")
-            if os.path.isdir(src_dir):
-                config_file_list = [f for f in os.listdir(src_dir) if os.path.isfile(os.path.join(src_dir, f))]
+            src_file_dir = os.path.join(os.environ.get('PYTHONPATH'), "files")
+            g.applogger.info(f"[Trace] src_file_dir={src_file_dir}")
+            if os.path.isdir(src_file_dir):
+                config_file_list = [f for f in os.listdir(src_file_dir) if os.path.isfile(os.path.join(src_file_dir, f))]
                 g.applogger.info(f"[Trace] config_file_list={config_file_list}")
                 for config_file_name in config_file_list:
                     if config_file_name != "config.json":
                         driver_name = config_file_name.replace('_config.json', '')
                         config_file_dict[driver_name] = config_file_name
+
+        config_jnl_list = []
+        config_jnl_dict = {}
+        if len(add_drivers) != 0:
+            # jnl配下のconfigファイルを取得する
+            src_jnl_dir = os.path.join(os.environ.get('PYTHONPATH'), "jnl")
+            g.applogger.info(f"[Trace] src_jnl_dir={src_jnl_dir}")
+            if os.path.isdir(src_jnl_dir):
+                config_jnl_list = [f for f in os.listdir(src_jnl_dir) if os.path.isfile(os.path.join(src_jnl_dir, f))]
+                g.applogger.info(f"[Trace] config_jnl_list={config_jnl_list}")
+                for config_jnl_name in config_jnl_list:
+                    if config_jnl_name != "config.json":
+                        driver_name = config_jnl_name.replace('_config.json', '')
+                        config_jnl_dict[driver_name] = config_jnl_name
 
         # 対象のワークスペースをループし、追加するドライバについてのデータベース処理（SQLを実行しテーブルやレコードを作成）を行う
         for workspace_data in workspace_data_list:
@@ -751,11 +765,20 @@ def organization_update(organization_id, body=None):  # noqa: E501
                 # files配下のconfigファイルを取得し、インストール中のドライバと一致していたら実行する
                 if install_driver in config_file_dict:
                     dest_dir = os.path.join(workspace_dir, "uploadfiles")
-                    config_file_path = os.path.join(src_dir, config_file_dict[install_driver])
+                    config_file_path = os.path.join(src_file_dir, config_file_dict[install_driver])
                     g.applogger.info(f" [Trace] dest_dir={dest_dir}")
                     g.applogger.info(f" [Trace] config_file_path={config_file_path}")
-                    put_uploadfiles(config_file_path, src_dir, dest_dir)
-                g.applogger.info(" set initial material files")
+                    put_uploadfiles(config_file_path, src_file_dir, dest_dir)
+                g.applogger.info(" set material files")
+
+                # jnl配下のconfigファイルを取得し、インストール中のドライバと一致していたら実行する
+                if install_driver in config_jnl_dict:
+                    dest_dir = os.path.join(workspace_dir, "uploadfiles")
+                    config_jnl_path = os.path.join(src_jnl_dir, config_jnl_dict[install_driver])
+                    g.applogger.info(f" [Trace] dest_dir={dest_dir}")
+                    g.applogger.info(f" [Trace] config_jnl_path={config_jnl_path}")
+                    put_uploadfiles_jnl(ws_db, config_jnl_path, src_jnl_dir, dest_dir)
+                g.applogger.info(" set jnl")
 
                 # t_comn_workspace_db_infoテーブルのNO_INSTALL_DRIVERを更新する
                 ws_no_install_driver.remove(install_driver)

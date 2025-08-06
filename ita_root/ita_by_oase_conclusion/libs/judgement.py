@@ -154,7 +154,7 @@ class Judgement:
         for RuleRow in RuleList:
             # g.applogger.debug('RULE_ID={}'.format(RuleRow['RULE_ID']))
             hit = True
-            sp_ptn_01 = False # A → BのルールがあるときにAが来なくてBが来ているときの対処
+            sp_ptn_01 = False # A → BのルールがあるときにAが来なくてBが来ている（可能性がある）ときの対処用フラグ
             FilterList = []
             FilterList.append(RuleRow['FILTER_A'])
             if RuleRow.get('FILTER_B') is not None:
@@ -164,6 +164,7 @@ class Judgement:
                 if RuleRow['FILTER_OPERATOR'] == oaseConst.DF_OPE_ORDER:
                     sp_ptn_01 = True
 
+            # フィルターA, Bを順に確認する（Bは登録がなければ、通らない）
             for FilterId in FilterList:
                 if FilterId not in FiltersUsedinRulesDict:
                     # Target filter is not registered RULE_ID {} FILTER_ID {}>>
@@ -171,16 +172,14 @@ class Judgement:
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     hit = False
                     continue
-                # ルール抽出対象: 複数のルールで使用していないフィルタを使用しているルール※1の場合
+                # ルール抽出対象: 複数のルールで使用していないフィルタを使用しているルール or 重複しているルールの中で最上位のルール※1の場合
                 if TargetLevel == "Level1":
-                    if FiltersUsedinRulesDict[FilterId]['count'] != 1:
+                    if FiltersUsedinRulesDict[FilterId]['count'] != 1 and _FiltersUsedinRulesDict[FilterId]['rule_id'][0] != RuleRow['RULE_ID']:
                         hit = False
-                    # if FiltersUsedinRulesDict[FilterId]['count'] != 1 and _FiltersUsedinRulesDict[FilterId]['rule_id'][0] != RuleRow['RULE_ID']:
-                    #     hit = False
 
                 # ルール抽出対象: 複数のルールで使用しているフィルタで優先順位が最上位のルール※2の場合
                 elif TargetLevel == "Level2":
-                    # A → B
+                    # A → BのルールがあるときにAが来なくてBが来ている（可能性がある）ときの対処用フラグ
                     if sp_ptn_01 is True:
                         if FilterId == RuleRow['FILTER_A']:
                             if FilterId not in IncidentDict or len(IncidentDict[FilterId]) == 0:
@@ -190,13 +189,16 @@ class Judgement:
                                 sp_ptn_01 = False
                         elif FilterId == RuleRow['FILTER_B']:
                             if FilterId not in IncidentDict or len(IncidentDict[FilterId]) == 0:
+                                # FILTER_Bのイベントはない
                                 sp_ptn_01 = False
                             else:
+                                # FILTER_Bのイベントを検索
+                                sp_ptn_01 = False
                                 for event_id in IncidentDict[FilterId]:
                                     ret, EventRow = self.EventObj.get_events(event_id)
 
                                     if ret is False:
-                                        sp_ptn_01 = False
+                                        continue
                                     else:
                                         if EventRow['labels']['_exastro_evaluated'] != '0' \
                                         or EventRow['labels']['_exastro_timeout'] != '0' \
@@ -228,14 +230,19 @@ class Judgement:
                         hit = False
                         break
                     else:
+                        # 優先順位の高いルールからチェックしていき、自分より上のルールが既に使われていないかを確認
+                        in_used = False
                         for rule_id in FiltersUsedinRulesDict[FilterId]['rule_id']:
                             if rule_id == RuleRow['RULE_ID']:
                                 break
                             if rule_id in TargetRuleIdList:
                                 # 自分より優先順位の高いルールが、既に使われる予定
                                 # g.applogger.debug('FilterId({}), event_id({})=Level3 hit=False1'.format(FilterId, event_id))
-                                hit = False
+                                in_used = True
                                 break
+                        if in_used is True:
+                            hit = False
+                            break
 
                         if len(IncidentDict[FilterId]) == 0:
                             # イベント配列に空がセットされている場合（検索方法がユニークで複数合致した場合）
@@ -267,6 +274,7 @@ class Judgement:
                                     # g.applogger.debug('FilterId({}), event_id({})=Level3 hit=False3'.format(FilterId, event_id))
                                     hit = False
                                 else:
+                                    # タイムアウト
                                     hit = True
                                     # g.applogger.debug('FilterId({}), event_id({})=Level3 True'.format(FilterId, event_id))
                                     break

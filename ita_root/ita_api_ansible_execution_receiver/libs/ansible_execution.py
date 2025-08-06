@@ -249,7 +249,7 @@ def get_execution_status(objdbca, organization_id, workspace_id, execution_no, b
             # ステータス更新
             execute_row["STATUS_ID"] = status
             execute_row["TIME_END"] = get_timestamp()
-            zip_data_source_dir = f"/storage/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/out"
+            zip_data_source_dir = os.path.join(os.environ.get("STORAGEPATH"), organization_id, workspace_id, "driver", "ansible", driver_id, execution_no, "out")
             rmtmpfiles = False
             retBool, err_msg, zip_result_file, rm_tmp_files_list = createTmpZipFile(
                         execution_no,
@@ -321,10 +321,10 @@ def get_populated_data_path(objdbca, organization_id, workspace_id, execution_no
         conductor_instance_no = ret[0].get("CONDUCTOR_INSTANCE_NO", None) if len(ret) == 1 else None
 
     # パス
-    dir_path = f"/storage/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}"
+    dir_path = os.path.join(os.environ.get("STORAGEPATH"), organization_id, workspace_id, "driver", "ansible", driver_id, execution_no)
     tmp_base_path = f"/tmp/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/"
     tmp_path = f"/tmp/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/{execution_no}"
-    conductor_dir_path = f"/storage/{organization_id}/{workspace_id}/driver/conductor/{conductor_instance_no}"
+    conductor_dir_path = os.path.join(os.environ.get("STORAGEPATH"), organization_id, workspace_id, "driver", "conductor", conductor_instance_no)
     tmp_c_path = f"/tmp/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/conductor"
     gztar_path = f"{tmp_path}/{execution_no}.tar.gz"
 
@@ -444,19 +444,19 @@ def update_result(objdbca, organization_id, workspace_id, execution_no, paramete
         return {}
 
     if driver_id == "legacy":
-        out_directory_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "/out"
-        in_directory_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "/in"
+        out_directory_path = os.path.join(os.environ.get("STORAGEPATH"), organization_id, workspace_id, "driver", "ansible", "legacy", execution_no, "out")
+        in_directory_path = os.path.join(os.environ.get("STORAGEPATH"), organization_id, workspace_id, "driver", "ansible", "legacy", execution_no, "in")
         tmp_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "/"
     elif driver_id == "pioneer":
-        out_directory_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/pioneer/" + execution_no + "/out"
-        in_directory_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/pioneer/" + execution_no + "/in"
+        out_directory_path = os.path.join(os.environ.get("STORAGEPATH"), organization_id, workspace_id, "driver", "ansible", "pioneer", execution_no, "out")
+        in_directory_path = os.path.join(os.environ.get("STORAGEPATH"), organization_id, workspace_id, "driver", "ansible", "pioneer", execution_no, "in")
         tmp_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/pioneer/" + execution_no + "/"
     else:
-        out_directory_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy_role/" + execution_no + "/out"
-        in_directory_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy_role/" + execution_no + "/in"
+        out_directory_path = os.path.join(os.environ.get("STORAGEPATH"), organization_id, workspace_id, "driver", "ansible", "legacy_role", execution_no, "out")
+        in_directory_path = os.path.join(os.environ.get("STORAGEPATH"), organization_id, workspace_id, "driver", "ansible", "legacy_role", execution_no, "in")
         tmp_path = "/tmp/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy_role/" + execution_no + "/"
     if conductor_instance_no:
-        conductor_directory_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/conductor/" + conductor_instance_no
+        conductor_directory_path = os.path.join(os.environ.get("STORAGEPATH"), organization_id, workspace_id, "driver", "conductor", conductor_instance_no)
 
     try:
         # {'conductor_tar_data': '/tmp/org1/ws2/driver/ansible/legacy/2ed69707-d211-4bb4-9c65-ec0165efddac/conductor.tar.gz',
@@ -587,15 +587,12 @@ def update_ansible_agent_status_file(organization_id, workspace_id, body, ws_db)
 
     # 作業状態通知受信ファイルを空更新する
     for execution_no in legacy:
-        file_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy/" + execution_no + "/tmp/ansible_agent_status_file.txt"
         update_timestamp(ws_db, "legacy", execution_no)
 
     for execution_no in pioneer:
-        file_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/pioneer/" + execution_no + "/tmp/ansible_agent_status_file.txt"
         update_timestamp(ws_db, "pioneer", execution_no)
 
     for execution_no in legacy_role:
-        file_path = "/storage/" + organization_id + "/" + workspace_id + "/driver/ansible/legacy_role/" + execution_no + "/tmp/ansible_agent_status_file.txt"
         update_timestamp(ws_db, "legacy_role", execution_no)
 
     return True

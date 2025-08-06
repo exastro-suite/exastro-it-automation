@@ -517,11 +517,11 @@ def get_upload_file_path_specify(workspace_id, place, uuid, file_name, uuid_jnl)
         filepath
     """
     organization_id = g.get("ORGANIZATION_ID")
-    file_path = "/storage/{}/{}{}/{}/{}".format(organization_id, workspace_id, place, uuid, file_name)
+    file_path = safe_path_join(os.environ.get("STORAGEPATH"), organization_id, f"{workspace_id}{place}", uuid, file_name)
     old_file_path = ""
     if uuid_jnl is not None:
         if len(uuid_jnl) > 0:
-            old_file_path = "/storage/{}/{}{}/{}/old/{}/{}".format(organization_id, workspace_id, place, uuid, uuid_jnl, file_name)  # noqa: E501
+            old_file_path = safe_path_join(os.environ.get("STORAGEPATH"), organization_id, f"{workspace_id}{place}", uuid, "old", uuid_jnl, file_name)  # noqa: E501
 
     return {"file_path": file_path, "old_file_path": old_file_path}
 

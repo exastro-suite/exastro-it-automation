@@ -23,6 +23,7 @@ services:
       - ~/.netrc:/home/app_user/.netrc
       - ~/.gitconfig:/home/app_user/.gitconfig
       - ./ita-api-organization/.vscode/launch.json:/workspace/.vscode/launch.json
+      - ./ita-api-organization/.vscode/tasks.json:/workspace/.vscode/tasks.json
       - /usr/share/pki/ca-trust-source/anchors/UserRootCertificate.crt:/etc/ssl/certs/ca-certificates.crt
       - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore

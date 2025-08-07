@@ -1,4 +1,10 @@
 __pycache__/
 common_libs/
+!tests/common_libs/
 messages/
 .env
+pytest.ini
+/tests/temp/*
+!/tests/temp/.gitkeep
+tests/storage/*
+!tests/storage/.gitkeep

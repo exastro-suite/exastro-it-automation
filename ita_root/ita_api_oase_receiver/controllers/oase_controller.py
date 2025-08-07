@@ -129,6 +129,10 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
         # エラーレスポンスを返す場合
         is_err_res = False
 
+        # エージェント名、バージョンの初期値
+        _undefined_agent_name = oaseConst.DF_AGENT_NAME
+        _undefined_agent_version = oaseConst.DF_AGENT_VERSION
+
         # eventsデータを取り出す
         event_group_list = body["events"]
         for event_group in event_group_list:
@@ -184,6 +188,31 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
             else:
                 fetched_time = int(event_group["fetched_time"])
 
+            # エージェントの識別情報の取得時して無ければ埋める
+            _undefined_exastro_agent = {
+                "name": _undefined_agent_name,
+                "version": _undefined_agent_version
+            }
+            if isinstance(event_group.get("_exastro_agent"), dict):
+                exastro_agent = event_group.get("_exastro_agent", {})
+                # 空文字で来た場合も未定義扱い
+                for _k, _v in _undefined_exastro_agent.items():
+                    exastro_agent[_k] = exastro_agent[_k] or _v
+            else:
+                exastro_agent =  _undefined_exastro_agent
+
+            # エージェント名またはバージョンが未定義の場合に警告ログを出力
+            undefined_items = []
+            if exastro_agent.get("name") == _undefined_agent_name:
+                undefined_items.append("name")
+            if exastro_agent.get("version") == _undefined_agent_version:
+                undefined_items.append("version")
+
+            if undefined_items:
+                g.applogger.warning(
+                    f"_exastro_agent.{'/'.join(undefined_items)} is _undefined: {event_collection_settings_id=}"
+                )
+
             # イベント収集設定ID × 取得時間（fetched_time）をイベント収集経過テーブルに保存するためにcollection_group_listに追加する
             collection_group_data = {}
             collection_group_data["EVENT_COLLECTION_SETTINGS_ID"] = event_collection_settings_id
@@ -222,6 +251,10 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
 
                 if not "_exastro_end_time" in single_event:
                     single_event['_exastro_end_time'] = end_time
+
+                # エージェントの識別情報がなければ追加する
+                if "_exastro_agent" not in single_event:
+                    single_event['_exastro_agent'] = exastro_agent
 
                 # 未来の削除用に生成時刻をもたせておく
                 single_event['_exastro_created_at'] = datetime.datetime.now(datetime.timezone.utc)

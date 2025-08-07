@@ -114,6 +114,15 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
             "_exastro_undetected": "0",
             "_exastro_timeout": "0",
         }
+
+        # イベントからエージェントの識別情報を取得してラベルに追加
+        agent_agent = {
+            "_exastro_agent_name": single_event.get("_exastro_agent", {}).get("name"),
+            "_exastro_agent_version": single_event.get("_exastro_agent", {}).get("version"),
+        }
+        # 辞書の更新は1行で完結
+        exastro_labeled_event["labels"].update(agent_agent)
+
         exastro_labeled_event["exastro_created_at"] = single_event["_exastro_created_at"]
         # 重複して不要なexastro用ラベルを削除
         del exastro_labeled_event["event"]["_exastro_event_collection_settings_id"]
@@ -125,6 +134,9 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
         if "_exastro_not_available" in single_event:
             exastro_labeled_event["labels"]["_exastro_not_available"] = single_event["_exastro_not_available"]
             del exastro_labeled_event["event"]["_exastro_not_available"]
+        # 重複して不要なエージェントの識別情報を削除
+        if "_exastro_agent" in single_event:
+            del exastro_labeled_event["event"]["_exastro_agent"]
         labeled_events.append(exastro_labeled_event)
     events = []
 

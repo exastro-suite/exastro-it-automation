@@ -84,3 +84,7 @@ class oaseConst():
     CSTS_Emergency_stop = "9"           # 緊急停止
     CSTS_Schedule_Cancel = "10"         # 予約取消
     CSTS_Unexpected_Error = "11"        # 想定外エラー
+
+    # OASEエージェントの識別情報(未設定時)
+    DF_AGENT_NAME = "Unknown"           # エージェント名未設定
+    DF_AGENT_VERSION = "Unknown"        # バージョン未設定

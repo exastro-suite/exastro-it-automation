@@ -142,6 +142,17 @@ paths:
                       event_collection_settings_id:
                         type: string
                         example: setting_id
+                      agent:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                            example: "agent-oase-01"
+                            description: OASEエージェントの名称(AGENT_NAME)を記載
+                          version:
+                            type: string
+                            example: "2.x.y"
+                            description: OASEエージェントのバージョン情報を記載
                     required:
                       - event
 

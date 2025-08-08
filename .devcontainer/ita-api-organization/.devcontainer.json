@@ -53,7 +53,20 @@
 						"org-mng-port": "38000"
 					}
 				},
-				"rest-client.decodeEscapedUnicodeCharacters": true
+				"rest-client.decodeEscapedUnicodeCharacters": true,
+				"python.testing.cwd": "/workspace/ita_root/ita_api_organization",
+				"python.testing.unittestEnabled": false,
+				"python.testing.pytestEnabled": true,
+				"python.testing.pytestArgs": [
+					"--cov=/workspace/ita_root/ita_api_organization/",
+					"--cov-report=xml",
+				],
+				"python.testing.autoTestDiscoverOnSaveEnabled": true,
+				"coverage-gutters.showGutterCoverage": false,
+				"coverage-gutters.showLineCoverage": true,
+				"coverage-gutters.showRulerCoverage": false,
+				"coverage-gutters.coverageBaseDir": "ita_root/ita_api_organization",
+				"coverage-gutters.coverageReportFileName": "ita_root/ita_api_organization/coverage.xml",
 			},
 			// Add the IDs of extensions you want installed when the container is created.
 			"extensions": [
@@ -84,7 +97,8 @@
 				"bmalehorn.shell-syntax",
 				"foxundermoon.shell-format",
 				"timonwong.shellcheck",
-			],
+				"ryanluker.vscode-coverage-gutters"
+			]
 		}
 	},
 	"settings": {
@@ -133,7 +147,20 @@
 				"org-mng-port": "38000"
 			}
 		},
-		"rest-client.decodeEscapedUnicodeCharacters": true
+		"rest-client.decodeEscapedUnicodeCharacters": true,
+		"python.testing.cwd": "/workspace/ita_root/ita_api_organization",
+		"python.testing.unittestEnabled": false,
+		"python.testing.pytestEnabled": true,
+		"python.testing.pytestArgs": [
+			"--cov=/workspace/ita_root/ita_api_organization/",
+			"--cov-report=xml",
+		],
+		"python.testing.autoTestDiscoverOnSaveEnabled": true,
+		"coverage-gutters.showGutterCoverage": false,
+		"coverage-gutters.showLineCoverage": true,
+		"coverage-gutters.showRulerCoverage": false,
+		"coverage-gutters.coverageBaseDir": "ita_root/ita_api_organization",
+		"coverage-gutters.coverageReportFileName": "ita_root/ita_api_organization/coverage.xml",
 	},
 	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": [
@@ -164,6 +191,7 @@
 		"bmalehorn.shell-syntax",
 		"foxundermoon.shell-format",
 		"timonwong.shellcheck",
+		"ryanluker.vscode-coverage-gutters"
 	],
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	"forwardPorts": [

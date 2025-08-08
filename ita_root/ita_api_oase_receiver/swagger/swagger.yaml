@@ -205,7 +205,7 @@ components:
         - {}
         - {}
         message: message
-    apiorganization_idworkspacesworkspace_idoase_agentevents_exastro_agent:
+    apiorganization_idworkspacesworkspace_idoase_agentevents_agent:
       type: object
       properties:
         name:
@@ -236,8 +236,8 @@ components:
         event_collection_settings_id:
           type: string
           example: setting_id
-        exastro_agent:
-          $ref: "#/components/schemas/apiorganization_idworkspacesworkspace_idoase_agentevents_exastro_agent"
+        agent:
+          $ref: "#/components/schemas/apiorganization_idworkspacesworkspace_idoase_agentevents_agent"
     oase_agent_events_body:
       properties:
         events:

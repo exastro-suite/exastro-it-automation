@@ -142,7 +142,7 @@ paths:
                       event_collection_settings_id:
                         type: string
                         example: setting_id
-                      exastro_agent:
+                      agent:
                         type: object
                         properties:
                           name:

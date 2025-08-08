@@ -193,8 +193,8 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
                 "name": _undefined_agent_name,
                 "version": _undefined_agent_version
             }
-            if isinstance(event_group.get("_exastro_agent"), dict):
-                exastro_agent = event_group.get("_exastro_agent", {})
+            if isinstance(event_group.get("agent"), dict):
+                exastro_agent = event_group.get("agent", {})
                 # 空文字で来た場合も未定義扱い
                 for _k, _v in _undefined_exastro_agent.items():
                     exastro_agent[_k] = exastro_agent[_k] or _v
@@ -210,7 +210,7 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
 
             if undefined_items:
                 g.applogger.warning(
-                    f"_exastro_agent.{'/'.join(undefined_items)} is _undefined: {event_collection_settings_id=}"
+                    f"agent.{'/'.join(undefined_items)} is _undefined: {event_collection_settings_id=}"
                 )
 
             # イベント収集設定ID × 取得時間（fetched_time）をイベント収集経過テーブルに保存するためにcollection_group_listに追加する

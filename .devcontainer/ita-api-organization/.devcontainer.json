@@ -54,19 +54,19 @@
 					}
 				},
 				"rest-client.decodeEscapedUnicodeCharacters": true,
-				"python.testing.cwd": "/workspace/platform_root/platform_api",
+				"python.testing.cwd": "/workspace/ita_root/ita_api_organization",
 				"python.testing.unittestEnabled": false,
 				"python.testing.pytestEnabled": true,
 				"python.testing.pytestArgs": [
-					"--cov=/workspace/platform_root/platform_api/",
+					"--cov=/workspace/ita_root/ita_api_organization/",
 					"--cov-report=xml",
 				],
 				"python.testing.autoTestDiscoverOnSaveEnabled": true,
 				"coverage-gutters.showGutterCoverage": false,
 				"coverage-gutters.showLineCoverage": true,
 				"coverage-gutters.showRulerCoverage": false,
-				"coverage-gutters.coverageBaseDir": "platform_root/platform_api",
-				"coverage-gutters.coverageReportFileName": "platform_root/platform_api/coverage.xml",
+				"coverage-gutters.coverageBaseDir": "ita_root/ita_api_organization",
+				"coverage-gutters.coverageReportFileName": "ita_root/ita_api_organization/coverage.xml",
 			},
 			// Add the IDs of extensions you want installed when the container is created.
 			"extensions": [
@@ -148,19 +148,19 @@
 			}
 		},
 		"rest-client.decodeEscapedUnicodeCharacters": true,
-		"python.testing.cwd": "/workspace/platform_root/platform_api",
+		"python.testing.cwd": "/workspace/ita_root/ita_api_organization",
 		"python.testing.unittestEnabled": false,
 		"python.testing.pytestEnabled": true,
 		"python.testing.pytestArgs": [
-			"--cov=/workspace/platform_root/platform_api/",
+			"--cov=/workspace/ita_root/ita_api_organization/",
 			"--cov-report=xml",
 		],
 		"python.testing.autoTestDiscoverOnSaveEnabled": true,
 		"coverage-gutters.showGutterCoverage": false,
 		"coverage-gutters.showLineCoverage": true,
 		"coverage-gutters.showRulerCoverage": false,
-		"coverage-gutters.coverageBaseDir": "platform_root/platform_api",
-		"coverage-gutters.coverageReportFileName": "platform_root/platform_api/coverage.xml",
+		"coverage-gutters.coverageBaseDir": "ita_root/ita_api_organization",
+		"coverage-gutters.coverageReportFileName": "ita_root/ita_api_organization/coverage.xml",
 	},
 	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": [

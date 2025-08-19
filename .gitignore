@@ -77,6 +77,9 @@ instance/
 # Scrapy stuff:
 .scrapy
 
+# openapi docs
+!docs/openapi/*/build/
+
 # Sphinx documentation
 docs/_build/
 

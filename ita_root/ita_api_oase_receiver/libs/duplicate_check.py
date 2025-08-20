@@ -145,7 +145,7 @@ def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
             conditions.update(tmp_user_labels)  # ラベルのkey&valueの一致
 
             g.applogger.debug("conditions={}".format(conditions))
-            mongo_results = wsMongo.collection(mongoConst.LABELED_EVENT_COLLECTION).find(conditions).sort([("labels._exastro_fetched_time", ASCENDING), ("exastro_created_at", ASCENDING)]).limit(1)
+            mongo_results = wsMongo.collection(mongoConst.LABELED_EVENT_COLLECTION).find(conditions).sort([("labels._exastro_fetched_time", ASCENDING), ("exastro_created_at", ASCENDING), ("_id", ASCENDING)]).limit(1)
 
             for mongo_result in mongo_results:
                 # 既に先着イベントがあるので、重複イベントが来た履歴を先着イベントに残して、イベントの新規登録はしない（=重複排除）

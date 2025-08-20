@@ -341,8 +341,11 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         # OASEのmongo設定（インデックスなど）
             ws_mongo = MONGOConnectWs()
             try:
+                labeled_event_collection = ws_mongo.collection(mongoConst.LABELED_EVENT_COLLECTION)
                 # db.labeled_event_collection.createIndex({"labels._exastro_fetched_time":1,"labels._exastro_end_time":1,"_id":1}, {"name": "default_sort"})
-                ws_mongo.collection(mongoConst.LABELED_EVENT_COLLECTION).create_index([("labels._exastro_fetched_time", ASCENDING), ("labels._exastro_end_time", ASCENDING), ("_id", ASCENDING)], name="default_sort")
+                labeled_event_collection.create_index([("labels._exastro_fetched_time", ASCENDING), ("labels._exastro_end_time", ASCENDING), ("_id", ASCENDING)], name="default_sort")
+                # 重複排除時の検索用
+                labeled_event_collection.create_index([("labels._exastro_fetched_time", ASCENDING), ("exastro_created_at", ASCENDING), ("_id", ASCENDING)], name="duplicate_check")
                 # # イベントデータの保持期限 90日
                 # ws_mongo.collection(mongoConst.LABELED_EVENT_COLLECTION).create_index([("exastro_created_at", ASCENDING)], expireAfterSeconds=7776000, name="data_ttl")
                 g.applogger.info("Index of mongo is made")

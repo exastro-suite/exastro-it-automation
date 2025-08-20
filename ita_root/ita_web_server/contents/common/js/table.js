@@ -1248,6 +1248,7 @@ filterHtml( filterHeaderFlag = true ) {
                     case 'JsonIDColumn': case 'UserIDColumn': case 'NotificationIDColumn':
                     case 'FilterConditionSettingColumn': case 'ConclusionEventSettingColumn':
                     case 'ColorCodeColumn': case 'ExecutionEnvironmentDefinitionIDColumn':
+                    case 'MultiSelectIDColumn':
                         return 'text';
                     break;
                     // 数値のFROM,TO
@@ -4242,7 +4243,7 @@ editCellHtml( item, columnKey ) {
             case 'JsonColumn':
             case 'IDColumn': case 'LinkIDColumn': case 'RoleIDColumn': case 'UserIDColumn':
             case 'EnvironmentIDColumn': case 'JsonIDColumn': case 'NotificationIDColumn':
-            case 'ExecutionEnvironmentDefinitionIDColumn':
+            case 'ExecutionEnvironmentDefinitionIDColumn': case 'MultiSelectIDColumn':
                 return fn.cv( v, '');
             case 'FilterConditionSettingColumn': case 'ConclusionEventSettingColumn':
                 if ( !tb.partsFlag ) {
@@ -4353,7 +4354,7 @@ editCellHtml( item, columnKey ) {
 
     switch ( columnType ) {
         // JsonColumn
-        case 'JsonColumn': case 'MultiSelectIDColumn':
+        case 'JsonColumn':
             if ( fn.typeof( value ) === 'object' || fn.typeof( value ) === 'array') {
                 value = fn.escape( fn.jsonStringify( value ) );
             } else {
@@ -4408,7 +4409,7 @@ editCellHtml( item, columnKey ) {
         }
 
         // 複数選択プルダウン
-        case 'NotificationIDColumn':  {
+        case 'NotificationIDColumn': case 'MultiSelectIDColumn':  {
             const displayValue = fn.cv( value, '', true );
             const pulldownClassName = ['tableEditInputMultipleSelectValue'];
             if ( attr.disabled === 'disabled') pulldownClassName.push('tableEditInputSelectValueDisabled');
@@ -4881,7 +4882,7 @@ async changeEdtiMode( changeMode ) {
             const columnInfo = info[ key ];
 
             // セレクト必須選択項目
-            const selectTarget = ['IDColumn', 'LinkIDColumn', 'AppIDColumn', 'RoleIDColumn', 'JsonIDColumn', 'UserIDColumn', 'NotificationIDColumn', 'ExecutionEnvironmentDefinitionIDColumn'];
+            const selectTarget = ['IDColumn', 'LinkIDColumn', 'AppIDColumn', 'RoleIDColumn', 'JsonIDColumn', 'UserIDColumn', 'NotificationIDColumn', 'ExecutionEnvironmentDefinitionIDColumn', 'MultiSelectIDColumn'];
             if ( selectTarget.indexOf( columnInfo.column_type ) !== -1
               && columnInfo.required_item === '1'
               && columnInfo.initial_value === null ) {

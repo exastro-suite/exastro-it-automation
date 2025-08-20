@@ -1,0 +1,248 @@
+#   Copyright 2025 NEC Corporation
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+import pytest
+import datetime
+import os
+from unittest.mock import MagicMock, patch
+from flask import Flask, g
+
+from common_libs.common.logger import AppLog
+from common_libs.common import *  # noqa: F403
+from common_libs.common.dbconnect import DBConnectWs
+from common_libs.common.mongoconnect.const import Const as mongoConst
+from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
+from common_libs.api import api_filter
+
+from controllers.oase_controller import post_events
+from common_libs.oase.const import oaseConst
+from libs.oase_receiver_common import check_menu_info, check_auth_menu
+from libs.label_event import label_event
+from common_libs.common.exception import AppException
+from common_libs.common.util import stacktrace
+
+
+"""
+    test_post_events_success: 正常系
+    test_post_events_success_no_fetched_time: 正常系(fetched_timeなし)
+    test_post_events_maintenance_mode: 異常系(メンテナンス中)
+    test_post_events_permission_error: 異常系(権限なし)
+    test_post_events_invalid_settings_name: 異常系(不正なイベント設定名)
+    test_post_events_disused_settings: 異常系(イベント設定が廃止)
+"""
+
+# テスト用のダミークラスと定数を定義
+class DummyAppException(Exception):
+    def __init__(self, status_code, log_msg_args, api_msg_args):
+        self.status_code = status_code
+        self.log_msg_args = log_msg_args
+        self.api_msg_args = api_msg_args
+        super().__init__(f"AppException: {status_code}")
+
+class DummyOaseConst:
+    DF_AGENT_NAME = "undefined_agent_name"
+    DF_AGENT_VERSION = "undefined_agent_version"
+    T_OASE_EVENT_COLLECTION_SETTINGS = "T_OASE_EVENT_COLLECTION_SETTINGS"
+    T_OASE_EVENT_COLLECTION_PROGRESS = "T_OASE_EVENT_COLLECTION_PROGRESS"
+
+@pytest.fixture
+def app():
+    app = Flask(__name__)
+    app.config['TESTING'] = True
+    yield app
+
+# bodyのテンプレート
+def get_valid_body():
+    return {
+        "events": [
+            {
+                "event": [
+                    {
+                        "parameter": {
+                            "host_name": "localhost",
+                            "hw_device_type": "SV",
+                            "managed_system_item_number": "1"
+                        }
+                    }
+                ],
+                "fetched_time": 1754609518,
+                "event_collection_settings_name": "test_name",
+                "agent": {
+                    "name": "oase_ag_001",
+                    "version": "2.7.0"
+                }
+            }
+        ]
+    }
+
+class TestPostEvents:
+    # クラスのセットアップメソッド
+    def setup_class(self):
+        self.body = get_valid_body()
+        self.organization_id = "org1"
+        self.workspace_id = "ws1"
+        os.environ['ORGANIZATION_ID'] = 'org1'
+        os.environ['NEW_KEY'] = 'test'
+
+    @pytest.fixture(autouse=True)
+    def _setup_mocks(self, mocker, monkeypatch):
+        """
+        各テスト実行前に依存関係をモックする
+        """
+        # gオブジェクトの属性をモック
+        mock_g = MagicMock()
+        mock_g.maintenance_mode.get.return_value = '0'
+        mock_g.appmsg.get_log_message.return_value = "dummy log message"
+        mock_g.dbConnectError = False
+        mock_g.applogger = MagicMock()
+
+        # gにアクセスするすべてのモジュールをパッチする
+        # `post_events`がgをインポートしているモジュール
+        mocker.patch('controllers.oase_controller.g', new=mock_g)
+        # エラーログから特定されたgにアクセスしているモジュール
+        mocker.patch('common_libs.api.util.g', new=mock_g)
+
+        # その他の依存関係をモック
+        self.mock_db_ws = MagicMock()
+        self.mock_mongo_ws = MagicMock()
+        mocker.patch('common_libs.common.exception.AppException', side_effect=DummyAppException)
+        mocker.patch('common_libs.oase.const.oaseConst', new=DummyOaseConst)
+        mocker.patch('libs.label_event.label_event')
+        mocker.patch('os.getenv', return_value="72")
+        mocker.patch('datetime.datetime')
+
+        mocker.patch('common_libs.common.dbconnect.dbdisuse_check.is_db_disuse', return_value=False)
+        mocker.patch('controllers.oase_controller.DBConnectWs', return_value=self.mock_db_ws)
+        mocker.patch('controllers.oase_controller.MONGOConnectWs', return_value=self.mock_mongo_ws)
+        mocker.patch('controllers.oase_controller.check_menu_info', return_value=True)
+        mocker.patch('controllers.oase_controller.check_auth_menu', return_value='1')
+        mocker.patch('controllers.oase_controller.label_event', return_value='1')
+
+    # 正常系のテスト ##
+    def test_post_events_success(self, app):
+        """正常な入力でイベントが正しく保存されることを確認する"""
+
+        # table_selectの戻り値を設定
+        self.mock_db_ws.table_select.side_effect = [
+            [{
+                "EVENT_COLLECTION_SETTINGS_ID": "12345",
+                "EVENT_COLLECTION_SETTINGS_NAME": "test_name",
+                "DISUSE_FLAG": "0",
+                "TTL": "3600"
+            }],
+            [] # event_collection_progressは空
+        ]
+        # table_insertの戻り値を設定
+        self.mock_db_ws.table_insert.return_value = [{
+            "EVENT_COLLECTION_ID": "1",
+            "EVENT_COLLECTION_SETTINGS_ID": "12345"
+        }]
+
+        self.mock_db_ws.db_transaction_start.return_value = True
+        self.mock_db_ws.db_transaction_end.return_value = True
+        self.mock_db_ws.table_permanent_delete.return_value = True
+        self.mock_db_ws.table_count.return_value = 0
+
+        # アプリケーションコンテキストとリクエストコンテキストを両方有効にする: URLはダミー
+        with app.test_request_context('/oase/api/v1/event_collection/event_list/'):
+            result, status_code = post_events(self.body, self.organization_id, self.workspace_id)
+
+        assert status_code == 200
+        assert result.get("message") == "SUCCESS"
+        assert result.get("data") == []
+        assert result.get("result") == "000-00000"
+
+    def test_post_events_success_no_fetched_time(self, mocker, app):
+        """fetched_timeがない場合に現在時刻が使用されることを確認する"""
+
+        body = get_valid_body()
+        del body["events"][0]["fetched_time"]
+        assert body["events"][0].get("fetched_time") is None
+
+        mock_now = mocker.patch('datetime.datetime.now')
+        mock_now.return_value.timestamp.return_value = 1754609600
+
+        # table_selectの戻り値を設定
+        self.mock_db_ws.table_select.side_effect = [
+            [{
+                "EVENT_COLLECTION_SETTINGS_ID": "12345",
+                "EVENT_COLLECTION_SETTINGS_NAME": "test_name",
+                "DISUSE_FLAG": "0",
+                "TTL": "3600"
+            }],
+            []
+        ]
+
+        # アプリケーションコンテキストとリクエストコンテキストを両方有効にする: URLはダミー
+        with app.test_request_context('/oase/api/v1/event_collection/event_list/'):
+            result, status_code = post_events(body, self.organization_id, self.workspace_id)
+
+        assert self.mock_db_ws.table_insert.call_args[0][1][0]["FETCHED_TIME"] == 1754609600
+
+    # 異常系のテスト ##
+    def test_post_events_maintenance_mode(self, mocker, app):
+        """メンテナンスモード時にAppExceptionがraiseされることを確認する"""
+        # gオブジェクトの属性をモック
+        mock_g = MagicMock()
+        mock_g.dbConnectError = False
+        mock_g.applogger = MagicMock()
+        mocker.patch('controllers.oase_controller.g.maintenance_mode.get', return_value='1')
+
+        # アプリケーションコンテキストとリクエストコンテキストを両方有効にする: URLはダミー
+        with app.test_request_context('/oase/api/v1/event_collection/event_list/'):
+            result, status_code = post_events(self.body, self.organization_id, self.workspace_id)
+
+        assert status_code == 498
+        assert "498-00004" in result["result"]
+
+    def test_post_events_permission_error(self, mocker, app):
+        """権限エラー時にAppExceptionがraiseされることを確認する"""
+
+        mocker.patch('controllers.oase_controller.check_auth_menu', return_value='2')
+
+        # アプリケーションコンテキストとリクエストコンテキストを両方有効にする: URLはダミー
+        with app.test_request_context('/oase/api/v1/event_collection/event_list/'):
+            result, status_code = post_events(self.body, self.organization_id, self.workspace_id)
+
+        assert status_code == 401
+        assert "401-00001" in result["result"]
+
+    def test_post_events_invalid_settings_name(self, app):
+        """event_collection_settings_nameがDBに存在しない場合にAppExceptionがraiseされることを確認する"""
+
+        self.mock_db_ws.table_select.return_value = []
+
+        # アプリケーションコンテキストとリクエストコンテキストを両方有効にする: URLはダミー
+        with app.test_request_context('/oase/api/v1/event_collection/event_list/'):
+            result, status_code = post_events(self.body, self.organization_id, self.workspace_id)
+
+        assert status_code == 499
+        assert "499-01802" in result["result"]
+
+    def test_post_events_disused_settings(self, app):
+        """収集設定が廃止済みの場合、イベントが保存されないことを確認する"""
+
+        self.mock_db_ws.table_select.return_value = [{
+            "EVENT_COLLECTION_SETTINGS_ID": "12345",
+            "EVENT_COLLECTION_SETTINGS_NAME": "test_name",
+            "DISUSE_FLAG": "1", # 廃止済み
+            "TTL": "3600"
+        }]
+
+        # アプリケーションコンテキストとリクエストコンテキストを両方有効にする: URLはダミー
+        with app.test_request_context('/oase/api/v1/event_collection/event_list/'):
+            result, status_code = post_events(self.body, self.organization_id, self.workspace_id)
+
+        assert status_code == 200
+        assert "000-00000" in result["result"]

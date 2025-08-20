@@ -26,6 +26,7 @@ from common_libs.oase.const import oaseConst
 from common_libs.oase.encrypt import agent_encrypt
 from libs.oase_receiver_common import check_menu_info, check_auth_menu
 from libs.label_event import label_event
+from libs.duplicate_check import duplicate_check
 
 
 @api_filter
@@ -135,6 +136,9 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
 
         # eventsデータを取り出す
         event_group_list = body["events"]
+        if "fetched_time" in event_group_list[0]:
+            # fetched_timeがあればソートしておく
+            event_group_list.sort(key=lambda x: x['fetched_time'])
         for event_group in event_group_list:
             # event_collection_settings_nameもしくは、event_collection_settings_idは必須
             if "event_collection_settings_name" in event_group:
@@ -184,11 +188,11 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
 
             # 取得時間がなければ、受信時刻を埋める
             if not "fetched_time" in event_group:
-                fetched_time =int(datetime.datetime.now().timestamp())
+                fetched_time = int(datetime.datetime.now().timestamp())
             else:
                 fetched_time = int(event_group["fetched_time"])
 
-            # エージェントの識別情報の取得時して無ければ埋める
+            # エージェントの識別情報を取得。無ければ固定値で埋める
             _undefined_exastro_agent = {
                 "name": _undefined_agent_name,
                 "version": _undefined_agent_version
@@ -239,6 +243,8 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
             event_collection_ttl = event_collection_settings[0]["TTL"]
             end_time = fetched_time + int(event_collection_ttl)
             for single_event in event_list:
+                single_event['_exastro_agent_name'] = exastro_agent.get("name")
+                single_event['_exastro_agent_version'] = exastro_agent.get("version")
                 # 必要なプロパティを一旦、なければ追加する
                 if not "_exastro_event_collection_settings_name" in single_event:
                     single_event['_exastro_event_collection_settings_name'] = event_collection_settings_name
@@ -251,10 +257,6 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
 
                 if not "_exastro_end_time" in single_event:
                     single_event['_exastro_end_time'] = end_time
-
-                # エージェントの識別情報がなければ追加する
-                if "_exastro_agent" not in single_event:
-                    single_event['_exastro_agent'] = exastro_agent
 
                 # 未来の削除用に生成時刻をもたせておく
                 single_event['_exastro_created_at'] = datetime.datetime.now(datetime.timezone.utc)
@@ -273,7 +275,19 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
                 raise AppException("499-01802", [", ".join(not_available_event_msg_list)], [", ".join(not_available_event_msg_list)])
 
         # ラベリングしてMongoDBに保存
-        label_event(wsDb, wsMongo, events)  # noqa: F841
+        labeled_event_list = label_event(wsDb, wsMongo, events)  # noqa: F841
+        # 重複排除
+        save_event_list = duplicate_check(wsDb, wsMongo, labeled_event_list)
+
+        # MongoDBに保存
+        labeled_event_collection = wsMongo.collection(mongoConst.LABELED_EVENT_COLLECTION)  # ラベル付与したイベントデータを保存するためのコレクション
+        try:
+            labeled_event_collection.bulk_write(save_event_list)
+        except Exception as e:
+            g.applogger.error(stacktrace())
+            err_code = "499-01803"
+            raise AppException(err_code, [e], [e])
+
 
         # MySQLにイベント収集設定IDとfetched_timeを保存する処理を行う
         wsDb.db_transaction_start()

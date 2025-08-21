@@ -43,9 +43,6 @@ def main(work_dir_path, ws_db):
     table_name = "T_OASE_NOTIFICATION_TEMPLATE_COMMON"
     table_name_jnl = table_name + "_JNL"
 
-    # トランザクション
-    ws_db.db_transaction_start()
-
     """v2.6までで、oaseがインストールされていない状態で作成し、後にoaseをインストールしたワークスペースへの対応
         対象の抽出条件と対処
             ・JOURNAL_SEQ_NOが{}-2のレコードがない場合に、jnlパッチをあてる
@@ -58,7 +55,9 @@ def main(work_dir_path, ws_db):
         return 0
 
     # jnl patchをかける
-    src_dir = "versions/2_5_0/WS_level/jnl/"
+    ws_db.db_transaction_start()  # トランザクション
+
+    src_dir = "versions/2_7_0/WS_level/specific/jnl_patch_bug_2785/"
     config_file_path = os.path.join(src_dir, "oase_config.json")
     dest_dir = os.path.join(work_dir_path, "uploadfiles")
     put_uploadfiles_jnl(ws_db, config_file_path, src_dir, dest_dir)

@@ -1,0 +1,89 @@
+{
+    "110102":
+    {
+        "1": [
+            {
+                "1-2": [
+                    "1",
+                    {
+                        "JOURNAL_SEQ_NO": "1-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "NOTIFICATION_TEMPLATE_ID": "1",
+                        "EVENT_TYPE": "1",
+                        "NOTIFICATION_DESTINATION": "{\"id\": [\"1\"]}",
+                        "TEMPLATE_FILE": "New.j2",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [["New.j2", "/template_file/1/old/1-2/", "/template_file/1/"]]
+                ]
+            }
+        ],
+        "2": [
+            {
+                "2-2": [
+                    "2",
+                    {
+                        "JOURNAL_SEQ_NO": "2-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "NOTIFICATION_TEMPLATE_ID": "2",
+                        "EVENT_TYPE": "2",
+                        "NOTIFICATION_DESTINATION": "{\"id\": [\"1\"]}",
+                        "TEMPLATE_FILE": "Known(evaluated).j2",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [["Known(evaluated).j2", "/template_file/2/old/2-2/", "/template_file/2/"]]
+                ]
+            }
+        ],
+        "3": [
+            {
+                "3-2": [
+                    "3",
+                    {
+                        "JOURNAL_SEQ_NO": "3-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "NOTIFICATION_TEMPLATE_ID": "3",
+                        "EVENT_TYPE": "3",
+                        "NOTIFICATION_DESTINATION": "{\"id\": [\"1\"]}",
+                        "TEMPLATE_FILE": "Known(timeout).j2",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [["Known(timeout).j2", "/template_file/3/old/3-2/", "/template_file/3/"]]
+                ]
+            }
+        ],
+        "4": [
+            {
+                "4-2": [
+                    "4",
+                    {
+                        "JOURNAL_SEQ_NO": "4-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "NOTIFICATION_TEMPLATE_ID": "4",
+                        "EVENT_TYPE": "4",
+                        "NOTIFICATION_DESTINATION": "{\"id\": [\"1\"]}",
+                        "TEMPLATE_FILE": "Undetected.j2",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [["Undetected.j2", "/template_file/4/old/4-2/", "/template_file/4/"]]
+                ]
+            }
+        ]
+    }
+}

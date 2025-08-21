@@ -119,7 +119,6 @@ class NotificationIDColumn(MultiSelectIDColumn):
         if val_decode is not None:
             for val in val_decode:
                 return_values = self.get_values_by_value([val]) if val != "default" else {"1": "default"}
-                print(return_values)
 
                 if len(return_values) == 1:
                     # val = list(return_values.keys())[0]

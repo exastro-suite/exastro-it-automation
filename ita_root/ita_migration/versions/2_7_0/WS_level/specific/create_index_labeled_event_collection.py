@@ -45,6 +45,13 @@ def main(work_dir_path, wsdb):
     try:
         ws_mongo = MONGOConnectWs()
         labeled_event_collection = ws_mongo.collection(mongoConst.LABELED_EVENT_COLLECTION)
+        # 既存のインデックス情報を取得し、その中にインデックス名が見つかれば、抜ける
+        index_list = labeled_event_collection.index_information()
+        if "duplicate_check" in index_list:
+            g.applogger.info("Index[duplicate_check] already exists in 'labeled_event_collection'")
+            ws_mongo.disconnect()
+            return 0
+
         labeled_event_collection.create_index([("labels._exastro_fetched_time", ASCENDING), ("exastro_created_at", ASCENDING), ("_id", ASCENDING)], name="duplicate_check")
         ws_mongo.disconnect()
     except Exception:

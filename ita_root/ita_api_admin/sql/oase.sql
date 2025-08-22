@@ -128,8 +128,9 @@ CREATE TABLE T_OASE_NOTIFICATION_TEMPLATE_COMMON
 (
     NOTIFICATION_TEMPLATE_ID        VARCHAR(40),                                -- 通知テンプレートID
     EVENT_TYPE                      VARCHAR(255),                               -- イベント種別
-    NOTIFICATION_DESTINATION        TEXT,                                       -- 通知先
     TEMPLATE_FILE                   VARCHAR(255),                               -- テンプレート
+    NOTIFICATION_DESTINATION        TEXT,                                       -- 通知先
+    IS_DEFAULT                      VARCHAR(10)  ,                              -- デフォルト
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -144,8 +145,9 @@ CREATE TABLE T_OASE_NOTIFICATION_TEMPLATE_COMMON_JNL
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
     NOTIFICATION_TEMPLATE_ID        VARCHAR(40),                                -- 通知テンプレートID
     EVENT_TYPE                      VARCHAR(255),                               -- イベント種別
-    NOTIFICATION_DESTINATION        TEXT,                                       -- 通知先
     TEMPLATE_FILE                   VARCHAR(255),                               -- テンプレート
+    NOTIFICATION_DESTINATION        TEXT,                                       -- 通知先
+    IS_DEFAULT                      VARCHAR(10)  ,                              -- デフォルト
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時

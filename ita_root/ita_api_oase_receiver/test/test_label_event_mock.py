@@ -15,7 +15,6 @@
 import pytest
 from unittest.mock import MagicMock
 import datetime
-from flask import g
 
 from libs import label_event
 from controllers import oase_controller
@@ -25,7 +24,33 @@ from controllers import oase_controller
     mock_wsmongo: mongodbのモック
     test_label_event_success_case1: 識別情報あり
     test_label_event_success_case2: 識別情報なし(コントローラーでUnknown付与済み)
+    test_label_event_no_labeling_settings: ラベル付与設定がない
+    test_label_event_empty_events: 空のイベントリストのテスト
 """
+
+# Flaskアプリケーションのインスタンスを作成
+@pytest.fixture(scope="session")
+def app_context():
+    from flask import Flask
+    app = Flask(__name__)
+    with app.app_context():
+        yield
+
+# gオブジェクトをモックするためのフィクスチャ
+@pytest.fixture
+def mock_g(mocker):
+    """
+    gオブジェクトをモックし、appmsgとapploggerを置き換える
+    """
+    mock_g_object = mocker.MagicMock()
+    mock_g_object.appmsg = mocker.MagicMock()
+    mock_g_object.applogger = mocker.MagicMock()
+
+    # gオブジェクトを直接モックする
+    mocker.patch('libs.label_event.g', new=mock_g_object)
+
+    return mock_g_object
+
 @pytest.fixture
 def mock_wsdb(mocker):
     """
@@ -127,15 +152,11 @@ def mock_wsdb(mocker):
 def mock_wsmongo(mocker):
     """
     wsMongoオブジェクトのモックを作成するフィクスチャ。
-    collectionメソッドの戻り値を定義します。
     """
     wsmongo_mock = mocker.MagicMock()
-    collection_result_mock = MagicMock()
-    collection_result_mock.acknowledged = True
-    wsmongo_mock.collection.return_value = collection_result_mock
     return wsmongo_mock
 
-def test_label_event_success_case1(mock_wsdb, mock_wsmongo):
+def test_label_event_success_case1(mock_wsdb, mock_wsmongo, mock_g, app_context):
     """
     正常系：有効なイベントデータが渡された場合に、データベースに正しく挿入されることを確認するテスト。
         '_exastro_agent': {
@@ -157,10 +178,8 @@ def test_label_event_success_case1(mock_wsdb, mock_wsmongo):
             '_exastro_event_collection_settings_id': '5f6c522f-d87e-4dc2-84a3-7f23ed71da8b',
             '_exastro_fetched_time': int(_now_time),
             '_exastro_end_time': int(_now_time)+10,
-            '_exastro_agent': {
-                'name': 'oase_ag_001',
-                'version': '2.7.0'
-            },
+            '_exastro_agent_name': 'oase_ag_001',
+            '_exastro_agent_version': '2.7.0',
             '_exastro_created_at': datetime.datetime(2025, 8, 7, 8, 25, 2, 689181, tzinfo=datetime.timezone.utc)
         }
     ]
@@ -196,28 +215,20 @@ def test_label_event_success_case1(mock_wsdb, mock_wsmongo):
     # 期待される結果を検証
     assert mock_wsdb.table_select.call_count == 2
 
-    # wsMongo.collectionが1回呼び出されたことを確認
-    mock_wsmongo.collection.assert_called_once()
+    # 正常終了したことを確認
+    doc = result[0]["labels"] # returnのlabel内容
+    doc_eq = labeled_data[0]["labels"] # 確認するlabel内容
+    assert doc['_exastro_agent_name'] == doc_eq['_exastro_agent_name']
+    assert doc['_exastro_agent_version'] == doc_eq['_exastro_agent_version']
+    assert doc['_exastro_event_collection_settings_id'] == doc_eq['_exastro_event_collection_settings_id']
+    assert doc['_exastro_type'] == doc_eq['_exastro_type']
+    assert doc['_exastro_checked'] == doc_eq['_exastro_checked']
+    assert doc['_exastro_evaluated'] == doc_eq['_exastro_evaluated']
+    assert doc['_exastro_not_available'] ==doc_eq['_exastro_not_available']
+    assert doc['_exastro_timeout'] == doc_eq['_exastro_timeout']
+    assert doc['_exastro_undetected'] == doc_eq['_exastro_undetected']
 
-    #####  label_eventで、return labeled_eventする形に直すなら
-    # import json
-    # doc = result[0]["labels"]
-    # doc_eq = labeled_data[0]["labels"]
-    # assert doc['_exastro_agent_name'] == doc_eq['_exastro_agent_name']
-    # assert doc['_exastro_agent_version'] == doc_eq['_exastro_agent_version']
-    # assert doc['_exastro_event_collection_settings_id'] == doc_eq['_exastro_event_collection_settings_id']
-    # assert doc['_exastro_type'] == doc_eq['_exastro_type']
-    # assert doc['_exastro_checked'] == doc_eq['_exastro_checked']
-    # assert doc['_exastro_evaluated'] == doc_eq['_exastro_evaluated']
-    # assert doc['_exastro_not_available'] ==doc_eq['_exastro_not_available']
-    # assert doc['_exastro_timeout'] == doc_eq['_exastro_timeout']
-    # assert doc['_exastro_undetected'] == doc_eq['_exastro_undetected']
-
-    # # 正常終了したことを確認
-    assert result is None
-    # assert result is not None
-
-def test_label_event_success_case2(mock_wsdb, mock_wsmongo):
+def test_label_event_success_case2(mock_wsdb, mock_wsmongo, mock_g, app_context):
     """
     正常系：有効なイベントデータが渡された場合に、データベースに正しく挿入されることを確認するテスト。
         '_exastro_agent': {
@@ -239,10 +250,8 @@ def test_label_event_success_case2(mock_wsdb, mock_wsmongo):
             '_exastro_event_collection_settings_id': '5f6c522f-d87e-4dc2-84a3-7f23ed71da8b',
             '_exastro_fetched_time': int(_now_time),
             '_exastro_end_time': int(_now_time)+10,
-            # '_exastro_agent': {
-            #     'name': 'oase_ag_001',
-            #     'version': '2.7.0'
-            # },
+            '_exastro_agent_name': 'Unknown',
+            '_exastro_agent_version': 'Unknown',
             '_exastro_created_at': datetime.datetime(2025, 8, 7, 8, 25, 2, 689181, tzinfo=datetime.timezone.utc)
         }
     ]
@@ -278,11 +287,116 @@ def test_label_event_success_case2(mock_wsdb, mock_wsmongo):
     # 期待される結果を検証
     assert mock_wsdb.table_select.call_count == 2
 
-    # wsMongo.collectionが1回呼び出されたことを確認
-    mock_wsmongo.collection.assert_called_once()
+    # 正常終了したことを確認
+    doc = result[0]["labels"] # returnのlabel内容
+    doc_eq = labeled_data[0]["labels"] # 確認するlabel内容
+    assert doc['_exastro_agent_name'] == doc_eq['_exastro_agent_name']
+    assert doc['_exastro_agent_version'] == doc_eq['_exastro_agent_version']
+    assert doc['_exastro_event_collection_settings_id'] == doc_eq['_exastro_event_collection_settings_id']
+    assert doc['_exastro_type'] == doc_eq['_exastro_type']
+    assert doc['_exastro_checked'] == doc_eq['_exastro_checked']
+    assert doc['_exastro_evaluated'] == doc_eq['_exastro_evaluated']
+    assert doc['_exastro_not_available'] ==doc_eq['_exastro_not_available']
+    assert doc['_exastro_timeout'] == doc_eq['_exastro_timeout']
+    assert doc['_exastro_undetected'] == doc_eq['_exastro_undetected']
 
-    #####  label_eventで、return labeled_eventする形に直すなら
+    # 正常終了したことを確認
+    assert result is not None
 
-    # # 正常終了したことを確認
-    assert result is None
-    # assert result is not None
+def test_label_event_no_labeling_settings(mock_wsdb, mock_wsmongo, mock_g, app_context):
+    """
+    ラベル付与設定がない場合に、ログが出力されることを確認
+    """
+    # wsDb.table_selectが、1回目は空リスト、2回目はラベルキーを返すように設定
+    mock_wsdb.table_select.side_effect = [
+        [],  # labeling_settingsが空
+        [
+            {
+                'LABEL_KEY_ID': 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx01',
+                'LABEL_KEY_NAME': '_exastro_event_collection_settings_id'
+            }
+        ]
+    ]
+    _now_time = int(datetime.datetime.now().timestamp())
+    events_data = [
+        {
+            "file": {},
+            "parameter": {},
+            '_exastro_oase_event_id': 1754555102546647,
+            '_exastro_not_available': 'EVENT_ID_KEY not found',
+            '_exastro_event_collection_settings_name': 'test_2',
+            '_exastro_event_collection_settings_id': '5f6c522f-d87e-4dc2-84a3-7f23ed71da8b',
+            '_exastro_fetched_time': int(_now_time),
+            '_exastro_end_time': int(_now_time)+10,
+            '_exastro_agent_name': 'Unknown',
+            '_exastro_agent_version': 'Unknown',
+            '_exastro_created_at': datetime.datetime(2025, 8, 7, 8, 25, 2, 689181, tzinfo=datetime.timezone.utc)
+        }
+    ]
+    labeled_data = [
+        {
+            "event": {
+                "file": {},
+                "parameter": {},
+                "_exastro_oase_event_id": 1754629084041401
+            },
+            "labels": {
+                "_exastro_event_collection_settings_id": "5f6c522f-d87e-4dc2-84a3-7f23ed71da8b",
+                "_exastro_fetched_time": 1754629083,
+                "_exastro_end_time": 1754629093,
+                "_exastro_type": "event",
+                "_exastro_checked": "0",
+                "_exastro_evaluated": "0",
+                "_exastro_undetected": "1",
+                "_exastro_timeout": "0",
+                "_exastro_agent_name": "Unknown",
+                "_exastro_agent_version": "Unknown",
+                "_exastro_not_available": "EVENT_ID_KEY not found"
+            },
+            "exastro_created_at": "2025-08-08T04:58:04.149676+00:00",
+            "_id": None
+        }
+    ]
+
+    # 関数を実行
+    result = label_event.label_event(mock_wsdb, mock_wsmongo, events_data)
+
+    # 期待される結果を検証
+    doc = result[0]["labels"] # returnのlabel内容
+    doc_eq = labeled_data[0]["labels"] # 確認するlabel内容
+    assert doc['_exastro_agent_name'] == doc_eq['_exastro_agent_name']
+    assert doc['_exastro_agent_version'] == doc_eq['_exastro_agent_version']
+    assert doc['_exastro_event_collection_settings_id'] == doc_eq['_exastro_event_collection_settings_id']
+    assert doc['_exastro_type'] == doc_eq['_exastro_type']
+    assert doc['_exastro_checked'] == doc_eq['_exastro_checked']
+    assert doc['_exastro_evaluated'] == doc_eq['_exastro_evaluated']
+    assert doc['_exastro_not_available'] ==doc_eq['_exastro_not_available']
+    assert doc['_exastro_timeout'] == doc_eq['_exastro_timeout']
+    assert doc['_exastro_undetected'] == doc_eq['_exastro_undetected']
+
+    # "ラベル付与設定を取得できませんでした" のログメッセージが呼ばれたことを確認
+    mock_g.appmsg.get_log_message.assert_any_call("499-01804")
+    mock_g.applogger.info.assert_called_with(mock_g.appmsg.get_log_message.return_value)
+
+def test_label_event_empty_events(mock_wsdb, mock_wsmongo, mock_g, app_context):
+    """
+    ラベル付与するイベントが空の場合のテスト
+    """
+    mock_wsdb.table_select.side_effect = [
+        [],  # labeling_settings
+        [],  # label_keys
+    ]
+    events_data = []
+
+    result = label_event.label_event(mock_wsdb, mock_wsmongo, events_data)
+
+    # 戻り値が空リストであることを確認
+    assert result == []
+
+    # データベースが呼び出されていることを確認
+    assert mock_wsdb.table_select.call_count == 2
+
+    # ラベル付与設定なしとラベルマスタなしのログが出力されることを確認
+    mock_g.appmsg.get_log_message.assert_any_call("499-01804")
+    mock_g.appmsg.get_log_message.assert_any_call("499-01805")
+    mock_g.applogger.info.assert_called()

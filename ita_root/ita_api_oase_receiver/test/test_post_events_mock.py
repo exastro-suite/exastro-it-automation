@@ -35,7 +35,6 @@ from common_libs.common.util import stacktrace
 
 """
     test_post_events_success: 正常系
-    test_post_events_success_no_fetched_time: 正常系(fetched_timeなし)
     test_post_events_maintenance_mode: 異常系(メンテナンス中)
     test_post_events_permission_error: 異常系(権限なし)
     test_post_events_invalid_settings_name: 異常系(不正なイベント設定名)
@@ -130,7 +129,7 @@ class TestPostEvents:
         mocker.patch('controllers.oase_controller.label_event', return_value='1')
 
     # 正常系のテスト ##
-    def test_post_events_success(self, app):
+    def test_post_events_success(self, app, mocker):
         """正常な入力でイベントが正しく保存されることを確認する"""
 
         # table_selectの戻り値を設定
@@ -154,41 +153,48 @@ class TestPostEvents:
         self.mock_db_ws.table_permanent_delete.return_value = True
         self.mock_db_ws.table_count.return_value = 0
 
+        expected_labeled_events = [
+            {
+                "event": {
+                    "file": {},
+                    "parameter": {},
+                    "_exastro_oase_event_id": 1754629084041401
+                },
+                "labels": {
+                    "_exastro_event_collection_settings_id": "5f6c522f-d87e-4dc2-84a3-7f23ed71da8b",
+                    "_exastro_fetched_time": 1754629083,
+                    "_exastro_end_time": 1754629093,
+                    "_exastro_type": "event",
+                    "_exastro_checked": "0",
+                    "_exastro_evaluated": "0",
+                    "_exastro_undetected": "1",
+                    "_exastro_timeout": "0",
+                    "_exastro_agent_name": "Unknown",
+                    "_exastro_agent_version": "Unknown",
+                    "_exastro_not_available": "EVENT_ID_KEY not found"
+                },
+                "exastro_created_at": "2025-08-08T04:58:04.149676+00:00",
+                "_id": None
+            }
+        ]
+        mocker.patch('controllers.oase_controller.label_event', return_value=expected_labeled_events)
+
         # アプリケーションコンテキストとリクエストコンテキストを両方有効にする: URLはダミー
         with app.test_request_context('/oase/api/v1/event_collection/event_list/'):
             result, status_code = post_events(self.body, self.organization_id, self.workspace_id)
 
+        # ステータスコードの検証
         assert status_code == 200
         assert result.get("message") == "SUCCESS"
         assert result.get("data") == []
         assert result.get("result") == "000-00000"
 
-    def test_post_events_success_no_fetched_time(self, mocker, app):
-        """fetched_timeがない場合に現在時刻が使用されることを確認する"""
+        # insert_many の呼び出し引数を検証
+        labeled_event_collection = self.mock_mongo_ws.collection.return_value
+        labeled_event_collection.insert_many.assert_called_once_with(expected_labeled_events)
+        args, kwargs =  labeled_event_collection.insert_many.call_args
+        assert args == (expected_labeled_events,)
 
-        body = get_valid_body()
-        del body["events"][0]["fetched_time"]
-        assert body["events"][0].get("fetched_time") is None
-
-        mock_now = mocker.patch('datetime.datetime.now')
-        mock_now.return_value.timestamp.return_value = 1754609600
-
-        # table_selectの戻り値を設定
-        self.mock_db_ws.table_select.side_effect = [
-            [{
-                "EVENT_COLLECTION_SETTINGS_ID": "12345",
-                "EVENT_COLLECTION_SETTINGS_NAME": "test_name",
-                "DISUSE_FLAG": "0",
-                "TTL": "3600"
-            }],
-            []
-        ]
-
-        # アプリケーションコンテキストとリクエストコンテキストを両方有効にする: URLはダミー
-        with app.test_request_context('/oase/api/v1/event_collection/event_list/'):
-            result, status_code = post_events(body, self.organization_id, self.workspace_id)
-
-        assert self.mock_db_ws.table_insert.call_args[0][1][0]["FETCHED_TIME"] == 1754609600
 
     # 異常系のテスト ##
     def test_post_events_maintenance_mode(self, mocker, app):
@@ -230,7 +236,7 @@ class TestPostEvents:
         assert status_code == 499
         assert "499-01802" in result["result"]
 
-    def test_post_events_disused_settings(self, app):
+    def test_post_events_disused_settings(self, app, mocker):
         """収集設定が廃止済みの場合、イベントが保存されないことを確認する"""
 
         self.mock_db_ws.table_select.return_value = [{
@@ -240,9 +246,39 @@ class TestPostEvents:
             "TTL": "3600"
         }]
 
+        expected_labeled_events = [
+            {
+                "event": {
+                    "file": {},
+                    "parameter": {},
+                    "_exastro_oase_event_id": 1754629084041401
+                },
+                "labels": {
+                    "_exastro_event_collection_settings_id": "5f6c522f-d87e-4dc2-84a3-7f23ed71da8b",
+                    "_exastro_fetched_time": 1754629083,
+                    "_exastro_end_time": 1754629093,
+                    "_exastro_type": "event",
+                    "_exastro_checked": "0",
+                    "_exastro_evaluated": "0",
+                    "_exastro_undetected": "1",
+                    "_exastro_timeout": "0",
+                    "_exastro_agent_name": "Unknown",
+                    "_exastro_agent_version": "Unknown",
+                    "_exastro_not_available": "EVENT_ID_KEY not found"
+                },
+                "exastro_created_at": "2025-08-08T04:58:04.149676+00:00",
+                "_id": None
+            }
+        ]
+        mocker.patch('controllers.oase_controller.label_event', return_value=expected_labeled_events)
+
         # アプリケーションコンテキストとリクエストコンテキストを両方有効にする: URLはダミー
         with app.test_request_context('/oase/api/v1/event_collection/event_list/'):
             result, status_code = post_events(self.body, self.organization_id, self.workspace_id)
 
         assert status_code == 200
         assert "000-00000" in result["result"]
+
+        # 登録されていない事の検証
+        labeled_event_collection = self.mock_mongo_ws.collection.return_value
+        assert labeled_event_collection.insert_many.called is False

@@ -13,24 +13,11 @@
 #   limitations under the License.
 
 import pytest
-import datetime
 import os
-from unittest.mock import MagicMock, patch
-from flask import Flask, g
-
-from common_libs.common.logger import AppLog
-from common_libs.common import *  # noqa: F403
-from common_libs.common.dbconnect import DBConnectWs
-from common_libs.common.mongoconnect.const import Const as mongoConst
-from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
-from common_libs.api import api_filter
+from unittest.mock import MagicMock
+from flask import Flask
 
 from controllers.oase_controller import post_events
-from common_libs.oase.const import oaseConst
-from libs.oase_receiver_common import check_menu_info, check_auth_menu
-from libs.label_event import label_event
-from common_libs.common.exception import AppException
-from common_libs.common.util import stacktrace
 
 
 """
@@ -41,6 +28,7 @@ from common_libs.common.util import stacktrace
     test_post_events_disused_settings: 異常系(イベント設定が廃止)
 """
 
+
 # テスト用のダミークラスと定数を定義
 class DummyAppException(Exception):
     def __init__(self, status_code, log_msg_args, api_msg_args):
@@ -49,17 +37,20 @@ class DummyAppException(Exception):
         self.api_msg_args = api_msg_args
         super().__init__(f"AppException: {status_code}")
 
+
 class DummyOaseConst:
     DF_AGENT_NAME = "undefined_agent_name"
     DF_AGENT_VERSION = "undefined_agent_version"
     T_OASE_EVENT_COLLECTION_SETTINGS = "T_OASE_EVENT_COLLECTION_SETTINGS"
     T_OASE_EVENT_COLLECTION_PROGRESS = "T_OASE_EVENT_COLLECTION_PROGRESS"
 
+
 @pytest.fixture
 def app():
     app = Flask(__name__)
     app.config['TESTING'] = True
     yield app
+
 
 # bodyのテンプレート
 def get_valid_body():
@@ -84,6 +75,7 @@ def get_valid_body():
             }
         ]
     }
+
 
 class TestPostEvents:
     # クラスのセットアップメソッド
@@ -140,7 +132,7 @@ class TestPostEvents:
                 "DISUSE_FLAG": "0",
                 "TTL": "3600"
             }],
-            [] # event_collection_progressは空
+            []  # event_collection_progressは空
         ]
         # table_insertの戻り値を設定
         self.mock_db_ws.table_insert.return_value = [{
@@ -192,9 +184,8 @@ class TestPostEvents:
         # insert_many の呼び出し引数を検証
         labeled_event_collection = self.mock_mongo_ws.collection.return_value
         labeled_event_collection.insert_many.assert_called_once_with(expected_labeled_events)
-        args, kwargs =  labeled_event_collection.insert_many.call_args
+        args, kwargs = labeled_event_collection.insert_many.call_args
         assert args == (expected_labeled_events,)
-
 
     # 異常系のテスト ##
     def test_post_events_maintenance_mode(self, mocker, app):
@@ -242,7 +233,7 @@ class TestPostEvents:
         self.mock_db_ws.table_select.return_value = [{
             "EVENT_COLLECTION_SETTINGS_ID": "12345",
             "EVENT_COLLECTION_SETTINGS_NAME": "test_name",
-            "DISUSE_FLAG": "1", # 廃止済み
+            "DISUSE_FLAG": "1",  # 廃止済み
             "TTL": "3600"
         }]
 

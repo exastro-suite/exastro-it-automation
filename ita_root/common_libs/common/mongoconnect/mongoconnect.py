@@ -86,6 +86,12 @@ class MONGOConnectCommon():
         if self._client is None:
             raise AppException("999-00002", ["mongodb.{}".format(self._db_name), "mongodb client is invalid"])
 
+        # server_info()メソッドでサーバー情報を取得
+        server_info = self._client.server_info()
+        # バージョンを取得
+        version = server_info.get('version')
+        g.mongoVersion = version
+
         self._db = self._client[self._db_name]
 
         return True

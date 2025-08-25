@@ -13,11 +13,14 @@
 #
 
 from flask import g
+import os
 import json
 import datetime
 import copy
-from bson.objectid import ObjectId
+from packaging.version import Version
 from pymongo import ASCENDING, InsertOne, UpdateOne
+import concurrent.futures
+from collections import defaultdict
 
 # from common_libs.common.exception import AppException
 # from common_libs.common.util import stacktrace
@@ -32,27 +35,52 @@ DEDUPLICATION_SETTINGS_MAP = {}
 # イベント収集設定から、重複排除の設定を引けるようにしたもの
 DEDUPLICATION_SETTINGS_ECS_MAP = {}
 
+findoneupdate_insert_num = 0
+findoneupdate_update_num = 0
 
 # 重複排除
 def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
+    global findoneupdate_insert_num
+    global findoneupdate_update_num
+
+    findoneupdate_insert_num = 0
+    findoneupdate_update_num = 0
+
     # 重複排除の設定を取得
     deduplication_settings = wsDb.table_select(
         oaseConst.T_OASE_DEDUPLICATION_SETTINGS,
-        "WHERE DISUSE_FLAG=0 ORDER BY SETTING_PRIORITY, DEDUPLICATION_SETTING_NAME"
+        "WHERE DISUSE_FLAG='0' ORDER BY SETTING_PRIORITY, DEDUPLICATION_SETTING_NAME"
     )
     if len(deduplication_settings) == 0:
         # 重複排除の設定設定を取得できませんでした。
-        msg = g.appmsg.get_log_message("499-01804")
+        msg = g.appmsg.get_log_message("重複排除の設定設定を取得できませんでした。")
         g.applogger.info(msg)
-        return
+        return False
+
+    # mongoのバージョンが8.0以上かどうか
+    # update_oneでsortが利用可能
+    def is_mongo_version_8_or_greater():
+        version_str = g.mongoVersion
+        return Version(version_str) >= Version("8.0")
+    is_enable_update_one = is_mongo_version_8_or_greater()
+
+    labeled_event_collection = wsMongo.collection(mongoConst.LABELED_EVENT_COLLECTION)  # ラベル付与したイベントデータを保存するためのコレクション
 
     # IDとイベント収集設定IDから引けるように整形しておく
     for deduplication_setting in deduplication_settings:
         deduplication_setting_id = deduplication_setting["DEDUPLICATION_SETTING_ID"]
-        event_source_redundancy_group = json.loads(deduplication_setting["EVENT_SOURCE_REDUNDANCY_GROUP"])
+
+        # multi_select_id_columnのものをすぐに配列として利用できるように整形
+        try:
+            event_source_redundancy_group = json.loads(deduplication_setting["EVENT_SOURCE_REDUNDANCY_GROUP"])['id']
+        except:
+            event_source_redundancy_group = []
         deduplication_setting["EVENT_SOURCE_REDUNDANCY_GROUP"] = event_source_redundancy_group
-        deduplication_setting["CONDITION_LABEL_KEY_IDS"] = json.loads(deduplication_setting.get("CONDITION_LABEL_KEY_IDS", []))
-        # リストのものなどを適切な形に整形しておく
+        try:
+            deduplication_setting["CONDITION_LABEL_KEY_IDS"] = json.loads(deduplication_setting["CONDITION_LABEL_KEY_IDS"])['id']
+        except:
+            deduplication_setting["CONDITION_LABEL_KEY_IDS"] = []
+
         DEDUPLICATION_SETTINGS_MAP[deduplication_setting_id] = deduplication_setting
 
         for event_collection_settings_id in event_source_redundancy_group:
@@ -61,38 +89,40 @@ def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
             if deduplication_setting_id not in DEDUPLICATION_SETTINGS_ECS_MAP[event_collection_settings_id]:
                 DEDUPLICATION_SETTINGS_ECS_MAP[event_collection_settings_id].append(deduplication_setting_id)
     # g.applogger.debug("DEDUPLICATION_SETTINGS_MAP={}".format(DEDUPLICATION_SETTINGS_MAP))
-    g.applogger.debug("DEDUPLICATION_SETTINGS_ECS_MAP={}".format(DEDUPLICATION_SETTINGS_ECS_MAP))
+    g.applogger.debug(f"{DEDUPLICATION_SETTINGS_ECS_MAP=}")
 
-    # mongoに保存する用に整形している、updateするイベントデータ
-    save_update_event_list = []
-    # 登録予定の先着イベントのリスト（検索&あとでまとめて登録するためにキャッシュ）
-    first_event_list = []
-    # 件数
-    mongo_update = 0  # 既にmongoに入っている先着イベントと重複している
-    request_update = 0  # 同じリクエストの中の先着イベントと重複している
+    # mongoにbulkで発行できるものはここにためておく
+    bulkwrite_event_list = []
+    # key: dupulicate_check_key, value: list of event data (find_one_updateを実行するためのデータ)
+    findoneupdate_event_group = defaultdict(list)
 
     # イベント単位でループ
     # labeled_event_listは、既にfetched_time->exastro_created_atでソート済みの前提
     for event in labeled_event_list:
         event_collection_settings_id = event["labels"]["_exastro_event_collection_settings_id"]
+        agent_name = event["labels"]["_exastro_agent_name"]
+        # 重複チェックキーの生成
+        dupulicate_check_key = "{}_{}".format(event_collection_settings_id, agent_name)
 
-        # 重複排除設定がなければスキップ
+        # 重複排除設定がなければ、追加決定
         if event_collection_settings_id not in DEDUPLICATION_SETTINGS_ECS_MAP:
+            event["exastro_dupulicate_check"] = [dupulicate_check_key]
+            bulkwrite_event_list.append(InsertOne(event))
             continue
 
+        # ここから重複排除の判定に入っていく
         # ユーザがつけたラベルのkey&valueを抜き出す
         user_labels = {}
         for label_key_name, label_key_id in event["exastro_label_key_inputs"].items():
             user_labels["labels.{}".format(label_key_name)] = event["labels"][label_key_name]
 
-        # 重複チェックキーの生成
-        agent_name = event["labels"]["_exastro_agent_name"]
-        dupulicate_check_key = "{}_{}".format(event_collection_settings_id, agent_name)
-
         # 含まれている重複排除設定でループ
-        is_update = False
+        conditions_list = []
         for deduplication_settings_id in DEDUPLICATION_SETTINGS_ECS_MAP[event_collection_settings_id]:
             deduplication_setting = DEDUPLICATION_SETTINGS_MAP[deduplication_settings_id]  # 重複排除設定
+            event_source_redundancy_group = deduplication_setting["EVENT_SOURCE_REDUNDANCY_GROUP"]
+            if len(event_source_redundancy_group) == 0:
+                break
 
             # ラベルでの同一性確認の判定条件を生成 = 一致するラベルのkey&valueを作る
             condition_label_key_ids = deduplication_setting["CONDITION_LABEL_KEY_IDS"]
@@ -133,69 +163,96 @@ def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
                     # 無視対象のラベルがあれば除外
                         del tmp_user_labels[ignore_label_key_name]
             if is_skip is True:
-                break
+                continue
 
-            # 検索条件を作成し、mongoから検索
-            event_source_redundancy_group = deduplication_setting["EVENT_SOURCE_REDUNDANCY_GROUP"]
+            # 検索条件を作成
             conditions = {
                 "labels._exastro_end_time": {"$gte": int(datetime.datetime.now().timestamp())},  # 現在時刻より未来（TTL範囲内）
                 "labels._exastro_event_collection_settings_id": {"$in": event_source_redundancy_group},  # 重複排除設定のイベント収集範囲
                 "exastro_dupulicate_check": {"$nin": [dupulicate_check_key]}  # これから重複する以外のケース（先着イベントor先着イベントに刻まれている）を省くため
             }
-            conditions.update(tmp_user_labels)  # ラベルのkey&valueの一致
+            if tmp_user_labels:
+                conditions.update(tmp_user_labels)  # ラベルのkey&valueの一致
+            # g.applogger.debug(f"{conditions=}")
 
-            g.applogger.debug("conditions={}".format(conditions))
-            mongo_results = wsMongo.collection(mongoConst.LABELED_EVENT_COLLECTION).find(conditions).sort([("labels._exastro_fetched_time", ASCENDING), ("exastro_created_at", ASCENDING), ("_id", ASCENDING)]).limit(1)
+            # 検索条件を追加（重複排除ごとに検索するのではなく、まとめる）
+            conditions_list.append(conditions)
 
-            for mongo_result in mongo_results:
-                # 既に先着イベントがあるので、重複イベントが来た履歴を先着イベントに残して、イベントの新規登録はしない（=重複排除）
-                dupulicate_check_list = list(mongo_result["exastro_dupulicate_check"]) + [dupulicate_check_key]
-                # 先着イベントを更新
-                save_update_event_list.append(UpdateOne(
-                    {"_id": ObjectId(mongo_result["_id"])},
-                    {"$set" :{"exastro_dupulicate_check": dupulicate_check_list}}
-                ))
-                mongo_update += 1
-                g.applogger.debug("first event(_id={}) is to be updated".format(mongo_result["_id"]))
-                is_update = True
-                break
-            # 更新（重複排除）が行われた場合は、（該当イベントに関する）処理終了
-            if is_update is True:
-                break
+        # g.applogger.debug(f"{conditions_list=}")
+        if len(conditions_list) == 0:
+        # insertしかありえない
+            event["exastro_dupulicate_check"] = [dupulicate_check_key]
+            bulkwrite_event_list.append(InsertOne(event))
+            continue
 
-            # save_update_event_listに先着イベントがないか探す
-            for first_event in first_event_list:
-                if first_event["labels"]["_exastro_event_collection_settings_id"] not in event_source_redundancy_group:  # 重複排除設定のイベント収集範囲
-                    break
-                if dupulicate_check_key in first_event["exastro_dupulicate_check"]:  # これから重複する以外のケース（先着イベントor先着イベントに刻まれている）を省くため
-                    break
-                match_label = True  # ラベルのkey&valueの一致
-                for _key, value in tmp_user_labels.items():
-                    key = _key.replace("labels.", "")
-                    if first_event["labels"][key] != value:
-                        match_label = False
-                        break
-                if match_label is False:
-                    break
-                # ソート済のリストを検索しているので、先着イベントがみつかった時点で抜けて重複イベント対象とみなす
-                # 先着イベントを更新
-                first_event["exastro_dupulicate_check"].append(dupulicate_check_key)
-                request_update += 1
-                g.applogger.debug("first event(dupulicate_check_key={}, exastro_created_at={}, exastro_dupulicate_check={}) is to be updated".format(dupulicate_check_key, first_event["exastro_created_at"], first_event["exastro_dupulicate_check"]))
-                is_update = True
-                break
-            # 更新（重複排除）が行われた場合は、（該当イベントに関する）処理終了
-            if is_update is True:
-                break
+        # upsertする場合は、その場でmongoにクエリを発行する（find_one_and_updateがbulk_writeできないから）
+        if is_enable_update_one is False:
+            findoneupdate_event_group[dupulicate_check_key].append({
+                "event": event,
+                "conditions_list": conditions_list,
+                "dupulicate_check_key": dupulicate_check_key
+            })
+        else:
+            bulkwrite_event_list.append(UpdateOne(
+                filter={"$or": conditions_list},
+                update={
+                    "$setOnInsert": event,  # ドキュメントが存在しない場合に挿入する内容
+                    "$push": {"exastro_dupulicate_check": dupulicate_check_key}  # ドキュメントが存在する場合に更新する内容
+                },
+                sort={"labels._exastro_fetched_time": ASCENDING, "exastro_created_at": ASCENDING, "_id": ASCENDING},
+                upsert=True
+            ))
 
-        # いずれの場合でも重複排除が行われなかった場合に、「新規登録」と判断 ※先着イベント or 重複排除判定をする必要がないイベントを指す
-        if is_update is False:
-            g.applogger.debug("first event(dupulicate_check_key={}, exastro_created_at={}) is to be inserted".format(dupulicate_check_key, event["exastro_created_at"]))
-            first_event_list.append(event)
+    if len(bulkwrite_event_list) != 0:
+        labeled_event_collection.bulk_write(bulkwrite_event_list)
+        g.applogger.info("bulk_write_num={}".format(len(bulkwrite_event_list)))
 
-    # 登録するイベントのリストをmongoに保存するために整形
-    save_insert_event_list = [InsertOne(x) for x in first_event_list]
+    if findoneupdate_event_group:
+        # スレッド数は環境や負荷に応じて調整してください
+        # I/Oバウンドな処理なので、CPUコア数より多めに設定するのが一般的です
+        MAX_WORKERS = os.environ.get("MAX_WORKER_DUPLICATE_CHECK", 12)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+            # 各グループを処理するタスクを投入
+            future_to_group = {
+                executor.submit(_process_event_group, labeled_event_collection, event_group): key
+                for key, event_group in findoneupdate_event_group.items()
+            }
+            # 全てのタスクの完了を待ち、例外が発生した場合はログに出力
+            for future in concurrent.futures.as_completed(future_to_group):
+                group_key = future_to_group[future]
+                try:
+                    future.result()  # result()を呼び出すことでワーカー関数内の例外を再発生させる
+                except Exception as e:
+                    g.applogger.error(f"An error occurred while processing group {group_key}: {e}")
 
-    g.applogger.info("duplicate check result is below: all={}, insert={}, mongo_update={}, request_update={}".format(len(labeled_event_list), len(first_event_list), mongo_update, request_update))
+    g.applogger.info(f"{findoneupdate_insert_num=}")
+    g.applogger.info(f"{findoneupdate_update_num=}")
 
-    return save_insert_event_list + save_update_event_list
+    return True
+
+def _process_event_group(labeled_event_collection, event_group):
+    """
+    同じ重複チェックキーを持つイベントグループを逐次処理するワーカー関数。
+    各イベントに対して find_one_and_update を実行する。
+    """
+    global findoneupdate_insert_num
+    global findoneupdate_update_num
+
+    for event_data in event_group:
+        event = event_data["event"]
+        conditions_list = event_data["conditions_list"]
+        dupulicate_check_key = event_data["dupulicate_check_key"]
+
+        res = labeled_event_collection.find_one_and_update(
+            filter={"$or": conditions_list},
+            update={
+                "$setOnInsert": event,  # ドキュメントが存在しない場合に挿入する内容
+                "$push": {"exastro_dupulicate_check": dupulicate_check_key}  # ドキュメントが存在する場合に更新する内容
+            },
+            sort={"labels._exastro_fetched_time": ASCENDING, "exastro_created_at": ASCENDING, "_id": ASCENDING},
+            upsert=True
+        )
+        if res is None:
+            findoneupdate_insert_num += 1
+        else:
+            findoneupdate_update_num += 1

@@ -15,6 +15,7 @@
 from flask import g
 
 import datetime
+from pymongo import InsertOne
 
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectWs
@@ -276,13 +277,14 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
 
         # ラベリングしてMongoDBに保存
         labeled_event_list = label_event(wsDb, wsMongo, events)  # noqa: F841
-        # 重複排除
-        save_event_list = duplicate_check(wsDb, wsMongo, labeled_event_list)
 
-        # MongoDBに保存
-        labeled_event_collection = wsMongo.collection(mongoConst.LABELED_EVENT_COLLECTION)  # ラベル付与したイベントデータを保存するためのコレクション
         try:
-            labeled_event_collection.bulk_write(save_event_list)
+            # 重複排除してmongoに書き込む
+            duplicate_check_result = duplicate_check(wsDb, wsMongo, labeled_event_list)
+            if duplicate_check_result is False:
+                # 重複排除を行わなかった場合は、ラベル付きデータを保存
+                labeled_event_collection = wsMongo.collection(mongoConst.LABELED_EVENT_COLLECTION)  # ラベル付与したイベントデータを保存するためのコレクション
+                labeled_event_collection.bulk_write([InsertOne(x) for x in labeled_event_list])
         except Exception as e:
             g.applogger.error(stacktrace())
             err_code = "499-01803"

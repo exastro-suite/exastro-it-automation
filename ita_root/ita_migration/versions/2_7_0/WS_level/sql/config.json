@@ -1,3 +1,4 @@
 [
-    ["", "oase_master.sql"]
+    ["", "workspace_master.sql"],
+    ["oase.sql", "oase_master.sql"]
 ]

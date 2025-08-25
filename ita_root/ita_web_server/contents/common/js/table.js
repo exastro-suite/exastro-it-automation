@@ -4890,6 +4890,8 @@ async changeEdtiMode( changeMode ) {
                 if ( select !== undefined ) {
                     if ( columnInfo.column_type === 'NotificationIDColumn') {
                         tb.edit.blank.parameter[ columnInfo.column_name_rest ] = fn.jsonStringify([select[0]]);
+                    } else if ( columnInfo.column_type === 'MultiSelectIDColumn') {
+                        tb.edit.blank.parameter[ columnInfo.column_name_rest ] = fn.jsonStringify([]);
                     } else {
                         tb.edit.blank.parameter[ columnInfo.column_name_rest ] = select[0];
                     }

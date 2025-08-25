@@ -45,7 +45,7 @@ def external_valid_menu_before(objdbca, objtable, option):
     
     # 「登録」「更新」の場合、entry_parameterから各値を取得
     if cmd_type == "Register" or cmd_type == "Update":
-        event_source_redundancy_group = json.loads(entry_parameter.get("event_source_redundancy_group")).get("id", {}) if type(entry_parameter.get("event_source_redundancy_group")) else None
+        event_source_redundancy_group = json.loads(entry_parameter.get("event_source_redundancy_group")).get("id", {}) if entry_parameter.get("event_source_redundancy_group") else None
         condition_labels = json.loads(entry_parameter.get("condition_labels", {})).get("id", {}) if entry_parameter.get("condition_labels") else None
         condition_expression = entry_parameter.get("condition_expression")
     # 「復活」の場合、currrent_parameterから各値を取得

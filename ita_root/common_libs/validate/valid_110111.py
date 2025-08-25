@@ -1,4 +1,4 @@
-# Copyright 2023 NEC Corporation#
+# Copyright 2025 NEC Corporation#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -74,7 +74,8 @@ def external_valid_menu_before(objdbca, objtable, option):
                 link_check_dict[event_source] = []
                 labeling_settings = objdbca.table_select(
                     "T_OASE_LABELING_SETTINGS",
-                    f"WHERE EVENT_COLLECTION_SETTINGS_ID = '{event_source}' AND DISUSE_FLAG='0'"
+                    "WHERE EVENT_COLLECTION_SETTINGS_ID = %s AND DISUSE_FLAG='0'",
+                    [event_source]
                 )
                 for record in labeling_settings:
                     link_check_dict[event_source].append(record["LABEL_KEY_ID"])
@@ -97,7 +98,8 @@ def external_valid_menu_before(objdbca, objtable, option):
             for event_source in event_source_redundancy_group:
                 labeling_settings = objdbca.table_select(
                     "T_OASE_LABELING_SETTINGS",
-                    f"WHERE EVENT_COLLECTION_SETTINGS_ID = '{event_source}' AND DISUSE_FLAG='0'"
+                    "WHERE EVENT_COLLECTION_SETTINGS_ID = %s AND DISUSE_FLAG='0'",
+                    [event_source]
                 )
                 for item in labeling_settings:
                     link_check_list.append(item["LABEL_KEY_ID"])
@@ -120,7 +122,8 @@ def external_valid_menu_before(objdbca, objtable, option):
 def get_label_key_by_id(objdbca, id):
     label_key_input = objdbca.table_select(
         "T_OASE_LABEL_KEY_INPUT",
-        f"WHERE LABEL_KEY_ID = '{id}' AND DISUSE_FLAG = '0'"
+        "WHERE LABEL_KEY_ID = %s AND DISUSE_FLAG = '0'",
+        [id]
     )
     label_key_name = label_key_input[0]["LABEL_KEY_NAME"]
     return label_key_name
@@ -129,7 +132,8 @@ def get_label_key_by_id(objdbca, id):
 def get_event_collection_settings_name_by_id(objdbca, id):
     event_collection_setting = objdbca.table_select(
         "T_OASE_EVENT_COLLECTION_SETTINGS",
-        f"WHERE EVENT_COLLECTION_SETTINGS_ID = '{id}' AND DISUSE_FLAG='0'"
+        "WHERE EVENT_COLLECTION_SETTINGS_ID = %s AND DISUSE_FLAG='0'",
+        [id]
     )
     event_collection_settings_name = event_collection_setting[0]["EVENT_COLLECTION_SETTINGS_NAME"]
     return event_collection_settings_name

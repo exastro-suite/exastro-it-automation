@@ -187,6 +187,7 @@ def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
 
         # upsertする場合は、その場でmongoにクエリを発行する（find_one_and_updateがbulk_writeできないから）
         if is_enable_update_one is False:
+            # タスクをdupulicate_check_keyごとにまとめる
             findoneupdate_event_group[dupulicate_check_key].append({
                 "event": event,
                 "conditions_list": conditions_list,
@@ -202,28 +203,26 @@ def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
                 sort={"labels._exastro_fetched_time": ASCENDING, "exastro_created_at": ASCENDING, "_id": ASCENDING},
                 upsert=True
             ))
+    labeled_event_list = None
 
     if len(bulkwrite_event_list) != 0:
         labeled_event_collection.bulk_write(bulkwrite_event_list)
         g.applogger.info("bulk_write_num={}".format(len(bulkwrite_event_list)))
+        bulkwrite_event_list = None
 
     if findoneupdate_event_group:
-        # スレッド数は環境や負荷に応じて調整してください
-        # I/Oバウンドな処理なので、CPUコア数より多めに設定するのが一般的です
+        # スレッド数。I/Oバウンドな処理なので、CPUコア数より多めに設定するのが一般的
         MAX_WORKERS = os.environ.get("MAX_WORKER_DUPLICATE_CHECK", 12)
         with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
             # 各グループを処理するタスクを投入
-            future_to_group = {
-                executor.submit(_process_event_group, labeled_event_collection, event_group): key
-                for key, event_group in findoneupdate_event_group.items()
-            }
+            future_to_group = []
+            for dupulicate_check_key, event_group in findoneupdate_event_group.items():
+                future_to_group.append(executor.submit(_process_event_group, labeled_event_collection, event_group))
+            findoneupdate_event_group = None
             # 全てのタスクの完了を待ち、例外が発生した場合はログに出力
             for future in concurrent.futures.as_completed(future_to_group):
-                group_key = future_to_group[future]
-                try:
-                    future.result()  # result()を呼び出すことでワーカー関数内の例外を再発生させる
-                except Exception as e:
-                    g.applogger.error(f"An error occurred while processing group {group_key}: {e}")
+                future.result()  # result()を呼び出すことでワーカー関数内の例外を再発生させる
+            future_to_group = None
 
     g.applogger.info(f"{findoneupdate_insert_num=}")
     g.applogger.info(f"{findoneupdate_update_num=}")
@@ -238,21 +237,25 @@ def _process_event_group(labeled_event_collection, event_group):
     global findoneupdate_insert_num
     global findoneupdate_update_num
 
-    for event_data in event_group:
-        event = event_data["event"]
-        conditions_list = event_data["conditions_list"]
-        dupulicate_check_key = event_data["dupulicate_check_key"]
+    try:
+        for event_data in event_group:
+            event = event_data["event"]
+            conditions_list = event_data["conditions_list"]
+            dupulicate_check_key = event_data["dupulicate_check_key"]
 
-        res = labeled_event_collection.find_one_and_update(
-            filter={"$or": conditions_list},
-            update={
-                "$setOnInsert": event,  # ドキュメントが存在しない場合に挿入する内容
-                "$push": {"exastro_dupulicate_check": dupulicate_check_key}  # ドキュメントが存在する場合に更新する内容
-            },
-            sort={"labels._exastro_fetched_time": ASCENDING, "exastro_created_at": ASCENDING, "_id": ASCENDING},
-            upsert=True
-        )
-        if res is None:
-            findoneupdate_insert_num += 1
-        else:
-            findoneupdate_update_num += 1
+            res = labeled_event_collection.find_one_and_update(
+                filter={"$or": conditions_list},
+                update={
+                    "$setOnInsert": event,  # ドキュメントが存在しない場合に挿入する内容
+                    "$push": {"exastro_dupulicate_check": dupulicate_check_key}  # ドキュメントが存在する場合に更新する内容
+                },
+                sort={"labels._exastro_fetched_time": ASCENDING, "exastro_created_at": ASCENDING, "_id": ASCENDING},
+                upsert=True
+            )
+            if res is None:
+                findoneupdate_insert_num += 1
+            else:
+                findoneupdate_update_num += 1
+    except Exception as e:
+        g.applogger.error("An error occurred while find_one_and_update (conditions_list{}, event={})".format(conditions_list, event))
+        raise e

@@ -7,6 +7,12 @@ EXASTRO_USERNAME="admin"
 EXASTRO_PASSWORD=""
 
 
+EXASTRO_URL="http://platform-auth:38000"
+EXASTRO_ORG_ID="org_uekawa_1"
+EXASTRO_WS_ID="ws_jyufukuhaijyo"
+EXASTRO_USERNAME="admin"
+EXASTRO_PASSWORD="password"
+
 # SYSTEM
 HTTP_STATUS=""
 RESPONSE_BODY=""
@@ -164,9 +170,10 @@ sendEvent() {
     JSON_BODY="{
 \"events\": [
     {
-        \"event\": [
-            {
-                \"eventid\": \"${EVENTID}\",
+        \"event\": ["
+for i in {1..2500}; do
+JSON_BODY+="{
+                \"eventid\": \"$((EVENTID+i))\",
                 \"source\": \"0\",
                 \"object\": \"0\",
                 \"objectid\": \"16046\",
@@ -183,8 +190,10 @@ sendEvent() {
                 \"opdata\": \"Current utilization: 100 %\",
                 \"suppressed\": \"0\",
                 \"urls\": []
-            }
-        ],
+            },"
+done
+JSON_BODY=${JSON_BODY::-1}
+JSON_BODY+="],
         \"event_collection_settings_name\": \"${EVENT_COLLECTION_SETTINGS_NAME}\",
         \"fetched_time\": $((TIMESTAMP+1)),
         \"agent\": {
@@ -193,8 +202,9 @@ sendEvent() {
         }
     },
     {
-        \"event\": [
-            {
+        \"event\": ["
+for i in {1..2500}; do
+JSON_BODY+="{
                 \"eventid\": \"${EVENTID}\",
                 \"source\": \"0\",
                 \"object\": \"0\",
@@ -212,12 +222,174 @@ sendEvent() {
                 \"opdata\": \"Current utilization: 100 %\",
                 \"suppressed\": \"0\",
                 \"urls\": []
-            }
-        ],
+            },"
+done
+JSON_BODY=${JSON_BODY::-1}
+JSON_BODY+="],
         \"event_collection_settings_name\": \"z01\",
         \"fetched_time\": ${TIMESTAMP},
         \"agent\": {
             \"name\" : \"a02\",
+            \"version\": \"2.7.0\"
+        }
+    },
+    {
+        \"event\": ["
+for i in {1..2500}; do
+JSON_BODY+="{
+                \"eventid\": \"${EVENTID}\",
+                \"source\": \"0\",
+                \"object\": \"0\",
+                \"objectid\": \"16046\",
+                \"clock\": \"${TIMESTAMP}\",
+                \"ns\": \"906955445\",
+                \"r_eventid\": \"0\",
+                \"r_clock\": \"0\",
+                \"r_ns\": \"0\",
+                \"correlationid\": \"0\",
+                \"userid\": \"0\",
+                \"name\": \"High CPU utilization (over 90% for 5m)\",
+                \"acknowledged\": \"0\",
+                \"severity\": \"2\",
+                \"opdata\": \"Current utilization: 100 %\",
+                \"suppressed\": \"0\",
+                \"urls\": []
+            },"
+done
+JSON_BODY=${JSON_BODY::-1}
+JSON_BODY+="],
+        \"event_collection_settings_name\": \"z02\",
+        \"fetched_time\": $((TIMESTAMP+2)),
+        \"agent\": {
+            \"name\" : \"a01\",
+            \"version\": \"2.7.0\"
+        }
+    },
+    {
+        \"event\": ["
+for i in {1..2500}; do
+JSON_BODY+="{
+                \"eventid\": \"${EVENTID}\",
+                \"source\": \"0\",
+                \"object\": \"0\",
+                \"objectid\": \"16046\",
+                \"clock\": \"${TIMESTAMP}\",
+                \"ns\": \"906955445\",
+                \"r_eventid\": \"0\",
+                \"r_clock\": \"0\",
+                \"r_ns\": \"0\",
+                \"correlationid\": \"0\",
+                \"userid\": \"0\",
+                \"name\": \"High CPU utilization (over 90% for 5m)\",
+                \"acknowledged\": \"0\",
+                \"severity\": \"2\",
+                \"opdata\": \"Current utilization: 100 %\",
+                \"suppressed\": \"0\",
+                \"urls\": []
+            },"
+done
+JSON_BODY=${JSON_BODY::-1}
+JSON_BODY+="],
+        \"event_collection_settings_name\": \"z02\",
+        \"fetched_time\": $((TIMESTAMP+2)),
+        \"agent\": {
+            \"name\" : \"a02\",
+            \"version\": \"2.7.0\"
+        }
+    },
+    {
+        \"event\": ["
+for i in {1..50}; do
+JSON_BODY+="{
+                \"eventid\": \"${EVENTID}\",
+                \"source\": \"0\",
+                \"object\": \"0\",
+                \"objectid\": \"16046\",
+                \"clock\": \"${TIMESTAMP}\",
+                \"ns\": \"906955445\",
+                \"r_eventid\": \"0\",
+                \"r_clock\": \"0\",
+                \"r_ns\": \"0\",
+                \"correlationid\": \"0\",
+                \"userid\": \"0\",
+                \"name\": \"High CPU utilization (over 90% for 5m)\",
+                \"acknowledged\": \"0\",
+                \"severity\": \"2\",
+                \"opdata\": \"Current utilization: 100 %\",
+                \"suppressed\": \"0\",
+                \"urls\": []
+            },"
+done
+JSON_BODY=${JSON_BODY::-1}
+JSON_BODY+="],
+        \"event_collection_settings_name\": \"z03\",
+        \"fetched_time\": $((TIMESTAMP)),
+        \"agent\": {
+            \"name\" : \"a02\",
+            \"version\": \"2.7.0\"
+        }
+    },
+    {
+        \"event\": ["
+for i in {1..50}; do
+JSON_BODY+="{
+                \"eventid\": \"${EVENTID}\",
+                \"source\": \"0\",
+                \"object\": \"0\",
+                \"objectid\": \"16046\",
+                \"clock\": \"${TIMESTAMP}\",
+                \"ns\": \"906955445\",
+                \"r_eventid\": \"0\",
+                \"r_clock\": \"0\",
+                \"r_ns\": \"0\",
+                \"correlationid\": \"0\",
+                \"userid\": \"0\",
+                \"name\": \"High CPU utilization (over 90% for 5m)\",
+                \"acknowledged\": \"0\",
+                \"severity\": \"2\",
+                \"opdata\": \"Current utilization: 100 %\",
+                \"suppressed\": \"0\",
+                \"urls\": []
+            },"
+done
+JSON_BODY=${JSON_BODY::-1}
+JSON_BODY+="],
+        \"event_collection_settings_name\": \"z03\",
+        \"fetched_time\": $((TIMESTAMP+1)),
+        \"agent\": {
+            \"name\" : \"a01\",
+            \"version\": \"2.7.0\"
+        }
+    },
+    {
+        \"event\": ["
+for i in {1..100}; do
+JSON_BODY+="{
+                \"eventid\": \"${EVENTID}\",
+                \"source\": \"0\",
+                \"object\": \"0\",
+                \"objectid\": \"16046\",
+                \"clock\": \"${TIMESTAMP}\",
+                \"ns\": \"906955445\",
+                \"r_eventid\": \"0\",
+                \"r_clock\": \"0\",
+                \"r_ns\": \"0\",
+                \"correlationid\": \"0\",
+                \"userid\": \"0\",
+                \"name\": \"High CPU utilization (over 90% for 5m)\",
+                \"acknowledged\": \"0\",
+                \"severity\": \"2\",
+                \"opdata\": \"Current utilization: 100 %\",
+                \"suppressed\": \"0\",
+                \"urls\": []
+            },"
+done
+JSON_BODY=${JSON_BODY::-1}
+JSON_BODY+="],
+        \"event_collection_settings_name\": \"z04\",
+        \"fetched_time\": $((TIMESTAMP)),
+        \"agent\": {
+            \"name\" : \"a01\",
             \"version\": \"2.7.0\"
         }
     }
@@ -265,12 +437,21 @@ post_json_api() {
     HTTP_STATUS=""
     RESPONSE_BODY=""
 
-    CURL_OUTPUT=$(curl -s -X POST -k "$URL" \
+    # CURL_OUTPUT=$(curl -s -X POST -k "$URL" \
+    #     -u "${EXASTRO_USERNAME}:${EXASTRO_PASSWORD}" \
+    #     -H "accept: application/json" \
+    #     -H "Content-Type: application/json" \
+    #     -w '\n%{http_code}' \
+    #     -d "${JSON_BODY}")
+    CURL_OUTPUT=$(cat << EOF | curl -s -X POST -k "$URL" \
         -u "${EXASTRO_USERNAME}:${EXASTRO_PASSWORD}" \
         -H "accept: application/json" \
         -H "Content-Type: application/json" \
         -w '\n%{http_code}' \
-        -d "${JSON_BODY}")
+        --data-binary @-
+${JSON_BODY}
+EOF
+)
     API_RTN=$?
     if [ $API_RTN -ne 0 ]; then
         error "curl command failed (${CURL_OUTPUT})"

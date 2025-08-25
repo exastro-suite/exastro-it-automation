@@ -207,8 +207,6 @@ def add_exastro_label(event):
         "_exastro_timeout": "0",
     }
     labeled_event["exastro_created_at"] = event["_exastro_created_at"]
-    dupulicate_check_key = "{}_{}".format(event["_exastro_event_collection_settings_id"], event["_exastro_agent_name"])
-    labeled_event["exastro_dupulicate_check"] = [dupulicate_check_key]
     # 重複して不要なexastro用ラベルを削除
     del labeled_event["event"]["_exastro_event_collection_settings_id"]
     del labeled_event["event"]["_exastro_event_collection_settings_name"]

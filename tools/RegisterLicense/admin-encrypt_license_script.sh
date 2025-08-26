@@ -386,11 +386,11 @@ USERNAME:                       ${EXASTRO_USERNAME}
 PASSWORD:                       ********
 _EOF_
 
-            read -r -p "Start the encyrpt license process with these settings? (y/n) [default: n]: " confirm
-            echo ""
-            if echo "$confirm" | grep -q -e "[yY]" -e "[yY][eE][sS]"; then
-                break
-            fi
+        read -r -p "Start the encyrpt license process with these settings? (y/n) [default: n]: " confirm
+        echo ""
+        if echo "$confirm" | grep -q -e "[yY]" -e "[yY][eE][sS]"; then
+            break
+        fi
     done
 }
 

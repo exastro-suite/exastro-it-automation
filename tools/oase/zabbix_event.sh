@@ -7,12 +7,6 @@ EXASTRO_USERNAME="admin"
 EXASTRO_PASSWORD=""
 
 
-EXASTRO_URL="http://platform-auth:38000"
-EXASTRO_ORG_ID="org_uekawa_1"
-EXASTRO_WS_ID="ws_jyufukuhaijyo"
-EXASTRO_USERNAME="admin"
-EXASTRO_PASSWORD="password"
-
 # SYSTEM
 HTTP_STATUS=""
 RESPONSE_BODY=""
@@ -29,7 +23,7 @@ main() {
         fi
     done
 
-    # setup
+    setup
 
     while true; do
         echo "Please make each event data"

@@ -147,7 +147,7 @@ def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
                     match_label_key_name_list.append(match_label_key_name)
 
                 # 「一致するラベルの名前のリスト」に含まれないものを除外する
-                for label_key_name, label_key_id in tmp_user_labels.items():
+                for label_key_name, label_key_id in user_labels.items():
                     if label_key_name not in match_label_key_name_list:
                         del tmp_user_labels[label_key_name]
             elif condition_expression == "2":
@@ -212,7 +212,7 @@ def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
 
     if findoneupdate_event_group:
         # スレッド数。I/Oバウンドな処理なので、CPUコア数より多めに設定するのが一般的
-        MAX_WORKERS = os.environ.get("MAX_WORKER_DUPLICATE_CHECK", 12)
+        MAX_WORKERS = int(os.environ.get("MAX_WORKER_DUPLICATE_CHECK", 12))
         with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
             # 各グループを処理するタスクを投入
             future_to_group = []

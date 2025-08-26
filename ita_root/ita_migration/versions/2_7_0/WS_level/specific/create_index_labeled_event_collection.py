@@ -52,7 +52,7 @@ def main(work_dir_path, wsdb):
             ws_mongo.disconnect()
             return 0
 
-        labeled_event_collection.create_index([("labels._exastro_fetched_time", ASCENDING), ("exastro_created_at", ASCENDING), ("_id", ASCENDING)], name="duplicate_check")
+        labeled_event_collection.create_index([("labels._exastro_fetched_time", ASCENDING), ("exastro_created_at", ASCENDING)], name="duplicate_check")
         ws_mongo.disconnect()
     except Exception:
         t = traceback.format_exc()

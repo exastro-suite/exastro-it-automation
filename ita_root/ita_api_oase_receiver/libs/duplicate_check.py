@@ -221,7 +221,11 @@ def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
             findoneupdate_event_group = None
             # 全てのタスクの完了を待ち、例外が発生した場合はログに出力
             for future in concurrent.futures.as_completed(future_to_group):
-                future.result()  # result()を呼び出すことでワーカー関数内の例外を再発生させる
+                try:
+                    future.result()  # result()を呼び出すことでワーカー関数内の例外を再発生させる
+                except Exception as e:
+                    executor.shutdown(wait=False, cancel_futures=True)
+                    raise e
             future_to_group = None
 
     g.applogger.info(f"{findoneupdate_insert_num=}")
@@ -249,7 +253,7 @@ def _process_event_group(labeled_event_collection, event_group):
                     "$setOnInsert": event,  # ドキュメントが存在しない場合に挿入する内容
                     "$push": {"exastro_dupulicate_check": dupulicate_check_key}  # ドキュメントが存在する場合に更新する内容
                 },
-                sort={"labels._exastro_fetched_time": ASCENDING, "exastro_created_at": ASCENDING, "_id": ASCENDING},
+                sort={"labels._exastro_fetched_time": ASCENDING, "exastro_created_at": ASCENDING},
                 upsert=True
             )
             if res is None:

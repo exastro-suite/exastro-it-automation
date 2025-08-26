@@ -52,8 +52,9 @@ class Notification(ABC):
             g.applogger.info(g.appmsg.get_log_message("BKY-80002"))
             return {}
 
-        template = cls._get_template(fetch_data, decision_information)
-        if template is None:
+        template_list = cls._get_template(fetch_data, decision_information)
+        has_none_template = any(item.get("template") is None for item in template_list)
+        if has_none_template:
             g.applogger.info(g.appmsg.get_log_message("BKY-80007", [cls.__qualname__]))
             g.applogger.info(g.appmsg.get_log_message("BKY-80009", [decision_information]))
             g.applogger.info(g.appmsg.get_log_message("BKY-80003"))
@@ -78,18 +79,33 @@ class Notification(ABC):
         }
 
         for index, item in enumerate(event_list):
-            # _convert_messageでitemを直接書き換えると再実行時にエラーが発生する可能性があるため、複製したデータをベースに処理を行う。
-            tmp_item = copy.deepcopy(item)
             g.applogger.debug(g.appmsg.get_log_message("BKY-80011", [index + 1]))
 
-            message = cls._create_notise_message(tmp_item, template)
-            # messageがNoneの場合、テンプレートの変換に失敗しているので次のループに進む
-            if message is None:
-                result["failure_info"].append(g.appmsg.get_log_message("BKY-80024", [tmp_item, template]))
-                result["failure"] = result["failure"] + 1
+            found_none_message = False
+            message_list = []
+            for template_item in template_list:
+                # _convert_messageでitemを直接書き換えると再実行時にエラーが発生する可能性があるため、複製したデータをベースに処理を行う。
+                tmp_item = copy.deepcopy(item)
+                template = template_item.get("template")
+                message = cls._create_notise_message(tmp_item, template)
+
+                # messageがNoneの場合、テンプレートの変換に失敗しているので次のループに進む
+                if message is None:
+                    result["failure_info"].append(g.appmsg.get_log_message("BKY-80024", [tmp_item, template]))
+                    result["failure"] = result["failure"] + 1
+                    found_none_message = True
+                    break
+
+                message_list.append({
+                    "id": template_item.get("id"),
+                    "message": message,
+                    "IS_DEFAULT": template_item.get("IS_DEFAULT"),
+                })
+
+            if found_none_message is True:
                 continue
 
-            tmp_result = cls.__call_notification_api(message, notification_destination)
+            tmp_result = cls.__call_notification_api(message_list, notification_destination)
 
             result["success"] = result["success"] + tmp_result["success"]
             result["failure"] = result["failure"] + tmp_result["failure"]
@@ -251,11 +267,11 @@ class Notification(ABC):
         return response_data
 
     @classmethod
-    def __call_notification_api(cls, message, notification_destination):
+    def __call_notification_api(cls, message_list, notification_destination):
         """
         Platformの通知APIをコールする
         Args:
-            message: イベントとテンプレートを使って生成したdict
+            message_list: イベントとテンプレートを使って生成したdict
             notification_destination: 通知先のリスト
         """
 
@@ -272,13 +288,25 @@ class Notification(ABC):
             "Language": language
         }
 
-        body_data_list = []
         # 通知先の件数分データを作成する
-        for item in notification_destination:
-            data = cls._get_data()
-            data["message"] = message
-            data["destination_id"] = item
-            body_data_list.append(data)
+        message_map = {}
+        for m in message_list:
+            msg_id = m.get("id")
+            if isinstance(msg_id, list):
+                for i in msg_id:
+                    message_map[i] = m["message"]
+            elif msg_id is not None:
+                message_map[msg_id] = m["message"]
+        default_message = next((m["message"] for m in message_list if m.get("IS_DEFAULT") == "●"), None)
+
+        body_data_list = [
+            {
+                **cls._get_data(),
+                "destination_id": item,
+                "message": message_map.get(item, default_message)
+            }
+            for item in notification_destination
+        ]
 
         data_encode = json.dumps(body_data_list)
 
@@ -306,9 +334,9 @@ class Notification(ABC):
         if request_response.status_code != 200:
             # ループで処理する都合エラーが発生してもその瞬間に例外は発生させない
             # 代わりにエラー件数とエラーが発生した際のリクエスト内容を記録し、呼び出し元に返却するようにする。
-            g.applogger.info(g.appmsg.get_log_message("BKY-80026", [data]))
+            g.applogger.info(g.appmsg.get_log_message("BKY-80026", [data_encode]))
             result["failure"] = 1
-            result["failure_info"].append(data)
+            result["failure_info"].append(data_encode)
             result["failure_notification_count"] = len(body_data_list)
         else:
             result["success"] = 1

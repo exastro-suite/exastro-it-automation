@@ -25,159 +25,44 @@ main() {
 
     setup
 
-    while true; do # 全体（エージェント単位）
+    while true; do
         echo "Please make each event data"
         echo ""
 
-        JSON_BODY="{
-\"events\": ["
-
-        EVENTID=10000
-
-        while true; do # eventブロックのループ（event_collection_settings_name×fetched_timeの単位）
-            JSON_BODY_BLOCK=""
-            while true; do
-                read -r -p "event_collection_settings_name : " EVENT_COLLECTION_SETTINGS_NAME
-                if [ "${EVENT_COLLECTION_SETTINGS_NAME}" == "" ]; then
-                    echo "please enter event_collection_settings_name ... retry"
-                    continue
-                fi
-                break
-            done
-
-            while true; do
-                read -r -p "agent_name : " AGENT_NAME
-                if [ "${AGENT_NAME}" == "" ]; then
-                    echo "please enter agent_name ... retry"
-                    continue
-                fi
-                break
-            done
-
-            TIMESTAMP=$(date "+%s")
-            echo ""
-#             cat <<_EOF_
-# event_collection_settings_name:         ${EVENT_COLLECTION_SETTINGS_NAME}
-# agent_name:                             ${AGENT_NAME}
-# _EOF_
-
-            JSON_BODY_BLOCK+="{
-    \"event\": ["
-
-            JSON_BODY_EVENT=""
-            while true; do # eventのループ
-                JSON_BODY_EVENT_TMP=""
-                while true; do
-                    read -r -p " eventid : " EVENTID
-                    if [ "${EVENTID}" == "" ]; then
-                        EVENTID=$((EVENTID+1))
-                    fi
-                    break
-                done
-
-                while true; do
-                    read -r -p " event_name : " EVENT_NAME
-                    if [ "${EVENT_NAME}" == "" ]; then
-                        EVENT_NAME="High CPU utilization (over 90% for 5m)"
-                    fi
-                    break
-                done
-
-                while true; do
-                    read -r -p " severity : " SEVERITY
-                    if [ "${SEVERITY}" == "" ]; then
-                        SEVERITY="3"
-                    fi
-                    break
-                done
-
-                while true; do
-                    read -r -p " clock : " CLOCK
-                    if [ "${CLOCK}" == "" ]; then
-                        CLOCK=$(date "+%s")
-                    fi
-                    break
-                done
-
+        while true; do
+            read -r -p "event_collection_settings_name : " EVENT_COLLECTION_SETTINGS_NAME
+            if [ "${EVENT_COLLECTION_SETTINGS_NAME}" == "" ]; then
+                echo "please enter event_collection_settings_name ... retry"
                 echo ""
-
-                JSON_BODY_EVENT_TMP+="{
-            \"eventid\": \"$((EVENTID))\",
-            \"source\": \"0\",
-            \"object\": \"0\",
-            \"objectid\": \"16046\",
-            \"clock\": \"${CLOCK}\",
-            \"ns\": \"906955445\",
-            \"r_eventid\": \"0\",
-            \"r_clock\": \"0\",
-            \"r_ns\": \"0\",
-            \"correlationid\": \"0\",
-            \"userid\": \"0\",
-            \"name\": \"${EVENT_NAME}\",
-            \"acknowledged\": \"0\",
-            \"severity\": \"${SEVERITY}\",
-            \"opdata\": \"Current utilization: 100 %\",
-            \"suppressed\": \"0\",
-            \"urls\": []
-        },"
-                read -r -p " May I Add this event data? (y/n) [default: n]: " confirm
-                echo ""
-                if echo "$confirm" | grep -q -e "[yY]" -e "[yY][eE][sS]"; then
-                    JSON_BODY_EVENT+=${JSON_BODY_EVENT_TMP}
-                else
-                    echo "CANCEL event data"
-                    continue
-                fi
-
-                read -r -p " Continue input event data? (y/n) [default: n]: " confirm
-                echo ""
-                if echo "$confirm" | grep -q -e "[yY]" -e "[yY][eE][sS]"; then
-                    continue
-                else
-                    break
-                fi
-            done
-
-            # read -r -p "May I send Event Data with these settings? (y/n) [default: n]: " confirm
-            # echo ""
-            # if echo "$confirm" | grep -q -e "[yY]" -e "[yY][eE][sS]"; then
-            #     continue
-            # fi
-
-            JSON_BODY_EVENT=${JSON_BODY_EVENT::-1}
-
-            JSON_BODY_BLOCK+=${JSON_BODY_EVENT}
-            JSON_BODY_BLOCK+="],
-        \"event_collection_settings_name\": \"${EVENT_COLLECTION_SETTINGS_NAME}\",
-        \"fetched_time\": $((TIMESTAMP)),
-        \"agent\": {
-            \"name\" : \"${AGENT_NAME}\",
-            \"version\": \"2.7.0\"
-        }
-    },"
-
-            JSON_BODY+=${JSON_BODY_BLOCK}
-            read -r -p "Continue input event blcok data? (y/n) [default: n]: " confirm
-            echo ""
-            if echo "$confirm" | grep -q -e "[yY]" -e "[yY][eE][sS]"; then
                 continue
-            else
-                break
             fi
+            echo ""
+            break
         done
 
-        read -r -p "May I send Event Data? (y/n) [default: n]: " confirm
+        while true; do
+            read -r -p "agent_name : " AGENT_NAME
+            if [ "${AGENT_NAME}" == "" ]; then
+                echo "please enter agent_name ... retry"
+                echo ""
+                continue
+            fi
+            echo ""
+            break
+        done
+
+            echo ""
+            cat <<_EOF_
+event_collection_settings_name:         ${EVENT_COLLECTION_SETTINGS_NAME}
+agent_name:                             ${AGENT_NAME}
+_EOF_
+        read -r -p "May I send Event Data with these settings? (y/n) [default: n]: " confirm
         echo ""
         if echo "$confirm" | grep -q -e "[yY]" -e "[yY][eE][sS]"; then
-            JSON_BODY=${JSON_BODY::-1}
-            JSON_BODY+="]
-}"
-            # echo "${JSON_BODY}"
-            sendEvent
+            sendEvent "$EVENT_COLLECTION_SETTINGS_NAME" "$AGENT_NAME"
             echo ""
         fi
     done
-
 }
 
 setup() {
@@ -266,10 +151,84 @@ _EOF_
     done
 }
 
-
 sendEvent() {
     info "...Try to post events to OASE EVENT RECEIVER"
 
+    EVENT_COLLECTION_SETTINGS_NAME=$1
+    AGENT_NAME=$2
+
+    # zabbixのイベント
+    TIMESTAMP=$(date "+%s")
+    EVENTID=$(shuf -i 0-99999 -n1)
+
+    JSON_BODY="{
+\"events\": [
+    {
+        \"event\": ["
+for i in {1..2000}; do
+JSON_BODY+="{
+                \"eventid\": \"$((EVENTID+i))\",
+                \"source\": \"0\",
+                \"object\": \"0\",
+                \"objectid\": \"16046\",
+                \"clock\": \"$((TIMESTAMP+1))\",
+                \"ns\": \"906955445\",
+                \"r_eventid\": \"0\",
+                \"r_clock\": \"0\",
+                \"r_ns\": \"0\",
+                \"correlationid\": \"0\",
+                \"userid\": \"0\",
+                \"name\": \"High CPU utilization (over 90% for 5m)\",
+                \"acknowledged\": \"0\",
+                \"severity\": \"2\",
+                \"opdata\": \"Current utilization: 100 %\",
+                \"suppressed\": \"0\",
+                \"urls\": []
+            },"
+done
+JSON_BODY=${JSON_BODY::-1}
+JSON_BODY+="],
+        \"event_collection_settings_name\": \"${EVENT_COLLECTION_SETTINGS_NAME}\",
+        \"fetched_time\": $((TIMESTAMP+1)),
+        \"agent\": {
+            \"name\" : \"${AGENT_NAME}\",
+            \"version\": \"2.7.0\"
+        }
+    },
+    {
+        \"event\": ["
+for i in {1..2000}; do
+JSON_BODY+="{
+                \"eventid\": \"${EVENTID}\",
+                \"source\": \"0\",
+                \"object\": \"0\",
+                \"objectid\": \"16046\",
+                \"clock\": \"$((TIMESTAMP))\",
+                \"ns\": \"906955445\",
+                \"r_eventid\": \"0\",
+                \"r_clock\": \"0\",
+                \"r_ns\": \"0\",
+                \"correlationid\": \"0\",
+                \"userid\": \"0\",
+                \"name\": \"High CPU utilization (over 90% for 5m)\",
+                \"acknowledged\": \"0\",
+                \"severity\": \"2\",
+                \"opdata\": \"Current utilization: 100 %\",
+                \"suppressed\": \"0\",
+                \"urls\": []
+            },"
+done
+JSON_BODY=${JSON_BODY::-1}
+JSON_BODY+="],
+        \"event_collection_settings_name\": \"${EVENT_COLLECTION_SETTINGS_NAME}\",
+        \"fetched_time\": $((TIMESTAMP)),
+        \"agent\": {
+            \"name\" : \"${AGENT_NAME}\",
+            \"version\": \"2.7.0\"
+        }
+    }
+]
+}"
     # 送信
     URL="$EXASTRO_URL/api/$EXASTRO_ORG_ID/workspaces/$EXASTRO_WS_ID/oase_agent/events"
 

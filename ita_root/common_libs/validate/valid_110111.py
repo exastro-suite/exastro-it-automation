@@ -13,7 +13,8 @@
 
 from flask import g
 import json
-
+# oase
+from common_libs.oase.const import oaseConst
 
 def external_valid_menu_before(objdbca, objtable, option):
     """
@@ -42,20 +43,28 @@ def external_valid_menu_before(objdbca, objtable, option):
 
     current_parameter = option.get("current_parameter", {}).get("parameter")
     entry_parameter = option.get("entry_parameter", {}).get("parameter")
-    
+
     # 「登録」「更新」の場合、entry_parameterから各値を取得
     if cmd_type == "Register" or cmd_type == "Update":
-        event_source_redundancy_group = json.loads(entry_parameter.get("event_source_redundancy_group")).get("id", {}) if entry_parameter.get("event_source_redundancy_group") else None
-        condition_labels = json.loads(entry_parameter.get("condition_labels", {})).get("id", {}) if entry_parameter.get("condition_labels") else None
+        try:
+            event_source_redundancy_group = json.loads(entry_parameter.get("event_source_redundancy_group")).get("id", {})
+        except:
+            event_source_redundancy_group = []
+        print(entry_parameter.get("event_source_redundancy_group"))
+        print(event_source_redundancy_group)
+        condition_labels = json.loads(entry_parameter.get("condition_labels", {})).get("id", {}) if entry_parameter.get("condition_labels") else {}
         condition_expression = entry_parameter.get("condition_expression")
     # 「復活」の場合、currrent_parameterから各値を取得
     elif cmd_type == "Restore":
-        event_source_redundancy_group = json.loads(current_parameter.get("event_source_redundancy_group")).get("id", {}) if current_parameter.get("event_source_redundancy_group") else None
-        condition_labels = json.loads(current_parameter.get("condition_labels", {})).get("id", {}) if current_parameter.get("condition_labels") else None
+        try:
+            event_source_redundancy_group = json.loads(entry_parameter.get("event_source_redundancy_group")).get("id", {})
+        except:
+            event_source_redundancy_group = []
+        condition_labels = json.loads(current_parameter.get("condition_labels", {})).get("id", {}) if current_parameter.get("condition_labels") else {}
         condition_expression = current_parameter.get("condition_expression")
     else:
         return retBool, msg, option
-    
+
     # 条件のラベルと式は必ずどちらも入力する or どちらも入力しない
     check_link_flag = False
     if condition_labels and condition_expression:
@@ -64,7 +73,7 @@ def external_valid_menu_before(objdbca, objtable, option):
         pass
     else:
         msg.append(g.appmsg.get_api_message("MSG-160001"))
-    
+
     if check_link_flag:
         # 条件式が「一致する」の場合
         if condition_expression == "1":
@@ -79,11 +88,11 @@ def external_valid_menu_before(objdbca, objtable, option):
                 )
                 for record in labeling_settings:
                     link_check_dict[event_source].append(record["LABEL_KEY_ID"])
-            
+
             for event_collection_settings_id, label_key_ids in link_check_dict.items():
                 # メッセージ用にイベント収集設定名を取得
                 event_collection_settings_name = get_event_collection_settings_name_by_id(objdbca, event_collection_settings_id)
-                
+
                 # イベント収集設定それぞれにすべての条件ラベルが紐付いているか確認
                 for condition_label in condition_labels:
                     if condition_label not in label_key_ids:
@@ -109,7 +118,7 @@ def external_valid_menu_before(objdbca, objtable, option):
                 if condition_label not in link_check_list:
                     condition_label_key_name = get_label_key_by_id(objdbca, condition_label)
                     msg.append(g.appmsg.get_api_message("MSG-160003", [condition_label_key_name]))
-        
+
         else:
             msg.append(g.appmsg.get_api_message("MSG-00032", [condition_expression]))
 
@@ -121,7 +130,7 @@ def external_valid_menu_before(objdbca, objtable, option):
 
 def get_label_key_by_id(objdbca, id):
     label_key_input = objdbca.table_select(
-        "T_OASE_LABEL_KEY_INPUT",
+        oaseConst.V_OASE_LABEL_KEY_GROUP,
         "WHERE LABEL_KEY_ID = %s AND DISUSE_FLAG = '0'",
         [id]
     )
@@ -131,7 +140,7 @@ def get_label_key_by_id(objdbca, id):
 
 def get_event_collection_settings_name_by_id(objdbca, id):
     event_collection_setting = objdbca.table_select(
-        "T_OASE_EVENT_COLLECTION_SETTINGS",
+        oaseConst.T_OASE_EVENT_COLLECTION_SETTINGS,
         "WHERE EVENT_COLLECTION_SETTINGS_ID = %s AND DISUSE_FLAG='0'",
         [id]
     )

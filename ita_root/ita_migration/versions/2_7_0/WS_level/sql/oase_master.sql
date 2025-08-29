@@ -86,6 +86,6 @@ UPDATE T_COMN_MENU_TABLE_LINK      SET ROW_INSERT_FLAG='1', ROW_DISUSE_FLAG='1',
 UPDATE T_COMN_MENU_TABLE_LINK_JNL  SET ROW_INSERT_FLAG='1', ROW_DISUSE_FLAG='1', ROW_REUSE_FLAG='1' WHERE TABLE_DEFINITION_ID = '110102';
 
 -- 通知テンプレート（共通）メニューのソート順を更新
-UPDATE T_COMN_MENU      SET SORT_KEY='[{"ASC":"notification_template_id"},{"ASC":"event_type"}]' WHERE MENU_ID = 110102;
-UPDATE T_COMN_MENU_JNL  SET SORT_KEY='[{"ASC":"notification_template_id"},{"ASC":"event_type"}]' WHERE MENU_ID = 110102;
+UPDATE T_COMN_MENU      SET SORT_KEY='[{"ASC":"notification_template_id"},{"ASC":"event_type"}]' WHERE MENU_ID = '110102';
+UPDATE T_COMN_MENU_JNL  SET SORT_KEY='[{"ASC":"notification_template_id"},{"ASC":"event_type"}]' WHERE MENU_ID = '110102';
 

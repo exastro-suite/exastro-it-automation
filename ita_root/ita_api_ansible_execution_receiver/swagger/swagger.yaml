@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Exastro ITA Ansible Execution Receiver API
   description: Exastro ITA Ansible Execution Receiver API
-  version: "2.5"
+  version: 2.7.0
 servers:
 - url: "https://{host}"
   description: API endpoint
@@ -59,26 +59,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/instance_unexecuted_body'
+              $ref: "#/components/schemas/instance_unexecuted_body"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200'
+                $ref: "#/components/schemas/inline_response_200"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.ansible_execution_controller
   /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/notification/status:
     post:
@@ -115,26 +115,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/notification_status_body'
+              $ref: "#/components/schemas/notification_status_body"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_1'
+                $ref: "#/components/schemas/inline_response_200_1"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.ansible_execution_controller
   /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/populated_data:
     get:
@@ -181,19 +181,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_2'
+                $ref: "#/components/schemas/inline_response_200_2"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.ansible_execution_controller
   /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/{execution_no}/result_data:
     post:
@@ -230,26 +230,26 @@ paths:
         content:
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/execution_no_result_data_body'
+              $ref: "#/components/schemas/execution_no_result_data_body"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_3'
+                $ref: "#/components/schemas/inline_response_200_3"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.ansible_execution_controller
   /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/version:
     post:
@@ -278,26 +278,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ansible_execution_agent_version_body'
+              $ref: "#/components/schemas/ansible_execution_agent_version_body"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_4'
+                $ref: "#/components/schemas/inline_response_200_4"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.ansible_execution_controller
   /api/{organization_id}/workspaces/{workspace_id}/ansible_execution_agent/notification/execution:
     post:
@@ -326,26 +326,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/notification_execution_body'
+              $ref: "#/components/schemas/notification_execution_body"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_3'
+                $ref: "#/components/schemas/inline_response_200_3"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.ansible_execution_controller
   /internal-api/health-check/liveness:
     get:
@@ -359,13 +359,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_5'
+                $ref: "#/components/schemas/inline_response_200_5"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.internal_health_check_service_controller
   /internal-api/health-check/readiness:
     get:
@@ -379,13 +379,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_5'
+                $ref: "#/components/schemas/inline_response_200_5"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.internal_health_check_service_controller
 components:
   schemas:
@@ -407,6 +407,10 @@ components:
           - 実行環境名X
           items:
             type: string
+        execution_limit:
+          type: integer
+          description: 指定が無ければ対象（ステータス：準備完了）を全件取得。
+          example: 1
     inline_response_200:
       type: object
       properties:
@@ -485,7 +489,7 @@ components:
         status:
           type: string
         file:
-          $ref: '#/components/schemas/apiorganization_idworkspacesworkspace_idansible_execution_agentexecution_noresult_data_file'
+          $ref: "#/components/schemas/apiorganization_idworkspacesworkspace_idansible_execution_agentexecution_noresult_data_file"
       description: ドライバーID、ステータス、各種tarファイルを指定
     inline_response_200_3:
       type: object

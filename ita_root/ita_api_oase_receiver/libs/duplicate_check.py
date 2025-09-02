@@ -51,12 +51,6 @@ def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
         g.applogger.info(msg)
         return False
 
-    # mongoのバージョンが8.0以上かどうか
-    # update_oneでsortが利用可能
-    def is_mongo_version_8_or_greater():
-        version_str = g.mongoVersion
-        return Version(version_str) >= Version("8.0")
-    is_enable_update_one = is_mongo_version_8_or_greater()
 
     labeled_event_collection = wsMongo.collection(mongoConst.LABELED_EVENT_COLLECTION)  # ラベル付与したイベントデータを保存するためのコレクション
 
@@ -170,7 +164,7 @@ def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
             # g.applogger.debug(f"{conditions=}")
 
             # 検索条件を追加（重複排除ごとに検索するのではなく、まとめる）
-            conditions_list.append(conditions)
+            conditions_list.append((deduplication_settings_id, conditions))
 
         # g.applogger.debug(f"{conditions_list=}")
         if len(conditions_list) == 0:
@@ -180,23 +174,13 @@ def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
             continue
 
         # upsertする場合は、その場でmongoにクエリを発行する（find_one_and_updateがbulk_writeできないから）
-        if is_enable_update_one is False:
-            # タスクをdupulicate_check_keyごとにまとめる
-            findoneupdate_event_group[dupulicate_check_key].append({
-                "event": event,
-                "conditions_list": conditions_list,
-                "dupulicate_check_key": dupulicate_check_key
-            })
-        else:
-            bulkwrite_event_list.append(UpdateOne(
-                filter={"$or": conditions_list},
-                update={
-                    "$setOnInsert": event,  # ドキュメントが存在しない場合に挿入する内容
-                    "$push": {"exastro_dupulicate_check": dupulicate_check_key}  # ドキュメントが存在する場合に更新する内容
-                },
-                sort={"labels._exastro_fetched_time": ASCENDING, "exastro_created_at": ASCENDING, "_id": ASCENDING},
-                upsert=True
-            ))
+        # タスクをdupulicate_check_keyごとにまとめる
+        findoneupdate_event_group[dupulicate_check_key].append({
+            "event": event,
+            "conditions_list": conditions_list,
+            "dupulicate_check_key": dupulicate_check_key
+        })
+
     labeled_event_list = None
 
     if len(bulkwrite_event_list) != 0:
@@ -250,10 +234,13 @@ def _process_event_group(labeled_event_collection, event_group, q_findoneupdate_
         for event_data in event_group:
             event = event_data["event"]
             conditions_list = event_data["conditions_list"]
+            filter = {"$or": [conditions[1] for conditions in conditions_list]} if len(conditions_list) > 1 else conditions_list[0][1]
+            print(filter)
+            # deduplication_settings_id = conditions_list[0][0]
             dupulicate_check_key = event_data["dupulicate_check_key"]
 
             res = labeled_event_collection.find_one_and_update(
-                filter={"$or": conditions_list},
+                filter=filter,
                 update={
                     "$setOnInsert": event,  # ドキュメントが存在しない場合に挿入する内容
                     "$push": {"exastro_dupulicate_check": dupulicate_check_key}  # ドキュメントが存在する場合に更新する内容
@@ -271,5 +258,4 @@ def _process_event_group(labeled_event_collection, event_group, q_findoneupdate_
         q_findoneupdate_num.put({"insert_num": findoneupdate_insert_num, "update_num": findoneupdate_update_num})
 
     except Exception as e:
-        g.applogger.error("An error occurred while find_one_and_update (conditions_list{}, event={})".format(conditions_list, event))
         raise e

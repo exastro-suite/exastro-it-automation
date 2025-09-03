@@ -17,8 +17,7 @@ import os
 import json
 import datetime
 import copy
-from packaging.version import Version
-from pymongo import ASCENDING, InsertOne, UpdateOne
+from pymongo import ASCENDING, InsertOne
 import concurrent.futures
 from collections import defaultdict
 import queue
@@ -51,7 +50,6 @@ def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
         g.applogger.info(msg)
         return False
 
-
     labeled_event_collection = wsMongo.collection(mongoConst.LABELED_EVENT_COLLECTION)  # ラベル付与したイベントデータを保存するためのコレクション
 
     # IDとイベント収集設定IDから引けるように整形しておく
@@ -61,12 +59,12 @@ def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
         # multi_select_id_columnのものをすぐに配列として利用できるように整形
         try:
             event_source_redundancy_group = json.loads(deduplication_setting["EVENT_SOURCE_REDUNDANCY_GROUP"])['id']
-        except:
+        except Exception:
             event_source_redundancy_group = []
         deduplication_setting["EVENT_SOURCE_REDUNDANCY_GROUP"] = event_source_redundancy_group
         try:
             deduplication_setting["CONDITION_LABEL_KEY_IDS"] = json.loads(deduplication_setting["CONDITION_LABEL_KEY_IDS"])['id']
-        except:
+        except Exception:
             deduplication_setting["CONDITION_LABEL_KEY_IDS"] = []
 
         DEDUPLICATION_SETTINGS_MAP[deduplication_setting_id] = deduplication_setting
@@ -122,7 +120,7 @@ def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
                 # 設定したラベルが「一致」する場合
                 match_label_key_name_list = []   # 一致するラベルの名前のリスト（idのリストから名前のリストを作る）
                 for match_label_key_id in condition_label_key_ids:
-                    if not match_label_key_id in LABEL_KEY_MAP:
+                    if match_label_key_id not in LABEL_KEY_MAP:
                         # ラベルが廃止or削除されている？
                         is_skip = True
                         break
@@ -141,7 +139,7 @@ def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
             elif condition_expression == "2":
                 # 設定したラベルを「無視（不一致を許容）」する場合
                 for ignore_label_key_id in condition_label_key_ids:
-                    if not ignore_label_key_id in LABEL_KEY_MAP:
+                    if ignore_label_key_id not in LABEL_KEY_MAP:
                         # ラベルが廃止or削除されている？
                         is_skip = True
                         break
@@ -235,7 +233,7 @@ def _process_event_group(labeled_event_collection, event_group, q_findoneupdate_
             event = event_data["event"]
             conditions_list = event_data["conditions_list"]
             filter = {"$or": [conditions[1] for conditions in conditions_list]} if len(conditions_list) > 1 else conditions_list[0][1]
-            print(filter)
+
             # deduplication_settings_id = conditions_list[0][0]
             dupulicate_check_key = event_data["dupulicate_check_key"]
 

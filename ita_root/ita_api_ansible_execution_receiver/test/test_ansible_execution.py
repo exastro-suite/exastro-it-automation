@@ -360,6 +360,7 @@ def test_unexecuted_instance_with_env_names(app, mocker, mock_dbca):
     # mock_dbca.table_select.assert_any_call("T_ANSP_EXEC_STS_INST", where_expected, parameter_expected)
     mock_dbca.table_select.assert_any_call("T_ANSR_EXEC_STS_INST", where_expected, parameter_expected)
 
+
 @pytest.mark.parametrize(
     "execution_limit",
     [
@@ -486,6 +487,7 @@ def test_unexecuted_instance_with_execution_limit(app, mocker, mock_dbca, execut
     [
         ("10"),
         (None),
+        (0),
         (-10),
         ("１０"),
     ],
@@ -589,7 +591,7 @@ def test_unexecuted_instance_with_execution_limit_other(app, mocker, mock_dbca, 
     # gにアクセスするすべてのモジュールをパッチする
     mocker.patch('libs.ansible_execution.g', new=mock_g)
 
-    mocker.patch('libs.ansible_execution.get_execution_limit', return_value=1)
+    mocker.patch('libs.ansible_execution.get_execution_limit', return_value=25)
 
     body = {"execution_limit": execution_limit}
     with app.test_request_context('/ansible/api/v1/agent/agent/'):
@@ -600,13 +602,13 @@ def test_unexecuted_instance_with_execution_limit_other(app, mocker, mock_dbca, 
 
     # table_selectの引数が正しいか検証
     where_expected = 'WHERE DISUSE_FLAG=%s AND STATUS_ID = %s ORDER BY TIME_REGISTER ASC  LIMIT %s'
-    parameter_expected = ['0', '11', 1]
+    parameter_expected = ['0', '11', 25]
     mock_dbca.table_select.assert_any_call("T_ANSL_EXEC_STS_INST", where_expected, parameter_expected)
 
 
 def test_unexecuted_instance_with_env_names_and_execution_limit(app, mocker, mock_dbca):
     """
-    特定のexecution_environment_namesが指定された場合の正常動作をテスト
+    特定のexecution_environment_names、execution_limiが指定された場合の正常動作をテスト
     """
     mock_dbca.table_select.side_effect = [
         # T_ANSC_IF_INFO の戻り値
@@ -729,6 +731,7 @@ def test_unexecuted_instance_with_env_names_and_execution_limit(app, mocker, moc
 def test_unexecuted_instance_with_env_names_and_execution_limit_all_driver(app, mocker, mock_dbca):
     """
     特定のexecution_environment_namesが指定された場合の正常動作をテスト
+        legacy、pioneer、legacy_role
     """
     mock_dbca.table_select.side_effect = [
         # T_ANSC_IF_INFO の戻り値
@@ -930,7 +933,7 @@ def test_unexecuted_instance_with_env_names_and_execution_limit_all_driver(app, 
 )
 def test_get_populated_data_path(app, mocker, mock_dbca, organization_id, workspace_id, execution_no, driver_id):
     """
-    特定のexecution_environment_namesが指定された場合の正常動作をテスト
+    Conductorで作業実行しない場合の正常動作をテスト
     """
     mock_dbca.table_select.side_effect = [
         # T_ANSC_IF_INFO の戻り値
@@ -1013,6 +1016,7 @@ def test_get_populated_data_path(app, mocker, mock_dbca, organization_id, worksp
         ("org1", 25, "25", 1, 1),
         ("org1", 25, "25", 100, 25),
         ("org1", 25, "25", None, 25),
+        ("org1", 25, "25", 0, 25),
     ],
 )
 def test_get_execution_limit(app, mocker, mock_dbca, organization_id, sys_count, org_count, execution_limit, _return_val):

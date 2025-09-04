@@ -256,7 +256,6 @@ def child_process_exist_check(organization_id, workspace_id, execution_no, drive
 
     if is_running is False:
         # ステータスファイルがあるか確認
-        # storagepath = os.environ.get('STORAGEPATH')
         status_file_dir_path, status_file_path = get_execution_status_file_path(organization_id, workspace_id, driver_id, execution_no)  # noqa: F405
         if os.path.isfile(status_file_path):
             # ステータスファイルに書き込まれている再起動回数取得
@@ -349,7 +348,6 @@ def get_working_child_process(organization_id, workspace_id, start_up_list):
     # プロセス再起動上限値
     # 子プロ再起動は行わない
     # プロセス再起動上限値は0とする
-    # child_process_retry_limit = int(os.getenv('CHILD_PROCESS_RETRY_LIMIT', 0))
 
     # ドライバ毎の空リスト作成
     [working_ps_list.setdefault(_d, []) for _d in driver_id_list]

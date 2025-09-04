@@ -134,6 +134,11 @@ class AnscConst:
     DF_ITA_LOCAL_DUP_CHECK_ITEM = '__ITA_LOCAL_COLUMN_3__'
     DF_ITA_LOCAL_PKEY = '__ITA_LOCAL_COLUMN_4__'
 
+    # 各ドライバの作業管理テーブル
+    DF_ANSL_EXEC_STS_INST = "T_ANSL_EXEC_STS_INST"
+    DF_ANSP_EXEC_STS_INST = "T_ANSP_EXEC_STS_INST"
+    DF_ANSR_EXEC_STS_INST = "T_ANSR_EXEC_STS_INST"
+
     # ansible-vault command default password
     DF_ANSIBLE_VAULT_PASSWORD = "2FP7-DPJ7-6P6B-B7E2"
     ############################################################
@@ -184,7 +189,7 @@ class AnscConst:
     SCRAM = '8'             # 緊急停止
     RESERVE = '9'           # 未実行(予約中)
     RESERVE_CANCEL = '10'   # 予約取消
-    PREPARE_COMPLETE = "11" # 準備完了
+    PREPARE_COMPLETE = "11"  # 準備完了
     PROCESSING_WAIT = "12"  # 実行待ち
 
     DRY_RUN = '2'  # 実行モード(ドライラン=チェック)
@@ -266,6 +271,3 @@ class AnscConst:
                                             ITA_SP_VAR_ANS_DNSHOSTNAME_VAR_NAME,
                                             ITA_SP_VAR_ANS_IPADDRESS_VAR_NAME,
                                             ITA_SP_VAR_CONDUCTOR_ID]
-
-
-

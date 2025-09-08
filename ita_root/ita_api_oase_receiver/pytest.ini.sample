@@ -1,0 +1,32 @@
+; 当ファイルをpytest.iniにコピーして利用してください
+
+[pytest]
+; pythonのimportディレクトリを/appからカレントディレクトリ(/workspace/ita_root/***)に変更
+; この設定を読み込まないとpytestのカバレッジやdebuggerがうまく動きません(/app配下のソースがimportされちゃう)
+pythonpath=.
+
+;
+; 環境変数
+;
+; env =
+;     ; unit test用のコンテナに接続に切り替え
+
+;     ; pytest起動時にunit test用のコンテナを起動するかの指定
+;     ;
+;     ;   DOCKER_COMPOSE_UP_UNITTEST_NODE=MANUAL (開発時は基本こちらで利用)
+;     ;       手動でunit test用のコンテナを起動します
+;     ;       起動を待つ時間が省かれるのでunit testの実行時間が短くて済みます
+;     ;
+;     ;       unit test用のコンテナを起動コマンド(devcontainer内から実行)
+;     ;           ./platform_root/platform_api/tests/docker-compose-up.sh
+;     ;
+;     ;   DOCKER_COMPOSE_UP_UNITTEST_NODE=AUTO
+;     ;       自動でunit test用のコンテナを起動・停止します
+;     ;       毎回起動・停止するので環境的にはクリーンになりますが、unit testの実行時間は遅くなります
+;     ;
+;     DOCKER_COMPOSE_UP_UNITTEST_NODE=MANUAL
+;    ; DOCKER_COMPOSE_UP_UNITTEST_NODE=AUTO
+
+; pytestのデバック（debugger使用）時のみコメントアウトを解除してください
+; ※コメントアウトを解除中はカバレッジの情報は更新されません
+; addopts=--no-cov

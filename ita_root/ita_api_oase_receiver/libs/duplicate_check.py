@@ -17,10 +17,10 @@ import os
 import json
 import datetime
 import copy
-from packaging.version import Version
-from pymongo import ASCENDING, InsertOne, UpdateOne
+from pymongo import ASCENDING, InsertOne
 import concurrent.futures
 from collections import defaultdict
+import queue
 
 # from common_libs.common.exception import AppException
 # from common_libs.common.util import stacktrace
@@ -35,16 +35,9 @@ DEDUPLICATION_SETTINGS_MAP = {}
 # イベント収集設定から、重複排除の設定を引けるようにしたもの
 DEDUPLICATION_SETTINGS_ECS_MAP = {}
 
-findoneupdate_insert_num = 0
-findoneupdate_update_num = 0
 
 # 重複排除
 def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
-    global findoneupdate_insert_num
-    global findoneupdate_update_num
-
-    findoneupdate_insert_num = 0
-    findoneupdate_update_num = 0
 
     # 重複排除の設定を取得
     deduplication_settings = wsDb.table_select(
@@ -57,7 +50,6 @@ def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
         g.applogger.info(msg)
         return False
 
-
     labeled_event_collection = wsMongo.collection(mongoConst.LABELED_EVENT_COLLECTION)  # ラベル付与したイベントデータを保存するためのコレクション
 
     # IDとイベント収集設定IDから引けるように整形しておく
@@ -67,12 +59,12 @@ def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
         # multi_select_id_columnのものをすぐに配列として利用できるように整形
         try:
             event_source_redundancy_group = json.loads(deduplication_setting["EVENT_SOURCE_REDUNDANCY_GROUP"])['id']
-        except:
+        except Exception:
             event_source_redundancy_group = []
         deduplication_setting["EVENT_SOURCE_REDUNDANCY_GROUP"] = event_source_redundancy_group
         try:
             deduplication_setting["CONDITION_LABEL_KEY_IDS"] = json.loads(deduplication_setting["CONDITION_LABEL_KEY_IDS"])['id']
-        except:
+        except Exception:
             deduplication_setting["CONDITION_LABEL_KEY_IDS"] = []
 
         DEDUPLICATION_SETTINGS_MAP[deduplication_setting_id] = deduplication_setting
@@ -123,19 +115,19 @@ def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
             condition_expression = deduplication_setting["CONDITION_EXPRESSION_ID"]
             tmp_user_labels = copy.deepcopy(user_labels)
 
-            is_skip = False # 重複排除の対象外（判定不能）
+            is_skip = False  # 重複排除の対象外（判定不能）
             if condition_expression == "1":
-            # 設定したラベルが「一致」する場合
+                # 設定したラベルが「一致」する場合
                 match_label_key_name_list = []   # 一致するラベルの名前のリスト（idのリストから名前のリストを作る）
                 for match_label_key_id in condition_label_key_ids:
-                    if not match_label_key_id in LABEL_KEY_MAP:
-                    # ラベルが廃止or削除されている？
+                    if match_label_key_id not in LABEL_KEY_MAP:
+                        # ラベルが廃止or削除されている？
                         is_skip = True
                         break
 
                     match_label_key_name = "labels.{}".format(LABEL_KEY_MAP[match_label_key_id]["LABEL_KEY_NAME"])
                     if match_label_key_name not in tmp_user_labels:
-                    # 一致条件のラベルがついていない場合は、重複排除の対象外
+                        # 一致条件のラベルがついていない場合は、重複排除の対象外
                         is_skip = True
                         break
                     match_label_key_name_list.append(match_label_key_name)
@@ -145,16 +137,16 @@ def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
                     if label_key_name not in match_label_key_name_list:
                         del tmp_user_labels[label_key_name]
             elif condition_expression == "2":
-            # 設定したラベルを「無視（不一致を許容）」する場合
+                # 設定したラベルを「無視（不一致を許容）」する場合
                 for ignore_label_key_id in condition_label_key_ids:
-                    if not ignore_label_key_id in LABEL_KEY_MAP:
-                    # ラベルが廃止or削除されている？
+                    if ignore_label_key_id not in LABEL_KEY_MAP:
+                        # ラベルが廃止or削除されている？
                         is_skip = True
                         break
 
                     ignore_label_key_name = "labels.{}".format(LABEL_KEY_MAP[ignore_label_key_id]["LABEL_KEY_NAME"])
                     if ignore_label_key_name in tmp_user_labels:
-                    # 無視対象のラベルがあれば除外
+                        # 無視対象のラベルがあれば除外
                         del tmp_user_labels[ignore_label_key_name]
             if is_skip is True:
                 continue
@@ -174,7 +166,7 @@ def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
 
         # g.applogger.debug(f"{conditions_list=}")
         if len(conditions_list) == 0:
-        # insertしかありえない
+            # insertしかありえない
             event["exastro_dupulicate_check"] = [dupulicate_check_key]
             bulkwrite_event_list.append(InsertOne(event))
             continue
@@ -194,6 +186,7 @@ def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
         g.applogger.info("bulk_write_num={}".format(len(bulkwrite_event_list)))
         bulkwrite_event_list = None
 
+    q_findoneupdate_num = queue.Queue()
     if findoneupdate_event_group:
         # スレッド数。I/Oバウンドな処理なので、CPUコア数より多めに設定するのが一般的
         MAX_WORKERS = int(os.environ.get("MAX_WORKER_DUPLICATE_CHECK", 12))
@@ -201,7 +194,7 @@ def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
             # 各グループを処理するタスクを投入
             future_to_group = []
             for dupulicate_check_key, event_group in findoneupdate_event_group.items():
-                future_to_group.append(executor.submit(_process_event_group, labeled_event_collection, event_group))
+                future_to_group.append(executor.submit(_process_event_group, labeled_event_collection, event_group, q_findoneupdate_num))
             findoneupdate_event_group = None
             # 全てのタスクの完了を待ち、例外が発生した場合はログに出力
             for future in concurrent.futures.as_completed(future_to_group):
@@ -212,25 +205,35 @@ def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
                     raise e
             future_to_group = None
 
-    g.applogger.info(f"{findoneupdate_insert_num=}")
-    g.applogger.info(f"{findoneupdate_update_num=}")
+    # スレッド毎に処理されたワーカーでの件数を集計する
+    # ＃Aggregate the number of items processed by workers for each thread
+    insert_num = 0
+    update_num = 0
+    while not q_findoneupdate_num.empty():
+        item = q_findoneupdate_num.get()
+        insert_num += item.get("insert_num", 0)
+        update_num += item.get("update_num", 0)
+
+    g.applogger.info(f"{insert_num=}")
+    g.applogger.info(f"{update_num=}")
 
     return True
 
-def _process_event_group(labeled_event_collection, event_group):
+
+def _process_event_group(labeled_event_collection, event_group, q_findoneupdate_num):
     """
     同じ重複チェックキーを持つイベントグループを逐次処理するワーカー関数。
     各イベントに対して find_one_and_update を実行する。
     """
-    global findoneupdate_insert_num
-    global findoneupdate_update_num
+    findoneupdate_insert_num = 0
+    findoneupdate_update_num = 0
 
     try:
         for event_data in event_group:
             event = event_data["event"]
             conditions_list = event_data["conditions_list"]
             filter = {"$or": [conditions[1] for conditions in conditions_list]} if len(conditions_list) > 1 else conditions_list[0][1]
-            print(filter)
+
             # deduplication_settings_id = conditions_list[0][0]
             dupulicate_check_key = event_data["dupulicate_check_key"]
 
@@ -247,5 +250,10 @@ def _process_event_group(labeled_event_collection, event_group):
                 findoneupdate_insert_num += 1
             else:
                 findoneupdate_update_num += 1
+
+        # ワーカー内で処理した件数を、Queueに格納する
+        # Store the number of items processed in the worker in the Queue
+        q_findoneupdate_num.put({"insert_num": findoneupdate_insert_num, "update_num": findoneupdate_update_num})
+
     except Exception as e:
         raise e

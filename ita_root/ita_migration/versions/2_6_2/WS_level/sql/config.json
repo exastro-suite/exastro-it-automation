@@ -1,0 +1,7 @@
+[
+    ["ansible.sql", "ansible_master.sql"],
+    ["terraform_cloud_ep.sql", "terraform_cloud_ep_master.sql"],
+    ["conductor.sql", ""],
+    ["cicd.sql", "cicd_master.sql"],
+    ["oase.sql", "oase_master.sql"]
+]

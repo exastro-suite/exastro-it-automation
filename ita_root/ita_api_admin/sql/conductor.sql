@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS T_COMN_CONDUCTOR_NOTICE
     FIELDS                          TEXT,                                       -- メッセージ
     PROXY_URL                       VARCHAR(4096),                              -- Proxy URL
     PROXY_PORT                      INT,                                        -- Proxy Port
-    FQDN                            VARCHAR(255),                               -- 作業確認URL
+    FQDN                            VARCHAR(4096),                              -- 作業確認URL
     OTHER                           VARCHAR(255),                               -- その他
     SUPPRESS_START                  DATETIME(6),                                -- 抑止開始日時
     SUPPRESS_END                    DATETIME(6),                                -- 抑止終了日時
@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS T_COMN_CONDUCTOR_NOTICE_JNL
     FIELDS                          TEXT,                                       -- メッセージ
     PROXY_URL                       VARCHAR(4096),                              -- Proxy URL
     PROXY_PORT                      INT,                                        -- Proxy Port
-    FQDN                            VARCHAR(255),                               -- 作業確認URL
+    FQDN                            VARCHAR(4096),                              -- 作業確認URL
     OTHER                           VARCHAR(255),                               -- その他
     SUPPRESS_START                  DATETIME(6),                                -- 抑止開始日時
     SUPPRESS_END                    DATETIME(6),                                -- 抑止終了日時

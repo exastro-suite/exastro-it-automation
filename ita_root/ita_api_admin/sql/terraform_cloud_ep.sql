@@ -1,12 +1,12 @@
 -- インターフェース情報
-CREATE TABLE T_TERE_IF_INFO
+CREATE TABLE IF NOT EXISTS T_TERE_IF_INFO
 (
     TERRAFORM_IF_INFO_ID            VARCHAR(40),                                -- 項番(UUID)
     TERRAFORM_PROTOCOL              VARCHAR(8),                                 -- Terraform Protocol
     TERRAFORM_HOSTNAME              VARCHAR(255),                               -- Terraform Hostname
     TERRAFORM_PORT                  INT,                                        -- Terraform Port
     TERRAFORM_TOKEN                 TEXT,                                       -- Terraform User Token
-    TERRAFORM_PROXY_ADDRESS         VARCHAR(255),                               -- プロキシサーバアドレス
+    TERRAFORM_PROXY_ADDRESS         VARCHAR(4096),                              -- プロキシサーバアドレス
     TERRAFORM_PROXY_PORT            INT,                                        -- プロキシサーバポート
     NULL_DATA_HANDLING_FLG          VARCHAR(2),                                 -- NULL連携
     TERRAFORM_REFRESH_INTERVAL      INT,                                        -- 状態監視周期(単位ミリ秒)
@@ -18,7 +18,7 @@ CREATE TABLE T_TERE_IF_INFO
     PRIMARY KEY(TERRAFORM_IF_INFO_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_TERE_IF_INFO_JNL
+CREATE TABLE IF NOT EXISTS T_TERE_IF_INFO_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -28,7 +28,7 @@ CREATE TABLE T_TERE_IF_INFO_JNL
     TERRAFORM_HOSTNAME              VARCHAR(255),                               -- Terraform Hostname
     TERRAFORM_PORT                  INT,                                        -- Terraform Port
     TERRAFORM_TOKEN                 TEXT,                                       -- Terraform User Token
-    TERRAFORM_PROXY_ADDRESS         VARCHAR(255),                               -- プロキシサーバアドレス
+    TERRAFORM_PROXY_ADDRESS         VARCHAR(4096),                              -- プロキシサーバアドレス
     TERRAFORM_PROXY_PORT            INT,                                        -- プロキシサーバポート
     NULL_DATA_HANDLING_FLG          VARCHAR(2),                                 -- NULL連携
     TERRAFORM_REFRESH_INTERVAL      INT,                                        -- 状態監視周期(単位ミリ秒)
@@ -43,7 +43,7 @@ CREATE TABLE T_TERE_IF_INFO_JNL
 
 
 -- Organization管理
-CREATE TABLE T_TERE_ORGANIZATION
+CREATE TABLE IF NOT EXISTS T_TERE_ORGANIZATION
 (
     ORGANIZATION_ID                 VARCHAR(40),                                -- 項番(UUID)
     ORGANIZATION_NAME               VARCHAR(40),                                -- Organization名
@@ -55,7 +55,7 @@ CREATE TABLE T_TERE_ORGANIZATION
     PRIMARY KEY(ORGANIZATION_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_TERE_ORGANIZATION_JNL
+CREATE TABLE IF NOT EXISTS T_TERE_ORGANIZATION_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -73,7 +73,7 @@ CREATE TABLE T_TERE_ORGANIZATION_JNL
 
 
 -- Workspace管理
-CREATE TABLE T_TERE_WORKSPACE
+CREATE TABLE IF NOT EXISTS T_TERE_WORKSPACE
 (
     WORKSPACE_ID                    VARCHAR(40),                                -- 項番(UUID)
     ORGANIZATION_ID                 VARCHAR(40),                                -- Organization(ID連携)
@@ -86,7 +86,7 @@ CREATE TABLE T_TERE_WORKSPACE
     PRIMARY KEY(WORKSPACE_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_TERE_WORKSPACE_JNL
+CREATE TABLE IF NOT EXISTS T_TERE_WORKSPACE_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -144,7 +144,7 @@ WHERE
 
 
 -- Module素材集
-CREATE TABLE T_TERE_MODULE
+CREATE TABLE IF NOT EXISTS T_TERE_MODULE
 (
     MODULE_MATTER_ID                VARCHAR(40),                                -- 項番(UUID)
     MODULE_MATTER_NAME              VARCHAR(255),                               -- Module素材名
@@ -156,7 +156,7 @@ CREATE TABLE T_TERE_MODULE
     PRIMARY KEY(MODULE_MATTER_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_TERE_MODULE_JNL
+CREATE TABLE IF NOT EXISTS T_TERE_MODULE_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -174,7 +174,7 @@ CREATE TABLE T_TERE_MODULE_JNL
 
 
 -- Policy管理
-CREATE TABLE T_TERE_POLICY
+CREATE TABLE IF NOT EXISTS T_TERE_POLICY
 (
     POLICY_ID                       VARCHAR(40),                                -- 項番(UUID)
     POLICY_NAME                     VARCHAR(255),                               -- Policy名
@@ -186,7 +186,7 @@ CREATE TABLE T_TERE_POLICY
     PRIMARY KEY(POLICY_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_TERE_POLICY_JNL
+CREATE TABLE IF NOT EXISTS T_TERE_POLICY_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -204,7 +204,7 @@ CREATE TABLE T_TERE_POLICY_JNL
 
 
 -- Policy set管理
-CREATE TABLE T_TERE_POLICYSET
+CREATE TABLE IF NOT EXISTS T_TERE_POLICYSET
 (
     POLICY_SET_ID                   VARCHAR(40),                                -- 項番(UUID)
     POLICY_SET_NAME                 VARCHAR(255),                               -- Policy set名
@@ -215,7 +215,7 @@ CREATE TABLE T_TERE_POLICYSET
     PRIMARY KEY(POLICY_SET_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_TERE_POLICYSET_JNL
+CREATE TABLE IF NOT EXISTS T_TERE_POLICYSET_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -232,7 +232,7 @@ CREATE TABLE T_TERE_POLICYSET_JNL
 
 
 -- Policy set-Policy紐付
-CREATE TABLE T_TERE_POLICYSET_POLICY_LINK
+CREATE TABLE IF NOT EXISTS T_TERE_POLICYSET_POLICY_LINK
 (
     POLICYSET_POLICY_LINK_ID        VARCHAR(40),                                -- 項番(UUID)
     POLICY_SET_ID                   VARCHAR(40),                                -- PolicySet(ID連携)
@@ -244,7 +244,7 @@ CREATE TABLE T_TERE_POLICYSET_POLICY_LINK
     PRIMARY KEY(POLICYSET_POLICY_LINK_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_TERE_POLICYSET_POLICY_LINK_JNL
+CREATE TABLE IF NOT EXISTS T_TERE_POLICYSET_POLICY_LINK_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -262,7 +262,7 @@ CREATE TABLE T_TERE_POLICYSET_POLICY_LINK_JNL
 
 
 -- Policy set-Workspace紐付
-CREATE TABLE T_TERE_POLICYSET_WORKSPACE_LINK
+CREATE TABLE IF NOT EXISTS T_TERE_POLICYSET_WORKSPACE_LINK
 (
     POLICYSET_POLICY_LINK_ID        VARCHAR(40),                                -- 項番(UUID)
     POLICY_SET_ID                   VARCHAR(40),                                -- PolicySet(ID連携)
@@ -274,7 +274,7 @@ CREATE TABLE T_TERE_POLICYSET_WORKSPACE_LINK
     PRIMARY KEY(POLICYSET_POLICY_LINK_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_TERE_POLICYSET_WORKSPACE_LINK_JNL
+CREATE TABLE IF NOT EXISTS T_TERE_POLICYSET_WORKSPACE_LINK_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -292,7 +292,7 @@ CREATE TABLE T_TERE_POLICYSET_WORKSPACE_LINK_JNL
 
 
 -- Movement-Module紐付
-CREATE TABLE T_TERE_MVMT_MOD_LINK
+CREATE TABLE IF NOT EXISTS T_TERE_MVMT_MOD_LINK
 (
     MVMT_MOD_LINK_ID                VARCHAR(40),                                -- 項番(UUID)
     MOVEMENT_ID                     VARCHAR(40),                                -- Movement(ID連携)
@@ -304,7 +304,7 @@ CREATE TABLE T_TERE_MVMT_MOD_LINK
     PRIMARY KEY(MVMT_MOD_LINK_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_TERE_MVMT_MOD_LINK_JNL
+CREATE TABLE IF NOT EXISTS T_TERE_MVMT_MOD_LINK_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -322,7 +322,7 @@ CREATE TABLE T_TERE_MVMT_MOD_LINK_JNL
 
 
 -- 変数ネスト管理
-CREATE TABLE T_TERE_NESTVAR_MEMBER_MAX_COL
+CREATE TABLE IF NOT EXISTS T_TERE_NESTVAR_MEMBER_MAX_COL
 (
     MAX_COL_SEQ_ID                  VARCHAR(40),                                -- 項番(UUID)
     VARS_ID                         VARCHAR(40),                                -- 変数(ID連携)
@@ -335,7 +335,7 @@ CREATE TABLE T_TERE_NESTVAR_MEMBER_MAX_COL
     PRIMARY KEY(MAX_COL_SEQ_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_TERE_NESTVAR_MEMBER_MAX_COL_JNL
+CREATE TABLE IF NOT EXISTS T_TERE_NESTVAR_MEMBER_MAX_COL_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -354,7 +354,7 @@ CREATE TABLE T_TERE_NESTVAR_MEMBER_MAX_COL_JNL
 
 
 -- 代入値自動登録設定
-CREATE TABLE T_TERE_VALUE_AUTOREG
+CREATE TABLE IF NOT EXISTS T_TERE_VALUE_AUTOREG
 (
     VALUE_AUTOREG_ID                VARCHAR(40),                                -- 項番(UUID)
     MENU_NAME_REST                  VARCHAR(40),                                -- メニュー名(REST)
@@ -375,7 +375,7 @@ CREATE TABLE T_TERE_VALUE_AUTOREG
     PRIMARY KEY(VALUE_AUTOREG_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_TERE_VALUE_AUTOREG_JNL
+CREATE TABLE IF NOT EXISTS T_TERE_VALUE_AUTOREG_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -402,7 +402,7 @@ CREATE TABLE T_TERE_VALUE_AUTOREG_JNL
 
 
 -- 作業管理
-CREATE TABLE T_TERE_EXEC_STS_INST
+CREATE TABLE IF NOT EXISTS T_TERE_EXEC_STS_INST
 (
     EXECUTION_NO                    VARCHAR(40),                                -- 項番(UUID)
     RUN_MODE                        VARCHAR(2),                                 -- 実行種別
@@ -433,7 +433,7 @@ CREATE TABLE T_TERE_EXEC_STS_INST
     PRIMARY KEY(EXECUTION_NO)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_TERE_EXEC_STS_INST_JNL
+CREATE TABLE IF NOT EXISTS T_TERE_EXEC_STS_INST_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -470,7 +470,7 @@ CREATE TABLE T_TERE_EXEC_STS_INST_JNL
 
 
 -- 代入値管理
-CREATE TABLE T_TERE_VALUE
+CREATE TABLE IF NOT EXISTS T_TERE_VALUE
 (
     ASSIGN_ID                       VARCHAR(40),                                -- 項番(UUID)
     EXECUTION_NO                    VARCHAR(40),                                -- 作業No.
@@ -489,7 +489,7 @@ CREATE TABLE T_TERE_VALUE
     PRIMARY KEY(ASSIGN_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_TERE_VALUE_JNL
+CREATE TABLE IF NOT EXISTS T_TERE_VALUE_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -514,7 +514,7 @@ CREATE TABLE T_TERE_VALUE_JNL
 
 
 -- Module-変数紐付
-CREATE TABLE T_TERE_MOD_VAR_LINK
+CREATE TABLE IF NOT EXISTS T_TERE_MOD_VAR_LINK
 (
     MODULE_VARS_LINK_ID             VARCHAR(40),                                -- 項番(UUID)
     MODULE_MATTER_ID                VARCHAR(40),                                -- Module素材(ID連携)
@@ -528,7 +528,7 @@ CREATE TABLE T_TERE_MOD_VAR_LINK
     PRIMARY KEY(MODULE_VARS_LINK_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_TERE_MOD_VAR_LINK_JNL
+CREATE TABLE IF NOT EXISTS T_TERE_MOD_VAR_LINK_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -548,7 +548,7 @@ CREATE TABLE T_TERE_MOD_VAR_LINK_JNL
 
 
 -- メンバー変数管理
-CREATE TABLE T_TERE_VAR_MEMBER
+CREATE TABLE IF NOT EXISTS T_TERE_VAR_MEMBER
 (
     CHILD_MEMBER_VARS_ID            VARCHAR(40),                                -- 項番(UUID)
     PARENT_VARS_ID                  VARCHAR(40),                                -- 親変数(Module-変数紐付のID連携)
@@ -566,7 +566,7 @@ CREATE TABLE T_TERE_VAR_MEMBER
     PRIMARY KEY(CHILD_MEMBER_VARS_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_TERE_VAR_MEMBER_JNL
+CREATE TABLE IF NOT EXISTS T_TERE_VAR_MEMBER_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -590,7 +590,7 @@ CREATE TABLE T_TERE_VAR_MEMBER_JNL
 
 
 -- Movement-変数紐付
-CREATE TABLE T_TERE_MVMT_VAR_LINK
+CREATE TABLE IF NOT EXISTS T_TERE_MVMT_VAR_LINK
 (
     MVMT_VAR_LINK_ID                VARCHAR(40),                                -- 項番(UUID)
     MOVEMENT_ID                     VARCHAR(40),                                -- Movement(ID連携)
@@ -602,7 +602,7 @@ CREATE TABLE T_TERE_MVMT_VAR_LINK
     PRIMARY KEY(MVMT_VAR_LINK_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_TERE_MVMT_VAR_LINK_JNL
+CREATE TABLE IF NOT EXISTS T_TERE_MVMT_VAR_LINK_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -620,7 +620,7 @@ CREATE TABLE T_TERE_MVMT_VAR_LINK_JNL
 
 
 -- Movement-メンバー変数紐付
-CREATE TABLE T_TERE_MVMT_VAR_MEMBER_LINK
+CREATE TABLE IF NOT EXISTS T_TERE_MVMT_VAR_MEMBER_LINK
 (
     MVMT_VAR_MEMBER_LINK_ID         VARCHAR(40),                                -- 項番(UUID)
     MOVEMENT_ID                     VARCHAR(40),                                -- Movement(ID連携)
@@ -633,7 +633,7 @@ CREATE TABLE T_TERE_MVMT_VAR_MEMBER_LINK
     PRIMARY KEY(MVMT_VAR_MEMBER_LINK_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_TERE_MVMT_VAR_MEMBER_LINK_JNL
+CREATE TABLE IF NOT EXISTS T_TERE_MVMT_VAR_MEMBER_LINK_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時

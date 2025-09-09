@@ -1,0 +1,5 @@
+[
+    ["conductor.sql", ""],
+    ["cicd.sql", "cicd_master.sql"],
+    ["oase.sql", "oase_master.sql"]
+]

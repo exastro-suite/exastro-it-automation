@@ -22,9 +22,10 @@ import datetime
 from common_libs.oase.const import oaseConst
 
 def addline_msg(msg=''):
-    info = inspect.getouterframes(inspect.currentframe())[1]
-    msg_line = "{} ({}:{})".format(msg, os.path.basename(info.filename), info.lineno)
-    return msg_line
+    # info = inspect.getouterframes(inspect.currentframe())[1]
+    # msg_line = "{} ({}:{})".format(msg, os.path.basename(info.filename), info.lineno)
+    # return msg_line
+    return msg
 
 def InsertConclusionEvent(EventObj, RuleInfo, UseEventIdList, ConclusionLablesStr):
     # 結論イベント登録

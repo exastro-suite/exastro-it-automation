@@ -25,6 +25,7 @@ from common_libs.notification.sub_classes.oase import OASE, OASENotificationType
 from common_libs.oase.const import oaseConst
 from libs.common_functions import addline_msg, getIDtoLabelName
 from libs.notification_data import Notification_data
+from libs.notification_process import NotificationProcessManager
 
 class Action():
     def __init__(self, wsDb, EventObj):
@@ -171,7 +172,7 @@ class Action():
         if len(NotificationEventList) > 0:
             tmp_msg = g.appmsg.get_log_message("BKY-90008", ['Known(evaluated)'])
             g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-            OASE.send(self.wsDb, NotificationEventList, {"notification_type": OASENotificationType.EVALUATED})
+            NotificationProcessManager.send_notification(NotificationEventList, {"notification_type": OASENotificationType.EVALUATED})
 
         # コミット  トランザクション終了
         self.wsDb.db_transaction_end(True)
@@ -195,7 +196,7 @@ class Action():
 
                 tmp_msg = g.appmsg.get_log_message("BKY-90008", ['Advance notice'])
                 g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-                OASE.send(self.wsDb, before_Action_Event_List, {"notification_type": OASENotificationType.BEFORE_ACTION, "rule_id": rule_id})
+                NotificationProcessManager.send_notification(before_Action_Event_List, {"notification_type": OASENotificationType.BEFORE_ACTION, "rule_id": rule_id})
 
         return action_log_row
 

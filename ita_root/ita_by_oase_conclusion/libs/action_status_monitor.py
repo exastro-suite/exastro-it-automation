@@ -18,6 +18,7 @@ from common_libs.oase.const import oaseConst
 from common_libs.notification.sub_classes.oase import OASE, OASENotificationType
 from libs.common_functions import addline_msg, InsertConclusionEvent, getLabelGroup
 from libs.notification_data import Notification_data
+from libs.notification_process import NotificationProcessManager
 
 class ActionStatusMonitor():
     def __init__(self, wsDb, EventObj):
@@ -163,7 +164,7 @@ class ActionStatusMonitor():
 
                 tmp_msg = g.appmsg.get_log_message("BKY-90008", ['Post-event notification'])
                 g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-                OASE.send(self.wsDb, after_Action_Event_List, {"notification_type": OASENotificationType.AFTER_ACTION, "rule_id": rule_id})
+                NotificationProcessManager.send_notification(after_Action_Event_List, {"notification_type": OASENotificationType.AFTER_ACTION, "rule_id": rule_id})
 
             # 結論イベント登録
             if UpdateRow['STATUS_ID'] == oaseConst.OSTS_Completed:

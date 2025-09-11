@@ -30,6 +30,7 @@ class Action():
     def __init__(self, wsDb, EventObj):
         self.wsDb = wsDb
         self.EventObj = EventObj
+        self.template_cache = {}
 
     def RegisterActionLog(self, ruleInfo, UseEventIdList, LabelMasterDict):
         rule_id = ruleInfo.get("RULE_ID")
@@ -244,7 +245,11 @@ class Action():
             # label_key_idをlabel_key_nameに変換
             label_key_name = getIDtoLabelName(labelMaster, setting["label_key"])
             # label_valueに変数ブロックが含まれている場合、jinja2テンプレートで値を変換
-            template = Template(setting["label_value"])
+            template_string = setting["label_value"]
+            template = self.template_cache.get(template_string)
+            if template is None:
+                template = Template(template_string)
+                self.template_cache[template_string] = template
             try:
                 label_value = template.render(A=event_A_labels, B=event_B_labels)
             except Exception as e:

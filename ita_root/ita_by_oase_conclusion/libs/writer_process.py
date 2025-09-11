@@ -151,14 +151,14 @@ class WriterProcess():
         with flask_app.app_context():
             try:
                 cls._initialize()
-                g.applogger.info("NotificationProcess: start")
+                g.applogger.info("WriterProcess: start")
 
                 # メインループ処理
                 cls._main_loop(queue)
 
             finally:
                 # 終了
-                g.applogger.info("NotificationProcess: exit")
+                g.applogger.info("WriterProcess: exit")
                 # ここまで到達すればprocessは終了して良いので、終了済みフラグをONにする
                 exited.value = 1
         exit(0)
@@ -246,5 +246,5 @@ class WriterProcess():
                     break
 
             except Exception as e:
-                g.applogger.info(f"NotificationProcess: error occurred. {e}")
+                g.applogger.info(f"WriterProcess: error occurred. {e}")
                 g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(traceback.format_exc())))

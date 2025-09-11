@@ -41,12 +41,84 @@ def external_valid_menu_before(objdbca, objtable, option):
     retBool = True
     msg = []
 
-    # 削除時はチェックしない
-    # Do not check when deleting
-    if option.get("cmd_type") == "Delete":
-        return retBool, msg, option
+    cmd_type = option.get("cmd_type")
 
-    # 対象のメニューは更新の操作のみ実施可能なため「cmd_type」はチェックしない
+    # 既存データ
+    current_parameter = option.get("current_parameter", {}).get("parameter")
+    # 入力データ
+    entry_parameter = option.get("entry_parameter", {}).get("parameter")
+    # 通知テンプレートID
+    notification_template_id = current_parameter.get("notification_template_id", None)
+    
+    # 登録・更新時
+    if cmd_type in ["Register", "Update"]:
+        # 通知テンプレートIDが1～4の場合
+        if notification_template_id in ["1", "2", "3", "4"]:
+            # イベント種別は変更不可
+            if current_parameter.get("event_type") != entry_parameter.get("event_type"):
+                retBool = False
+                msg.append(g.appmsg.get_api_message("MSG-170001"))
+                return retBool, msg, option,
+
+            # 通知先は変更不可（空のみ）
+            if entry_parameter.get("notification_destination") is not None:
+                retBool = False
+                msg.append(g.appmsg.get_api_message("MSG-170002"))
+                return retBool, msg, option,
+
+        # 通知テンプレートIDが1～4以外の場合
+        else:
+            # 通知先が空の場合
+            if entry_parameter.get("notification_destination") is None:
+                retBool = False
+                msg.append(g.appmsg.get_api_message("MSG-170003"))
+                return retBool, msg, option,
+
+            # 入力した通知先がイベント種別内でユニークでない場合
+            data_cnt = get_notification_destination(objdbca,
+                                                    notification_template_id,
+                                                    entry_parameter.get("event_type"),
+                                                    entry_parameter.get("notification_destination"))
+            if (data_cnt >= 1):
+                retBool = False
+                msg.append(g.appmsg.get_api_message("MSG-170004"))
+                return retBool, msg, option,
+
+    # 削除時
+    elif cmd_type == "Delete":
+        # 通知テンプレートIDが1～4の場合
+        if notification_template_id in ["1", "2", "3", "4"]:
+            retBool = False
+            msg.append(g.appmsg.get_api_message("MSG-170005"))
+            return retBool, msg, option,
+
+    # 廃止時
+    elif cmd_type == "Discard":
+        # 通知テンプレートIDが1～4の場合
+        if notification_template_id in ["1", "2", "3", "4"]:
+            retBool = False
+            msg.append(g.appmsg.get_api_message("MSG-170006"))
+            return retBool, msg, option,
+
+    # 復活時
+    elif cmd_type == "Restore":
+        # 通知テンプレートIDが1～4の場合
+        if notification_template_id in ["1", "2", "3", "4"]:
+            retBool = False
+            msg.append(g.appmsg.get_api_message("MSG-170007"))
+            return retBool, msg, option,
+
+        # 通知テンプレートIDが1～4以外の場合
+        else:
+            # カレントの通知先がイベント種別内でユニークでない場合
+            data_cnt = get_notification_destination(objdbca,
+                                                    notification_template_id,
+                                                    current_parameter.get("event_type"),
+                                                    current_parameter.get("notification_destination"))
+            if (data_cnt >= 1):
+                retBool = False
+                msg.append(g.appmsg.get_api_message("MSG-170004"))
+                return retBool, msg, option,
 
     file_path = option.get('entry_parameter', {}).get('file_path', {}).get('template_file')
     if file_path is None:
@@ -82,3 +154,40 @@ def external_valid_menu_before(objdbca, objtable, option):
             msg.append(msg_tmp)
 
     return retBool, msg, option,
+
+
+def get_notification_destination(objdbca, notification_template_id, event_type, notification_destination):
+    """
+    通知テンプレートID、イベント種別、通知先を条件に
+    通知テンプレート(共通)に登録されているレコード件数を取得
+    ARGS:
+        objdbca :DB接続クラスインスタンス
+        notification_template_id：通知テンプレートID
+        event_type :イベント種別
+        notification_destination :通知先
+    RETRUN:
+        return :レコード件数
+    """
+
+    # 通知テンプレート(共通)
+    target_type_table = "T_OASE_NOTIFICATION_TEMPLATE_COMMON"
+    record = []
+    # 通知テンプレートIDが空の場合
+    if notification_template_id is None:
+        param = [[event_type], [notification_destination]]
+        record = objdbca.table_select(
+            target_type_table,
+            "WHERE DISUSE_FLAG=0 AND EVENT_TYPE = %s AND NOTIFICATION_DESTINATION = %s",
+            param
+        )
+    # 通知テンプレートIDが空でない場合
+    else:
+        param = [[notification_template_id], [event_type], [notification_destination]]
+        record = objdbca.table_select(
+            target_type_table,
+            "WHERE DISUSE_FLAG=0 AND NOTIFICATION_TEMPLATE_ID <> %s AND EVENT_TYPE = %s AND NOTIFICATION_DESTINATION = %s",
+            param
+        )
+
+    # レコード件数を取得
+    return len(record)

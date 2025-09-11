@@ -166,7 +166,7 @@ class ManageEvents:
                 self.unevaluated_event_ids.add(event_id)
             case (_, False):
                 # 評価不可能または評価済の場合、初期化時以外は集約から除外
-                self.unevaluated_event_ids.remove(event_id)
+                self.unevaluated_event_ids.discard(event_id)
             case _:
                 # 評価不可能または評価済の場合、初期化時以外はなにもしない
                 pass

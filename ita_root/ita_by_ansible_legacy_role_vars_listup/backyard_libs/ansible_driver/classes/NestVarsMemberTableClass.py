@@ -64,7 +64,7 @@ class NestVarsMemberTable(TableBase):
 
         user_id = g.get('USER_ID')
 
-        # 登録
+        # 登録：解析した側にのみ存在する変数を登録
         register_list = self._a_minus_b(list_a=extracted_records, list_b=self._stored_records.values())
         for record in register_list:
             record.pop('COL_SEQ_MEMBER')
@@ -77,8 +77,9 @@ class NestVarsMemberTable(TableBase):
             log_msg_args = [self.table_name]
             raise AppException(result_code, log_msg_args)
 
-        # 復活
-        restore_list = self._a_and_b(self._stored_records.values(), extracted_records)
+        # 更新：共通の変数だが、定義されている順番（VARS_KEY_ID）が異なる場合、解析した側に更新
+        # 復活：両者に共通する変数が廃止されている場合は復活
+        restore_list = self._a_and_b(self._stored_records.values(), extracted_records, marge_vars_key_id=True)
         for record in restore_list:
             if record['DISUSE_FLAG'] == '1':
                 record['DISUSE_FLAG'] = '0'
@@ -90,7 +91,7 @@ class NestVarsMemberTable(TableBase):
             log_msg_args = [self.table_name]
             raise AppException(result_code, log_msg_args)
 
-        # 廃止
+        # 廃止：既存側にのみ存在する変数を廃止
         discard_list = self._a_minus_b(list_a=self._stored_records.values(), list_b=extracted_records)
         for record in discard_list:
             if record['DISUSE_FLAG'] == '0':
@@ -106,43 +107,76 @@ class NestVarsMemberTable(TableBase):
         # 再読み込み
         self.store_dbdata_in_memory()
 
-    def _a_minus_b(self, list_a, list_b):
+    def _a_minus_b(self, list_a, list_b, ignore_vars_key_id=True):
+        """list aにのみ存在するレコードのリストを返す
+
+        Args:
+            list_a (list): 比較されるリスト
+            list_b (list): 比較するリスト
+            ignore_vars_key_id (bool, optional): VARS_KEY_IDを比較対象に含むか切り替え。 Defaults to False.
+
+        Returns:
+            list:
+        """
 
         result_list = []
 
         for record_a in list_a:
             for record_b in list_b:
-                if self._same_record(record_a, record_b):
+                if self._same_record(record_a, record_b, ignore_vars_key_id):
                     break
             else:
                 result_list.append(record_a)
 
         return result_list
 
-    def _a_and_b(self, list_a, list_b):
+    def _a_and_b(self, list_a, list_b, ignore_vars_key_id=True, marge_vars_key_id=False):
+        """list_a, list_bに共通して存在するレコードのリストを返す
+
+        Args:
+            list_a (list): 比較されるリスト
+            list_b (list): 比較するリスト
+            ignore_vars_key_id (bool, optional): VARS_KEY_IDを比較対象に含むか切り替え。Defaults to True.
+            marge_vars_key_id (bool, optional): record_bのVARS_KEY_IDをrecord_aにマージするか切り替え。Defaults to False.
+        Returns:
+            list:
+        """
 
         result_list = []
 
         for record_a in list_a:
             for record_b in list_b:
-                if self._same_record(record_a, record_b):
+                if self._same_record(record_a, record_b, ignore_vars_key_id):
+                    if marge_vars_key_id:
+                        record_a["VARS_KEY_ID"] = record_b["VARS_KEY_ID"]
                     result_list.append(record_a)
                     break
 
         return result_list
 
-    def _same_record(self, record_a, record_b):
-        if str(record_a['MVMT_VAR_LINK_ID']) == str(record_b['MVMT_VAR_LINK_ID']) and\
-                str(record_a['PARENT_VARS_KEY_ID']) == str(record_b['PARENT_VARS_KEY_ID']) and\
-                str(record_a['VARS_KEY_ID']) == str(record_b['VARS_KEY_ID']) and\
-                str(record_a['VARS_NAME']) == str(record_b['VARS_NAME']) and\
-                str(record_a['ARRAY_NEST_LEVEL']) == str(record_b['ARRAY_NEST_LEVEL']) and\
-                str(record_a['ASSIGN_SEQ_NEED']) == str(record_b['ASSIGN_SEQ_NEED']) and\
-                str(record_a['COL_SEQ_NEED']) == str(record_b['COL_SEQ_NEED']) and\
-                str(record_a['MEMBER_DISP']) == str(record_b['MEMBER_DISP']) and\
-                str(record_a['VRAS_NAME_PATH']) == str(record_b['VRAS_NAME_PATH']) and\
-                str(record_a['VRAS_NAME_ALIAS']) == str(record_b['VRAS_NAME_ALIAS']) and\
-                str(record_a['MAX_COL_SEQ']) == str(record_b['MAX_COL_SEQ']):
-            return True
+    def _same_record(self, record_a, record_b, ignore_vars_key_id=True):
 
-        return False
+        # 共通の比較条件をリストで定義
+        keys_to_compare = [
+            'MVMT_VAR_LINK_ID',
+            'PARENT_VARS_KEY_ID',
+            'VARS_NAME',
+            'ARRAY_NEST_LEVEL',
+            'ASSIGN_SEQ_NEED',
+            'COL_SEQ_NEED',
+            'MEMBER_DISP',
+            'VRAS_NAME_PATH',
+            'VRAS_NAME_ALIAS',
+            'MAX_COL_SEQ'
+        ]
+
+        # ignore_vars_key_idがTrueの場合、VARS_KEY_IDを追加
+        if not ignore_vars_key_id:
+            keys_to_compare.append('VARS_KEY_ID')
+
+        # すべてのフィールドで値が一致するかチェック
+        for field in keys_to_compare:
+            if str(record_a.get(field)) != str(record_b.get(field)):
+                return False
+
+        return True

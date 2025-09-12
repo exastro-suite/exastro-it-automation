@@ -42,7 +42,6 @@ class NestVarsMemberColCombTable(TableBase):
         nominate_dict = {}
         for rec in nominate_record:
             nominate_dict[(rec['MVMT_VAR_LINK_ID'], rec['ARRAY_MEMBER_ID'], rec['COL_COMBINATION_MEMBER_ALIAS'], None if not rec['COL_SEQ_VALUE'] else rec['COL_SEQ_VALUE'])] = 0
-
         nominate_keys = nominate_dict.keys()
 
         stored_records_by_tuple_key = {}

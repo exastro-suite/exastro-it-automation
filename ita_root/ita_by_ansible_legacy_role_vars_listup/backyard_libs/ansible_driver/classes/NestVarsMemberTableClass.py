@@ -170,7 +170,7 @@ class NestVarsMemberTable(TableBase):
             'MAX_COL_SEQ'
         ]
 
-        # ignore_vars_key_idがTrueの場合、VARS_KEY_IDを追加
+        # ignore_vars_key_idがFalseの場合、VARS_KEY_IDを追加
         if not ignore_vars_key_id:
             keys_to_compare.append('VARS_KEY_ID')
 

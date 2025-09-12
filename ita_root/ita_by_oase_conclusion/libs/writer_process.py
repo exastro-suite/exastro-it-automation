@@ -200,11 +200,13 @@ class WriterProcess():
                     g.WORKSPACE_ID = data["workspace_id"]
                     g.applogger.set_env_message()
 
+                    g.applogger.info("WriterProcess: start workspace processing")
                     cls._wsMongo = MONGOConnectWs()
                     cls._labeled_event_collection = cls._wsMongo.collection(mongoConst.LABELED_EVENT_COLLECTION)
 
                 elif data["action"] == "finish_workspace_processing":
                     # ワークスペースの処理終了
+                    g.applogger.info("WriterProcess: finish workspace processing")
                     
                     # 通知の送信バッファをフラッシュ
                     # OASE.flush_send_buffer()
@@ -219,7 +221,7 @@ class WriterProcess():
                         cls._labeled_event_collection = None
                         cls._wsMongo.disconnect()
                         cls._wsMongo = None
- 
+
                     # 変数のクリア
                     g.ORGANIZATION_ID = None
                     g.WORKSPACE_ID = None

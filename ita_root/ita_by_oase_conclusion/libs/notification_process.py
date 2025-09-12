@@ -164,6 +164,7 @@ class NotificationProcess():
                     g.ORGANIZATION_ID = data["oraganization_id"]
                     g.WORKSPACE_ID = data["workspace_id"]
                     g.applogger.set_env_message()
+                    g.applogger.info("NotificationProcess: start workspace processing")
 
                 elif data["action"] == "finish_workspace_processing":
                     # ワークスペースの処理終了
@@ -175,6 +176,8 @@ class NotificationProcess():
                     if cls._objdbca is not None:
                         cls._objdbca.db_disconnect()
                         cls._objdbca = None
+
+                    g.applogger.info("NotificationProcess: finish workspace processing")
 
                     # 変数のクリア
                     g.ORGANIZATION_ID = None

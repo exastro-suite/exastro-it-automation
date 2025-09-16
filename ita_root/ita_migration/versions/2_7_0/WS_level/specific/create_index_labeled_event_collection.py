@@ -48,7 +48,7 @@ def main(work_dir_path, wsdb):
         # 既存のインデックス情報を取得し、その中にインデックス名が見つかれば、抜ける
         index_list = labeled_event_collection.index_information()
         if "duplicate_check" in index_list:
-            g.applogger.info("Index[duplicate_check] already exists in 'labeled_event_collection'")
+            g.applogger.info("[Trace] Index[duplicate_check] already exists in 'labeled_event_collection'")
             ws_mongo.disconnect()
             return 0
 

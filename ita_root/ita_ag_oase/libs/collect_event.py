@@ -45,13 +45,13 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
             )
             saved_event_data_list = sqliteDB.db_cursor.fetchall()
 
-            saved_ids = []
+            # 保存されているイベントのidのリスト
+            saved_ids = [saved_event_data[0] for saved_event_data in saved_event_data_list]
+
+            # 最後に取得したイベントを検索
             last_fetched_event = None
             last_fetched_event_is_found = False
             for saved_event_data in saved_event_data_list:
-                saved_ids.append(saved_event_data[0])
-
-                # 最後に取得したイベントを検索
                 if last_fetched_event_is_found is False:
                     try:
                         saved_event = json.loads(saved_event_data[1])
@@ -59,8 +59,7 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
                             last_fetched_event = saved_event
                             last_fetched_event_is_found = True
                     except Exception as e:
-                        # todo
-                        g.applogger.info(g.appmsg.get_log_message("AGT-10001", [setting["EVENT_COLLECTION_SETTINGS_ID"]]))
+                        g.applogger.info("Error occured while checking latest event({}). ERROR={}".format(saved_event_data, e))
             saved_event_data_list = None
         except sqlite3.OperationalError:  # テーブルがまだ作成されていない時の例外処理
             saved_ids = []

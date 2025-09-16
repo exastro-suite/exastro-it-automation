@@ -21,6 +21,7 @@ from jinja2 import Template
 import datetime
 import time
 import copy
+import traceback
 import jmespath
 
 from common_libs.common.exception import AppException
@@ -56,24 +57,6 @@ class APIClientCommon:
         self.last_fetched_timestamp = setting["LAST_FETCHED_TIMESTAMP"] if setting["LAST_FETCHED_TIMESTAMP"] else 0
         self.saved_ids = setting["SAVED_IDS"] if "SAVED_IDS" in setting else None
 
-        # URLのHOST部が、環境変数NO_PROXYに、存在する場合、verify = Falseに設定
-        self.verify = None
-        parsed_url = urlparse(setting["URL"])
-        location_parts = parsed_url.netloc.split(':')
-        noproxy_host = location_parts[0]
-        no_proxy_large = os.environ['NO_PROXY'] if "NO_PROXY" in os.environ else ""
-        no_proxy_small = os.environ['no_proxy'] if "no_proxy" in os.environ else ""
-        # SSL 証明書の検証無効(verify = False)の設定
-        if no_proxy_large.find(noproxy_host) > -1 or \
-           no_proxy_small.find(noproxy_host) > -1:
-            # 環境変数NO_PROXYに、接続先のドメインが存在していた場合、
-            # プロキシ経由だと、Authorizationヘッダーがプロキシで破棄され、接続出来なくなる
-            self.verify = False
-        elif self.url.find("https") > -1:
-            # 接続先のプロトコルが、HTTSの場合
-            # SSL照明書の指定がないため、SSLエラーが発生するため
-            self.verify = False
-
         self.response_list_flag = setting["RESPONSE_LIST_FLAG"]
         self.response_key = setting["RESPONSE_KEY"]
         self.event_id_key = setting["EVENT_ID_KEY"]
@@ -89,32 +72,54 @@ class APIClientCommon:
 
         # 接続先（url）の値をテンプレートとしてレンダリングする
         self.url = self.render("URL", setting["URL"], setting, last_fetched_event)
+
+        # URLのHOST部が、環境変数NO_PROXYに、存在する場合、verify = Falseに設定
+        self.verify = None
+        parsed_url = urlparse(self.url)
+        location_parts = parsed_url.netloc.split(':')
+        noproxy_host = location_parts[0]
+        no_proxy_large = os.environ['NO_PROXY'] if "NO_PROXY" in os.environ else ""
+        no_proxy_small = os.environ['no_proxy'] if "no_proxy" in os.environ else ""
+        # SSL 証明書の検証無効(verify = False)の設定
+        if no_proxy_large.find(noproxy_host) > -1 or \
+           no_proxy_small.find(noproxy_host) > -1:
+            # 環境変数NO_PROXYに、接続先のドメインが存在していた場合、
+            # プロキシ経由だと、Authorizationヘッダーがプロキシで破棄され、接続出来なくなる
+            self.verify = False
+        elif self.url.find("https") > -1:
+            # 接続先のプロトコルが、HTTSの場合
+            # SSL照明書の指定がないため、SSLエラーが発生するため
+            self.verify = False
+
         # リクエストヘッダーの値をテンプレートとしてレンダリングする
         headers = self.render("REQUEST_HEADER", setting["REQUEST_HEADER"], setting, last_fetched_event)
         self.headers = json.loads(headers) if headers else None
 
         g.applogger.debug(g.appmsg.get_log_message("AGT-10042", [self.event_collection_settings_name]))
 
-    def render(self, name, template_setting, setting, last_fetched_event):
-        if not template_setting:
-            return template_setting
+    def render(self, column_name, setting_temaplte, setting, last_fetched_event):
+        if not setting_temaplte:
+            return setting_temaplte
 
-        template = Template(template_setting)
         try:
+            template = Template(str(setting_temaplte))
+
             res = template.render(
-                EXASTRO_LAST_FETCHED_EVENT_IS_EXIST=True if last_fetched_event else None,  # 最新取得イベントの存在フラグ
-                EXASTRO_LAST_FETCHED_EVENT=last_fetched_event,  # 最新取得イベント
-                EXASTRO_EVENT_COLLECTION_SETTING=setting,  # イベント収集設定
-                EXASTRO_LAST_FETCHED_TIME=self.last_fetched_time,  # 日時オブジェクト
-                EXASTRO_LAST_FETCHED_TIMESTAMP=self.last_fetched_timestamp,  # 1704817434
-                EXASTRO_LAST_FETCHED_YY_MM_DD=self.last_fetched_Ymd,  # 2024/01/10 01:23:45
-                EXASTRO_LAST_FETCHED_DD_MM_YY=self.last_fetched_dmy,  # 10/01/24 01:23:45
-                EXASTRO_CURRENT_TIME=self.current_time  # 日時オブジェクト
+                EXASTRO_LAST_FETCHED_EVENT_IS_EXIST=True if last_fetched_event else False,  # （最新）前回取得イベントの存在フラグ
+                EXASTRO_LAST_FETCHED_EVENT=last_fetched_event,  # （最新）前回取得イベント
+                EXASTRO_EVENT_COLLECTION_SETTING=setting,  # イベント収集設定メニューの入力値
+                EXASTRO_LAST_FETCHED_TIME=self.last_fetched_time,  # 前回取得日時（日時オブジェクト）
+                EXASTRO_LAST_FETCHED_TIMESTAMP=self.last_fetched_timestamp,  # 前回取得日時（1704817434）
+                EXASTRO_LAST_FETCHED_YY_MM_DD=self.last_fetched_Ymd,  # 前回取得日時（2024/01/10 01:23:45）
+                EXASTRO_LAST_FETCHED_DD_MM_YY=self.last_fetched_dmy,  # 1前回取得日時（0/01/24 01:23:45）
+                EXASTRO_CURRENT_TIME=self.current_time  # 現在時刻（日時オブジェクト）
             )
             return res
         except Exception as e:
-            g.applogger.info("{} temaplte rendering ERROR ({})".format(name, e))
-            return template_setting
+            g.applogger.info("TEMPLATE RENDERING ERROR ({}) column_name={} setting_temaplte={} setting={} last_fetched_event={}".format(e, column_name, setting_temaplte, setting, last_fetched_event))
+            t = traceback.format_exc()
+            g.applogger.debug(t)
+            return setting_temaplte
 
     def call_api(self, setting, last_fetched_event=None):
         API_response = None

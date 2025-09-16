@@ -77,24 +77,24 @@ class Notification(ABC):
 
         fetch_data = cls._fetch_table(objdbca, decision_information)
         if fetch_data is None:
-            g.applogger.info(g.appmsg.get_log_message("BKY-80007", [cls.__qualname__]))
-            g.applogger.info(g.appmsg.get_log_message("BKY-80009", [decision_information]))
+            # g.applogger.info(g.appmsg.get_log_message("BKY-80007", [cls.__qualname__]))
+            # g.applogger.info(g.appmsg.get_log_message("BKY-80009", [decision_information]))
             g.applogger.info(g.appmsg.get_log_message("BKY-80002"))
             return {}
 
         template_list = cls._get_template(fetch_data, decision_information)
         has_none_template = any(item.get("template") is None for item in template_list)
         if has_none_template:
-            g.applogger.info(g.appmsg.get_log_message("BKY-80007", [cls.__qualname__]))
-            g.applogger.info(g.appmsg.get_log_message("BKY-80009", [decision_information]))
+            # g.applogger.info(g.appmsg.get_log_message("BKY-80007", [cls.__qualname__]))
+            # g.applogger.info(g.appmsg.get_log_message("BKY-80009", [decision_information]))
             g.applogger.info(g.appmsg.get_log_message("BKY-80003"))
             return {}
 
         # 負荷を考慮して通知先は1回のみ取得することとする
         notification_destination = cls._fetch_notification_destination(fetch_data, decision_information)
         if len(notification_destination) == 0:
-            g.applogger.info(g.appmsg.get_log_message("BKY-80007", [cls.__qualname__]))
-            g.applogger.info(g.appmsg.get_log_message("BKY-80009", [decision_information]))
+            # g.applogger.info(g.appmsg.get_log_message("BKY-80007", [cls.__qualname__]))
+            # g.applogger.info(g.appmsg.get_log_message("BKY-80009", [decision_information]))
             g.applogger.info(g.appmsg.get_log_message("BKY-80004"))
             return {}
 

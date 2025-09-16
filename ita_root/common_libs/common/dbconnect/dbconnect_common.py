@@ -598,6 +598,16 @@ class DBConnectCommon:
         """
         return uuid.uuid4()
 
+    @classmethod
+    def genarate_primary_key_value(cls):
+        """
+        make uuid of version4
+
+        Returns:
+            uuid
+        """
+        return str(uuid.uuid4())
+
     def _get_history_table_data(self, action_class, timestamp):
         """
         get addtinal data for history JNL table

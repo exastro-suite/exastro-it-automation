@@ -74,6 +74,10 @@ def backyard_main(organization_id, workspace_id):
             tmp_msg = g.appmsg.get_log_message("BKY-90001", ['Ended'])
             g.applogger.info(tmp_msg)  # noqa: F405
 
+        # WriterProcessManagerに遅延書き込みはここまでに完了させる
+        #   T_OASE_ACTION_LOGへの参照がここ以降で発生するため、ここまでに書き込みを完了させる
+        WriterProcessManager.finish_workspace_processing()
+
         # 評価結果のステータスを監視するクラス
         action_status_monitor = ActionStatusMonitor(wsDb, EventObj)
 
@@ -101,7 +105,6 @@ def backyard_main(organization_id, workspace_id):
         wsMongo.disconnect()
 
     NotificationProcessManager.finish_workspace_processing()
-    WriterProcessManager.finish_workspace_processing()
 
     # メイン処理終了
     tmp_msg = g.appmsg.get_log_message("BKY-90000", ['Ended'])
@@ -347,8 +350,9 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
                                 "ACTION_LOG_ID": action_log_row["ACTION_LOG_ID"],
                                 "STATUS_ID": oaseConst.OSTS_Completed # "6"
                             }
-                            wsDb.table_update(oaseConst.T_OASE_ACTION_LOG, data_list, 'ACTION_LOG_ID')
-                            wsDb.db_commit()
+                            # wsDb.table_update(oaseConst.T_OASE_ACTION_LOG, data_list, 'ACTION_LOG_ID')
+                            # wsDb.db_commit()
+                            WriterProcessManager.update_oase_action_log(data_list)
                     else:
                     # ルール判定 アンマッチ
                         pass

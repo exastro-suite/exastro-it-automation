@@ -90,6 +90,42 @@ UPDATE T_COMN_MENU      SET SORT_KEY='[{"ASC":"notification_template_id"},{"ASC"
 UPDATE T_COMN_MENU_JNL  SET SORT_KEY='[{"ASC":"notification_template_id"},{"ASC":"event_type"}]' WHERE MENU_ID = '110102';
 
 
+-- ラベリング付与でagent_nameとagent_versionを指定できることになったことへの対応
+UPDATE T_COMN_MENU_COLUMN_LINK      SET DESCRIPTION_JA = '[最大長]255バイト
+検索条件となる、イベントのプロパティのキーをJSONのクエリ言語（JMESPath）で指定します。
+半角英数字と記号(!#%&()*+,-.;<=>?@[]^_{|}~)を使用できます。
+下記キーも指定可能です。
+・_exastro_event_collection_settings_id
+・_exastro_agent_name
+・_exastro_agent_version
+・_exastro_fetched_time
+・_exastro_end_time', DESCRIPTION_EN = '[Maximum length] 255 bytes
+Specify the event property key as the search condition using the JSON query language (JMESPath).
+You can use half-width alphanumeric characters and symbols (!#%&()*+,-.;<=>?@[]^_{|}~).
+The following keys can also be specified.
+・_exastro_event_collection_settings_id
+・_exastro_agent_name
+・_exastro_agent_version
+・_exastro_fetched_time
+・_exastro_end_time'  WHERE COLUMN_DEFINITION_ID = '11010604';
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL  SET DESCRIPTION_JA = '[最大長]255バイト
+検索条件となる、イベントのプロパティのキーをJSONのクエリ言語（JMESPath）で指定します。
+半角英数字と記号(!#%&()*+,-.;<=>?@[]^_{|}~)を使用できます。
+下記キーも指定可能です。
+・_exastro_event_collection_settings_id
+・_exastro_agent_name
+・_exastro_agent_version
+・_exastro_fetched_time
+・_exastro_end_time', DESCRIPTION_EN = '[Maximum length] 255 bytes
+Specify the event property key as the search condition using the JSON query language (JMESPath).
+You can use half-width alphanumeric characters and symbols (!#%&()*+,-.;<=>?@[]^_{|}~).
+The following keys can also be specified.
+・_exastro_event_collection_settings_id
+・_exastro_agent_name
+・_exastro_agent_version
+・_exastro_fetched_time
+・_exastro_end_time'  WHERE COLUMN_DEFINITION_ID = '11010604';
+
 -- -----------------------------------------------------------------------------
 -- - ▼Issue 行末の空白調整
 -- -----------------------------------------------------------------------------

@@ -89,3 +89,66 @@ UPDATE T_COMN_MENU_TABLE_LINK_JNL  SET ROW_INSERT_FLAG='1', ROW_DISUSE_FLAG='1',
 UPDATE T_COMN_MENU      SET SORT_KEY='[{"ASC":"notification_template_id"},{"ASC":"event_type"}]' WHERE MENU_ID = '110102';
 UPDATE T_COMN_MENU_JNL  SET SORT_KEY='[{"ASC":"notification_template_id"},{"ASC":"event_type"}]' WHERE MENU_ID = '110102';
 
+
+-------------------------------------------------------------------------------
+--- ▼Issue 行末の空白調整
+-------------------------------------------------------------------------------
+UPDATE T_COMN_MENU_COLUMN_LINK      SET DESCRIPTION_JA = '[最大長]255バイト
+ラベル付与したい値を入力します。
+
+正規表現で使用したい場合は、以下のように入力してください。
+①正規表現を使って（「比較する値」による）検索を行い、任意の値をラベルにつけたい
+任意の値を入力してください。
+②正規表現を使って（「比較する値」による）検索を行い、そのマッチした結果を、ラベルの値としてそのまま利用したい場合
+値を空欄にしてください。
+③②のマッチした結果に対して、正規表現置換を行いたい場合
+検索結果のキャプチャグループの値を使いたい場合などを想定しています
+ex.
+・キャプチャグループの1個目をラベルの値にしたい場合
+　→ \\1
+・キャプチャグループの1個目 + 任意の値（.com）をラベルの値にしたい場合
+　→ \\1.com', DESCRIPTION_EN = '[Maximum length] 255 bytes
+Enter the value you want to label.
+
+If you want to use it as a regular expression, enter it as follows.
+① I want to search using regular expressions (by "value to compare") and add any value to the label.
+Please enter any value.
+② If you want to search using regular expressions (by "value to compare") and use the matching results as is as the label value.
+Please leave the value blank.
+③ If you want to perform regular expression replacement on the matched results of ②
+This assumes cases where you want to use the capture group value of search results.
+ex.
+・If you want the first capture group to be the label value
+→ \\1
+・If you want to set the first capture group + any value (.com) as the label value
+→ \\1.com'  WHERE COLUMN_DEFINITION_ID = '11010609';
+
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL  SET DESCRIPTION_JA = '[最大長]255バイト
+ラベル付与したい値を入力します。
+
+正規表現で使用したい場合は、以下のように入力してください。
+①正規表現を使って（「比較する値」による）検索を行い、任意の値をラベルにつけたい
+任意の値を入力してください。
+②正規表現を使って（「比較する値」による）検索を行い、そのマッチした結果を、ラベルの値としてそのまま利用したい場合
+値を空欄にしてください。
+③②のマッチした結果に対して、正規表現置換を行いたい場合
+検索結果のキャプチャグループの値を使いたい場合などを想定しています
+ex.
+・キャプチャグループの1個目をラベルの値にしたい場合
+　→ \\1
+・キャプチャグループの1個目 + 任意の値（.com）をラベルの値にしたい場合
+　→ \\1.com', DESCRIPTION_EN = '[Maximum length] 255 bytes
+Enter the value you want to label.
+
+If you want to use it as a regular expression, enter it as follows.
+① I want to search using regular expressions (by "value to compare") and add any value to the label.
+Please enter any value.
+② If you want to search using regular expressions (by "value to compare") and use the matching results as is as the label value.
+Please leave the value blank.
+③ If you want to perform regular expression replacement on the matched results of ②
+This assumes cases where you want to use the capture group value of search results.
+ex.
+・If you want the first capture group to be the label value
+→ \\1
+・If you want to set the first capture group + any value (.com) as the label value
+→ \\1.com'  WHERE COLUMN_DEFINITION_ID = '11010609';

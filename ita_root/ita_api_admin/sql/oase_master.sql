@@ -703,7 +703,7 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA
 "max_length": 255
 }',NULL,NULL,NULL,'[最大長]255バイト
 ラベル付与したい値を入力します。
- 
+
 正規表現で使用したい場合は、以下のように入力してください。
 ①正規表現を使って（「比較する値」による）検索を行い、任意の値をラベルにつけたい
 任意の値を入力してください。
@@ -711,13 +711,13 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA
 値を空欄にしてください。
 ③②のマッチした結果に対して、正規表現置換を行いたい場合
 検索結果のキャプチャグループの値を使いたい場合などを想定しています
-ex. 
+ex.
 ・キャプチャグループの1個目をラベルの値にしたい場合
 　→ \\1
 ・キャプチャグループの1個目 + 任意の値（.com）をラベルの値にしたい場合
 　→ \\1.com','[Maximum length] 255 bytes
 Enter the value you want to label.
- 
+
 If you want to use it as a regular expression, enter it as follows.
 ① I want to search using regular expressions (by "value to compare") and add any value to the label.
 Please enter any value.
@@ -735,7 +735,7 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOU
 "max_length": 255
 }',NULL,NULL,NULL,'[最大長]255バイト
 ラベル付与したい値を入力します。
- 
+
 正規表現で使用したい場合は、以下のように入力してください。
 ①正規表現を使って（「比較する値」による）検索を行い、任意の値をラベルにつけたい
 任意の値を入力してください。
@@ -743,13 +743,13 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOU
 値を空欄にしてください。
 ③②のマッチした結果に対して、正規表現置換を行いたい場合
 検索結果のキャプチャグループの値を使いたい場合などを想定しています
-ex. 
+ex.
 ・キャプチャグループの1個目をラベルの値にしたい場合
 　→ \\1
 ・キャプチャグループの1個目 + 任意の値（.com）をラベルの値にしたい場合
 　→ \\1.com','[Maximum length] 255 bytes
 Enter the value you want to label.
- 
+
 If you want to use it as a regular expression, enter it as follows.
 ① I want to search using regular expressions (by "value to compare") and add any value to the label.
 Please enter any value.

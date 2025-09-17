@@ -21,7 +21,7 @@ from .auth_method.auth_imap import IMAPAuthClient  # noqa: F401
 from .auth_method.auth_optional import OptionalAuthAPIClient  # noqa: F401
 
 
-def get_auth_client(setting):
+def get_auth_client(setting, last_fetched_event):
     methods = {
         "1": BearerAuthAPIClient,
         "2": BasicAuthAPIClient,
@@ -35,4 +35,4 @@ def get_auth_client(setting):
 
     method = methods[setting["CONNECTION_METHOD_ID"]]
 
-    return method(setting)
+    return method(setting, last_fetched_event)

@@ -14,18 +14,17 @@
 
 from flask import g
 import json
-import os
-import shutil
+import re
 
 from common_libs.common.dbconnect import *  # noqa: F403
-from common_libs.common.util import put_uploadfiles_jnl
+
 
 def main(work_dir_path, ws_db):
     ###########################################################
-    # jnl_patch_bug_2785
+    # oase_2785
+    # 既にあった予約変数（EXASTRO_LAST_FETCHED_YY_MM_DDなど）をjinja2用の変数に置換を行う
     ###########################################################
-    g.applogger.info("[Trace][start] bug fix issue2785")
-
+    g.applogger.info("[Trace] oase_2785.py start")
     common_db = DBConnectCommon()  # noqa: F405
 
     organization_id = g.ORGANIZATION_ID
@@ -40,31 +39,34 @@ def main(work_dir_path, ws_db):
     if 'oase' in org_no_install_driver:
         return 0
 
-    table_name = "T_OASE_NOTIFICATION_TEMPLATE_COMMON"
-    table_name_jnl = table_name + "_JNL"
-
-    """v2.6までで、oaseがインストールされていない状態で作成し、後にoaseをインストールしたワークスペースへの対応
-        対象の抽出条件と対処
-            ・JOURNAL_SEQ_NOが{}-2のレコードがない場合に、jnlパッチをあてる
-    """
-
-    # 履歴内の{}-2のレコードがあれば、対象外
-    jnl_id = "{}-2".format("1")
-    jnl_record = ws_db.table_select(table_name_jnl, "WHERE `JOURNAL_SEQ_NO` = %s", [jnl_id])
-    if len(jnl_record) != 0:
+    records = ws_db.table_select('T_OASE_EVENT_COLLECTION_SETTINGS')
+    if len(records) == 0:
         return 0
 
-    # jnl patchをかける
-    ws_db.db_transaction_start()  # トランザクション
+    # トランザクション
+    ws_db.db_transaction_start()
 
-    src_dir = "versions/2_7_0/WS_level/specific/jnl_patch_bug_2785/"
-    config_file_path = os.path.join(src_dir, "oase_config.json")
-    dest_dir = os.path.join(work_dir_path, "uploadfiles")
-    put_uploadfiles_jnl(ws_db, config_file_path, src_dir, dest_dir)
+    for record in records:
+        value = record["PARAMETER"]
+
+        for variable in ["EXASTRO_LAST_FETCHED_YY_MM_DD", "EXASTRO_LAST_FETCHED_DD_MM_YY", "EXASTRO_LAST_FETCHED_TIMESTAMP"]:
+            pattern = fr"{{{{( )*{variable}( )*}}}}"
+            # レコードのPARAMETERカラムに入っている予約変数の値を{{}}つきに置換する
+            # カラムに値がある、かつ、既に{{}}つきの変数が入っていることはない（パッチ当て環境などを考慮）、かつ、予約変数を利用している
+            if value and re.search(pattern, value) is None and re.search(fr"{variable}", value):
+                value = value.replace(variable, f"{{{{ {variable} }}}}")
+                record["PARAMETER"] = value
+
+                update_data = {
+                    "EVENT_COLLECTION_SETTINGS_ID": record["EVENT_COLLECTION_SETTINGS_ID"],
+                    "PARAMETER": value
+                }
+                ws_db.table_update('T_OASE_EVENT_COLLECTION_SETTINGS', update_data, "EVENT_COLLECTION_SETTINGS_ID", True)
+
     # コミット
     ws_db.db_commit()
 
-    g.applogger.info("[Trace][end] bug fix issue2785")
+    g.applogger.info("[Trace] oase_2785.py end")
     return 0
 
 

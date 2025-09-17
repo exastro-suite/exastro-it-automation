@@ -17,9 +17,11 @@ from flask import g
 import requests
 import json
 from urllib.parse import urlparse
+from jinja2 import Template
 import datetime
 import time
 import copy
+import traceback
 import jmespath
 
 from common_libs.common.exception import AppException
@@ -29,36 +31,51 @@ class APIClientCommon:
         メールおよびAPI呼び出し用共通クラス
     """
     # 必要項目定義
-    def __init__(self, event_settings):
-        self.event_collection_settings_id = event_settings["EVENT_COLLECTION_SETTINGS_ID"]
-        self.event_collection_settings_name = event_settings["EVENT_COLLECTION_SETTINGS_NAME"]
+    def __init__(self, setting, last_fetched_event):
+        self.event_collection_settings_id = setting["EVENT_COLLECTION_SETTINGS_ID"]
+        self.event_collection_settings_name = setting["EVENT_COLLECTION_SETTINGS_NAME"]
 
         self.request_methods = {
             "1": "GET",
             "2": "POST"
         }
 
-        self.request_method = self.request_methods[event_settings["REQUEST_METHOD_ID"]] if event_settings["REQUEST_METHOD_ID"] in ["1", "2"] else None
-        self.url = event_settings["URL"]
-        self.port = event_settings["PORT"]
-        self.headers = json.loads(event_settings["REQUEST_HEADER"]) if event_settings["REQUEST_HEADER"] else None
-        parsed_url = urlparse(event_settings["PROXY"]) if event_settings["PROXY"] else None
+        self.request_method = self.request_methods[setting["REQUEST_METHOD_ID"]] if setting["REQUEST_METHOD_ID"] in ["1", "2"] else None
+
+        self.port = setting["PORT"]
+        parsed_url = urlparse(setting["PROXY"]) if setting["PROXY"] else None
         self.proxy_host = parsed_url.hostname if parsed_url else None
         self.proxy_port = parsed_url.port if parsed_url else None
-        self.auth_token = event_settings["AUTH_TOKEN"]
-        self.username = event_settings["USERNAME"]
-        self.password = event_settings["PASSWORD"]
-        self.access_key_id = event_settings["ACCESS_KEY_ID"]
-        self.secret_access_key = event_settings["SECRET_ACCESS_KEY"]
-        self.mailbox_name = event_settings["MAILBOXNAME"]
-        self.parameter = event_settings["PARAMETER"]
+        self.auth_token = setting["AUTH_TOKEN"]
+        self.username = setting["USERNAME"]
+        self.password = setting["PASSWORD"]
+        self.access_key_id = setting["ACCESS_KEY_ID"]
+        self.secret_access_key = setting["SECRET_ACCESS_KEY"]
+        self.mailbox_name = setting["MAILBOXNAME"]
+        self.parameter = setting["PARAMETER"]
         # 前回イベント収集日時（初回イベント収取時は、システム日時が設定されている）
-        self.last_fetched_timestamp = event_settings["LAST_FETCHED_TIMESTAMP"] if event_settings["LAST_FETCHED_TIMESTAMP"] else 0
-        self.saved_ids = event_settings["SAVED_IDS"] if "SAVED_IDS" in event_settings else None
+        self.last_fetched_timestamp = setting["LAST_FETCHED_TIMESTAMP"] if setting["LAST_FETCHED_TIMESTAMP"] else 0
+        self.saved_ids = setting["SAVED_IDS"] if "SAVED_IDS" in setting else None
+
+        self.response_list_flag = setting["RESPONSE_LIST_FLAG"]
+        self.response_key = setting["RESPONSE_KEY"]
+        self.event_id_key = setting["EVENT_ID_KEY"]
+
+        # 重複チェック用イベントIDキー名（イベント直下に格納する項目）
+        self.event_id_key_name = '_exastro_oase_event_id'
+
+        # 予約変数の値を保存しておく
+        self.last_fetched_time = datetime.datetime.fromtimestamp(self.last_fetched_timestamp)
+        self.last_fetched_Ymd = self.last_fetched_time.strftime('%Y/%m/%d %H:%M:%S')
+        self.last_fetched_dmy = self.last_fetched_time.strftime('%d/%m/%y %H:%M:%S')
+        self.current_time = datetime.datetime.now()
+
+        # 接続先（url）の値をテンプレートとしてレンダリングする
+        self.url = self.render("URL", setting["URL"], setting, last_fetched_event)
 
         # URLのHOST部が、環境変数NO_PROXYに、存在する場合、verify = Falseに設定
         self.verify = None
-        parsed_url = urlparse(event_settings["URL"])
+        parsed_url = urlparse(self.url)
         location_parts = parsed_url.netloc.split(':')
         noproxy_host = location_parts[0]
         no_proxy_large = os.environ['NO_PROXY'] if "NO_PROXY" in os.environ else ""
@@ -74,55 +91,42 @@ class APIClientCommon:
             # SSL照明書の指定がないため、SSLエラーが発生するため
             self.verify = False
 
-        self.response_list_flag = event_settings["RESPONSE_LIST_FLAG"]
-        self.response_key = event_settings["RESPONSE_KEY"]
-        self.event_id_key = event_settings["EVENT_ID_KEY"]
-
-        # 重複チェック用イベントIDキー名（イベント直下に格納する項目）
-        self.event_id_key_name = '_exastro_oase_event_id'
+        # リクエストヘッダーの値をテンプレートとしてレンダリングする
+        headers = self.render("REQUEST_HEADER", setting["REQUEST_HEADER"], setting, last_fetched_event)
+        self.headers = json.loads(headers) if headers else None
 
         g.applogger.debug(g.appmsg.get_log_message("AGT-10042", [self.event_collection_settings_name]))
 
-    def call_api(self, parameter):
+    def render(self, column_name, setting_temaplte, setting, last_fetched_event):
+        if not setting_temaplte:
+            return setting_temaplte
+
+        try:
+            template = Template(str(setting_temaplte))
+
+            res = template.render(
+                EXASTRO_LAST_FETCHED_EVENT_IS_EXIST=True if last_fetched_event else False,  # （最新）前回取得イベントの存在フラグ
+                EXASTRO_LAST_FETCHED_EVENT=last_fetched_event,  # （最新）前回取得イベント
+                EXASTRO_EVENT_COLLECTION_SETTING=setting,  # イベント収集設定メニューの入力値
+                EXASTRO_LAST_FETCHED_TIME=self.last_fetched_time,  # 前回取得日時（日時オブジェクト）
+                EXASTRO_LAST_FETCHED_TIMESTAMP=self.last_fetched_timestamp,  # 前回取得日時（1704817434）
+                EXASTRO_LAST_FETCHED_YY_MM_DD=self.last_fetched_Ymd,  # 前回取得日時（2024/01/10 01:23:45）
+                EXASTRO_LAST_FETCHED_DD_MM_YY=self.last_fetched_dmy,  # 1前回取得日時（0/01/24 01:23:45）
+                EXASTRO_CURRENT_TIME=self.current_time  # 現在時刻（日時オブジェクト）
+            )
+            return res
+        except Exception as e:
+            g.applogger.info("TEMPLATE RENDERING ERROR ({}) column_name={} setting_temaplte={} setting={} last_fetched_event={}".format(e, column_name, setting_temaplte, setting, last_fetched_event))
+            t = traceback.format_exc()
+            g.applogger.debug(t)
+            return setting_temaplte
+
+    def call_api(self, setting, last_fetched_event=None):
         API_response = None
-        self.parameter = parameter  # APIのパラメータ
+
+        self.parameter = json.loads(setting["PARAMETER"]) if setting["PARAMETER"] else None  # APIのパラメータ
         if self.parameter is not None:
-            # パラメータ中の"EXASTRO_LAST_FETCHED_TIME"を前回イベント収集日時（初回はシステム日時）に置換
-            last_fetched_time = datetime.datetime.fromtimestamp(self.last_fetched_timestamp)
-            last_fetched_ymd = last_fetched_time.strftime('%Y/%m/%d %H:%M:%S')
-            last_fetched_dmy = last_fetched_time.strftime('%d/%m/%y %H:%M:%S')
-            last_fetched_timestamp = str(int(datetime.datetime.timestamp(last_fetched_time)))
-
-            def replace_reserved_variable(value):
-                # 予約語を置換する
-                value = value.replace("EXASTRO_LAST_FETCHED_YY_MM_DD", last_fetched_ymd)
-                value = value.replace("EXASTRO_LAST_FETCHED_DD_MM_YY", last_fetched_dmy)
-                value = value.replace("EXASTRO_LAST_FETCHED_TIMESTAMP", last_fetched_timestamp)
-                return value
-
-            def search_reserved_variable(parameter):
-                # パラメータの中から再帰的に置換する
-                parameter_type = type(parameter)
-                if parameter_type is dict:
-                    for key, value in parameter.items():
-                        value_type = type(value)
-                        if value_type is dict:
-                            parameter[key] = search_reserved_variable(value)
-                        elif value_type is list:
-                            parameter[key] = list(map(search_reserved_variable, value))
-                        elif value_type is str:
-                            parameter[key] = replace_reserved_variable(value)
-                        else:
-                            parameter[key] = value
-                    return parameter
-                elif parameter_type is list:
-                    return list(map(search_reserved_variable, parameter))
-                elif parameter_type is str:
-                    return replace_reserved_variable(parameter)
-                else:
-                    return parameter
-
-            self.parameter = search_reserved_variable(self.parameter)
+            self.parameter = self.render("PARAMETER", self.parameter, setting, last_fetched_event)
 
         try:
             proxies = None
@@ -138,17 +142,18 @@ class APIClientCommon:
             # g.applogger.debug("verify.............{}".format(self.verify))
             # g.applogger.debug("env.NO_PROXY.......{}".format(os.environ['NO_PROXY']))
             # g.applogger.debug("proxies............{}".format(proxies))
-            g.applogger.debug("Request Parameter..........{}".format(parameter))
+            g.applogger.debug("Request Parameter..........{}".format(self.parameter))
 
             # deepcode ignore SSLVerificationBypass: <please specify a reason of ignoring this>
             response = requests.request(
                 method=self.request_method,
                 url=self.url,
                 headers=self.headers,
-                params=parameter if self.request_method == "GET" else None,
+                params=self.parameter if self.request_method == "GET" else None,
                 data=json.dumps(self.parameter).encode() if self.request_method == "POST" else None,
                 verify=self.verify,
-                proxies=proxies
+                proxies=proxies,
+                timeout=(12, 30)
             )
 
             if response.status_code < 200 or response.status_code > 299:

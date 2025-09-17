@@ -206,7 +206,13 @@ class AnscConst:
     ITA_SP_VAR_ANS_INVENTORYHOST_VAR_NAME = "__inventory_hostname__"
     ITA_SP_VAR_ANS_OUTDIR_VAR_NAME = "__workflowdir__"
     ITA_SP_VAR_CONDUCTO_DIR_VAR_NAME = "__conductor_workflowdir__"
-    ITA_SP_VAR_OPERATION_VAR_NAME = "__operation__"
+    ITA_SP_VAR_OPERATION_STRING = "__operation__"
+    ITA_SP_VAR_OPERATION_ID = "__operation_id__"
+    ITA_SP_VAR_OPERATION_NAME = "__operation_name__"
+    ITA_SP_VAR_OPERATION_DATETIME = "__operation_datetime__"
+    ITA_SP_VAR_ORGANIZATION_ID = "__organization_id__"
+    ITA_SP_VAR_WORKSPACE_ID = "__workspace_id__"
+    ITA_SP_VAR_EXTERNAL_URL = "__external_url__"
     ITA_SP_VAR_IN_PARAM_DIR_EPC = "__parameters_dir_for_epc__"
     ITA_SP_VAR_IN_PARAM_FILE_DIR_EPC = "__parameters_file_dir_for_epc__"
     ITA_SP_VAR_OUT_PARAM_DIR = "__parameter_dir__"
@@ -232,7 +238,13 @@ class AnscConst:
                                 ITA_SP_VAR_ANS_INVENTORYHOST_VAR_NAME,
                                 ITA_SP_VAR_ANS_OUTDIR_VAR_NAME,
                                 ITA_SP_VAR_CONDUCTO_DIR_VAR_NAME,
-                                ITA_SP_VAR_OPERATION_VAR_NAME,
+                                ITA_SP_VAR_OPERATION_STRING,
+                                ITA_SP_VAR_OPERATION_ID,
+                                ITA_SP_VAR_OPERATION_NAME,
+                                ITA_SP_VAR_OPERATION_DATETIME,
+                                ITA_SP_VAR_ORGANIZATION_ID,
+                                ITA_SP_VAR_WORKSPACE_ID,
+                                ITA_SP_VAR_EXTERNAL_URL,
                                 ITA_SP_VAR_IN_PARAM_DIR_EPC,
                                 ITA_SP_VAR_IN_PARAM_FILE_DIR_EPC,
                                 ITA_SP_VAR_OUT_PARAM_DIR,
@@ -254,7 +266,13 @@ class AnscConst:
                                         ITA_SP_VAR_ANS_INVENTORYHOST_VAR_NAME,
                                         ITA_SP_VAR_ANS_OUTDIR_VAR_NAME,
                                         ITA_SP_VAR_CONDUCTO_DIR_VAR_NAME,
-                                        ITA_SP_VAR_OPERATION_VAR_NAME,
+                                        ITA_SP_VAR_OPERATION_STRING,
+                                        ITA_SP_VAR_OPERATION_ID,
+                                        ITA_SP_VAR_OPERATION_NAME,
+                                        ITA_SP_VAR_OPERATION_DATETIME,
+                                        ITA_SP_VAR_ORGANIZATION_ID,
+                                        ITA_SP_VAR_WORKSPACE_ID,
+                                        ITA_SP_VAR_EXTERNAL_URL,
                                         ITA_SP_VAR_IN_PARAM_DIR_EPC,
                                         ITA_SP_VAR_IN_PARAM_FILE_DIR_EPC,
                                         ITA_SP_VAR_OUT_PARAM_DIR,

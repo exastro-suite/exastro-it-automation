@@ -15,7 +15,7 @@ ARG USERNAME=app_user
 ARG GROUPNAME=app_user
 ARG APP_PATH=/exastro
 
-FROM    registry.access.redhat.com/ubi9/ubi-init:9.4 as common_build
+FROM    registry.access.redhat.com/ubi9/ubi-init:9.4 AS common_build
 ARG USERNAME
 ARG GROUPNAME
 ARG APP_PATH
@@ -52,8 +52,9 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
     python3.11 \
     python3.11-devel \
     python3.11-pip \
-&&  alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 100 \
-&&  alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 1000000 
+&&  alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 10 \
+&&  alternatives --install /usr/bin/pip3 pip3 /usr/bin/pip3.11 10 \
+&&  alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 1 
 # &&  alternatives --set python3 /usr/bin/python3.11 \
 #\
 # start pypy install  
@@ -87,12 +88,12 @@ RUN set -eux; \
 &&  rm pypy.tar.bz2 \
 &&  dnf remove -y bzip2 \
 &&  ln -sv '/opt/pypy/bin/pypy3' /usr/local/bin/ \
-&&  alternatives --install /usr/bin/python3 python3 /opt/pypy/bin/python3.11 50 \
+&&  alternatives --install /usr/bin/python3 python3 /opt/pypy/bin/python3.11 100 \
 &&  alternatives --set python3 /opt/pypy/bin/python3.11 \
-&&  alternatives --install /usr/bin/pip3.11 pip3.11 /opt/pypy/bin/pip3.11 50 \
-&&  alternatives --set pip3.11 /opt/pypy/bin/pip3.11 \
+&&  alternatives --install /usr/bin/pip3 pip3 /opt/pypy/bin/pip3.11 100 \
+&&  alternatives --set pip3 /opt/pypy/bin/pip3.11 \
 &&  python3 -m ensurepip \
-&&  pip3.11 install --disable-pip-version-check --no-cache-dir --no-compile 'wheel<0.46' \
+&&  pip3 install --disable-pip-version-check --no-cache-dir --no-compile 'wheel<0.46' \
 && 	find /opt/pypy -depth \
 		\( \
 			\( -type d -a \( -name test -o -name tests \) \) \
@@ -100,10 +101,10 @@ RUN set -eux; \
 			\( -type f -a \( -name '*.pyc' -o -name '*.pyo' \) \) \
 		\) -exec rm -rf '{}' + \
 # end pypy install
-&&  pip3.11 install poetry==1.8.4 \
+&&  pip3 install poetry==1.8.4 \
 &&  poetry config virtualenvs.create false \
-&&  groupadd $GROUPNAME \
-&&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
+&&  groupadd "$GROUPNAME" \
+&&  useradd -m -s /bin/bash -g "$GROUPNAME" "$USERNAME"
 
 WORKDIR $APP_PATH
 
@@ -117,7 +118,7 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
 # Build for development
 #   Specify options when creating this image: --target develop_build
 #
-FROM    common_build as develop_build
+FROM    common_build AS develop_build
 ARG USERNAME
 ARG GROUPNAME
 ARG APP_PATH
@@ -134,7 +135,7 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
     iputils \
     docker-ce-cli \
     jq \
-&&  usermod -G wheel $USERNAME \
+&&  usermod -G wheel "$USERNAME" \
 &&  echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers \
 &&  echo "%${GROUPNAME} ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
@@ -173,7 +174,7 @@ COPY ./ita_root/messages/ $APP_PATH/messages/
 COPY ./ita_root/backyard/ $APP_PATH/backyard/
 
 USER root
-RUN chmod a+x $APP_PATH/backyard/entrypoint.sh
+RUN chmod a+x "$APP_PATH/backyard/entrypoint.sh"
 USER $USERNAME
 
 ENTRYPOINT ["bash", "./backyard/entrypoint.sh"]

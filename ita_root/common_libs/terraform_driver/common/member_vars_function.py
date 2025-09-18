@@ -1249,19 +1249,23 @@ def count_max_col_seq_by_module(objdbca, TFConst, trg_default_key_list, default_
                 default_data = dict_default_data.copy()
 
             # キーの一覧をループしてデフォルト値を確認
-            temp_default_data = default_data.copy()
-            for default_key in trg_default_key_list:
-                if isinstance(temp_default_data, dict):
-                    default = temp_default_data.get(str(default_key))
-                else:
-                    default = None
-                temp_default_data = default
+            if not default_data:
+                default = None
+                max_col_seq = 1
+            else:
+                temp_default_data = default_data.copy()
+                for default_key in trg_default_key_list:
+                    if isinstance(temp_default_data, dict):
+                        default = temp_default_data.get(str(default_key))
+                    else:
+                        default = None
+                    temp_default_data = default
 
-                # dict/listの場合は要素数をカウントする。それ以外は1とする。
-                if isinstance(default, dict) or isinstance(default, list):
-                    max_col_seq = len(default)
-                else:
-                    max_col_seq = 1
+                    # dict/listの場合は要素数をカウントする。それ以外は1とする。
+                    if isinstance(default, dict) or isinstance(default, list):
+                        max_col_seq = len(default)
+                    else:
+                        max_col_seq = 1
 
     return max_col_seq
 

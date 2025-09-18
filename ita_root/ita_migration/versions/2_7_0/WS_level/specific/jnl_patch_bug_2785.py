@@ -18,7 +18,7 @@ import os
 import shutil
 
 from common_libs.common.dbconnect import *  # noqa: F403
-from common_libs.common.util import get_timestamp, put_uploadfiles_jnl
+from common_libs.common.util import put_uploadfiles_jnl
 
 def main(work_dir_path, ws_db):
     ###########################################################

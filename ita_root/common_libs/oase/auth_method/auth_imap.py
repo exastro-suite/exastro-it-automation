@@ -21,8 +21,8 @@ from common_libs.oase.api_client_common import APIClientCommon
 
 
 class IMAPAuthClient(APIClientCommon):
-    def __init__(self, auth_settings=None):
-        super().__init__(auth_settings)
+    def __init__(self, setting, last_fetched_event):
+        super().__init__(setting, last_fetched_event)
 
     def imap_login(self):
         result = False
@@ -63,7 +63,7 @@ class IMAPAuthClient(APIClientCommon):
         except Exception as e:
             raise AppException("AGT-10028", [e])
 
-    def call_api(self, parameter=None):
+    def call_api(self, setting=None, last_fetched_event=None):
 
         if self.proxy_host:
             socks.setdefaultproxy(socks.SOCKS5, self.proxy_host, self.proxy_port)

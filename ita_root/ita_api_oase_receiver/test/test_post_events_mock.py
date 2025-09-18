@@ -16,6 +16,7 @@ import pytest
 import os
 from unittest.mock import MagicMock
 from flask import Flask
+from pymongo import InsertOne
 
 from controllers.oase_controller import post_events
 
@@ -118,6 +119,7 @@ class TestPostEvents:
         mocker.patch('controllers.oase_controller.MONGOConnectWs', return_value=self.mock_mongo_ws)
         mocker.patch('controllers.oase_controller.check_menu_info', return_value=True)
         mocker.patch('controllers.oase_controller.check_auth_menu', return_value='1')
+        mocker.patch('controllers.oase_controller.duplicate_check', return_value=False)
         mocker.patch('controllers.oase_controller.label_event', return_value='1')
 
     # 正常系のテスト ##
@@ -169,6 +171,10 @@ class TestPostEvents:
                 "_id": None
             }
         ]
+        expected_bulk_writes = []
+        for labeled_event in expected_labeled_events:
+            expected_bulk_writes.append(InsertOne(labeled_event))
+            
         mocker.patch('controllers.oase_controller.label_event', return_value=expected_labeled_events)
 
         # アプリケーションコンテキストとリクエストコンテキストを両方有効にする: URLはダミー
@@ -181,11 +187,11 @@ class TestPostEvents:
         assert result.get("data") == []
         assert result.get("result") == "000-00000"
 
-        # insert_many の呼び出し引数を検証
+        # bulk_write の呼び出し引数を検証
         labeled_event_collection = self.mock_mongo_ws.collection.return_value
-        labeled_event_collection.insert_many.assert_called_once_with(expected_labeled_events)
-        args, kwargs = labeled_event_collection.insert_many.call_args
-        assert args == (expected_labeled_events,)
+        labeled_event_collection.bulk_write.assert_called_once_with(expected_bulk_writes)
+        args, kwargs = labeled_event_collection.bulk_write.call_args
+        assert args == (expected_bulk_writes,)
 
     # 異常系のテスト ##
     def test_post_events_maintenance_mode(self, mocker, app):
@@ -272,4 +278,4 @@ class TestPostEvents:
 
         # 登録されていない事の検証
         labeled_event_collection = self.mock_mongo_ws.collection.return_value
-        assert labeled_event_collection.insert_many.called is False
+        assert labeled_event_collection.bulk_write.called is False

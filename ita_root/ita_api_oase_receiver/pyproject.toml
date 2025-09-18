@@ -38,6 +38,7 @@ pytest-cov = ">=0.0.0"
 pytest-docker = ">=0.0.0"
 pytest-mock = ">=0.0.0"
 requests-mock = ">=0.0.0"
+mongomock = ">=0.0.0"
 
 [build-system]
 requires = ["poetry-core"]

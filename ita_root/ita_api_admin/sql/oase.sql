@@ -52,11 +52,11 @@ CREATE TABLE IF NOT EXISTS T_OASE_EVENT_COLLECTION_SETTINGS
     EVENT_COLLECTION_SETTINGS_NAME  VARCHAR(255),                               -- イベント収集名
     CONNECTION_METHOD_ID            VARCHAR(2),                                 -- 接続方式ID
     REQUEST_METHOD_ID               VARCHAR(2),                                 -- リクエストメソッドID
-    URL                             VARCHAR(1024),                              -- 接続先
+    URL                             VARCHAR(4096),                              -- 接続先
     PORT                            INT,                                        -- ポート
     REQUEST_HEADER                  TEXT,                                       -- リクエストヘッダー
-    PROXY                           VARCHAR(255),                               -- プロキシ
-    AUTH_TOKEN                      VARCHAR(1024),                              -- 認証トークン
+    PROXY                           VARCHAR(4096),                              -- プロキシ
+    AUTH_TOKEN                      VARCHAR(4096),                              -- 認証トークン
     USERNAME                        VARCHAR(255),                               -- ユーザー名
     PASSWORD                        TEXT,                                       -- パスワード
     MAILBOXNAME                     VARCHAR(255),                               -- メールボックス名
@@ -83,11 +83,11 @@ CREATE TABLE IF NOT EXISTS T_OASE_EVENT_COLLECTION_SETTINGS_JNL
     EVENT_COLLECTION_SETTINGS_NAME  VARCHAR(255),                               -- イベント収集名
     CONNECTION_METHOD_ID            VARCHAR(2),                                 -- 接続方式ID
     REQUEST_METHOD_ID               VARCHAR(2),                                 -- リクエストメソッドID
-    URL                             VARCHAR(1024),                              -- 接続先
+    URL                             VARCHAR(4096),                              -- 接続先
     PORT                            INT,                                        -- ポート
     REQUEST_HEADER                  TEXT,                                       -- リクエストヘッダー
-    PROXY                           VARCHAR(255),                               -- プロキシ
-    AUTH_TOKEN                      VARCHAR(1024),                              -- 認証トークン
+    PROXY                           VARCHAR(4096),                              -- プロキシ
+    AUTH_TOKEN                      VARCHAR(4096),                              -- 認証トークン
     USERNAME                        VARCHAR(255),                               -- ユーザー名
     PASSWORD                        TEXT,                                       -- パスワード
     MAILBOXNAME                     VARCHAR(255),                               -- メールボックス名

@@ -1,4 +1,5 @@
 [
     ["", "workspace_master.sql"],
-    ["oase.sql", "oase_master.sql"]
+    ["oase.sql", "oase_master.sql"],
+    ["", "ansible_master.sql"]
 ]

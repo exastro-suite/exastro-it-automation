@@ -25,6 +25,9 @@ from common_libs.notification.sub_classes.oase import OASE, OASENotificationType
 from common_libs.oase.const import oaseConst
 from libs.common_functions import addline_msg, getIDtoLabelName
 from libs.notification_data import Notification_data
+from libs.notification_process import NotificationProcessManager
+from libs.writer_process import WriterProcessManager
+
 
 class Action():
     def __init__(self, wsDb, EventObj):
@@ -125,7 +128,8 @@ class Action():
 
         # 評価結果へ登録
         # トランザクション開始
-        self.wsDb.db_transaction_start()
+        # ⇒ T_OASE_ACTION_LOGへの書き込みは子プロセス（WriterProcess）で行うため、書き込みは行わなくなったためコメントアウト
+        # self.wsDb.db_transaction_start()
         action_log_row = {
             "RULE_ID": rule_id,
             "RULE_NAME": ruleInfo.get("RULE_NAME"),
@@ -152,7 +156,9 @@ class Action():
             "DISUSE_FLAG": "0",
             "LAST_UPDATE_USER": g.get('USER_ID')
         }
-        action_log_row_list = self.wsDb.table_insert(oaseConst.T_OASE_ACTION_LOG, action_log_row, 'ACTION_LOG_ID')
+        # T_OASE_ACTION_LOGへの書き込みは子プロセス（WriterProcess）で行う
+        # action_log_row_list = self.wsDb.table_insert(oaseConst.T_OASE_ACTION_LOG, action_log_row, 'ACTION_LOG_ID')
+        action_log_row_list = WriterProcessManager.insert_oase_action_log(action_log_row)
         action_log_row = action_log_row_list[0]
         action_log_id = action_log_row.get("ACTION_LOG_ID")
 
@@ -172,10 +178,11 @@ class Action():
         if len(NotificationEventList) > 0:
             tmp_msg = g.appmsg.get_log_message("BKY-90008", ['Known(evaluated)'])
             g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-            OASE.send(self.wsDb, NotificationEventList, {"notification_type": OASENotificationType.EVALUATED})
+            NotificationProcessManager.send_notification(NotificationEventList, {"notification_type": OASENotificationType.EVALUATED})
 
         # コミット  トランザクション終了
-        self.wsDb.db_transaction_end(True)
+        # ⇒ T_OASE_ACTION_LOGへの書き込みは子プロセス（WriterProcess）で行うため、書き込みは行わなくなったためコメントアウト
+        # self.wsDb.db_transaction_end(True)
 
         # アクションの事前処理（通知と承認）
         if action_id:
@@ -196,7 +203,7 @@ class Action():
 
                 tmp_msg = g.appmsg.get_log_message("BKY-90008", ['Advance notice'])
                 g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-                OASE.send(self.wsDb, before_Action_Event_List, {"notification_type": OASENotificationType.BEFORE_ACTION, "rule_id": rule_id})
+                NotificationProcessManager.send_notification(before_Action_Event_List, {"notification_type": OASENotificationType.BEFORE_ACTION, "rule_id": rule_id})
 
         return action_log_row
 

@@ -20,6 +20,9 @@ import os
 from common_libs.oase.const import oaseConst
 from common_libs.common.mongoconnect.const import Const as mongoConst
 
+from libs.writer_process import WriterProcessManager
+
+
 class ManageEvents:
     def __init__(self, wsMongo, judgeTime):
         self.labeled_event_collection = wsMongo.collection(mongoConst.LABELED_EVENT_COLLECTION)
@@ -250,8 +253,10 @@ class ManageEvents:
         return unused_event_ids
 
     def insert_event(self, dict):
-        result = self.labeled_event_collection.insert_one(dict)
-        return result.inserted_id
+        # result = self.labeled_event_collection.insert_one(dict)
+        # g.applogger.debug(f'**** Inserted event id: {result.inserted_id}')
+        # return result.inserted_id
+        return WriterProcessManager.insert_labeled_event_collection(dict)
 
     def update_label_flag(self, event_id_list, update_flag_dict):
         for event_id in event_id_list:
@@ -263,7 +268,8 @@ class ManageEvents:
             self.collect_unevaluated_event(event_id)
 
             # MongoDB更新
-            self.labeled_event_collection.update_one({"_id": event_id}, {"$set": {f"labels.{key}": value}})
+            # self.labeled_event_collection.update_one({"_id": event_id}, {"$set": {f"labels.{key}": value}})
+            WriterProcessManager.update_labeled_event_collection({"_id": event_id}, {"$set": {f"labels.{key}": value}})
 
         return True
 

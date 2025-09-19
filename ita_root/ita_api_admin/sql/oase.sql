@@ -365,7 +365,7 @@ CREATE TABLE IF NOT EXISTS T_OASE_DEDUPLICATION_SETTINGS
     SETTING_PRIORITY                INT,                                        -- 優先順位
     EVENT_SOURCE_REDUNDANCY_GROUP   TEXT,                                       -- 冗長グループ（イベント収集先）
     CONDITION_LABEL_KEY_IDS         TEXT,                                       -- ラベル
-    CONDITION_EXPRESSION_ID         VARCHAR(40),                                -- 式
+    CONDITION_EXPRESSION_ID         VARCHAR(2),                                 -- 式
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -383,7 +383,7 @@ CREATE TABLE IF NOT EXISTS T_OASE_DEDUPLICATION_SETTINGS_JNL
     SETTING_PRIORITY                INT,                                        -- 優先順位
     EVENT_SOURCE_REDUNDANCY_GROUP   TEXT,                                       -- 冗長グループ（イベント収集先）
     CONDITION_LABEL_KEY_IDS         TEXT,                                       -- ラベル
-    CONDITION_EXPRESSION_ID         VARCHAR(40),                                -- 式
+    CONDITION_EXPRESSION_ID         VARCHAR(2),                                 -- 式
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -449,6 +449,8 @@ CREATE TABLE IF NOT EXISTS T_OASE_FILTER
     FILTER_NAME                     VARCHAR(255),                               -- フィルター名
     FILTER_CONDITION_JSON           TEXT,                                       -- フィルター条件
     SEARCH_CONDITION_ID             VARCHAR(2),                                 -- 検索方法
+    GROUP_LABEL_KEY_IDS             TEXT,                                       -- グルーピングラベル
+    GROUP_CONDITION_ID              VARCHAR(2),                                 -- グルーピング条件ID
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -466,12 +468,31 @@ CREATE TABLE IF NOT EXISTS T_OASE_FILTER_JNL
     FILTER_NAME                     VARCHAR(255),                               -- フィルター名
     FILTER_CONDITION_JSON           TEXT,                                       -- フィルター条件
     SEARCH_CONDITION_ID             VARCHAR(2),                                 -- 検索方法
+    GROUP_LABEL_KEY_IDS             TEXT,                                       -- グルーピングラベル
+    GROUP_CONDITION_ID              VARCHAR(2),                                 -- グルーピング条件ID
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
     LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
     PRIMARY KEY(JOURNAL_SEQ_NO)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
+-- フィルターグルーピング条件マスタ
+CREATE TABLE IF NOT EXISTS T_OASE_FILTER_GROUP_CONDITION
+(
+    GROUP_CONDITION_ID              VARCHAR(2),                                 -- グルーピング条件ID
+    GROUP_CONDITION_JA              VARCHAR(255),                               -- グルーピング条件名（JA）
+    GROUP_CONDITION_EN              VARCHAR(255),                               -- グルーピング条件名（EN）
+    DISP_SEQ                        INT,                                        -- 表示順序
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(GROUP_CONDITION_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
 
 
 

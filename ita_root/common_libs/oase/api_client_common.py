@@ -110,12 +110,12 @@ class APIClientCommon:
 
             res = template.render(
                 EXASTRO_LAST_FETCHED_EVENT_IS_EXIST=True if last_fetched_event else False,  # （最新）前回取得イベントの存在フラグ
-                EXASTRO_LAST_FETCHED_EVENT=last_fetched_event,  # （最新）前回取得イベント
-                EXASTRO_EVENT_COLLECTION_SETTING=setting,  # イベント収集設定メニューの入力値
+                EXASTRO_LAST_FETCHED_EVENT=last_fetched_event,  # （最新）前回取得イベントのオブジェクト
+                EXASTRO_EVENT_COLLECTION_SETTING=setting,  # イベント収集設定メニューのレコードのオブジェクト
                 EXASTRO_LAST_FETCHED_TIME=self.last_fetched_time,  # 前回取得日時（日時オブジェクト）
                 EXASTRO_LAST_FETCHED_TIMESTAMP=self.last_fetched_timestamp,  # 前回取得日時（1704817434）
                 EXASTRO_LAST_FETCHED_YY_MM_DD=self.last_fetched_Ymd,  # 前回取得日時（2024/01/10 01:23:45）
-                EXASTRO_LAST_FETCHED_DD_MM_YY=self.last_fetched_dmy,  # 1前回取得日時（0/01/24 01:23:45）
+                EXASTRO_LAST_FETCHED_DD_MM_YY=self.last_fetched_dmy,  # 前回取得日時（0/01/24 01:23:45）
                 EXASTRO_CURRENT_TIME=self.current_time  # 現在時刻（日時オブジェクト）
             )
             return res

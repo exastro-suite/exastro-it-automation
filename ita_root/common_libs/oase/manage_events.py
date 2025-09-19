@@ -20,6 +20,9 @@ import os
 from common_libs.oase.const import oaseConst
 from common_libs.common.mongoconnect.const import Const as mongoConst
 
+from libs.writer_process import WriterProcessManager
+
+
 class ManageEvents:
     def __init__(self, wsMongo, judgeTime):
         self.labeled_event_collection = wsMongo.collection(mongoConst.LABELED_EVENT_COLLECTION)
@@ -32,6 +35,7 @@ class ManageEvents:
         labeled_events = self.labeled_event_collection.find(undetermined_search_value)
 
         self.labeled_events_dict = {}
+        self.unevaluated_event_ids = set()
 
         for event in labeled_events:
             event[oaseConst.DF_LOCAL_LABLE_NAME] = {}
@@ -52,6 +56,8 @@ class ManageEvents:
                 event_status
             )
             self.labeled_events_dict[event["_id"]] = event
+
+            self.collect_unevaluated_event(event["_id"], event, initial=True)
 
     # イベント有効期間判定
     def check_event_status(self, judge_time, fetched_time, end_time):
@@ -133,14 +139,40 @@ class ManageEvents:
         Returns:
             int: 未評価イベントの総数
         """
-        count = 0
-        for event_id, event in self.labeled_events_dict.items():
-            if event['labels']['_exastro_evaluated'] == '0' \
-            and event['labels']['_exastro_timeout'] == '0' \
-            and event['labels']['_exastro_undetected'] == '0':
-                count += 1
+        count = len(self.unevaluated_event_ids)
 
         return count
+
+    def collect_unevaluated_event(
+        self, event_id: object, event: dict | None = None, *, initial: bool = False
+    ):
+        """未評価イベントを収集する。
+
+        Args:
+            event_id (Any): 収集するイベントのID。収集判定を行い評価不可能または評価済の場合収集結果から除外する。
+            event (dict | None, optional): 収集判定に使うイベント。Noneの場合はキャッシュからイベントIDを取得する。デフォルトはNone。
+            initial (bool, optional): Trueの場合初期化時と判断して収集対象外。デフォルトはFalse。
+        """
+        target_event = self.labeled_events_dict[event_id] if event is None else event
+        match (target_event, initial):
+            case (
+                {
+                    "labels": {
+                        "_exastro_evaluated": "0",
+                        "_exastro_timeout": "0",
+                        "_exastro_undetected": "0",
+                    }
+                },
+                _,
+            ):
+                # 評価可能(未タイムアウトかつ既知)で、未評価のものを集約
+                self.unevaluated_event_ids.add(event_id)
+            case (_, False):
+                # 評価不可能または評価済の場合、初期化時以外は集約から除外
+                self.unevaluated_event_ids.discard(event_id)
+            case _:
+                # 評価不可能または評価済の場合、初期化時以外はなにもしない
+                pass
 
     def append_event(self, event):
         self.add_local_label(
@@ -151,6 +183,7 @@ class ManageEvents:
         )
         # キャッシュに保存
         self.labeled_events_dict[event["_id"]] = event
+        self.collect_unevaluated_event(event["_id"], event)
 
     def get_events(self, event_id):
         if event_id not in self.labeled_events_dict:
@@ -181,7 +214,7 @@ class ManageEvents:
 
         return post_proc_timeout_event_ids
 
-    def get_unused_event(self, incident_dict, filterIDMap):
+    def get_unused_event(self, incident_dict: dict, filterIDMap):
         """
         フィルタにマッチしていないイベントを抽出
 
@@ -194,10 +227,11 @@ class ManageEvents:
         unused_event_ids = []
 
         # incident_dictに登録されているイベントをfilter_match_listに格納する
-        filter_match_list = []
-        for filter_id, id_value_list in incident_dict.items():
-            if len(id_value_list) > 0:
-                filter_match_list += id_value_list
+        filter_match_list = frozenset(
+            id_value
+            for id_value_list in incident_dict.values()
+            for id_value in id_value_list
+        )
 
         for event_id, event in self.labeled_events_dict.items():
             # タイムアウトしたイベントは登録されているのでスキップ
@@ -219,8 +253,10 @@ class ManageEvents:
         return unused_event_ids
 
     def insert_event(self, dict):
-        result = self.labeled_event_collection.insert_one(dict)
-        return result.inserted_id
+        # result = self.labeled_event_collection.insert_one(dict)
+        # g.applogger.debug(f'**** Inserted event id: {result.inserted_id}')
+        # return result.inserted_id
+        return WriterProcessManager.insert_labeled_event_collection(dict)
 
     def update_label_flag(self, event_id_list, update_flag_dict):
         for event_id in event_id_list:
@@ -228,8 +264,12 @@ class ManageEvents:
                 return False
             for key, value in update_flag_dict.items():
                 self.labeled_events_dict[event_id]["labels"][key] = value
+
+            self.collect_unevaluated_event(event_id)
+
             # MongoDB更新
-            self.labeled_event_collection.update_one({"_id": event_id}, {"$set": {f"labels.{key}": value}})
+            # self.labeled_event_collection.update_one({"_id": event_id}, {"$set": {f"labels.{key}": value}})
+            WriterProcessManager.update_labeled_event_collection({"_id": event_id}, {"$set": {f"labels.{key}": value}})
 
         return True
 

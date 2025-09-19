@@ -68,7 +68,10 @@ paths:
                   example:
                     - 実行環境名1
                     - 実行環境名X
-
+                execution_limit:
+                  type: integer
+                  description: 指定が無ければ対象（ステータス：準備完了）を全件取得。
+                  example: 1
       responses:
         '200':
           description: Success

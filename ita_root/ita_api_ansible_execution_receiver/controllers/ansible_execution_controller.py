@@ -18,7 +18,7 @@ import json
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectWs
 from common_libs.api import api_filter, api_filter_download_temporary_file, check_request_body, check_request_body_key
-from libs.ansible_execution import * # noqa: F403
+from libs.ansible_execution import *  # noqa: F403
 from libs.ansible_execution_receiver_common import check_menu_info, check_auth_menu
 from flask import g
 
@@ -73,7 +73,7 @@ def post_unexecuted_instance(organization_id, workspace_id, body):  # noqa: E501
                 raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
         # 作業実行関連のメニューの基本情報および項目情報の取得
-        result_data = unexecuted_instance(objdbca, body)
+        result_data = unexecuted_instance(objdbca, organization_id, body)  # noqa: F405
         # result_data.setdefault("menu_info", tmp_data[0]["data"])
     except Exception as e:
         raise e
@@ -134,7 +134,7 @@ def execution_status_notification(organization_id, workspace_id, execution_no, b
             raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
         # 作業実行関連のメニューの基本情報および項目情報の取得
-        result_data = get_execution_status(objdbca, organization_id, workspace_id, execution_no, body)
+        result_data = get_execution_status(objdbca, organization_id, workspace_id, execution_no, body)  # noqa: F405
         # result_data.setdefault("menu_info", tmp_data[0]["data"])
     except Exception as e:
         raise e
@@ -187,13 +187,14 @@ def get_populated_data(organization_id, workspace_id, execution_no, driver_id): 
             raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
         # 作業実行関連のメニューの基本情報および項目情報の取得
-        result_data = get_populated_data_path(objdbca, organization_id, workspace_id, execution_no, driver_id)
+        result_data = get_populated_data_path(objdbca, organization_id, workspace_id, execution_no, driver_id)  # noqa: F405
         # result_data.setdefault("menu_info", tmp_data[0]["data"])
     except Exception as e:
         raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
+
 
 @api_filter
 def update_result_data(organization_id, workspace_id, execution_no, body=None, **kwargs):  # noqa: E501
@@ -247,10 +248,10 @@ def update_result_data(organization_id, workspace_id, execution_no, body=None, *
         # 各Driverパス
         tmp_path = "/tmp/" + organization_id + "/" + workspace_id
 
-        retBool, parameters, file_paths = create_file_path(connexion.request, tmp_path, execution_no)
+        retBool, parameters, file_paths = create_file_path(connexion.request, tmp_path, execution_no)  # noqa: F405
 
         # 作業実行関連のメニューの基本情報および項目情報の取得
-        result_data = update_result(objdbca, organization_id, workspace_id, execution_no, parameters, file_paths)
+        result_data = update_result(objdbca, organization_id, workspace_id, execution_no, parameters, file_paths)  # noqa: F405
         # result_data.setdefault("menu_info", tmp_data[0]["data"])
     except Exception as e:
         raise e
@@ -304,12 +305,13 @@ def agent_version(organization_id, workspace_id, body):  # noqa: E501
             check_request_body_key(body, 'version')
 
         # エージェント名とバージョン情報を取得
-        result_data = get_agent_version(objdbca, body)
+        result_data = get_agent_version(objdbca, body)  # noqa: F405
     except Exception as e:
         raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
+
 
 @api_filter
 def execution_notification(organization_id, workspace_id, body):  # noqa: E501
@@ -353,7 +355,7 @@ def execution_notification(organization_id, workspace_id, body):  # noqa: E501
                 api_msg_args = [menu]
                 raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
-        result_data = update_ansible_agent_status_file(organization_id, workspace_id, body, objdbca)
+        result_data = update_ansible_agent_status_file(organization_id, workspace_id, body, objdbca)  # noqa: F405
         # result_data.setdefault("menu_info", tmp_data[0]["data"])
     except Exception as e:
         raise e

@@ -35,14 +35,32 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
         setting["LAST_FETCHED_TIMESTAMP"] = last_fetched_timestamps[setting["EVENT_COLLECTION_SETTINGS_NAME"]]
         event_collection_result = {}
 
-        # 重複取得防止のため、event_collection_settings_nameに対応するidリストをDBから取得し、settingsに加える
+        # 過去に取得したevent_collection_settings_nameに対応するデータ（idリスト、イベント）をDBから取得する
+        # idリスト -> 重複取得防止のためチェックに利用
+        #
         try:
             sqliteDB.db_cursor.execute(
-                "SELECT id FROM events WHERE event_collection_settings_name=? and id is not null",
+                "SELECT id, event, fetched_time, sent_flag FROM events WHERE event_collection_settings_name=? ORDER BY fetched_time, id",
                 (setting["EVENT_COLLECTION_SETTINGS_NAME"], )
             )
-            saved_ids = sqliteDB.db_cursor.fetchall()
-            saved_ids = [item[0] for item in saved_ids]
+            saved_event_data_list = sqliteDB.db_cursor.fetchall()
+
+            # 保存されているイベントのidのリスト
+            saved_ids = [saved_event_data[0] for saved_event_data in saved_event_data_list]
+
+            # 最後に取得したイベントを検索
+            last_fetched_event = None
+            last_fetched_event_is_found = False
+            for saved_event_data in saved_event_data_list:
+                if last_fetched_event_is_found is False:
+                    try:
+                        saved_event = json.loads(saved_event_data[1])
+                        if "_exastro_not_available" not in saved_event:
+                            last_fetched_event = saved_event
+                            last_fetched_event_is_found = True
+                    except Exception as e:
+                        g.applogger.info("Error occured while checking latest event({}). ERROR={}".format(saved_event_data, e))
+            saved_event_data_list = None
         except sqlite3.OperationalError:  # テーブルがまだ作成されていない時の例外処理
             saved_ids = []
         setting["SAVED_IDS"] = saved_ids
@@ -60,11 +78,10 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
         setting['SECRET_ACCESS_KEY'] = agent_decrypt(setting['SECRET_ACCESS_KEY'], pass_phrase)
 
         # APIの呼び出し
-        api_client = get_auth_client(setting)  # noqa: F405
-        api_parameter = json.loads(setting["PARAMETER"]) if setting["PARAMETER"] else None
+        api_client = get_auth_client(setting=setting, last_fetched_event=last_fetched_event)  # noqa: F405
         json_data = {}
         try:
-            call_api_result, json_data = api_client.call_api(parameter=api_parameter)
+            call_api_result, json_data = api_client.call_api(setting=setting, last_fetched_event=last_fetched_event)
         except AppException as e:
             g.applogger.info(g.appmsg.get_log_message("AGT-10001", [setting["EVENT_COLLECTION_SETTINGS_ID"]]))
             app_exception(e)

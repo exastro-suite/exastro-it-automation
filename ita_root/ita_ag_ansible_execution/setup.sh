@@ -16,9 +16,9 @@ EXASTRO_UNAME=$(id -u -n)
 EXASTRO_UID=$(id -u)
 EXASTRO_GID=1000
 #### インストーラー自身のバージョン（インストールできる資材のバージョンを制御するため）
-AGENT_INSTALLER_VERSION=2.6.0
+AGENT_INSTALLER_VERSION=2.7.0
 #### AGENT_INSTALLER_VERSIONと揃っていること
-AGENT_INSTALLER_VNC=20600
+AGENT_INSTALLER_VNC=20700
 
 POETRY_VERSION=1.6.0
 
@@ -154,6 +154,8 @@ default_env_values=(
     ["ENTRYPOINT"]=""
     ["REFERENCE_ENVPATH"]=""
     ["PYTHON_CMD"]=""
+    ["MOVEMENT_LIMIT"]="1"
+    ["EXECUTION_LIMIT"]="5"
 )
 # use .env key
 output_env_values=(
@@ -183,6 +185,8 @@ output_env_values=(
     "ITERATION"
     "EXECUTE_INTERVAL"
     # "SERVICE_NAME"
+    "MOVEMENT_LIMIT"
+    "EXECUTION_LIMIT"
 )
 
 #########################################

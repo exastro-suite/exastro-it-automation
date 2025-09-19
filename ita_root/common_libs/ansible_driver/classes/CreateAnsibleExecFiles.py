@@ -3268,6 +3268,9 @@ class CreateAnsibleExecFiles():
                 mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_CONDUCTOR_ID] = self.LC_ANS_UNDEFINE_NAME
             mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_ANS_EXECUTION_NO] = execution_no
             mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_ANS_MOVEMENT_ID] = movement_id
+            mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_ORGANIZATION_ID] = g.ORGANIZATION_ID
+            mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_WORKSPACE_ID] = g.WORKSPACE_ID
+            mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_EXTERNAL_URL] = os.environ.get("EXTERNAL_URL", "__undefinesymbol__")
 
         return mt_host_vars
 
@@ -5423,19 +5426,27 @@ class CreateAnsibleExecFiles():
                                str(inspect.currentframe().f_lineno), msgstr)
             return False, mt_host_vars, mt_pioneer_template_host_vars
 
+        operation_date = rows[0]['OPERATION_DATE']
+        operation_name = rows[0]['OPERATION_NAME']
         operationStr = ""
-        operationStr = "{}_{}:{}".format(rows[0]['OPERATION_DATE'], in_operation_id, rows[0]['OPERATION_NAME'])
+        operationStr = "{}_{}:{}".format(operation_date, in_operation_id, operation_name)
 
         # オペレーション用の予約変数生成
         for host_name, hostinfo in ina_hostinfolist.items():
             if host_name not in mt_host_vars:
                 mt_host_vars[host_name] = {}
-            mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_OPERATION_VAR_NAME] = operationStr
+            mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_OPERATION_STRING] = operationStr
+            mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_OPERATION_ID] = in_operation_id
+            mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_OPERATION_NAME] = operation_name
+            mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_OPERATION_DATETIME] = operation_date
 
             if self.getAnsibleDriverID() == self.AnscObj.DF_PIONEER_DRIVER_ID:
                 if host_name not in mt_pioneer_template_host_vars:
                     mt_pioneer_template_host_vars[host_name] = {}
-                mt_pioneer_template_host_vars[host_name][self.AnscObj.ITA_SP_VAR_OPERATION_VAR_NAME] = operationStr
+                mt_pioneer_template_host_vars[host_name][self.AnscObj.ITA_SP_VAR_OPERATION_STRING] = operationStr
+                mt_pioneer_template_host_vars[host_name][self.AnscObj.ITA_SP_VAR_OPERATION_ID] = in_operation_id
+                mt_pioneer_template_host_vars[host_name][self.AnscObj.ITA_SP_VAR_OPERATION_NAME] = operation_name
+                mt_pioneer_template_host_vars[host_name][self.AnscObj.ITA_SP_VAR_OPERATION_DATETIME] = operation_date
         return True, mt_host_vars, mt_pioneer_template_host_vars
 
     def CreateSSHAgentConfigInfoFile(self, file, hostname, ssh_key_file, pssphrase):

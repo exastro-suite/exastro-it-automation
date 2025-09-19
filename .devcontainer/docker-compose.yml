@@ -271,6 +271,7 @@ services:
       - ANSIBLE_AGENT_BASE_IMAGE_TAG=${ANSIBLE_AGENT_BASE_IMAGE_TAG}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+      - EXTERNAL_URL=${EXTERNAL_URL:-}
       - NETWORK_ID=${NETWORK_ID}
     volumes:
       - ${HOST_DOCKER_SOCKET_PATH:-/var/run/docker.sock}:/var/run/docker.sock:cached

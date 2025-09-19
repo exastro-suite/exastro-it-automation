@@ -29,6 +29,8 @@ from libs.common_functions import addline_msg, InsertConclusionEvent, getRuleLis
 from libs.judgement import Judgement
 from libs.action import Action
 from libs.action_status_monitor import ActionStatusMonitor
+from libs.notification_process import NotificationProcessManager
+from libs.writer_process import WriterProcessManager
 
 def backyard_main(organization_id, workspace_id):
     """
@@ -50,6 +52,9 @@ def backyard_main(organization_id, workspace_id):
     # connect MariaDB
     wsDb = DBConnectWs(workspace_id)  # noqa: F405
 
+    NotificationProcessManager.start_workspace_processing(organization_id, workspace_id)
+    WriterProcessManager.start_workspace_processing(organization_id, workspace_id)
+    
     try:
         # 処理時間
         judgeTime = int(datetime.datetime.now().timestamp())
@@ -68,6 +73,10 @@ def backyard_main(organization_id, workspace_id):
         else:
             tmp_msg = g.appmsg.get_log_message("BKY-90001", ['Ended'])
             g.applogger.info(tmp_msg)  # noqa: F405
+
+        # WriterProcessManagerに遅延書き込みはここまでに完了させる
+        #   T_OASE_ACTION_LOGへの参照がここ以降で発生するため、ここまでに書き込みを完了させる
+        WriterProcessManager.finish_workspace_processing()
 
         # 評価結果のステータスを監視するクラス
         action_status_monitor = ActionStatusMonitor(wsDb, EventObj)
@@ -94,6 +103,8 @@ def backyard_main(organization_id, workspace_id):
         wsDb.db_transaction_end(False)
         wsDb.db_disconnect()
         wsMongo.disconnect()
+
+    NotificationProcessManager.finish_workspace_processing()
 
     # メイン処理終了
     tmp_msg = g.appmsg.get_log_message("BKY-90000", ['Ended'])
@@ -142,7 +153,7 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
         if len(timeout_notification_list) > 0:
             tmp_msg = g.appmsg.get_log_message("BKY-90008", ['Known(timeout)'])
             g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-            OASE.send(wsDb, timeout_notification_list, {"notification_type": OASENotificationType.TIMEOUT})
+            NotificationProcessManager.send_notification(timeout_notification_list, {"notification_type": OASENotificationType.TIMEOUT})
 
     # 「フィルター管理」からレコードのリストを取得
     filterIDMap = getFilterIDMap(wsDb)
@@ -178,7 +189,7 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
     if len(new_Event_List) > 0:
         tmp_msg = g.appmsg.get_log_message("BKY-90008", ['new'])
         g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        OASE.send(wsDb, new_Event_List, {"notification_type": OASENotificationType.NEW})
+        NotificationProcessManager.send_notification(new_Event_List, {"notification_type": OASENotificationType.NEW})
 
     # 新規イベント通知済みインシデントフラグを立てる  _exastro_checked='1'
     update_Flag_Dict = {"_exastro_checked": '1'}
@@ -339,8 +350,9 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
                                 "ACTION_LOG_ID": action_log_row["ACTION_LOG_ID"],
                                 "STATUS_ID": oaseConst.OSTS_Completed # "6"
                             }
-                            wsDb.table_update(oaseConst.T_OASE_ACTION_LOG, data_list, 'ACTION_LOG_ID')
-                            wsDb.db_commit()
+                            # wsDb.table_update(oaseConst.T_OASE_ACTION_LOG, data_list, 'ACTION_LOG_ID')
+                            # wsDb.db_commit()
+                            WriterProcessManager.update_oase_action_log(data_list)
                     else:
                     # ルール判定 アンマッチ
                         pass
@@ -434,4 +446,16 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
     if len(unused_notification_list) > 0:
         tmp_msg = g.appmsg.get_log_message("BKY-90008", ['Undetected'])
         g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        OASE.send(wsDb, unused_notification_list, {"notification_type": OASENotificationType.UNDETECTED})
+        NotificationProcessManager.send_notification(unused_notification_list, {"notification_type": OASENotificationType.UNDETECTED})
+
+
+def on_start_process(*args, **kwargs):
+    g.applogger.info("CALL on_start_process")
+    NotificationProcessManager.start_process()
+    WriterProcessManager.start_process()
+
+
+def on_exit_process(*args, **kwargs):
+    g.applogger.info("CALL on_exit_process")
+    NotificationProcessManager.stop_process()
+    WriterProcessManager.stop_process()

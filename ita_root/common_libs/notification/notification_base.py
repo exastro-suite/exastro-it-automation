@@ -28,6 +28,7 @@ from urllib3.util import Retry
 
 
 class Notification(ABC):
+    
     """
     通知に関する共通の振る舞いを定義するクラス
     """
@@ -40,6 +41,35 @@ class Notification(ABC):
             event_list (list): 通知の条件を満たしたイベントのlist\n
             decision_information (dict): 何かしら判定が必要な場合はここに必要な情報を詰めて渡す\n
         """
+        return cls.__send(objdbca, event_list, decision_information, False)
+
+    @classmethod
+    def buffered_send(cls, objdbca: DBConnectWs, event_list: list, decision_information: dict):
+        """
+        通知を送る処理(バッファリング送信)
+        Args:
+            objdbca (DBConnectWs): MariaDBのコネクション\n
+            event_list (list): 通知の条件を満たしたイベントのlist\n
+            decision_information (dict): 何かしら判定が必要な場合はここに必要な情報を詰めて渡す\n
+        """
+        return cls.__send(objdbca, event_list, decision_information, True)
+
+    @classmethod
+    def flush_send_buffer(cls):
+        """バッファ上の通知を送信します
+        """
+        return cls._flush_send_buffer()
+
+    @classmethod
+    def __send(cls, objdbca: DBConnectWs, event_list: list, decision_information: dict, buffered_send: bool):
+        """
+        通知を送る処理
+        Args:
+            objdbca (DBConnectWs): MariaDBのコネクション\n
+            event_list (list): 通知の条件を満たしたイベントのlist\n
+            decision_information (dict): 何かしら判定が必要な場合はここに必要な情報を詰めて渡す\n
+            buffered_send (bool): バッファリング送信を行うかどうか\n
+        """
         g.applogger.info(g.appmsg.get_log_message("BKY-80000"))
         g.applogger.debug(g.appmsg.get_log_message("BKY-80007", [cls.__qualname__]))
         g.applogger.debug(g.appmsg.get_log_message("BKY-80008", [len(event_list)]))
@@ -47,24 +77,24 @@ class Notification(ABC):
 
         fetch_data = cls._fetch_table(objdbca, decision_information)
         if fetch_data is None:
-            g.applogger.info(g.appmsg.get_log_message("BKY-80007", [cls.__qualname__]))
-            g.applogger.info(g.appmsg.get_log_message("BKY-80009", [decision_information]))
+            # g.applogger.info(g.appmsg.get_log_message("BKY-80007", [cls.__qualname__]))
+            # g.applogger.info(g.appmsg.get_log_message("BKY-80009", [decision_information]))
             g.applogger.info(g.appmsg.get_log_message("BKY-80002"))
             return {}
 
         template_list = cls._get_template(fetch_data, decision_information)
         has_none_template = any(item.get("template") is None for item in template_list)
         if has_none_template:
-            g.applogger.info(g.appmsg.get_log_message("BKY-80007", [cls.__qualname__]))
-            g.applogger.info(g.appmsg.get_log_message("BKY-80009", [decision_information]))
+            # g.applogger.info(g.appmsg.get_log_message("BKY-80007", [cls.__qualname__]))
+            # g.applogger.info(g.appmsg.get_log_message("BKY-80009", [decision_information]))
             g.applogger.info(g.appmsg.get_log_message("BKY-80003"))
             return {}
 
         # 負荷を考慮して通知先は1回のみ取得することとする
         notification_destination = cls._fetch_notification_destination(fetch_data, decision_information)
         if len(notification_destination) == 0:
-            g.applogger.info(g.appmsg.get_log_message("BKY-80007", [cls.__qualname__]))
-            g.applogger.info(g.appmsg.get_log_message("BKY-80009", [decision_information]))
+            # g.applogger.info(g.appmsg.get_log_message("BKY-80007", [cls.__qualname__]))
+            # g.applogger.info(g.appmsg.get_log_message("BKY-80009", [decision_information]))
             g.applogger.info(g.appmsg.get_log_message("BKY-80004"))
             return {}
 
@@ -105,7 +135,7 @@ class Notification(ABC):
             if found_none_message is True:
                 continue
 
-            tmp_result = cls.__call_notification_api(message_list, notification_destination)
+            tmp_result = cls.__call_notification_api(message_list, notification_destination, buffered_send)
 
             result["success"] = result["success"] + tmp_result["success"]
             result["failure"] = result["failure"] + tmp_result["failure"]
@@ -203,8 +233,17 @@ class Notification(ABC):
         """
         pass
 
-    @staticmethod
-    def _call_setting_notification_api(event_type_true: list = None, event_type_false: list = None):
+    # 通知先のキャッシュ
+    #   _setting_notification_cache_org_id: キャッシュ中のorganization id
+    #   _setting_notification_cache_ws_id: キャッシュ中のworkspace id
+    #   _setting_notification_cache: キャッシュ本体
+    #       _setting_notification_cache["通知先取得URLのクエリパラメータの文字列"] = [通知先のリスト]
+    _setting_notification_cache = {}
+    _setting_notification_cache_org_id = None
+    _setting_notification_cache_ws_id = None
+
+    @classmethod
+    def _call_setting_notification_api(cls, event_type_true: list = None, event_type_false: list = None):
         """
         通知先取得APIを呼び出し、結果を返却する
         Args:
@@ -230,6 +269,12 @@ class Notification(ABC):
             "Language": language
         }
 
+        # 作業対象のworkspaceが変わったらキャッシュをクリアする
+        if not (cls._setting_notification_cache_org_id == organization_id and cls._setting_notification_cache_ws_id == workspace_id):
+            cls._setting_notification_cache = {}
+            cls._setting_notification_cache_org_id = organization_id
+            cls._setting_notification_cache_ws_id = workspace_id
+
         query_params = {}
         if event_type_true is not None and len(event_type_true) > 0:
             # query_params["event_type_true"] = ",".join(event_type_true)
@@ -241,38 +286,56 @@ class Notification(ABC):
             # 現状はこの設定だが上で動くように修正される予定（区切り文字が|から,に変わる）
             query_params["event_type_false"] = "|".join(event_type_false)
 
-        # API呼出
-        api_url = f"http://{host_name}:{port}/internal-api/{organization_id}/platform/workspaces/{workspace_id}/settings/notifications"
+        if json.dumps(query_params) in cls._setting_notification_cache:
+            # キャッシュにデータがある場合はキャッシュの情報を返す
+            return cls._setting_notification_cache[json.dumps(query_params)]
+        else:
+            # キャッシュにデータがない場合はAPIを呼び出す
 
-        s = requests.Session()
+            # API呼出
+            api_url = f"http://{host_name}:{port}/internal-api/{organization_id}/platform/workspaces/{workspace_id}/settings/notifications"
 
-        retries = Retry(total=5,
-                        backoff_factor=1)
+            s = requests.Session()
 
-        s.mount('http://', HTTPAdapter(max_retries=retries))
-        s.mount('https://', HTTPAdapter(max_retries=retries))
+            retries = Retry(total=5,
+                            backoff_factor=1)
 
-        request_response = s.request(method='GET', url=api_url, timeout=2, headers=header_para, params=query_params)
+            s.mount('http://', HTTPAdapter(max_retries=retries))
+            s.mount('https://', HTTPAdapter(max_retries=retries))
 
-        response_data = request_response.json()
+            request_response = s.request(method='GET', url=api_url, timeout=2, headers=header_para, params=query_params)
 
-        if request_response.status_code != 200:
-            raise AppException('999-00005', [api_url, response_data])
+            response_data = request_response.json()
 
-        g.applogger.debug(g.appmsg.get_log_message("BKY-80015"))
-        g.applogger.debug(g.appmsg.get_log_message("BKY-80016", [len(response_data['data'])]))
-        for index, item in enumerate(response_data["data"]):
-            g.applogger.debug(g.appmsg.get_log_message("BKY-80017", [index + 1, item.get('id'), item.get('name')]))
+            if request_response.status_code != 200:
+                raise AppException('999-00005', [api_url, response_data])
 
-        return response_data
+            g.applogger.debug(g.appmsg.get_log_message("BKY-80015"))
+            g.applogger.debug(g.appmsg.get_log_message("BKY-80016", [len(response_data['data'])]))
+            for index, item in enumerate(response_data["data"]):
+                g.applogger.debug(g.appmsg.get_log_message("BKY-80017", [index + 1, item.get('id'), item.get('name')]))
+
+            # 通知先の情報をキャッシュに保存する
+            cls._setting_notification_cache[json.dumps(query_params)] = response_data
+
+            return response_data
+
+    # 送信バッファ
+    #   _send_buffer: 送信バッファ本体
+    #   _send_buffer_org_id: キャッシュ中のorganization id
+    #   _send_buffer_ws_id: キャッシュ中のworkspace id
+    _send_buffer = []
+    _send_buffer_org_id = None
+    _send_buffer_ws_id = None
 
     @classmethod
-    def __call_notification_api(cls, message_list, notification_destination):
+    def __call_notification_api(cls, message_list, notification_destination, buffered_send: bool):
         """
         Platformの通知APIをコールする
         Args:
             message_list: イベントとテンプレートを使って生成したdict
             notification_destination: 通知先のリスト
+            buffered_send: バッファリング送信を行うかどうか
         """
 
         organization_id = g.get('ORGANIZATION_ID')
@@ -308,10 +371,92 @@ class Notification(ABC):
             for item in notification_destination
         ]
 
-        data_encode = json.dumps(body_data_list)
+        if not buffered_send:
+            data_encode = json.dumps(body_data_list)
+
+            # API呼出
+            api_url = f"http://{host_name}:{port}/internal-api/{organization_id}/platform/workspaces/{workspace_id}/notifications"
+
+            s = requests.Session()
+
+            retries = Retry(total=5,
+                            backoff_factor=1)
+
+            s.mount('http://', HTTPAdapter(max_retries=retries))
+            s.mount('https://', HTTPAdapter(max_retries=retries))
+
+            request_response = s.request(method='POST', url=api_url, timeout=2, headers=header_para, data=data_encode)
+
+            result = {
+                "success": 0,
+                "failure": 0,
+                "failure_info": [],
+                "success_notification_count": 0,
+                "failure_notification_count": 0
+            }
+
+            if request_response.status_code != 200:
+                # ループで処理する都合エラーが発生してもその瞬間に例外は発生させない
+                # 代わりにエラー件数とエラーが発生した際のリクエスト内容を記録し、呼び出し元に返却するようにする。
+                g.applogger.info(g.appmsg.get_log_message("BKY-80026", [data_encode]))
+                result["failure"] = 1
+                result["failure_info"].append(data_encode)
+                result["failure_notification_count"] = len(body_data_list)
+            else:
+                result["success"] = 1
+                result["success_notification_count"] = len(body_data_list)
+
+            g.applogger.debug(g.appmsg.get_log_message("BKY-80018", [result]))
+        else:
+            if not (organization_id == cls._send_buffer_org_id and workspace_id == cls._send_buffer_ws_id):
+                # Workspaceが変わった場合はバッファを送信する
+                cls._flush_send_buffer()
+
+            cls._send_buffer_org_id = organization_id
+            cls._send_buffer_ws_id = workspace_id
+            cls._send_buffer.extend(body_data_list)
+
+            if len(cls._send_buffer) >= os.environ.get('NOTIFICATION_BUFFER_SIZE', 100):
+                # バッファサイズを超えた場合はバッファを送信する
+                cls._flush_send_buffer()
+
+            # バッファリングの時は成功扱いにする
+            result = {
+                "success": 1,
+                "failure": 0,
+                "failure_info": [],
+                "success_notification_count": len(body_data_list),
+                "failure_notification_count": 0
+            }
+
+        return result
+
+    @classmethod
+    def _flush_send_buffer(cls):
+        """
+        送信バッファに溜まっているデータを送信する
+        """
+        if len(cls._send_buffer) == 0:
+            cls._send_buffer = []
+            cls._send_buffer_org_id = None
+            cls._send_buffer_ws_id = None
+            return
+
+        host_name = os.environ.get('PLATFORM_API_HOST')
+        port = os.environ.get('PLATFORM_API_PORT')
+        user_id = g.get('USER_ID')
+        language = g.get('LANGUAGE')
+
+        header_para = {
+            "Content-Type": "application/json",
+            "User-Id": user_id,
+            "Language": language
+        }
+
+        data_encode = json.dumps(cls._send_buffer)
 
         # API呼出
-        api_url = f"http://{host_name}:{port}/internal-api/{organization_id}/platform/workspaces/{workspace_id}/notifications"
+        api_url = f"http://{host_name}:{port}/internal-api/{cls._send_buffer_org_id}/platform/workspaces/{cls._send_buffer_ws_id}/notifications"
 
         s = requests.Session()
 
@@ -332,17 +477,19 @@ class Notification(ABC):
         }
 
         if request_response.status_code != 200:
-            # ループで処理する都合エラーが発生してもその瞬間に例外は発生させない
-            # 代わりにエラー件数とエラーが発生した際のリクエスト内容を記録し、呼び出し元に返却するようにする。
             g.applogger.info(g.appmsg.get_log_message("BKY-80026", [data_encode]))
             result["failure"] = 1
             result["failure_info"].append(data_encode)
-            result["failure_notification_count"] = len(body_data_list)
+            result["failure_notification_count"] = len(cls._send_buffer)
         else:
             result["success"] = 1
-            result["success_notification_count"] = len(body_data_list)
+            result["success_notification_count"] = len(cls._send_buffer)
 
         g.applogger.debug(g.appmsg.get_log_message("BKY-80018", [result]))
+
+        cls._send_buffer = []
+        cls._send_buffer_org_id = None
+        cls._send_buffer_ws_id = None
 
         return result
 

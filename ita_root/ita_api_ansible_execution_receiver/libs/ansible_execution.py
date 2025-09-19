@@ -14,21 +14,23 @@
 
 import subprocess
 import tarfile
-import datetime
 import glob
 import os
+import traceback
+import shutil
+import json
 
 from flask import g
 from common_libs.common import *  # noqa: F403
-from common_libs.ag.util import ky_decrypt, app_exception, exception
+from common_libs.ag.util import app_exception, exception
 from common_libs.common import storage_access
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_execution.version import AnsibleExexutionVersion
-from common_libs.ansible_execution.encrypt import agent_encrypt
 from common_libs.ansible_driver.functions.util import InstanceRecodeUpdate, createTmpZipFile, get_OSTmpPath
 from common_libs.common.util import get_timestamp
 
-def unexecuted_instance(objdbca, body={}):
+
+def unexecuted_instance(objdbca, organization_id, body={}):
     """
         未実行インスタンス取得
         ARGS:
@@ -39,9 +41,9 @@ def unexecuted_instance(objdbca, body={}):
     """
 
     # 各テーブル
-    t_ansl_exec_sts_inst = "T_ANSL_EXEC_STS_INST"
-    t_ansp_exec_sts_inst = "T_ANSP_EXEC_STS_INST"
-    t_ansr_exec_sts_inst = "T_ANSR_EXEC_STS_INST"
+    t_ansl_exec_sts_inst = AnscConst.DF_ANSL_EXEC_STS_INST
+    t_ansp_exec_sts_inst = AnscConst.DF_ANSP_EXEC_STS_INST
+    t_ansr_exec_sts_inst = AnscConst.DF_ANSR_EXEC_STS_INST
     t_ansc_execdev = "T_ANSC_EXECDEV"
     t_ansc_info = "T_ANSC_IF_INFO"
 
@@ -66,19 +68,26 @@ def unexecuted_instance(objdbca, body={}):
     where = 'WHERE DISUSE_FLAG=%s'
     parameter = ['0']
     ret = objdbca.table_select(t_ansc_execdev, where, parameter)
-    execdev_data = {_r.get("EXECUTION_ENVIRONMENT_NAME"): _r for _r in ret \
-        if _r.get("EXECUTION_ENVIRONMENT_NAME") is not None} if ret else {}
+    execdev_data = {_r.get("EXECUTION_ENVIRONMENT_NAME"): _r for _r in ret if _r.get("EXECUTION_ENVIRONMENT_NAME") is not None} \
+        if ret else {}
 
     # bodyから対象実行環境名のリスト取得
     _eens = body["execution_environment_names"] if body and "execution_environment_names" in body else None
     execution_environment_names = _eens if _eens and len(_eens) != 0 else None
+
+    # bodyから未実行作業の取得数を取得: 整数(正)以外はNoneとする。
+    _etc = body["execution_limit"] if body and "execution_limit" in body else None
+    execution_limit = _etc if _etc and isinstance(_etc, int) and str(_etc).isdigit() else None
+
+    # 同時実行数上限と、パラメータの値と比較する
+    execution_limit = get_execution_limit(organization_id, execution_limit)
+    g.applogger.debug(f"{execution_limit=}")
 
     try:
         # トランザクション開始
         objdbca.db_transaction_start()
 
         result = {}
-        pass_phrase = g.ORGANIZATION_ID + " " + g.WORKSPACE_ID
 
         # 各driver
         for driver_id in driver_ids:
@@ -96,10 +105,19 @@ def unexecuted_instance(objdbca, body={}):
 
             # 実行環境名の指定がある場合に条件追加
             if execution_environment_names:
-                prepared_list = ','.join(['%s']*len(execution_environment_names))
-                where +=  f" AND I_AG_EXECUTION_ENVIRONMENT_NAME IN ({prepared_list})"
+                prepared_list = ','.join(['%s'] * len(execution_environment_names))
+                where += f" AND I_AG_EXECUTION_ENVIRONMENT_NAME IN ({prepared_list})"
                 parameter.extend(execution_environment_names)
 
+            # 登録された順で検索
+            where += " ORDER BY TIME_REGISTER ASC "
+
+            # 作業対象の取得数の制御
+            if execution_limit:
+                where += " LIMIT %s"
+                parameter.append(int(execution_limit))
+
+            g.applogger.debug([t_exec_sts_inst, where, parameter])
             ret = objdbca.table_select(t_exec_sts_inst, where, parameter)
 
             # 各作業実行関連テーブルの行ロック
@@ -134,16 +152,17 @@ def unexecuted_instance(objdbca, body={}):
 
         # コミット/トランザクション終了
         objdbca.db_transaction_end(True)
-    except Exception as e:
+    except Exception:
         result = {}
         t = traceback.format_exc()
-        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))  # noqa: F405
 
         if objdbca._is_transaction is True:
             # ロールバック/トランザクション終了
             objdbca.db_transaction_end(False)
 
     return result
+
 
 def get_execution_status(objdbca, organization_id, workspace_id, execution_no, body):
     """
@@ -156,9 +175,6 @@ def get_execution_status(objdbca, organization_id, workspace_id, execution_no, b
     """
 
     # 各テーブル
-    t_ansl_exec_sts_inst = "T_ANSL_EXEC_STS_INST"
-    t_ansp_exec_sts_inst = "T_ANSP_EXEC_STS_INST"
-    t_ansr_exec_sts_inst = "T_ANSR_EXEC_STS_INST"
 
     status_list = [
         AnscConst.NOT_YET,          # 未実行
@@ -171,7 +187,7 @@ def get_execution_status(objdbca, organization_id, workspace_id, execution_no, b
         AnscConst.SCRAM,            # 緊急停止
         AnscConst.RESERVE,          # 未実行(予約中)
         AnscConst.RESERVE_CANCEL,   # 予約取消
-        AnscConst.PREPARE_COMPLETE, # 準備完了
+        AnscConst.PREPARE_COMPLETE,  # 準備完了
         AnscConst.PROCESSING_WAIT,  # 実行待ち
     ]
 
@@ -180,16 +196,8 @@ def get_execution_status(objdbca, organization_id, workspace_id, execution_no, b
     # ステータス
     status = body["status"]
 
-    if driver_id == "legacy":
-        t_exec_sts_inst = t_ansl_exec_sts_inst
-        driver_mode_id = AnscConst.DF_LEGACY_DRIVER_ID
-    elif driver_id == "pioneer":
-        t_exec_sts_inst = t_ansp_exec_sts_inst
-        driver_mode_id = AnscConst.DF_PIONEER_DRIVER_ID
-    elif driver_id == "legacy_role":
-        t_exec_sts_inst = t_ansr_exec_sts_inst
-        driver_mode_id = AnscConst.DF_LEGACY_ROLE_DRIVER_ID
-    else:
+    driver_mode_id, t_exec_sts_inst = check_driver(driver_id)
+    if t_exec_sts_inst is None:
         g.applogger.info(f"driver id is Not found {driver_id=}")
         return {}
 
@@ -252,11 +260,11 @@ def get_execution_status(objdbca, organization_id, workspace_id, execution_no, b
             zip_data_source_dir = os.path.join(os.environ.get("STORAGEPATH"), organization_id, workspace_id, "driver", "ansible", driver_id, execution_no, "out")
             rmtmpfiles = False
             retBool, err_msg, zip_result_file, rm_tmp_files_list = createTmpZipFile(
-                        execution_no,
-                        zip_data_source_dir,
-                        'FILE_RESULT',
-                        'ResultData_',
-                        rmtmpfiles)
+                execution_no,
+                zip_data_source_dir,
+                'FILE_RESULT',
+                'ResultData_',
+                rmtmpfiles)
 
             if retBool is True:
                 execute_row['FILE_RESULT'] = zip_result_file
@@ -265,7 +273,7 @@ def get_execution_status(objdbca, organization_id, workspace_id, execution_no, b
                 else:
                     zip_tmp_save_path = ''
                 # 作業インスタンス更新
-                ret = InstanceRecodeUpdate(objdbca, driver_mode_id, execution_no, execute_row, 'FILE_RESULT', zip_tmp_save_path)
+                InstanceRecodeUpdate(objdbca, driver_mode_id, execution_no, execute_row, 'FILE_RESULT', zip_tmp_save_path)
 
             else:
                 # ZIPファイル作成の作成に失敗しても、ログに出して次に進む
@@ -288,6 +296,7 @@ def get_execution_status(objdbca, organization_id, workspace_id, execution_no, b
 
     return result
 
+
 def get_populated_data_path(objdbca, organization_id, workspace_id, execution_no, driver_id):
     """
         投入データ取得
@@ -298,18 +307,7 @@ def get_populated_data_path(objdbca, organization_id, workspace_id, execution_no
             statusCode, {}, msg
     """
 
-    # 各テーブル
-    t_ansl_exec_sts_inst = "T_ANSL_EXEC_STS_INST"
-    t_ansp_exec_sts_inst = "T_ANSP_EXEC_STS_INST"
-    t_ansr_exec_sts_inst = "T_ANSR_EXEC_STS_INST"
-
-    if driver_id == "legacy":
-        t_exec_sts_inst = t_ansl_exec_sts_inst
-    elif driver_id == "pioneer":
-        t_exec_sts_inst = t_ansp_exec_sts_inst
-    elif driver_id == "legacy_role":
-        t_exec_sts_inst = t_ansr_exec_sts_inst
-
+    driver_mode_id, t_exec_sts_inst = check_driver(driver_id)
 
     conductor_instance_no = None
 
@@ -324,7 +322,7 @@ def get_populated_data_path(objdbca, organization_id, workspace_id, execution_no
     dir_path = os.path.join(os.environ.get("STORAGEPATH"), organization_id, workspace_id, "driver", "ansible", driver_id, execution_no)
     tmp_base_path = f"/tmp/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/"
     tmp_path = f"/tmp/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/{execution_no}"
-    conductor_dir_path = os.path.join(os.environ.get("STORAGEPATH"), organization_id, workspace_id, "driver", "conductor", conductor_instance_no)
+    conductor_dir_path = os.path.join(os.environ.get("STORAGEPATH"), organization_id, workspace_id, "driver", "conductor", conductor_instance_no) if conductor_instance_no else None
     tmp_c_path = f"/tmp/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/conductor"
     gztar_path = f"{tmp_path}/{execution_no}.tar.gz"
 
@@ -358,7 +356,7 @@ def get_populated_data_path(objdbca, organization_id, workspace_id, execution_no
                 g.applogger.debug(f"os.makedirs, os.chmod, ({tmp_c_path})")
 
         # tar.gz
-        @file_read_retry
+        @file_read_retry  # noqa: F405
         def tarfile_gztar_path():
             try:
                 with tarfile.open(gztar_path, "w:gz") as tar:
@@ -368,7 +366,7 @@ def get_populated_data_path(objdbca, organization_id, workspace_id, execution_no
             except Exception as e:
                 g.applogger.info("tarfile_gztar_path failed. file_path={}".format(gztar_path))
                 t = traceback.format_exc()
-                g.applogger.info(arrange_stacktrace_format(t))
+                g.applogger.info(arrange_stacktrace_format(t))  # noqa: F405
                 raise e
         tarfile_gztar_path()
 
@@ -390,7 +388,7 @@ def get_populated_data_path(objdbca, organization_id, workspace_id, execution_no
             with tarfile.open(gztar_path, 'r:gz') as tar:
                 g.applogger.debug(f"{tar.getmembers()=}")
         except Exception as e:
-            print_exception_msg(e)
+            print_exception_msg(e)  # noqa: F405
 
     return gztar_path
 
@@ -406,28 +404,18 @@ def update_result(objdbca, organization_id, workspace_id, execution_no, paramete
             statusCode, {}, msg
     """
 
-    # 各テーブル
-    t_ansl_exec_sts_inst = "T_ANSL_EXEC_STS_INST"
-    t_ansp_exec_sts_inst = "T_ANSP_EXEC_STS_INST"
-    t_ansr_exec_sts_inst = "T_ANSR_EXEC_STS_INST"
-
     # ドライバーID
     driver_id = parameters["driver_id"]
     # ステータス
     status = parameters["status"]
 
-    if driver_id == "legacy":
-        t_exec_sts_inst = t_ansl_exec_sts_inst
-    elif driver_id == "pioneer":
-        t_exec_sts_inst = t_ansp_exec_sts_inst
-    elif driver_id == "legacy_role":
-        t_exec_sts_inst = t_ansr_exec_sts_inst
+    driver_mode_id, t_exec_sts_inst = check_driver(driver_id)
 
     current_status_id = None
     allowed_update_status = [
         AnscConst.PROCESSING,       # 実行中
         AnscConst.PROCESS_DELAYED,  # 実行中(遅延)
-        AnscConst.PREPARE_COMPLETE, # 準備完了
+        AnscConst.PREPARE_COMPLETE,  # 準備完了
         AnscConst.PROCESSING_WAIT,  # 実行待ち
     ]
 
@@ -503,10 +491,10 @@ def update_result(objdbca, organization_id, workspace_id, execution_no, paramete
                         tmp_copy_subprocess_run(cmd)
 
     except subprocess.CalledProcessError as e:
-        print_exception_msg(e)
+        print_exception_msg(e)  # noqa: F405
         exception(e)
     except Exception as e:
-        print_exception_msg(e)
+        print_exception_msg(e)  # noqa: F405
         exception(e)
     finally:
         # clear tmp_path
@@ -515,6 +503,7 @@ def update_result(objdbca, organization_id, workspace_id, execution_no, paramete
             g.applogger.debug(f"shutil.rmtree({tmp_path})")
 
     return {}
+
 
 def get_agent_version(objdbca, body):
     """
@@ -571,6 +560,7 @@ def get_agent_version(objdbca, body):
 
     return result
 
+
 def update_ansible_agent_status_file(organization_id, workspace_id, body, ws_db):
     """
         作業中通知
@@ -596,6 +586,7 @@ def update_ansible_agent_status_file(organization_id, workspace_id, body, ws_db)
         update_timestamp(ws_db, "legacy_role", execution_no)
 
     return True
+
 
 def encode_tar_file(dir_path, file_name):
     """
@@ -625,6 +616,7 @@ def encode_tar_file(dir_path, file_name):
 
     return base64_data
 
+
 def decode_tar_file(base64_data, dir_path):
     """
         base64をtarファイルに変換する
@@ -642,6 +634,7 @@ def decode_tar_file(base64_data, dir_path):
         raise app_exception(msg)
 
     return base64_data
+
 
 def create_file_path(connexion_request, tmp_path, execution_no):
     """
@@ -664,7 +657,7 @@ def create_file_path(connexion_request, tmp_path, execution_no):
         try:
             parameters = json.loads(connexion_request.form['json_parameters'])
         except Exception as e:   # noqa: E722
-            print_exception_msg(e)
+            print_exception_msg(e)  # noqa: F405
 
             parameters = connexion_request.form['json_parameters']
             if isinstance(parameters, (list, dict)) is False:
@@ -682,13 +675,13 @@ def create_file_path(connexion_request, tmp_path, execution_no):
             # ファイルが保存できる容量があるか確認
             file_size = connexion_request.headers.get("Content-Length")
             file_size_str = f"{int(file_size):,} byte(s)"
-            storage = storage_base()
+            storage = storage_base()  # noqa: F405
             can_save, free_space = storage.validate_disk_space(file_size)
             if can_save is False:
                 status_code = "499-00222"
                 log_msg_args = [file_size_str]
                 api_msg_args = [file_size_str]
-                raise AppException(status_code, log_msg_args, api_msg_args)
+                raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
             for _file_key in connexion_request.files:
                 _file_data = connexion_request.files[_file_key]
@@ -718,7 +711,8 @@ def create_file_path(connexion_request, tmp_path, execution_no):
 
     return True, parameters, file_paths
 
-@file_read_retry
+
+@file_read_retry  # noqa: F405
 def tmp_copy_subprocess_run(cmd):
     try:
         ret = subprocess.run(cmd, text=True, shell=True)
@@ -727,7 +721,8 @@ def tmp_copy_subprocess_run(cmd):
         g.applogger.info("copy failed. cmd={}, ret={}".format(cmd, ret if ret else None))
         raise e
 
-@file_read_retry
+
+@file_read_retry  # noqa: F405
 def tmp_shutil_move(gztar_path, tmp_base_path):
     try:
         gztar_path = shutil.move(gztar_path, tmp_base_path)
@@ -737,17 +732,56 @@ def tmp_shutil_move(gztar_path, tmp_base_path):
         g.applogger.info("move failed. gztar_path={}, tmp_base_path={}".format(gztar_path, tmp_base_path))
         raise e
 
+
 def update_timestamp(ws_db, driver_name, execution_no):
+
     # 各driverのテーブル
     if driver_name == "legacy":
-        t_exec_sts_inst = "T_ANSL_EXEC_STS_INST"
+        t_exec_sts_inst = AnscConst.DF_ANSL_EXEC_STS_INST
     elif driver_name == "pioneer":
-        t_exec_sts_inst = "T_ANSP_EXEC_STS_INST"
+        t_exec_sts_inst = AnscConst.DF_ANSP_EXEC_STS_INST
     elif driver_name == "legacy_role":
-        t_exec_sts_inst = "T_ANSR_EXEC_STS_INST"
+        t_exec_sts_inst = AnscConst.DF_ANSR_EXEC_STS_INST
+    else:
+        t_exec_sts_inst = None
     update_date = {
         'EXECUTION_NO': execution_no
     }
-    ws_db.db_transaction_start()
-    ws_db.table_update(t_exec_sts_inst, update_date, 'EXECUTION_NO', False, True)
-    ws_db.db_transaction_end(True)
+    if t_exec_sts_inst:
+        ws_db.db_transaction_start()
+        ws_db.table_update(t_exec_sts_inst, update_date, 'EXECUTION_NO', False, True)
+        ws_db.db_transaction_end(True)
+
+
+def check_driver(driver_id):
+    t_exec_sts_inst, driver_mode_id = None, None
+    # 各テーブル
+    t_ansl_exec_sts_inst = AnscConst.DF_ANSL_EXEC_STS_INST
+    t_ansp_exec_sts_inst = AnscConst.DF_ANSP_EXEC_STS_INST
+    t_ansr_exec_sts_inst = AnscConst.DF_ANSR_EXEC_STS_INST
+
+    if driver_id == "legacy":
+        t_exec_sts_inst = t_ansl_exec_sts_inst
+        driver_mode_id = AnscConst.DF_LEGACY_DRIVER_ID
+    elif driver_id == "pioneer":
+        t_exec_sts_inst = t_ansp_exec_sts_inst
+        driver_mode_id = AnscConst.DF_PIONEER_DRIVER_ID
+    elif driver_id == "legacy_role":
+        t_exec_sts_inst = t_ansr_exec_sts_inst
+        driver_mode_id = AnscConst.DF_LEGACY_ROLE_DRIVER_ID
+    else:
+        g.applogger.info(f"driver id is Not found {driver_id=}")
+
+    return driver_mode_id, t_exec_sts_inst
+
+
+def get_execution_limit(organization_id, execution_limit):
+    # システム全体/organization毎の同時実行数取得
+    all_execution_limit = get_all_execution_limit("ita.system.ansible.execution_limit")  # noqa: F405
+    all_execution_limit = int(all_execution_limit) if isinstance(all_execution_limit, str) else all_execution_limit
+    org_execution_limit = get_org_execution_limit("ita.organization.ansible.execution_limit").get(organization_id, 25)  # noqa: F405
+    org_execution_limit = int(org_execution_limit) if isinstance(org_execution_limit, str) else org_execution_limit
+
+    # 未実行作業の取得数とリソースプランの同時実行数を比較
+    _execution_limit = org_execution_limit if org_execution_limit and org_execution_limit < all_execution_limit else all_execution_limit
+    return min(execution_limit if execution_limit else _execution_limit, _execution_limit)

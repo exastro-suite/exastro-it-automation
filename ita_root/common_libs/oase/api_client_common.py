@@ -93,7 +93,11 @@ class APIClientCommon:
 
         # リクエストヘッダーの値をテンプレートとしてレンダリングする
         headers = self.render("REQUEST_HEADER", setting["REQUEST_HEADER"], setting, last_fetched_event)
-        self.headers = json.loads(headers) if headers else None
+        try:
+            self.headers = json.loads(headers)
+        except Exception:
+            self.headers = headers
+
 
         g.applogger.debug(g.appmsg.get_log_message("AGT-10042", [self.event_collection_settings_name]))
 
@@ -124,9 +128,11 @@ class APIClientCommon:
     def call_api(self, setting, last_fetched_event=None):
         API_response = None
 
-        self.parameter = json.loads(setting["PARAMETER"]) if setting["PARAMETER"] else None  # APIのパラメータ
-        if self.parameter is not None:
-            self.parameter = self.render("PARAMETER", self.parameter, setting, last_fetched_event)
+        parameter = self.render("PARAMETER", setting["PARAMETER"], setting, last_fetched_event) if setting["PARAMETER"] else None
+        try:
+            self.parameter = json.loads(parameter)
+        except Exception:
+            self.parameter = parameter
 
         try:
             proxies = None

@@ -119,7 +119,7 @@ def agent_setting_valid(objdbca, objtable, option):
                 if is_use_jinja2_variable(entry_parameter['request_header']) is True:
                     # jinja2の形式として問題無いか確認する
                     if not is_jinja2_template(entry_parameter['request_header']):
-                        msg.append(g.appmsg.get_api_message("499-01815", [connection_method_name]))
+                        msg.append(g.appmsg.get_api_message("499-01815", [objtable["COLINFO"]["request_header"]["COLUMN_NAME_{}".format(LANG)]]))
                 else:
                     # JSON形式チェック
                     if not isJsonFormat(entry_parameter['request_header']):
@@ -130,7 +130,7 @@ def agent_setting_valid(objdbca, objtable, option):
                 if is_use_jinja2_variable(entry_parameter['parameter']) is True:
                     # jinja2の形式チェック
                     if not is_jinja2_template(entry_parameter['parameter']):
-                        msg.append(g.appmsg.get_api_message("499-01815", [connection_method_name]))
+                        msg.append(g.appmsg.get_api_message("499-01815", [objtable["COLINFO"]["parameter"]["COLUMN_NAME_{}".format(LANG)]]))
                 else:
                     # JSON形式チェック
                     if not isJsonFormat(entry_parameter['parameter']):
@@ -185,7 +185,7 @@ def isJsonFormat(line):
 
 
 def is_use_jinja2_variable(template_data_decoded):
-    """jinja2の構文が疲れているかをチェックする
+    """jinja2の構文が使われているかをチェックする
 
     Args:
         template_data_decoded (str): 評価する文字列
@@ -195,8 +195,10 @@ def is_use_jinja2_variable(template_data_decoded):
 
     # {{空白+jinja2変数+空白}}
     pattern1 = r"\{\{( )*([a-zA-Z_][a-zA-Z0-9_]*?)( )*\}\}"
-    # {%空白+ifやjinja2変数など+空白%}
-    pattern2 = r"\{%( )*([a-zA-Z_][a-zA-Z0-9_]*?)( )*%\}"
+    # {%+ifやjinja2変数など%}
+    pattern2 = r"\{%(.*?)%\}"
+
+    print(re.search(pattern2, template_data_decoded))
 
     if re.search(pattern1, template_data_decoded):
         return True

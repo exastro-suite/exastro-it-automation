@@ -18,6 +18,7 @@ chardet = ">=0.0.0"
 pycryptodome = ">=0.0.0"
 pymongo = ">=0.0.0"
 jsonlines = ">=0.0.0"
+psutil = ">=0.0.0"
 
 
 [tool.poetry.group.first_install.dependencies]

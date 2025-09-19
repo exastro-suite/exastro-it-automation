@@ -13,6 +13,7 @@
 #
 
 import os
+import psutil
 import multiprocessing
 import time
 from flask import Flask, g
@@ -29,6 +30,10 @@ from common_libs.common.mongoconnect.const import Const as mongoConst
 
 from common_libs.oase.const import oaseConst
 
+class WriterProcessException(Exception):
+    """書き込みプロセス例外クラス
+    """
+    pass
 
 class WriterProcessManager():
     """書き込みプロセスとのインターフェース
@@ -53,7 +58,7 @@ class WriterProcessManager():
         cls._exited = multiprocessing.Value('i', 0)
 
         # 書き込みプロセス起動
-        cls._process = multiprocessing.Process(target=WriterProcess.main, args=(cls._queue, cls._complite, cls._exited), daemon=True)
+        cls._process = multiprocessing.Process(target=WriterProcess.main, args=(os.getpid(), cls._queue, cls._complite, cls._exited), daemon=True)
         cls._process.start()
 
     @classmethod
@@ -72,6 +77,8 @@ class WriterProcessManager():
 
         # cls変数をクリアする
         cls._queue = None
+        cls._complite = None
+        cls._exited = None
         cls._process = None
 
     @classmethod
@@ -82,6 +89,10 @@ class WriterProcessManager():
             oraganization_id (str): _description_
             workspace_id (str): _description_
         """
+        if cls._process.is_alive() is False:
+            # プロセスが起動していない場合は起動する
+            cls.start_process()
+
         cls._queue.put({
             "action": "start_workspace_processing",
             "oraganization_id": oraganization_id,
@@ -95,8 +106,18 @@ class WriterProcessManager():
         cls._queue.put({
             "action": "finish_workspace_processing"
         })
-        # 書き込み完了を待つ
-        cls._complite.get()
+        # 処理の完了を待つ
+        while True:
+            try:
+                cls._complite.get(timeout=5.0)
+                break
+            except multiprocessing.queues.Empty:
+                if cls._process.is_alive() is False:
+                    # プロセスが終了してしまった場合は待っても帰ってこないので終了する
+                    break
+                else:
+                    # 再度完了を待つ
+                    continue
 
     @classmethod
     def insert_labeled_event_collection(cls, dict: dict) -> ObjectId:
@@ -108,6 +129,9 @@ class WriterProcessManager():
         Returns:
             ObjectId: 生成したオブジェクトID
         """
+        if cls._process.is_alive() is False:
+            raise WriterProcessException("WriterProcess is not running.")
+
         if "_id" not in dict:
             # ObjectIdを作成する
             my_object_id = ObjectId()
@@ -117,7 +141,6 @@ class WriterProcessManager():
             "action": "insert_labeled_event_collection",
             "dict": dict
         })
-
         return dict["_id"]
         
     @classmethod
@@ -128,6 +151,9 @@ class WriterProcessManager():
             filter (dict): update対象
             update (dict): updateするドキュメント
         """
+        if cls._process.is_alive() is False:
+            raise WriterProcessException("WriterProcess is not running.")
+
         cls._queue.put({
             "action": "update_labeled_event_collection",
             "filter": filter,
@@ -136,6 +162,9 @@ class WriterProcessManager():
 
     @classmethod
     def insert_oase_action_log(cls, data: dict) -> list[dict]:
+        if cls._process.is_alive() is False:
+            raise WriterProcessException("WriterProcess is not running.")
+
         # キーを先に設定する
         data['ACTION_LOG_ID'] = DBConnectWs.genarate_primary_key_value()
         # 書き込みプロセスにインサートを依頼する
@@ -147,6 +176,9 @@ class WriterProcessManager():
 
     @classmethod
     def update_oase_action_log(cls, data: dict):
+        if cls._process.is_alive() is False:
+            raise WriterProcessException("WriterProcess is not running.")
+
         # 書き込みプロセスにupdateを依頼する
         cls._queue.put({
             "action": "update_oase_action_log",
@@ -163,10 +195,11 @@ class WriterProcess():
     _t_oase_action_log = None
 
     @classmethod
-    def main(cls, queue: multiprocessing.Queue, complite: multiprocessing.Queue, exited):
+    def main(cls, ppid: int, queue: multiprocessing.Queue, complite: multiprocessing.Queue, exited):
         """書き込みプロセスのメインループ
 
         Args:
+            ppid (int): 親プロセスID
             queue (multiprocessing.Queue): 書き込みプロセスに書き込みを依頼するためのQueue
             complite (multiprocessing.Queue): 書き込みプロセスから完了を応答するためのQueue
             exited (multiprocessing.Value): 書き込みプロセス終了確認用 (0:起動中, 1:終了)
@@ -180,7 +213,7 @@ class WriterProcess():
                 g.applogger.info("WriterProcess: start")
 
                 # メインループ処理
-                cls._main_loop(queue, complite)
+                cls._main_loop(ppid, queue, complite)
 
             finally:
                 # DBコネクションを切断
@@ -211,21 +244,29 @@ class WriterProcess():
         g.applogger.set_env_message()
 
     @classmethod
-    def _main_loop(cls, queue: multiprocessing.Queue, complite: multiprocessing.Queue):
+    def _main_loop(cls, ppid: int, queue: multiprocessing.Queue, complite: multiprocessing.Queue):
         """メインループ処理
 
         Args:
-            queue (multiprocessing.Queue): 書き込みプロセスに処理を依頼するためのQueue
+            ppid (int): 親プロセスID
+            queue (multiprocessing.Queue): 書き込みプロセスに書き込みを依頼するためのQueue
+            complite (multiprocessing.Queue): 書き込みプロセスから完了を応答するためのQueue
         """
         while True:
-            #
-            # Queueからの指示を待つ
-            #
-            data = queue.get()
             try:
-                #
+                # Queueからの指示を待つ
+                data = queue.get(timeout=5)
+            except multiprocessing.queues.Empty:
+                if psutil.pid_exists(ppid) is False:
+                    # 親プロセスが存在しない場合は終了する
+                    cls.exit_process()
+                    g.applogger.info("WriterProcess: parent process not found. exit.")
+                    break
+                else:
+                    # 再度queueからの指示を待つ
+                    continue
+            try:
                 # 指示に応じた処理を実行する
-                #
                 if data["action"] == "insert_labeled_event_collection":
                     cls._labeled_event_collection.insert(data["dict"])
 
@@ -249,8 +290,8 @@ class WriterProcess():
                     break
 
             except Exception as e:
-                g.applogger.info(f"WriterProcess: error occurred. {e}")
-                g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(traceback.format_exc())))
+                g.applogger.error(f"WriterProcess: error occurred. {e}")
+                g.applogger.error("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(traceback.format_exc())))
 
     @classmethod
     def _start_workspace_processing(cls, oraganization_id: str, workspace_id: str):
@@ -375,7 +416,7 @@ class MongoBufferedWriter():
             return
 
         # バッファのデータをDBに書き込む
-        g.applogger.info(f"MongoBufferedWriter: bulk_write {len(self._bulk_buffer)} records")
+        g.applogger.debug(f"MongoBufferedWriter: bulk_write {len(self._bulk_buffer)} records")
         self._mongo_collection.bulk_write(self._bulk_buffer)
         self._bulk_buffer = []
 

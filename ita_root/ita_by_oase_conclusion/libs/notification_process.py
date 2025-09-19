@@ -12,6 +12,7 @@
 # limitations under the License.
 #
 import os
+import psutil
 import multiprocessing
 import time
 from flask import Flask, g
@@ -23,13 +24,18 @@ from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common.message_class import MessageTemplate
 from common_libs.notification.sub_classes.oase import OASE
 
+class NotificationProcessException(Exception):
+    """書き込みプロセス例外クラス
+    """
+    pass
 
 class NotificationProcessManager():
     """通知プロセスとのインターフェース
     """
-    _queue = None
-    _exitcode = None
-    _process = None
+    _queue = None       # 書き込みを要求するQueue (oase conclusionメインプロセス ⇒ 書き込みプロセス)
+    _complite = None    # 完了を応答するQueue (書き込みプロセス ⇒ oase conclusionメインプロセス)
+    _exited = None      # 書き込みプロセス終了確認用 (0:起動中, 1:終了)
+    _process = None     # 書き込みプロセス
 
     @classmethod
     def start_process(cls):
@@ -37,6 +43,8 @@ class NotificationProcessManager():
         """
         # 通知を要求するQueue
         cls._queue = multiprocessing.Queue()
+        # 完了を応答するQueue
+        cls._complite = multiprocessing.Queue()
 
         # 通知プロセス終了確認用 (0:起動中, 1:終了)
         #   process.is_alive() / process.join() だけではプロセスが終了しているかどうかの確認ができない場合があるため（数十回に1度程度の頻度で発生）
@@ -44,7 +52,7 @@ class NotificationProcessManager():
         cls._exited = multiprocessing.Value('i', 0)
 
         # 通知プロセス起動
-        cls._process = multiprocessing.Process(target=NotificationProcess.main, args=(cls._queue, cls._exited), daemon=True)
+        cls._process = multiprocessing.Process(target=NotificationProcess.main, args=(os.getpid(), cls._queue, cls._complite, cls._exited), daemon=True)
         cls._process.start()
 
     @classmethod
@@ -63,6 +71,8 @@ class NotificationProcessManager():
 
         # cls変数をクリアする
         cls._queue = None
+        cls._complite = None
+        cls._exited = None
         cls._process = None
 
     @classmethod
@@ -73,6 +83,10 @@ class NotificationProcessManager():
             oraganization_id (str): _description_
             workspace_id (str): _description_
         """
+        if cls._process.is_alive() is False:
+            # プロセスが起動していない場合は起動する
+            cls.start_process()
+
         cls._queue.put({
             "action": "start_workspace_processing",
             "oraganization_id": oraganization_id,
@@ -86,6 +100,18 @@ class NotificationProcessManager():
         cls._queue.put({
             "action": "finish_workspace_processing"
         })
+        # 処理の完了を待つ
+        while True:
+            try:
+                cls._complite.get(timeout=5.0)
+                break
+            except multiprocessing.queues.Empty:
+                if cls._process.is_alive() is False:
+                    # プロセスが終了してしまった場合は待っても帰ってこないので終了する
+                    break
+                else:
+                    # 再度完了を待つ
+                    continue
 
     @classmethod
     def send_notification(cls, event_list: list, decision_information: dict):
@@ -95,6 +121,9 @@ class NotificationProcessManager():
             event_list (list): _description_
             decision_information (dict): _description_
         """
+        if cls._process.is_alive() is False:
+            raise NotificationProcessException("NotificationProcess is not running.")
+
         cls._queue.put({
             "action": "notification",
             "event_list": event_list,
@@ -108,12 +137,14 @@ class NotificationProcess():
     _objdbca = None
 
     @classmethod
-    def main(cls, queue: multiprocessing.Queue, exited):
+    def main(cls, ppid: int, queue: multiprocessing.Queue, complite: multiprocessing.Queue, exited):
         """通知プロセスのメイン処理
 
         Args:
-            queue (multiprocessing.Queue): 通知プロセスに通知を依頼するためのQueue
-            exited (_type_): 終了済みフラグ(0:起動中, 1:終了)
+            ppid (int): 親プロセスID
+            queue (multiprocessing.Queue): 書き込みプロセスに書き込みを依頼するためのQueue
+            complite (multiprocessing.Queue): 書き込みプロセスから完了を応答するためのQueue
+            exited (multiprocessing.Value): 書き込みプロセス終了確認用 (0:起動中, 1:終了)
         """
         # 初期化処理
         flask_app = Flask(__name__)
@@ -124,7 +155,7 @@ class NotificationProcess():
                 g.applogger.info("NotificationProcess: start")
 
                 # メインループ処理
-                cls._main_loop(queue)
+                cls._main_loop(ppid, queue, complite)
 
             finally:
                 # 終了
@@ -144,15 +175,25 @@ class NotificationProcess():
         g.applogger.set_env_message()
 
     @classmethod
-    def _main_loop(cls, queue: multiprocessing.Queue):
+    def _main_loop(cls, ppid: int, queue: multiprocessing.Queue, complite: multiprocessing.Queue):
         """メインループ処理
 
         Args:
             queue (multiprocessing.Queue): 通知プロセスに通知を依頼するためのQueue
         """
         while True:
-            # Queueからの指示を待つ
-            data = queue.get()
+            try:
+                # Queueからの指示を待つ
+                data = queue.get(timeout=5)
+            except multiprocessing.queues.Empty:
+                if psutil.pid_exists(ppid) is False:
+                    # 親プロセスが存在しない場合は終了する
+                    OASE.flush_send_buffer()
+                    g.applogger.info("NotificationProcess: parent process not found. exit.")
+                    break
+                else:
+                    # 再度queueからの指示を待つ
+                    continue
             try:
                 if data["action"] == "notification":
                     # 通知処理
@@ -178,6 +219,11 @@ class NotificationProcess():
                         cls._objdbca = None
 
                     g.applogger.info("NotificationProcess: finish workspace processing")
+
+                    # 処理完了を応答
+                    complite.put({
+                        "message": "workspace_processing_finished"
+                    })
 
                     # 変数のクリア
                     g.ORGANIZATION_ID = None

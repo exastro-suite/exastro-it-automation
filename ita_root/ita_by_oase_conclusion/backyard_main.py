@@ -100,11 +100,11 @@ def backyard_main(organization_id, workspace_id):
         tmp_msg = g.appmsg.get_log_message("BKY-90003", [])
         g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
     finally:
+        WriterProcessManager.finish_workspace_processing()  # 一応、Finaryでも入れておく（例外発生時）
+        NotificationProcessManager.finish_workspace_processing()
         wsDb.db_transaction_end(False)
         wsDb.db_disconnect()
         wsMongo.disconnect()
-
-    NotificationProcessManager.finish_workspace_processing()
 
     # メイン処理終了
     tmp_msg = g.appmsg.get_log_message("BKY-90000", ['Ended'])

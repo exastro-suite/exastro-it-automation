@@ -113,7 +113,7 @@ def agent_setting_valid(objdbca, objtable, option):
             if request_method not in ["1", "2"]:
                 msg.append(g.appmsg.get_api_message("MSG-120004", [connection_method_name]))
 
-        if connection_method in ["1", "2", "3", "5", "99"]:
+        if connection_method in ["1", "2", "3", "5"]:
             # リクエストヘッダー
             if entry_parameter['request_header'] is not None:
                 if is_use_jinja2_variable(entry_parameter['request_header']) is True:

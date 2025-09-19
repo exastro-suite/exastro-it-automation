@@ -165,6 +165,7 @@ class DBConnectOrgRoot(DBConnectOrg):
         if connect_info is False:
             raise AppException("999-00001", ["ORGANIZATION_ID=" + organization_id])
 
+        self._db = None
         self._host = connect_info['DB_HOST']
         self._port = int(connect_info['DB_PORT'])
         self._db_user = connect_info['DB_ADMIN_USER']

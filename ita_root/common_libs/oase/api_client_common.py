@@ -124,9 +124,8 @@ class APIClientCommon:
     def call_api(self, setting, last_fetched_event=None):
         API_response = None
 
-        self.parameter = json.loads(setting["PARAMETER"]) if setting["PARAMETER"] else None  # APIのパラメータ
-        if self.parameter is not None:
-            self.parameter = self.render("PARAMETER", self.parameter, setting, last_fetched_event)
+        parameter = self.render("PARAMETER", setting["PARAMETER"], setting, last_fetched_event) if setting["PARAMETER"] else None
+        self.parameter = json.loads(parameter) if parameter else None
 
         try:
             proxies = None

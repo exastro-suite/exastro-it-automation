@@ -134,6 +134,7 @@ class NotificationProcessManager():
 class NotificationProcess():
     """通知プロセス
     """
+    _process_name = "NotificationProcess"
     _objdbca = None
 
     @classmethod
@@ -152,14 +153,14 @@ class NotificationProcess():
         with flask_app.app_context():
             try:
                 cls._initialize()
-                g.applogger.info("NotificationProcess: start")
+                g.applogger.info(g.appmsg.get_log_message("BKY-90077", [cls._process_name, "Start"]))
 
                 # メインループ処理
                 cls._main_loop(ppid, queue, complite)
 
             finally:
                 # 終了
-                g.applogger.info("NotificationProcess: exit")
+                g.applogger.info(g.appmsg.get_log_message("BKY-90077", [cls._process_name, "Exit"]))
                 # ここまで到達すればprocessは終了して良いので、終了済みフラグをONにする
                 exited.value = 1
         exit(0)
@@ -189,7 +190,7 @@ class NotificationProcess():
                 if psutil.pid_exists(ppid) is False:
                     # 親プロセスが存在しない場合は終了する
                     OASE.flush_send_buffer()
-                    g.applogger.info("NotificationProcess: parent process not found. exit.")
+                    g.applogger.info(g.appmsg.get_log_message("BKY-90078", [cls._process_name]))
                     break
                 else:
                     # 再度queueからの指示を待つ
@@ -205,7 +206,7 @@ class NotificationProcess():
                     g.ORGANIZATION_ID = data["oraganization_id"]
                     g.WORKSPACE_ID = data["workspace_id"]
                     g.applogger.set_env_message()
-                    g.applogger.info("NotificationProcess: start workspace processing")
+                    g.applogger.debug(g.appmsg.get_log_message("BKY-90079", [cls._process_name]))
 
                 elif data["action"] == "finish_workspace_processing":
                     # ワークスペースの処理終了
@@ -218,7 +219,7 @@ class NotificationProcess():
                         cls._objdbca.db_disconnect()
                         cls._objdbca = None
 
-                    g.applogger.info("NotificationProcess: finish workspace processing")
+                    g.applogger.info(g.appmsg.get_log_message("BKY-90080", [cls._process_name]))
 
                     # 処理完了を応答
                     complite.put({
@@ -245,5 +246,5 @@ class NotificationProcess():
                     break
 
             except Exception as e:
-                g.applogger.error(f"NotificationProcess: error occurred. {e}")
+                g.applogger.error(g.appmsg.get_log_message("BKY-90081", [cls._process_name, e]))
                 g.applogger.error("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(traceback.format_exc())))

@@ -450,12 +450,10 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
 
 
 def on_start_process(*args, **kwargs):
-    g.applogger.info("CALL on_start_process")
     NotificationProcessManager.start_process()
     WriterProcessManager.start_process()
 
 
 def on_exit_process(*args, **kwargs):
-    g.applogger.info("CALL on_exit_process")
     NotificationProcessManager.stop_process()
     WriterProcessManager.stop_process()

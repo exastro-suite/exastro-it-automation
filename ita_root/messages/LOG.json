@@ -1366,6 +1366,13 @@
     "MSG-160001": "Both Labels and Expression must be entered to specify Condition.",
     "MSG-160002": "Event Source and Condition Label are not linked in the Labeling menu. (Event Collection Settings Name: {}, Label: {})",
     "MSG-160003": "Condition Label is not linked to any specified Event Source in the Labeling menu. (Label: {})",
+    "MSG-170001": "Event types cannot be changed for Notification Templates ID from 1 to 4.",
+    "MSG-170002": "Notification Destination cannot be changed for Notification Templates ID from 1 to 4.",
+    "MSG-170003": "If the Notification Template ID is other than 1 to 4, you must be entered Notification Destination.",
+    "MSG-170004": "Do not overlap Notification Destinations within the event type for Notification Templates ID from 1 to 4.(Duplicate target: {}, Duplicate Notification Destination: {})",
+    "MSG-170005": "Cannot be deleted for the Notification Templates ID from 1 to 4.",
+    "MSG-170006": "Cannot be discarded for the Notification Templates ID from 1 to 4.",
+    "MSG-170007": "Cannot be Restored for the Notification Templates ID from 1 to 4.",
     "BKY-00001": "[backyard]main process is started",
     "BKY-00002": "[backyard]main process is finished",
     "BKY-00003": "[backyard]main process is finished with error",
@@ -1729,5 +1736,11 @@
     "BKY-90073": "calling 'ConductorExecute'.(action_log_id={})",
     "BKY-90074": "calling 'apply API'.(action_log_id={})",
     "BKY-90075": "Cannnot execute the Action because {} is invalid.(action_log_id={})",
-    "BKY-90076": "Failrue to call 'apply API'.(action_log_id={}, error = {})"
+    "BKY-90076": "Failrue to call 'apply API'.(action_log_id={}, error = {})",
+    "BKY-90077": "SubProcess({}) : {}",
+    "BKY-90078": "Terminate SubProcess({}) as there is no parent process",
+    "BKY-90079": "Change the target workspace of a SubProcess({})",
+    "BKY-90080": "SubProcess({}) processing target workspace processing completed",
+    "BKY-90081": "An error occurred in the SubProcess({}) : {}",
+    "BKY-90082": "MongoBufferedWriter: bulk_write {} records"
 }

@@ -189,6 +189,7 @@ class WriterProcessManager():
 class WriterProcess():
     """書き込みプロセス
     """
+    _process_name = "WriterProcess"
     _objdbca = None
     _ws_mongo = None
     _labeled_event_collection = None
@@ -210,7 +211,7 @@ class WriterProcess():
         with flask_app.app_context():
             try:
                 cls._initialize()
-                g.applogger.info("WriterProcess: start")
+                g.applogger.info(g.appmsg.get_log_message("BKY-90077", [cls._process_name, "Start"]))
 
                 # メインループ処理
                 cls._main_loop(ppid, queue, complite)
@@ -228,7 +229,7 @@ class WriterProcess():
                     cls._ws_mongo = None
 
                 # 終了
-                g.applogger.info("WriterProcess: exit")
+                g.applogger.info(g.appmsg.get_log_message("BKY-90077", [cls._process_name, "Exit"]))
                 # ここまで到達すればprocessは終了して良いので、終了済みフラグをONにする
                 exited.value = 1
         exit(0)
@@ -260,7 +261,7 @@ class WriterProcess():
                 if psutil.pid_exists(ppid) is False:
                     # 親プロセスが存在しない場合は終了する
                     cls.exit_process()
-                    g.applogger.info("WriterProcess: parent process not found. exit.")
+                    g.applogger.info(g.appmsg.get_log_message("BKY-90078", [cls._process_name]))
                     break
                 else:
                     # 再度queueからの指示を待つ
@@ -290,7 +291,7 @@ class WriterProcess():
                     break
 
             except Exception as e:
-                g.applogger.error(f"WriterProcess: error occurred. {e}")
+                g.applogger.error(g.appmsg.get_log_message("BKY-90081", [cls._process_name, e]))
                 g.applogger.error("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(traceback.format_exc())))
 
     @classmethod
@@ -306,7 +307,7 @@ class WriterProcess():
         g.WORKSPACE_ID = workspace_id
         g.applogger.set_env_message()
 
-        g.applogger.info("WriterProcess: start workspace processing")
+        g.applogger.debug(g.appmsg.get_log_message("BKY-90079", [cls._process_name]))
         cls._ws_mongo = MONGOConnectWs()
         cls._labeled_event_collection = MongoBufferedWriter(cls._ws_mongo.collection(mongoConst.LABELED_EVENT_COLLECTION))
         cls._t_oase_action_log = DBBufferedWriter(cls._objdbca, oaseConst.T_OASE_ACTION_LOG, 'ACTION_LOG_ID')
@@ -338,7 +339,7 @@ class WriterProcess():
             cls._ws_mongo = None
 
         # ワークスペースの処理終了
-        g.applogger.info("WriterProcess: finish workspace processing")
+        g.applogger.info(g.appmsg.get_log_message("BKY-90080", [cls._process_name]))
 
         # 書き込み完了を応答
         complite.put({
@@ -416,7 +417,7 @@ class MongoBufferedWriter():
             return
 
         # バッファのデータをDBに書き込む
-        g.applogger.debug(f"MongoBufferedWriter: bulk_write {len(self._bulk_buffer)} records")
+        g.applogger.debug(g.appmsg.get_log_message("BKY-90082", [len(self._bulk_buffer)]))
         self._mongo_collection.bulk_write(self._bulk_buffer)
         self._bulk_buffer = []
 
@@ -473,10 +474,8 @@ class DBBufferedWriter():
 
         # バッファのデータをDBに書き込む
         if self._row_insert:
-            g.applogger.debug(f"DBBufferedWriter: insert {self._table_name} {self._row_buffer}")
             self._objdbca.table_insert(self._table_name, self._row_buffer, self._key_name)
         else:
-            g.applogger.debug(f"DBBufferedWriter: update {self._table_name} {self._row_buffer}")
             self._objdbca.table_update(self._table_name, self._row_buffer, self._key_name)
         
         self._objdbca.db_commit()

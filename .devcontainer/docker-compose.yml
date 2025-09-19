@@ -39,7 +39,7 @@ services:
       - PLATFORM_API_PORT=8000
       - MONGO_OPTION_SSL=${MONGO_OPTION_SSL:-FALSE}
       - MONGO_SCHEME=${MONGO_SCHEME:-mongodb}
-      - MONGO_HOST=${MONGO_HOST-ita-mongodb}
+      - MONGO_HOST=${MONGO_HOST:-ita-mongodb}
       - MONGO_PORT=${MONGO_PORT:-27017}
     volumes:
       - vol-ita-storage:/storage
@@ -70,7 +70,7 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - MONGO_OPTION_SSL=${MONGO_OPTION_SSL:-FALSE}
       - MONGO_SCHEME=${MONGO_SCHEME:-mongodb}
-      - MONGO_HOST=${MONGO_HOST-ita-mongodb}
+      - MONGO_HOST=${MONGO_HOST:-ita-mongodb}
       - MONGO_PORT=${MONGO_PORT:-27017}
       - MONGO_ADMIN_USER=${MONGO_ADMIN_USER}
       - MONGO_ADMIN_PASSWORD=${MONGO_ADMIN_PASSWORD}
@@ -109,7 +109,7 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - MONGO_OPTION_SSL=${MONGO_OPTION_SSL:-FALSE}
       - MONGO_SCHEME=${MONGO_SCHEME:-mongodb}
-      - MONGO_HOST=${MONGO_HOST-ita-mongodb}
+      - MONGO_HOST=${MONGO_HOST:-ita-mongodb}
       - MONGO_PORT=${MONGO_PORT:-27017}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
@@ -142,7 +142,7 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - MONGO_OPTION_SSL=${MONGO_OPTION_SSL:-FALSE}
       - MONGO_SCHEME=${MONGO_SCHEME:-mongodb}
-      - MONGO_HOST=${MONGO_HOST-ita-mongodb}
+      - MONGO_HOST=${MONGO_HOST:-ita-mongodb}
       - MONGO_PORT=${MONGO_PORT:-27017}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
@@ -214,6 +214,30 @@ services:
       - exastro
     profiles:
       - mongo
+
+
+  ita-mongodb8:
+    image: mongo:8.0
+    # entrypoint: ["mongod","--config","/etc/mongo/mongod.conf"]
+    # healthcheck:
+    #   test: echo 'db.runCommand("ping").ok' | mongosh mongodb://127.0.0.1:27017/test || exit 1
+    #   interval: 3s
+    #   retries: 200
+    environment:
+      - TZ=Asia/Tokyo
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+    # ports:
+    #   - "0.0.0.0:27017:27017"
+    volumes:
+      # - ../ita_root/ita_mongodb8/conf/mongod.conf:/etc/mongo/mongod.conf
+      # - ../ita_root/ita_mongodb8/logs:/root/logs
+      - ../.volumes/ita-mongodb8/data:/data/db
+      # - ../.volumes/ita-mongodb8/configdb:/data/configdb
+    networks:
+      - exastro
+    profiles:
+      - mongo8
 
   ita-by-ansible-execute:
     user: 1000:${HOST_DOCKER_GID:-1000}
@@ -880,7 +904,7 @@ services:
       - PLATFORM_API_PORT=8000
       - MONGO_OPTION_SSL=${MONGO_OPTION_SSL:-FALSE}
       - MONGO_SCHEME=${MONGO_SCHEME:-mongodb}
-      - MONGO_HOST=${MONGO_HOST-ita-mongodb}
+      - MONGO_HOST=${MONGO_HOST:-ita-mongodb}
       - MONGO_PORT=${MONGO_PORT:-27017}
     volumes:
       - vol-ita-storage:/storage
@@ -937,7 +961,7 @@ services:
       - ORG_MENU_EXPORT_IMPORT_BUFFER_SIZE_DEFAULT=${ORG_MENU_EXPORT_IMPORT_BUFFER_SIZE_DEFAULT}
       - MONGO_OPTION_SSL=${MONGO_OPTION_SSL:-FALSE}
       - MONGO_SCHEME=${MONGO_SCHEME:-mongodb}
-      - MONGO_HOST=${MONGO_HOST-ita-mongodb}
+      - MONGO_HOST=${MONGO_HOST:-ita-mongodb}
       - MONGO_PORT=${MONGO_PORT:-27017}
     volumes:
       - vol-ita-storage:/storage

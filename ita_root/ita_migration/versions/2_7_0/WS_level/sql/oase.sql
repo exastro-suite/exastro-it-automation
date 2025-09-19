@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS T_OASE_DEDUPLICATION_SETTINGS
     SETTING_PRIORITY                INT,                                        -- 優先順位
     EVENT_SOURCE_REDUNDANCY_GROUP   TEXT,                                       -- 冗長グループ（イベント収集先）
     CONDITION_LABEL_KEY_IDS         TEXT,                                       -- ラベル
-    CONDITION_EXPRESSION_ID         VARCHAR(40),                                -- 式
+    CONDITION_EXPRESSION_ID         VARCHAR(2),                                 -- 式
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS T_OASE_DEDUPLICATION_SETTINGS_JNL
     SETTING_PRIORITY                INT,                                        -- 優先順位
     EVENT_SOURCE_REDUNDANCY_GROUP   TEXT,                                       -- 冗長グループ（イベント収集先）
     CONDITION_LABEL_KEY_IDS         TEXT,                                       -- ラベル
-    CONDITION_EXPRESSION_ID         VARCHAR(40),                                -- 式
+    CONDITION_EXPRESSION_ID         VARCHAR(2),                                 -- 式
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時

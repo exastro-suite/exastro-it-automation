@@ -245,5 +245,5 @@ class NotificationProcess():
                     break
 
             except Exception as e:
-                g.applogger.info(f"NotificationProcess: error occurred. {e}")
-                g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(traceback.format_exc())))
+                g.applogger.error(f"NotificationProcess: error occurred. {e}")
+                g.applogger.error("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(traceback.format_exc())))

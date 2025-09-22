@@ -81,9 +81,9 @@ UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_JA = '該当ノードがAnsib
 
 
 -- - AAP2.5対応には直接関係ないが、不自然な表現を微修正
-UPDATE T_COMN_MENU_COLUMN_LINK SET DESCRIPTION_JA = 'http/httpsのいずれかから選択します。
+UPDATE T_COMN_MENU_COLUMN_LINK SET DESCRIPTION_JA = 'http/httpsのいずれかを入力します。
 通常はhttpsです。' WHERE COLUMN_DEFINITION_ID = '2010204';
-UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_JA = 'http/httpsのいずれかから選択します。
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_JA = 'http/httpsのいずれかを入力します。
 通常はhttpsです。' WHERE COLUMN_DEFINITION_ID = '2010204';
 
 UPDATE T_COMN_MENU_COLUMN_LINK SET DESCRIPTION_JA = 'ansible-vaultコマンドで変数の具体値を暗号化する場合のパスワードを入力します。

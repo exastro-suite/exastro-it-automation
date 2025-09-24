@@ -13,8 +13,6 @@
 #
 
 from flask import g
-import inspect
-import os
 
 import json
 import datetime
@@ -22,9 +20,17 @@ import datetime
 from common_libs.oase.const import oaseConst
 
 def addline_msg(msg=''):
-    info = inspect.getouterframes(inspect.currentframe())[1]
-    msg_line = "{} ({}:{})".format(msg, os.path.basename(info.filename), info.lineno)
-    return msg_line
+    """メッセージへの行追加(ダミー)
+
+    本来はメッセージへの行追加処理だが、処理が重いためダミー化
+
+    Args:
+        msg (str, optional): メッセージ。デフォルトは''。
+
+    Returns:
+        str: メッセージ。
+    """
+    return msg
 
 def InsertConclusionEvent(EventObj, RuleInfo, UseEventIdList, ConclusionLablesStr):
     # 結論イベント登録

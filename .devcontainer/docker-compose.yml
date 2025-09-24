@@ -228,8 +228,8 @@ services:
       - TZ=Asia/Tokyo
       - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
       - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
-    # ports:
-    #   - "0.0.0.0:27017:27017"
+    ports:
+      - "0.0.0.0:27018:27017"
     volumes:
       # - ../ita_root/ita_mongodb8/conf/mongod.conf:/etc/mongo/mongod.conf
       # - ../ita_root/ita_mongodb8/logs:/root/logs

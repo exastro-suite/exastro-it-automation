@@ -1736,5 +1736,11 @@
     "BKY-90073": "calling 'ConductorExecute'.(action_log_id={})",
     "BKY-90074": "calling 'apply API'.(action_log_id={})",
     "BKY-90075": "Cannnot execute the Action because {} is invalid.(action_log_id={})",
-    "BKY-90076": "Failrue to call 'apply API'.(action_log_id={}, error = {})"
+    "BKY-90076": "Failrue to call 'apply API'.(action_log_id={}, error = {})",
+    "BKY-90077": "SubProcess({}) : {}",
+    "BKY-90078": "Terminate SubProcess({}) as there is no parent process",
+    "BKY-90079": "Change the target workspace of a SubProcess({})",
+    "BKY-90080": "SubProcess({}) processing target workspace processing completed",
+    "BKY-90081": "An error occurred in the SubProcess({}) : {}",
+    "BKY-90082": "MongoBufferedWriter: bulk_write {} records"
 }

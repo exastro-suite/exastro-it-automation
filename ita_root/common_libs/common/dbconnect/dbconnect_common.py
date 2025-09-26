@@ -340,6 +340,27 @@ class DBConnectCommon:
             for res in data.values():
                 return res
 
+    def table_exists(self, table_name, where_str="", bind_value_list=[]):
+        """
+        select exists table
+
+        Arguments:
+            table_name: table name
+            where_str: sql statement of WHERE sentence ex."WHERE name = %s and number = %s"
+            bind_value_list: value list ex.["hoge taro", 5]
+        Returns:
+            boolean: true: exists / false: not exists
+        """
+        where_str = " {}".format(where_str) if where_str else ""
+        sql = "SELECT EXISTS (SELECT 1 FROM `{}`{}) AS RET".format(table_name, where_str)
+        result = self.sql_execute(sql, bind_value_list)
+
+        # 結果確認 / Check results
+        if result[0]["RET"] == 1:
+            return True
+        else:
+            return False
+
     def table_insert(self, table_name, data_list, primary_key_name, is_register_history=False):
         """
         insert table

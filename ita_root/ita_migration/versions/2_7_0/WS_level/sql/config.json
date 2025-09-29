@@ -2,5 +2,6 @@
     ["", "workspace_master.sql"],
     ["", "cicd_master.sql"],
     ["", "terraform_cli_master.sql"],
-    ["oase.sql", "oase_master.sql"]
+    ["oase.sql", "oase_master.sql"],
+    ["", "ansible_master.sql"]
 ]

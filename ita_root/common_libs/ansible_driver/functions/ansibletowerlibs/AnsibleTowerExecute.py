@@ -83,6 +83,15 @@ def AnsibleTowerExecution(
 
             g.applogger.info("Faild to authorize to Ansible Automation Controller. %s" % (response_array['responseContents']['errorMessage']))
 
+        # AAP2.5対応
+        # AAPのバージョン確認
+        response_flg = restApiCaller.check_api_info()
+        if not response_flg:
+            process_has_error = True
+            error_flag = 1
+
+            g.applogger.info(f"Faild to check api to Controller / Platform Gateway .")
+
         workflowTplId = -1
         director = None
         if not process_has_error:

@@ -190,10 +190,21 @@ def backyard_main(organization_id, workspace_id):
         if not response_array['success']:
             raise Exception("Faild to authorize to Ansible Automation Controller. %s" % (response_array['responseContents']['errorMessage']))
 
+        # AAP2.5対応
+        # AAPのバージョン確認
+        response_flg = restApiCaller.check_api_info()
+        if not response_flg:
+            raise Exception("Faild to check api to Controller / Platform Gateway .")
+
         ############################################################
         # 接続トークンに対応したユーザー情報取得
         ############################################################
-        url = "/api/v2/me/"
+        # AAP2.5対応
+        # AAPのバージョンでURLを変更
+        if restApiCaller.gateway:
+            url = "/api/controller/v2/me/"
+        else:
+            url = "/api/v2/me/"
         response_array = AnsibleTowerRestApiPassThrough.get(restApiCaller, url)
         if not response_array['success']:
             RestResultLog(restApiCaller.getRestResultList())
@@ -249,7 +260,12 @@ def backyard_main(organization_id, workspace_id):
             is_organizations = True
             # 組織の紐付けが無い場合、Defaultの組織を適用する。
             if response_array['responseContents']['count'] == 0:
-                url = "/api/v2/organizations/1/"
+                # AAP2.5対応
+                # AAPのバージョンでURLを変更
+                if restApiCaller.gateway:
+                    url = "/api/controller/v2/organizations/1/"
+                else:
+                    url = "/api/v2/organizations/1/"
                 response_array = AnsibleTowerRestApiPassThrough.get(restApiCaller, url)
                 if not response_array['success']:
                     RestResultLog(restApiCaller.getRestResultList())
@@ -319,7 +335,12 @@ def backyard_main(organization_id, workspace_id):
 
             # 組織が紐づいていないユーザーで管理者ユーザーの場合
             if is_organizations == False and is_superuser == True:
-                igrp_url = "/api/v2/instance_groups/"
+                # AAP2.5対応
+                # AAPのバージョンでURLを変更
+                if restApiCaller.gateway:
+                    igrp_url = "/api/controller/v2/instance_groups/"
+                else:
+                    igrp_url = "/api/v2/instance_groups/"
 
             DBUpdate(Contents_array, TableName, OrganizationRows, PkeyItem, NameItem, IDItem, dbAccess, False)
 
@@ -415,7 +436,13 @@ def backyard_main(organization_id, workspace_id):
         try:
             #  該当ユーザーの組織が利用可能な実行環境取得
             # /api/v2/organizations/12/execution_environments/だと組織共通の実行環境が取得できない
-            url = "/api/v2/execution_environments/"
+
+            # AAP2.5対応
+            # AAPのバージョンでURLを変更
+            if restApiCaller.gateway:
+                url = "/api/controller/v2/execution_environments/"
+            else:
+                url = "/api/v2/execution_environments/"
             response_array = AnsibleTowerRestApiPassThrough.get(restApiCaller, url)
 
             if not response_array['success']:

@@ -176,6 +176,7 @@ services:
       test: (mysqladmin ping --silent -u root -p$${MYSQL_ROOT_PASSWORD} && mysql -u root -p$${MYSQL_ROOT_PASSWORD} -e 'select 1;') || exit 1
       interval: 3s
       retries: 200
+      # test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1"]
     environment:
       - TZ=Asia/Tokyo
       - MYSQL_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}

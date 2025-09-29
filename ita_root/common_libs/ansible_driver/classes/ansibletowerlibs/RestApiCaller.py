@@ -20,9 +20,12 @@ import re
 import inspect
 import time
 from flask import g
+import traceback
+from socket import timeout
 
 from common_libs.common.util import ky_decrypt
 from common_libs.ansible_driver.functions.util import getAnsibleConst
+from common_libs.common.util import arrange_stacktrace_format
 from socket import timeout
 
 def setAACRestAPITimoutVaule(objdbca):
@@ -50,6 +53,7 @@ class RestApiCaller():
     """
 
     API_BASE_PATH = "/api/v2/"
+    API_BASE_PATH_GWC = "/api/controller/v2/"
     API_TOKEN_PATH = "authtoken/"
 
     def __init__(self, protocol, hostName, portNo, encryptedAuthToken, proxySetting, driver_id=None):
@@ -64,6 +68,7 @@ class RestApiCaller():
         self.AnsConstObj = None
         if driver_id:
             self.AnsConstObj = getAnsibleConst(driver_id)
+        self.gateway = None
 
     def getOrchestratorSubId_dir(self):
         return self.AnsConstObj.vg_OrchestratorSubId_dir
@@ -249,7 +254,9 @@ class RestApiCaller():
                             response_array['responseHeaders'] = http_response_header
                             response_array['responseContents'] = responseContents
                             for arrHeader in response_array['responseHeaders']:
-                                if re.search('^\s*Content-Type$', arrHeader[0]):
+                                # AAP2.5対応
+                                # 小文字で来た時にもjson.loadsをかける
+                                if re.search('^\s*Content-Type$', arrHeader[0]) or re.search('^\s*content-type$', arrHeader[0]):
                                     if re.search('\s*application\/json', arrHeader[1]):
                                         try:
                                             response_array['responseContents'] = json.loads(responseContents)
@@ -321,3 +328,45 @@ class RestApiCaller():
             print_backtrace += '%s: line:%s\n' % (trace.f_code.co_filename, trace.f_lineno)
             trace = trace.f_back
         return print_backtrace
+
+    def check_api_info(self):
+        """
+        AAP バージョンを/api/にアクセスして判断、必要に応じてbaseURI・gatewayフラグを変更する
+
+        RETURNS:
+            response: Boolean
+                True: 成功
+                False: 失敗
+        NOTES:
+            gateway=None: AAP2.4
+            gateway=True: AAP2.5(PlatformGateway)
+        """
+        uri = "/api/"
+        response_flg = False
+
+        try:
+            _ra = self.restCall(method="GET", apiUri=uri, DirectUrl=True)
+            rh, rc = (_ra["responseHeaders"] if "responseHeaders" in _ra else {}, _ra["responseContents"]  if "responseContents" in _ra else {})
+            g.applogger.debug(f"responseHeaders:  {rh}")
+            g.applogger.debug(f"responseContents: {rc}")
+            for header, value in rh:
+                # ヘッダの中にx-api-product-nameがあり、値が"AAP gateway"ならAAP2.5として判断
+                if not self.gateway and header.lower() == "x-api-product-name" and value == "AAP gateway":
+                    self.gateway = True
+            self.reset_baseuri() if self.gateway else None
+            g.applogger.debug(f"{self.gateway=} {self.baseURI=}")
+            response_flg = True
+
+        except Exception as e:
+            g.applogger.info(f"check_api_info, url:{self.baseURI}{uri}, exception:{e}")
+            t = traceback.format_exc()
+            g.applogger.info(arrange_stacktrace_format(t))
+            response_flg = False
+
+        return response_flg
+
+    def reset_baseuri(self):
+        self.baseURI = self.baseURI.replace(self.API_BASE_PATH, self.API_BASE_PATH_GWC) if self.gateway else self.baseURI
+
+    def reset_url(self, url):
+        return url.replace(self.API_BASE_PATH, self.API_BASE_PATH_GWC) if self.gateway else url

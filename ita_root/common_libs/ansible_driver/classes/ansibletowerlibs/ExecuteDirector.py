@@ -773,6 +773,10 @@ class ExecuteDirector():
         result_code = True
         tgtHostList = []
         for credential in TowerHostList:
+            # 制御ノードの場合、Exastro用カスタムディレクトリ配下(/var/lib/exastro/ita_{driver}_{execution_no})は無いので削除対象外
+            if (credential['node_type'] == AnscConst.DF_CONTROL_NODE) and (PathId == "ExastroPath"):
+                g.applogger.debug(f"[Trace] Skip MaterialsDelete due to control node. {credential=}")
+                continue
 
             # 実行ノードの場合、Towerプロジェクトディレクトリ配下(/var/lib/awx/projects)は無いので削除対象外
             if (credential['node_type'] != AnscConst.DF_CONTROL_NODE) and (PathId == "TowerPath"):
@@ -1157,6 +1161,11 @@ class ExecuteDirector():
             # 1. ノード数=(x+y): 制御=x, 実行=y => execution_nodeの設定値のまま扱う
             # 2. ノード数=n:     制御=n, 実行=0 => 資材転送対象にする(ハイブリッド・実行ノードとして扱う)
             # 3. ノード数=n:     制御=0, 実行=n => 不正な構成
+
+            # AAP2.5では、
+            # PlatformGatewayを制御、ExecutionNode又はHybridNodeを実行として登録するため
+            # ノード数=(1+1n): 制御=1, 実行=1n => execution_nodeの設定値のまま扱う
+            # の構成のみとなる
 
             # Execution node=Trueのノードが無い場合、資材転送対象にする
             if _ex_node_num == 0:
@@ -2778,7 +2787,12 @@ class ExecuteDirector():
         ############################################################
         is_superuser = False
         is_organizations = True
-        url = "/api/v2/me/"
+        # AAP2.5対応
+        # AAPのバージョンでURLを変更
+        if self.restApiCaller.gateway:
+            url = "/api/controller/v2/me/"
+        else:
+            url = "/api/v2/me/"
         response_array = AnsibleTowerRestApiPassThrough.get(self.restApiCaller, url)
         if not response_array['success']:
             self.errorLogOut("Status not success. %s" % (url))
@@ -2863,7 +2877,12 @@ class ExecuteDirector():
         org_response_array = response_array
         # 組織の紐付けが無い場合、Defaultの組織を適用する。
         if response_array['responseContents']['count'] == 0:
-            url = "/api/v2/organizations/1/"
+            # AAP2.5対応
+            # AAPのバージョンでURLを変更
+            if self.restApiCaller.gateway:
+                url = "/api/controller/v2/organizations/1/"
+            else:
+                url = "/api/v2/organizations/1/"
             response_array = AnsibleTowerRestApiPassThrough.get(self.restApiCaller, url)
             if not response_array['success']:
                 self.errorLogOut("Status not success. %s" % (url))
@@ -2900,7 +2919,12 @@ class ExecuteDirector():
 
         # 組織が紐づいていないユーザーで管理者ユーザーの場合
         if is_organizations == False and is_superuser == True:
-            url = "/api/v2/instance_groups/"
+            # AAP2.5対応
+            # AAPのバージョンでURLを変更
+            if self.restApiCaller.gateway:
+                url = "/api/controller/v2/instance_groups/"
+            else:
+                url = "/api/v2/instance_groups/"
 
         response_array = AnsibleTowerRestApiPassThrough.get(self.restApiCaller, url)
         if not response_array['success']:

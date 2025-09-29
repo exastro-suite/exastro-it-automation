@@ -33,8 +33,6 @@ def external_valid_menu_before(objdbca, objtable, option):
     msg = []
     cmd_type = option.get('cmd_type')
 
-    entry_parameter = option.get('entry_parameter', {}).get('parameter')
-
     if cmd_type == 'Register' or cmd_type == 'Update':
         # 「登録」「更新」の場合、entry_parameterから各値を取得
         # In the case of "Register" or "Update", retrieve each value from entry_parameter.
@@ -48,19 +46,16 @@ def external_valid_menu_before(objdbca, objtable, option):
         # For cases other than "Register", "Update", or "Restore" (such as "Discard" or "Delete"), validation checks are not performed.
         return retBool, msg, option
 
+    # フィルターID / Filter ID
+    filter_id = parameter.get('filter_id')
+    # フィルター条件 / Filter condition
+    filter_condition_json = parameter.get('filter_condition_json')
     # 検索条件 / Search condition
     try:
-        search_condition_id = entry_parameter.get("search_condition_id")
+        search_condition_id = parameter.get("search_condition_id")
     except Exception:
         search_condition_id = ""
         pass
-
-    filter_id = parameter.get('filter_id')
- 
-    # 検索条件 / Search condition
-    # search_condition_id = parameter.get('search_condition_id')
-    # フィルター条件 / Filter condition
-    filter_condition_json = parameter.get('filter_condition_json')
     # グループラベル / Group label
     group_label_key_ids = parameter.get('group_label_key_ids')
     # グループ条件 / Group condition

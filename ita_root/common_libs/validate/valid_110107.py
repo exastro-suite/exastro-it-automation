@@ -65,18 +65,21 @@ def external_valid_menu_before(objdbca, objtable, option):
     # If the search method is "1: Unique" or "2: Queuing"
     if search_condition_id in [oaseConst.DF_SEARCH_CONDITION_UNIQUE, oaseConst.DF_SEARCH_CONDITION_QUEUING]:
         # フィルター条件は必須とする
+        # The filter condition is required
         if not filter_condition_json or len(filter_condition_json) == 0:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-180001")
             return retBool, msg, option,
 
         # グループラベル、条件は入力不可とする
+        # Group labels and conditions cannot be entered
         if group_label_key_ids or group_condition_id or (group_label_key_ids and len(group_label_key_ids) > 0):
             retBool = False
             msg = g.appmsg.get_api_message("MSG-180002")
             return retBool, msg, option,
 
         # 同一フィルターのチェック
+        # Check for identical filters
         if db_filter_unique_check(objdbca, filter_id, filter_condition_json):
             retBool = False
             msg = g.appmsg.get_api_message("MSG-180003")
@@ -87,6 +90,7 @@ def external_valid_menu_before(objdbca, objtable, option):
         # If the search method is "3: Group"
 
         # グループラベル、条件は必須とする
+        # Group labels and conditions are required
         if not (group_label_key_ids and group_condition_id):
             retBool = False
             msg = g.appmsg.get_api_message("MSG-180004")
@@ -142,7 +146,7 @@ def db_filter_unique_check(objdbca, filter_id, target_value):
 
     # 廃止を対象外
     # Exclude abolition
-    where_str = where_str + " and `{}` <> 1 ".format("DISUSE_FLAG")
+    where_str = where_str + " and `{}` == 0 ".format("DISUSE_FLAG")
 
     # 該当レコードの存在チェック
     # Check for the existence of the relevant record
@@ -191,7 +195,7 @@ def db_filter_group_unique_check(objdbca, filter_id, target_value, group_label_k
 
     # 廃止を対象外
     # Exclude abolition
-    where_str = where_str + " and `{}` <> 1 ".format("DISUSE_FLAG")
+    where_str = where_str + " and `{}` == 0 ".format("DISUSE_FLAG")
 
     # 該当レコードの存在チェック
     # Check for the existence of the relevant record

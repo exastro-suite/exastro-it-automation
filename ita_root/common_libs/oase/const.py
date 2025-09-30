@@ -40,6 +40,11 @@ class oaseConst():
     DF_EVENT_TYPE_EVENT = "1"
     DF_EVENT_TYPE_CONCLUSION = "2"
 
+    # フィルター検索条件 / Filter search conditions
+    DF_SEARCH_CONDITION_UNIQUE = '1'    # ユニーク / Unique
+    DF_SEARCH_CONDITION_QUEUING = '2'   # キューイング / Queuing
+    DF_SEARCH_CONDITION_GROUPING = '3'  # グルーピング / Grouping
+
     # イベントデータに一時的に追加する項目定期
     # 親ラベル
     DF_LOCAL_LABLE_NAME = "__exastro_local_labels__"

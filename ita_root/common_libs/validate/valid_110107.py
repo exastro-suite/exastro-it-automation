@@ -146,7 +146,7 @@ def db_filter_unique_check(objdbca, filter_id, target_value):
 
     # 廃止を対象外
     # Exclude abolition
-    where_str = where_str + " and `{}` == 0 ".format("DISUSE_FLAG")
+    where_str = where_str + " and `{}` = 0 ".format("DISUSE_FLAG")
 
     # 該当レコードの存在チェック
     # Check for the existence of the relevant record
@@ -199,7 +199,7 @@ def db_filter_group_unique_check(objdbca, filter_id, target_value, group_label_k
 
     # 廃止を対象外
     # Exclude abolition
-    where_str = where_str + " and `{}` == 0 ".format("DISUSE_FLAG")
+    where_str = where_str + " and `{}` = 0 ".format("DISUSE_FLAG")
 
     # 該当レコードの存在チェック
     # Check for the existence of the relevant record

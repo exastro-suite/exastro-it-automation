@@ -1,0 +1,24 @@
+[TITLE]
+Event Received;
+
+[BODY]
+Event Received;
+Detailed information
+  Event Factor             : {% if exastro_edit_count == 1 %}Primary Event{% else %}Consolidated Event{% endif %} ({{ exastro_edit_count }})
+  Event collection settings: {{ labels._exastro_event_collection_settings_id }}
+  Event fetch time         : {{ labels._exastro_fetched_time }}
+  Event end time           : {{ labels._exastro_end_time }}
+  Event type               : {{ labels._exastro_type }}
+
+  Re-evaluation
+    Event                  : {{ exastro_events }}
+
+  Label:
+    {% for key, value in labels.items() %}
+    ・{{ key }}: {{ value }}
+    {% endfor %}
+
+  Agent:
+    {% for key, value in exastro_agents.items() %}
+    ・{{ key }}: {{ value }}
+    {% endfor %}

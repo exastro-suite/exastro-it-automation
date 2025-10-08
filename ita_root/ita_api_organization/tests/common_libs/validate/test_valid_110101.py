@@ -46,129 +46,137 @@ class DummyObjDbca:
 
 
 @pytest.mark.parametrize(
-    "connection_method, request_method, username, password, auth_token, secret_access_key, access_key_id,"
+    "cmd_type, connection_method, request_method, username, password, auth_token, secret_access_key, access_key_id,"
     "request_header, parameter, expected_bool, expected_msgs",
     [
         # IMAPパスワード（接続方式4）※JSON/jinja2判定なし
-        ("4", "3", "user", "password", None, None, None, None, None, True, []),
+        ("Register", "4", "3", "user", "password", None, None, None, None, None, True, []),
 
         # エージェント不使用（接続方式99）※JSON/jinja2判定なし
-        ("99", None, None, None, None, None, None, None, None, True, []),
+        ("Register", "99", None, None, None, None, None, None, None, None, True, []),
 
         # Bearer認証（接続方式1）
         #  ヘッダーのテスト
         # 　正常なjinja2
-        ("1", "1", None, None, "token", None, None, '{ "key": "{{ header_var }}" }', None, True, []),
+        ("Register", "1", "1", None, None, "token", None, None, '{ "key": "{{ header_var }}" }', None, True, []),
         #   不正なjinja2構文 （制御構文の閉じタグがない）
-        ("1", "1", None, None, "token", None, None, '{% if value %}True', None, False, ["499-01815"]),
+        ("Register", "1", "1", None, None, "token", None, None, '{% if value %}True', None, False, ["499-01815"]),
         #   正常なJSON
-        ("1", "1", None, None, "token", None, None, '{"key": "value"}', None, True, []),
-        #   不正なjinja2構文 (カンマ抜け)
-        ("1", "1", None, None, "token", None, None, '{"key": "value" "key2": "value2"}', None, False, ["MSG-120011"]),
+        ("Register", "1", "1", None, None, "token", None, None, '{"key": "value"}', None, True, []),
+        #   不正なJSON構文 (カンマ抜け)
+        ("Register", "1", "1", None, None, "token", None, None, '{"key": "value" "key2": "value2"}', None, False, ["MSG-120011"]),
         #   空文字（JSON扱いになり、不正扱い）
-        ("1", "1", None, None, "token", None, None, '', None, False, ["MSG-120011"]),
+        ("Register", "1", "1", None, None, "token", None, None, '', None, False, ["MSG-120011"]),
         #   None（正常扱い）
-        ("1", "1", None, None, "token", None, None, None, None, True, []),
+        ("Register", "1", "1", None, None, "token", None, None, None, None, True, []),
         # パラメーターのテスト
         #  正常なjinja2
-        ("1", "1", None, None, "token", None, None, None, '{ "key": "{{ header_var }}" }', True, []),
+        ("Register", "1", "1", None, None, "token", None, None, None, '{ "key": "{{ header_var }}" }', True, []),
         #  不正なjinja2構文 （制御構文の閉じタグがない）
-        ("1", "1", None, None, "token", None, None, None, '{% if value %}True', False, ["499-01815"]),
+        ("Register", "1", "1", None, None, "token", None, None, None, '{% if value %}True', False, ["499-01815"]),
         #  正常なJSON
-        ("1", "1", None, None, "token", None, None, None, '{"key": "value"}', True, []),
-        #  不正なjinja2構文 (カンマ抜け)
-        ("1", "1", None, None, "token", None, None, None, '{"key": "value" "key2": "value2"}', False, ["MSG-120012"]),
+        ("Register", "1", "1", None, None, "token", None, None, None, '{"key": "value"}', True, []),
+        #  不正なJSON構文 (カンマ抜け)
+        ("Register", "1", "1", None, None, "token", None, None, None, '{"key": "value" "key2": "value2"}', False, ["MSG-120012"]),
         #  空文字（JSON扱いになり、不正扱い）
-        ("1", "1", None, None, "token", None, None, None, '', False, ["MSG-120012"]),
+        ("Register", "1", "1", None, None, "token", None, None, None, '', False, ["MSG-120012"]),
         #  None（正常扱い）
-        ("1", "1", None, None, "token", None, None, None, None, True, []),
+        ("Register", "1", "1", None, None, "token", None, None, None, None, True, []),
 
         # Basic認証（接続方式2）
         #  ヘッダーのテスト
         # 　正常なjinja2
-        ("2", "1", "user", "pass", None, None, None, '{ "key": "{{ header_var }}" }', None, True, []),
+        ("Register", "2", "1", "user", "pass", None, None, None, '{ "key": "{{ header_var }}" }', None, True, []),
         #   不正なjinja2構文 （制御構文の閉じタグがない）
-        ("2", "1", "user", "pass", None, None, None, '{% if value %}True', None, False, ["499-01815"]),
+        ("Register", "2", "1", "user", "pass", None, None, None, '{% if value %}True', None, False, ["499-01815"]),
         #   正常なJSON
-        ("2", "1", "user", "pass", None, None, None, '{"key": "value"}', None, True, []),
-        #   不正なjinja2構文 (カンマ抜け)
-        ("2", "1", "user", "pass", None, None, None, '{"key": "value" "key2": "value2"}', None, False, ["MSG-120011"]),
+        ("Register", "2", "1", "user", "pass", None, None, None, '{"key": "value"}', None, True, []),
+        #   不正なJSON構文 (カンマ抜け)
+        ("Register", "2", "1", "user", "pass", None, None, None, '{"key": "value" "key2": "value2"}', None, False, ["MSG-120011"]),
         #   空文字（JSON扱いになり、不正扱い）
-        ("2", "1", "user", "pass", None, None, None, '', None, False, ["MSG-120011"]),
+        ("Register", "2", "1", "user", "pass", None, None, None, '', None, False, ["MSG-120011"]),
         #   None（正常扱い）
-        ("2", "1", "user", "pass", None, None, None, None, None, True, []),
+        ("Register", "2", "1", "user", "pass", None, None, None, None, None, True, []),
         # パラメーターのテスト
         #  正常なjinja2
-        ("2", "1", "user", "pass", None, None, None, None, '{ "key": "{{ header_var }}" }', True, []),
+        ("Register", "2", "1", "user", "pass", None, None, None, None, '{ "key": "{{ header_var }}" }', True, []),
         #  不正なjinja2構文 （制御構文の閉じタグがない）
-        ("2", "1", "user", "pass", None, None, None, None, '{% if value %}True', False, ["499-01815"]),
+        ("Register", "2", "1", "user", "pass", None, None, None, None, '{% if value %}True', False, ["499-01815"]),
         #  正常なJSON
-        ("2", "1", "user", "pass", None, None, None, None, '{"key": "value"}', True, []),
-        #  不正なjinja2構文 (カンマ抜け)
-        ("2", "1", "user", "pass", None, None, None, None, '{"key": "value" "key2": "value2"}', False, ["MSG-120012"]),
+        ("Register", "2", "1", "user", "pass", None, None, None, None, '{"key": "value"}', True, []),
+        #  不正なJSON構文 (カンマ抜け)
+        ("Register", "2", "1", "user", "pass", None, None, None, None, '{"key": "value" "key2": "value2"}', False, ["MSG-120012"]),
         #  空文字（JSON扱いになり、不正扱い）
-        ("2", "1", "user", "pass", None, None, None, None, '', False, ["MSG-120012"]),
+        ("Register", "2", "1", "user", "pass", None, None, None, None, '', False, ["MSG-120012"]),
         #  None（正常扱い）
-        ("2", "1", "user", "pass", None, None, None, None, None, True, []),
+        ("Register", "2", "1", "user", "pass", None, None, None, None, None, True, []),
 
         # 共有鍵認証（接続方式3）
         #  ヘッダーのテスト
         # 　正常なjinja2
-        ("3", "1", None, None, None, "secret_access_key", "access_key_id", '{ "key": "{{ header_var }}" }', None, True, []),
+        ("Register", "3", "1", None, None, None, "secret_access_key", "access_key_id", '{ "key": "{{ header_var }}" }', None, True, []),
         #   不正なjinja2構文 （制御構文の閉じタグがない）
-        ("3", "1", None, None, None, "secret_access_key", "access_key_id", '{% if value %}True', None, False, ["499-01815"]),
+        ("Register", "3", "1", None, None, None, "secret_access_key", "access_key_id", '{% if value %}True', None, False, ["499-01815"]),
         #   正常なJSON
-        ("3", "1", None, None, None, "secret_access_key", "access_key_id", '{"key": "value"}', None, True, []),
-        #   不正なjinja2構文 (カンマ抜け)
-        ("3", "1", None, None, None, "secret_access_key", "access_key_id", '{"key": "value" "key2": "value2"}', None, False, ["MSG-120011"]),
+        ("Register", "3", "1", None, None, None, "secret_access_key", "access_key_id", '{"key": "value"}', None, True, []),
+        #   不正なJSON構文 (カンマ抜け)
+        ("Register", "3", "1", None, None, None, "secret_access_key", "access_key_id", '{"key": "value" "key2": "value2"}', None, False, ["MSG-120011"]),
         #   空文字（JSON扱いになり、不正扱い）
-        ("3", "1", None, None, None, "secret_access_key", "access_key_id", '', None, False, ["MSG-120011"]),
+        ("Register", "3", "1", None, None, None, "secret_access_key", "access_key_id", '', None, False, ["MSG-120011"]),
         #   None（正常扱い）
-        ("3", "1", None, None, None, "secret_access_key", "access_key_id", None, None, True, []),
+        ("Register", "3", "1", None, None, None, "secret_access_key", "access_key_id", None, None, True, []),
         # パラメーターのテスト
         #  正常なjinja2
-        ("3", "1", None, None, None, "secret_access_key", "access_key_id", None, '{ "key": "{{ header_var }}" }', True, []),
+        ("Register", "3", "1", None, None, None, "secret_access_key", "access_key_id", None, '{ "key": "{{ header_var }}" }', True, []),
         #  不正なjinja2構文 （制御構文の閉じタグがない）
-        ("3", "1", None, None, None, "secret_access_key", "access_key_id", None, '{% if value %}True', False, ["499-01815"]),
+        ("Register", "3", "1", None, None, None, "secret_access_key", "access_key_id", None, '{% if value %}True', False, ["499-01815"]),
         #  正常なJSON
-        ("3", "1", None, None, None, "secret_access_key", "access_key_id", None, '{"key": "value"}', True, []),
-        #  不正なjinja2構文 (カンマ抜け)
-        ("3", "1", None, None, None, "secret_access_key", "access_key_id", None, '{"key": "value" "key2": "value2"}', False, ["MSG-120012"]),
+        ("Register", "3", "1", None, None, None, "secret_access_key", "access_key_id", None, '{"key": "value"}', True, []),
+        #  不正なJSON構文 (カンマ抜け)
+        ("Register", "3", "1", None, None, None, "secret_access_key", "access_key_id", None, '{"key": "value" "key2": "value2"}', False, ["MSG-120012"]),
         #  空文字（JSON扱いになり、不正扱い）
-        ("3", "1", None, None, None, "secret_access_key", "access_key_id", None, '', False, ["MSG-120012"]),
+        ("Register", "3", "1", None, None, None, "secret_access_key", "access_key_id", None, '', False, ["MSG-120012"]),
         #  None（正常扱い）
-        ("3", "1", None, None, None, "secret_access_key", "access_key_id", None, None, True, []),
+        ("Register", "3", "1", None, None, None, "secret_access_key", "access_key_id", None, None, True, []),
 
         # オプション認証（接続方式5）
         #  ヘッダーのテスト
         # 　正常なjinja2
-        ("5", "1", None, None, None, None, None, '{ "key": "{{ header_var }}" }', None, True, []),
+        ("Register", "5", "1", None, None, None, None, None, '{ "key": "{{ header_var }}" }', None, True, []),
         #   不正なjinja2構文 （制御構文の閉じタグがない）
-        ("5", "1", None, None, None, None, None, '{% if value %}True', None, False, ["499-01815"]),
+        ("Register", "5", "1", None, None, None, None, None, '{% if value %}True', None, False, ["499-01815"]),
         #   正常なJSON
-        ("5", "1", None, None, None, None, None, '{"key": "value"}', None, True, []),
-        #   不正なjinja2構文 (カンマ抜け)
-        ("5", "1", None, None, None, None, None, '{"key": "value" "key2": "value2"}', None, False, ["MSG-120011"]),
+        ("Register", "5", "1", None, None, None, None, None, '{"key": "value"}', None, True, []),
+        #   不正なJSON構文 (カンマ抜け)
+        ("Register", "5", "1", None, None, None, None, None, '{"key": "value" "key2": "value2"}', None, False, ["MSG-120011"]),
         #   空文字（JSON扱いになり、不正扱い）
-        ("5", "1", None, None, None, None, None, '', None, False, ["MSG-120011"]),
+        ("Register", "5", "1", None, None, None, None, None, '', None, False, ["MSG-120011"]),
         #   None（正常扱い）
-        ("5", "1", None, None, None, None, None, None, None, True, []),
+        ("Register", "5", "1", None, None, None, None, None, None, None, True, []),
         # パラメーターのテスト
         #  正常なjinja2
-        ("5", "1", None, None, None, None, None, None, '{ "key": "{{ header_var }}" }', True, []),
+        ("Register", "5", "1", None, None, None, None, None, None, '{ "key": "{{ header_var }}" }', True, []),
         #  不正なjinja2構文 （制御構文の閉じタグがない）
-        ("5", "1", None, None, None, None, None, None, '{% if value %}True', False, ["499-01815"]),
+        ("Register", "5", "1", None, None, None, None, None, None, '{% if value %}True', False, ["499-01815"]),
         #  正常なJSON
-        ("5", "1", None, None, None, None, None, None, '{"key": "value"}', True, []),
-        #  不正なjinja2構文 (カンマ抜け)
-        ("5", "1", None, None, None, None, None, None, '{"key": "value" "key2": "value2"}', False, ["MSG-120012"]),
+        ("Register", "5", "1", None, None, None, None, None, None, '{"key": "value"}', True, []),
+        #  不正なJSON構文 (カンマ抜け)
+        ("Register", "5", "1", None, None, None, None, None, None, '{"key": "value" "key2": "value2"}', False, ["MSG-120012"]),
         #  空文字（JSON扱いになり、不正扱い）
-        ("5", "1", None, None, None, None, None, None, '', False, ["MSG-120012"]),
+        ("Register", "5", "1", None, None, None, None, None, None, '', False, ["MSG-120012"]),
         #  None（JSON扱いになり、正常扱い）
-        ("5", "1", None, None, None, None, None, None, None, True, [])
+        ("Register", "5", "1", None, None, None, None, None, None, None, True, []),
+
+        # cmd_type=Updateの場合 (※Registerと同じ処理を通るので正常系と不正系を1パターンずつとする)
+        # Bearer認証（接続方式1）
+        #  ヘッダーのテスト
+        # 　正常なjinja2
+        ("Update", "1", "1", None, None, "token", None, None, '{ "key": "{{ header_var }}" }', None, True, []),
+        #   不正なjinja2構文 （制御構文の閉じタグがない）
+        ("Update", "1", "1", None, None, "token", None, None, '{% if value %}True', None, False, ["499-01815"])
     ]
 )
-def test_agent_setting_valid(connection_method, request_method,
+def test_agent_setting_valid(cmd_type, connection_method, request_method,
                              username, password, auth_token, secret_access_key, access_key_id,
                              request_header, parameter, expected_bool, expected_msgs):
     """
@@ -183,7 +191,7 @@ def test_agent_setting_valid(connection_method, request_method,
         }
     }
     option = {
-        "cmd_type": "Register",
+        "cmd_type": cmd_type,
         "entry_parameter": {
             "parameter": {
                 "connection_method_name": connection_method,

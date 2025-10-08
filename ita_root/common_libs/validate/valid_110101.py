@@ -125,8 +125,7 @@ def agent_setting_valid(objdbca, objtable, option):
                     if not isJsonFormat(entry_parameter['request_header']):
                         msg.append(g.appmsg.get_api_message("MSG-120011", [connection_method_name]))
             # パラメーター
-            if entry_parameter['parameter'] is not None:
-                print(entry_parameter['parameter'])
+            if entry_parameter['parameter'] is not None:                
                 if is_use_jinja2_variable(entry_parameter['parameter']) is True:
                     # jinja2の形式チェック
                     if not is_jinja2_template(entry_parameter['parameter']):
@@ -198,8 +197,6 @@ def is_use_jinja2_variable(template_data_decoded):
     # {%+ifやjinja2変数など%}
     pattern2 = r"\{%(.*?)%\}"
 
-    print(re.search(pattern2, template_data_decoded))
-
     if re.search(pattern1, template_data_decoded):
         return True
     if re.search(pattern2, template_data_decoded):
@@ -219,7 +216,7 @@ def is_jinja2_template(template_data_decoded):
 
     try:
         jinja2.Template(template_data_decoded)
-    except Exception as e:
+    except Exception:
         return False
 
     return True

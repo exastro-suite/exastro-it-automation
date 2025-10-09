@@ -12,163 +12,218 @@
 # limitations under the License.
 #
 
-import base64
 
 from common_libs.notification import validator
 from common_libs.notification import notification_base
 from flask import g
 
+
 def external_valid_menu_before(objdbca, objtable, option):
     """
     メニューバリデーション(更新)
-    ARGS:
-        objdbca :DB接続クラスインスタンス
-        objtabl :メニュー情報、カラム紐付、関連情報
-        option :パラメータ、その他設定値
-    RETRUN:
-        retBoo :True/ False
-        msg :エラーメッセージ
-        option :受け取ったもの
-    """
 
+    メニューの登録・更新・削除・廃止・復活時に、入力されたパラメータやファイルの内容を検証する。
+
+    Args:
+        objdbca (object): DB接続クラスインスタンス
+        objtable (dict): メニュー情報、カラム紐付、関連情報
+        option (dict): パラメータ、その他設定値
+    Returns:
+        retBool (bool): True/False
+        msg (list): エラーメッセージ
+        option (dict): 受け取ったもの
+    """
     target_column_name = {
         "ja": objtable["COLINFO"]["template_file"]["COLUMN_NAME_JA"],
         "en": objtable["COLINFO"]["template_file"]["COLUMN_NAME_EN"],
     }
-
     target_lang = g.LANGUAGE if g.LANGUAGE is not None else "ja"
 
-    retBool = True
-    msg = []
-
     cmd_type = option.get("cmd_type")
-
     current_parameter = option.get("current_parameter", {}).get("parameter")
     entry_parameter = option.get("entry_parameter", {}).get("parameter")
     notification_template_id = str(current_parameter.get("notification_template_id", None))
 
-    # 登録・更新時
+    retBool, msg = True, []
+
+    # コマンドタイプごとの処理を分割
     if cmd_type in ["Register", "Update"]:
-        # 通知テンプレートIDが1～4の場合
-        if is_id_in_default_range(notification_template_id):
-            # イベント種別は変更不可
-            if current_parameter.get("event_type") != entry_parameter.get("event_type"):
-                retBool = False 
-                msg.append(g.appmsg.get_api_message("MSG-170001"))
-                return retBool, msg, option,
-
-            # 通知先は変更不可（空のみ）
-            if entry_parameter.get("notification_destination") is not None:
-                retBool = False
-                msg.append(g.appmsg.get_api_message("MSG-170002"))
-                return retBool, msg, option,
-
-        # 通知テンプレートIDが1～4以外の場合
-        else:
-            # 通知先が空の場合
-            if entry_parameter.get("notification_destination") is None:
-                retBool = False
-                msg.append(g.appmsg.get_api_message("MSG-170003"))
-                return retBool, msg, option,
-
-            # 同一のイベント種別で、同一の通知先の場合
-            event_type = entry_parameter.get("event_type")
-            notification_destination = entry_parameter.get("notification_destination")
-            duplicate_notification_destination = check_duplicate_notification_destination(objdbca,
-                                                                                          notification_template_id,
-                                                                                          event_type,
-                                                                                          notification_destination)
-            if duplicate_notification_destination != "":
-                retBool = False
-                if not notification_template_id or str(notification_template_id).lower() == "none":
-                    notification_template_id = "-"
-                msg.append(g.appmsg.get_api_message("MSG-170004", [notification_template_id, duplicate_notification_destination]))
-                return retBool, msg, option,
-
-    # 削除時
+        retBool, msg = handle_register_update(
+            objdbca, current_parameter, entry_parameter, notification_template_id
+        )
     elif cmd_type == "Delete":
-        # 通知テンプレートIDが1～4の場合
-        if is_id_in_default_range(notification_template_id):
-            retBool = False
-            msg.append(g.appmsg.get_api_message("MSG-170005"))
-            return retBool, msg, option,
-
-    # 廃止時
+        retBool, msg = handle_delete(notification_template_id)
     elif cmd_type == "Discard":
-        # 通知テンプレートIDが1～4の場合
-        if is_id_in_default_range(notification_template_id):
-            retBool = False
-            msg.append(g.appmsg.get_api_message("MSG-170006"))
-            return retBool, msg, option,
-
-    # 復活時
+        retBool, msg = handle_discard(notification_template_id)
     elif cmd_type == "Restore":
-        # 通知テンプレートIDが1～4の場合
-        if is_id_in_default_range(notification_template_id):
-            retBool = False
-            msg.append(g.appmsg.get_api_message("MSG-170007"))
-            return retBool, msg, option,
+        retBool, msg = handle_restore(
+            objdbca, current_parameter, notification_template_id
+        )
 
-        # 通知テンプレートIDが1～4以外の場合
-        else:
-            event_type = current_parameter.get("event_type")
-            notification_destination = current_parameter.get("notification_destination")
-            # 同一のイベント種別で、同一の通知先の場合
-            duplicate_notification_destination = check_duplicate_notification_destination(objdbca,
-                                                                                          notification_template_id,
-                                                                                          event_type,
-                                                                                          notification_destination)
-            if duplicate_notification_destination != "":
-                retBool = False
-                msg.append(g.appmsg.get_api_message("MSG-170004", [notification_template_id, duplicate_notification_destination]))
-                return retBool, msg, option,
+    # ファイル検証
+    if retBool:
+        file_path = option.get("entry_parameter", {}).get("file_path", {}).get("template_file")
+        if file_path:
+            retBool, msg = validate_template_file(file_path, target_column_name, target_lang, msg)
 
-    file_path = option.get('entry_parameter', {}).get('file_path', {}).get('template_file')
-    if file_path is None:
-        return retBool, msg, option,
+    return retBool, msg, option
 
-    with open(file_path, 'rb') as f:  # バイナリファイルとしてファイルをオープン
+
+def handle_register_update(objdbca, current_parameter, entry_parameter, notification_template_id):
+    """
+    登録・更新時の処理
+
+    通知テンプレートIDや通知先の内容を検証し、エラーがあればメッセージを返す。
+
+    Args:
+        objdbca (object): DB接続クラスインスタンス
+        current_parameter (dict): 現在のパラメータ
+        entry_parameter (dict): 入力されたパラメータ
+        notification_template_id (str): 通知テンプレートID
+    Returns:
+        retBool (bool): True/False
+        msg (list): エラーメッセージ
+    """
+    retBool, msg = True, []
+
+    if is_id_in_default_range(notification_template_id):
+        if current_parameter.get("event_type") != entry_parameter.get("event_type"):
+            return False, [g.appmsg.get_api_message("MSG-170001")]
+        if entry_parameter.get("notification_destination") is not None:
+            return False, [g.appmsg.get_api_message("MSG-170002")]
+    else:
+        if entry_parameter.get("notification_destination") is None:
+            return False, [g.appmsg.get_api_message("MSG-170003")]
+        duplicate_notification_destination = check_duplicate_notification_destination(
+            objdbca,
+            notification_template_id,
+            entry_parameter.get("event_type"),
+            entry_parameter.get("notification_destination"),
+        )
+        if duplicate_notification_destination:
+            msg_code = g.appmsg.get_api_message(
+                "MSG-170004", [notification_template_id or "-", duplicate_notification_destination]
+            )
+            return False, [msg_code]
+
+    return retBool, msg
+
+
+def handle_delete(notification_template_id):
+    """
+    削除時の処理
+
+    通知テンプレートIDが特定の範囲内の場合、削除を許可しない。
+
+    Args:
+        notification_template_id (str): 通知テンプレートID
+    Returns:
+        retBool (bool): True/False
+        msg (list): エラーメッセージ
+    """
+    if is_id_in_default_range(notification_template_id):
+        return False, [g.appmsg.get_api_message("MSG-170005")]
+    return True, []
+
+
+def handle_discard(notification_template_id):
+    """
+    廃止時の処理
+
+    通知テンプレートIDが特定の範囲内の場合、廃止を許可しない。
+
+    Args:
+        notification_template_id (str): 通知テンプレートID
+    Returns:
+        retBool (bool): True/False
+        msg (list): エラーメッセージ
+    """
+    if is_id_in_default_range(notification_template_id):
+        return False, [g.appmsg.get_api_message("MSG-170006")]
+    return True, []
+
+
+def handle_restore(objdbca, current_parameter, notification_template_id):
+    """
+    復活時の処理
+
+    通知テンプレートIDや通知先の内容を検証し、エラーがあればメッセージを返す。
+
+    Args:
+        objdbca (object): DB接続クラスインスタンス
+        current_parameter (dict): 現在のパラメータ
+        notification_template_id (str): 通知テンプレートID
+    Returns:
+        retBool (bool): True/False
+        msg (list): エラーメッセージ
+    """
+    if is_id_in_default_range(notification_template_id):
+        return False, [g.appmsg.get_api_message("MSG-170007")]
+
+    duplicate_notification_destination = check_duplicate_notification_destination(
+        objdbca,
+        notification_template_id,
+        current_parameter.get("event_type"),
+        current_parameter.get("notification_destination"),
+    )
+    if duplicate_notification_destination:
+        msg_code = g.appmsg.get_api_message(
+            "MSG-170004", [notification_template_id, duplicate_notification_destination]
+        )
+        return False, [msg_code]
+
+    return True, []
+
+
+def validate_template_file(file_path, target_column_name, target_lang, msg):
+    """
+    テンプレートファイルの検証
+
+    ファイルがバイナリ形式でないか、Jinja2形式として正しいか、必要な構文が含まれているかを検証する。
+
+    Args:
+        file_path (str): ファイルパス
+        target_column_name (dict): カラム名（日本語・英語）
+        target_lang (str): 言語設定
+        msg (list): エラーメッセージリスト
+    Returns:
+        retBool (bool): True/False
+        msg (list): エラーメッセージ
+    """
+    retBool = True
+    with open(file_path, "rb") as f:
         template_data_binary = f.read()
 
-    # 文字コードをチェック バイナリファイルの場合、encode['encoding']はNone
     if validator.is_binary_file(template_data_binary):
+        msg.append(g.appmsg.get_api_message("499-01814", [target_column_name[target_lang]]))
+        return False, msg
+
+    template_data_decoded = template_data_binary.decode("utf-8", "ignore")
+    if not validator.is_jinja2_template(template_data_decoded):
+        msg.append(g.appmsg.get_api_message("499-01815", [target_column_name[target_lang]]))
+        return False, msg
+
+    if not validator.contains_title(template_data_decoded):
+        msg.append(g.appmsg.get_api_message("499-01816", [target_column_name[target_lang]]))
         retBool = False
-        msg_tmp = g.appmsg.get_api_message("499-01814", [target_column_name[target_lang]])
-        msg.append(msg_tmp)
 
-    template_data_decoded = template_data_binary.decode('utf-8', 'ignore')
-    if retBool:
-        # jinja2の形式として問題無いか確認する
-        if not validator.is_jinja2_template(template_data_decoded):
-            retBool = False
-            msg_tmp = g.appmsg.get_api_message("499-01815", [target_column_name[target_lang]])
-            msg.append(msg_tmp)
+    if not validator.contains_body(template_data_decoded):
+        msg.append(g.appmsg.get_api_message("499-01817", [target_column_name[target_lang]]))
+        retBool = False
 
-    if retBool:
-        # 特有の構文チェック
-        if not validator.contains_title(template_data_decoded):
-            retBool = False
-            msg_tmp = g.appmsg.get_api_message("499-01816", [target_column_name[target_lang]])
-            msg.append(msg_tmp)
-
-        if not validator.contains_body(template_data_decoded):
-            retBool = False
-            msg_tmp = g.appmsg.get_api_message("499-01817", [target_column_name[target_lang]])
-            msg.append(msg_tmp)
-
-    return retBool, msg, option,
+    return retBool, msg
 
 
 def is_id_in_default_range(notification_template_id):
     """
-    通知テンプレートIDが1～4の場合はTrueを返す
-    それ以外はFalseを返す
-    ARGS:
-        notification_template_id：通知テンプレートID
-    RETRUN:
-        return : True/ False
+    通知テンプレートIDが1～6の場合はTrueを返す
+
+    Args:
+        notification_template_id (str): 通知テンプレートID
+    Returns:
+        bool: True/False
     """
-    if notification_template_id in ["1", "2", "3", "4"]:
+    if notification_template_id in ["1", "2", "3", "4", "5", "6"]:
         return True
     else:
         return False
@@ -178,13 +233,15 @@ def check_duplicate_notification_destination(objdbca, notification_template_id, 
     """
     同一の通知先、その通知先を返す
 
-    ARGS:
-        objdbca :DB接続クラスインスタンス
-        notification_template_id：通知テンプレートID
-        event_type :イベント種別
-        notification_destination :通知先ID文字列
-    RETRUN:
-        通知先名称 / 空文字
+    通知先が他の通知テンプレートと重複していないかを確認する。
+
+    Args:
+        objdbca (object): DB接続クラスインスタンス
+        notification_template_id (str): 通知テンプレートID
+        event_type (str): イベント種別
+        notification_destination (str): 通知先ID文字列
+    Returns:
+        str: 通知先名称 / 空文字
     """
     # 引数の通知先ID文字列が空の場合は空文字を返す
     if not notification_destination:
@@ -226,12 +283,14 @@ def get_notification_destination(objdbca, notification_template_id, event_type):
     """
     通知テンプレート(共通)より通知先を取得
 
-    ARGS:
-        objdbca :DB接続クラスインスタンス
-        notification_template_id：通知テンプレートID
-        event_type :イベント種別
-    RETRUN:
-        取得レコード        
+    指定された通知テンプレートIDとイベント種別に基づいて、通知先のデータを取得する。
+
+    Args:
+        objdbca (object): DB接続クラスインスタンス
+        notification_template_id (str): 通知テンプレートID
+        event_type (str): イベント種別
+    Returns:
+        list: 取得レコード
     """
 
     # 通知テンプレート(共通)

@@ -12,21 +12,22 @@
 # limitations under the License.
 #
 
-from flask import g
 import json
 import copy
 
+from bson import ObjectId
+from flask import g
+
 from common_libs.oase.const import oaseConst
-from libs.common_functions import addline_msg, getLabelGroup, getIDtoLabelName
+from common_libs.oase.manage_events import ManageEvents
+from libs.common_functions import addline_msg, getIDtoLabelName
 
 
 class Judgement:
-    def __init__(self, wsDb, EventObj):
+    def __init__(self, wsDb, EventObj: ManageEvents, label_master_dict: dict):
         self.wsDb = wsDb
         self.EventObj = EventObj
-
-        # ラベルマスタ取得
-        self.LabelMasterDict = getLabelGroup(wsDb)
+        self.LabelMasterDict = label_master_dict
 
     def getFilterMatch(self, FilterRow):
         """指定フィルターに合致するイベントを取得します / Gets events that match the specified filter.
@@ -72,7 +73,6 @@ class Judgement:
             return True, []
         else:
             return ret, UsedEventIdList
-
 
     def EventJudge(self, EventJudgList):
         """指定のラベル条件に合致するイベントを返します / Returns events that match the specified label condition.
@@ -154,7 +154,7 @@ class Judgement:
         for RuleRow in RuleList:
             # g.applogger.debug('RULE_ID={}'.format(RuleRow['RULE_ID']))
             hit = True
-            sp_ptn_01 = False # A → BのルールがあるときにAが来なくてBが来ている（可能性がある）ときの対処用フラグ
+            sp_ptn_01 = False  # A → BのルールがあるときにAが来なくてBが来ている（可能性がある）ときの対処用フラグ
             FilterList = []
             FilterList.append(RuleRow['FILTER_A'])
             if RuleRow.get('FILTER_B') is not None:
@@ -200,9 +200,11 @@ class Judgement:
                                     if ret is False:
                                         continue
                                     else:
-                                        if EventRow['labels']['_exastro_evaluated'] != '0' \
-                                        or EventRow['labels']['_exastro_timeout'] != '0' \
-                                        or EventRow['labels']['_exastro_undetected'] != '0':
+                                        if (
+                                            EventRow["labels"]["_exastro_evaluated"] != "0" or
+                                            EventRow["labels"]["_exastro_timeout"] != "0" or
+                                            EventRow["labels"]["_exastro_undetected"] != "0"
+                                        ):
                                             continue
                                         # FILTER_Bはイベントあり
                                         sp_ptn_01 = True
@@ -258,9 +260,11 @@ class Judgement:
                                 # g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                                 hit = False
                             else:
-                                if EventRow['labels']['_exastro_evaluated'] != '0' \
-                                or EventRow['labels']['_exastro_timeout'] != '0' \
-                                or EventRow['labels']['_exastro_undetected'] != '0':
+                                if (
+                                    EventRow["labels"]["_exastro_evaluated"] != "0" or
+                                    EventRow["labels"]["_exastro_timeout"] != "0" or
+                                    EventRow["labels"]["_exastro_undetected"] != "0"
+                                ):
                                     # 判定済みは無視
                                     # g.applogger.debug('FilterId({}), event_id({})=Level3 hit=False2'.format(FilterId, event_id))
                                     hit = False
@@ -335,6 +339,8 @@ class Judgement:
         # フィルタ毎のループ
         Filter_AB_List = []
         Filter_AB_List.append(RuleRow['FILTER_A'])
+        # フィルタID毎にマッチしたイベントを保存する(グルーピング用)
+        filtered_event_map: dict[str, dict[str]] = {}
         if RuleRow['FILTER_B'] is not None:
             Filter_AB_List.append(RuleRow['FILTER_B'])
         for FilterId in Filter_AB_List:
@@ -342,9 +348,20 @@ class Judgement:
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
             ret, EventRow = self.getFilterJudge(FilterId, IncidentDict, filterIDMap)
+            filtered_event_map[FilterId] = EventRow
+
+            # グルーピングの場合、追加で後続イベントチェックを行う
+            if (
+                ret and
+                filterIDMap[FilterId]["SEARCH_CONDITION_ID"] == oaseConst.DF_SEARCH_CONDITION_GROUPING and
+                # ここでグルーピングすると不整合になるケースがあるため、グルーピングした際に先頭になるかどうかのチェックのみ
+                not self.EventObj.is_first_event_when_grouping(EventRow)
+            ):
+                # 後続イベントはOASE Conclusion上ではイベント扱いとしないため、判定結果をFalseにする
+                ret = False
 
             if ret is True:
-                FilterResultDict['EventList'].append(EventRow)
+                FilterResultDict["EventList"].append(EventRow)
 
             # フィルタ件数 Up
             FilterResultDict['Count'] += 1
@@ -363,7 +380,31 @@ class Judgement:
         tmp_msg = g.appmsg.get_log_message("BKY-90055", [str(ret)])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-        ret = self.checkFilterCondition(FilterResultDict, IncidentDict)
+        # フィルタ判定結果に沿ったフィルターの適用
+        ret = self.apply_filter(FilterResultDict, IncidentDict)
+
+        # フィルターが適用された場合の処理
+        if ret is not None:
+            # フィルターの適用が行われた場合、検索方法がグルーピングのものはここでグルーピングを実行する
+            for filter_id in Filter_AB_List:
+                filter_row = filterIDMap[filter_id]
+                event = filtered_event_map[filter_id]
+                if (
+                    filter_row["SEARCH_CONDITION_ID"] != oaseConst.DF_SEARCH_CONDITION_GROUPING or
+                    event is None
+                ):
+                    continue
+                # グルーピングの実行
+                is_first_event = self.EventObj.grouping_event(event, filter_row)
+                if not is_first_event:
+                    # 後続イベントの場合はOASE Conclusion上ではイベント扱いとしない
+
+                    # IncidentDictから削除する
+                    IncidentDict[filter_id].remove(event["_id"])
+                    # 後続イベントを判定済み扱いとする
+                    self.EventObj.update_label_flag([event["_id"]], {'_exastro_evaluated': '1'})
+                    # FilterResultDict['EventList']からの削除は不要(存在しない)
+
         if ret is True:
             tmp_msg = g.appmsg.get_log_message("BKY-90056", [RuleRow['RULE_ID'], RuleRow['RULE_NAME'], RuleRow['FILTER_A'], RuleRow['FILTER_OPERATOR'], RuleRow['FILTER_B']])
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -397,7 +438,20 @@ class Judgement:
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             return False, {}
 
-    def checkFilterCondition(self, FilterResultDict, IncidentDict):
+    def apply_filter(self, FilterResultDict: dict[str], IncidentDict: dict[str, list[ObjectId]]) -> bool | None:
+        """フィルター判定に沿ってフィルターを適用する
+
+        Args:
+            FilterResultDict (dict[str]): フィルター判定結果
+            IncidentDict (dict[str, list[ObjectId]]): 
+
+        Returns:
+            (bool | None):
+                - True=フィルターを適用し、ルール条件成立
+                - False=フィルターを適用し、ルール条件不成立
+                - None=フィルター適用不可(ルール判定対象外)
+        """
+
         if FilterResultDict['Operator'] == oaseConst.DF_OPE_OR:
             if FilterResultDict['True'] == 1:
                 # or条件の場合、片方がマッチした時のみTrueとする
@@ -417,20 +471,18 @@ class Judgement:
             if FilterResultDict['False'] == 0:
                 return True
         elif FilterResultDict['Operator'] == oaseConst.DF_OPE_ORDER:
-            if FilterResultDict['False'] != 0:
+            match FilterResultDict["EventList"]:
+                # イベント発生順の確認
+                case [
+                    {"labels": {"_exastro_fetched_time": event_a_fetched_time}},
+                    {"labels": {"_exastro_fetched_time": event_b_fetched_time}},
+                ] if (
+                    event_b_fetched_time <= event_a_fetched_time
+                ):
+                    # 発生順が B → A または A = B の場合はフィルター適用条件を満たしていないのでフィルター適用不可
+                    return None
+            if FilterResultDict["False"] != 0:
                 return False
-            f_time = None
-            if len(FilterResultDict['EventList']) > 1:
-                for EventRow in FilterResultDict['EventList']:
-                    if not f_time:
-                        f_time = EventRow['labels']['_exastro_fetched_time']
-                    else:
-                        # イベント発生順の確認
-                        # 発生順　A => B
-                        if EventRow['labels']['_exastro_fetched_time'] > f_time:
-                            return True
-                        else:
-                            return False
             return True
         else:
             if FilterResultDict['True'] != 0:
@@ -513,12 +565,12 @@ class Judgement:
 
         return True
 
-    def get_first_unevaluated_event(self, IncidentDict, FilterId):
+    def get_first_unevaluated_event(self, IncidentDict: dict[str, list[ObjectId]], FilterId: str):
         """指定フィルターの最初の未評価イベントを返します / Returns the first unevaluated event for the specified filter
 
         Args:
-            IncidentDict (_type_): _description_
-            FilterId (_type_): _description_
+            IncidentDict (dict[str, list[ObjectId]]): イベントの辞書
+            FilterId (str): フィルターID
 
         Returns:
             boolean: True=exists event, False=not exists event
@@ -531,10 +583,12 @@ class Judgement:
         # １件のイベントの場合、該当イベントが未評価イベントの場合、それを返す
         for event_id in IncidentDict[FilterId]:
             ret, EventRow = self.EventObj.get_events(event_id)
-            if ret is True \
-            and EventRow['labels']['_exastro_evaluated'] == '0' \
-            and EventRow['labels']['_exastro_timeout'] == '0' \
-            and EventRow['labels']['_exastro_undetected'] == '0':
+            if (
+                ret is True and
+                EventRow["labels"]["_exastro_evaluated"] == "0" and
+                EventRow["labels"]["_exastro_timeout"] == "0" and
+                EventRow["labels"]["_exastro_undetected"] == "0"
+            ):
                 return True, EventRow
 
         # 未評価イベントが見つからなかった場合

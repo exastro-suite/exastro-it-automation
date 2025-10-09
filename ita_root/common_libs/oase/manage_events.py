@@ -12,29 +12,78 @@
 # limitations under the License.
 #
 
-
-from flask import g
 import inspect
+import json
 import os
+import re
+from typing import Any, NewType, TypedDict
+
+from bson import ObjectId
+from flask import g
 
 from common_libs.oase.const import oaseConst
 from common_libs.common.mongoconnect.const import Const as mongoConst
-
+from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
+from libs.common_functions import getIDtoLabelName
 from libs.writer_process import WriterProcessManager
+
+AttributeKey = NewType('AttributeKey', frozenset[tuple[str, Any]])
+"""属性集約キー"""
+
+Event = NewType('Event', dict[str, Any])
+"""イベント"""
+
+
+class TtlGroup(TypedDict):
+    """時間集約グループ"""
+
+    fetched_time: int
+    """グループの先頭イベントのイベント取得日時"""
+
+    end_time: int
+    """グループの最大イベント有効日時"""
+
+    first_event: Event
+    """グループの先頭イベント"""
+
+    remaining_events: list[Event]
+    """グループの後続イベント"""
+
+
+class GroupingInformation(TypedDict):
+    group_id: ObjectId
+    """グループID"""
+
+    filter_id: str
+    """フィルターID"""
+
+    is_first_event: bool
+    """先頭イベントフラグ"""
 
 
 class ManageEvents:
-    def __init__(self, wsMongo, judgeTime):
-        self.labeled_event_collection = wsMongo.collection(mongoConst.LABELED_EVENT_COLLECTION)
+    def __init__(self, ws_mongo: MONGOConnectWs, judge_time: int) -> None:
+        self._label_master: dict[str, str] = {}
+        """ラベルマスタ"""
+
+        self.evaluated_event_groups: dict[str, dict[AttributeKey, list[TtlGroup]]] = {}
+        """ルール確定グループ"""
+
+        self.labeled_event_collection = ws_mongo.collection(mongoConst.LABELED_EVENT_COLLECTION)
+
+        # イベントキャッシュの作成
+
         # 以下条件のイベントを取得
         undetermined_search_value = {
             "labels._exastro_timeout": "0",
             "labels._exastro_evaluated": "0",
             "labels._exastro_undetected": "0"
         }
-        labeled_events = self.labeled_event_collection.find(undetermined_search_value)
+        labeled_events = self.labeled_event_collection.find(
+            undetermined_search_value
+        ).sort("labels._exastro_fetched_time", 1)  # 取得日時昇順にしておかないとグルーピングで先頭イベントが決定できなくなる
 
-        self.labeled_events_dict = {}
+        self.labeled_events_dict: dict[ObjectId, Event] = {}
         self.unevaluated_event_ids = set()
 
         for event in labeled_events:
@@ -42,7 +91,7 @@ class ManageEvents:
             event[oaseConst.DF_LOCAL_LABLE_NAME]["status"] = None
 
             check_result, event_status = self.check_event_status(
-                int(judgeTime),
+                int(judge_time),
                 int(event["labels"]["_exastro_fetched_time"]),
                 int(event["labels"]["_exastro_end_time"]),
             )
@@ -253,9 +302,6 @@ class ManageEvents:
         return unused_event_ids
 
     def insert_event(self, dict):
-        # result = self.labeled_event_collection.insert_one(dict)
-        # g.applogger.debug(f'**** Inserted event id: {result.inserted_id}')
-        # return result.inserted_id
         return WriterProcessManager.insert_labeled_event_collection(dict)
 
     def update_label_flag(self, event_id_list, update_flag_dict):
@@ -268,10 +314,225 @@ class ManageEvents:
             self.collect_unevaluated_event(event_id)
 
             # MongoDB更新
-            # self.labeled_event_collection.update_one({"_id": event_id}, {"$set": {f"labels.{key}": value}})
             WriterProcessManager.update_labeled_event_collection({"_id": event_id}, {"$set": {f"labels.{key}": value}})
 
         return True
+
+    def init_label_master(self, label_master: dict[str, str]) -> None:
+        """ラベルマスタを初期化する
+
+        Args:
+            label_master_dict (dict[str, str]): ラベルIDをキー、ラベル名を値とする辞書
+        """
+        self._label_master = label_master
+
+    def init_grouping(self, judge_time: int, filter_map: dict[str, dict[str]]) -> None:
+        """グルーピングの初期処理を行う
+
+        有効な判定済み先頭イベントを取得し、ルール確定グループを初期化する
+
+        Args:
+            judge_time (int): 判定日時のタイムスタンプ
+            filter_map (dict[str, dict[str, str]]): フィルターIDをキー、フィルター情報を値とする辞書
+        """
+
+        # フィルターに検索条件がグルーピングのものが含まれていない場合は処理しない
+        if not any(
+            filter_row["SEARCH_CONDITION_ID"] == oaseConst.DF_SEARCH_CONDITION_GROUPING
+            for filter_row in filter_map.values()
+        ):
+            return
+
+        # 有効な判定済み先頭イベントを取得
+        evaluated_first_events = self.labeled_event_collection.find(
+            {
+                "labels._exastro_timeout": "0",
+                "labels._exastro_evaluated": "1",
+                "labels._exastro_undetected": "0",
+                "labels._exastro_end_time": {"$gte": judge_time},
+                "exastro_filter_group.is_first_event": True,
+                "exastro_filter_group.filter_id": {"$in": filter_map.keys()},
+            }
+        ).sort("labels._exastro_fetched_time", 1)
+
+        for evaluated_first_event in evaluated_first_events:
+
+            filter_row = filter_map[
+                evaluated_first_event["exastro_filter_group"]["filter_id"]
+            ]
+            ttl_groups = self._get_ttl_groups(evaluated_first_event, filter_row)
+
+            # 有効な判定済み先頭イベントなので必ず新規グループになる
+            ttl_groups.append(self._create_new_ttl_group(evaluated_first_event))
+
+    def grouping_event(self, event: Event, filter_row: dict[str]) -> bool:
+        """イベントをグルーピングする
+
+        ルール確定グループに対して以下の処理を行う
+        - グルーピング条件に従って属性集約グループを作成・更新する
+        - イベントの取得日時と有効期間に従って時間集約グループを作成・更新する
+
+        Args:
+            event (Event): グルーピング対象のイベント
+            filter_row (dict[str]): フィルター情報
+        
+        Returns:
+            bool:
+                - True: イベントが先頭イベントになった場合
+                - False: イベントが後続イベントになった場合
+        """
+        # ルール確定グループからフィルターIDでフィルター別属性集約グループを取得・作成する
+
+        ttl_groups = self._get_ttl_groups(event, filter_row)
+        match ttl_groups:
+            case [*_, _ as latest_group] if (
+                event["labels"]["_exastro_fetched_time"] <= latest_group["end_time"]
+            ):
+                # 最新グループが取得でき、イベントがTTL内の場合は、後続イベントとして最新グループにイベントを追加
+                self._append_ttl_group(latest_group, event)
+                is_first_event = False
+            case _:
+                # グループが空の場合、またはイベントがTTL外の場合は新規グループを作成
+                latest_group = ManageEvents._create_new_ttl_group(event)
+                ttl_groups.append(latest_group)
+                is_first_event = True
+
+        # イベントのグループ情報を追加
+        group_info: GroupingInformation = event.setdefault("exastro_filter_group", {})
+        group_info["filter_id"] = filter_row["FILTER_ID"]
+        group_info["group_id"] = latest_group["first_event"]["_id"]
+        group_info["is_first_event"] = is_first_event
+        # MongoDB更新
+        WriterProcessManager.update_labeled_event_collection(
+            {"_id": event["_id"]}, {"$set": {"exastro_filter_group": group_info}}
+        )
+        
+        return is_first_event
+
+    @staticmethod
+    def _create_new_ttl_group(event: Event) -> TtlGroup:
+        """新しいグループを作成する
+
+        Args:
+            event (Event): グループに追加するイベント
+
+        Returns:
+            Group: 新しいグループ
+        """
+        return {
+            "fetched_time": event["labels"]["_exastro_fetched_time"],
+            "end_time": event["labels"]["_exastro_end_time"],
+            "first_event": event,
+            "remaining_events": [],
+        }
+
+    def _append_ttl_group(self, ttl_group: TtlGroup, event: Event) -> None:
+        """グループにイベントを追加する
+
+        Args:
+            ttl_group (Group): グループ
+            event (Event): グループに追加するイベント
+        """
+        ttl_group["remaining_events"].append(event)
+
+        # グループの終了時間の変更を確認
+        new_end_time = event["labels"]["_exastro_end_time"]
+        if new_end_time > ttl_group["end_time"]:
+            # グループの終了時間を更新
+            ttl_group["end_time"] = new_end_time
+            self.update_label_flag(
+                [ttl_group["first_event"]["_id"]], {"_exastro_end_time": new_end_time}
+            )
+
+    def _get_attribute_key(
+        self, event: Event, filter_row: dict[str] | None = None
+    ) -> AttributeKey:
+        """イベントから属性集約キーを取得する
+
+        Args:
+            event (Event): イベント
+            filter_row (dict[str]): フィルター情報
+
+        Returns:
+            AttributeKey: 属性集約キー
+        """
+
+        # グループキーがキャッシュに存在する場合そこから取り出す
+        local_label: dict[str, AttributeKey] = event.setdefault(
+            oaseConst.DF_LOCAL_LABLE_NAME, {}
+        )
+        attribute_key = local_label.get(oaseConst.DF_LOCAL_LABLE_ATTRIBUTE_KEY, None)
+        if attribute_key:
+            return attribute_key
+
+        # キャッシュに存在しない場合はイベントのラベルから生成する
+        if filter_row is None:
+            raise ValueError("filter_row is required when attribute_key is not cached")
+        labels: dict[str] = event["labels"]
+        group_condition_labels: list[str] = [
+            getIDtoLabelName(self._label_master, label_key)
+            for label_key in json.loads(filter_row["GROUP_LABEL_KEY_IDS"])
+        ]
+        if filter_row["GROUP_CONDITION_ID"] == oaseConst.DF_GROUP_CONDITION_ID_TARGET:
+            # 「を対象とする」の場合、ラベルに含まれる属性のみをキーとする
+            attribute_key = frozenset(
+                (key, value)
+                for (key, value) in labels.items()
+                if key in group_condition_labels
+            )
+        else:
+            # 「以外を対象とする」の場合、ラベルに含まれない属性のみをキーとするが、_exastroで始まる属性は除外する
+            attribute_key = frozenset(
+                (key, value)
+                for (key, value) in labels.items()
+                if not (key in group_condition_labels or re.match("^_exastro", key))
+            )
+        # キャッシュに保存
+        local_label[oaseConst.DF_LOCAL_LABLE_ATTRIBUTE_KEY] = attribute_key
+        return attribute_key
+
+    def is_first_event_when_grouping(self, event: Event, filter_row: dict[str]) -> bool:
+        """イベントをグルーピングした際に先頭イベントになるか判定する
+
+        Args:
+            event (Event): グルーピングするイベント
+            group_condition_id (Literal[&quot;1&quot;, &quot;2&quot;]): グルーピング条件ID
+            group_condition_labels (list[str]): グルーピング条件ラベル
+
+        Returns:
+            bool: 先頭イベントになる場合True、ならない場合False
+        """
+
+        ttl_groups = self._get_ttl_groups(event, filter_row)
+
+        match ttl_groups:
+            case [*_, _ as latest_group] if (
+                event["labels"]["_exastro_fetched_time"] <= latest_group["end_time"]
+            ):
+                return False
+            case _:
+                return True
+
+    def _get_ttl_groups(self, event: Event, filter_row: dict[str]) -> list[TtlGroup]:
+        """イベントとフィルターに対応する時間集約グループリストを取得する
+
+        Args:
+            event (Event): イベント
+            filter_row (dict[str]): フィルター
+
+        Returns:
+            list[Group]: 時間集約グループリスト
+        """
+
+        filter_id = filter_row["FILTER_ID"]
+
+        filter_groups = self.evaluated_event_groups.setdefault(filter_id, {})
+
+        # イベントから属性集約グループキーを取得
+        attribute_group_key = self._get_attribute_key(event, filter_row)
+
+        ttl_groups = filter_groups.setdefault(attribute_group_key, [])
+        return ttl_groups
 
     def print_event(self):
         for event_id, event in self.labeled_events_dict.items():

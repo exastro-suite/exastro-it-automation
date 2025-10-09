@@ -12,15 +12,21 @@
 # limitations under the License.
 #
 
-from flask import g
+import datetime
 import json
+import textwrap
+import traceback
+
+from flask import g
 from jinja2 import Template
 
 # action
 from common_libs.apply import apply
-from common_libs.conductor.classes.exec_util import *
+from common_libs.common.exception import AppException
+from common_libs.common.util import arrange_stacktrace_format, get_iso_datetime
+from common_libs.conductor.classes.exec_util import ConductorExecuteBkyLibs
 # notification
-from common_libs.notification.sub_classes.oase import OASE, OASENotificationType
+from common_libs.notification.sub_classes.oase import OASENotificationType
 # oase
 from common_libs.oase.const import oaseConst
 from libs.common_functions import addline_msg, getIDtoLabelName
@@ -102,7 +108,7 @@ class Action():
                     else:
                         _host = ret_host[0].get("KY_VALUE")
                         if _host.startswith("[HG]"):
-                        # ホストグループ
+                            # ホストグループ
                             ret_host = self.wsDb.table_select('T_HGSP_HOSTGROUP_LIST', 'WHERE DISUSE_FLAG = %s AND ROW_ID = %s', [0, host_id])
                             if not ret_host:
                                 tmp_msg = g.appmsg.get_log_message("BKY-90009", ['T_HGSP_HOSTGROUP_LIST'])
@@ -160,7 +166,6 @@ class Action():
         # action_log_row_list = self.wsDb.table_insert(oaseConst.T_OASE_ACTION_LOG, action_log_row, 'ACTION_LOG_ID')
         action_log_row_list = WriterProcessManager.insert_oase_action_log(action_log_row)
         action_log_row = action_log_row_list[0]
-        action_log_id = action_log_row.get("ACTION_LOG_ID")
 
         # 判定済みインシデントフラグを立てる  _exastro_evaluated='1'
         update_Flag_Dict = {"_exastro_evaluated": '1'}
@@ -279,7 +284,7 @@ class Action():
         else:
             conclusion_event_lables["labels"] = setting_only_labels
 
-        #　exastro_label_key_inputs
+        # exastro_label_key_inputs
         if event_label_inheritance_flg == "0":
             for label_key_name in setting_only_labels:
                 for master_label_id, master_label_key_name in labelMaster.items():
@@ -387,8 +392,8 @@ class Action():
             if col_info['COL_GROUP_ID'] in [None, '0000001']:
                 continue
 
-            if col_name_rest in action_parameters.keys():
             # ラベルのキー名とパラメータシートのカラム名が一致するときのみ、値をセットする
+            if col_name_rest in action_parameters.keys():
                 # ラベルの値をセット
                 parameter[col_name_rest] = action_parameters[col_name_rest]
             # else:
@@ -399,7 +404,7 @@ class Action():
 
         parameter_info = {}
         parameter_info[parameter_sheet_name_rest] = {
-            'type' : "Register",
+            'type': "Register",
             'parameter': parameter
         }
 
@@ -428,21 +433,21 @@ class Action():
             for menu in check_menu_list:
                 if menu not in check_items:
                     check_items[menu] = {
-                        "sheet_type" : None,
-                        "privilege"  : None,
+                        "sheet_type": None,
+                        "privilege": None,
                     }
 
                 if menu == "conductor_class_edit":
                     check_items[menu]["sheet_type"] = ["14", "15"]
-                    check_items[menu]["privilege"]  = ["0", "1", "2"]
+                    check_items[menu]["privilege"] = ["0", "1", "2"]
 
                 elif menu == "operation_list":
                     check_items[menu]["sheet_type"] = ["0", ]
-                    check_items[menu]["privilege"]  = ["0", "1"]
+                    check_items[menu]["privilege"] = ["0", "1"]
 
                 elif menu in specify_menu_list:
                     check_items[menu]["sheet_type"] = ["0", "1", "2", "3", "4"]
-                    check_items[menu]["privilege"]  = ["0", "1"]
+                    check_items[menu]["privilege"] = ["0", "1"]
 
             # トランザクション開始
             self.wsDb.db_transaction_start()

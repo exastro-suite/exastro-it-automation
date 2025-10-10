@@ -100,6 +100,26 @@ class WriterProcessManager():
         })
 
     @classmethod
+    def flush_buffer(cls):
+        """バッファの内容を強制的にDBに書き込む
+        """
+        cls._queue.put({
+            "action": "flush_buffer"
+        })
+        # 処理の完了を待つ
+        while True:
+            try:
+                cls._complite.get(timeout=5.0)
+                break
+            except multiprocessing.queues.Empty:
+                if cls._process.is_alive() is False:
+                    # プロセスが終了してしまった場合は待っても帰ってこないので終了する
+                    break
+                else:
+                    # 再度完了を待つ
+                    continue
+
+    @classmethod
     def finish_workspace_processing(cls):
         """ワークスペースの処理終了を通知プロセスに伝える
         """
@@ -282,6 +302,9 @@ class WriterProcess():
 
                 elif data["action"] == "start_workspace_processing":
                     cls._start_workspace_processing(data["oraganization_id"], data["workspace_id"])
+                
+                elif data["action"] == "flush_buffer":
+                    cls._flush_buffer(complite)
 
                 elif data["action"] == "finish_workspace_processing":
                     cls._finish_workspace_processing(complite)
@@ -311,6 +334,27 @@ class WriterProcess():
         cls._ws_mongo = MONGOConnectWs()
         cls._labeled_event_collection = MongoBufferedWriter(cls._ws_mongo.collection(mongoConst.LABELED_EVENT_COLLECTION))
         cls._t_oase_action_log = DBBufferedWriter(cls._objdbca, oaseConst.T_OASE_ACTION_LOG, 'ACTION_LOG_ID')
+
+    @classmethod
+    def _flush_buffer(cls, complite: multiprocessing.Queue):
+        """バッファの内容を強制的にDBに書き込む
+
+        Args:
+            complite (multiprocessing.Queue): 完了応答メッセージ送信用
+        """
+        if cls._labeled_event_collection is not None:
+            cls._labeled_event_collection.flush()
+
+        if cls._t_oase_action_log is not None:
+            cls._t_oase_action_log.flush()
+
+        # バッファの書き込み完了
+        g.applogger.debug(f"SubProcess({cls._process_name}) flush buffer completed")
+
+        # 書き込み完了を応答
+        complite.put({
+            "message": "flush_buffer_completed"
+        })
 
     @classmethod
     def _finish_workspace_processing(cls, complite: multiprocessing.Queue):
@@ -478,4 +522,5 @@ class DBBufferedWriter():
         else:
             self._objdbca.table_update(self._table_name, self._row_buffer, self._key_name)
         
+        self._row_buffer = None
         self._objdbca.db_commit()

@@ -77,7 +77,7 @@ def backyard_main(organization_id, workspace_id):
 
         # WriterProcessManagerに遅延書き込みはここまでに完了させる
         #   T_OASE_ACTION_LOGへの参照がここ以降で発生するため、ここまでに書き込みを完了させる
-        WriterProcessManager.finish_workspace_processing()
+        WriterProcessManager.flush_buffer()
 
         # 評価結果のステータスを監視するクラス
         action_status_monitor = ActionStatusMonitor(wsDb, EventObj)
@@ -101,7 +101,7 @@ def backyard_main(organization_id, workspace_id):
         tmp_msg = g.appmsg.get_log_message("BKY-90003", [])
         g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
     finally:
-        WriterProcessManager.finish_workspace_processing()  # 一応、Finaryでも入れておく（例外発生時）
+        WriterProcessManager.finish_workspace_processing()
         NotificationProcessManager.finish_workspace_processing()
         wsDb.db_transaction_end(False)
         wsDb.db_disconnect()

@@ -37,10 +37,10 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
 
         # 過去に取得したevent_collection_settings_nameに対応するデータ（idリスト、イベント）をDBから取得する
         # idリスト -> 重複取得防止のためチェックに利用
-        #
+        # イベント -> 最後に取得したイベントをAPIのパラメータに利用するため（探しやすいようにID降順で後ろから検索）
         try:
             sqliteDB.db_cursor.execute(
-                "SELECT id, event, fetched_time, sent_flag FROM events WHERE event_collection_settings_name=? ORDER BY fetched_time, id",
+                "SELECT id, event, fetched_time, sent_flag FROM events WHERE event_collection_settings_name=? ORDER BY fetched_time DESC, id DESC",
                 (setting["EVENT_COLLECTION_SETTINGS_NAME"], )
             )
             saved_event_data_list = sqliteDB.db_cursor.fetchall()
@@ -176,6 +176,12 @@ def setNotAvailable(event, reason=True):
     """
     設定が間違っていて、本来取り込めないはずのイベントに、フラグをつけておいて取り込めるようにする
     """
+    if isinstance(event, dict) is False:
+        raw_data = event
+        return {
+            "_exastro_raw_data": raw_data,
+            "_exastro_not_available": reason
+        }
     if "_exastro_not_available" not in event:
         event["_exastro_not_available"] = reason
 
@@ -186,6 +192,11 @@ def checkEventIdKey(event, event_id_key, event_collection_settings_id):
     """
     設定されたイベントIDキーの値でキーが取得できるか確認し、出来なければ「利用できない」フラグをonにする
     """
+    if isinstance(event, dict) is False:
+        raw_data = event
+        event = {
+            "_exastro_raw_data": raw_data
+        }
     event_id = get_value_from_jsonpath(event_id_key, event)
     if event_id is None:
         # イベントIDキーが取得できない場合

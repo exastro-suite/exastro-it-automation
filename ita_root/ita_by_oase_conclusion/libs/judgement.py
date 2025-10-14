@@ -392,7 +392,7 @@ class Judgement:
                 event = filtered_event_map[filter_id]
                 if (
                     filter_row["SEARCH_CONDITION_ID"] != oaseConst.DF_SEARCH_CONDITION_GROUPING or
-                    event is None
+                    not event
                 ):
                     continue
                 # グルーピングの実行

@@ -16,6 +16,7 @@ from flask import g
 
 import datetime
 from pymongo import InsertOne
+import os
 
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectWs
@@ -25,10 +26,10 @@ from common_libs.api import api_filter
 # oase
 from common_libs.oase.const import oaseConst
 from common_libs.oase.encrypt import agent_encrypt
+from common_libs.notification.sub_classes.oase import OASE, OASENotificationType
 from libs.oase_receiver_common import check_menu_info, check_auth_menu
 from libs.label_event import label_event
 from libs.duplicate_check import duplicate_check
-from common_libs.notification.sub_classes.oase import OASE, OASENotificationType
 
 
 @api_filter
@@ -73,9 +74,9 @@ def post_event_collection_settings(body, organization_id, workspace_id):  # noqa
 
         # エージェント用にパスワードカラムを暗号化しなおす
         for data in data_list:
-            auth_token = ky_decrypt(data["AUTH_TOKEN"])
-            password = ky_decrypt(data['PASSWORD'])
-            secret_access_key = ky_decrypt(data['SECRET_ACCESS_KEY'])
+            auth_token = ky_decrypt(data["AUTH_TOKEN"])  # noqa: F405
+            password = ky_decrypt(data['PASSWORD'])  # noqa: F405
+            secret_access_key = ky_decrypt(data['SECRET_ACCESS_KEY'])  # noqa: F405
 
             pass_phrase = g.ORGANIZATION_ID + " " + g.WORKSPACE_ID
             data['AUTH_TOKEN'] = agent_encrypt(auth_token, pass_phrase)
@@ -88,7 +89,7 @@ def post_event_collection_settings(body, organization_id, workspace_id):  # noqa
 
 
 @api_filter
-def post_events(body, organization_id, workspace_id):  # noqa: E501
+def post_events(body: str, organization_id: str, workspace_id: str) -> tuple:  # noqa: E501
     """post_events
 
     イベントを受け取り、ラベリングして保存する # noqa: E501
@@ -131,6 +132,9 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
         not_available_event_msg_list = []
         # エラーレスポンスを返す場合
         is_err_res = False
+        # 通知キューに追加するイベント
+        recieve_notification_list = []
+        duplicate_notification_list = []
 
         # エージェント名、バージョンの初期値
         _undefined_agent_name = oaseConst.DF_AGENT_NAME
@@ -189,7 +193,7 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
                 continue
 
             # 取得時間がなければ、受信時刻を埋める
-            if not "fetched_time" in event_group:
+            if "fetched_time" not in event_group:
                 fetched_time = int(datetime.datetime.now().timestamp())
             else:
                 fetched_time = int(event_group["fetched_time"])
@@ -205,7 +209,7 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
                 for _k, _v in _undefined_exastro_agent.items():
                     exastro_agent[_k] = exastro_agent[_k] or _v
             else:
-                exastro_agent =  _undefined_exastro_agent
+                exastro_agent = _undefined_exastro_agent
 
             # エージェント名またはバージョンが未定義の場合に警告ログを出力
             undefined_items = []
@@ -248,16 +252,16 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
                 single_event['_exastro_agent_name'] = exastro_agent.get("name")
                 single_event['_exastro_agent_version'] = exastro_agent.get("version")
                 # 必要なプロパティを一旦、なければ追加する
-                if not "_exastro_event_collection_settings_name" in single_event:
+                if "_exastro_event_collection_settings_name" not in single_event:
                     single_event['_exastro_event_collection_settings_name'] = event_collection_settings_name
 
-                if not "_exastro_event_collection_settings_id" in single_event:
+                if "_exastro_event_collection_settings_id" not in single_event:
                     single_event['_exastro_event_collection_settings_id'] = event_collection_settings_id
 
-                if not "_exastro_fetched_time" in single_event:
+                if "_exastro_fetched_time" not in single_event:
                     single_event['_exastro_fetched_time'] = fetched_time
 
-                if not "_exastro_end_time" in single_event:
+                if "_exastro_end_time" not in single_event:
                     single_event['_exastro_end_time'] = end_time
 
                 # 未来の削除用に生成時刻をもたせておく
@@ -274,23 +278,28 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
                 return not_available_event_msg_list,
             else:
                 # 不正データ受信と判断し、エラーレスポンス
-                raise AppException("499-01802", [", ".join(not_available_event_msg_list)], [", ".join(not_available_event_msg_list)])
+                raise AppException("499-01802", [", ".join(not_available_event_msg_list)], [", ".join(not_available_event_msg_list)])  # noqa: F405
 
         # ラベリングしてMongoDBに保存
         labeled_event_list = label_event(wsDb, wsMongo, events)  # noqa: F841
 
         try:
             # 重複排除してmongoに書き込む
-            duplicate_check_result = duplicate_check(wsDb, wsMongo, labeled_event_list)
+            duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check(wsDb, wsMongo, labeled_event_list)
             if duplicate_check_result is False:
                 # 重複排除を行わなかった場合は、ラベル付きデータを保存
                 labeled_event_collection = wsMongo.collection(mongoConst.LABELED_EVENT_COLLECTION)  # ラベル付与したイベントデータを保存するためのコレクション
                 labeled_event_collection.bulk_write([InsertOne(x) for x in labeled_event_list])
-        except Exception as e:
-            g.applogger.error(stacktrace())
-            err_code = "499-01803"
-            raise AppException(err_code, [e], [e])
+                # InsertOneなのでイベント受信対象に追加
+                recieve_notification_list = labeled_event_list
 
+        except Exception as e:
+            g.applogger.error(stacktrace())  # noqa: F405
+            err_code = "499-01803"
+            raise AppException(err_code, [e], [e])  # noqa: F405
+
+        # 通知キューへの追加
+        add_notification_queue(wsDb, recieve_notification_list, duplicate_notification_list)  # noqa: F841
 
         # MySQLにイベント収集設定IDとfetched_timeを保存する処理を行う
         wsDb.db_transaction_start()
@@ -307,11 +316,13 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
         fetched_time_limit = int(datetime.datetime.now().timestamp()) - event_collections_progress_ttl
 
         values_list = [fetched_time_limit] + event_collection_settings_id_list
-        ret = wsDb.table_count(oaseConst.T_OASE_EVENT_COLLECTION_PROGRESS, "WHERE `FETCHED_TIME` < %s and `EVENT_COLLECTION_SETTINGS_ID` in ({})".format(','.join(["%s"]*len(event_collection_settings_id_list))), values_list)  # noqa: F841
+        ret = wsDb.table_count(oaseConst.T_OASE_EVENT_COLLECTION_PROGRESS, "WHERE `FETCHED_TIME` < %s and `EVENT_COLLECTION_SETTINGS_ID` in ({})".format(','.join(["%s"] * len(event_collection_settings_id_list))), values_list)  # noqa: F841
 
         if ret > 0:
             wsDb.db_transaction_start()
-            ret = wsDb.table_permanent_delete(oaseConst.T_OASE_EVENT_COLLECTION_PROGRESS, "WHERE `FETCHED_TIME` < %s and `EVENT_COLLECTION_SETTINGS_ID` in ({})".format(','.join(["%s"]*len(event_collection_settings_id_list))), values_list)  # noqa: F841
+            ret = wsDb.table_permanent_delete(
+                oaseConst.T_OASE_EVENT_COLLECTION_PROGRESS,
+                "WHERE `FETCHED_TIME` < %s and `EVENT_COLLECTION_SETTINGS_ID` in ({})".format(','.join(["%s"] * len(event_collection_settings_id_list))), values_list)  # noqa: F841
             wsDb.db_transaction_end(True)
 
     finally:

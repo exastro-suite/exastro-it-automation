@@ -28,7 +28,7 @@ from urllib3.util import Retry
 
 
 class Notification(ABC):
-    
+
     """
     通知に関する共通の振る舞いを定義するクラス
     """
@@ -243,12 +243,13 @@ class Notification(ABC):
     _setting_notification_cache_ws_id = None
 
     @classmethod
-    def _call_setting_notification_api(cls, event_type_true: list = None, event_type_false: list = None):
+    def _call_setting_notification_api(cls, event_type_true: list = None, event_type_false: list = None, use_cache: bool = True):
         """
         通知先取得APIを呼び出し、結果を返却する
         Args:
             event_type_true (list, optional): 指定したevent_typeがtrueのデータを抽出したい場合に指定する。 Defaults to None.
             event_type_false (list, optional): 指定したevent_typeがfalseのデータを抽出したい場合に指定する。 Defaults to None.
+            use_cache (bool, optional): キャッシュを使用するかどうかを指定する。 Defaults to True.
 
         Raises:
             AppException: _description_
@@ -286,39 +287,39 @@ class Notification(ABC):
             # 現状はこの設定だが上で動くように修正される予定（区切り文字が|から,に変わる）
             query_params["event_type_false"] = "|".join(event_type_false)
 
-        if json.dumps(query_params) in cls._setting_notification_cache:
+        if use_cache and json.dumps(query_params) in cls._setting_notification_cache:
             # キャッシュにデータがある場合はキャッシュの情報を返す
             return cls._setting_notification_cache[json.dumps(query_params)]
-        else:
-            # キャッシュにデータがない場合はAPIを呼び出す
 
-            # API呼出
-            api_url = f"http://{host_name}:{port}/internal-api/{organization_id}/platform/workspaces/{workspace_id}/settings/notifications"
+        # キャッシュにデータがない場合、またはキャッシュを使用しない場合はAPIを呼び出す
 
-            s = requests.Session()
+        # API呼出
+        api_url = f"http://{host_name}:{port}/internal-api/{organization_id}/platform/workspaces/{workspace_id}/settings/notifications"
 
-            retries = Retry(total=5,
-                            backoff_factor=1)
+        s = requests.Session()
 
-            s.mount('http://', HTTPAdapter(max_retries=retries))
-            s.mount('https://', HTTPAdapter(max_retries=retries))
+        retries = Retry(total=5,
+                        backoff_factor=1)
 
-            request_response = s.request(method='GET', url=api_url, timeout=2, headers=header_para, params=query_params)
+        s.mount('http://', HTTPAdapter(max_retries=retries))
+        s.mount('https://', HTTPAdapter(max_retries=retries))
 
-            response_data = request_response.json()
+        request_response = s.request(method='GET', url=api_url, timeout=2, headers=header_para, params=query_params)
 
-            if request_response.status_code != 200:
-                raise AppException('999-00005', [api_url, response_data])
+        response_data = request_response.json()
 
-            g.applogger.debug(g.appmsg.get_log_message("BKY-80015"))
-            g.applogger.debug(g.appmsg.get_log_message("BKY-80016", [len(response_data['data'])]))
-            for index, item in enumerate(response_data["data"]):
-                g.applogger.debug(g.appmsg.get_log_message("BKY-80017", [index + 1, item.get('id'), item.get('name')]))
+        if request_response.status_code != 200:
+            raise AppException('999-00005', [api_url, response_data])
 
-            # 通知先の情報をキャッシュに保存する
-            cls._setting_notification_cache[json.dumps(query_params)] = response_data
+        g.applogger.debug(g.appmsg.get_log_message("BKY-80015"))
+        g.applogger.debug(g.appmsg.get_log_message("BKY-80016", [len(response_data['data'])]))
+        for index, item in enumerate(response_data["data"]):
+            g.applogger.debug(g.appmsg.get_log_message("BKY-80017", [index + 1, item.get('id'), item.get('name')]))
 
-            return response_data
+        # 通知先の情報をキャッシュに保存する
+        cls._setting_notification_cache[json.dumps(query_params)] = response_data
+
+        return response_data
 
     # 送信バッファ
     #   _send_buffer: 送信バッファ本体
@@ -503,13 +504,16 @@ class Notification(ABC):
         return {}
 
     @classmethod
-    def fetch_notification_destination_dict(cls):
+    def fetch_notification_destination_dict(cls, use_cache: bool = True):
         """
         通知先IDと通知先名称のdictを取得する
+
+        Args:
+            use_cache (bool, optional): キャッシュを使用するかどうかを指定する。 Defaults to True.
         Returns:
-           Key: 通知先ID, Value: 通知先名のdict
+            Key: 通知先ID, Value: 通知先名のdict
         """
-        fetch_data = cls._call_setting_notification_api()
+        fetch_data = cls._call_setting_notification_api(use_cache=use_cache)
         data = fetch_data["data"]
 
         result = {}

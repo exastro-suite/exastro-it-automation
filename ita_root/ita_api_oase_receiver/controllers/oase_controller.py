@@ -143,25 +143,7 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
             event_group_list.sort(key=lambda x: x['fetched_time'])
         for event_group in event_group_list:
             # event_collection_settings_nameもしくは、event_collection_settings_idは必須
-            if "event_collection_settings_id" in event_group:
-                event_collection_settings_id = event_group["event_collection_settings_id"]
-                event_collection_settings = wsDb.table_select(oaseConst.T_OASE_EVENT_COLLECTION_SETTINGS, "WHERE EVENT_COLLECTION_SETTINGS_ID = %s ORDER BY DISUSE_FLAG", [event_collection_settings_id])  # noqa: E501
-                # 受信したデータに不備があるため、イベントは保存されませんでした。({})
-                if len(event_collection_settings) == 0:
-                    msg = g.appmsg.get_log_message("499-01801", [f"{event_collection_settings_id=}"])
-                    is_err_res = True
-                    not_available_event_msg_list.append(msg)
-                    g.applogger.info(msg)
-                    continue
-                # 設定が廃止済みのため、イベントは保存されませんでした。({})
-                elif event_collection_settings[0]['DISUSE_FLAG'] == '1':
-                    msg = g.appmsg.get_log_message("499-01827", [f"{event_collection_settings_id=}"])
-                    not_available_event_msg_list.append(msg)
-                    g.applogger.info(msg)
-                    continue
-
-                event_collection_settings_name = event_collection_settings[0]["EVENT_COLLECTION_SETTINGS_NAME"]
-            elif "event_collection_settings_name" in event_group:
+            if "event_collection_settings_name" in event_group:
                 event_collection_settings_name = event_group["event_collection_settings_name"]
                 event_collection_settings = wsDb.table_select(oaseConst.T_OASE_EVENT_COLLECTION_SETTINGS, "WHERE EVENT_COLLECTION_SETTINGS_NAME = %s ORDER BY DISUSE_FLAG", [event_collection_settings_name])  # noqa: E501
                 # 受信したデータに不備があるため、イベントは保存されませんでした。({})
@@ -179,6 +161,24 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
                     continue
 
                 event_collection_settings_id = event_collection_settings[0]["EVENT_COLLECTION_SETTINGS_ID"]
+            elif "event_collection_settings_id" in event_group:
+                event_collection_settings_id = event_group["event_collection_settings_id"]
+                event_collection_settings = wsDb.table_select(oaseConst.T_OASE_EVENT_COLLECTION_SETTINGS, "WHERE EVENT_COLLECTION_SETTINGS_ID = %s", [event_collection_settings_id])  # noqa: E501
+                # 受信したデータに不備があるため、イベントは保存されませんでした。({})
+                if len(event_collection_settings) == 0:
+                    msg = g.appmsg.get_log_message("499-01801", [f"{event_collection_settings_id=}"])
+                    is_err_res = True
+                    not_available_event_msg_list.append(msg)
+                    g.applogger.info(msg)
+                    continue
+                # 設定が廃止済みのため、イベントは保存されませんでした。({})
+                elif event_collection_settings[0]['DISUSE_FLAG'] == '1':
+                    msg = g.appmsg.get_log_message("499-01827", [f"{event_collection_settings_id=}"])
+                    not_available_event_msg_list.append(msg)
+                    g.applogger.info(msg)
+                    continue
+
+                event_collection_settings_name = event_collection_settings[0]["EVENT_COLLECTION_SETTINGS_NAME"]
             else:
                 # 受信したデータに不備があるため、イベントは保存されませんでした。({})
                 # # event_collection_settings_idもしくはevent_collection_settings_nameが必要です

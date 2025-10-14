@@ -339,14 +339,14 @@ def add_notification_queue(wsdb, recieve_notification_list, duplicate_notificati
     try:
         recieve_decision_information = {"notification_type": OASENotificationType.RECEIVE}
         duplicate_decision_information = {"notification_type": OASENotificationType.DUPLICATE}
-        # イベント種別ごとに分けてbulksendを呼び出す（受信時アラート）
+        # イベント種別ごとに分けてbulksendを呼び出す（新規（受信時））
         if recieve_notification_list:
             recieve_ret = OASE.bulksend(wsdb, recieve_notification_list, recieve_decision_information)
             # PF通知キューへの追加失敗があればログに出しておく
             if recieve_ret.get("failure", 0) > 0:
                 g.applogger.info(f'Notification API call Failed {recieve_ret["failure"]}: {recieve_ret["failure_info"]}')
             g.applogger.debug(g.appmsg.get_log_message("BKY-80018", [recieve_ret]))
-        # イベント種別ごとに分けてbulksendを呼び出す（重複排除アラート）
+        # イベント種別ごとに分けてbulksendを呼び出す（新規（統合時））
         if duplicate_notification_list:
             duplicate_ret = OASE.bulksend(wsdb, duplicate_notification_list, duplicate_decision_information)
             # PF通知キューへの追加失敗があればログに出しておく

@@ -28,6 +28,7 @@ from common_libs.oase.encrypt import agent_encrypt
 from libs.oase_receiver_common import check_menu_info, check_auth_menu
 from libs.label_event import label_event
 from libs.duplicate_check import duplicate_check
+from common_libs.notification.sub_classes.oase import OASE, OASENotificationType
 
 
 @api_filter
@@ -319,3 +320,43 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
         wsMongo.disconnect()
 
     return not_available_event_msg_list,
+
+
+def add_notification_queue(wsdb, recieve_notification_list, duplicate_notification_list):
+    """ スレッド処理で実施するイベント通知キューに追加する\n
+        Args:
+            wsdb: MariaDBのWSDBコネクション
+            recieve_notification_list: 受信時アラート通知用
+            duplicate_notification_list: 重複排除アラート通知用
+        Returns:
+            tuple: 2つの辞書 (recieve_ret, duplicate_ret)
+                - recieve_ret (dict): 受信時アラート通知処理の結果
+                - duplicate_ret (dict): 重複排除アラート通知処理の結果。
+
+    """
+    recieve_ret = {}
+    duplicate_ret = {}
+    try:
+        recieve_decision_information = {"notification_type": OASENotificationType.RECEIVE}
+        duplicate_decision_information = {"notification_type": OASENotificationType.DUPLICATE}
+        # イベント種別ごとに分けてbulksendを呼び出す（受信時アラート）
+        if recieve_notification_list:
+            recieve_ret = OASE.bulksend(wsdb, recieve_notification_list, recieve_decision_information)
+            # PF通知キューへの追加失敗があればログに出しておく
+            if recieve_ret.get("failure", 0) > 0:
+                g.applogger.info(f'Notification API call Failed {recieve_ret["failure"]}: {recieve_ret["failure_info"]}')
+            g.applogger.debug(g.appmsg.get_log_message("BKY-80018", [recieve_ret]))
+        # イベント種別ごとに分けてbulksendを呼び出す（重複排除アラート）
+        if duplicate_notification_list:
+            duplicate_ret = OASE.bulksend(wsdb, duplicate_notification_list, duplicate_decision_information)
+            # PF通知キューへの追加失敗があればログに出しておく
+            if duplicate_ret.get("failure", 0) > 0:
+                g.applogger.info(f'Notification API call Failed {duplicate_ret["failure"]}: {duplicate_ret["failure_info"]}')
+            g.applogger.debug(g.appmsg.get_log_message("BKY-80018", [duplicate_ret]))
+    except Exception:
+        # 通知処理の中で例外が発生したとしてもイベント自体はmongoに登録されているので、わざわざ例外発生はさせない
+        # ロガーのエラーレベルで出しておくくらい
+        g.applogger.error(stacktrace())
+        g.applogger.error(g.appmsg.get_log_message("BKY-80018", [[recieve_ret, duplicate_ret]]))
+
+    return recieve_ret, duplicate_ret

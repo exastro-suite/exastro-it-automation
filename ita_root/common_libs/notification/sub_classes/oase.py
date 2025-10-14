@@ -15,6 +15,9 @@
 import datetime
 import json
 from enum import Enum
+import copy
+import concurrent.futures
+import queue
 
 from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common.util import get_upload_file_path
@@ -39,6 +42,10 @@ class OASENotificationType(Enum):
     BEFORE_ACTION = 5
     # 事後通知
     AFTER_ACTION = 6
+    # 受信
+    RECEIVE = 10
+    # 重複排除
+    DUPLICATE = 20
 
 
 class OASE(Notification):
@@ -67,6 +74,14 @@ class OASE(Notification):
             "menu_id": "110102",
             "rest_name": "template_file"
         },
+        OASENotificationType.RECEIVE: {
+            "menu_id": "110102",
+            "rest_name": "template_file"
+        },
+        OASENotificationType.DUPLICATE: {
+            "menu_id": "110102",
+            "rest_name": "template_file"
+        },
         OASENotificationType.BEFORE_ACTION: {
             "menu_id": "110109",
             "rest_name": "before_notification"
@@ -83,6 +98,8 @@ class OASE(Notification):
         OASENotificationType.EVALUATED: "ita.event_type.evaluated",
         OASENotificationType.TIMEOUT: "ita.event_type.timeout",
         OASENotificationType.UNDETECTED: "ita.event_type.undetected",
+        OASENotificationType.RECEIVE: "ita.event_type.new_received",
+        OASENotificationType.DUPLICATE: "ita.event_type.new_consolidated",
     }
 
     DATA_CONVERT_MAP = {
@@ -97,6 +114,8 @@ class OASE(Notification):
         OASENotificationType.EVALUATED,
         OASENotificationType.TIMEOUT,
         OASENotificationType.UNDETECTED,
+        OASENotificationType.RECEIVE,
+        OASENotificationType.DUPLICATE
     ]
 
     DEFAULT_MARK = "●"
@@ -308,6 +327,14 @@ class OASE(Notification):
             OASENotificationType.UNDETECTED: {
                 **notification_template_common_base,
                 "condition_value": ["4"]  # 未知
+            },
+            OASENotificationType.RECEIVE: {
+                **notification_template_common_base,
+                "condition_value": ["0010"]  # 受信
+            },
+            OASENotificationType.DUPLICATE: {
+                **notification_template_common_base,
+                "condition_value": ["0020"]  # 重複
             },
             OASENotificationType.BEFORE_ACTION: {
                 **rule_base,

@@ -351,7 +351,7 @@ class ManageEvents:
                 "labels._exastro_undetected": "0",
                 "labels._exastro_end_time": {"$gte": judge_time},
                 "exastro_filter_group.is_first_event": True,
-                "exastro_filter_group.filter_id": {"$in": filter_map.keys()},
+                "exastro_filter_group.filter_id": {"$in": list(filter_map.keys())},
             }
         ).sort("labels._exastro_fetched_time", 1)
 

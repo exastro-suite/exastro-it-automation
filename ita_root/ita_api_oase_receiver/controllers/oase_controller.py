@@ -326,19 +326,19 @@ def add_notification_queue(wsdb, recieve_notification_list, duplicate_notificati
     """ スレッド処理で実施するイベント通知キューに追加する\n
         Args:
             wsdb: MariaDBのWSDBコネクション
-            recieve_notification_list: 受信時アラート通知用
-            duplicate_notification_list: 重複排除アラート通知用
+            recieve_notification_list: 新規（受信時）通知イベント
+            duplicate_notification_list: 新規（統合時）通知イベント
         Returns:
             tuple: 2つの辞書 (recieve_ret, duplicate_ret)
-                - recieve_ret (dict): 受信時アラート通知処理の結果
-                - duplicate_ret (dict): 重複排除アラート通知処理の結果。
+                - recieve_ret (dict): 新規（受信時）通知処理の結果
+                - duplicate_ret (dict): 新規（統合時）通知処理の結果
 
     """
     recieve_ret = {}
     duplicate_ret = {}
+
     try:
         recieve_decision_information = {"notification_type": OASENotificationType.RECEIVE}
-        duplicate_decision_information = {"notification_type": OASENotificationType.DUPLICATE}
         # イベント種別ごとに分けてbulksendを呼び出す（新規（受信時））
         if recieve_notification_list:
             recieve_ret = OASE.bulksend(wsdb, recieve_notification_list, recieve_decision_information)
@@ -346,6 +346,14 @@ def add_notification_queue(wsdb, recieve_notification_list, duplicate_notificati
             if recieve_ret.get("failure", 0) > 0:
                 g.applogger.info(f'Notification API call Failed {recieve_ret["failure"]}: {recieve_ret["failure_info"]}')
             g.applogger.debug(g.appmsg.get_log_message("BKY-80018", [recieve_ret]))
+    except Exception:
+        # 通知処理の中で例外が発生したとしてもイベント自体はmongoに登録されているので、わざわざ例外発生はさせない
+        # ロガーのエラーレベルで出しておくくらい
+        g.applogger.error(stacktrace())
+        g.applogger.error(g.appmsg.get_log_message("BKY-80018", [recieve_ret]))
+
+    try:
+        duplicate_decision_information = {"notification_type": OASENotificationType.DUPLICATE}
         # イベント種別ごとに分けてbulksendを呼び出す（新規（統合時））
         if duplicate_notification_list:
             duplicate_ret = OASE.bulksend(wsdb, duplicate_notification_list, duplicate_decision_information)
@@ -357,6 +365,6 @@ def add_notification_queue(wsdb, recieve_notification_list, duplicate_notificati
         # 通知処理の中で例外が発生したとしてもイベント自体はmongoに登録されているので、わざわざ例外発生はさせない
         # ロガーのエラーレベルで出しておくくらい
         g.applogger.error(stacktrace())
-        g.applogger.error(g.appmsg.get_log_message("BKY-80018", [[recieve_ret, duplicate_ret]]))
+        g.applogger.error(g.appmsg.get_log_message("BKY-80018", [duplicate_ret]))
 
     return recieve_ret, duplicate_ret

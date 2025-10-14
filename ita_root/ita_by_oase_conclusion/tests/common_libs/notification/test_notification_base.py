@@ -1,3 +1,17 @@
+#   Copyright 2025 NEC Corporation
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
 import pytest
 from unittest.mock import MagicMock
 import copy
@@ -7,6 +21,10 @@ import requests
 from jinja2 import Template, UndefinedError
 from common_libs.notification.notification_base import Notification
 from common_libs.common.exception import AppException
+import urllib3
+from unittest.mock import MagicMock, call
+from requests.exceptions import ConnectionError
+from common_libs.notification.sub_classes.oase import OASENotificationType
 
 
 # Notificationクラスの抽象メソッドを実装するモッククラス
@@ -330,3 +348,390 @@ def test_fetch_notification_destination_dict(app_context_with_mock_g, mocker):
 
     expected_dict = {"id1": "name1", "id2": "name2"}
     assert result == expected_dict
+
+
+# __call_notification_api_threadのテスト
+def test_call_notification_api_thread_complex_message_mapping(app_context_with_mock_g, mocker):
+    """
+    __call_notification_api_threadの正常系で通知テンプレート設定で複数の通知先を指定している場合、単一の通知先を指定している場合、デフォルトメッセージが混在する複雑なケースを確認
+    それぞれの通知先に正しいメッセージが送信されることを確認
+    """
+    # 環境変数のモック
+    mocker.patch.dict(os.environ, {'PLATFORM_API_HOST': 'localhost', 'PLATFORM_API_PORT': '8080'})
+
+    # requestsのモック
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_request = mocker.patch('requests.Session.request', return_value=mock_response)
+
+    # _get_dataのモック(モックするまでもなく固定値だけど)
+    mocker.patch.object(MockNotification, '_get_data', return_value={"func_id": "1102", "func_informations": {"menu_group_name": "OASE"}})
+
+    # 複雑なテストデータ
+    message_list = [
+        {"id": ["AA", "BB"], "message": {"title": "Title AA/BB", "message": "Message AA/BB"}, "IS_DEFAULT": None},  # 複数通知先が入っている
+        {"id": ["CC"], "message": {"title": "Title CC", "message": "Message CC"}, "IS_DEFAULT": None},  # 単一の通知先が入っている
+        {"id": None, "message": {"title": "Default Title", "message": "Default Message"}, "IS_DEFAULT": "●"},  # デフォルトメッセージ
+        {"id": "DD", "message": {"title": "Title DD", "message": "Message DD"}, "IS_DEFAULT": None},  # 原則来ないと思うけど一応条件分岐には入るので入れる
+    ]
+    notification_destination = ["AA", "BB", "CC", "DD", "EE"]  # 通知先EEはデフォルトメッセージを使用されることを期待
+    organization_id = "org1"
+    workspace_id = "ws1"
+    user_id = "user1"
+    language = "ja"
+
+    # テスト実行
+    result = MockNotification._Notification__call_notification_api_thread(
+        message_list, notification_destination, organization_id, workspace_id, user_id, language
+    )
+
+    # request.data から JSON データを抽出して検証
+    args, kwargs = mock_request.call_args
+    request_data = json.loads(kwargs['data'])
+
+    # 検証
+    assert result["success"] == 1
+    assert result["success_notification_count"] == len(request_data)
+
+    # 通知先ごとのメッセージが正しく設定されていることを確認
+    dest_messages = {}
+    for item in request_data:
+        dest_id = item["destination_id"]
+        if dest_id not in dest_messages:
+            dest_messages[dest_id] = []
+        dest_messages[dest_id].append(item["message"])
+
+    # AA宛てのメッセージは1つ
+    assert len(dest_messages.get("AA", [])) == 1
+    # AAのメッセージ確認
+    assert dest_messages.get("AA")[0]["title"] == "Title AA/BB"
+    assert dest_messages.get("AA")[0]["message"] == "Message AA/BB"
+    # BB宛てのメッセージは1つ
+    assert len(dest_messages.get("BB", [])) == 1
+    # BB宛てのメッセージはAA宛てのメッセージと同じ
+    assert dest_messages.get("BB")[0]["title"] == dest_messages.get("AA")[0]["title"]
+    assert dest_messages.get("BB")[0]["message"] == dest_messages.get("AA")[0]["message"]
+    # CC宛てのメッセージは1つ
+    assert len(dest_messages.get("CC", [])) == 1
+    # CC宛てのメッセージ確認
+    assert dest_messages.get("CC")[0]["title"] == "Title CC"
+    assert dest_messages.get("CC")[0]["message"] == "Message CC"
+    # DD宛てのメッセージは1つ
+    assert len(dest_messages.get("DD", [])) == 1
+    # DD宛てのメッセージ確認
+    assert dest_messages.get("DD")[0]["title"] == "Title DD"
+    assert dest_messages.get("DD")[0]["message"] == "Message DD"
+    # EE宛てのメッセージは1つ
+    assert len(dest_messages.get("EE", [])) == 1
+    # EE宛てのメッセージはデフォルトメッセージを使用
+    assert dest_messages.get("EE")[0]["title"] == "Default Title"
+    assert dest_messages.get("EE")[0]["message"] == "Default Message"
+
+
+def test_call_notification_api_thread_api_error(mocker):
+    """
+    __call_notification_api_threadがAPIエラー(非200ステータス)を適切に処理することを確認
+    """
+    # 環境変数のモック
+    mocker.patch.dict(os.environ, {'PLATFORM_API_HOST': 'localhost', 'PLATFORM_API_PORT': '8080'})
+
+    # requestsのモック - 500エラーを返す
+    mock_response = MagicMock()
+    mock_response.status_code = 500
+    mocker.patch('requests.Session.request', return_value=mock_response)
+
+    # _get_dataのモック(モックするまでもなく固定値だけど)
+    mocker.patch.object(MockNotification, '_get_data', return_value={"func_id": "1102", "func_informations": {"menu_group_name": "OASE"}})
+
+    # テストデータ
+    message_list = [
+        {"id": ["CC"], "message": {"title": "Title CC", "message": "Message CC"}, "IS_DEFAULT": None},  # 単一の通知先が入っている
+        {"id": None, "message": {"title": "Default Title", "message": "Default Message"}, "IS_DEFAULT": "●"}  # デフォルトメッセージ
+    ]
+    notification_destination = ["CC"]
+    organization_id = "org1"
+    workspace_id = "ws1"
+    user_id = "user1"
+    language = "ja"
+
+    # テスト実行
+    result = MockNotification._Notification__call_notification_api_thread(
+        message_list, notification_destination, organization_id, workspace_id, user_id, language
+    )
+
+    # 検証
+    assert result["success"] == 0
+    assert result["failure"] == 1
+    assert len(result["failure_info"]) == 1
+    assert "API Error: 500" in result["failure_info"][0]
+    assert result["failure_notification_count"] > 0
+    assert result["success_notification_count"] == 0
+
+
+def test_call_notification_api_thread_exception(mocker):
+    """
+    __call_notification_api_threadが例外を適切に処理することを確認
+    """
+    # 環境変数のモック
+    mocker.patch.dict(os.environ, {'PLATFORM_API_HOST': 'localhost', 'PLATFORM_API_PORT': '8080'})
+
+    # requestsのモック - 例外を発生させる
+    mocker.patch('requests.Session.request', side_effect=ConnectionError("Connection refused"))
+
+    # _get_dataのモック(モックするまでもなく固定値だけど)
+    mocker.patch.object(MockNotification, '_get_data', return_value={"func_id": "1102", "func_informations": {"menu_group_name": "OASE"}})
+
+    # テストデータ
+    message_list = [
+        {"id": ["CC"], "message": {"title": "Title CC", "message": "Message CC"}, "IS_DEFAULT": None},  # 単一の通知先が入っている
+        {"id": None, "message": {"title": "Default Title", "message": "Default Message"}, "IS_DEFAULT": "●"}  # デフォルトメッセージ
+    ]
+    notification_destination = ["CC"]
+    organization_id = "org1"
+    workspace_id = "ws1"
+    user_id = "user1"
+    language = "ja"
+
+    # テスト実行
+    result = MockNotification._Notification__call_notification_api_thread(
+        message_list, notification_destination, organization_id, workspace_id, user_id, language
+    )
+
+    # 検証
+    assert result["success"] == 0
+    assert result["failure"] == 1
+    assert len(result["failure_info"]) == 1
+    assert "Exception: Connection refused" in result["failure_info"][0]
+    assert result["failure_notification_count"] > 0
+    assert result["success_notification_count"] == 0
+
+
+def test_call_notification_api_thread_default_message_only(mocker):
+    """
+    __call_notification_api_threadがデフォルトメッセージのみで通知先が指定されていない（PFの通知先設定があるが、通知テンプレート設定は初期データ）場合の処理を確認
+    """
+    # 環境変数のモック
+    mocker.patch.dict(os.environ, {'PLATFORM_API_HOST': 'localhost', 'PLATFORM_API_PORT': '8080'})
+
+    # requestsのモック
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_request = mocker.patch('requests.Session.request', return_value=mock_response)
+
+    # _get_dataのモック(モックするまでもなく固定値だけど)
+    mocker.patch.object(MockNotification, '_get_data', return_value={"func_id": "1102", "func_informations": {"menu_group_name": "OASE"}})
+
+    # テストデータ - デフォルトメッセージのみ
+    message_list = [
+        {"id": None, "message": {"title": "Default Title", "message": "Default Message"}, "IS_DEFAULT": "●"}
+    ]
+    notification_destination = ["CC", "DD"]
+    organization_id = "org1"
+    workspace_id = "ws1"
+    user_id = "user1"
+    language = "ja"
+
+    # テスト実行
+    result = MockNotification._Notification__call_notification_api_thread(
+        message_list, notification_destination, organization_id, workspace_id, user_id, language
+    )
+
+    # APIが呼び出され、全ての通知先にデフォルトメッセージが送信されることを確認
+    mock_request.assert_called_once()
+    args, kwargs = mock_request.call_args
+    request_data = json.loads(kwargs['data'])
+    assert len(request_data) == 2
+
+    # 結果の検証
+    assert result["success"] == 1
+    assert result["failure"] == 0
+    assert result["success_notification_count"] == 2
+
+    # 通知先ごとのメッセージが正しく設定されていることを確認
+    dest_messages = {}
+    for item in request_data:
+        dest_id = item["destination_id"]
+        if dest_id not in dest_messages:
+            dest_messages[dest_id] = []
+        dest_messages[dest_id].append(item["message"])
+
+    # CC宛てのメッセージは1つ
+    assert len(dest_messages.get("CC", [])) == 1
+    # CC宛てのメッセージはデフォルトメッセージを使用
+    assert dest_messages.get("CC")[0]["title"] == "Default Title"
+    assert dest_messages.get("CC")[0]["message"] == "Default Message"
+    # DD宛てのメッセージは1つ
+    assert len(dest_messages.get("DD", [])) == 1
+    # DD宛てのメッセージはデフォルトメッセージを使用
+    assert dest_messages.get("DD")[0]["title"] == "Default Title"
+    assert dest_messages.get("DD")[0]["message"] == "Default Message"
+
+
+# bulksendのテスト
+def test_bulksend_success(app_context_with_mock_g, mocker):
+    """
+    bulksendメソッドが正常終了し、通知APIが正しく呼ばれることを確認
+    """
+    mock_dbca = MagicMock()
+    event_list = [{"_id": "0000", "labels": {"labelA": "01"}, "event": {"EVENT_RAWDATA": "is_here"}, "exastro_agents": {"test-ag01": "2.7.0"}, "exastro_created_at": "datetime.datetime(2025, 10, 1, 0, 0, 00, 000000)", "exastro_duplicate_check": ["a0f82210-b548-44a3-a9bb-9ac0f3c61232_test-ag01"], "exastro_duplicate_collection_settings_ids": {"a0f82210-b548-44a3-a9bb-9ac0f3c61232": 1}, "exastro_edit_count": 1}, {"_id": "0001", "labels": {"labelA": "02"}, "event": { "EVENT_RAWDATA": "is_here"}, "exastro_agents": {"test-ag01": 1}, "exastro_created_at": "datetime.datetime(2025, 10, 1, 0, 0, 00, 000000)", "exastro_duplicate_check": ["a0f82210-b548-44a3-a9bb-9ac0f3c61232_test-ag01"], "exastro_duplicate_collection_settings_ids": {"a0f82210-b548-44a3-a9bb-9ac0f3c61232": 1}, "exastro_edit_count": 1}]
+    decision_information = {"notification_type": OASENotificationType.RECEIVE}
+
+    # Mock environment variables
+    mocker.patch.dict(os.environ, {
+        'NOTIFICATION_BATCH_SIZE': '100',
+        'MAX_WORKER_THREAD_POOL_SIZE': '12',
+        'PLATFORM_API_HOST': 'localhost',
+        'PLATFORM_API_PORT': '8080'
+    })
+
+    # Set up g values
+    app_context_with_mock_g.get.side_effect = lambda key: {
+        'ORGANIZATION_ID': 'org1',
+        'WORKSPACE_ID': 'ws1',
+        'USER_ID': 'user1',
+        'LANGUAGE': 'ja'
+    }.get(key)
+
+    # Mock required methods
+    mocker.patch.object(MockNotification, '_fetch_table', return_value={'NOTIFICATION_DESTINATION': [{'id': None, 'UUID': '11', 'TEMPLATE_FILE': 'Receive.j2', 'IS_DEFAULT': '●'}, {'id': ['AA'], 'UUID': '4c9d73d2-4f21-4afe-bb5f-794da5398579', 'TEMPLATE_FILE': 'Receive.j2', 'IS_DEFAULT': None}]})
+    mocker.patch.object(MockNotification, '_get_template', return_value=[{'id': None, 'UUID': '11', 'TEMPLATE_FILE': 'Receive.j2', 'IS_DEFAULT': '●', 'template': '[TITLE]\nDefault Title\n[BODY]\nDefault Message'}, {'id': ['AA'], 'UUID': '4c9d73d2-4f21-4afe-bb5f-794da5398579', 'TEMPLATE_FILE': 'Receive.j2', 'IS_DEFAULT': None, 'template': '[TITLE]\nTitle AA\n[BODY]\nMessage AA'}])
+    mocker.patch.object(MockNotification, '_fetch_notification_destination', return_value=['AA', 'BB'])
+    mocker.patch.object(MockNotification, '_create_notise_message', side_effect=[{"id": None, "message": {"title": "Default Title", "message": "Default Message"}, "IS_DEFAULT": "●"}, {"id": "4c9d73d2-4f21-4afe-bb5f-794da5398579", "message":{"title": "Title AA", "message": "Message AA"}, "IS_DEFAULT": None}, {"id": None, "message":{"title": "Default Title", "message": "Default Message"}, "IS_DEFAULT": "●"}, {"id": "4c9d73d2-4f21-4afe-bb5f-794da5398579", "message":{"title": "Title AA", "message": "Message AA"}, "IS_DEFAULT": None}])
+
+    # Mock the thread execution method
+    mock_api_thread = mocker.patch.object(
+        MockNotification,
+        '_Notification__call_notification_api_thread',
+        return_value={
+            "success": 1,
+            "failure": 0,
+            "failure_info": [],
+            "success_notification_count": 4,
+            "failure_notification_count": 0
+        }
+    )
+
+    # Execute the method
+    result = MockNotification.bulksend(mock_dbca, event_list, decision_information)
+
+    # Verify the method calls
+    MockNotification._fetch_table.assert_called_once_with(mock_dbca, decision_information)
+    MockNotification._get_template.assert_called_once()
+    MockNotification._fetch_notification_destination.assert_called_once()
+
+    assert mock_api_thread.call_count == 1
+
+    # Check the result
+    assert result["success"] == 1
+    assert result["failure"] == 0
+    assert result["success_notification_count"] == 4
+    assert result["failure_notification_count"] == 0
+    assert result["failure_info"] == []
+
+
+def test_bulksend_fetch_table_none(app_context_with_mock_g, mocker):
+    """
+    _fetch_tableがNoneを返した場合にbulksendメソッドが適切に終了することを確認
+    """
+    mock_dbca = MagicMock()
+    mocker.patch.object(MockNotification, '_fetch_table', return_value=None)
+    event_list = [{"_id": "0000", "labels": {"labelA": "01"}, "event": {"EVENT_RAWDATA": "is_here"}, "exastro_agents": {"test-ag01": "2.7.0"}, "exastro_created_at": "datetime.datetime(2025, 10, 1, 0, 0, 00, 000000)", "exastro_duplicate_check": ["a0f82210-b548-44a3-a9bb-9ac0f3c61232_test-ag01"], "exastro_duplicate_collection_settings_ids": {"a0f82210-b548-44a3-a9bb-9ac0f3c61232": 1}, "exastro_edit_count": 1}, {"_id": "0001", "labels": {"labelA": "02"}, "event": { "EVENT_RAWDATA": "is_here"}, "exastro_agents": {"test-ag01": 1}, "exastro_created_at": "datetime.datetime(2025, 10, 1, 0, 0, 00, 000000)", "exastro_duplicate_check": ["a0f82210-b548-44a3-a9bb-9ac0f3c61232_test-ag01"], "exastro_duplicate_collection_settings_ids": {"a0f82210-b548-44a3-a9bb-9ac0f3c61232": 1}, "exastro_edit_count": 1}]
+    decision_information = {"notification_type": OASENotificationType.RECEIVE}
+    g = app_context_with_mock_g
+
+    result = MockNotification.bulksend(mock_dbca, event_list, decision_information)
+
+    assert result == {}
+    app_context_with_mock_g.applogger.info.assert_any_call(g.appmsg.get_log_message("BKY-80002"))
+
+
+def test_bulksend_get_template_none(app_context_with_mock_g, mocker):
+    """
+    _get_templateがNoneを含むリストを返した場合にbulksendメソッドが適切に終了することを確認
+    """
+    mock_dbca = MagicMock()
+    mocker.patch.object(MockNotification, '_fetch_table', return_value={'NOTIFICATION_DESTINATION': [{'id': None, 'UUID': '11', 'TEMPLATE_FILE': 'Receive.j2', 'IS_DEFAULT': '●'}, {'id': ['AA'], 'UUID': '4c9d73d2-4f21-4afe-bb5f-794da5398579', 'TEMPLATE_FILE': 'Receive.j2', 'IS_DEFAULT': None}]})
+    mocker.patch.object(MockNotification, '_get_template', return_value=[{'id': None, 'UUID': '11', 'TEMPLATE_FILE': 'Receive.j2', 'IS_DEFAULT': '●', 'template': None}, {'id': ['AA'], 'UUID': '4c9d73d2-4f21-4afe-bb5f-794da5398579', 'TEMPLATE_FILE': 'Receive.j2', 'IS_DEFAULT': None, 'template': None}])
+    event_list = [{"_id": "0000", "labels": {"labelA": "01"}, "event": {"EVENT_RAWDATA": "is_here"}, "exastro_agents": {"test-ag01": "2.7.0"}, "exastro_created_at": "datetime.datetime(2025, 10, 1, 0, 0, 00, 000000)", "exastro_duplicate_check": ["a0f82210-b548-44a3-a9bb-9ac0f3c61232_test-ag01"], "exastro_duplicate_collection_settings_ids": {"a0f82210-b548-44a3-a9bb-9ac0f3c61232": 1}, "exastro_edit_count": 1}, {"_id": "0001", "labels": {"labelA": "02"}, "event": { "EVENT_RAWDATA": "is_here"}, "exastro_agents": {"test-ag01": 1}, "exastro_created_at": "datetime.datetime(2025, 10, 1, 0, 0, 00, 000000)", "exastro_duplicate_check": ["a0f82210-b548-44a3-a9bb-9ac0f3c61232_test-ag01"], "exastro_duplicate_collection_settings_ids": {"a0f82210-b548-44a3-a9bb-9ac0f3c61232": 1}, "exastro_edit_count": 1}]
+    decision_information = {"notification_type": OASENotificationType.RECEIVE}
+    g = app_context_with_mock_g
+
+    result = MockNotification.bulksend(mock_dbca, event_list, decision_information)
+
+    assert result == {}
+    app_context_with_mock_g.applogger.info.assert_any_call(g.appmsg.get_log_message("BKY-80003"))
+
+
+def test_bulksend_fetch_notification_destination_empty(app_context_with_mock_g, mocker):
+    """
+    _fetch_notification_destinationが空リストを返した場合にbulksendメソッドが適切に終了することを確認
+    """
+    mock_dbca = MagicMock()
+    mocker.patch.object(MockNotification, '_fetch_table', return_value={'NOTIFICATION_DESTINATION': [{'id': None, 'UUID': '11', 'TEMPLATE_FILE': 'Receive.j2', 'IS_DEFAULT': '●'}, {'id': ['AA'], 'UUID': '4c9d73d2-4f21-4afe-bb5f-794da5398579', 'TEMPLATE_FILE': 'Receive.j2', 'IS_DEFAULT': None}]})
+    mocker.patch.object(MockNotification, '_get_template', return_value=[{'id': None, 'UUID': '11', 'TEMPLATE_FILE': 'Receive.j2', 'IS_DEFAULT': '●', 'template': '[TITLE]\nDefault Title\n[BODY]\nDefault Message'}, {'id': ['AA'], 'UUID': '4c9d73d2-4f21-4afe-bb5f-794da5398579', 'TEMPLATE_FILE': 'Receive.j2', 'IS_DEFAULT': None, 'template': '[TITLE]\nTitle AA\n[BODY]\nMessage AA'}])
+    mocker.patch.object(MockNotification, '_fetch_notification_destination', return_value=[])
+    event_list = [{"_id": "0000", "labels": {"labelA": "01"}, "event": {"EVENT_RAWDATA": "is_here"}, "exastro_agents": {"test-ag01": "2.7.0"}, "exastro_created_at": "datetime.datetime(2025, 10, 1, 0, 0, 00, 000000)", "exastro_duplicate_check": ["a0f82210-b548-44a3-a9bb-9ac0f3c61232_test-ag01"], "exastro_duplicate_collection_settings_ids": {"a0f82210-b548-44a3-a9bb-9ac0f3c61232": 1}, "exastro_edit_count": 1}, {"_id": "0001", "labels": {"labelA": "02"}, "event": { "EVENT_RAWDATA": "is_here"}, "exastro_agents": {"test-ag01": 1}, "exastro_created_at": "datetime.datetime(2025, 10, 1, 0, 0, 00, 000000)", "exastro_duplicate_check": ["a0f82210-b548-44a3-a9bb-9ac0f3c61232_test-ag01"], "exastro_duplicate_collection_settings_ids": {"a0f82210-b548-44a3-a9bb-9ac0f3c61232": 1}, "exastro_edit_count": 1}]
+    decision_information = {"notification_type": OASENotificationType.RECEIVE}
+    g = app_context_with_mock_g
+
+    result = MockNotification.bulksend(mock_dbca, event_list, decision_information)
+
+    assert result == {}
+    app_context_with_mock_g.applogger.info.assert_any_call(g.appmsg.get_log_message("BKY-80004"))
+
+
+def test_bulksend_process_event_call_api_error(app_context_with_mock_g, mocker):
+    """
+    イベント処理中にエラーが発生した場合、エラー情報が正しく収集されることを確認
+    """
+    mock_dbca = MagicMock()
+    event_list = [{"_id": "0000", "labels": {"labelA": "01"}, "event": {"EVENT_RAWDATA": "is_here"}, "exastro_agents": {"test-ag01": "2.7.0"}, "exastro_created_at": "datetime.datetime(2025, 10, 1, 0, 0, 00, 000000)", "exastro_duplicate_check": ["a0f82210-b548-44a3-a9bb-9ac0f3c61232_test-ag01"], "exastro_duplicate_collection_settings_ids": {"a0f82210-b548-44a3-a9bb-9ac0f3c61232": 1}, "exastro_edit_count": 1}, {"_id": "0001", "labels": {"labelA": "02"}, "event": { "EVENT_RAWDATA": "is_here"}, "exastro_agents": {"test-ag01": 1}, "exastro_created_at": "datetime.datetime(2025, 10, 1, 0, 0, 00, 000000)", "exastro_duplicate_check": ["a0f82210-b548-44a3-a9bb-9ac0f3c61232_test-ag01"], "exastro_duplicate_collection_settings_ids": {"a0f82210-b548-44a3-a9bb-9ac0f3c61232": 1}, "exastro_edit_count": 1}]
+    decision_information = {"notification_type": OASENotificationType.RECEIVE}
+
+    # Mock environment variables
+    mocker.patch.dict(os.environ, {
+        'NOTIFICATION_BATCH_SIZE': '100',
+        'MAX_WORKER_THREAD_POOL_SIZE': '12',
+        'PLATFORM_API_HOST': 'localhost',
+        'PLATFORM_API_PORT': '8080'
+    })
+
+    # Set up g values
+    app_context_with_mock_g.get.side_effect = lambda key: {
+        'ORGANIZATION_ID': 'org1',
+        'WORKSPACE_ID': 'ws1',
+        'USER_ID': 'user1',
+        'LANGUAGE': 'ja'
+    }.get(key)
+
+    # Mock required methods
+    mocker.patch.object(MockNotification, '_fetch_table', return_value={'NOTIFICATION_DESTINATION': [{'id': None, 'UUID': '11', 'TEMPLATE_FILE': 'Receive.j2', 'IS_DEFAULT': '●'}, {'id': ['AA'], 'UUID': '4c9d73d2-4f21-4afe-bb5f-794da5398579', 'TEMPLATE_FILE': 'Receive.j2', 'IS_DEFAULT': None}]})
+    mocker.patch.object(MockNotification, '_get_template', return_value=[{'id': None, 'UUID': '11', 'TEMPLATE_FILE': 'Receive.j2', 'IS_DEFAULT': '●', 'template': '[TITLE]\nDefault Title\n[BODY]\nDefault Message'}, {'id': ['AA'], 'UUID': '4c9d73d2-4f21-4afe-bb5f-794da5398579', 'TEMPLATE_FILE': 'Receive.j2', 'IS_DEFAULT': None, 'template': '[TITLE]\nTitle AA\n[BODY]\nMessage AA'}])
+    mocker.patch.object(MockNotification, '_fetch_notification_destination', return_value=['AA', 'BB'])
+
+    # Mock _create_notise_message to return None for one event (simulating error)
+    def side_effect(item, template):
+        if item["_id"] == "0000":
+            return {'id': None, 'UUID': '11', 'TEMPLATE_FILE': 'Receive.j2', 'IS_DEFAULT': '●', 'template': '[TITLE]\nDefault Title\n[BODY]\nDefault Message'}
+        return None
+
+    mocker.patch.object(MockNotification, '_create_notise_message', side_effect=side_effect)
+
+    # Mock the thread execution method
+    mocker.patch.object(
+        MockNotification,
+        '_Notification__call_notification_api_thread',
+        return_value={
+            "success": 0,
+            "failure": 0,
+            "failure_info": [],
+            "success_notification_count": 0,
+            "failure_notification_count": 0
+        }
+    )
+
+    # Execute the method
+    result = MockNotification.bulksend(mock_dbca, event_list, decision_information)
+
+    # Check that failure_create_messages has been populated
+    assert len(result["failure_create_messages"]) > 0

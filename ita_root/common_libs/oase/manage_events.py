@@ -400,7 +400,7 @@ class ManageEvents:
         # イベントのグループ情報を追加
         group_info: GroupingInformation = event.setdefault("exastro_filter_group", {})
         group_info["filter_id"] = filter_row["FILTER_ID"]
-        group_info["group_id"] = latest_group["first_event"]["_id"]
+        group_info["group_id"] = repr(latest_group["first_event"]["_id"])  # exastro_eventsに合わせてシリアライズ
         group_info["is_first_event"] = is_first_event
         # MongoDB更新
         WriterProcessManager.update_labeled_event_collection(
@@ -468,7 +468,10 @@ class ManageEvents:
         # キャッシュに存在しない場合はイベントのラベルから生成する
         if filter_row is None:
             raise ValueError("filter_row is required when attribute_key is not cached")
-        labels: dict[str] = event["labels"]
+        labels: dict[str] | None = event.get("labels")
+        if labels is None:
+            # IncidentDictに未登録のフィルターは空イベントを返すので、
+            return None
         group_condition_labels: list[str] = [
             getIDtoLabelName(self._label_master, label_key)
             for label_key in json.loads(filter_row["GROUP_LABEL_KEY_IDS"])

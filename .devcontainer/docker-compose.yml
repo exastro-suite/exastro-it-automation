@@ -147,8 +147,8 @@ services:
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
       - EVENT_COLLECTION_PROGRESS_TTL=${EVENT_COLLECTION_PROGRESS_TTL:-72}
-    # volumes:
-    #   - vol-ita-storage:/storage
+    volumes:
+      - vol-ita-storage:/storage
     networks:
       - exastro
 

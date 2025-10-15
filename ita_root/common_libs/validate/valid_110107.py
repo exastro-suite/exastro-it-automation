@@ -132,7 +132,7 @@ def db_filter_unique_check(objdbca, filter_id, target_value):
     where_str = ' where `FILTER_CONDITION_JSON` = %s'
     bind_value_list.append(target_value)
 
-    # 更新時自身をIDを除外
+    # 更新時自身のIDを除外
     # Exclude own ID when updating
     if filter_id is not None:
         if len(filter_id) != 0:
@@ -146,7 +146,7 @@ def db_filter_unique_check(objdbca, filter_id, target_value):
 
     # 廃止を対象外
     # Exclude abolition
-    where_str = where_str + " and `{}` == 0 ".format("DISUSE_FLAG")
+    where_str = where_str + " and `{}` = 0 ".format("DISUSE_FLAG")
 
     # 該当レコードの存在チェック
     # Check for the existence of the relevant record
@@ -172,16 +172,20 @@ def db_filter_group_unique_check(objdbca, filter_id, target_value, group_label_k
     bind_value_list = []
     where_str = ''
 
-    # フォルター条件・グループ条件の同一有無チェック
+    # ・グループ条件の同一有無チェック
     # Check for identical filter conditions and group conditions
-    where_str = ' where `FILTER_CONDITION_JSON` = %s' + \
-                ' and `GROUP_LABEL_KEY_IDS` = %s' + \
+    where_str = ' where `GROUP_LABEL_KEY_IDS` = %s' + \
                 ' and `GROUP_CONDITION_ID` = %s'
-    bind_value_list.append(target_value)
     bind_value_list.append(group_label_key_ids)
     bind_value_list.append(group_condition_id)
 
-    # 更新時自身をIDを除外
+    # フォルター条件が設定されていたら除外
+    # Exclude if filter condition is set
+    if target_value is not None:
+        where_str = where_str + ' and `FILTER_CONDITION_JSON` = %s'
+        bind_value_list.append(target_value)
+        
+    # 更新時自身のIDを除外
     # Exclude own ID when updating
     if filter_id is not None:
         if len(filter_id) != 0:
@@ -189,13 +193,13 @@ def db_filter_group_unique_check(objdbca, filter_id, target_value, group_label_k
             bind_value_list.append(filter_id)
 
     # 検索方法「グルーピング」を対象
-    # Target search method "Grouping" 
+    # Target search method "Grouping"
     where_str = where_str + " and `SEARCH_CONDITION_ID` = %s"
     bind_value_list.append(oaseConst.DF_SEARCH_CONDITION_GROUPING)
 
     # 廃止を対象外
     # Exclude abolition
-    where_str = where_str + " and `{}` == 0 ".format("DISUSE_FLAG")
+    where_str = where_str + " and `{}` = 0 ".format("DISUSE_FLAG")
 
     # 該当レコードの存在チェック
     # Check for the existence of the relevant record

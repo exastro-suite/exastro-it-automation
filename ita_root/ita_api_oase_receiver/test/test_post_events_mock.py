@@ -171,11 +171,136 @@ class TestPostEvents:
                 "_id": None
             }
         ]
+        expected_labeled_events_add_meta = [
+            {
+                "event": {
+                    "file": {},
+                    "parameter": {},
+                    "_exastro_oase_event_id": 1754629084041401
+                },
+                "labels": {
+                    "_exastro_event_collection_settings_id": "5f6c522f-d87e-4dc2-84a3-7f23ed71da8b",
+                    "_exastro_fetched_time": 1754629083,
+                    "_exastro_end_time": 1754629093,
+                    "_exastro_type": "event",
+                    "_exastro_checked": "0",
+                    "_exastro_evaluated": "0",
+                    "_exastro_undetected": "1",
+                    "_exastro_timeout": "0",
+                    "_exastro_agent_name": "Unknown",
+                    "_exastro_agent_version": "Unknown",
+                    "_exastro_not_available": "EVENT_ID_KEY not found"
+                },
+                "exastro_created_at": "2025-08-08T04:58:04.149676+00:00",
+                "_id": None,
+                "exastro_duplicate_collection_settings_ids": {
+                    "5f6c522f-d87e-4dc2-84a3-7f23ed71da8b": 1
+                },
+                "exastro_agents": {
+                    "Unknown": 1
+                },
+                "exastro_edit_count": 1
+            }
+        ]
+
         expected_bulk_writes = []
-        for labeled_event in expected_labeled_events:
+        for labeled_event in expected_labeled_events_add_meta:
             expected_bulk_writes.append(InsertOne(labeled_event))
-            
+
         mocker.patch('controllers.oase_controller.label_event', return_value=expected_labeled_events)
+        mocker.patch('controllers.oase_controller.duplicate_check', return_value=(True, expected_labeled_events_add_meta, []))
+
+        # アプリケーションコンテキストとリクエストコンテキストを両方有効にする: URLはダミー
+        with app.test_request_context('/oase/api/v1/event_collection/event_list/'):
+            result, status_code = post_events(self.body, self.organization_id, self.workspace_id)
+
+        # ステータスコードの検証
+        assert status_code == 200
+        assert result.get("message") == "SUCCESS"
+        assert result.get("data") == []
+        assert result.get("result") == "000-00000"
+        # bulk_write→find_one_and_update(モック)なので廃止。./test_duplicate_check.py 側のテスト
+
+    # 正常系のテスト # 重複排除0件
+    def test_post_events_success_bulk_no_deduplication_settings(self, app, mocker):
+        """正常な入力でイベントが正しく保存されることを確認する"""
+
+        # table_selectの戻り値を設定
+        self.mock_db_ws.table_select.side_effect = [
+            [{
+                "EVENT_COLLECTION_SETTINGS_ID": "12345",
+                "EVENT_COLLECTION_SETTINGS_NAME": "test_name",
+                "DISUSE_FLAG": "0",
+                "TTL": "3600"
+            }],
+            []  # event_collection_progressは空
+        ]
+        # table_insertの戻り値を設定
+        self.mock_db_ws.table_insert.return_value = [{
+            "EVENT_COLLECTION_ID": "1",
+            "EVENT_COLLECTION_SETTINGS_ID": "12345"
+        }]
+
+        self.mock_db_ws.db_transaction_start.return_value = True
+        self.mock_db_ws.db_transaction_end.return_value = True
+        self.mock_db_ws.table_permanent_delete.return_value = True
+        self.mock_db_ws.table_count.return_value = 0
+
+        expected_labeled_events = [
+            {
+                "event": {
+                    "file": {},
+                    "parameter": {},
+                    "_exastro_oase_event_id": 1754629084041401
+                },
+                "labels": {
+                    "_exastro_event_collection_settings_id": "5f6c522f-d87e-4dc2-84a3-7f23ed71da8b",
+                    "_exastro_fetched_time": 1754629083,
+                    "_exastro_end_time": 1754629093,
+                    "_exastro_type": "event",
+                    "_exastro_checked": "0",
+                    "_exastro_evaluated": "0",
+                    "_exastro_undetected": "1",
+                    "_exastro_timeout": "0",
+                    "_exastro_agent_name": "Unknown",
+                    "_exastro_agent_version": "Unknown",
+                    "_exastro_not_available": "EVENT_ID_KEY not found"
+                },
+                "exastro_created_at": "2025-08-08T04:58:04.149676+00:00",
+                "_id": None
+            }
+        ]
+        expected_labeled_events_add_meta = [
+            {
+                "event": {
+                    "file": {},
+                    "parameter": {},
+                    "_exastro_oase_event_id": 1754629084041401
+                },
+                "labels": {
+                    "_exastro_event_collection_settings_id": "5f6c522f-d87e-4dc2-84a3-7f23ed71da8b",
+                    "_exastro_fetched_time": 1754629083,
+                    "_exastro_end_time": 1754629093,
+                    "_exastro_type": "event",
+                    "_exastro_checked": "0",
+                    "_exastro_evaluated": "0",
+                    "_exastro_undetected": "1",
+                    "_exastro_timeout": "0",
+                    "_exastro_agent_name": "Unknown",
+                    "_exastro_agent_version": "Unknown",
+                    "_exastro_not_available": "EVENT_ID_KEY not found"
+                },
+                "exastro_created_at": "2025-08-08T04:58:04.149676+00:00",
+                "_id": None,
+            }
+        ]
+
+        expected_bulk_writes = []
+        for labeled_event in expected_labeled_events_add_meta:
+            expected_bulk_writes.append(InsertOne(labeled_event))
+
+        mocker.patch('controllers.oase_controller.label_event', return_value=expected_labeled_events)
+        mocker.patch('controllers.oase_controller.duplicate_check', return_value=(False, [], []))
 
         # アプリケーションコンテキストとリクエストコンテキストを両方有効にする: URLはダミー
         with app.test_request_context('/oase/api/v1/event_collection/event_list/'):

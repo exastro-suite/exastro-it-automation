@@ -70,7 +70,7 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
     # ラベル付与の設定を取得
     labeling_settings = wsDb.table_select(
         oaseConst.T_OASE_LABELING_SETTINGS,
-        "WHERE DISUSE_FLAG=0"
+        "WHERE DISUSE_FLAG=0 ORDER BY LABELING_SETTINGS_NAME ASC"
     )
     if len(labeling_settings) == 0:
         # ラベル付与設定を取得できませんでした。

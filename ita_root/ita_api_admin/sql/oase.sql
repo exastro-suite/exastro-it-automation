@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS T_OASE_EVENT_COLLECTION_SETTINGS_JNL
 -- イベント種別マスタ
 CREATE TABLE IF NOT EXISTS T_OASE_EVENT_TYPE
 (
-    EVENT_TYPE_ID                   VARCHAR(2),                                 -- イベント種別ID
+    EVENT_TYPE_ID                   VARCHAR(255),                               -- イベント種別ID
     EVENT_TYPE_NAME_JA              VARCHAR(255),                               -- イベント種別(ja)
     EVENT_TYPE_NAME_EN              VARCHAR(255),                               -- イベント種別(en)
     NOTE                            TEXT,                                       -- 備考

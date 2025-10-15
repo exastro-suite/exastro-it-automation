@@ -474,7 +474,7 @@ class ManageEvents:
             return None
         group_condition_labels: list[str] = [
             getIDtoLabelName(self._label_master, label_key)
-            for label_key in json.loads(filter_row["GROUP_LABEL_KEY_IDS"])
+            for label_key in json.loads(filter_row["GROUP_LABEL_KEY_IDS"])["id"]
         ]
         if filter_row["GROUP_CONDITION_ID"] == oaseConst.DF_GROUP_CONDITION_ID_TARGET:
             # 「を対象とする」の場合、ラベルに含まれる属性のみをキーとする

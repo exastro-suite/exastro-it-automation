@@ -185,6 +185,12 @@ def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
         if len(conditions_list) == 0:
             # insertしかありえない
             event["exastro_duplicate_check"] = [duplicate_check_key]
+
+            # bulk_writeの初期値対応(find_one_and_updateの$inc対応分)
+            event["exastro_duplicate_collection_settings_ids"] = {event["labels"]["_exastro_event_collection_settings_id"]: 1}
+            event["exastro_agents"] = {event["labels"]["_exastro_agent_name"]: 1}
+            event["exastro_edit_count"] = 1
+
             bulkwrite_event_list.append(InsertOne(event))
             recieve_notification_list.append(event)
             continue

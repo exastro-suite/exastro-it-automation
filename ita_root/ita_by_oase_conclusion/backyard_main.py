@@ -282,9 +282,6 @@ def JudgeMain(wsDb: DBConnectWs, judgeTime: int, EventObj: ManageEvents, actionO
 
             newIncidentCount[TargetLevel] = 0
 
-            # イベント数が減らずにループしている回数のカウンタを初期化する（無限ループ対策用）
-            loops_without_events_reduction = 0
-
             # 各レベルに対応したルール抽出
             TargetRuleList = judgeObj.TargetRuleExtraction(TargetLevel, ruleList, FiltersUsedinRulesDict, IncidentDict)
             g.applogger.debug(addline_msg('TargetRuleList={}'.format(TargetRuleList)))  # noqa: F405
@@ -295,13 +292,10 @@ def JudgeMain(wsDb: DBConnectWs, judgeTime: int, EventObj: ManageEvents, actionO
             while newIncident_Flg is True:
                 newIncident_Flg = False
 
-                # 判定前のイベント数を取得（無限ループ対策用）
-                prev_count_unevaluated_events = EventObj.count_unevaluated_events()
-
                 # region レベル毎のルール判定のループ
                 for ruleInfo in TargetRuleList:
                     # ルール判定
-                    ret, UseEventIdList = judgeObj.RuleJudge(ruleInfo, IncidentDict, actionIdList, filterIDMap)
+                    ret, UseEventIdList, judged_result_has_subsequent_event = judgeObj.RuleJudge(ruleInfo, IncidentDict, actionIdList, filterIDMap)
 
                     # ルール判定 マッチ
                     if ret is True:
@@ -380,7 +374,9 @@ def JudgeMain(wsDb: DBConnectWs, judgeTime: int, EventObj: ManageEvents, actionO
                             WriterProcessManager.update_oase_action_log(data_list)
                     else:
                         # ルール判定 アンマッチ
-                        pass
+                        if judged_result_has_subsequent_event:
+                            # 判定結果が後続イベントを含む場合は、ループ継続のために結論イベントが生じたものとして扱う
+                            newIncident_Flg = True
 
                 # endregion レベル毎のルール判定のループ
 
@@ -392,15 +388,8 @@ def JudgeMain(wsDb: DBConnectWs, judgeTime: int, EventObj: ManageEvents, actionO
                     tmp_msg = g.appmsg.get_log_message("BKY-90024", [TargetLevel])
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-                    # 判定後のイベント数を取得（無限ループ対策用）
-                    count_unevaluated_events = EventObj.count_unevaluated_events()
-
-                    if prev_count_unevaluated_events == count_unevaluated_events:
-                        # 判定前後の未評価イベント数に変わりがなかった回数をカウントアップ（無限ループ対策用）
-                        loops_without_events_reduction += 1
-
-                    if loops_without_events_reduction > len(ruleList) or newIncidentCount[TargetLevel] > evaluate_latent_infinite_loop_limit:
-                        # 未判定イベントがルールの回数以上で変わらない、もしくは一定回数以上繰り返した場合は抜ける
+                    if newIncidentCount[TargetLevel] > evaluate_latent_infinite_loop_limit:
+                        # 未判定イベントが一定回数以上繰り返した場合は抜ける
                         # ※無限ループ（ルール⇒結論イベント⇒ルール）の発生を回避するための条件
                         # Reached maximum amount of loops.
                         tmp_msg = g.appmsg.get_log_message("BKY-90025", [])

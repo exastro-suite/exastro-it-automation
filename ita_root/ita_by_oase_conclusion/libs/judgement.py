@@ -298,6 +298,8 @@ class Judgement:
         return TargetRuleList
 
     def RuleJudge(self, RuleRow, IncidentDict, actionIdList, filterIDMap):
+        # 判定結果が後続イベントを含むかどうか
+        judged_result_has_subsequent_event = False
         UseEventIdList = []
 
         # Rule verdict process started RULE_ID:{} RULE_NAME:{} FILTER_A:{} FILTER_OPERATOR:{} FILTER_B:{}
@@ -317,7 +319,7 @@ class Judgement:
         # ルールに設定されているアクションIDが異常ではないかチェック
         action_id = RuleRow['ACTION_ID']
         if action_id is not None and action_id not in actionIdList:
-            return False, UseEventIdList
+            return False, UseEventIdList, judged_result_has_subsequent_event
 
         # ルールに設定されている結論ラベルが異常ではないかチェック
         if type(RuleRow["CONCLUSION_LABEL_SETTINGS"]) is str:
@@ -327,7 +329,7 @@ class Judgement:
             label_key = row.get('label_key')
             name = getIDtoLabelName(self.LabelMasterDict, label_key)
             if name is False:
-                return False, UseEventIdList
+                return False, UseEventIdList, judged_result_has_subsequent_event
 
         FilterResultDict['Operator'] = str(RuleRow['FILTER_OPERATOR'])
 
@@ -398,6 +400,8 @@ class Judgement:
                 # グルーピングの実行
                 is_first_event = self.EventObj.grouping_event(event, filter_row)
                 if not is_first_event:
+                    judged_result_has_subsequent_event = True
+
                     # 後続イベントの場合はOASE Conclusion上ではイベント扱いとしない
 
                     # IncidentDictから削除する
@@ -412,14 +416,12 @@ class Judgement:
         else:
             tmp_msg = g.appmsg.get_log_message("BKY-90057", [RuleRow['RULE_ID'], RuleRow['RULE_NAME'], RuleRow['FILTER_A'], RuleRow['FILTER_OPERATOR'], RuleRow['FILTER_B']])
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-
-        if ret is False:
-            return False, UseEventIdList
+            return False, UseEventIdList, judged_result_has_subsequent_event
 
         for EventRow in FilterResultDict['EventList']:
             UseEventIdList.append(EventRow['_id'])
 
-        return True, UseEventIdList
+        return True, UseEventIdList, judged_result_has_subsequent_event
 
     def getFilterJudge(self, FilterId, IncidentDict, filterIDMap):
         # メモリーに保持しているIncidentDict[フィルターID:イベント]形式のリストの中から、これから判定に使うべきイベントを選ぶ

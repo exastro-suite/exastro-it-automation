@@ -193,7 +193,7 @@ def is_use_jinja2_variable(template_data_decoded):
     """
 
     # {{空白+jinja2変数+空白}}
-    pattern1 = r"\{\{( )*([a-zA-Z_][a-zA-Z0-9_]*?)( )*\}\}"
+    pattern1 = r"\{\{\s*([a-zA-Z_])(.*?)\s*\}\}"
     # {%+ifやjinja2変数など%}
     pattern2 = r"\{%(.*?)%\}"
 

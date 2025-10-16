@@ -170,10 +170,20 @@ class DummyObjDbca:
         # cmd_type=Updateの場合 (※Registerと同じ処理を通るので正常系と不正系を1パターンずつとする)
         # Bearer認証（接続方式1）
         #  ヘッダーのテスト
-        # 　正常なjinja2
+        #   正常なjinja2
         ("Update", "1", "1", None, None, "token", None, None, '{ "key": "{{ header_var }}" }', None, True, []),
         #   不正なjinja2構文 （制御構文の閉じタグがない）
-        ("Update", "1", "1", None, None, "token", None, None, '{% if value %}True', None, False, ["499-01815"])
+        ("Update", "1", "1", None, None, "token", None, None, '{% if value %}True', None, False, ["499-01815"]),
+
+        # 追加テスト
+        #   正常なjinja2構文（「ドット（.）」が含まれる）
+        ("Update", "1", "1", None, None, "token", None, None, '{ "key": "{{ aaa.bbb }}" }', None, True, []),
+        #   正常なjinja2構文（「|」「int + 1」が含まれスペースがある）
+        ("Update", "1", "1", None, None, "token", None, None, '{ "key": "{{ aaa|int + 1 }}" }', None, True, []),
+        #   正常なjinja2構文（「|」「int+1」が含まれスペースがない）
+        ("Update", "1", "1", None, None, "token", None, None, '{ "key": "{{ aaa|int+1 }}" }', None, True, []),
+        #   不正なjinja2構文 （「|」「+1」が含まれていてスペースがない）
+        ("Update", "1", "1", None, None, "token", None, None, '{ "key": "{{ aaa|+1 }}" }', None, False, []),
     ]
 )
 def test_agent_setting_valid(cmd_type, connection_method, request_method,
@@ -233,6 +243,16 @@ def test_agent_setting_valid(cmd_type, connection_method, request_method,
         ("", False),
         # jinja2構文と通常文字列混在
         ("abc {{ var }} def", True),
+        
+        # 追加テスト
+        #  jinja2構文で「ドット（.）」が含まれる場合
+        ("{{ aaa.bbb }}", True),
+        #  jinja2構文で「|」「int + 1」が含まれスペースがある場合
+        ("{{ aaa|int + 1 }}", True),
+        #  jinja2構文で「|」「int + 1」が含まれスペースがない場合
+        ("{{ aaa|int+1 }}", True),
+        #  jinja2構文で 「|」「+1」が含まれていてスペースがない場合
+        ("{{ aaa|+1 }}", True),
     ]
 )
 def test_is_use_jinja2_variable(template_data_decoded, expected):
@@ -275,6 +295,16 @@ def test_jinja2_template_none():
         ("", True),
         # None （不正）
         (None, False),
+        
+        # 追加テスト
+        #  jinja2構文で「ドット（.）」が含まれる場合（正常）
+        ("{{ aaa.bbb }}", True),
+        #  jinja2構文で「|」「int + 1」が含まれスペースがある場合（正常）
+        ("{{ aaa|int + 1 }}", True),
+        #  jinja2構文で「|」「int + 1」が含まれスペースがない場合（正常）
+        ("{{ aaa|int+1 }}", True),
+        #  jinja2構文で 「|」「+1」が含まれていてスペースがない場合（不正）
+        ("{{ aaa|+1 }}", False),
     ]
 )
 def test_is_jinja2_template(template_data_decoded, expected):

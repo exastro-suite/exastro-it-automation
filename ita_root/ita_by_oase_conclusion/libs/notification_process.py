@@ -213,7 +213,8 @@ class NotificationProcess():
                     
                     # 通知の送信バッファをフラッシュ
                     OASE.flush_send_buffer()
-                    
+                    OASE.clear_setting_notification_cache()
+
                     # DBコネクションを切断
                     if cls._objdbca is not None:
                         cls._objdbca.db_disconnect()

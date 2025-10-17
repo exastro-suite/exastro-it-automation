@@ -119,3 +119,54 @@ def getFilterIDMap(wsDb):
         filterIDMap[filter["FILTER_ID"]] = filter
 
     return filterIDMap
+
+
+def deduplication_timeout_filter(deduplication_settings, event):
+    """ 新規（統合時）イベントのTTL切れを抽出し通知対象であるかどうかを返却する\n
+        Args:
+            deduplication_settings (list): 重複排除設定のレコードリスト
+            event (dict): TTL切れイベントのget_eventsで取得したイベントデータ(EventRow)
+        Returns:
+            is_alert_target (bool): 新規（統合時）通知対象かどうかの判定結果
+    """
+
+    # 重複排除設定で単一の収集先が複数の冗長グループに入っている場合はそもそもアラート通知の対象外と出来るはず（アラート通知で前提条件として複数システムは対象外）
+    # _exastro_event_collection_settings_idから重複排除設定の冗長グループを特定する
+    # （ただデータパターンとしては一応あるので、エラー落ちしないよう単一の収集先が複数の冗長グループに入っているなら優先順位が一番高いもののみを使用）
+    # dedup_to_redundancy_ids-->重複排除設定IDをキーとし、冗長グループ(MultiIDColumn)のidリストを値とする辞書
+    dedup_to_redundancy_ids = {}
+    # source_to_dedup_id-->収集先設定IDをキーとし、自身が対象の重複排除設定IDを値とする辞書
+    source_to_dedup_id = {}
+    # 取り扱いしやすくするために収集先IDから冗長グループを特定する辞書を作成する
+    for deduplication_setting in deduplication_settings:
+        # 重複排除設定ID
+        deduplication_setting_id = deduplication_setting["DEDUPLICATION_SETTING_ID"]
+        # 冗長グループ
+        redundancy_ids = json.loads(deduplication_setting["EVENT_SOURCE_REDUNDANCY_GROUP"])["id"]
+        # dedup_to_redundancy_idsの構築-->重複排除設定IDをキーとし、冗長グループ(MultiIDColumn)のidリストを値とする
+        dedup_to_redundancy_ids[deduplication_setting_id] = redundancy_ids
+        # source_to_dedup_idの構築-->収集先設定IDをキーとし、自身が対象の重複排除設定IDを値とする
+        for source_id in redundancy_ids:
+            # 優先順位の昇順で回しているので既に入っているならスルー
+            if source_id not in source_to_dedup_id:
+                source_to_dedup_id[source_id] = deduplication_setting_id
+    # イベントから収集先設定IDを特定する
+    collection_id = event["labels"]["_exastro_event_collection_settings_id"]
+    # イベントから重複排除関連の情報を特定する
+    duplicate_ids = event.get("exastro_duplicate_collection_settings_ids", {})
+    # 収集先設定IDから自身が対象の重複排除設定を特定する
+    dedup_id = source_to_dedup_id.get(collection_id)
+    # 該当の重複排除設定から冗長グループを特定する
+    redundancy_group = dedup_to_redundancy_ids.get(dedup_id, [])
+    # 対象の冗長グループがexastro_duplicate_collection_settings_idsの辞書内に1以上で刻まれているならイベント自体はそろってるはず
+    is_alert_target = False
+    for target_source_id in redundancy_group:
+        # exastro_duplicate_collection_settings_idsにあるべき収集先設定IDがない、もしくは1以上の値を持っていない場合は重複排除アラートのTTL切れとして通知キューに入れる
+        if target_source_id not in duplicate_ids or duplicate_ids[target_source_id] < 1:
+            # 通知キューに入れるべきイベントとして認識した旨はログに出す
+            g.applogger.debug(f"EventID:{event['_id']} is an event that should be put into the deduplication timeout notification queue.")
+            is_alert_target = True
+            # 1つでも冗長グループの収集先が足りていないなら通知キューに入れるべきなのでここでループを抜ける
+            break
+    # 単純に対象かどうかのフラグを返す
+    return is_alert_target

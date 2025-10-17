@@ -25,7 +25,7 @@ from common_libs.oase.const import oaseConst
 from common_libs.oase.manage_events import ManageEvents
 from common_libs.notification.sub_classes.oase import OASE, OASENotificationType
 
-from libs.common_functions import addline_msg, InsertConclusionEvent, getRuleList, getFilterIDMap
+from libs.common_functions import addline_msg, InsertConclusionEvent, getRuleList, getFilterIDMap, deduplication_timeout_filter
 from libs.judgement import Judgement
 from libs.action import Action
 from libs.action_status_monitor import ActionStatusMonitor
@@ -143,17 +143,35 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
         tmp_msg = g.appmsg.get_log_message("BKY-90007", [str(update_Flag_Dict), str(timeout_Event_Id_List)])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-        # 通知処理（既知(時間切れ)）
-        timeout_notification_list = []
+        timeout_notification_list = []  # 通知処理（既知(時間切れ)）
+        timeout_consolidated_notification_list = []  # 通知処理（新規(統合時) TTL切れ）
+
+        # 新規(統合時) TTL切れ用に予め重複排除設定を取っておく
+        deduplication_settings = wsDb.table_select(
+            oaseConst.T_OASE_DEDUPLICATION_SETTINGS,
+            "WHERE DISUSE_FLAG='0' ORDER BY SETTING_PRIORITY, DEDUPLICATION_SETTING_NAME"
+        )
         for event_id in timeout_Event_Id_List:
             ret, EventRow = EventObj.get_events(event_id)
             if ret is True:
+                # 通知処理（既知(時間切れ)）用にリストに入れる
                 timeout_notification_list.append(EventRow)
+                # 通知処理（新規(統合時) TTL切れ）用にリストに入れる
+                if len(deduplication_settings) > 0 and deduplication_timeout_filter(deduplication_settings, EventRow) is True:
+                    timeout_consolidated_notification_list.append(EventRow)
 
+        # 通知処理（既知(時間切れ)）通知キューに入れる
         if len(timeout_notification_list) > 0:
             tmp_msg = g.appmsg.get_log_message("BKY-90008", ['Known(timeout)'])
             g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             NotificationProcessManager.send_notification(timeout_notification_list, {"notification_type": OASENotificationType.TIMEOUT})
+
+        # 通知処理（新規(統合時) TTL切れ）通知キューに入れる
+        if len(timeout_consolidated_notification_list) > 0:
+            tmp_msg = g.appmsg.get_log_message("BKY-90008", ['New(consolidated)'])
+            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+            # 通知キューに入れておく
+            NotificationProcessManager.send_notification(timeout_consolidated_notification_list, {"notification_type": OASENotificationType.DUPLICATE})
 
     # 「フィルター管理」からレコードのリストを取得
     filterIDMap = getFilterIDMap(wsDb)

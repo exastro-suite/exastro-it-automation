@@ -318,6 +318,33 @@ class ManageEvents:
 
         return True
 
+    def _update_label_force(
+        self, event_id_list: list[str], update_labels_dict: dict[str]
+    ):
+        """イベントキャッシュに存在しないイベントでも強制的にラベルの更新を行う
+
+        Args:
+            event_id_list (list[str]): 更新対象のイベントIDリスト
+            update_labels_dict (dict): 更新するラベル辞書
+        """
+        for event_id in event_id_list:
+            # キャッシュに存在する場合はキャッシュも更新
+            event = self.labeled_events_dict.get(event_id)
+            if event:
+                event["labels"].update(update_labels_dict)
+                self.collect_unevaluated_event(event_id, event)
+
+            # MongoDB更新
+            WriterProcessManager.update_labeled_event_collection(
+                {"_id": event_id},
+                {
+                    "$set": {
+                        f"labels.{key}": value
+                        for key, value in update_labels_dict.items()
+                    }
+                },
+            )
+
     def init_label_master(self, label_master: dict[str, str]) -> None:
         """ラベルマスタを初期化する
 
@@ -406,7 +433,7 @@ class ManageEvents:
         WriterProcessManager.update_labeled_event_collection(
             {"_id": event["_id"]}, {"$set": {"exastro_filter_group": group_info}}
         )
-        
+
         return is_first_event
 
     @staticmethod
@@ -440,7 +467,8 @@ class ManageEvents:
         if new_end_time > ttl_group["end_time"]:
             # グループの終了時間を更新
             ttl_group["end_time"] = new_end_time
-            self.update_label_flag(
+            # 先頭イベントの終了時間を更新(イベントキャッシュに存在しないケースも強制更新)
+            self._update_label_force(
                 [ttl_group["first_event"]["_id"]], {"_exastro_end_time": new_end_time}
             )
 

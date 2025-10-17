@@ -159,9 +159,9 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
                 # 取得したEventRowをそのまま使いまわす
                 if len(deduplication_settings) > 0:
                     deduplication_timeout_flg, deduplication_timeout_EventRow = deduplication_timeout_filter(deduplication_settings, EventRow)
-                # 通知処理（新規(統合時) TTL切れ）用にリストに入れる
-                if deduplication_timeout_flg is True:
-                    timeout_consolidated_notification_list.append(deduplication_timeout_EventRow)
+                    # 通知処理（新規(統合時) TTL切れ）用にリストに入れる
+                    if deduplication_timeout_flg is True:
+                        timeout_consolidated_notification_list.append(deduplication_timeout_EventRow)
 
         # 通知処理（既知(時間切れ)）通知キューに入れる
         if len(timeout_notification_list) > 0:

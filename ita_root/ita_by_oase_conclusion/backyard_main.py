@@ -156,6 +156,7 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
             if ret is True:
                 # 通知処理（既知(時間切れ)）用にリストに入れる
                 timeout_notification_list.append(EventRow)
+                # 通知処理（新規(統合時) TTL切れ）用にリストに入れる
                 if len(deduplication_settings) > 0 and deduplication_timeout_filter(deduplication_settings, EventRow) is True:
                     timeout_consolidated_notification_list.append(EventRow)
 

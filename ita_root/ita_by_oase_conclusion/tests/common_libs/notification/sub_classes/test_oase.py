@@ -107,12 +107,8 @@ def test_fetch_notification_destination_before_action_valid(app_context_with_moc
     # _call_setting_notification_apiのモック設定
     mocker.patch.object(OASE, '_call_setting_notification_api', return_value={"data": [{"id": "dest1"}, {"id": "dest2"}, {"id": "dest3"}]})
 
-    # メソッド呼び出しの前に、fetch_dataから必要な情報を取り出す
-    notification_destination_data = fetch_data.get("NOTIFICATION_DESTINATION")
-    notification_destination_id = notification_destination_data[0].get("id")
-
     # 修正後のメソッド呼び出し
-    result = OASE._fetch_notification_destination({"NOTIFICATION_DESTINATION": notification_destination_id}, decision_info)
+    result = OASE._fetch_notification_destination(fetch_data, decision_info)
     assert result == ["dest1", "dest2"]
 
 

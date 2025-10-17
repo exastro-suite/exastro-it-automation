@@ -436,6 +436,12 @@ class Notification(ABC):
 
         return response_data
 
+    @classmethod
+    def clear_setting_notification_cache(cls):
+        cls._setting_notification_cache = {}
+        cls._setting_notification_cache_org_id = None
+        cls._setting_notification_cache_ws_id = None
+
     # 送信バッファ
     #   _send_buffer: 送信バッファ本体
     #   _send_buffer_org_id: キャッシュ中のorganization id

@@ -26,24 +26,6 @@ class TestDeduplicationTimeoutFilter:
         return mock_db
 
     # データ上はあり得るケース
-    def test_no_deduplication_settings(self, app_context_with_mock_g):
-        """重複排除設定が存在しない場合のテスト"""
-
-        # Sample event list
-        event = {
-            "_id": "event123",
-            "labels": {"_exastro_event_collection_settings_id": "source1"},
-            "exastro_duplicate_collection_settings_ids": {}
-        }
-
-        # Call the function
-        result_flg, result_event = deduplication_timeout_filter([], event)
-
-        # Assertions
-        assert result_flg is False  # アラート対象でないこと
-        assert result_event == {}  # 空辞書が返ること
-        app_context_with_mock_g.applogger.debug.assert_called_once_with("There are no deduplication settings.")  # ログに出ていること
-
     def test_event_missing_required_source(self, app_context_with_mock_g):
         """重複排除設定の冗長グループの内、片方がイベントのexastro_duplicate_collection_settings_idsに含まれていない場合"""
         # Set up mock deduplication settings
@@ -64,11 +46,10 @@ class TestDeduplicationTimeoutFilter:
         }
 
         # Call the function
-        result_flg, result_event = deduplication_timeout_filter(deduplication_settings, event)
+        result_flg = deduplication_timeout_filter(deduplication_settings, event)
 
         # Assertions
         assert result_flg is True  # アラート対象であること
-        assert result_event["_id"] == "event123"  # 該当イベントが返ること
         app_context_with_mock_g.applogger.debug.assert_any_call("EventID:event123 is an event that should be put into the deduplication timeout notification queue.")  # ログに出ていること
 
     def test_event_with_source_value_zero(self, app_context_with_mock_g):
@@ -91,11 +72,10 @@ class TestDeduplicationTimeoutFilter:
         }
 
         # Call the function
-        result_flg, result_event = deduplication_timeout_filter(deduplication_settings, event)
+        result_flg = deduplication_timeout_filter(deduplication_settings, event)
 
         # Assertions
         assert result_flg is True  # アラート対象であること
-        assert result_event["_id"] == "event123"  # 該当イベントが返ること
         app_context_with_mock_g.applogger.debug.assert_any_call("EventID:event123 is an event that should be put into the deduplication timeout notification queue.")  # ログに出ていること
 
     def test_event_with_all_sources_present(self, mock_db, app_context_with_mock_g):
@@ -118,11 +98,10 @@ class TestDeduplicationTimeoutFilter:
         }
 
         # Call the function
-        result_flg, result_event = deduplication_timeout_filter(deduplication_settings, event)
+        result_flg = deduplication_timeout_filter(deduplication_settings, event)
 
         # Assertions
         assert result_flg is False  # アラート対象でないこと
-        assert result_event == {}  # 空辞書が返ること
 
     def test_multiple_deduplication_settings(self, mock_db, app_context_with_mock_g):
         """重複排除設定の冗長グループの内、単一の収集先が複数の冗長グループに入っている場合"""
@@ -151,11 +130,10 @@ class TestDeduplicationTimeoutFilter:
         }
 
         # Call the function
-        result_flg, result_event = deduplication_timeout_filter(deduplication_settings, event)
+        result_flg = deduplication_timeout_filter(deduplication_settings, event)
 
         # Assertions
         assert result_flg is True  # アラート対象であること
-        assert result_event["_id"] == "event123"  # 該当イベントが返ること
         app_context_with_mock_g.applogger.debug.assert_any_call("EventID:event123 is an event that should be put into the deduplication timeout notification queue.")  # ログに出ていること
 
     def test_collection_id_not_in_settings(self, mock_db, app_context_with_mock_g):
@@ -177,11 +155,10 @@ class TestDeduplicationTimeoutFilter:
         }
 
         # Call the function
-        result_flg, result_event = deduplication_timeout_filter(deduplication_settings, event)
+        result_flg = deduplication_timeout_filter(deduplication_settings, event)
 
         # Assertions
         assert result_flg is False  # アラート対象でないこと
-        assert result_event == {}  # 空辞書が返ること
 
     def test_single_source_redundancy_group(self, mock_db, app_context_with_mock_g):
         """重複排除設定の冗長グループに単一の収集先のみが含まれている場合"""
@@ -203,8 +180,7 @@ class TestDeduplicationTimeoutFilter:
         }
 
         # Call the function
-        result_flg, result_event = deduplication_timeout_filter(deduplication_settings, event)
+        result_flg = deduplication_timeout_filter(deduplication_settings, event)
 
         # Assertions
         assert result_flg is False  # アラート対象でないこと
-        assert result_event == {}  # 空辞書が返ること

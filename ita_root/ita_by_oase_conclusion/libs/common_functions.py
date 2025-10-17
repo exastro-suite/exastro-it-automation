@@ -122,18 +122,13 @@ def getFilterIDMap(wsDb):
 
 
 def deduplication_timeout_filter(deduplication_settings, event):
-    """ 新規（統合時）イベントのTTL切れを抽出し通知対象のイベントを返却する\n
+    """ 新規（統合時）イベントのTTL切れを抽出し通知対象であるかどうかを返却する\n
         Args:
             deduplication_settings (list): 重複排除設定のレコードリスト
             event (dict): TTL切れイベントのget_eventsで取得したイベントデータ(EventRow)
         Returns:
-            alert_event (dict): 新規（統合時）アラート対象(TTL切れ)のイベントデータ(EventRow)
+            is_alert_target (bool): 新規（統合時）通知対象かどうかの判定結果
     """
-
-    if len(deduplication_settings) == 0:
-        # 重複排除の設定を取得出来ない、又はそもそもないならその時点で終わり
-        g.applogger.debug("There are no deduplication settings.")
-        return False, {}
 
     # 重複排除設定で単一の収集先が複数の冗長グループに入っている場合はそもそもアラート通知の対象外と出来るはず（アラート通知で前提条件として複数システムは対象外）
     # _exastro_event_collection_settings_idから重複排除設定の冗長グループを特定する
@@ -173,9 +168,5 @@ def deduplication_timeout_filter(deduplication_settings, event):
             is_alert_target = True
             # 1つでも冗長グループの収集先が足りていないなら通知キューに入れるべきなのでここでループを抜ける
             break
-    # フラグついてるやつは通知キューに入れる用のリストに返す
-    # 実際にキューに入れるのはこの関数の呼び出し元で行う
-    if is_alert_target:
-        return True, event
-    else:
-        return False, {}
+    # 単純に対象かどうかのフラグを返す
+    return is_alert_target

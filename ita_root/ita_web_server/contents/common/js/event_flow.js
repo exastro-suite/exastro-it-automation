@@ -1520,6 +1520,8 @@ setupParts() {
     er.fetchParts('filter');
     er.fetchParts('action');
     er.fetchParts('rule');
+    er.fetchSettings('eventCollectionSettings');
+    er.fetchSettings('filterSettings');
 }
 /*
 ##################################################
@@ -1581,6 +1583,18 @@ fetchParts( type ) {
         }
     });
 }
+
+// ID変換用にイベント収集設定・フィルター設定を取得
+fetchSettings( type ) {
+    const er = this;
+    const settingsData = er.getSettingsData( type );
+    fn.fetch( settingsData.info, null, 'POST', settingsData.data ).then(function( data ){
+        er[ type ] = data;
+
+    }).catch(function( error ){
+        er[ type ] = { error }
+    });
+}
 /*
 ##################################################
     パーツデータ
@@ -1620,6 +1634,26 @@ getPartsData( type ) {
                 target: '.eventFlowPartsBlockRule',
                 partsRestId: 'rule_id',
                 partsRestName: 'rule_name'
+            };
+    }
+}
+
+// イベント収集設定・フィルター設定取得用パラメータ
+getSettingsData(type) {
+    switch ( type ) {
+        case 'eventCollectionSettings':
+            return {
+                info: '/menu/event_collection/filter/',
+                data: {
+                    discard: { NORMAL: '0'}
+                }
+            };
+        case 'filterSettings':
+            return {
+                info: '/menu/filter/filter/',
+                data: {
+                    discard: { NORMAL: '0'}
+                }
             };
     }
 }
@@ -2176,8 +2210,36 @@ viewEventInfo( x ) {
             html.push( er.eventInfoRowHtml('Rule ID', fn.cv( d.item.exastro_rules[0].id, ''), '') );
             html.push( er.eventInfoRowHtml('Rule name', fn.cv( d.item.exastro_rules[0].name, ''), '') );
         }
+        // ラベル
         html.push( er.eventInfoRowHtml('Labels', '', 'eventInfoTableLabelsBlank') );
         html.push(`<tr class="eventInfoTableTr"><td class="eventInfoTableTd eventInfoTableLabels" colspan="2">${fn.html.labelListHtml( d.item.labels, er.label )}</td></tr>`);
+
+        // 重複排除（イベントにexastro_duplicate_checkが付与されている時のみ表示）
+        if ( d.item.exastro_duplicate_check ) {
+            let eventCollectionSettingsExchange
+            if (er['eventCollectionSettings'].error ) {
+                eventCollectionSettingsExchange = null
+            } else {
+                eventCollectionSettingsExchange = er.eventCollectionSettings.reduce((acc, cur) => {
+                    acc[cur.parameter.event_collection_settings_id] = cur.parameter.event_collection_settings_name;
+                    return acc;
+                }, {});
+            }
+            html.push( er.eventInfoRowHtml('Deduplication', '', 'eventInfoTableLabelsBlank'));
+            html.push(`<tr class="eventInfoTableTr"><td class="eventInfoTableTd eventInfoTableLabels" colspan="2">${fn.html.deduplicationListHtml( d.item.exastro_duplicate_check, eventCollectionSettingsExchange )}</td></tr>`);
+        }
+
+        // グループ（イベントにexastro_filter_groupが付与されている時のみ表示）
+        if ( d.item.exastro_filter_group ) {
+            const targetFilter = ( er.filterSettings.error ) ? null : er.filterSettings.find(data => data.parameter.filter_id === d.item.exastro_filter_group.filter_id );
+            const groupData = {
+                group_id: d.item.exastro_filter_group.group_id,
+                filter_name: (targetFilter) ? targetFilter.parameter.filter_name : d.item.exastro_filter_group.filter_id,
+                first_event: d.item.exastro_filter_group.is_first_event
+            };
+            html.push( er.eventInfoRowHtml('Group', '', 'eventInfoTableLabelsBlank'));
+            html.push(`<tr class="eventInfoTableTr"><td class="eventInfoTableTd eventInfoTableLabels" colspan="2">${fn.html.labelListHtml( groupData, null, true )}</td></tr>`);
+        }
     }
 
     const tableHtml = `<table class="eventInfoTable">${html.join('')}</table>`;

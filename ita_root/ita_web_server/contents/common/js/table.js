@@ -7654,8 +7654,22 @@ partsBodyHtml( type, parameter ) {
 ##################################################
 */
 partsFilterHtml( parameter ) {
+    const html = [];
     const labelList = parameter.filter_condition_json;
-    return fn.html.labelListHtml( labelList, this.label );
+    const filterHtml = fn.html.labelListHtml( labelList, this.label );
+    html.push(filterHtml);
+    if ( parameter.group_condition ) {
+        const groupCondition = ( parameter.group_condition === "を対象とする" || parameter.group_condition === "is the target" )? "Included": "Excluded";
+        const groupHtml = fn.html.labelListHtml( parameter.group_labels, this.label, true );
+        const groupTable = `<div class="eventFlowPartsFilterGroupTableWrap"><table class="eventFlowPartsFilterGroupTable">`
+            + `<tr>`
+            + `<th class="eventFlowPartsFilterTh">Group<br>${groupCondition}</th>`
+            + `<td class="eventFlowPartsFilterTd">${groupHtml}</td>`
+            + `</tr>`
+            + `</table></div>`;
+        html.push(groupTable)
+    }
+    return html.join('')
 }
 /*
 ##################################################

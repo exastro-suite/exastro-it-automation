@@ -137,7 +137,7 @@ def create_filter_row(
 
 def create_filter_row(
     search_condition_id: Literal["1", "2", "3"],
-    conditions: Iterable[tuple[str, Literal["1", "2"], str]],
+    search_conditions: Iterable[tuple[str, Literal["1", "2"], str]] | None,
     group_condition_id: Literal["1", "2"] | None = None,
     group_label_names: list[str] | None = None,
     *,
@@ -148,8 +148,12 @@ def create_filter_row(
         "FILTER_ID": filter_id or str(uuid.uuid4()),
         "DISUSE_FLAG": 0,
         "AVAILABLE_FLAG": 1,
-        "FILTER_CONDITION_JSON": json.dumps(
-            [create_filter_condition(*condition) for condition in conditions]
+        "FILTER_CONDITION_JSON": (
+            json.dumps(
+                [create_filter_condition(*condition) for condition in search_conditions]
+            )
+            if search_conditions
+            else None
         ),
         "SEARCH_CONDITION_ID": search_condition_id,
         # GROUP_LABEL_KEY_IDSのデータ形式はidフィールドにLABEL_KEY_IDのリストを持つ辞書をJSON文字列化したもの
@@ -312,7 +316,7 @@ class DummyDB:
                 }
                 for label_key_name, label_key_id in V_OASE_LABEL_KEY_GROUP.items()
             ],
-            oaseConst.T_OASE_DEDUPLICATION_SETTINGS: []
+            oaseConst.T_OASE_DEDUPLICATION_SETTINGS: [],
         }
 
     def db_transaction_end(self, flag):
@@ -1618,3 +1622,127 @@ def test_scenario_grouping_evaluated_first_events(
         event["labels"]["_exastro_type"]
         for event in ev_obj.labeled_events_dict.values()
     ].count("conclusion") == 0
+
+
+def test_scenario_grouping_without_filter_condition(
+    patch_global_g, patch_notification_and_writer, patch_common_functions, monkeypatch
+):
+    """JudgeMain: グルーピング: フィルター条件なしでグルーピングが正しく行われることを確認"""
+    # 結論イベントフィルタリング用のテストデータを設定したManageEventsを使用
+    group1_labels = {
+        "grp_label_1": "grp1_label_1",
+        "grp_label_2": "grp1_label_2",
+        "grp_label_3": "grp1_label_3",
+    }
+    group2_labels = {
+        "grp_label_1": "grp2_label_1",
+        "grp_label_2": "grp2_label_2",
+    }
+    judge_time = 1760486660
+
+    mock_mongo = MockMONGOConnectWs()
+    monkeypatch.setattr(bm, "MONGOConnectWs", lambda: mock_mongo)
+
+    mock_mongo.test_events = [
+        create_event(
+            "case1",
+            "case1-grp1-ev-01",
+            judge_time - 9,
+            judge_time + 1,
+            custom_labels=group1_labels,
+        ),
+        create_event(
+            "case1",
+            "case1-grp2-ev-01",
+            judge_time - 9,
+            judge_time + 1,
+            custom_labels=group2_labels,
+        ),
+    ]
+
+    ev_obj = ManageEvents(mock_mongo, judge_time)
+    ws_db = DummyDB("ws1")
+    # 必要なテーブルデータを設定（イベントがマッチしないフィルター条件）
+    ws_db.table_data["T_OASE_FILTER"] = [
+        # 結論イベント対策
+        create_filter_row(
+            oaseConst.DF_SEARCH_CONDITION_QUEUING,
+            [("_exastro_type", oaseConst.DF_TEST_EQ, "conclusion")],
+        ),
+        grouping_filter := create_filter_row(
+            oaseConst.DF_SEARCH_CONDITION_GROUPING,
+            None,  # フィルター条件なし
+            oaseConst.DF_GROUP_CONDITION_ID_TARGET,
+            ["grp_label_2", "grp_label_3", "grp_label_1"],
+        ),
+    ]
+    ws_db.table_data["T_OASE_RULE"] = [
+        create_rule_row(1, "rule_case1", grouping_filter),
+    ]
+    ws_db.table_data["T_OASE_ACTION"] = []
+    action_obj = Action(ws_db, ev_obj)
+
+    bm.JudgeMain(ws_db, judge_time, ev_obj, action_obj)
+
+    # グルーピングが正しく行われることの確認
+
+    group_ids = set()
+    for event in ev_obj.labeled_events_dict.values():
+        if event["labels"]["_exastro_type"] == "conclusion":
+            continue
+
+        group_info = event.get("exastro_filter_group")
+        assert group_info is not None
+        assert group_info["group_id"] == repr(event["_id"])
+        assert group_info["filter_id"] == grouping_filter["FILTER_ID"]
+        assert group_info["is_first_event"]
+
+        group_ids.add(group_info["group_id"])
+
+    assert len(group_ids) == 2
+
+    # 正しくグルーピング、結論イベント追加がされていることを確認
+
+    # 結論以外のイベントレコード
+    without_conclusion_event_records = [
+        event
+        for event in ev_obj.labeled_events_dict.values()
+        if event["labels"]["_exastro_type"] != "conclusion"
+    ]
+    # 結論イベントレコード
+    conclusion_event_records = [
+        event
+        for event in ev_obj.labeled_events_dict.values()
+        if event["labels"]["_exastro_type"] == "conclusion"
+    ]
+    # 実質的な結論以外のイベント
+    without_conclusion_events = [
+        event
+        for event in without_conclusion_event_records
+        if "exastro_filter_group" not in event or
+        event["exastro_filter_group"]["is_first_event"]
+    ]
+    # 実質的な結論イベント
+    conclusion_events = [
+        event
+        for event in conclusion_event_records
+        if "exastro_filter_group" not in event or
+        event["exastro_filter_group"]["is_first_event"]
+    ]
+
+    # 1. 1件目のイベント処理(F_A1にヒット→グループ1先頭イベント)
+    # 2. 1件目の結論イベント作成
+    # 3. 2件目のイベント処理(F_A1にヒット→グループ2先頭イベント)
+    # 4. 2件目の結論イベント作成
+    # 5. 1件目の結論イベント処理(F_A1にヒット→グループ3先頭イベント)
+    # 6. 3件目の結論イベント(1件目の結論イベントの結論イベント)作成
+    # 7. 2件目の結論イベント処理(F_A1にヒット→グループ3後続イベント)
+    # 8. 3件目の結論イベント処理(F_A1にヒット→グループ3後続イベント)
+    # 9. 処理できるイベントがなくなったため終了
+    #     → 結論以外のイベントがレコード2件、実質2件(先頭イベント2件)
+    #       結論イベントがレコード3件、実質1件(先頭イベント1件、後続イベント2件)
+
+    assert len(without_conclusion_event_records) == 2
+    assert len(without_conclusion_events) == 2
+    assert len(conclusion_event_records) == 3
+    assert len(conclusion_events) == 1

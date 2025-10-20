@@ -48,12 +48,13 @@ class Judgement:
         # 検索方法（1はユニーク、2はキューイング）
         search_condition_Id = FilterRow["SEARCH_CONDITION_ID"]
 
-        if type(FilterRow["FILTER_CONDITION_JSON"]) is str:
-            filter_condition_json = json.loads(FilterRow.get('FILTER_CONDITION_JSON'))
+        filter_condition_json = FilterRow["FILTER_CONDITION_JSON"]
+        if isinstance(filter_condition_json, str):
+            filter_condition = json.loads(filter_condition_json)
         else:
-            filter_condition_json = FilterRow.get('FILTER_CONDITION_JSON')
+            filter_condition = filter_condition_json if filter_condition_json is not None else []
 
-        for LabelRow in filter_condition_json:
+        for LabelRow in filter_condition:
             # ラベル毎のループ
             LabelKeyId = str(LabelRow['label_name'])
             LabelValue = str(LabelRow['condition_value'])
@@ -528,13 +529,14 @@ class Judgement:
         # ConclusionLablesDict = {'labels': {'httpd': 'down', 'server': 'web01'}}
         # FilterRow['FILTER_CONDITION_JSON'] = [{'key': 'c_01_name', 'condition': '0', 'value': 'c_01'}, {'key': 'c_02_name', 'condition': '0', 'value': 'c_02'}]
 
-        if type(FilterRow["FILTER_CONDITION_JSON"]) is str:
-            filter_condition_json = json.loads(FilterRow.get('FILTER_CONDITION_JSON'))
+        filter_condition_json = FilterRow["FILTER_CONDITION_JSON"]
+        if isinstance(filter_condition_json, str):
+            filter_condition = json.loads(filter_condition_json)
         else:
-            filter_condition_json = FilterRow.get('FILTER_CONDITION_JSON')
+            filter_condition = filter_condition_json if filter_condition_json is not None else []
 
         LabelHitCount = 0
-        for LabelRow in filter_condition_json:
+        for LabelRow in filter_condition:
             LabelKeyName = getIDtoLabelName(self.LabelMasterDict, LabelRow['label_name'])
             LabelValue = LabelRow['condition_value']
             LabelCondition = str(LabelRow['condition_type'])
@@ -561,7 +563,7 @@ class Judgement:
                 # g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 break
 
-        if LabelHitCount != len(filter_condition_json):
+        if LabelHitCount != len(filter_condition):
             tmp_msg = g.appmsg.get_log_message("BKY-90070", [])
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             return False

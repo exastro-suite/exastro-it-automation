@@ -289,17 +289,17 @@ class DummyDB:
         self.args_end = None
 
         # テーブル別のカスタムデータ（テストでオーバーライド可能）
-        self.table_data = {}
-
-        # マスタ類の初期値
-        self.table_data["V_OASE_LABEL_KEY_GROUP"] = [
-            {
-                "LABEL_KEY_ID": label_key_id,
-                "LABEL_KEY_NAME": label_key_name,
-                "DISUSE_FLAG": 0,
-            }
-            for label_key_name, label_key_id in V_OASE_LABEL_KEY_GROUP.items()
-        ]
+        self.table_data = {
+            oaseConst.V_OASE_LABEL_KEY_GROUP: [
+                {
+                    "LABEL_KEY_ID": label_key_id,
+                    "LABEL_KEY_NAME": label_key_name,
+                    "DISUSE_FLAG": 0,
+                }
+                for label_key_name, label_key_id in V_OASE_LABEL_KEY_GROUP.items()
+            ],
+            oaseConst.T_OASE_DEDUPLICATION_SETTINGS: []
+        }
 
     def db_transaction_end(self, flag):
         """トランザクション終了"""
@@ -310,8 +310,9 @@ class DummyDB:
         """データベース切断"""
         self.disconnected = True
 
-    def table_select(self, table, where, params):
+    def table_select(self, table, where="", params=None):
         """テーブル選択"""
+        params = params or []
         return self.table_data[table]
 
 

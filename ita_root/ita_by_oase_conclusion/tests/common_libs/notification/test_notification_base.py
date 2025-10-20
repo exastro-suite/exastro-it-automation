@@ -463,7 +463,7 @@ def test_call_notification_api_thread_api_error(mocker):
     assert result["success"] == 0
     assert result["failure"] == 1
     assert len(result["failure_info"]) == 1
-    assert "API Error: 500" in result["failure_info"][0]
+    assert "API Failed: 500" in result["failure_info"][0]
     assert result["failure_notification_count"] > 0
     assert result["success_notification_count"] == 0
 

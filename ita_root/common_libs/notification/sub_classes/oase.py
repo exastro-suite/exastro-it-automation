@@ -258,10 +258,11 @@ class OASE(Notification):
 
         result = []
         for item in notification_destination_list:
-            if item in feched_notification_destination_list:
-                result.append(item)
-            else:
-                g.applogger.info(g.appmsg.get_log_message("BKY-80005", [item]))
+            for id in item.get("id", []):
+                if id in feched_notification_destination_list:
+                    result.append(id)
+                else:
+                    g.applogger.info(g.appmsg.get_log_message("BKY-80005", [id]))
 
         return result
 

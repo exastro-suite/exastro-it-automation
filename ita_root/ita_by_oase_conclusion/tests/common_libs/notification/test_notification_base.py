@@ -211,7 +211,7 @@ def test_call_notification_api_success(app_context_with_mock_g, mocker):
     ]
     notification_destination = ["aa", "bb", "dd"]
 
-    result = MockNotification._Notification__call_notification_api(message_list, notification_destination)
+    result = MockNotification._Notification__call_notification_api(message_list, notification_destination, False)
 
     # requests.Session.requestが正しい引数で呼ばれていることを確認
     expected_data = json.dumps([
@@ -253,7 +253,7 @@ def test_call_notification_api_failure(app_context_with_mock_g, mocker):
                     {"id": ["dest2"], "message": {"title": "test2", "message": "body2"}}]
     notification_destination = ["dest1", "dest2"]
 
-    result = MockNotification._Notification__call_notification_api(message_list, notification_destination)
+    result = MockNotification._Notification__call_notification_api(message_list, notification_destination, False)
 
     assert result["success"] == 0
     assert result["failure"] == 1

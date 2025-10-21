@@ -1,5 +1,6 @@
 __pycache__/
 common_libs/
+!tests/common_libs/
 messages/
 agent/
 .env

@@ -85,13 +85,14 @@ class IMAPAuthClient(APIClientCommon):
             mailbox = self.client.select_folder(self.mailbox_name)  # noqa F841
 
             # 最後の取得時間以降に受信したメールのIDを取得
-            datetime_obj = datetime.datetime.fromtimestamp(self.last_fetched_timestamp)
+            datetime_obj = datetime.datetime.fromtimestamp(self.last_fetched_timestamp, tz=datetime.timezone.utc)
             target_datetime = datetime_obj.strftime("%d-%b-%Y")
             message_ids = self.client.search(["SINCE", target_datetime])
 
             # 取得したIDのメールの内容を取得
             mail_dict = self.client.fetch(message_ids, ['ENVELOPE', 'RFC822.HEADER', 'RFC822.TEXT'])
             if mail_dict == {}:
+                print("b")
                 return False, response
 
             # メールの内容を辞書型にまとめる
@@ -283,7 +284,7 @@ class IMAPAuthClient(APIClientCommon):
             raise AppException("AGT-10028", [e])
 
         socks.setdefaultproxy()
-
+        print(f"{response=}")
         return True, response
 
     def _parser(self, header_text, key):

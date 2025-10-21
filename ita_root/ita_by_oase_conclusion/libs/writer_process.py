@@ -293,6 +293,8 @@ class WriterProcess():
             except Exception as e:
                 g.applogger.error(g.appmsg.get_log_message("BKY-90081", [cls._process_name, e]))
                 g.applogger.error("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(traceback.format_exc())))
+                raise
+
 
     @classmethod
     def _start_workspace_processing(cls, oraganization_id: str, workspace_id: str):

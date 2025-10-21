@@ -284,7 +284,7 @@ class IMAPAuthClient(APIClientCommon):
             raise AppException("AGT-10028", [e])
 
         socks.setdefaultproxy()
-        print(f"{response=}")
+
         return True, response
 
     def _parser(self, header_text, key):

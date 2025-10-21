@@ -50,8 +50,7 @@ def external_valid_menu_before(objdbca, objtable, option):
             event_source_redundancy_group = json.loads(entry_parameter.get("event_source_redundancy_group")).get("id", {})
         except:
             event_source_redundancy_group = []
-        print(entry_parameter.get("event_source_redundancy_group"))
-        print(event_source_redundancy_group)
+
         condition_labels = json.loads(entry_parameter.get("condition_labels", {})).get("id", {}) if entry_parameter.get("condition_labels") else {}
         condition_expression = entry_parameter.get("condition_expression")
     # 「復活」の場合、currrent_parameterから各値を取得

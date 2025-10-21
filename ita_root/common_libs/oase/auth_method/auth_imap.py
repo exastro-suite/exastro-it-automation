@@ -85,9 +85,10 @@ class IMAPAuthClient(APIClientCommon):
             mailbox = self.client.select_folder(self.mailbox_name)  # noqa F841
 
             # 最後の取得時間以降に受信したメールのIDを取得
-            datetime_obj = datetime.datetime.fromtimestamp(self.last_fetched_timestamp)
+            datetime_obj = datetime.datetime.fromtimestamp(self.last_fetched_timestamp, tz=datetime.timezone.utc)  # IMAPサーバーに送信する日付は、UTCタイムゾーンで指定するのが望ましい
             target_datetime = datetime_obj.strftime("%d-%b-%Y")
             message_ids = self.client.search(["SINCE", target_datetime])
+            g.applogger.debug("Mail COLLECT SINCE..........{}".format(datetime_obj.strftime("%Y-%m-%d %H:%M:%S %Z")))
 
             # 取得したIDのメールの内容を取得
             mail_dict = self.client.fetch(message_ids, ['ENVELOPE', 'RFC822.HEADER', 'RFC822.TEXT'])
@@ -109,7 +110,7 @@ class IMAPAuthClient(APIClientCommon):
                     res = {}
                     # RFC5322 Message-IDは含むべき、Dateは必須
                     # Dateがない場合は、古いデータにしてしまい、取り扱わない
-                    e_timestamp = e.date.timestamp() if type(e.date) is datetime.datetime else int(self.last_fetched_timestamp) - 1
+                    e_timestamp = e.date.astimezone(datetime.timezone.utc).timestamp() if type(e.date) is datetime.datetime else int(self.last_fetched_timestamp) - 1
                     res['date'] = int(e_timestamp)
                     res['lastchange'] = e_timestamp
                     # message_idがない場合は無理やりつける

@@ -27,13 +27,12 @@ from common_libs.oase.encrypt import agent_decrypt
 # イベント収集
 ######################################################
 def collect_event(sqlite_db, event_collection_settings, last_fetched_timestamps=None):
-    events = []
+    events_list = []
     event_collection_result_list = []  # イベント収集対象の収集結果（最新収集日時の保存の可否に利用する）
     pass_phrase = g.ORGANIZATION_ID + " " + g.WORKSPACE_ID
 
     for setting in event_collection_settings:
         setting["LAST_FETCHED_TIMESTAMP"] = last_fetched_timestamps[setting["EVENT_COLLECTION_SETTINGS_NAME"]]
-        event_collection_result = {}
 
         # 過去に取得したevent_collection_settings_nameに対応するデータ（idリスト、イベント）をDBから取得する
         # idリスト -> 重複取得防止のためチェックに利用
@@ -68,6 +67,7 @@ def collect_event(sqlite_db, event_collection_settings, last_fetched_timestamps=
         fetched_time = datetime.datetime.now()  # API取得時間
 
         # イベント収集設定名とfetched_timeを記録しておく（次回の取得日時に利用するためのdbへの保存の可否に利用する）
+        event_collection_result = {}
         event_collection_result["name"] = setting["EVENT_COLLECTION_SETTINGS_NAME"]
         event_collection_result["fetched_time"] = int(fetched_time.timestamp())
         event_collection_result["is_save"] = True
@@ -79,58 +79,84 @@ def collect_event(sqlite_db, event_collection_settings, last_fetched_timestamps=
 
         # APIの呼び出し
         api_client = get_auth_client(setting=setting, last_fetched_event=last_fetched_event)  # noqa: F405
-        json_data = {}
+        org_json_data = {}
         try:
-            _, json_data = api_client.call_api(setting=setting, last_fetched_event=last_fetched_event)
+            _, org_json_data = api_client.call_api(setting=setting, last_fetched_event=last_fetched_event)
         except AppException as e:
             g.applogger.info(g.appmsg.get_log_message("AGT-10001", [setting["EVENT_COLLECTION_SETTINGS_ID"]]))
             app_exception(e)
             event_collection_result["is_save"] = False
 
         # 戻り値のevent_collection_result_listに追加しておく
-        event_length = 0
-        event_collection_result["len"] = event_length
+        event_collection_result["len"] = 0
         event_collection_result_list.append(event_collection_result)
 
-        # レスポンスが空の場合はスキップ(空文字をはじくため)
-        if len(json_data) == 0:
-            continue
+        events, event_length = extract_events(setting, fetched_time, org_json_data)
 
-        if setting["RESPONSE_KEY"]:
-            # 設定で指定したキーの値でレスポンスを取得
-            response_key_json_data = get_value_from_jsonpath(setting["RESPONSE_KEY"], json_data)
-            if response_key_json_data is None:
-                # レスポンスキーの指定が間違っている場合、受信したイベントで以降処理する。
-                g.applogger.info(g.appmsg.get_log_message("AGT-10002", [setting["RESPONSE_KEY"], setting["EVENT_COLLECTION_SETTINGS_ID"]]))
-                # 「利用できない」フラグをonにする
-                if isinstance(json_data, list) is False:
-                    json_data = set_not_available(json_data, "RESPONSE_KEY not found")
-                else:
-                    for event in json_data:
-                        if isinstance(event, dict) is False:
-                            event =  {
-                                "_exastro_raw_data": event
-                            }
-                        event = set_not_available(event, "RESPONSE_KEY not found")
+        if event_length > 0:
+            events_list.extend(events)
+            event_collection_result["len"] = event_length  # イベント収集数の更新
+
+        g.applogger.debug(f'{event_collection_result=}')
+
+    return events_list, event_collection_result_list
+
+
+def extract_events(setting, fetched_time, org_json_data):
+    events = []
+    event_length = 0
+
+    # レスポンスが空({}, [], "")の場合はスキップ
+    if len(org_json_data) == 0:
+        return events, event_length
+
+    if setting["RESPONSE_KEY"]:
+        # 設定で指定したキーの値でレスポンスを取得
+        response_key_json_data = get_value_from_jsonpath(setting["RESPONSE_KEY"], org_json_data)
+        if response_key_json_data is None:
+            # レスポンスキーの指定が間違っている場合、受信したイベントで以降処理する。
+            json_data = org_json_data
+            org_json_data = None
+            g.applogger.info(g.appmsg.get_log_message("AGT-10002", [setting["RESPONSE_KEY"], setting["EVENT_COLLECTION_SETTINGS_ID"]]))
+            # 「利用できない」フラグをonにする
+            if isinstance(json_data, list) is False:
+                json_data = set_not_available(json_data, "RESPONSE_KEY not found")
             else:
-                # レスポンスキーで取得できた場合、レスポンスキーの値で以降処理する。
-                # この時点でjson_dataはdict,list,「string」全てあり得る
-                json_data = response_key_json_data
+                for event in json_data:
+                    event = set_not_available(event, "RESPONSE_KEY not found")
         else:
-            # レスポンスキーが未指定の場合
-            pass
+            # レスポンスキーで取得できた場合、レスポンスキーの値で以降処理する。
+            # この時点でjson_dataはdict,list,「string」全てあり得る
+            json_data = response_key_json_data
+    else:
+        # レスポンスキーが未指定の場合
+        json_data = org_json_data
+        org_json_data = None
 
+    # 空の場合、そのまま返す
+    if (setting["RESPONSE_LIST_FLAG"] != "1" and json_data in [{}, ""]) or (setting["RESPONSE_LIST_FLAG"] == "1" and json_data == []):
+        return events, event_length
+
+    # response_key_jsonが辞書型でも配列でもない場合（文字列など？）、イベントとして扱えないため、無理やりオブジェクトにする
+    if isinstance(json_data, dict) is False and isinstance(json_data, list) is False:
+        event = init_label(org_json_data, fetched_time, setting)
+        event = set_not_available(event, "RESPONSE_KEY value is Invalid.(not Object and not List)")
+
+        event_length = 1
+        events.append(event)
+    else:
         # RESPONSE_LIST_FLAGの値がリスト形式ではない場合
-        if setting["RESPONSE_LIST_FLAG"] == "0":
+        if setting["RESPONSE_LIST_FLAG"] != "1":
             # 実際の値はリスト（設定間違い）
             if isinstance(json_data, list) is True:
                 g.applogger.info(g.appmsg.get_log_message("AGT-10031", [setting["RESPONSE_KEY"], setting["EVENT_COLLECTION_SETTINGS_ID"]]))
-                for event in json_data:
-                    event = init_label(event, fetched_time, setting)
-                    # 「利用できない」フラグをonにする
-                    event = set_not_available(event, "RESPONSE_LIST_FLAG is incorrect.(Not Dict Type)")
-                    events.append(event)
-                event_length += len(json_data)
+                # 元のレスポンスデータをそのままイベントとして格納する
+                event = init_label(org_json_data, fetched_time, setting)
+                # 「利用できない」フラグをonにする
+                event = set_not_available(event, "RESPONSE_LIST_FLAG is incorrect.(List Type)")
+
+                event_length += 1
+                events.append(event)
             else:
             # 値がオブジェクト
                 if len(json_data) > 0:
@@ -156,6 +182,7 @@ def collect_event(sqlite_db, event_collection_settings, last_fetched_timestamps=
             else:
             # 値がリスト
                 for event in json_data:
+                    # リストの中に空オブジェクトが入っているケースは意味があるかもしれないので、ここでは空チェックはしない
                     event = init_label(event, fetched_time, setting)
                     # イベントIDキーがあるかのチェック
                     event = check_event_id_key(event, setting["EVENT_ID_KEY"], setting["EVENT_COLLECTION_SETTINGS_ID"])
@@ -163,26 +190,23 @@ def collect_event(sqlite_db, event_collection_settings, last_fetched_timestamps=
                     events.append(event)
                 event_length += len(json_data)
 
-        # イベント収集数を更新しておく
-        event_collection_result_list[len(event_collection_result_list)-1]["len"] = event_length
-        g.applogger.debug(f'{event_collection_result=}')
+    # # イベント収集数を更新しておく
+    # event_collection_result_list[len(event_collection_result_list)-1]["len"] = event_length
+    # g.applogger.debug(f'{event_collection_result=}')
 
-    return events, event_collection_result_list
+    return events, event_length
 
 
 def init_label(raw_data, fetched_time, setting):
-    # raw_dataはdict型であることを期待しているが、stringで来ることもありうる。
-    if isinstance(raw_data, dict) is False:
-        event =  {
-            "_exastro_raw_data": raw_data
-        }
-    else:
-        event = raw_data
-
+    event = raw_data
     event["_exastro_event_collection_settings_name"] = setting["EVENT_COLLECTION_SETTINGS_NAME"]
     event["_exastro_event_collection_settings_id"] = setting["EVENT_COLLECTION_SETTINGS_ID"]
     event["_exastro_fetched_time"] = int(fetched_time.timestamp())
     event["_exastro_end_time"] = int((fetched_time + datetime.timedelta(seconds=setting["TTL"])).timestamp())
+
+    # 取りこめないデータとして整形されていた場合
+    if "_exastro_raw_data" in event:
+        event = set_not_available(event, "event format is Invalid.(not Object)")
 
     return event
 

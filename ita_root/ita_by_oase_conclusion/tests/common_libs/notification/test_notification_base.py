@@ -13,12 +13,12 @@
 #   limitations under the License.
 
 import pytest
+import unittest.mock
 from unittest.mock import MagicMock
-import copy
 import json
 import os
 import requests
-from jinja2 import Template, UndefinedError
+from jinja2 import UndefinedError
 from common_libs.notification.notification_base import Notification
 from common_libs.common.exception import AppException
 import urllib3
@@ -189,7 +189,7 @@ def test_create_notise_message_template_render_error(app_context_with_mock_g, mo
     assert result is None
 
 
-def test_call_notification_api_success(app_context_with_mock_g, mocker):
+def test_call_notification_api_success(app_context_with_mock_g, mocker: unittest.mock):
     """
     __call_notification_apiが成功ステータスで正常に動作することを確認
     """
@@ -235,7 +235,7 @@ def test_call_notification_api_success(app_context_with_mock_g, mocker):
     assert result["failure_info"] == []
 
 
-def test_call_notification_api_failure(app_context_with_mock_g, mocker):
+def test_call_notification_api_failure(app_context_with_mock_g, mocker: unittest.mock):
     """
     __call_notification_apiが失敗ステータスでエラーを記録することを確認
     """
@@ -463,7 +463,7 @@ def test_call_notification_api_thread_api_error(mocker):
     assert result["success"] == 0
     assert result["failure"] == 1
     assert len(result["failure_info"]) == 1
-    assert "API Error: 500" in result["failure_info"][0]
+    assert "API Failed: 500" in result["failure_info"][0]
     assert result["failure_notification_count"] > 0
     assert result["success_notification_count"] == 0
 

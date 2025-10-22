@@ -45,7 +45,14 @@ class oaseConst():
     DF_SEARCH_CONDITION_QUEUING = '2'   # キューイング / Queuing
     DF_SEARCH_CONDITION_GROUPING = '3'  # グルーピング / Grouping
 
+    # グルーピング条件 / Grouping conditions
+    DF_GROUP_CONDITION_ID_TARGET = '1'      # を対象とする / is the target
+    """グルーピング条件「を対象とする」"""
+    DF_GROUP_CONDITION_ID_NOT_TARGET = '2'  # 以外を対象とする / is not a target
+    """グルーピング条件「以外を対象とする」"""
+
     # イベントデータに一時的に追加する項目定期
+
     # 親ラベル
     DF_LOCAL_LABLE_NAME = "__exastro_local_labels__"
     # 子ラベル イベント状態
@@ -55,6 +62,9 @@ class oaseConst():
     DF_POST_PROC_TIMEOUT_EVENT = '1'    # 処理対象　処理後タイムアウト:●
     DF_TIMEOUT_EVENT = '2'           # タイムアウト（TTL*2）
     DF_NOT_PROC_EVENT = '3'       # 対象外
+    # 子ラベル グループキー
+    DF_LOCAL_LABLE_ATTRIBUTE_KEY = "group_key"
+    """子ラベル グループキー"""
 
     # ルール・フィルタ管理　JSON内の演算子・条件
     # 条件

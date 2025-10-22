@@ -1,7 +1,5 @@
-import pytest
+import os
 from datetime import datetime
-import json
-from unittest.mock import Mock, patch
 from common_libs.notification.sub_classes.oase import OASE, OASENotificationType
 
 
@@ -63,14 +61,14 @@ def test_get_template_valid_file(app_context_with_mock_g, mocker):
     mock_access_file = mock_storage_access.return_value
     mock_access_file.read.return_value = b'template_content'
 
-    mocker.patch('common_libs.common.util.get_upload_file_path').return_value = {"file_path": "/workspace/ita_root/ita_by_oase_conclusion/tests/storage/mock_org_id/mock_workspace_id/uploadfiles/110102/template_file/mock_uuid/template.txt"}
+    mocker.patch('common_libs.common.util.get_upload_file_path').return_value = {"file_path": os.path.join(os.environ.get('STORAGEPATH'), "mock_org_id/mock_workspace_id/uploadfiles/110102/template_file/mock_uuid/template.txt")}
 
     fetch_data = {"NOTIFICATION_DESTINATION": [{"UUID": "mock_uuid", "TEMPLATE_FILE": "template.txt"}]}
     decision_info = {"notification_type": OASENotificationType.NEW}
 
     result = OASE._get_template(fetch_data, decision_info)
 
-    mock_access_file.open.assert_called_once_with("/workspace/ita_root/ita_by_oase_conclusion/tests/storage/mock_org_id/mock_workspace_id/uploadfiles/110102/template_file/mock_uuid/template.txt")
+    mock_access_file.open.assert_called_once_with(os.path.join(os.environ.get('STORAGEPATH'), "mock_org_id/mock_workspace_id/uploadfiles/110102/template_file/mock_uuid/template.txt"))
     mock_access_file.read.assert_called_once()
     mock_access_file.close.assert_called_once()
     assert result == [{"UUID": "mock_uuid", "TEMPLATE_FILE": "template.txt", "template": b'template_content'}]

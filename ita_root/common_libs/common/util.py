@@ -32,6 +32,7 @@ import shutil
 import inspect
 import traceback
 from urllib.parse import urlparse
+import uuid as uuid_lib
 
 from common_libs.common.exception import AppException
 from common_libs.common.encrypt import *
@@ -501,6 +502,24 @@ def get_upload_file_path(workspace_id, menu_id, uuid, column_name_rest, file_nam
             old_file_path = safe_path_join(os.environ.get('STORAGEPATH'), organization_id, workspace_id, 'uploadfiles', menu_id, column_name_rest, uuid, 'old', uuid_jnl, file_name)  # noqa: E501
 
     return {"file_path": file_path, "old_file_path": old_file_path}
+
+
+def get_tmp_file_path(workspace_id: str, file_name: str) -> dict:
+    """
+    Get filepath(tmp)
+
+    Arguments:
+        workspace_id: workspace_id
+        file_name: Target file name
+
+    Returns:
+        filepath: /tmp/{organization_id}/{workspace_id}/tmp/{uuid}/{file_name}
+    """
+    organization_id = g.get("ORGANIZATION_ID")
+    _uuid = str(uuid_lib.uuid4())
+    file_path = safe_path_join("/tmp", organization_id, workspace_id, 'tmp', _uuid, file_name)
+
+    return {"file_path": file_path}
 
 
 def get_upload_file_path_specify(workspace_id, place, uuid, file_name, uuid_jnl):

@@ -20,7 +20,7 @@ import concurrent.futures
 import queue
 
 from common_libs.common.dbconnect import DBConnectWs
-from common_libs.common.util import get_upload_file_path
+from common_libs.common.util import get_upload_file_path, get_tmp_file_path
 from common_libs.notification.notification_base import Notification
 from common_libs.common import storage_access
 from flask import g
@@ -206,16 +206,21 @@ class OASE(Notification):
                 item["template"] = None
             else:
                 path = get_upload_file_path(workspace_id, menu_id, uuid, rest_name, file_name, "")
+                # 一時パスの生成: /tmp/<organization_id>/<workspace_id>/tmp/<uuid>/<file_name>
+                tmp_path = get_tmp_file_path(workspace_id, file_name)
 
                 try:
                     access_file = storage_access.storage_read()
-                    access_file.open(path["file_path"])
+                    # 一時パスを指定してopen
+                    access_file.open(path["file_path"], tmp_path=tmp_path["file_path"])
                     item["template"] = access_file.read()
                     access_file.close()
                 except Exception as e:
                     g.applogger.info(g.appmsg.get_log_message("BKY-80021", [path]))
                     g.applogger.error(e)
                     item["template"] = None
+                    # 一時パスが作成されている場合の削除を実施
+                    access_file.close() if access_file.force_file_del else None
 
         return template_list
 

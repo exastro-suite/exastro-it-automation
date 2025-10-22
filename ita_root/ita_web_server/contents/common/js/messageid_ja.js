@@ -1014,7 +1014,7 @@ export function messageid_ja() {
         'FTE13028': function( sec ){ return `${sec}秒`},
         'FTE13029': '自動更新',
         'FTE13030': 'ルール',
-        'FTE13031': '',
+        'FTE13031': 'を対象とする',
         'FTE13032': '',
         'FTE13033': '',
         'FTE13034': '',

@@ -7659,7 +7659,7 @@ partsFilterHtml( parameter ) {
     const filterHtml = fn.html.labelListHtml( labelList, this.label );
     html.push(filterHtml);
     if ( parameter.group_condition ) {
-        const groupCondition = ( parameter.group_condition === "を対象とする" || parameter.group_condition === "is the target" )? "Included": "Excluded";
+        const groupCondition = ( parameter.group_condition === getMessage.FTE13031 )? "Included": "Excluded";
         const groupHtml = fn.html.labelListHtml( parameter.group_labels, this.label, true );
         const groupTable = `<div class="eventFlowPartsFilterGroupTableWrap"><table class="eventFlowPartsFilterGroupTable">`
             + `<tr>`

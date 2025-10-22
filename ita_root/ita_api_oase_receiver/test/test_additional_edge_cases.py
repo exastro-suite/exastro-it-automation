@@ -82,7 +82,7 @@ class TestAddNotificationQueueEdgeCases:
 
         assert recieve_ret == expected_result
         assert duplicate_ret == {}
-        mock_oase.bulksend.assert_called_once_with(None, notification_list, {"notification_type": OASENotificationType.NEW})
+        mock_oase.bulksend.assert_called_once_with(None, notification_list, {"notification_type": OASENotificationType.RECEIVE})
 
     @patch('controllers.oase_controller.OASE')
     @patch('controllers.oase_controller.stacktrace')
@@ -327,7 +327,7 @@ class TestAddNotificationQueueEdgeCases:
         call_args = mock_oase.bulksend.call_args[0]
         decision_info = call_args[2]
 
-        assert decision_info == {"notification_type": OASENotificationType.NEW}
+        assert decision_info == {"notification_type": OASENotificationType.RECEIVE}
         assert recieve_ret == {"status": "success", "sent": 1, "failure": 0}
         assert duplicate_ret == {}
 

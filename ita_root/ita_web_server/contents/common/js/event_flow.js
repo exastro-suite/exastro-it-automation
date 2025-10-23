@@ -2235,7 +2235,7 @@ viewEventInfo( x ) {
             const groupData = {
                 group_id: d.item.exastro_filter_group.group_id,
                 filter_name: (targetFilter) ? targetFilter.parameter.filter_name : d.item.exastro_filter_group.filter_id,
-                first_event: d.item.exastro_filter_group.is_first_event
+                first_event: d.item.exastro_filter_group.is_first_event.toString()
             };
             html.push( er.eventInfoRowHtml('Group', '', 'eventInfoTableLabelsBlank'));
             html.push(`<tr class="eventInfoTableTr"><td class="eventInfoTableTd eventInfoTableLabels" colspan="2">${fn.html.labelListHtml( groupData, null, true )}</td></tr>`);

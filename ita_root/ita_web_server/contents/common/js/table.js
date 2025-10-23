@@ -7655,12 +7655,15 @@ partsBodyHtml( type, parameter ) {
 */
 partsFilterHtml( parameter ) {
     const html = [];
-    const labelList = parameter.filter_condition_json;
-    const filterHtml = fn.html.labelListHtml( labelList, this.label );
-    html.push(filterHtml);
-    if ( parameter.group_condition ) {
-        const groupCondition = ( parameter.group_condition === getMessage.FTE13031 )? "Included": "Excluded";
-        const groupHtml = fn.html.labelListHtml( parameter.group_labels, this.label, true );
+    if ( parameter.filter_condition_json ) {
+        const labelList = parameter.filter_condition_json;
+        const filterHtml = fn.html.labelListHtml( labelList, this.label );
+        html.push(filterHtml);
+    }
+
+    if ( parameter.group_condition_id ) {
+        const groupCondition = ( parameter.group_condition_id === getMessage.FTE13031 )? "Included": "Excluded";
+        const groupHtml = fn.html.labelListHtml( parameter.group_label_key_ids, this.label, true );
         const groupTable = `<div class="eventFlowPartsFilterGroupTableWrap"><table class="eventFlowPartsFilterGroupTable">`
             + `<tr>`
             + `<th class="eventFlowPartsFilterTh">Group<br>${groupCondition}</th>`

@@ -787,12 +787,14 @@ border-color: #666;
 color: #EEE;
 }
 .eventFlowPartsRuleContainer,
-.eventFlowPartsActionTableWrap {
+.eventFlowPartsActionTableWrap,
+.eventFlowPartsFilterGroupTableWrap {
 padding: 4px;
 background-color: #F5F5F6;
 }
 .darkmode .eventFlowPartsRuleContainer,
-.darkmode .eventFlowPartsActionTableWrap {
+.darkmode .eventFlowPartsActionTableWrap,
+.darkmode .eventFlowPartsFilterGroupTableWrap {
 background-color: rgba(0,0,0,.1);
 }
 .eventFlowPartsRuleBlock {
@@ -839,19 +841,32 @@ background-color: #91aac5;
 border-radius: 4px;
 color: #FFF;
 }
-.eventFlowPartsActionTable {
+.eventFlowPartsActionTable,
+.eventFlowPartsFilterGroupTable {
 width: 100%;
 }
+.eventFlowPartsFilterTh,
+.eventFlowPartsFilterTd,
 .eventFlowPartsActionTh,
 .eventFlowPartsActionTd {
 padding: 6px 12px;
 border: 1px solid #005BAC;
 }
-.eventFlowPartsActionTh {
+.eventFlowPartsFilterTh,
+.eventFlowPartsFilterTd {
+border: 1px solid #647B93;
+}
+.eventFlowPartsActionTh,
+.eventFlowPartsFilterTh {
 width: 8px;
 background-color: #94b9da;
 white-space: nowrap;
 color: #FFF;
+}
+.eventFlowPartsFilterTh {
+background-color: #A9B8C7;
+text-align: center;
+vertical-align: middle;
 }
 .eventFlowPartsActionTd {
 word-break: break-all;
@@ -859,6 +874,9 @@ background-color: #FFF;
 }
 .darkmode .eventFlowPartsActionTh {
 background-color: #00325e;
+}
+.darkmode .eventFlowPartsFilterTh {
+background-color: #68717a;
 }
 .darkmode .eventFlowPartsActionTd {
 background-color: rgba(0,0,0,.5);

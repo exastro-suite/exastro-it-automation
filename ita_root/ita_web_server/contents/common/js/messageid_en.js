@@ -1008,7 +1008,7 @@ export function messageid_en() {
         'FTE13028': function( sec ){ return `${sec}sec`},
         'FTE13029': 'Auto Update',
         'FTE13030': 'Rule',
-        'FTE13031': '',
+        'FTE13031': 'is the target',
         'FTE13032': '',
         'FTE13033': '',
         'FTE13034': '',

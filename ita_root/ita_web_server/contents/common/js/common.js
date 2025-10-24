@@ -2542,7 +2542,7 @@ html: {
 
         return `<div class="operationMenu">${html.join('')}</div>`;
     },
-    labelListHtml: function( labels, labelData ) {
+    labelListHtml: function( labels, labelData, uncoloredLabel=false ) {
         const html = [];
 
         if ( !labelData ) labelData = [];
@@ -2553,15 +2553,19 @@ html: {
         // ラベルリストの形式
         if ( cmn.typeof( labels ) === 'array') {
             for ( const label of labels ) {
-                if ( label.length === 2 ) {
-                    html.push( this.labelHtml( labelData, label[0], label[1] ) );
-                } else {
-                    html.push( this.labelHtml( labelData, label[0], label[2], label[1] ) );
+                if ( typeof(label) == 'string' ) {  // 例：'label_01'
+                    html.push( this.labelHtml( labelData, label ) );
+                } else {  // 例：['label_01', '==', 'e_01']
+                    if ( label.length === 2 ) {
+                        html.push( this.labelHtml( labelData, label[0], label[1] ) );
+                    } else {
+                        html.push( this.labelHtml( labelData, label[0], label[2], label[1] ) );
+                    }
                 }
             }
         } else if ( cmn.typeof( labels ) === 'object') {
             for ( const key in labels ) {
-                html.push( this.labelHtml( labelData, key, labels[ key ] ) );
+                html.push( this.labelHtml( labelData, key, labels[ key ], undefined, uncoloredLabel ) );
             }
         }
 
@@ -2570,7 +2574,27 @@ html: {
             + html.join('')
         + `</ul>`;
     },
-    labelHtml: function( labelData, key, value, condition ) {
+    // 「イベント収集設定名 – エージェント名」を表示する。※nダッシュ（–）を使用
+    deduplicationListHtml: function( labels, exchangeData ) {
+        const html = [];
+        if (labels) {
+            for ( const label of labels ) {
+                const index = label.indexOf( '_' )
+                const settingStr = ( exchangeData ) ? `${exchangeData[label.slice(0, index)]} – ${label.slice(index + 1)}` : `${label.slice(0, index)} – ${label.slice(index + 1)}`;
+                html.push( this.labelHtml( [], '', settingStr ) );
+            }
+
+            return ``
+            + `<ul class="eventFlowLabelList">`
+                + html.join('')
+            + `</ul>`;
+        } else{
+            return ``
+            + `<ul class="eventFlowLabelList">`
+            + `</ul>`;
+        }
+    },
+    labelHtml: function( labelData, key, value, condition, uncoloredLabel=false ) {
         // 色の取得
         const label = labelData.find(function( item ){
             return key === item.parameter.label_key_name;
@@ -2579,8 +2603,14 @@ html: {
         const exastroLabelColor = '#CCC'; // _exastro_xxxラベル
         const defaultLabelColor = '#002B62'; // ラベル設定の無いラベル
 
-        const color = ( label && label.parameter && label.parameter.color_code )? label.parameter.color_code:
-            ( key.indexOf('_exastro_') === 0 )? exastroLabelColor: defaultLabelColor;
+        let color
+        // ラベルの色コード、ラベル名が無い場合はexastroLabelColor、_exastro_xxxラベルはexastroLabelColor、uncoloredLabelがtrueの場合はdefaultLabelColor
+        if ( uncoloredLabel ) {
+            color = exastroLabelColor;
+        } else {
+            color = ( label && label.parameter && label.parameter.color_code )? label.parameter.color_code:
+                ( !key )? exastroLabelColor : ( key.indexOf('_exastro_') === 0 )? exastroLabelColor: defaultLabelColor;
+        }
 
         const
         keyColor = cmn.blackOrWhite( color, 1 ),
@@ -2593,9 +2623,9 @@ html: {
         return ``
         + `<li class="eventFlowLabelItem">`
             + `<div class="eventFlowLabel" style="background-color:${color}">`
-                + `<div class="eventFlowLabelKey"><span class="eventFlowLabelText" style="color:${keyColor}">${fn.cv( key, '', true )}</span></div>`
+                + ( ( key )? `<div class="eventFlowLabelKey"><span class="eventFlowLabelText" style="color:${keyColor}">${fn.cv( key, '', true )}</span></div>` : ``)
                 + ( ( condition )? `<div class="eventFlowLabelCondition" style="color:${conColor}">${fn.cv( condition, '', true )}</div>`: ``)
-                + `<div class="eventFlowLabelValue"><span class="eventFlowLabelText" style="color:${valColor}">${fn.cv( value, '', true )}</span></div>`
+                + ( ( value )?`<div class="eventFlowLabelValue"><span class="eventFlowLabelText" style="color:${valColor}">${fn.cv( value, '', true )}</span></div>`: ``)
             + `</div>`
         + `</li>`;
     }

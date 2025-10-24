@@ -184,6 +184,8 @@ def db_filter_group_unique_check(objdbca, filter_id, target_value, group_label_k
     if target_value is not None:
         where_str = where_str + ' and `FILTER_CONDITION_JSON` = %s'
         bind_value_list.append(target_value)
+    else:
+        where_str = where_str + ' and `FILTER_CONDITION_JSON` IS NULL'
         
     # 更新時自身のIDを除外
     # Exclude own ID when updating

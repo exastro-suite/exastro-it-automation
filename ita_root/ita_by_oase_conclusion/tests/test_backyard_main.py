@@ -15,6 +15,7 @@
 from collections.abc import Iterable, Set
 import datetime
 import json
+import operator
 from typing import Literal, overload
 import uuid
 import pytest
@@ -52,8 +53,9 @@ def create_event(
     test_case: str,
     event_id: str,
     fetched_time: int,
-    end_time: int,
+    end_time: int | None = None,
     *,
+    ttl: int = 10,
     id: ObjectId | bytes | str | None = None,
     exastro_type: str = "event",
     undetected: Literal["0", "1"] = "0",
@@ -63,6 +65,8 @@ def create_event(
     grouping_filter: str | dict | None = None,
 ):
     """テスト用イベントデータを作成"""
+    if end_time is None:
+        end_time = fetched_time + ttl
     labels = {"test_case": test_case, "event_id": event_id, **(custom_labels or {})}
     labels_and_system_labels = {
         "_exastro_event_collection_settings_id": str(uuid.uuid4()),
@@ -97,6 +101,7 @@ def create_event(
             "filter_id": _get_filter_id(grouping_filter),
             "group_id": repr(event["_id"]),
             "is_first_event": True,
+            "original_ttl": end_time - fetched_time,
         }
     return event
 
@@ -382,6 +387,22 @@ class MockCollection:
 class MockCursor:
     """MongoDBカーソルのモッククラス"""
 
+    __mongo_compare_operator_map = {
+        "$eq": operator.eq,
+        "$ne": operator.ne,
+        "$gt": operator.gt,
+        "$lt": operator.lt,
+        "$gte": operator.ge,
+        "$lte": operator.le,
+    }
+
+    __mongo_calculation_map = {
+        "$add": (operator.add, 0),
+        "$multiply": (operator.mul, 1),
+        "$subtract": (operator.sub, None),
+        "$divide": (operator.truediv, None),
+    }
+
     def __init__(self, test_events, query=None):
         self.test_events = test_events
         self.query = query or {}
@@ -413,12 +434,15 @@ class MockCursor:
                 filtered_events.append(event)
         return filtered_events
 
-    def _matches_query(self, event, query):
+    @classmethod
+    def _matches_query(cls, event, query):
         """イベントがクエリにマッチするかチェック"""
         if not query:
             return True
 
         for joined_key, expression in query.items():
+            if joined_key.startswith("$"):
+                return cls._match_query_body(event, event, query)
             remain_keys = joined_key.split(".")
             target = event
             # キーがネストされている場合に対応
@@ -427,23 +451,129 @@ class MockCursor:
                 if not isinstance(target, dict) or key not in target:
                     return False
                 target = target[key]
-                if not remain_keys and not self._match_query_expression(
-                    target, expression
+                if not remain_keys and not cls._match_query_body(
+                    event, target, expression
                 ):
                     return False
 
         return True
 
-    @staticmethod
-    def _match_query_expression(value, expression):
-        """クエリ表現にマッチするかチェック"""
-        if not isinstance(expression, dict):
-            return value == expression
-        if expression.get("$in"):
-            return value in expression["$in"]
-        if expression.get("$gte"):
-            return value >= expression["$gte"]
+    @classmethod
+    def _match_query_body(cls, event, target, expression):
+        """クエリ本体にマッチするかチェック"""
+        match expression:
+            case {"$in": [*values]}:
+                return target in values
+            case {"$gte": value}:
+                return target >= value
+            case {"$and": [*queries]}:
+                return all(cls._matches_query(target, query) for query in queries)
+            case {"$expr": expression}:
+                return cls._match_expression(event, expression)
+            case value:
+                return target == value
         return False
+
+    @classmethod
+    def _match_expression(cls, event, expression_or_value):
+        """式にマッチするかチェック"""
+
+        def match_expression_nested(expression_or_value):
+            return cls._match_expression(event, expression_or_value)
+
+        match expression_or_value:
+            case {"$gt": [expr1, expr2]}:
+                return cls.__compare("$gt", expr1, expr2)
+            case {"$gte": [expr1, expr2]}:
+                return cls.__compare("$gte", expr1, expr2)
+            case {"$lt": [expr1, expr2]}:
+                return cls.__compare("$lt", expr1, expr2)
+            case {"$lte": [expr1, expr2]}:
+                return cls.__compare("$lte", expr1, expr2)
+            case {"$add": [*expressions]}:
+                return cls.__calculation(
+                    "$add", *expressions, match_expression=match_expression_nested
+                )
+            case {"$multiply": [*expressions]}:
+                return cls.__calculation(
+                    "$multiply",
+                    *expressions,
+                    match_expression=match_expression_nested,
+                )
+            case {"$divide": [expr1, expr2]}:
+                return cls.__calculation(
+                    "$divide", expr1, expr2, match_expression=match_expression_nested
+                )
+            case {"$subtract": [expr1, expr2]}:
+                return cls.__calculation(
+                    "$subtract",
+                    expr1,
+                    expr2,
+                    match_expression=match_expression_nested,
+                )
+            case {"$ifNull": [expr1, expr2]}:
+                v1 = match_expression_nested(expr1)
+                return v1 if v1 is not None else match_expression_nested(expr2)
+            case str() as field_name if field_name.startswith("$"):
+                return cls.__resolve_fieldpath(event, field_name)
+            case value:
+                return value
+
+    @staticmethod
+    def __resolve_fieldpath(event: dict, field_path: str):
+        """フィールドパスから値を取得"""
+        remain_keys = field_path.strip("$").split(".")
+        target = event
+        while remain_keys:
+            key, *remain_keys = remain_keys
+            if not isinstance(target, dict) or key not in target:
+                return None
+            target = target[key]
+            if not remain_keys:
+                return target
+        return target
+
+    @classmethod
+    def __compare(cls, operator_name, value1, value2):
+        """MongoDBのBSON比較条件に基づく比較"""
+        return cls.__mongo_compare_operator_map[operator_name](
+            cls.__get_comparable(value1), cls.__get_comparable(value2)
+        )
+
+    @classmethod
+    def __get_comparable(cls, value):
+        """MongoDBのBSON比較条件に基づく比較可能な値を取得"""
+        return cls.__get_type_order(value), value
+
+    @classmethod
+    def __get_type_order(cls, value):
+        """MongoDBのBSONタイプ順序に基づく型の順序を取得"""
+        match value:
+            case None:
+                return 2
+            case int() | float():
+                return 3
+            case str():
+                return 4
+            case dict():
+                return 5
+            case list():
+                return 6
+            case bool():
+                return 9
+            case _:
+                return 100
+
+    @classmethod
+    def __calculation(cls, operator_name, *exprs, match_expression):
+        """MongoDBの算術演算に基づく計算"""
+        operator, result = cls.__mongo_calculation_map[operator_name]
+        for expr in exprs:
+            value = match_expression(expr)
+            if value is None:
+                return None
+            result = operator(result, value) if result is not None else value
+        return result
 
 
 class DummyAppMsg:
@@ -789,7 +919,7 @@ def test_backyard_main_action_status_monitor_exception(
     # イベントありのManageEventsを設定
     mock_mongo = MockMONGOConnectWs()
     mock_mongo.test_events = [
-        create_event("test_case", "event1", judge_time, judge_time + 1000000),
+        create_event("test_case", "event1", judge_time, ttl=1000000),
     ]
     dummy_manage_events = ManageEvents(mock_mongo, judge_time)
     ws_db = DummyDB("ws1")
@@ -865,9 +995,7 @@ def test_judge_main_with_timeout_events(
     # タイムアウト用のテストデータを設定したManageEventsを使用
     mock_mongo = MockMONGOConnectWs()
     mock_mongo.test_events = [
-        create_event(
-            "timeout_event", "event_timeout_1", judge_time - 9999, judge_time - 7999
-        ),
+        create_event("timeout_event", "event_timeout_1", judge_time - 9999, ttl=2000),
     ]
 
     monkeypatch.setattr(bm, "MONGOConnectWs", lambda: mock_mongo)
@@ -905,12 +1033,12 @@ def test_judge_main_with_new_events_notification(
     mock_mongo = MockMONGOConnectWs()
     monkeypatch.setattr(bm, "MONGOConnectWs", lambda: mock_mongo)
     mock_mongo.test_events = [
-        e1 := create_event("ne", "ne1", judge_time, judge_time + 3600),
+        e1 := create_event("ne", "ne1", judge_time, ttl=3600),
         e2 := create_event(
             "ne",
             "ne2",
             judge_time,
-            judge_time + 3599,
+            ttl=3599,
             exastro_type="conclusion",
         ),
     ]
@@ -969,7 +1097,7 @@ def test_judge_main_with_undetected_events(
             "undetected_event",
             "event_undetected_1",
             judge_time - 999,
-            judge_time + 2001,
+            ttl=3000,
         ),
     ]
 
@@ -999,7 +1127,7 @@ def test_judge_main_filter_id_map_failure(patch_global_g, monkeypatch):
     mock_mongo = MockMONGOConnectWs()
     monkeypatch.setattr(bm, "MONGOConnectWs", lambda: mock_mongo)
     mock_mongo.test_events = [
-        create_event("event1", "event1", judge_time, judge_time + 1000000),
+        create_event("event1", "event1", judge_time, ttl=1000000),
     ]
     ev_obj = ManageEvents(mock_mongo, judge_time)
     ws_db = DummyDB("ws1")
@@ -1021,7 +1149,7 @@ def test_judge_main_rule_list_failure(patch_global_g, monkeypatch):
     mock_mongo = MockMONGOConnectWs()
     monkeypatch.setattr(bm, "MONGOConnectWs", lambda: mock_mongo)
     mock_mongo.test_events = [
-        create_event("event1", "event1", judge_time, judge_time + 1000000),
+        create_event("event1", "event1", judge_time, ttl=1000000),
     ]
     ev_obj = ManageEvents(mock_mongo, judge_time)
     ws_db = DummyDB("ws1")
@@ -1058,7 +1186,7 @@ def test_judge_main_with_action_records(
     mock_mongo = MockMONGOConnectWs()
     monkeypatch.setattr(bm, "MONGOConnectWs", lambda: mock_mongo)
     mock_mongo.test_events = [
-        create_event("event1", "event1", judge_time, judge_time + 1000000),
+        create_event("event1", "event1", judge_time, ttl=1000000),
     ]
     ev_obj = ManageEvents(mock_mongo, judge_time)
     action_obj = Action(ws_db, ev_obj)
@@ -1091,13 +1219,13 @@ def test_judge_main_with_post_proc_timeout_events(
             "post_proc_timeout_event",
             "event_post_proc_timeout_1",
             judge_time - 1800,
-            judge_time - 900,
+            ttl=900,
         ),
         create_event(
             "post_proc_timeout_event",
             "event_post_proc_timeout_2",
             judge_time - 1800,
-            judge_time - 900,
+            ttl=900,
         ),
     ]
 
@@ -1141,44 +1269,27 @@ def test_judge_main_with_environment_variable(
     mock_mongo = MockMONGOConnectWs()
     monkeypatch.setattr(bm, "MONGOConnectWs", lambda: mock_mongo)
     mock_mongo.test_events = [
-        {
-            "_id": "event1",
-            "labels": {
-                "_exastro_type": "raw",
-                "_exastro_checked": "0",
-                "_exastro_timeout": "0",
-                "_exastro_evaluated": "0",
-                "_exastro_undetected": "0",
-                "_exastro_fetched_time": "1000000",
-                "_exastro_end_time": "2000000",
-            },
-        }
+        create_event(
+            "env_var_test_event",
+            "event_env_var_1",
+            judge_time,
+            ttl=1000000,
+        )
     ]
-    ev_obj = ManageEvents(mock_mongo, 1000000)
+    ev_obj = ManageEvents(mock_mongo, judge_time)
     ws_db = DummyDB("ws1")
     # 必要なテーブルデータを設定
     ws_db.table_data["T_OASE_FILTER"] = [
-        {
-            "FILTER_ID": "filter1",
-            "DISUSE_FLAG": 0,
-            "AVAILABLE_FLAG": 1,
-            "SEARCH_CONDITION_ID": 1,
-            "FILTER_CONDITION_JSON": "{}",
-        }
+        filter_row := create_filter_row(oaseConst.DF_SEARCH_CONDITION_UNIQUE, []),
     ]
     ws_db.table_data["T_OASE_RULE"] = [
-        {
-            "RULE_ID": "rule1",
-            "DISUSE_FLAG": 0,
-            "AVAILABLE_FLAG": 1,
-            "RULE_PRIORITY": 1,
-            "FILTER_A": "filter1",
-            "RULE_NAME": "rule1_name",
-            "FILTER_OPERATOR": "AND",
-            "FILTER_B": "filter1",
-            "ACTION_ID": "action1",
-            "CONCLUSION_LABEL_SETTINGS": "{}",
-        }
+        create_rule_row(
+            1,
+            "rule1_name",
+            [filter_row, filter_row],
+            filter_operator=oaseConst.DF_OPE_AND,
+            action_id="action1",
+        )
     ]
     ws_db.table_data["T_OASE_ACTION"] = [
         {"ACTION_ID": "action1", "CONCLUSION_LABEL_SETTINGS": "{}", "DISUSE_FLAG": 0}
@@ -1531,7 +1642,7 @@ def test_scenario_grouping_evaluated_first_events(
     patch_global_g, patch_notification_and_writer, patch_common_functions, monkeypatch
 ):
     """JudgeMain: グルーピング: 有効な判定済み先頭イベントが正しくグルーピングされることを確認"""
-    # 結論イベントフィルタリング用のテストデータを設定したManageEventsを使用
+    calls = patch_notification_and_writer
     group1_labels = {
         "grp_label_1": "grp1_label_1",
         "grp_label_2": "grp1_label_2",
@@ -1599,10 +1710,7 @@ def test_scenario_grouping_evaluated_first_events(
     # グルーピングが正しく行われることの確認
 
     # 有効な判定済み先頭イベントに更新が走っている
-    assert (
-        frozenset({("_id", evaluated_first_event["_id"])})
-        in patch_notification_and_writer["update_events"]
-    )
+    assert frozenset({("_id", evaluated_first_event["_id"])}) in calls["update_events"]
 
     # 有効な判定済み先頭イベントはグルーピング情報を持つ
     first_event_group = evaluated_first_event.get("exastro_filter_group")
@@ -1746,3 +1854,98 @@ def test_scenario_grouping_without_filter_condition(
     assert len(without_conclusion_events) == 2
     assert len(conclusion_event_records) == 3
     assert len(conclusion_events) == 1
+
+
+def test_scenario_grouping_timeout_and_evaluated_first_event_in_conclusion_period(
+    patch_global_g, patch_notification_and_writer, patch_common_functions, monkeypatch
+):
+    """JudgeMain: グルーピング: 評価対象期間内ならばタイムアウトしている判定済み先頭イベントが正しくグルーピングされることを確認"""
+    calls = patch_notification_and_writer
+    group1_labels = {
+        "grp_label_1": "grp1_label_1",
+        "grp_label_2": "grp1_label_2",
+        "grp_label_3": "grp1_label_3",
+    }
+
+    mock_mongo = MockMONGOConnectWs()
+    monkeypatch.setattr(bm, "MONGOConnectWs", lambda: mock_mongo)
+
+    grouping_filter = create_filter_row(
+        oaseConst.DF_SEARCH_CONDITION_GROUPING,
+        [
+            ("test_case", oaseConst.DF_TEST_EQ, "case1"),
+            ("_exastro_type", oaseConst.DF_TEST_NE, "conclusion"),
+        ],
+        oaseConst.DF_GROUP_CONDITION_ID_TARGET,
+        ["grp_label_2", "grp_label_3", "grp_label_1"],
+    )
+    mock_mongo.test_events = [
+        # グループ1
+        evaluated_first_event := create_event(
+            "case1",
+            "case1-grp1-ev-01",
+            # TTL: 10
+            judge_time - 15,
+            judge_time - 5,
+            custom_labels=group1_labels,
+            evaluated="1",
+            grouping_filter=grouping_filter,
+        ),
+        subsequent_event_1 := create_event(
+            "case1",
+            "case1-grp1-ev-02",
+            judge_time - 6,
+            judge_time + 4,
+            custom_labels=group1_labels,
+        ),
+        subsequent_event_2 := create_event(
+            "case1",
+            "case1-grp1-ev-03",
+            judge_time + 3,
+            judge_time + 13,
+            custom_labels=group1_labels,
+        ),
+    ]
+
+    ev_obj = ManageEvents(mock_mongo, judge_time)
+    ws_db = DummyDB("ws1")
+    # 必要なテーブルデータを設定（イベントがマッチしないフィルター条件）
+    ws_db.table_data["T_OASE_FILTER"] = [
+        grouping_filter,
+        # 結論イベント対策
+        create_filter_row(
+            oaseConst.DF_SEARCH_CONDITION_QUEUING,
+            [("_exastro_type", oaseConst.DF_TEST_EQ, "conclusion")],
+        ),
+    ]
+    ws_db.table_data["T_OASE_RULE"] = [
+        create_rule_row(1, "rule_case1", grouping_filter),
+    ]
+    ws_db.table_data["T_OASE_ACTION"] = []
+    action_obj = Action(ws_db, ev_obj)
+
+    bm.JudgeMain(ws_db, judge_time, ev_obj, action_obj)
+
+    # グルーピングが正しく行われることの確認
+
+    # 有効な判定済み先頭イベントに更新が走っている
+    assert frozenset({("_id", evaluated_first_event["_id"])}) in calls["update_events"]
+
+    # 有効な判定済み先頭イベントはグルーピング情報を持つ
+    first_event_group = evaluated_first_event.get("exastro_filter_group")
+    assert first_event_group is not None
+
+    # 後続イベントが有効な判定済み先頭イベントにグルーピングされていることを確認
+    grouping_info_1 = subsequent_event_1.get("exastro_filter_group")
+    assert grouping_info_1 is not None
+    assert grouping_info_1["group_id"] == first_event_group["group_id"]
+
+    grouping_info_2 = subsequent_event_2.get("exastro_filter_group")
+    assert grouping_info_2 is not None
+    assert grouping_info_2["group_id"] == first_event_group["group_id"]
+
+    # 結論イベントが追加されていないことを確認
+    assert [
+        event["labels"]["_exastro_type"]
+        for event in ev_obj.labeled_events_dict.values()
+    ].count("conclusion") == 0

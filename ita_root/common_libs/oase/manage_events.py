@@ -373,12 +373,47 @@ class ManageEvents:
         # 有効な判定済み先頭イベントを取得
         evaluated_first_events = self.labeled_event_collection.find(
             {
-                "labels._exastro_timeout": "0",
-                "labels._exastro_evaluated": "1",
-                "labels._exastro_undetected": "0",
-                "labels._exastro_end_time": {"$gte": judge_time},
-                "exastro_filter_group.is_first_event": True,
-                "exastro_filter_group.filter_id": {"$in": list(filter_map.keys())},
+                "$and": [
+                    {
+                        "labels._exastro_timeout": "0",
+                        "labels._exastro_evaluated": "1",
+                        "labels._exastro_undetected": "0",
+                        "exastro_filter_group.is_first_event": True,
+                        "exastro_filter_group.filter_id": {
+                            "$in": list(filter_map.keys())
+                        },
+                    },
+                    # labels._exastro_end_time + TTL*2 > judge_time
+                    {
+                        "$expr": {
+                            "$gt": [
+                                {
+                                    "$add": [
+                                        "$labels._exastro_end_time",
+                                        {
+                                            "$multiply": [
+                                                {
+                                                    # 元のTTLが存在しない場合は、イベントの有効期間をTTLとして使用する
+                                                    "$ifNull": [
+                                                        "$exastro_filter_group.original_ttl",
+                                                        {
+                                                            "$subtract": [
+                                                                "$labels._exastro_end_time",
+                                                                "$labels._exastro_fetched_time",
+                                                            ]
+                                                        },
+                                                    ]
+                                                },
+                                                2,
+                                            ]
+                                        },
+                                    ]
+                                },
+                                judge_time,
+                            ]
+                        }
+                    },
+                ]
             }
         ).sort("labels._exastro_fetched_time", 1)
 
@@ -429,6 +464,9 @@ class ManageEvents:
         group_info["filter_id"] = filter_row["FILTER_ID"]
         group_info["group_id"] = repr(latest_group["first_event"]["_id"])  # exastro_eventsに合わせてシリアライズ
         group_info["is_first_event"] = is_first_event
+        group_info["original_ttl"] = (
+            event["labels"]["_exastro_end_time"] - event["labels"]["_exastro_fetched_time"]
+        )
         # MongoDB更新
         WriterProcessManager.update_labeled_event_collection(
             {"_id": event["_id"]}, {"$set": {"exastro_filter_group": group_info}}

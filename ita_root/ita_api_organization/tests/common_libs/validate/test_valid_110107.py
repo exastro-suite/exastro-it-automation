@@ -117,6 +117,7 @@ def test_db_filter_unique_check(mock_objdbca, filter_id, target_value, expected_
     [
         ("1", '{"key": "value"}', "group_label", "group_condition", True),
         ("2", '{"key": "value"}', "group_label", "group_condition", False),
+        ("3", None, "group_label", "group_condition", True),
     ]
 )
 def test_db_filter_group_unique_check(mock_objdbca, filter_id, target_value, group_label_key_ids, group_condition_id, expected_result):
@@ -126,7 +127,7 @@ def test_db_filter_group_unique_check(mock_objdbca, filter_id, target_value, gro
     result = db_filter_group_unique_check(mock_objdbca, filter_id, target_value, group_label_key_ids, group_condition_id)
 
     if target_value is None:
-        where_str = " where `GROUP_LABEL_KEY_IDS` = %s and `GROUP_CONDITION_ID` = %s and `FILTER_ID` <> %s and `SEARCH_CONDITION_ID` = %s and `DISUSE_FLAG` = 0 "
+        where_str = " where `GROUP_LABEL_KEY_IDS` = %s and `GROUP_CONDITION_ID` = %s and `FILTER_CONDITION_JSON` IS NULL and `FILTER_ID` <> %s and `SEARCH_CONDITION_ID` = %s and `DISUSE_FLAG` = 0 "
         bind_str = [group_label_key_ids, group_condition_id, filter_id, "3"]
     else:
         where_str = " where `GROUP_LABEL_KEY_IDS` = %s and `GROUP_CONDITION_ID` = %s and `FILTER_CONDITION_JSON` = %s and `FILTER_ID` <> %s and `SEARCH_CONDITION_ID` = %s and `DISUSE_FLAG` = 0 "

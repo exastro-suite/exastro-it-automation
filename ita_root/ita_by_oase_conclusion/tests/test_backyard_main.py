@@ -1866,6 +1866,7 @@ def test_scenario_grouping_timeout_and_evaluated_first_event_in_conclusion_perio
         "grp_label_2": "grp1_label_2",
         "grp_label_3": "grp1_label_3",
     }
+    original_ttl = 11
 
     mock_mongo = MockMONGOConnectWs()
     monkeypatch.setattr(bm, "MONGOConnectWs", lambda: mock_mongo)
@@ -1884,9 +1885,8 @@ def test_scenario_grouping_timeout_and_evaluated_first_event_in_conclusion_perio
         evaluated_first_event := create_event(
             "case1",
             "case1-grp1-ev-01",
-            # TTL: 10
             judge_time - 15,
-            judge_time - 5,
+            ttl=original_ttl,
             custom_labels=group1_labels,
             evaluated="1",
             grouping_filter=grouping_filter,
@@ -1895,14 +1895,14 @@ def test_scenario_grouping_timeout_and_evaluated_first_event_in_conclusion_perio
             "case1",
             "case1-grp1-ev-02",
             judge_time - 6,
-            judge_time + 4,
+            ttl=original_ttl,
             custom_labels=group1_labels,
         ),
         subsequent_event_2 := create_event(
             "case1",
             "case1-grp1-ev-03",
             judge_time + 3,
-            judge_time + 13,
+            ttl=original_ttl,
             custom_labels=group1_labels,
         ),
     ]
@@ -1934,6 +1934,9 @@ def test_scenario_grouping_timeout_and_evaluated_first_event_in_conclusion_perio
     # 有効な判定済み先頭イベントはグルーピング情報を持つ
     first_event_group = evaluated_first_event.get("exastro_filter_group")
     assert first_event_group is not None
+    # original_ttlが設定されていて、元のTTLが設定されていることを確認
+    assert "original_ttl" in first_event_group
+    assert first_event_group["original_ttl"] == original_ttl
 
     # 後続イベントが有効な判定済み先頭イベントにグルーピングされていることを確認
     grouping_info_1 = subsequent_event_1.get("exastro_filter_group")

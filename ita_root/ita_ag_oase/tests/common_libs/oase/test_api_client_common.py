@@ -166,7 +166,7 @@ test_requests_parameters = [
     "dummy_setting, last_fetched_event, expected_requests",
     test_requests_parameters
 )
-def test_render_url(dummy_setting, last_fetched_event, expected_requests):
+def test_render_requests(dummy_setting, last_fetched_event, expected_requests):
     '''
     接続先（url）の値をテンプレートとしてレンダリングするテスト
     '''
@@ -174,26 +174,17 @@ def test_render_url(dummy_setting, last_fetched_event, expected_requests):
     # __init__でself.render("URL", ...)が呼ばれる
     assert client.url == expected_requests["url"]
 
-@pytest.mark.parametrize(
-    "dummy_setting, last_fetched_event, expected_requests",
-    test_requests_parameters
-)
-def test_render_request_header(dummy_setting, last_fetched_event, expected_requests):
-    client = APIClientCommon(dummy_setting, last_fetched_event)
     # __init__でself.render("REQUEST_HEADER", ...)が呼ばれる
     assert isinstance(client.headers, dict)
     assert client.headers == expected_requests["headers"]
 
-@pytest.mark.parametrize(
-    "dummy_setting, last_fetched_event, expected_requests",
-    test_requests_parameters
-)
-def test_render_parameter(dummy_setting, mock_requests, last_fetched_event, expected_requests):
-    client = APIClientCommon(dummy_setting, last_fetched_event)
     # __init__でself.render("PARAMETER", ...)が呼ばれる
-
     assert isinstance(client.headers, dict)
     assert client.parameter == expected_requests["parameter"]
+
+
+
+
 
 test_response_parameters = [
     # テストケース:メール→対象外

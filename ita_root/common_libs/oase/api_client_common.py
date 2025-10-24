@@ -52,10 +52,10 @@ class APIClientCommon:
         self.access_key_id = setting["ACCESS_KEY_ID"]
         self.secret_access_key = setting["SECRET_ACCESS_KEY"]
         self.mailbox_name = setting["MAILBOXNAME"]
-        self.parameter = setting["PARAMETER"]
         # 前回イベント収集日時（初回イベント収取時は、システム日時が設定されている）
         self.last_fetched_timestamp = setting["LAST_FETCHED_TIMESTAMP"] if setting["LAST_FETCHED_TIMESTAMP"] else 0
         self.saved_ids = setting["SAVED_IDS"] if "SAVED_IDS" in setting else None
+        self.last_fetched_event = last_fetched_event
 
         self.response_list_flag = setting["RESPONSE_LIST_FLAG"]
         self.response_key = setting["RESPONSE_KEY"]
@@ -73,7 +73,7 @@ class APIClientCommon:
         self.current_time = datetime.datetime.now()
 
         # 接続先（url）の値をテンプレートとしてレンダリングする
-        self.url = self.render("URL", setting["URL"], setting, last_fetched_event)
+        self.url = self.render("URL", setting["URL"], setting)
 
         # URLのHOST部が、環境変数NO_PROXYに、存在する場合、verify = Falseに設定
         self.verify = None
@@ -94,16 +94,17 @@ class APIClientCommon:
             self.verify = False
 
         # リクエストヘッダーの値をテンプレートとしてレンダリングする
-        headers = self.render("REQUEST_HEADER", setting["REQUEST_HEADER"], setting, last_fetched_event)
+        headers = self.render("REQUEST_HEADER", setting["REQUEST_HEADER"], setting)
         try:
             self.headers = json.loads(headers)
         except Exception:
             self.headers = headers
 
+        self.parameter = self.generate_parameter(setting)
 
         g.applogger.debug(g.appmsg.get_log_message("AGT-10042", [self.event_collection_settings_name]))
 
-    def render(self, column_name, setting_temaplte, setting, last_fetched_event):
+    def render(self, column_name, setting_temaplte, setting):
         if not setting_temaplte:
             return setting_temaplte
 
@@ -111,8 +112,8 @@ class APIClientCommon:
             template = Template(str(setting_temaplte))
 
             res = template.render(
-                EXASTRO_LAST_FETCHED_EVENT_IS_EXIST=True if last_fetched_event else False,  # （最新）前回取得イベントの存在フラグ
-                EXASTRO_LAST_FETCHED_EVENT=last_fetched_event,  # （最新）前回取得イベントのオブジェクト
+                EXASTRO_LAST_FETCHED_EVENT_IS_EXIST=True if self.last_fetched_event else False,  # （最新）前回取得イベントの存在フラグ
+                EXASTRO_LAST_FETCHED_EVENT=self.last_fetched_event,  # （最新）前回取得イベントのオブジェクト
                 EXASTRO_EVENT_COLLECTION_SETTING=setting,  # イベント収集設定メニューのレコードのオブジェクト
                 EXASTRO_LAST_FETCHED_TIME=self.last_fetched_time,  # 前回取得日時（日時オブジェクト）
                 EXASTRO_LAST_FETCHED_TIMESTAMP=self.last_fetched_timestamp,  # 前回取得日時（1704817434）
@@ -122,21 +123,19 @@ class APIClientCommon:
             )
             return res
         except Exception as e:
-            g.applogger.info("TEMPLATE RENDERING ERROR ({}) column_name={} setting_temaplte={} setting={} last_fetched_event={}".format(e, column_name, setting_temaplte, setting, last_fetched_event))
+            g.applogger.info("TEMPLATE RENDERING ERROR ({}) column_name={} setting_temaplte={} event_collection_settings_id={} last_fetched_event={}".format(e, column_name, setting_temaplte, self.event_collection_settings_id, self.last_fetched_event))
             t = traceback.format_exc()
             g.applogger.debug(t)
             return setting_temaplte
 
-    def call_api(self, setting, last_fetched_event=None):
-        api_response = None
-
-        parameter = self.render("PARAMETER", setting["PARAMETER"], setting, last_fetched_event) if setting["PARAMETER"] else None
+    def generate_parameter(self, setting):
+        _parameter = self.render("PARAMETER", setting["PARAMETER"], setting) if setting["PARAMETER"] else None
         try:
-            self.parameter = json.loads(parameter)
+            parameter = json.loads(_parameter)
         except Exception:
-            self.parameter = parameter
+            parameter = _parameter
 
-        if self.parameter is not None:
+        if parameter is not None:
         # 2.7以前の予約変数の置換処理
             def replace_reserved_variable(value):
                 # 予約語を置換する
@@ -167,7 +166,12 @@ class APIClientCommon:
                 else:
                     return parameter
 
-            self.parameter = search_reserved_variable(self.parameter)
+            parameter = search_reserved_variable(parameter)
+
+        return parameter
+
+    def call_api(self):
+        api_response = None
 
         try:
             proxies = None

@@ -16,7 +16,7 @@ from flask import Flask, g
 import datetime
 import jmespath
 from common_libs.oase.api_client_common import APIClientCommon
-from tests.common_libs.oase.test_api_client_common import test_parameters
+from tests.common_libs.oase.test_api_client_common import test_response_parameters
 from libs.collect_event import extract_events
 
 app = Flask(__name__)
@@ -40,10 +40,10 @@ def setup_g():
 
 
 @pytest.mark.parametrize(
-    "raw_json, dummy_setting, expected_response, expected_events", test_parameters
+    "api_response_raw_json, dummy_setting, expected_response, expected_events", test_response_parameters
 )
 
-def test_extract_events(raw_json, dummy_setting, expected_response, expected_events):
+def test_extract_events(api_response_raw_json, dummy_setting, expected_response, expected_events):
     # 必要な設定を追加(zabbix_problem_get用)
     dummy_setting.update({
         "URL": "http://10.197.18.228/api_jsonrpc.php",
@@ -71,7 +71,7 @@ def test_extract_events(raw_json, dummy_setting, expected_response, expected_eve
 
     # 日時（ミリ秒単位）シリアル値
     now_time = int(dummy_setting["LAST_FETCHED_TIMESTAMP"]) * 1000
-    result_json = client.get_new_events(raw_json, now_time)
+    result_json = client.get_new_events(api_response_raw_json, now_time)
 
     # テスト結果の検証
     assert result_json == expected_response  # 新規イベントのリストを確認

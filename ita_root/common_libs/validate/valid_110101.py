@@ -17,6 +17,7 @@ import json
 import jinja2
 import re
 
+# メニュー「イベント収集」設定のバリデーション
 
 def agent_setting_valid(objdbca, objtable, option):
 
@@ -125,7 +126,7 @@ def agent_setting_valid(objdbca, objtable, option):
                     if not isJsonFormat(entry_parameter['request_header']):
                         msg.append(g.appmsg.get_api_message("MSG-120011", [connection_method_name]))
             # パラメーター
-            if entry_parameter['parameter'] is not None:                
+            if entry_parameter['parameter'] is not None:
                 if is_use_jinja2_variable(entry_parameter['parameter']) is True:
                     # jinja2の形式チェック
                     if not is_jinja2_template(entry_parameter['parameter']):

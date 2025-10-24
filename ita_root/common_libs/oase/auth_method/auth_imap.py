@@ -63,7 +63,7 @@ class IMAPAuthClient(APIClientCommon):
         except Exception as e:
             raise AppException("AGT-10028", [e])
 
-    def call_api(self, setting=None, last_fetched_event=None):
+    def call_api(self):
 
         if self.proxy_host:
             socks.setdefaultproxy(socks.SOCKS5, self.proxy_host, self.proxy_port)

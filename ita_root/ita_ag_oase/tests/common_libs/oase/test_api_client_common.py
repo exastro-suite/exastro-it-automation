@@ -36,50 +36,6 @@ def setup_g():
         g.appmsg = DummyAppMsg()
         yield
 
-
-@pytest.fixture
-def dummy_setting():
-    return {
-        "EVENT_COLLECTION_SETTINGS_ID": "1",
-        "EVENT_COLLECTION_SETTINGS_ID": "1",
-            "EVENT_COLLECTION_SETTINGS_NAME": "test",
-        "REQUEST_METHOD_ID": "1",
-        "PORT": 443,
-        "PROXY": None,
-        "AUTH_TOKEN": "",
-        "USERNAME": "",
-        "PASSWORD": "",
-        "ACCESS_KEY_ID": "",
-        "SECRET_ACCESS_KEY": "",
-        "MAILBOXNAME": "",
-        "PARAMETER": '{"key": "value"}',
-        "LAST_FETCHED_TIMESTAMP": 0,
-        "SAVED_IDS": [],
-        "RESPONSE_LIST_FLAG": "1",
-        "RESPONSE_KEY": None,
-        "EVENT_ID_KEY": "id",
-        "URL": "https://dummy/api",
-        "REQUEST_HEADER": '{"X-Test": "test"}'
-    }
-
-
-
-def test_render_url(dummy_setting):
-    '''
-    接続先（url）の値をテンプレートとしてレンダリングするテスト
-    '''
-    client = APIClientCommon(dummy_setting, last_fetched_event=None)
-    # __init__でself.render("URL", ...)が呼ばれる
-    assert client.url == "https://dummy/api"
-
-
-def test_render_request_header(dummy_setting):
-    client = APIClientCommon(dummy_setting, last_fetched_event=None)
-    # __init__でself.render("REQUEST_HEADER", ...)が呼ばれる
-    assert isinstance(client.headers, dict)
-    assert client.headers.get("X-Test") == "test"
-
-
 @pytest.fixture
 def mock_requests(monkeypatch):
     '''
@@ -96,14 +52,141 @@ def mock_requests(monkeypatch):
         return DummyResponse()
     monkeypatch.setattr("requests.request", dummy_request)
 
+# リクエストのテスト用のパラメータ（dummy_setting, last_fetched_event, expected_requests）
+test_requests_parameters = [
+    (
+        {
+            "ACCESS_KEY_ID": None,
+            "AUTH_TOKEN": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
+            "CONNECTION_METHOD_ID": "5",
+            "DISUSE_FLAG": "0",
+            "EVENT_COLLECTION_SETTINGS_ID": "41086c31-6c24-41f2-aa30-741082642bfc",
+            "EVENT_COLLECTION_SETTINGS_NAME": "zabbix_problem_get",
+            "EVENT_ID_KEY": "eventid",
+            "LAST_UPDATE_TIMESTAMP": "2025-10-24T00:20:22.172832Z",
+            "LAST_UPDATE_USER": "7f3ae1a4-c163-40d5-8509-c3881f5e46f1",
+            "MAILBOXNAME": None,
+            "NOTE": "b",
+            "PARAMETER": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"problem.get\",\n    \"params\": {\n        \"output\": \"extend\",\n        {% if EXASTRO_LAST_FETCHED_EVENT_IS_EXIST %}\n          \"eventid_from\": \"{{ EXASTRO_LAST_FETCHED_EVENT.eventid }}\"\n        {% else %}\n          \"time_from\": \"{{ EXASTRO_LAST_FETCHED_TIMESTAMP }}\"\n        {% endif %}\n    },\n  \"auth\": \"{{ EXASTRO_EVENT_COLLECTION_SETTING.AUTH_TOKEN }}\",\n  \"id\": 1\n}",
+            "PASSWORD": "4jFT+McKLHwH123J+5UPn337ejPj3PlMUnh2/NPDKl4=",
+            "PORT": None,
+            "PROXY": None,
+            "REQUEST_HEADER": "{ \"content-type\" : \"application/json-rpc\" }",
+            "REQUEST_METHOD_ID": "2",
+            "RESPONSE_KEY": "result",
+            "RESPONSE_LIST_FLAG": "1",
+            "SECRET_ACCESS_KEY": "hmvA0mcecB1gG++MFCKg5co6jDn5n2LN7f0E4k2YiBQ=",
+            "TTL": 60,
+            "URL": "http://dummy.hoge.com/api_jsonrpc.php",
+            "USERNAME": "admin",
+            "SAVED_IDS": ["365"],
+            "LAST_FETCHED_TIMESTAMP": 1760599000,
+        },
+        {
+            "acknowledged": "0",
+            "clock": "1760434892",
+            "correlationid": "0",
+            "eventid": "366",
+            "name": "error319",
+            "ns": "766145658",
+            "object": "0",
+            "objectid": "24477",
+            "opdata": "",
+            "r_clock": "0",
+            "r_eventid": "0",
+            "r_ns": "0",
+            "severity": "2",
+            "source": "0",
+            "suppressed": "0",
+            "urls": [],
+            "userid": "0"
+        },
+        {
+            "url": "http://dummy.hoge.com/api_jsonrpc.php",
+            "headers": { "content-type" : "application/json-rpc" },
+            "parameter": {
+                "jsonrpc": "2.0",
+                "method": "problem.get",
+                "params": {
+                    "output": "extend",
+                    "eventid_from": "366"
+                },
+                "auth": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
+                "id": 1
+            }
+        }
+    ),
+    (
+        {
+            "ACCESS_KEY_ID": None,
+            "AUTH_TOKEN": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
+            "CONNECTION_METHOD_ID": "5",
+            "DISUSE_FLAG": "0",
+            "EVENT_COLLECTION_SETTINGS_ID": "41086c31-6c24-41f2-aa30-741082642bfc",
+            "EVENT_COLLECTION_SETTINGS_NAME": "zabbix_problem_get",
+            "EVENT_ID_KEY": "eventid",
+            "LAST_UPDATE_TIMESTAMP": "2025-10-24T00:20:22.172832Z",
+            "LAST_UPDATE_USER": "7f3ae1a4-c163-40d5-8509-c3881f5e46f1",
+            "MAILBOXNAME": None,
+            "NOTE": "b",
+            "PARAMETER": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"problem.get\",\n    \"params\": {\n        \"output\": \"extend\",\n        {% if EXASTRO_LAST_FETCHED_EVENT_IS_EXIST %}\n          \"eventid_from\": \"{{ EXASTRO_LAST_FETCHED_EVENT.eventid }}\"\n        {% else %}\n          \"time_from\": \"{{ EXASTRO_LAST_FETCHED_TIMESTAMP }}\"\n        {% endif %}\n    },\n  \"auth\": \"{{ EXASTRO_EVENT_COLLECTION_SETTING.AUTH_TOKEN }}\",\n  \"id\": 1\n}",
+            "PASSWORD": "4jFT+McKLHwH123J+5UPn337ejPj3PlMUnh2/NPDKl4=",
+            "PORT": None,
+            "PROXY": None,
+            "REQUEST_HEADER": "{ \"content-type\" : \"application/json-rpc\" }",
+            "REQUEST_METHOD_ID": "2",
+            "RESPONSE_KEY": "result",
+            "RESPONSE_LIST_FLAG": "1",
+            "SECRET_ACCESS_KEY": "hmvA0mcecB1gG++MFCKg5co6jDn5n2LN7f0E4k2YiBQ=",
+            "TTL": 60,
+            "URL": "http://dummy.hoge.com/api_jsonrpc.php",
+            "USERNAME": "admin",
+            "SAVED_IDS": ["365"],
+            "LAST_FETCHED_TIMESTAMP": 1760599000,
+        },
+        None,
+        {
+            "url": "http://dummy.hoge.com/api_jsonrpc.php",
+            "headers": { "content-type" : "application/json-rpc" },
+            "parameter": {
+                "jsonrpc": "2.0",
+                "method": "problem.get",
+                "params": {
+                    "output": "extend",
+                    "time_from": "1760599000"
+                },
+                "auth": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
+                "id": 1
+            }
+        }
+    ),
+]
 
-def test_render_parameter(dummy_setting, mock_requests):
-    client = APIClientCommon(dummy_setting, last_fetched_event=None)
-    # call_apiでself.render("PARAMETER", ...)が呼ばれる
-    result, events = client.call_api(dummy_setting, last_fetched_event=None)
-    assert client.parameter == {"key": "value"}
+@pytest.mark.parametrize(
+    "dummy_setting, last_fetched_event, expected_requests",
+    test_requests_parameters
+)
+def test_render_requests(dummy_setting, last_fetched_event, expected_requests):
+    '''
+    接続先（url）の値をテンプレートとしてレンダリングするテスト
+    '''
+    client = APIClientCommon(dummy_setting, last_fetched_event)
+    # __init__でself.render("URL", ...)が呼ばれる
+    assert client.url == expected_requests["url"]
 
-test_parameters = [
+    # __init__でself.render("REQUEST_HEADER", ...)が呼ばれる
+    assert isinstance(client.headers, dict)
+    assert client.headers == expected_requests["headers"]
+
+    # __init__でself.render("PARAMETER", ...)が呼ばれる
+    assert isinstance(client.headers, dict)
+    assert client.parameter == expected_requests["parameter"]
+
+
+
+
+
+test_response_parameters = [
     # テストケース:メール→対象外
 
     # テストケース:レスポンスがzabbixのproblem.get
@@ -2621,23 +2704,23 @@ test_parameters = [
 ]
 
 @pytest.mark.parametrize(
-    "raw_json, dummy_setting, expected_response_json, expected_response", test_parameters
+    "api_response_raw_json, dummy_setting, expected_response_json, expected_response", test_response_parameters
 )
 
-def test_get_new_events(raw_json, dummy_setting, expected_response_json, expected_response):
+def test_get_new_events(api_response_raw_json, dummy_setting, expected_response_json, expected_response):
     """
     get_new_eventsメソッドのパラメータ化テスト
     """
     # 必要な設定を追加(zabbix_problem_get用)
     dummy_setting.update({
         "EVENT_COLLECTION_SETTINGS_ID": "41086c31-6c24-41f2-aa30-741082642bfc",
-        "URL": "http://10.197.18.228/api_jsonrpc.php",
+        "URL": "http://dummy.hoge.com/api_jsonrpc.php",
         "PORT": None,
         "PROXY": None,
         "CONNECTION_METHOD_ID": "5",
         "REQUEST_METHOD_ID": "2",
         "REQUEST_HEADER": "{ \"content-type\" : \"application/json-rpc\" }",
-        "AUTH_TOKEN": "u/9aLZZSn5Ua66S+SBqz3z59XK9SMyLXukvSVsuQno09pjWdbTyx8EA7DsRBJ14tNLrlFbobedc/B6UThxcCBQ88nRNv/yGhaBmvJ8eErXN09WZJxTkXAdBmJp6WYwwn",
+        "AUTH_TOKEN": "u/9aLZZSn5Ua66S+a/B6UThxcCBQ88nRNv/yGhaBmvJ8eErXN09WZJxTkXAdBmJp6WYwwn",
         "USERNAME": "",
         "PASSWORD": "",
         "ACCESS_KEY_ID": "",
@@ -2657,7 +2740,7 @@ def test_get_new_events(raw_json, dummy_setting, expected_response_json, expecte
 
     # 日時（ミリ秒単位）シリアル値
     now_time = int(dummy_setting["LAST_FETCHED_TIMESTAMP"]) * 1000
-    result_json = client.get_new_events(raw_json, now_time)
+    result_json = client.get_new_events(api_response_raw_json, now_time)
 
     # テスト結果の検証
     assert result_json == expected_response_json  # 新規イベントのリストを確認

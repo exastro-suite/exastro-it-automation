@@ -81,7 +81,7 @@ def collect_event(sqlite_db, event_collection_settings, last_fetched_timestamps=
         api_client = get_auth_client(setting=setting, last_fetched_event=last_fetched_event)  # noqa: F405
         org_json_data = {}
         try:
-            _, org_json_data = api_client.call_api(setting=setting, last_fetched_event=last_fetched_event)
+            _, org_json_data = api_client.call_api()
         except AppException as e:
             g.applogger.info(g.appmsg.get_log_message("AGT-10001", [setting["EVENT_COLLECTION_SETTINGS_ID"]]))
             app_exception(e)

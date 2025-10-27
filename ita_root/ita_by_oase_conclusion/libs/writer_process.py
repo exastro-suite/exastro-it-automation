@@ -12,7 +12,9 @@
 # limitations under the License.
 #
 
+import copy
 import os
+import traceback
 import psutil
 import multiprocessing
 import time
@@ -20,7 +22,7 @@ from flask import Flask, g
 from bson.objectid import ObjectId
 
 from pymongo.operations import InsertOne, UpdateOne
-from common_libs.conductor.classes.exec_util import *
+from common_libs.conductor.classes.exec_util import get_iso_datetime, arrange_stacktrace_format
 
 from common_libs.common.queuing_logger import QueuingAppLogClient
 from common_libs.common.dbconnect import DBConnectWs
@@ -30,10 +32,12 @@ from common_libs.common.mongoconnect.const import Const as mongoConst
 
 from common_libs.oase.const import oaseConst
 
+
 class WriterProcessException(Exception):
     """書き込みプロセス例外クラス
     """
     pass
+
 
 class WriterProcessManager():
     """書き込みプロセスとのインターフェース
@@ -159,7 +163,8 @@ class WriterProcessManager():
 
         cls._queue.put({
             "action": "insert_labeled_event_collection",
-            "dict": dict
+            # キュー上のデータ破壊を防ぐためにdeepcopyでコピーを渡す
+            "dict": copy.deepcopy(dict)
         })
         return dict["_id"]
         
@@ -317,7 +322,6 @@ class WriterProcess():
                 g.applogger.error(g.appmsg.get_log_message("BKY-90081", [cls._process_name, e]))
                 g.applogger.error("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(traceback.format_exc())))
                 raise
-
 
     @classmethod
     def _start_workspace_processing(cls, oraganization_id: str, workspace_id: str):

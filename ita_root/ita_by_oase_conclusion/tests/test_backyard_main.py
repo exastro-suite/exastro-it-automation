@@ -13,6 +13,7 @@
 #   limitations under the License.
 
 from collections.abc import Iterable, Set
+import copy
 import datetime
 import json
 import operator
@@ -753,7 +754,7 @@ def patch_notification_and_writer(monkeypatch):
         def insert_labeled_event_collection(cls, event):
             if "_id" not in event:
                 event["_id"] = ObjectId()
-            calls["insert_events"].append(event)
+            calls["insert_events"].append(copy.deepcopy(event))
             return event["_id"]  # 戻り値はイベントID
 
         @classmethod
@@ -1736,7 +1737,7 @@ def test_scenario_grouping_without_filter_condition(
     patch_global_g, patch_notification_and_writer, patch_common_functions, monkeypatch
 ):
     """JudgeMain: グルーピング: フィルター条件なしでグルーピングが正しく行われることを確認"""
-    # 結論イベントフィルタリング用のテストデータを設定したManageEventsを使用
+    calls = patch_notification_and_writer
     group1_labels = {
         "grp_label_1": "grp1_label_1",
         "grp_label_2": "grp1_label_2",
@@ -1854,6 +1855,10 @@ def test_scenario_grouping_without_filter_condition(
     assert len(without_conclusion_events) == 2
     assert len(conclusion_event_records) == 3
     assert len(conclusion_events) == 1
+    
+    # MongoDB上作成される結論イベントにDF_LOCAL_LABLE_NAMEが存在しないことを確認
+    for event in calls["insert_events"]:
+        assert oaseConst.DF_LOCAL_LABLE_NAME not in event
 
 
 def test_scenario_grouping_timeout_and_evaluated_first_event_in_conclusion_period(

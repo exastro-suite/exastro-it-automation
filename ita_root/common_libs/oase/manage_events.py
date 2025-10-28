@@ -550,11 +550,12 @@ class ManageEvents:
                 if key in group_condition_labels
             )
         else:
-            # 「以外を対象とする」の場合、ラベルに含まれない属性のみをキーとするが、_exastroで始まる属性は除外する
+            # 「以外を対象とする」の場合、ラベルに含まれない属性のみをキーとする
             attribute_key = frozenset(
                 (key, value)
                 for (key, value) in labels.items()
-                if not (key in group_condition_labels or re.match("^_exastro", key))
+                # システム属性である_exastroで始まる属性は除外する(_exastro_hostは除外対象外)
+                if not (key in group_condition_labels or re.match("^_exastro(?!_host$)", key))
             )
         # キャッシュに保存
         local_label[oaseConst.DF_LOCAL_LABLE_ATTRIBUTE_KEY] = attribute_key

@@ -68,7 +68,8 @@ def create_event(
     """テスト用イベントデータを作成"""
     if end_time is None:
         end_time = fetched_time + ttl
-    labels = {"test_case": test_case, "event_id": event_id, **(custom_labels or {})}
+    event_content = {"test_case": test_case, "event_id": event_id}
+    labels = custom_labels or {}
     labels_and_system_labels = {
         "_exastro_event_collection_settings_id": str(uuid.uuid4()),
         "_exastro_checked": "0",
@@ -85,7 +86,7 @@ def create_event(
 
     event = {
         "_id": id if id else ObjectId(id),
-        "event": labels,
+        "event": event_content,
         "labels": labels_and_system_labels,
         "exastro_created_at": datetime.datetime.now(datetime.timezone.utc),
         "exastro_labeling_settings": (
@@ -260,7 +261,8 @@ def create_rule_row(
         "CONCLUSION_LABEL_SETTINGS": json.dumps(
             [
                 {get_label_key_id(label_name): template}
-                for label_name, template in conclusion_label_settings
+                for label_setting in conclusion_label_settings
+                for label_name, template in label_setting.items()
             ]
             if conclusion_label_settings
             else []
@@ -1358,7 +1360,6 @@ def test_scenario_grouping_target_2_same_label_events_to_1_group(
         grouping_filter := create_filter_row(
             oaseConst.DF_SEARCH_CONDITION_GROUPING,
             [
-                ("test_case", oaseConst.DF_TEST_EQ, "case1"),
                 ("_exastro_type", oaseConst.DF_TEST_NE, "conclusion"),
             ],
             oaseConst.DF_GROUP_CONDITION_ID_TARGET,
@@ -1458,7 +1459,6 @@ def test_scenario_grouping_target_2_different_label_events_to_2_groups(
         grouping_filter := create_filter_row(
             oaseConst.DF_SEARCH_CONDITION_GROUPING,
             [
-                ("test_case", oaseConst.DF_TEST_EQ, "case1"),
                 ("_exastro_type", oaseConst.DF_TEST_NE, "conclusion"),
             ],
             oaseConst.DF_GROUP_CONDITION_ID_TARGET,
@@ -1575,7 +1575,6 @@ def test_scenario_grouping_multiple_groups_has_multiple_subsequent_events(
         grouping_filter := create_filter_row(
             oaseConst.DF_SEARCH_CONDITION_GROUPING,
             [
-                ("test_case", oaseConst.DF_TEST_EQ, "case1"),
                 ("_exastro_type", oaseConst.DF_TEST_NE, "conclusion"),
             ],
             oaseConst.DF_GROUP_CONDITION_ID_TARGET,
@@ -1656,7 +1655,6 @@ def test_scenario_grouping_evaluated_first_events(
     grouping_filter = create_filter_row(
         oaseConst.DF_SEARCH_CONDITION_GROUPING,
         [
-            ("test_case", oaseConst.DF_TEST_EQ, "case1"),
             ("_exastro_type", oaseConst.DF_TEST_NE, "conclusion"),
         ],
         oaseConst.DF_GROUP_CONDITION_ID_TARGET,
@@ -1855,7 +1853,7 @@ def test_scenario_grouping_without_filter_condition(
     assert len(without_conclusion_events) == 2
     assert len(conclusion_event_records) == 3
     assert len(conclusion_events) == 1
-    
+
     # MongoDB上作成される結論イベントにDF_LOCAL_LABLE_NAMEが存在しないことを確認
     for event in calls["insert_events"]:
         assert oaseConst.DF_LOCAL_LABLE_NAME not in event
@@ -1879,7 +1877,6 @@ def test_scenario_grouping_timeout_and_evaluated_first_event_in_conclusion_perio
     grouping_filter = create_filter_row(
         oaseConst.DF_SEARCH_CONDITION_GROUPING,
         [
-            ("test_case", oaseConst.DF_TEST_EQ, "case1"),
             ("_exastro_type", oaseConst.DF_TEST_NE, "conclusion"),
         ],
         oaseConst.DF_GROUP_CONDITION_ID_TARGET,
@@ -1957,3 +1954,89 @@ def test_scenario_grouping_timeout_and_evaluated_first_event_in_conclusion_perio
         event["labels"]["_exastro_type"]
         for event in ev_obj.labeled_events_dict.values()
     ].count("conclusion") == 0
+
+
+def test_scenario_grouping_not_target_can_handle_exastro_host_label(
+    patch_global_g, patch_notification_and_writer, patch_common_functions, monkeypatch
+):
+    """JudgeMain: グルーピング・「以外を対象とする」: _exastro_host ラベルが正しく処理されることを確認"""
+    group1_labels = {
+        "grp_label_1": "grp1_label_1",
+        "grp_label_2": "grp1_label_2",
+        "grp_label_3": "grp1_label_3",
+    }
+    original_ttl = 11
+
+    mock_mongo = MockMONGOConnectWs()
+    monkeypatch.setattr(bm, "MONGOConnectWs", lambda: mock_mongo)
+
+    grouping_filter = create_filter_row(
+        oaseConst.DF_SEARCH_CONDITION_GROUPING,
+        [
+            ("_exastro_type", oaseConst.DF_TEST_NE, "conclusion"),
+        ],
+        oaseConst.DF_GROUP_CONDITION_ID_NOT_TARGET,
+        ["grp_label_2", "grp_label_3", "grp_label_1"],
+    )
+    mock_mongo.test_events = [
+        # グループ1
+        e1 := create_event(
+            "case1",
+            "case1-grp1-ev-01",
+            judge_time - 7,
+            ttl=original_ttl,
+            custom_labels={**group1_labels, "_exastro_host": "host1"},
+            evaluated="1",
+            grouping_filter=grouping_filter,
+        ),
+        e2 := create_event(
+            "case1",
+            "case1-grp1-ev-02",
+            judge_time - 6,
+            ttl=original_ttl,
+            custom_labels={**group1_labels, "_exastro_host": "host1"},
+        ),
+        e3 := create_event(
+            "case1",
+            "case1-grp2-ev-01",
+            judge_time - 3,
+            ttl=original_ttl,
+            custom_labels={**group1_labels, "_exastro_host": "host2"},
+        ),
+    ]
+
+    ev_obj = ManageEvents(mock_mongo, judge_time)
+    ws_db = DummyDB("ws1")
+    # 必要なテーブルデータを設定（イベントがマッチしないフィルター条件）
+    ws_db.table_data["T_OASE_FILTER"] = [
+        grouping_filter,
+        # 結論イベント対策
+        create_filter_row(
+            oaseConst.DF_SEARCH_CONDITION_QUEUING,
+            [("_exastro_type", oaseConst.DF_TEST_EQ, "conclusion")],
+        ),
+    ]
+    ws_db.table_data["T_OASE_RULE"] = [
+        create_rule_row(1, "rule_case1", grouping_filter),
+    ]
+    ws_db.table_data["T_OASE_ACTION"] = []
+    action_obj = Action(ws_db, ev_obj)
+
+    bm.JudgeMain(ws_db, judge_time, ev_obj, action_obj)
+
+    # グルーピングが正しく行われることの確認
+
+    # 有効な判定済み先頭イベントはグルーピング情報を持つ
+    grouping_info_1 = e1.get("exastro_filter_group")
+    assert grouping_info_1 is not None
+    assert grouping_info_1["group_id"] == repr(e1["_id"])
+
+    # _exastro_host ラベルが同じイベントは同じグループになることを確認
+    grouping_info_2 = e2.get("exastro_filter_group")
+    assert grouping_info_2 is not None
+    assert grouping_info_2["group_id"] == grouping_info_1["group_id"]
+
+    # _exastro_host ラベルが異なるイベントは別グループになることを確認
+    grouping_info_3 = e3.get("exastro_filter_group")
+    assert grouping_info_3 is not None
+    assert grouping_info_3["group_id"] != grouping_info_1["group_id"]

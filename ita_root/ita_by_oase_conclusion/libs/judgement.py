@@ -218,10 +218,9 @@ class Judgement:
                                 FiltersUsedinRulesDict[FilterId]['rule_priority'].pop(rule_index)
                                 FiltersUsedinRulesDict[FilterId]['count'] -= 1
 
-                    # g.applogger.debug('FilterId({})=Level2'.format(FilterId))
                     # 優先順位が最上位のルールか判定
-                    if FiltersUsedinRulesDict[FilterId]['rule_id'][0] != RuleRow['RULE_ID']:
-                        # g.applogger.debug('FilterId({})=Level2 hit=False'.format(FilterId))
+                    current_rule_ids = FiltersUsedinRulesDict[FilterId]['rule_id']
+                    if len(current_rule_ids) == 0 or current_rule_ids[0] != RuleRow['RULE_ID']:
                         hit = False
 
                 # ルール抽出対象: 複数のルールで使用しているフィルタでタイムアウトを迎えるフィルタを使用しているルール※3の場合

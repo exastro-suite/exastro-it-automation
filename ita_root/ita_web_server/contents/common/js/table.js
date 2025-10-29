@@ -1939,7 +1939,7 @@ setTableEvents() {
                   key = $input.attr('data-key');
 
             const changeFlag = tb.setInputData( value, id, key, tb.data.body );
-
+            
             if ( changeFlag ) {
                 $input.addClass('tableEditChange');
                 if ( $input.is('.tableEditInputSelect') ) {
@@ -2184,7 +2184,7 @@ setTableEvents() {
 
             tb.multipleColmunSetting( columnType, restName, value, required ).then(function( result ){
                 if ( result !== undefined ) {
-                    const resultValue = ( fn.typeof( result ) === 'array' && result.length )? fn.jsonStringifyDelimiterSpace( result ): '';
+                    const resultValue = ( fn.typeof( result ) === 'array' && result.length )? fn.jsonStringifyDelimiterSpace( result ): '[]';
                     $input.val( resultValue ).change();
 
                     // 表示欄の幅の調整
@@ -2553,7 +2553,8 @@ checkNewInputDataDelete( id ) {
     const tb = this;
 
     // 変更が一つもない場合（パラメータが固有IDのみの場合）
-    if ( tb.edit.input[id] && Object.keys( tb.edit.input[id]['after'].parameter ).length <= 1 ) {
+    const keys = Object.keys( tb.edit.input[id]['after'].parameter );
+    if ( tb.edit.input[id] && keys.length <= 1 && keys[0] === tb.idNameRest ) {
         delete tb.edit.input[id];
     }
 
@@ -2708,13 +2709,14 @@ addRowInputData( addId ) {
         };
 
         // 初期値を入力済みへ
-        for ( const key in tb.edit.blank.parameter ) {
-            const beforeValue = tb.edit.input[ addId ].before.parameter[ key ],
-                  afterValue = tb.edit.blank.parameter[ key ];
-            if ( beforeValue !== afterValue && afterValue !== '' && afterValue !== null ) {
-                tb.edit.input[ addId ].after.parameter[ key ] = afterValue;
+        for ( const key in tb.edit.initialValue.parameter ) {
+            const initialValue = tb.edit.initialValue.parameter[ key ];
+            if ( initialValue !== '' && initialValue !== null && initialValue !== undefined ) {
+                tb.edit.input[ addId ].after.parameter[ key ] = initialValue;
             }
         }
+
+        tb.edit.input[ addId ].after.parameter[ tb.idNameRest ] = addId;
      }
      tb.checkNewInputDataDelete( addId );
 }
@@ -4876,6 +4878,14 @@ async changeEdtiMode( changeMode ) {
                 discard: '0'
             }
         };
+        for ( const key of tb.data.columnNames ) {
+            if ( !tb.edit.blank.parameter[ key ] ) tb.edit.blank.parameter[ key ] = null;
+        }
+
+        // 初期値用データ
+        tb.edit.initialValue = {
+            parameter: {}
+        };
 
         // 初期値
         for ( const key of tb.data.columnKeys ) {
@@ -4883,22 +4893,28 @@ async changeEdtiMode( changeMode ) {
 
             // セレクト必須選択項目
             const selectTarget = ['IDColumn', 'LinkIDColumn', 'AppIDColumn', 'RoleIDColumn', 'JsonIDColumn', 'UserIDColumn', 'NotificationIDColumn', 'ExecutionEnvironmentDefinitionIDColumn', 'MultiSelectIDColumn'];
-            if ( selectTarget.indexOf( columnInfo.column_type ) !== -1
-              && columnInfo.required_item === '1'
-              && columnInfo.initial_value === null ) {
+            if (
+                selectTarget.indexOf( columnInfo.column_type ) !== -1
+                && columnInfo.required_item === '1'
+                && columnInfo.initial_value === null
+            ) {
                 const select = tb.data.editSelectArray[ columnInfo.column_name_rest ];
                 if ( select !== undefined ) {
                     if ( columnInfo.column_type === 'NotificationIDColumn') {
                         tb.edit.blank.parameter[ columnInfo.column_name_rest ] = fn.jsonStringify([select[0]]);
+                        tb.edit.initialValue.parameter[ columnInfo.column_name_rest ] = fn.jsonStringify([select[0]]);
                     } else if ( columnInfo.column_type === 'MultiSelectIDColumn') {
                         tb.edit.blank.parameter[ columnInfo.column_name_rest ] = fn.jsonStringify([]);
+                        tb.edit.initialValue.parameter[ columnInfo.column_name_rest ] = fn.jsonStringify([]);
                     } else {
                         tb.edit.blank.parameter[ columnInfo.column_name_rest ] = select[0];
+                        tb.edit.initialValue.parameter[ columnInfo.column_name_rest ] = select[0];
                     }
                 }
             } else {
+                // 初期値（initial_value）がある場合
                 if ( info[ key ].column_name_rest !== 'discard') {
-                    tb.edit.blank.parameter[ columnInfo.column_name_rest ] = columnInfo.initial_value;
+                    tb.edit.initialValue.parameter[ columnInfo.column_name_rest ] = columnInfo.initial_value;
                 }
             }
         }

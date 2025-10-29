@@ -14,7 +14,10 @@
 
 from flask import g
 import json
+import jinja2
+import re
 
+# メニュー「イベント収集」設定のバリデーション
 
 def agent_setting_valid(objdbca, objtable, option):
 
@@ -105,16 +108,27 @@ def agent_setting_valid(objdbca, objtable, option):
             if request_method not in ["1", "2"]:
                 msg.append(g.appmsg.get_api_message("MSG-120004", [connection_method_name]))
 
-        # JSON形式チェック
         if connection_method in ["1", "2", "3", "5"]:
             # リクエストヘッダー
             if entry_parameter['request_header'] is not None:
-                if not isJsonFormat(entry_parameter['request_header']):
-                    msg.append(g.appmsg.get_api_message("MSG-120011", [connection_method_name]))
+                if is_use_jinja2_variable(entry_parameter['request_header']) is True:
+                    # jinja2の形式として問題無いか確認する
+                    if not is_jinja2_template(entry_parameter['request_header']):
+                        msg.append(g.appmsg.get_api_message("499-01815", [objtable["COLINFO"]["request_header"]["COLUMN_NAME_{}".format(LANG)]]))
+                else:
+                    # JSON形式チェック
+                    if not isJsonFormat(entry_parameter['request_header']):
+                        msg.append(g.appmsg.get_api_message("MSG-120011", [connection_method_name]))
             # パラメーター
             if entry_parameter['parameter'] is not None:
-                if not isJsonFormat(entry_parameter['parameter']):
-                    msg.append(g.appmsg.get_api_message("MSG-120012", [connection_method_name]))
+                if is_use_jinja2_variable(entry_parameter['parameter']) is True:
+                    # jinja2の形式チェック
+                    if not is_jinja2_template(entry_parameter['parameter']):
+                        msg.append(g.appmsg.get_api_message("499-01815", [objtable["COLINFO"]["parameter"]["COLUMN_NAME_{}".format(LANG)]]))
+                else:
+                    # JSON形式チェック
+                    if not isJsonFormat(entry_parameter['parameter']):
+                        msg.append(g.appmsg.get_api_message("MSG-120012", [connection_method_name]))
 
         # 編集時に対象レコードの接続方式が変更され、パスワードカラムに入力が無い場合、値をnullに設定
         if cmd_type == "Update":
@@ -161,4 +175,43 @@ def isJsonFormat(line):
 
     except Exception:
         return False
+    return True
+
+
+def is_use_jinja2_variable(template_data_decoded):
+    """jinja2の構文が使われているかをチェックする
+
+    Args:
+        template_data_decoded (str): 評価する文字列
+    RETRUN:
+        result :True（正常）/ False（エラー）
+    """
+
+    # {{空白+jinja2変数+空白}}
+    pattern1 = r"\{\{\s*([a-zA-Z_])(.*?)\s*\}\}"
+    # {%+ifやjinja2変数など%}
+    pattern2 = r"\{%(.*?)%\}"
+
+    if re.search(pattern1, template_data_decoded):
+        return True
+    if re.search(pattern2, template_data_decoded):
+        return True
+
+    return False
+
+
+def is_jinja2_template(template_data_decoded):
+    """jinja2のテンプレートとして問題無いかチェックする。
+
+    Args:
+        template_data_decoded (str): 評価する文字列
+    RETRUN:
+        result :True（正常）/ False（エラー）
+    """
+
+    try:
+        jinja2.Template(template_data_decoded)
+    except Exception:
+        return False
+
     return True

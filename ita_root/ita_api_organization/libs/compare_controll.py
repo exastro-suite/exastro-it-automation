@@ -994,6 +994,8 @@ def _get_unified_diff(accept_compare_file_list, filename_1, filename_2, mimetype
                     chunk_2 = tmp_data_2.read(chunk_byte)
                     if chunk_1 != chunk_2:
                         file_diff = True
+                        # バイナリファイルの比較では差分詳細は不要
+                        break
         return file_diff, str_rdiff
     except Exception:
         t = traceback.format_exc()

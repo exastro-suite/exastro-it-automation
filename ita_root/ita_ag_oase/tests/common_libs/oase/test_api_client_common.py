@@ -1119,6 +1119,7 @@ test_requests_parameters = [
     ),
 ]
 
+
 @pytest.mark.parametrize(
     "dummy_setting, last_fetched_event, expected_requests",
     test_requests_parameters
@@ -2423,7 +2424,7 @@ test_response_parameters = [
         ]
     ),
     # テストケース:レスポンスがカスタム
-    ## 12-正常系 - EVENT_ID_KEYがないので全て新規（SAVED_IDSあり）
+    # 12-正常系 - EVENT_ID_KEYがないので全て新規（SAVED_IDSあり）
     (
         {
             "events": [
@@ -2479,7 +2480,7 @@ test_response_parameters = [
             }
         ]
     ),
-    ## 13-正常系 - 中身が空オブジェクト_1
+    # 13-正常系 - 中身が空オブジェクト_1
     (
         {},
         {
@@ -2495,7 +2496,7 @@ test_response_parameters = [
         {},
         []
     ),
-    ## 14-正常系 - 中身が空オブジェクト_2
+    # 14-正常系 - 中身が空オブジェクト_2
     (
         {
             "event": {}
@@ -2515,7 +2516,7 @@ test_response_parameters = [
         },
         []
     ),
-    ## 15-異常系 - 空オブジェクト_3
+    # 15-異常系 - 空オブジェクト_3
     (
         {},
         {
@@ -2542,7 +2543,7 @@ test_response_parameters = [
             }
         ]
     ),
-    ## 16-正常系 - 空オブジェクト_4（リストの中に空オブジェクト）
+    # 16-正常系 - 空オブジェクト_4（リストの中に空オブジェクト）
     (
         {
             "events": [{}]
@@ -2574,7 +2575,7 @@ test_response_parameters = [
             }
         ]
     ),
-    ## 17-正常系 - 取れたが、中身が空リスト_1
+    # 17-正常系 - 取れたが、中身が空リスト_1
     (
         [],
         {
@@ -2590,7 +2591,7 @@ test_response_parameters = [
         [],
         []
     ),
-    ## 18-異常系 - 中身が空リスト_2
+    # 18-異常系 - 中身が空リスト_2
     (
         {
             "events": []
@@ -2621,7 +2622,7 @@ test_response_parameters = [
             }
         ]
     ),
-    ## 19-正常系 - 取れたが、空文字
+    # 19-正常系 - 取れたが、空文字
     (
         "",
         {
@@ -2637,7 +2638,7 @@ test_response_parameters = [
         "",
         []
     ),
-    ## 20-異常系 - 取れたが、中身が文字列
+    # 20-異常系 - 取れたが、中身が文字列
     (
         "message",
         {
@@ -3392,7 +3393,7 @@ test_response_parameters = [
             }
         ]
     ),
-    ## 40-異常系 -リストの中にリスト
+    # 40-異常系 -リストの中にリスト
     (
         {
             "message": [["error1", "error2"], ["error3", "error4", "error5"]]
@@ -3440,7 +3441,7 @@ test_response_parameters = [
             }
         ]
     ),
-    ## 42-異常系 - 文字列
+    # 42-異常系 - 文字列
     (
         "error is occured",
         {
@@ -3469,7 +3470,7 @@ test_response_parameters = [
             }
         ]
     ),
-    ## 43-異常系 - リストだが、オブジェクトを指定（空オブジェクト）
+    # 43-異常系 - リストだが、オブジェクトを指定（空オブジェクト）
     (
         [
             {}
@@ -3504,7 +3505,7 @@ test_response_parameters = [
             }
         ]
     ),
-    ## 44-異常系 - リストだが、オブジェクトを指定（空リスト）
+    # 44-異常系 - リストだが、オブジェクトを指定（空リスト）
     (
         [],
         {
@@ -3533,7 +3534,7 @@ test_response_parameters = [
             }
         ]
     ),
-    ## 45-異常系 - EVENT_ID_KEYがない
+    # 45-異常系 - EVENT_ID_KEYがない
     (
         [
             {
@@ -3584,7 +3585,7 @@ test_response_parameters = [
             }
         ]
     ),
-    ## 46-異常系 - 取れたが、中身が配列の中に配列
+    # 46-異常系 - 取れたが、中身が配列の中に配列
     (
         [["error1", "error2"], ["error3", "error4", "error5"]],
         {
@@ -3628,7 +3629,7 @@ test_response_parameters = [
             }
         ]
     ),
-    ## 47-異常系 - EVENT_ID_KEYがない
+    # 47-異常系 - EVENT_ID_KEYがない
     (
         {"status": "error", "id": 123},
         {

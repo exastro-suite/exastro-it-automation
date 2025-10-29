@@ -112,6 +112,8 @@ setInitCanvasValue() {
     // 履歴データ用
     er.history = [];
 
+    // デバッグ用
+    er.debug = fn.getParams().debug ?? false;
 }
 /*
 ##################################################
@@ -448,28 +450,53 @@ createCanvasData() {
 
     const ruleList = [];
     const ruleIdList = [];
+    er.groupingList = {};
 
     // イベントのつながりを作成
     // ルールリストの作成
     for ( const e of history ) {
-        // パターン
+
+        // パターン・座標
         if ( e.type === 'event') {
             e.pattern = er.checkEventPattern( e.item.labels );
+
+            // グルーピングイベントは座標を取得しスキップ
+            if (
+                e.pattern !== 'conclusion'
+                && e.item
+                && e.item.exastro_filter_group
+                && e.item.exastro_filter_group.is_first_event === false
+            ) {
+                const groupingId = e.item.exastro_filter_group.group_id;
+                if ( !er.groupingList[ groupingId ] ) {
+                    er.groupingList[ groupingId ] = {
+                        x: [],
+                        endX: 0,
+                        count: 0,
+                        data: []
+                    }
+                };
+                const groupData = er.groupingList[ groupingId ];
+                const x = er.getDateWidthPositionX( e.item.labels._exastro_fetched_time );
+                if ( x > groupData.endX ) groupData.endX = x;
+                groupData.count++;
+                groupData.x.push(x);
+                
+                // イベントデータ
+                if ( er.debug ) groupData.data.push(e);
+
+                // デバッグ時はグルーピングイベントを表示する
+                if ( !er.debug ) continue;
+            }            
+            e.x1 = er.getDateWidthPositionX( e.item.labels._exastro_fetched_time );
+            e.x2 = er.getDateWidthPositionX( e.item.labels._exastro_end_time );
         } else {
             e.pattern = e.type;
+            e.x1 = e.x2 = er.getDateWidthPositionX( e.datetime );
         }
 
         const eventList = er.getEventList(e);
         const ruleInfo = er.getRuleInfo(e);
-
-        // 座標
-        if ( e.type === 'event') {
-            e.x1 = er.getDateWidthPositionX( e.item.labels._exastro_fetched_time );
-            e.x2 = er.getDateWidthPositionX( e.item.labels._exastro_end_time );
-        } else {
-            e.x1 = e.x2 = er.getDateWidthPositionX( e.datetime );
-        }
-
         if ( eventList && ruleInfo ) {
             // ユニークルールID
             const ruleId = ruleInfo.id + eventList.toString();
@@ -577,6 +604,7 @@ createCanvasData() {
         if ( e.after || e.before ) {
             eventLinkCheck( e.id, 'group' + groupCount++ );
         } else {
+            if ( !e.x1 ) continue;
             er.groupList.singleData.push( e );
         }
     }
@@ -666,6 +694,11 @@ createCanvasData() {
     // 段数
     const floors = ( floor.length > er.minFloor )? floor.length: er.minFloor;
     er.lineSpacing = Math.round( er.h / floors * 100 ) / 100;
+
+    if ( er.debug ) {
+        console.log('履歴表示データ', er.groupList);
+        console.log('グルーピング', er.groupingList );
+    }
 }
 /*
 ##################################################
@@ -1233,6 +1266,7 @@ setEventBlock() {
         x1 = er.round( event.x1 * er.hRate - er.hPosition ),
         y = er.getFloorPositonY( event.floor );
 
+        // TTL 線
         if ( event.type === 'event') {
             const
             x2 = er.round( event.x2 * er.hRate - er.hPosition ),
@@ -1270,7 +1304,42 @@ eventBlock( ctx, e, opacity = 1 ) {
 
     const r = e.block.h *.1;
     if ( e.pattern !== 'rule') {
-        er.roundRect( ctx, e.block, r, er.getPatternColor( e.pattern, opacity ) );
+        if (
+            e.pattern !== 'conclusion'
+            && e.item
+            && e.item.exastro_filter_group
+            && e.item.exastro_filter_group.is_first_event === true
+            && er.groupingList[ e.item.exastro_filter_group.group_id ]
+        ) {
+            // グルーピングブロック
+            const blockHeight = er.round( er.lineSpacing * er.vRate * .7 );
+            const x = er.round( er.groupingList[ e.item.exastro_filter_group.group_id ].endX * er.hRate - er.hPosition );
+            const block = {
+                x: e.block.x,
+                y: e.block.y,
+                w: x - e.block.x + blockHeight / 2,
+                h: e.block.h,
+                centerX: e.block.centerX,
+                centerY: e.block.centerY,
+            };
+            er.roundRect( ctx, block, r, er.getPatternColor( e.pattern, .4 ) );
+
+            // 各位置に丸を描画
+            const arcHeight = er.round( er.lineSpacing * er.vRate * .06 );
+            for ( const gX of er.groupingList[ e.item.exastro_filter_group.group_id ].x ) {
+                const setX = er.round( gX * er.hRate - er.hPosition );
+                ctx.beginPath();
+                er.arc( ctx, arcHeight, setX, e.block.centerY, er.getPatternColor( e.pattern, .8 ) );
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            // 基本ブロック
+            er.roundRect( ctx, e.block, r, er.getPatternColor( e.pattern, opacity ) );
+        } else {
+            // 基本ブロック
+            er.roundRect( ctx, e.block, r, er.getPatternColor( e.pattern, opacity ) );
+        }
     } else {
         er.roundRect( ctx, e.block, r, er.getPatternColor( e.pattern, opacity ), null, null, true );
     }

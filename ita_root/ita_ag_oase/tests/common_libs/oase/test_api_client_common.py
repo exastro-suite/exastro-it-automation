@@ -626,7 +626,7 @@ test_requests_parameters = [
                 "method": "problem.get",
                 "params": {
                     "output": "extend",
-                    "eventid_from": "451"  # 前回イベントがある場合はid+1
+                    "eventid_from": "451"
                 },
                 "auth": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
                 "id": 1

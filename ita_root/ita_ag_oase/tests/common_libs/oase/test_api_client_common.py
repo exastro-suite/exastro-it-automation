@@ -103,7 +103,9 @@ test_requests_parameters = [
         },
         {
             "url": "http://dummy.hoge.com/api_jsonrpc.php",
-            "headers": { "content-type" : "application/json-rpc" },
+            "headers": {
+                "content-type": "application/json-rpc",
+            },
             "parameter": {
                 "jsonrpc": "2.0",
                 "method": "problem.get",
@@ -147,7 +149,9 @@ test_requests_parameters = [
         None,
         {
             "url": "http://dummy.hoge.com/api_jsonrpc.php",
-            "headers": { "content-type" : "application/json-rpc" },
+            "headers": {
+                "content-type": "application/json-rpc",
+            },
             "parameter": {
                 "jsonrpc": "2.0",
                 "method": "problem.get",
@@ -157,6 +161,959 @@ test_requests_parameters = [
                 },
                 "auth": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
                 "id": 1
+            }
+        }
+    ),
+    # 2-接続先(1): EXASTRO_EVENT_COLLECTION_SETTING.AUTH_TOKENの変数確認
+    (
+        {
+            "ACCESS_KEY_ID": None,
+            "AUTH_TOKEN": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
+            "CONNECTION_METHOD_ID": "5",
+            "DISUSE_FLAG": "0",
+            "EVENT_COLLECTION_SETTINGS_ID": "41086c31-6c24-41f2-aa30-741082642bfc",
+            "EVENT_COLLECTION_SETTINGS_NAME": "auth_token_check",
+            "EVENT_ID_KEY": "event_collection_settings_id",
+            "LAST_UPDATE_TIMESTAMP": "2025-10-24T00:20:22.172832Z",
+            "LAST_UPDATE_USER": "7f3ae1a4-c163-40d5-8509-c3881f5e46f1",
+            "MAILBOXNAME": None,
+            "NOTE": "b",
+            "PARAMETER": "",
+            "PASSWORD": "4jFT+McKLHwH123J+5UPn337ejPj3PlMUnh2/NPDKl4=",
+            "PORT": None,
+            "PROXY": None,
+            "REQUEST_HEADER": "{ \"content-type\" : \"application/json\" }",
+            "REQUEST_METHOD_ID": "2",
+            "RESPONSE_KEY": "data",
+            "RESPONSE_LIST_FLAG": "1",
+            "SECRET_ACCESS_KEY": None,
+            "TTL": 60,
+            "URL": "http://dummy.hoge.com/api_jsonrpc.php?token={{ EXASTRO_EVENT_COLLECTION_SETTING.AUTH_TOKEN | urlencode() }}",
+            "USERNAME": "user",
+            "SAVED_IDS": ["365"],
+            "LAST_FETCHED_TIMESTAMP": 1729756009,
+        },
+        None,
+        {
+            "url": "http://dummy.hoge.com/api_jsonrpc.php?token=ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
+            "headers": {
+                "content-type": "application/json",
+            },
+            "parameter": None
+        }
+    ),
+    # 3-接続先(2): EXASTRO_LAST_FETCHED_EVENT.eventidの変数確認
+    (
+        {
+            "ACCESS_KEY_ID": None,
+            "AUTH_TOKEN": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
+            "CONNECTION_METHOD_ID": "5",
+            "DISUSE_FLAG": "0",
+            "EVENT_COLLECTION_SETTINGS_ID": "41086c31-6c24-41f2-aa30-741082642bfc",
+            "EVENT_COLLECTION_SETTINGS_NAME": "zabbix_last_fetched_event_check",
+            "EVENT_ID_KEY": "eventid",
+            "LAST_UPDATE_TIMESTAMP": "2025-10-24T00:20:22.172832Z",
+            "LAST_UPDATE_USER": "7f3ae1a4-c163-40d5-8509-c3881f5e46f1",
+            "MAILBOXNAME": None,
+            "NOTE": "b",
+            "PARAMETER": "",
+            "PASSWORD": "4jFT+McKLHwH123J+5UPn337ejPj3PlMUnh2/NPDKl4=",
+            "PORT": None,
+            "PROXY": None,
+            "REQUEST_HEADER": "{ \"content-type\" : \"application/json-rpc\" }",
+            "REQUEST_METHOD_ID": "2",
+            "RESPONSE_KEY": "result",
+            "RESPONSE_LIST_FLAG": "1",
+            "SECRET_ACCESS_KEY": None,
+            "TTL": 60,
+            "URL": "http://dummy.hoge.com/api_jsonrpc.php?eventid={{ EXASTRO_LAST_FETCHED_EVENT.eventid | urlencode() }}",
+            "USERNAME": "user",
+            "SAVED_IDS": ["365"],
+            "LAST_FETCHED_TIMESTAMP": 1729756009,
+        },
+        {
+            "eventid": "67890",
+            "clock": 1695110400,
+            "ns": "dummy",
+            "value": "dummy"
+        },
+        {
+            "url": "http://dummy.hoge.com/api_jsonrpc.php?eventid=67890",
+            "headers": {
+                "content-type": "application/json-rpc",
+            },
+            "parameter": None
+        }
+    ),
+    # 4-リクエストヘッダー(1): EXASTRO_EVENT_COLLECTION_SETTING.AUTH_TOKENの変数確認
+    (
+        {
+            "ACCESS_KEY_ID": None,
+            "AUTH_TOKEN": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
+            "CONNECTION_METHOD_ID": "5",
+            "DISUSE_FLAG": "0",
+            "EVENT_COLLECTION_SETTINGS_ID": "41086c31-6c24-41f2-aa30-741082642bfc",
+            "EVENT_COLLECTION_SETTINGS_NAME": "zabbix_request_auth_token_check",
+            "EVENT_ID_KEY": "eventid",
+            "LAST_UPDATE_TIMESTAMP": "2025-10-24T00:20:22.172832Z",
+            "LAST_UPDATE_USER": "7f3ae1a4-c163-40d5-8509-c3881f5e46f1",
+            "MAILBOXNAME": None,
+            "NOTE": "b",
+            "PARAMETER": "",
+            "PASSWORD": "password",
+            "PORT": None,
+            "PROXY": None,
+            "REQUEST_HEADER": "{\n      \"content-type\": \"application/json\",\n      \"Authorization\": \"Bearer {{ EXASTRO_EVENT_COLLECTION_SETTING.AUTH_TOKEN }}\"\n}",
+            "REQUEST_METHOD_ID": "2",
+            "RESPONSE_KEY": "data",
+            "RESPONSE_LIST_FLAG": "1",
+            "SECRET_ACCESS_KEY": None,
+            "TTL": 60,
+            "URL": "http://dummy.hoge.com/api_jsonrpc.php?token={{ EXASTRO_EVENT_COLLECTION_SETTING.AUTH_TOKEN | urlencode() }}",
+            "USERNAME": "user",
+            "SAVED_IDS": ["365"],
+            "LAST_FETCHED_TIMESTAMP": 1729756009,
+        },
+        None,
+        {
+            "url": "http://dummy.hoge.com/api_jsonrpc.php?token=ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
+            "headers": {
+                "content-type": "application/json",
+                "Authorization": "Bearer ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC"
+            },
+            "parameter": None
+        }
+    ),
+    # 5-パラメータ(1): EXASTRO_EVENT_COLLECTION_SETTING.USERNAME/PASSWORDの変数確認
+    (
+        {
+            "ACCESS_KEY_ID": None,
+            "AUTH_TOKEN": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
+            "CONNECTION_METHOD_ID": "5",
+            "DISUSE_FLAG": "0",
+            "EVENT_COLLECTION_SETTINGS_ID": "41086c31-6c24-41f2-aa30-741082642bfc",
+            "EVENT_COLLECTION_SETTINGS_NAME": "zabbix_user_login_password",
+            "EVENT_ID_KEY": "eventid",
+            "LAST_UPDATE_TIMESTAMP": "2025-10-24T00:20:22.172832Z",
+            "LAST_UPDATE_USER": "7f3ae1a4-c163-40d5-8509-c3881f5e46f1",
+            "MAILBOXNAME": None,
+            "NOTE": "b",
+            "PARAMETER": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"user.login\",\n    \"params\": {\n      \"username\": \"{{ EXASTRO_EVENT_COLLECTION_SETTING.USERNAME }}\",\n      \"password\": \"{{ EXASTRO_EVENT_COLLECTION_SETTING.PASSWORD }}\"\n    },\n    \"id\": 1\n  }",
+            "PASSWORD": "4jFT+McKLHwH123J+5UPn337ejPj3PlMUnh2/NPDKl4=",
+            "PORT": None,
+            "PROXY": None,
+            "REQUEST_HEADER": "{ \"content-type\" : \"application/json-rpc\" }",
+            "REQUEST_METHOD_ID": "2",
+            "RESPONSE_KEY": "result",
+            "RESPONSE_LIST_FLAG": "1",
+            "SECRET_ACCESS_KEY": "hmvA0mcecB1gG++MFCKg5co6jDn5n2LN7f0E4k2YiBQ=",
+            "TTL": 60,
+            "URL": "http://dummy.hoge.com/api_jsonrpc.php",
+            "USERNAME": "user",
+            "SAVED_IDS": ["365"],
+            "LAST_FETCHED_TIMESTAMP": 1729756009,
+        },
+        None,
+        {
+            "url": "http://dummy.hoge.com/api_jsonrpc.php",
+            "headers": {
+                "content-type": "application/json-rpc",
+            },
+            "parameter": {
+                "jsonrpc": "2.0",
+                "method": "user.login",
+                "params": {
+                    "username": "user",
+                    "password": "4jFT+McKLHwH123J+5UPn337ejPj3PlMUnh2/NPDKl4="
+                },
+                "id": 1
+            }
+        }
+    ),
+    # 6-パラメータ(2): EXASTRO_EVENT_COLLECTION_SETTING.AUTH_TOKENの変数確認
+    (
+        {
+            "ACCESS_KEY_ID": None,
+            "AUTH_TOKEN": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
+            "CONNECTION_METHOD_ID": "5",
+            "DISUSE_FLAG": "0",
+            "EVENT_COLLECTION_SETTINGS_ID": "41086c31-6c24-41f2-aa30-741082642bfc",
+            "EVENT_COLLECTION_SETTINGS_NAME": "zabbix_auth_token",
+            "EVENT_ID_KEY": "eventid",
+            "LAST_UPDATE_TIMESTAMP": "2025-10-24T00:20:22.172832Z",
+            "LAST_UPDATE_USER": "7f3ae1a4-c163-40d5-8509-c3881f5e46f1",
+            "MAILBOXNAME": None,
+            "NOTE": "b",
+            "PARAMETER": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"alert.get\",\n    \"params\": {\n        \"output\": \"extend\",\n        \"actionids\": \"3\"\n    },\n    \"auth\": \"{{ EXASTRO_EVENT_COLLECTION_SETTING.AUTH_TOKEN }}\",\n    \"id\": 1\n}",
+            "PASSWORD": "4jFT+McKLHwH123J+5UPn337ejPj3PlMUnh2/NPDKl4=",
+            "PORT": None,
+            "PROXY": None,
+            "REQUEST_HEADER": "{ \"content-type\" : \"application/json-rpc\" }",
+            "REQUEST_METHOD_ID": "2",
+            "RESPONSE_KEY": "result",
+            "RESPONSE_LIST_FLAG": "1",
+            "SECRET_ACCESS_KEY": "hmvA0mcecB1gG++MFCKg5co6jDn5n2LN7f0E4k2YiBQ=",
+            "TTL": 60,
+            "URL": "http://dummy.hoge.com/api_jsonrpc.php",
+            "USERNAME": "user",
+            "SAVED_IDS": ["365"],
+            "LAST_FETCHED_TIMESTAMP": 1729756009,
+        },
+        None,
+        {
+            "url": "http://dummy.hoge.com/api_jsonrpc.php",
+            "headers": {
+                "content-type": "application/json-rpc",
+            },
+            "parameter": {
+                "jsonrpc": "2.0",
+                "method": "alert.get",
+                "params": {
+                    "output": "extend",
+                    "actionids": "3"
+                },
+                "auth": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
+                "id": 1
+            }
+        }
+    ),
+    # 7-パラメータ(3): EXASTRO_LAST_FETCHED_EVENT.clockの変数確認
+    (
+        {
+            "ACCESS_KEY_ID": None,
+            "AUTH_TOKEN": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
+            "CONNECTION_METHOD_ID": "5",
+            "DISUSE_FLAG": "0",
+            "EVENT_COLLECTION_SETTINGS_ID": "41086c31-6c24-41f2-aa30-741082642bfc",
+            "EVENT_COLLECTION_SETTINGS_NAME": "zabbix_last_fetched_event_clock",
+            "EVENT_ID_KEY": "eventid",
+            "LAST_UPDATE_TIMESTAMP": "2025-10-24T00:20:22.172832Z",
+            "LAST_UPDATE_USER": "7f3ae1a4-c163-40d5-8509-c3881f5e46f1",
+            "MAILBOXNAME": None,
+            "NOTE": "b",
+            "PARAMETER": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"event.get\",\n    \"params\": {\n        \"output\": \"extend\",\n        \"time_from\": \"{{ EXASTRO_LAST_FETCHED_EVENT.clock }}\"\n    },\n    \"id\": 1\n}",
+            "PASSWORD": "4jFT+McKLHwH123J+5UPn337ejPj3PlMUnh2/NPDKl4=",
+            "PORT": None,
+            "PROXY": None,
+            "REQUEST_HEADER": "{ \"content-type\" : \"application/json-rpc\" }",
+            "REQUEST_METHOD_ID": "2",
+            "RESPONSE_KEY": "result",
+            "RESPONSE_LIST_FLAG": "1",
+            "SECRET_ACCESS_KEY": "hmvA0mcecB1gG++MFCKg5co6jDn5n2LN7f0E4k2YiBQ=",
+            "TTL": 60,
+            "URL": "http://dummy.hoge.com/api_jsonrpc.php",
+            "USERNAME": "user",
+            "SAVED_IDS": ["365"],
+            "LAST_FETCHED_TIMESTAMP": 1729756009,
+        },
+        {
+            "eventid": "12345",
+            "clock": "1758731649",
+            "ns": "123456789",
+            "value": "1"
+        },
+        {
+            "url": "http://dummy.hoge.com/api_jsonrpc.php",
+            "headers": {
+                "content-type": "application/json-rpc",
+            },
+            "parameter": {
+                "jsonrpc": "2.0",
+                "method": "event.get",
+                "params": {
+                    "output": "extend",
+                    "time_from": "1758731649"  # EXASTRO_LAST_FETCHED_EVENT.clockの値
+                },
+                "id": 1
+            }
+        }
+    ),
+    # 8-パラメータ(4): EXASTRO_LAST_FETCHED_TIMESTAMPの変数確認
+    (
+        {
+            "ACCESS_KEY_ID": None,
+            "AUTH_TOKEN": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
+            "CONNECTION_METHOD_ID": "5",
+            "DISUSE_FLAG": "0",
+            "EVENT_COLLECTION_SETTINGS_ID": "41086c31-6c24-41f2-aa30-741082642bfc",
+            "EVENT_COLLECTION_SETTINGS_NAME": "zabbix_event_get_timestamp",
+            "EVENT_ID_KEY": "eventid",
+            "LAST_UPDATE_TIMESTAMP": "2025-10-24T00:20:22.172832Z",
+            "LAST_UPDATE_USER": "7f3ae1a4-c163-40d5-8509-c3881f5e46f1",
+            "MAILBOXNAME": None,
+            "NOTE": "b",
+            "PARAMETER": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"event.get\",\n    \"params\": {\n        \"output\": \"extend\",\n        \"time_from\": \"{{ EXASTRO_LAST_FETCHED_TIMESTAMP }}\"\n    },\n    \"id\": 1\n}",
+            "PASSWORD": "4jFT+McKLHwH123J+5UPn337ejPj3PlMUnh2/NPDKl4=",
+            "PORT": None,
+            "PROXY": None,
+            "REQUEST_HEADER": "{ \"content-type\" : \"application/json-rpc\" }",
+            "REQUEST_METHOD_ID": "2",
+            "RESPONSE_KEY": "result",
+            "RESPONSE_LIST_FLAG": "1",
+            "SECRET_ACCESS_KEY": None,
+            "TTL": 60,
+            "URL": "http://dummy.hoge.com/api_jsonrpc.php",
+            "USERNAME": "user",
+            "SAVED_IDS": ["365"],
+            "LAST_FETCHED_TIMESTAMP": 1758879732,
+        },
+        {
+            "eventid": "12345",
+            "ns": "123456789",
+            "value": "1"
+        },
+        {
+            "url": "http://dummy.hoge.com/api_jsonrpc.php",
+            "headers": {
+                "content-type": "application/json-rpc",
+            },
+            "parameter": {
+                "jsonrpc": "2.0",
+                "method": "event.get",
+                "params": {
+                    "output": "extend",
+                    "time_from": "1758879732"  # EXASTRO_LAST_FETCHED_TIMESTAMPの値
+                },
+                "id": 1
+            }
+        }
+    ),
+    # 9-パラメータ(5): EXASTRO_LAST_FETCHED_TIMESTAMPの変数確認
+    (
+        {
+            "ACCESS_KEY_ID": None,
+            "AUTH_TOKEN": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
+            "CONNECTION_METHOD_ID": "5",
+            "DISUSE_FLAG": "0",
+            "EVENT_COLLECTION_SETTINGS_ID": "41086c31-6c24-41f2-aa30-741082642bfc",
+            "EVENT_COLLECTION_SETTINGS_NAME": "zabbix_event_get_timestamp",
+            "EVENT_ID_KEY": "eventid",
+            "LAST_UPDATE_TIMESTAMP": "2025-10-24T00:20:22.172832Z",
+            "LAST_UPDATE_USER": "7f3ae1a4-c163-40d5-8509-c3881f5e46f1",
+            "MAILBOXNAME": None,
+            "NOTE": "b",
+            "PARAMETER": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"problem.get\",\n     \"params\": {\n        \"output\": \"extend\",\n             \"time_from\": \"{{ EXASTRO_LAST_FETCHED_TIMESTAMP }}\"\n    },\n    \"auth\": \"{{ EXASTRO_EVENT_COLLECTION_SETTING.AUTH_TOKEN }}\",\n    \"id\": 1\n}",
+            "PASSWORD": "4jFT+McKLHwH123J+5UPn337ejPj3PlMUnh2/NPDKl4=",
+            "PORT": None,
+            "PROXY": None,
+            "REQUEST_HEADER": "{ \"content-type\" : \"application/json-rpc\" }",
+            "REQUEST_METHOD_ID": "2",
+            "RESPONSE_KEY": "result",
+            "RESPONSE_LIST_FLAG": "1",
+            "SECRET_ACCESS_KEY": None,
+            "TTL": 60,
+            "URL": "http://dummy.hoge.com/api_jsonrpc.php",
+            "USERNAME": "user",
+            "SAVED_IDS": ["365"],
+            "LAST_FETCHED_TIMESTAMP": 1695110400,
+        },
+        {
+            "eventid": "12345",
+            "ns": "123456789",
+            "value": "1"
+        },
+        {
+            "url": "http://dummy.hoge.com/api_jsonrpc.php",
+            "headers": {
+                "content-type": "application/json-rpc",
+            },
+            "parameter": {
+                "jsonrpc": "2.0",
+                "method": "problem.get",
+                "params": {
+                    "output": "extend",
+                    "time_from": "1695110400"
+                },
+                "auth": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
+                "id": 1
+            }
+        }
+    ),
+    # 10-パラメータ(6): EXASTRO_LAST_FETCHED_EVENT.clock,EXASTRO_EVENT_COLLECTION_SETTING.AUTH_TOKENの変数確認
+    (
+        {
+            "ACCESS_KEY_ID": None,
+            "AUTH_TOKEN": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
+            "CONNECTION_METHOD_ID": "5",
+            "DISUSE_FLAG": "0",
+            "EVENT_COLLECTION_SETTINGS_ID": "41086c31-6c24-41f2-aa30-741082642bfc",
+            "EVENT_COLLECTION_SETTINGS_NAME": "zabbix_auth_token_check",
+            "EVENT_ID_KEY": "eventid",
+            "LAST_UPDATE_TIMESTAMP": "2025-10-24T00:20:22.172832Z",
+            "LAST_UPDATE_USER": "7f3ae1a4-c163-40d5-8509-c3881f5e46f1",
+            "MAILBOXNAME": None,
+            "NOTE": "b",
+            "PARAMETER": "{\n    \"jsonrpc\":\"2.0\",\n    \"method\":\"problem.get\",\n     \"params\" : {\n        \"output\":\"extend\",\n        \"time_from\": \"{{ EXASTRO_LAST_FETCHED_EVENT.clock }}\"\n    },\n    \"auth\": \"{{ EXASTRO_EVENT_COLLECTION_SETTING.AUTH_TOKEN }}\",\n    \"id\": 1\n}",
+            "PASSWORD": "4jFT+McKLHwH123J+5UPn337ejPj3PlMUnh2/NPDKl4=",
+            "PORT": None,
+            "PROXY": None,
+            "REQUEST_HEADER": "{ \"content-type\" : \"application/json-rpc\" }",
+            "REQUEST_METHOD_ID": "2",
+            "RESPONSE_KEY": "result",
+            "RESPONSE_LIST_FLAG": "1",
+            "SECRET_ACCESS_KEY": None,
+            "TTL": 60,
+            "URL": "http://dummy.hoge.com/api_jsonrpc.php",
+            "USERNAME": "user",
+            "SAVED_IDS": ["365"],
+            "LAST_FETCHED_TIMESTAMP": 1695110400,
+        },
+        {
+            "eventid": "425",
+            "clock": 1695110400,
+            "ns": "dummy",
+            "value": "dummy"
+        },
+        {
+            "url": "http://dummy.hoge.com/api_jsonrpc.php",
+            "headers": {
+                "content-type": "application/json-rpc",
+            },
+            "parameter": {
+                "jsonrpc": "2.0",
+                "method": "problem.get",
+                "params": {
+                    "output": "extend",
+                    "time_from": "1695110400"
+                },
+                "auth": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
+                "id": 1
+            }
+        }
+    ),
+    # 11-パラメータ(7-1): EXASTRO_LAST_FETCHED_EVENT.eventidの変数確認 - 前回取得イベントがある場合
+    (
+        {
+            "ACCESS_KEY_ID": None,
+            "AUTH_TOKEN": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
+            "CONNECTION_METHOD_ID": "5",
+            "DISUSE_FLAG": "0",
+            "EVENT_COLLECTION_SETTINGS_ID": "41086c31-6c24-41f2-aa30-741082642bfc",
+            "EVENT_COLLECTION_SETTINGS_NAME": "zabbix_last_fetched_true",
+            "EVENT_ID_KEY": "eventid",
+            "LAST_UPDATE_TIMESTAMP": "2025-10-24T00:20:22.172832Z",
+            "LAST_UPDATE_USER": "7f3ae1a4-c163-40d5-8509-c3881f5e46f1",
+            "MAILBOXNAME": None,
+            "NOTE": "b",
+            "PARAMETER": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"problem.get\",\n    \"params\": {\n        \"output\": \"extend\",\n        {% if EXASTRO_LAST_FETCHED_EVENT_IS_EXIST %}\n          \"eventid_from\": \"{{ EXASTRO_LAST_FETCHED_EVENT.eventid|int + 1  }}\"\n        {% else %}\n          \"time_from\": \"{{ EXASTRO_LAST_FETCHED_TIMESTAMP }}\"\n        {% endif %}\n    },\n  \"auth\": \"{{ EXASTRO_EVENT_COLLECTION_SETTING.AUTH_TOKEN }}\",\n  \"id\": 1\n}",
+            "PASSWORD": "4jFT+McKLHwH123J+5UPn337ejPj3PlMUnh2/NPDKl4=",
+            "PORT": None,
+            "PROXY": None,
+            "REQUEST_HEADER": "{ \"content-type\" : \"application/json-rpc\" }",
+            "REQUEST_METHOD_ID": "2",
+            "RESPONSE_KEY": "result",
+            "RESPONSE_LIST_FLAG": "1",
+            "SECRET_ACCESS_KEY": None,
+            "TTL": 60,
+            "URL": "http://dummy.hoge.com/api_jsonrpc.php",
+            "USERNAME": "user",
+            "SAVED_IDS": ["365"],
+            "LAST_FETCHED_TIMESTAMP": 1695110400,
+        },
+        {
+            "eventid": "450",
+            "clock": 1695110400,
+            "ns": "dummy",
+            "value": "dummy"
+        },
+        {
+            "url": "http://dummy.hoge.com/api_jsonrpc.php",
+            "headers": {
+                "content-type": "application/json-rpc",
+            },
+            "parameter": {
+                "jsonrpc": "2.0",
+                "method": "problem.get",
+                "params": {
+                    "output": "extend",
+                    "eventid_from": "451"  # 前回イベントがある場合はid+1
+                },
+                "auth": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
+                "id": 1
+            }
+        }
+    ),
+    # 12-パラメータ(7-2): EXASTRO_LAST_FETCHED_EVENT.eventidの変数確認 - 前回取得イベントが無い場合
+    (
+        {
+            "ACCESS_KEY_ID": None,
+            "AUTH_TOKEN": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
+            "CONNECTION_METHOD_ID": "5",
+            "DISUSE_FLAG": "0",
+            "EVENT_COLLECTION_SETTINGS_ID": "41086c31-6c24-41f2-aa30-741082642bfc",
+            "EVENT_COLLECTION_SETTINGS_NAME": "zabbix_last_fetched_false",
+            "EVENT_ID_KEY": "eventid",
+            "LAST_UPDATE_TIMESTAMP": "2025-10-24T00:20:22.172832Z",
+            "LAST_UPDATE_USER": "7f3ae1a4-c163-40d5-8509-c3881f5e46f1",
+            "MAILBOXNAME": None,
+            "NOTE": "b",
+            "PARAMETER": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"problem.get\",\n    \"params\": {\n        \"output\": \"extend\",\n        {% if EXASTRO_LAST_FETCHED_EVENT_IS_EXIST %}\n          \"eventid_from\": \"{{ EXASTRO_LAST_FETCHED_EVENT.eventid|int + 1  }}\"\n        {% else %}\n          \"time_from\": \"{{ EXASTRO_LAST_FETCHED_TIMESTAMP }}\"\n        {% endif %}\n    },\n  \"auth\": \"{{ EXASTRO_EVENT_COLLECTION_SETTING.AUTH_TOKEN }}\",\n  \"id\": 1\n}",
+            "PASSWORD": "4jFT+McKLHwH123J+5UPn337ejPj3PlMUnh2/NPDKl4=",
+            "PORT": None,
+            "PROXY": None,
+            "REQUEST_HEADER": "{ \"content-type\" : \"application/json-rpc\" }",
+            "REQUEST_METHOD_ID": "2",
+            "RESPONSE_KEY": "result",
+            "RESPONSE_LIST_FLAG": "1",
+            "SECRET_ACCESS_KEY": None,
+            "TTL": 60,
+            "URL": "http://dummy.hoge.com/api_jsonrpc.php",
+            "USERNAME": "user",
+            "SAVED_IDS": ["365"],
+            "LAST_FETCHED_TIMESTAMP": 1695110400,
+        },
+        None,
+        {
+            "url": "http://dummy.hoge.com/api_jsonrpc.php",
+            "headers": {
+                "content-type": "application/json-rpc",
+            },
+            "parameter": {
+                "jsonrpc": "2.0",
+                "method": "problem.get",
+                "params": {
+                    "output": "extend",
+                    "time_from": "1695110400"
+                },
+                "auth": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
+                "id": 1
+            }
+        }
+    ),
+    # 13-パラメータ(8): EXASTRO_LAST_FETCHED_TIMESTAMPの変数確認
+    (
+        {
+            "ACCESS_KEY_ID": None,
+            "AUTH_TOKEN": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
+            "CONNECTION_METHOD_ID": "5",
+            "DISUSE_FLAG": "0",
+            "EVENT_COLLECTION_SETTINGS_ID": "41086c31-6c24-41f2-aa30-741082642bfc",
+            "EVENT_COLLECTION_SETTINGS_NAME": "zabbix_last_fethced_check",
+            "EVENT_ID_KEY": "eventid",
+            "LAST_UPDATE_TIMESTAMP": "2025-10-24T00:20:22.172832Z",
+            "LAST_UPDATE_USER": "7f3ae1a4-c163-40d5-8509-c3881f5e46f1",
+            "MAILBOXNAME": None,
+            "NOTE": "b",
+            "PARAMETER": "{\n      \"jsonrpc\": \"2.0\",\n      \"method\": \"problem.get\",\n       \"params\": {\n            \"output\": \"extend\",\n            \"time_from\": \"EXASTRO_LAST_FETCHED_TIMESTAMP\"\n      },\n    \"auth\": \"\",\n    \"id\": 1\n}",
+            "PASSWORD": "4jFT+McKLHwH123J+5UPn337ejPj3PlMUnh2/NPDKl4=",
+            "PORT": None,
+            "PROXY": None,
+            "REQUEST_HEADER": "{ \"content-type\" : \"application/json-rpc\" }",
+            "REQUEST_METHOD_ID": "2",
+            "RESPONSE_KEY": "result",
+            "RESPONSE_LIST_FLAG": "1",
+            "SECRET_ACCESS_KEY": None,
+            "TTL": 60,
+            "URL": "http://dummy.hoge.com/api_jsonrpc.php",
+            "USERNAME": "user",
+            "SAVED_IDS": ["365"],
+            "LAST_FETCHED_TIMESTAMP": 1695110400,
+        },
+        {
+            "eventid": "450",
+            "clock": 1695110400,
+            "ns": "dummy",
+            "value": "dummy"
+        },
+        {
+            "url": "http://dummy.hoge.com/api_jsonrpc.php",
+            "headers": {
+                "content-type": "application/json-rpc",
+            },
+            "parameter": {
+                "jsonrpc": "2.0",
+                "method": "problem.get",
+                "params": {
+                    "output": "extend",
+                    "time_from": "1695110400"
+                },
+                "auth": "",
+                "id": 1
+            }
+        }
+    ),
+    # 14-1パラメータ(9-1): 条件分岐EXASTRO_LAST_FETCHED_...の変数確認- 前回取得イベントがある場合
+    (
+        {
+            "ACCESS_KEY_ID": None,
+            "AUTH_TOKEN": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
+            "CONNECTION_METHOD_ID": "5",
+            "DISUSE_FLAG": "0",
+            "EVENT_COLLECTION_SETTINGS_ID": "41086c31-6c24-41f2-aa30-741082642bfc",
+            "EVENT_COLLECTION_SETTINGS_NAME": "zabbix_last_fethced_check",
+            "EVENT_ID_KEY": "eventid",
+            "LAST_UPDATE_TIMESTAMP": "2025-10-24T00:20:22.172832Z",
+            "LAST_UPDATE_USER": "7f3ae1a4-c163-40d5-8509-c3881f5e46f1",
+            "MAILBOXNAME": None,
+            "NOTE": "b",
+            "PARAMETER": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"problem.get\",\n    \"params\": {\n        \"output\": \"extend\",\n        {% if EXASTRO_LAST_FETCHED_EVENT_IS_EXIST %}\n          \"eventid_from\": \"{{ EXASTRO_LAST_FETCHED_EVENT.eventid|int + 1  }}\"\n        {% else %}\n          \"time_from\": \"EXASTRO_LAST_FETCHED_TIMESTAMP\"\n        {% endif %}\n    },\n  \"auth\": \"{{ EXASTRO_EVENT_COLLECTION_SETTING.AUTH_TOKEN }}\",\n  \"id\": 1\n}",
+            "PASSWORD": "4jFT+McKLHwH123J+5UPn337ejPj3PlMUnh2/NPDKl4=",
+            "PORT": None,
+            "PROXY": None,
+            "REQUEST_HEADER": "{ \"content-type\" : \"application/json-rpc\" }",
+            "REQUEST_METHOD_ID": "2",
+            "RESPONSE_KEY": "result",
+            "RESPONSE_LIST_FLAG": "1",
+            "SECRET_ACCESS_KEY": None,
+            "TTL": 60,
+            "URL": "http://dummy.hoge.com/api_jsonrpc.php",
+            "USERNAME": "user",
+            "SAVED_IDS": ["365"],
+            "LAST_FETCHED_TIMESTAMP": 1695110400,
+        },
+        {
+            "eventid": "450",
+            "clock": 1695110400,
+            "ns": "dummy",
+            "value": "dummy"
+        },
+        {
+            "url": "http://dummy.hoge.com/api_jsonrpc.php",
+            "headers": {
+                "content-type": "application/json-rpc",
+            },
+            "parameter": {
+                "jsonrpc": "2.0",
+                "method": "problem.get",
+                "params": {
+                    "output": "extend",
+                    "eventid_from": "451"
+                },
+                "auth": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
+                "id": 1
+            }
+        }
+    ),
+    # 15-パラメータ(9-2): 条件分岐EXASTRO_LAST_FETCHED_...の変数確認- 前回取得イベントがない場合
+    (
+        {
+            "ACCESS_KEY_ID": None,
+            "AUTH_TOKEN": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
+            "CONNECTION_METHOD_ID": "5",
+            "DISUSE_FLAG": "0",
+            "EVENT_COLLECTION_SETTINGS_ID": "41086c31-6c24-41f2-aa30-741082642bfc",
+            "EVENT_COLLECTION_SETTINGS_NAME": "zabbix_last_fethced_check",
+            "EVENT_ID_KEY": "eventid",
+            "LAST_UPDATE_TIMESTAMP": "2025-10-24T00:20:22.172832Z",
+            "LAST_UPDATE_USER": "7f3ae1a4-c163-40d5-8509-c3881f5e46f1",
+            "MAILBOXNAME": None,
+            "NOTE": "b",
+            "PARAMETER": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"problem.get\",\n    \"params\": {\n        \"output\": \"extend\",\n        {% if EXASTRO_LAST_FETCHED_EVENT_IS_EXIST %}\n          \"eventid_from\": \"{{ EXASTRO_LAST_FETCHED_EVENT.eventid|int + 1  }}\"\n        {% else %}\n          \"time_from\": \"EXASTRO_LAST_FETCHED_TIMESTAMP\"\n        {% endif %}\n    },\n  \"auth\": \"{{ EXASTRO_EVENT_COLLECTION_SETTING.AUTH_TOKEN }}\",\n  \"id\": 1\n}",
+            "PASSWORD": "4jFT+McKLHwH123J+5UPn337ejPj3PlMUnh2/NPDKl4=",
+            "PORT": None,
+            "PROXY": None,
+            "REQUEST_HEADER": "{ \"content-type\" : \"application/json-rpc\" }",
+            "REQUEST_METHOD_ID": "2",
+            "RESPONSE_KEY": "result",
+            "RESPONSE_LIST_FLAG": "1",
+            "SECRET_ACCESS_KEY": None,
+            "TTL": 60,
+            "URL": "http://dummy.hoge.com/api_jsonrpc.php",
+            "USERNAME": "user",
+            "SAVED_IDS": ["365"],
+            "LAST_FETCHED_TIMESTAMP": 1695110400,
+        },
+        None,
+        {
+            "url": "http://dummy.hoge.com/api_jsonrpc.php",
+            "headers": {
+                "content-type": "application/json-rpc",
+            },
+            "parameter": {
+                "jsonrpc": "2.0",
+                "method": "problem.get",
+                "params": {
+                    "output": "extend",
+                    "time_from": "1695110400"
+                },
+                "auth": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
+                "id": 1
+            }
+        }
+    ),
+    # 16-パラメータ(10): EXASTRO_LAST_FETCHED_EVENTの変数確認
+    (
+        {
+            "ACCESS_KEY_ID": None,
+            "AUTH_TOKEN": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
+            "CONNECTION_METHOD_ID": "5",
+            "DISUSE_FLAG": "0",
+            "EVENT_COLLECTION_SETTINGS_ID": "41086c31-6c24-41f2-aa30-741082642bfc",
+            "EVENT_COLLECTION_SETTINGS_NAME": "zabbix_last_fethced_dummy",
+            "EVENT_ID_KEY": "eventid",
+            "LAST_UPDATE_TIMESTAMP": "2025-10-24T00:20:22.172832Z",
+            "LAST_UPDATE_USER": "7f3ae1a4-c163-40d5-8509-c3881f5e46f1",
+            "MAILBOXNAME": None,
+            "NOTE": "b",
+            "PARAMETER": "{\n      \"eventid_from\": \"{{ EXASTRO_LAST_FETCHED_EVENT.dummy }}\"\n}",
+            "PASSWORD": "4jFT+McKLHwH123J+5UPn337ejPj3PlMUnh2/NPDKl4=",
+            "PORT": None,
+            "PROXY": None,
+            "REQUEST_HEADER": "{ \"content-type\" : \"application/json-rpc\" }",
+            "REQUEST_METHOD_ID": "2",
+            "RESPONSE_KEY": "result",
+            "RESPONSE_LIST_FLAG": "1",
+            "SECRET_ACCESS_KEY": None,
+            "TTL": 60,
+            "URL": "http://dummy.hoge.com/api_jsonrpc.php",
+            "USERNAME": "user",
+            "SAVED_IDS": ["365"],
+            "LAST_FETCHED_TIMESTAMP": 1695110400,
+        },
+        {
+            "eventid": "450",
+            "clock": 1695110400,
+            "ns": "dummy",
+            "value": "dummy"
+        },
+        {
+            "url": "http://dummy.hoge.com/api_jsonrpc.php",
+            "headers": {
+                "content-type": "application/json-rpc",
+            },
+            "parameter": {
+                "eventid_from": ""
+            }
+        }
+    ),
+    # 17-パラメータ(11): EXASTRO_LAST_FETCHED_YY_MM_DDの変数確認
+    (
+        {
+            "ACCESS_KEY_ID": None,
+            "AUTH_TOKEN": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
+            "CONNECTION_METHOD_ID": "1",
+            "DISUSE_FLAG": "0",
+            "EVENT_COLLECTION_SETTINGS_ID": "41086c31-6c24-41f2-aa30-741082642bfc",
+            "EVENT_COLLECTION_SETTINGS_NAME": "last_fetched_YY_MM_DD_check",
+            "EVENT_ID_KEY": "eventid",
+            "LAST_UPDATE_TIMESTAMP": "2025-10-24T00:20:22.172832Z",
+            "LAST_UPDATE_USER": "7f3ae1a4-c163-40d5-8509-c3881f5e46f1",
+            "MAILBOXNAME": None,
+            "NOTE": "b",
+            "PARAMETER": "{\n      \"discard\": { \"NORMAL\": \"0\" },\n      \"last_update_date_time\": { \"RANGE\": { \"START\": \"{{ EXASTRO_LAST_FETCHED_YY_MM_DD }}\" } }\n}",
+            "PASSWORD": "4jFT+McKLHwH123J+5UPn337ejPj3PlMUnh2/NPDKl4=",
+            "PORT": None,
+            "PROXY": None,
+            "REQUEST_HEADER": "{ \"content-type\" : \"application/json\" }",
+            "REQUEST_METHOD_ID": "1",
+            "RESPONSE_KEY": "result",
+            "RESPONSE_LIST_FLAG": "1",
+            "SECRET_ACCESS_KEY": None,
+            "TTL": 60,
+            "URL": "http://dummy.hoge.com/api_jsonrpc.php",
+            "USERNAME": "user",
+            "SAVED_IDS": ["365"],
+            "LAST_FETCHED_TIMESTAMP": 1695110400,
+        },
+        {
+            "eventid": "450",
+            "ns": "dummy",
+            "value": "dummy"
+        },
+        {
+            "url": "http://dummy.hoge.com/api_jsonrpc.php",
+            "headers": {
+                "content-type": "application/json",
+            },
+            "parameter": {
+                "discard": {
+                    "NORMAL": "0"
+                },
+                "last_update_date_time": {
+                    "RANGE": {
+                        "START": "2023/09/19 17:00:00"
+                    }
+                }
+            }
+        }
+    ),
+    # 18-パラメータ(12): EXASTRO_LAST_FETCHED_YY_MM_DDの変数確認
+    (
+        {
+            "ACCESS_KEY_ID": None,
+            "AUTH_TOKEN": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
+            "CONNECTION_METHOD_ID": "1",
+            "DISUSE_FLAG": "0",
+            "EVENT_COLLECTION_SETTINGS_ID": "41086c31-6c24-41f2-aa30-741082642bfc",
+            "EVENT_COLLECTION_SETTINGS_NAME": "last_fetched_YY_MM_DD:00:00:00_check",
+            "EVENT_ID_KEY": "eventid",
+            "LAST_UPDATE_TIMESTAMP": "2025-10-28T00:54:09.000000Z",
+            "LAST_UPDATE_USER": "7f3ae1a4-c163-40d5-8509-c3881f5e46f1",
+            "MAILBOXNAME": None,
+            "NOTE": "b",
+            "PARAMETER": "{\n      \"discard\": { \"NORMAL\": \"0\" },\n      \"last_update_date_time\": {\n            \"RANGE\": {\n                  \"START\": \"{{ EXASTRO_LAST_FETCHED_TIME.year }}/{{ '%02d'|format(EXASTRO_LAST_FETCHED_TIME.month) }}/{{ '%02d'|format(EXASTRO_LAST_FETCHED_TIME.day) }} 00:00:00\"\n            }\n      }\n}",
+            "PASSWORD": "4jFT+McKLHwH123J+5UPn337ejPj3PlMUnh2/NPDKl4=",
+            "PORT": None,
+            "PROXY": None,
+            "REQUEST_HEADER": "{ \"content-type\" : \"application/json\" }",
+            "REQUEST_METHOD_ID": "1",
+            "RESPONSE_KEY": "result",
+            "RESPONSE_LIST_FLAG": "1",
+            "SECRET_ACCESS_KEY": None,
+            "TTL": 60,
+            "URL": "http://dummy.hoge.com/api_jsonrpc.php",
+            "USERNAME": "user",
+            "SAVED_IDS": ["365"],
+            "LAST_FETCHED_TIMESTAMP": 1695110400,
+        },
+        None,
+        {
+            "url": "http://dummy.hoge.com/api_jsonrpc.php",
+            "headers": {
+                "content-type": "application/json",
+            },
+            "parameter": {
+                "discard": {
+                    "NORMAL": "0"
+                },
+                "last_update_date_time": {
+                    "RANGE": {
+                        "START": "2023/09/19 00:00:00"
+                    }
+                }
+            }
+        }
+    ),
+    # 19-パラメータ(13-1): 条件分岐EXASTRO_LAST_FETCHED_..の変数確認-前回データが廃止ありの場合
+    (
+        {
+            "ACCESS_KEY_ID": None,
+            "AUTH_TOKEN": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
+            "CONNECTION_METHOD_ID": "1",
+            "DISUSE_FLAG": "0",
+            "EVENT_COLLECTION_SETTINGS_ID": "41086c31-6c24-41f2-aa30-741082642bfc",
+            "EVENT_COLLECTION_SETTINGS_NAME": "last_fetched_check",
+            "EVENT_ID_KEY": "eventid",
+            "LAST_UPDATE_TIMESTAMP": "2025-10-28T00:54:09.000000Z",
+            "LAST_UPDATE_USER": "7f3ae1a4-c163-40d5-8509-c3881f5e46f1",
+            "MAILBOXNAME": None,
+            "NOTE": "b",
+            "PARAMETER": "{\n  {% if EXASTRO_LAST_FETCHED_EVENT_IS_EXIST %}\n    {% if EXASTRO_LAST_FETCHED_EVENT.parameter.discard == \"1\" %}\n      \"discard\": { \"NORMAL\": \"0\" }\n    {% else %}\n      \"discard\": { \"NORMAL\": \"1\" }\n    {% endif %}\n  {% else %}\n    \"discard\": { \"NORMAL\": \"0\" }\n  {% endif %}\n}",
+            "PASSWORD": "4jFT+McKLHwH123J+5UPn337ejPj3PlMUnh2/NPDKl4=",
+            "PORT": None,
+            "PROXY": None,
+            "REQUEST_HEADER": "{ \"content-type\" : \"application/json\" }",
+            "REQUEST_METHOD_ID": "1",
+            "RESPONSE_KEY": "data",
+            "RESPONSE_LIST_FLAG": "1",
+            "SECRET_ACCESS_KEY": None,
+            "TTL": 60,
+            "URL": "http://dummy.hoge.com/api_jsonrpc.php",
+            "USERNAME": "user",
+            "SAVED_IDS": ["365"],
+            "LAST_FETCHED_TIMESTAMP": 1695110400,
+        },
+        {
+            "eventid": "450",
+            "clock": 1695110400,
+            "parameter": {
+                "discard": "1"
+            },
+            "ns": "dummy",
+            "value": "dummy"
+        },
+        {
+            "url": "http://dummy.hoge.com/api_jsonrpc.php",
+            "headers": {
+                "content-type": "application/json",
+            },
+            "parameter": {
+                "discard": {
+                    "NORMAL": "0"
+                }
+            }
+        }
+    ),
+    # 20-パラメータ(13-2): 条件分岐EXASTRO_LAST_FETCHED_..の変数確認 - 前回データがない場合
+    (
+        {
+            "ACCESS_KEY_ID": None,
+            "AUTH_TOKEN": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
+            "CONNECTION_METHOD_ID": "1",
+            "DISUSE_FLAG": "0",
+            "EVENT_COLLECTION_SETTINGS_ID": "41086c31-6c24-41f2-aa30-741082642bfc",
+            "EVENT_COLLECTION_SETTINGS_NAME": "last_fetched_check",
+            "EVENT_ID_KEY": "id",
+            "LAST_UPDATE_TIMESTAMP": "2025-10-28T00:54:09.000000Z",
+            "LAST_UPDATE_USER": "7f3ae1a4-c163-40d5-8509-c3881f5e46f1",
+            "MAILBOXNAME": None,
+            "NOTE": "b",
+            "PARAMETER": "{\n  {% if EXASTRO_LAST_FETCHED_EVENT_IS_EXIST %}\n    {% if EXASTRO_LAST_FETCHED_EVENT.parameter.discard == \"1\" %}\n      \"discard\": { \"NORMAL\": \"0\" }\n    {% else %}\n      \"discard\": { \"NORMAL\": \"1\" }\n    {% endif %}\n  {% else %}\n    \"discard\": { \"NORMAL\": \"0\" }\n  {% endif %}\n}",
+            "PASSWORD": "4jFT+McKLHwH123J+5UPn337ejPj3PlMUnh2/NPDKl4=",
+            "PORT": None,
+            "PROXY": None,
+            "REQUEST_HEADER": "{ \"content-type\" : \"application/json\" }",
+            "REQUEST_METHOD_ID": "1",
+            "RESPONSE_KEY": "data",
+            "RESPONSE_LIST_FLAG": "1",
+            "SECRET_ACCESS_KEY": None,
+            "TTL": 60,
+            "URL": "http://dummy.hoge.com/api_jsonrpc.php",
+            "USERNAME": "user",
+            "SAVED_IDS": ["365"],
+            "LAST_FETCHED_TIMESTAMP": None,
+            "EXASTRO_LAST_FETCHED_EVENT_IS_EXIST": False,
+        },
+        None,
+        {
+            "url": "http://dummy.hoge.com/api_jsonrpc.php",
+            "headers": {
+                "content-type": "application/json",
+            },
+            "parameter": {
+                "discard": {
+                    "NORMAL": "0"
+                }
+            }
+        }
+    ),
+    # 20-パラメータ(13-3): 条件分岐EXASTRO_LAST_FETCHED_..の変数確認 - 前回データが廃止無しの場合
+    (
+        {
+            "ACCESS_KEY_ID": None,
+            "AUTH_TOKEN": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
+            "CONNECTION_METHOD_ID": "1",
+            "DISUSE_FLAG": "0",
+            "EVENT_COLLECTION_SETTINGS_ID": "41086c31-6c24-41f2-aa30-741082642bfc",
+            "EVENT_COLLECTION_SETTINGS_NAME": "last_fetched_check",
+            "EVENT_ID_KEY": "id",
+            "LAST_UPDATE_TIMESTAMP": "2025-10-28T00:54:09.000000Z",
+            "LAST_UPDATE_USER": "7f3ae1a4-c163-40d5-8509-c3881f5e46f1",
+            "MAILBOXNAME": None,
+            "NOTE": "b",
+            "PARAMETER": "{\n  {% if EXASTRO_LAST_FETCHED_EVENT_IS_EXIST %}\n    {% if EXASTRO_LAST_FETCHED_EVENT.parameter.discard == \"1\" %}\n      \"discard\": { \"NORMAL\": \"0\" }\n    {% else %}\n      \"discard\": { \"NORMAL\": \"1\" }\n    {% endif %}\n  {% else %}\n    \"discard\": { \"NORMAL\": \"0\" }\n  {% endif %}\n}",
+            "PASSWORD": "4jFT+McKLHwH123J+5UPn337ejPj3PlMUnh2/NPDKl4=",
+            "PORT": None,
+            "PROXY": None,
+            "REQUEST_HEADER": "{ \"content-type\" : \"application/json\" }",
+            "REQUEST_METHOD_ID": "1",
+            "RESPONSE_KEY": "data",
+            "RESPONSE_LIST_FLAG": "1",
+            "SECRET_ACCESS_KEY": None,
+            "TTL": 60,
+            "URL": "http://dummy.hoge.com/api_jsonrpc.php",
+            "USERNAME": "user",
+            "SAVED_IDS": ["365"],
+            "LAST_FETCHED_TIMESTAMP": 1695110400,
+        },
+        {
+            "eventid": "450",
+            "clock": 1695110400,
+            "parameter": {
+                "discard": "0"
+            },
+            "ns": "dummy",
+            "value": "dummy"
+        },
+        {
+            "url": "http://dummy.hoge.com/api_jsonrpc.php",
+            "headers": {
+                "content-type": "application/json",
+            },
+            "parameter": {
+                "discard": {
+                    "NORMAL": "1"
+                }
             }
         }
     ),
@@ -2726,7 +3683,7 @@ def test_get_new_events(api_response_raw_json, dummy_setting, expected_response_
         "ACCESS_KEY_ID": "",
         "SECRET_ACCESS_KEY": "",
         "MAILBOXNAME": "",
-		"PARAMETER": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"problem.get\",\n    \"params\": {\n        \"output\": \"extend\",\n        {% if EXASTRO_LAST_FETCHED_EVENT_IS_EXIST %}\n          \"eventid_from\": \"{{ EXASTRO_LAST_FETCHED_EVENT.eventid|int + 1  }}\"\n        {% else %}\n          \"time_from\": \"{{ EXASTRO_LAST_FETCHED_TIMESTAMP }}\"\n        {% endif %}\n    },\n  \"auth\": \"{{ EXASTRO_EVENT_COLLECTION_SETTING.AUTH_TOKEN }}\",\n  \"id\": 1\n}",
+        "PARAMETER": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"problem.get\",\n    \"params\": {\n        \"output\": \"extend\",\n        {% if EXASTRO_LAST_FETCHED_EVENT_IS_EXIST %}\n          \"eventid_from\": \"{{ EXASTRO_LAST_FETCHED_EVENT.eventid|int + 1  }}\"\n        {% else %}\n          \"time_from\": \"{{ EXASTRO_LAST_FETCHED_TIMESTAMP }}\"\n        {% endif %}\n    },\n  \"auth\": \"{{ EXASTRO_EVENT_COLLECTION_SETTING.AUTH_TOKEN }}\",\n  \"id\": 1\n}",
         "TTL": 60,
 		"MAILBOXNAME": None,
         "NOTE": "b",
@@ -2744,4 +3701,3 @@ def test_get_new_events(api_response_raw_json, dummy_setting, expected_response_
 
     # テスト結果の検証
     assert result_json == expected_response_json  # 新規イベントのリストを確認
-

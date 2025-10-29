@@ -2814,6 +2814,7 @@ border-radius: 2px;
 line-height: 22px;
 letter-spacing: 1px;
 font-size: 14px;
+text-align: center;
 }
 .editType.register  {
 border-color: var(--buttonColor);

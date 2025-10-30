@@ -135,7 +135,7 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
             # event_collection_settings_nameもしくは、event_collection_settings_idは必須
             if "event_collection_settings_name" in event_group:
                 event_collection_settings_name = event_group["event_collection_settings_name"]
-                event_collection_settings = wsDb.table_select(oaseConst.T_OASE_EVENT_COLLECTION_SETTINGS, "WHERE EVENT_COLLECTION_SETTINGS_NAME = %s", [event_collection_settings_name])  # noqa: E501
+                event_collection_settings = wsDb.table_select(oaseConst.T_OASE_EVENT_COLLECTION_SETTINGS, "WHERE EVENT_COLLECTION_SETTINGS_NAME = %s ORDER BY DISUSE_FLAG", [event_collection_settings_name])  # noqa: E501
                 # 受信したデータに不備があるため、イベントは保存されませんでした。({})
                 if len(event_collection_settings) == 0:
                     is_err_res = True

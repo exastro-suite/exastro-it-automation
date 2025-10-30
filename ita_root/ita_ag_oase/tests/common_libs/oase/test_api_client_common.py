@@ -680,158 +680,7 @@ test_requests_parameters = [
             }
         }
     ),
-    # 13-パラメータ(8): EXASTRO_LAST_FETCHED_TIMESTAMPの変数確認
-    (
-        {
-            "ACCESS_KEY_ID": None,
-            "AUTH_TOKEN": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
-            "CONNECTION_METHOD_ID": "5",
-            "DISUSE_FLAG": "0",
-            "EVENT_COLLECTION_SETTINGS_ID": "41086c31-6c24-41f2-aa30-741082642bfc",
-            "EVENT_COLLECTION_SETTINGS_NAME": "zabbix_last_fethced_check",
-            "EVENT_ID_KEY": "eventid",
-            "LAST_UPDATE_TIMESTAMP": "2025-10-24T00:20:22.172832Z",
-            "LAST_UPDATE_USER": "7f3ae1a4-c163-40d5-8509-c3881f5e46f1",
-            "MAILBOXNAME": None,
-            "NOTE": "b",
-            "PARAMETER": "{\n      \"jsonrpc\": \"2.0\",\n      \"method\": \"problem.get\",\n       \"params\": {\n            \"output\": \"extend\",\n            \"time_from\": \"EXASTRO_LAST_FETCHED_TIMESTAMP\"\n      },\n    \"auth\": \"\",\n    \"id\": 1\n}",
-            "PASSWORD": "4jFT+McKLHwH123J+5UPn337ejPj3PlMUnh2/NPDKl4=",
-            "PORT": None,
-            "PROXY": None,
-            "REQUEST_HEADER": "{ \"content-type\" : \"application/json-rpc\" }",
-            "REQUEST_METHOD_ID": "2",
-            "RESPONSE_KEY": "result",
-            "RESPONSE_LIST_FLAG": "1",
-            "SECRET_ACCESS_KEY": None,
-            "TTL": 60,
-            "URL": "http://dummy.hoge.com/api_jsonrpc.php",
-            "USERNAME": "user",
-            "SAVED_IDS": ["365"],
-            "LAST_FETCHED_TIMESTAMP": 1695110400,
-        },
-        {
-            "eventid": "450",
-            "clock": 1695110400,
-            "ns": "dummy",
-            "value": "dummy"
-        },
-        {
-            "url": "http://dummy.hoge.com/api_jsonrpc.php",
-            "headers": {
-                "content-type": "application/json-rpc",
-            },
-            "parameter": {
-                "jsonrpc": "2.0",
-                "method": "problem.get",
-                "params": {
-                    "output": "extend",
-                    "time_from": "1695110400"
-                },
-                "auth": "",
-                "id": 1
-            }
-        }
-    ),
-    # 14-1パラメータ(9-1): 条件分岐EXASTRO_LAST_FETCHED_...の変数確認- 前回取得イベントがある場合
-    (
-        {
-            "ACCESS_KEY_ID": None,
-            "AUTH_TOKEN": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
-            "CONNECTION_METHOD_ID": "5",
-            "DISUSE_FLAG": "0",
-            "EVENT_COLLECTION_SETTINGS_ID": "41086c31-6c24-41f2-aa30-741082642bfc",
-            "EVENT_COLLECTION_SETTINGS_NAME": "zabbix_last_fethced_check",
-            "EVENT_ID_KEY": "eventid",
-            "LAST_UPDATE_TIMESTAMP": "2025-10-24T00:20:22.172832Z",
-            "LAST_UPDATE_USER": "7f3ae1a4-c163-40d5-8509-c3881f5e46f1",
-            "MAILBOXNAME": None,
-            "NOTE": "b",
-            "PARAMETER": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"problem.get\",\n    \"params\": {\n        \"output\": \"extend\",\n        {% if EXASTRO_LAST_FETCHED_EVENT_IS_EXIST %}\n          \"eventid_from\": \"{{ EXASTRO_LAST_FETCHED_EVENT.eventid|int + 1  }}\"\n        {% else %}\n          \"time_from\": \"EXASTRO_LAST_FETCHED_TIMESTAMP\"\n        {% endif %}\n    },\n  \"auth\": \"{{ EXASTRO_EVENT_COLLECTION_SETTING.AUTH_TOKEN }}\",\n  \"id\": 1\n}",
-            "PASSWORD": "4jFT+McKLHwH123J+5UPn337ejPj3PlMUnh2/NPDKl4=",
-            "PORT": None,
-            "PROXY": None,
-            "REQUEST_HEADER": "{ \"content-type\" : \"application/json-rpc\" }",
-            "REQUEST_METHOD_ID": "2",
-            "RESPONSE_KEY": "result",
-            "RESPONSE_LIST_FLAG": "1",
-            "SECRET_ACCESS_KEY": None,
-            "TTL": 60,
-            "URL": "http://dummy.hoge.com/api_jsonrpc.php",
-            "USERNAME": "user",
-            "SAVED_IDS": ["365"],
-            "LAST_FETCHED_TIMESTAMP": 1695110400,
-        },
-        {
-            "eventid": "450",
-            "clock": 1695110400,
-            "ns": "dummy",
-            "value": "dummy"
-        },
-        {
-            "url": "http://dummy.hoge.com/api_jsonrpc.php",
-            "headers": {
-                "content-type": "application/json-rpc",
-            },
-            "parameter": {
-                "jsonrpc": "2.0",
-                "method": "problem.get",
-                "params": {
-                    "output": "extend",
-                    "eventid_from": "451"
-                },
-                "auth": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
-                "id": 1
-            }
-        }
-    ),
-    # 15-パラメータ(9-2): 条件分岐EXASTRO_LAST_FETCHED_...の変数確認- 前回取得イベントがない場合
-    (
-        {
-            "ACCESS_KEY_ID": None,
-            "AUTH_TOKEN": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
-            "CONNECTION_METHOD_ID": "5",
-            "DISUSE_FLAG": "0",
-            "EVENT_COLLECTION_SETTINGS_ID": "41086c31-6c24-41f2-aa30-741082642bfc",
-            "EVENT_COLLECTION_SETTINGS_NAME": "zabbix_last_fethced_check",
-            "EVENT_ID_KEY": "eventid",
-            "LAST_UPDATE_TIMESTAMP": "2025-10-24T00:20:22.172832Z",
-            "LAST_UPDATE_USER": "7f3ae1a4-c163-40d5-8509-c3881f5e46f1",
-            "MAILBOXNAME": None,
-            "NOTE": "b",
-            "PARAMETER": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"problem.get\",\n    \"params\": {\n        \"output\": \"extend\",\n        {% if EXASTRO_LAST_FETCHED_EVENT_IS_EXIST %}\n          \"eventid_from\": \"{{ EXASTRO_LAST_FETCHED_EVENT.eventid|int + 1  }}\"\n        {% else %}\n          \"time_from\": \"EXASTRO_LAST_FETCHED_TIMESTAMP\"\n        {% endif %}\n    },\n  \"auth\": \"{{ EXASTRO_EVENT_COLLECTION_SETTING.AUTH_TOKEN }}\",\n  \"id\": 1\n}",
-            "PASSWORD": "4jFT+McKLHwH123J+5UPn337ejPj3PlMUnh2/NPDKl4=",
-            "PORT": None,
-            "PROXY": None,
-            "REQUEST_HEADER": "{ \"content-type\" : \"application/json-rpc\" }",
-            "REQUEST_METHOD_ID": "2",
-            "RESPONSE_KEY": "result",
-            "RESPONSE_LIST_FLAG": "1",
-            "SECRET_ACCESS_KEY": None,
-            "TTL": 60,
-            "URL": "http://dummy.hoge.com/api_jsonrpc.php",
-            "USERNAME": "user",
-            "SAVED_IDS": ["365"],
-            "LAST_FETCHED_TIMESTAMP": 1695110400,
-        },
-        None,
-        {
-            "url": "http://dummy.hoge.com/api_jsonrpc.php",
-            "headers": {
-                "content-type": "application/json-rpc",
-            },
-            "parameter": {
-                "jsonrpc": "2.0",
-                "method": "problem.get",
-                "params": {
-                    "output": "extend",
-                    "time_from": "1695110400"
-                },
-                "auth": "ytkkfvj3EHeXZaO7qN5vD6MSbye1pG0AuLh3lOI6JaOfhbyma1KW0XsVu6bC",
-                "id": 1
-            }
-        }
-    ),
-    # 16-パラメータ(10): EXASTRO_LAST_FETCHED_EVENTの変数確認
+    # 13-パラメータ(10): EXASTRO_LAST_FETCHED_EVENTの変数確認
     (
         {
             "ACCESS_KEY_ID": None,
@@ -876,7 +725,7 @@ test_requests_parameters = [
             }
         }
     ),
-    # 17-パラメータ(11): EXASTRO_LAST_FETCHED_YY_MM_DDの変数確認
+    # 14-パラメータ(11): EXASTRO_LAST_FETCHED_YY_MM_DDの変数確認
     (
         {
             "ACCESS_KEY_ID": None,
@@ -927,7 +776,7 @@ test_requests_parameters = [
             }
         }
     ),
-    # 18-パラメータ(12): EXASTRO_LAST_FETCHED_YY_MM_DDの変数確認
+    # 15-パラメータ(12): EXASTRO_LAST_FETCHED_YY_MM_DDの変数確認
     (
         {
             "ACCESS_KEY_ID": None,
@@ -974,7 +823,7 @@ test_requests_parameters = [
             }
         }
     ),
-    # 19-パラメータ(13-1): 条件分岐EXASTRO_LAST_FETCHED_..の変数確認-前回データが廃止ありの場合
+    # 16-パラメータ(13-1): 条件分岐EXASTRO_LAST_FETCHED_..の変数確認-前回データが廃止ありの場合
     (
         {
             "ACCESS_KEY_ID": None,
@@ -1024,7 +873,7 @@ test_requests_parameters = [
             }
         }
     ),
-    # 20-パラメータ(13-2): 条件分岐EXASTRO_LAST_FETCHED_..の変数確認 - 前回データがない場合
+    # 17-パラメータ(13-2): 条件分岐EXASTRO_LAST_FETCHED_..の変数確認 - 前回データがない場合
     (
         {
             "ACCESS_KEY_ID": None,
@@ -1067,7 +916,7 @@ test_requests_parameters = [
             }
         }
     ),
-    # 20-パラメータ(13-3): 条件分岐EXASTRO_LAST_FETCHED_..の変数確認 - 前回データが廃止無しの場合
+    # 18-パラメータ(13-3): 条件分岐EXASTRO_LAST_FETCHED_..の変数確認 - 前回データが廃止無しの場合
     (
         {
             "ACCESS_KEY_ID": None,

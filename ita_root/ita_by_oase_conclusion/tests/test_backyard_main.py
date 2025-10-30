@@ -68,7 +68,8 @@ def create_event(
     """テスト用イベントデータを作成"""
     if end_time is None:
         end_time = fetched_time + ttl
-    labels = {"test_case": test_case, "event_id": event_id, **(custom_labels or {})}
+    event_content = {"test_case": test_case, "event_id": event_id}
+    labels = custom_labels or {}
     labels_and_system_labels = {
         "_exastro_event_collection_settings_id": str(uuid.uuid4()),
         "_exastro_checked": "0",
@@ -85,7 +86,7 @@ def create_event(
 
     event = {
         "_id": id if id else ObjectId(id),
-        "event": labels,
+        "event": event_content,
         "labels": labels_and_system_labels,
         "exastro_created_at": datetime.datetime.now(datetime.timezone.utc),
         "exastro_labeling_settings": (
@@ -176,7 +177,7 @@ def create_filter_row(
 def create_rule_row(
     priority: int,
     rule_name: str,
-    filter: str,
+    filter: str | dict,
     /,
     action_id: str | None = None,
     rule_id: str | None = None,
@@ -194,7 +195,7 @@ def create_rule_row(
 def create_rule_row(
     priority: int,
     rule_name: str,
-    filter: tuple[str, str],
+    filter: tuple[str | dict, str | dict],
     /,
     filter_operator: Literal["1", "2", "3"],
     action_id: str | None = None,
@@ -260,7 +261,8 @@ def create_rule_row(
         "CONCLUSION_LABEL_SETTINGS": json.dumps(
             [
                 {get_label_key_id(label_name): template}
-                for label_name, template in conclusion_label_settings
+                for label_setting in conclusion_label_settings
+                for label_name, template in label_setting.items()
             ]
             if conclusion_label_settings
             else []
@@ -297,6 +299,9 @@ V_OASE_LABEL_KEY_GROUP = {
     "grp_label_3": "b274a4a0-0522-44f6-9ed3-85e57ab37a0d",
     "test_case": "4ae00b24-b194-40b8-a6a8-e57951181959",
     "A_event_id": "f03dc6d8-25ba-4296-89e5-08342b615a66",
+    "node": "d1f2e2f3-5f4a-4f2e-8f4a-8f4a8f4a8f4a",
+    "type": "e2f3d1f2-4a5f-2e4f-2e4f-4a8f4a8f4a8f",
+    "mode": "f4a8f4a8-f4a8-f4a8-f4a8-f4a8f4a8f4a8",
 }
 
 
@@ -1358,7 +1363,6 @@ def test_scenario_grouping_target_2_same_label_events_to_1_group(
         grouping_filter := create_filter_row(
             oaseConst.DF_SEARCH_CONDITION_GROUPING,
             [
-                ("test_case", oaseConst.DF_TEST_EQ, "case1"),
                 ("_exastro_type", oaseConst.DF_TEST_NE, "conclusion"),
             ],
             oaseConst.DF_GROUP_CONDITION_ID_TARGET,
@@ -1458,7 +1462,6 @@ def test_scenario_grouping_target_2_different_label_events_to_2_groups(
         grouping_filter := create_filter_row(
             oaseConst.DF_SEARCH_CONDITION_GROUPING,
             [
-                ("test_case", oaseConst.DF_TEST_EQ, "case1"),
                 ("_exastro_type", oaseConst.DF_TEST_NE, "conclusion"),
             ],
             oaseConst.DF_GROUP_CONDITION_ID_TARGET,
@@ -1575,7 +1578,6 @@ def test_scenario_grouping_multiple_groups_has_multiple_subsequent_events(
         grouping_filter := create_filter_row(
             oaseConst.DF_SEARCH_CONDITION_GROUPING,
             [
-                ("test_case", oaseConst.DF_TEST_EQ, "case1"),
                 ("_exastro_type", oaseConst.DF_TEST_NE, "conclusion"),
             ],
             oaseConst.DF_GROUP_CONDITION_ID_TARGET,
@@ -1656,7 +1658,6 @@ def test_scenario_grouping_evaluated_first_events(
     grouping_filter = create_filter_row(
         oaseConst.DF_SEARCH_CONDITION_GROUPING,
         [
-            ("test_case", oaseConst.DF_TEST_EQ, "case1"),
             ("_exastro_type", oaseConst.DF_TEST_NE, "conclusion"),
         ],
         oaseConst.DF_GROUP_CONDITION_ID_TARGET,
@@ -1855,7 +1856,7 @@ def test_scenario_grouping_without_filter_condition(
     assert len(without_conclusion_events) == 2
     assert len(conclusion_event_records) == 3
     assert len(conclusion_events) == 1
-    
+
     # MongoDB上作成される結論イベントにDF_LOCAL_LABLE_NAMEが存在しないことを確認
     for event in calls["insert_events"]:
         assert oaseConst.DF_LOCAL_LABLE_NAME not in event
@@ -1879,7 +1880,6 @@ def test_scenario_grouping_timeout_and_evaluated_first_event_in_conclusion_perio
     grouping_filter = create_filter_row(
         oaseConst.DF_SEARCH_CONDITION_GROUPING,
         [
-            ("test_case", oaseConst.DF_TEST_EQ, "case1"),
             ("_exastro_type", oaseConst.DF_TEST_NE, "conclusion"),
         ],
         oaseConst.DF_GROUP_CONDITION_ID_TARGET,
@@ -1957,3 +1957,312 @@ def test_scenario_grouping_timeout_and_evaluated_first_event_in_conclusion_perio
         event["labels"]["_exastro_type"]
         for event in ev_obj.labeled_events_dict.values()
     ].count("conclusion") == 0
+
+
+def test_scenario_grouping_not_target_can_handle_exastro_host_label(
+    patch_global_g, patch_notification_and_writer, patch_common_functions, monkeypatch
+):
+    """JudgeMain: グルーピング・「以外を対象とする」: _exastro_host ラベルが正しく処理されることを確認"""
+    group1_labels = {
+        "grp_label_1": "grp1_label_1",
+        "grp_label_2": "grp1_label_2",
+        "grp_label_3": "grp1_label_3",
+    }
+    original_ttl = 11
+
+    mock_mongo = MockMONGOConnectWs()
+    monkeypatch.setattr(bm, "MONGOConnectWs", lambda: mock_mongo)
+
+    grouping_filter = create_filter_row(
+        oaseConst.DF_SEARCH_CONDITION_GROUPING,
+        [
+            ("_exastro_type", oaseConst.DF_TEST_NE, "conclusion"),
+        ],
+        oaseConst.DF_GROUP_CONDITION_ID_NOT_TARGET,
+        ["grp_label_2", "grp_label_3", "grp_label_1"],
+    )
+    mock_mongo.test_events = [
+        # グループ1
+        e1 := create_event(
+            "case1",
+            "case1-grp1-ev-01",
+            judge_time - 7,
+            ttl=original_ttl,
+            custom_labels={**group1_labels, "_exastro_host": "host1"},
+            evaluated="1",
+            grouping_filter=grouping_filter,
+        ),
+        e2 := create_event(
+            "case1",
+            "case1-grp1-ev-02",
+            judge_time - 6,
+            ttl=original_ttl,
+            custom_labels={**group1_labels, "_exastro_host": "host1"},
+        ),
+        e3 := create_event(
+            "case1",
+            "case1-grp2-ev-01",
+            judge_time - 3,
+            ttl=original_ttl,
+            custom_labels={**group1_labels, "_exastro_host": "host2"},
+        ),
+    ]
+
+    ev_obj = ManageEvents(mock_mongo, judge_time)
+    ws_db = DummyDB("ws1")
+    # 必要なテーブルデータを設定（イベントがマッチしないフィルター条件）
+    ws_db.table_data["T_OASE_FILTER"] = [
+        grouping_filter,
+        # 結論イベント対策
+        create_filter_row(
+            oaseConst.DF_SEARCH_CONDITION_QUEUING,
+            [("_exastro_type", oaseConst.DF_TEST_EQ, "conclusion")],
+        ),
+    ]
+    ws_db.table_data["T_OASE_RULE"] = [
+        create_rule_row(1, "rule_case1", grouping_filter),
+    ]
+    ws_db.table_data["T_OASE_ACTION"] = []
+    action_obj = Action(ws_db, ev_obj)
+
+    bm.JudgeMain(ws_db, judge_time, ev_obj, action_obj)
+
+    # グルーピングが正しく行われることの確認
+
+    # 有効な判定済み先頭イベントはグルーピング情報を持つ
+    grouping_info_1 = e1.get("exastro_filter_group")
+    assert grouping_info_1 is not None
+    assert grouping_info_1["group_id"] == repr(e1["_id"])
+
+    # _exastro_host ラベルが同じイベントは同じグループになることを確認
+    grouping_info_2 = e2.get("exastro_filter_group")
+    assert grouping_info_2 is not None
+    assert grouping_info_2["group_id"] == grouping_info_1["group_id"]
+
+    # _exastro_host ラベルが異なるイベントは別グループになることを確認
+    grouping_info_3 = e3.get("exastro_filter_group")
+    assert grouping_info_3 is not None
+    assert grouping_info_3["group_id"] != grouping_info_1["group_id"]
+
+
+def test_pattern_92(
+    patch_global_g, patch_notification_and_writer, patch_common_functions, monkeypatch
+):
+    """JudgeMain: ユニーク→キューイングで判定した結果、結論イベントが生まれる。生まれた結論イベントをまたルールで判定できるか？"""
+
+    mock_mongo = MockMONGOConnectWs()
+    monkeypatch.setattr(bm, "MONGOConnectWs", lambda: mock_mongo)
+
+    # イベント
+    e016 = create_event(
+        "p92",
+        "e016",
+        judge_time - 5,
+        ttl=20,
+        custom_labels={"node": "z11", "type": "a"},
+    )
+    e017 = create_event(
+        "p92",
+        "e017",
+        judge_time + 7,
+        ttl=20,
+        custom_labels={"node": "z11", "type": "a"},
+    )
+    e026 = create_event(
+        "p92",
+        "e026",
+        judge_time + 7,
+        ttl=20,
+        custom_labels={"node": "z11", "type": "qa", "mode": "q3"},
+    )
+    e026a = create_event(
+        "p92",
+        "e026a",
+        judge_time + 16,
+        ttl=20,
+        custom_labels={"node": "z11", "type": "qa", "mode": "q3"},
+    )
+    test_events = [e016, e017, e026, e026a]
+
+    # フィルター
+    f_u_a = create_filter_row(
+        oaseConst.DF_SEARCH_CONDITION_UNIQUE,
+        [
+            ("type", oaseConst.DF_TEST_EQ, "a"),
+        ],
+    )
+    f_q_a = create_filter_row(
+        oaseConst.DF_SEARCH_CONDITION_QUEUING,
+        [
+            ("type", oaseConst.DF_TEST_EQ, "qa"),
+        ],
+    )
+
+    # ルール
+    r1 = create_rule_row(
+        1,
+        "p92:r1",
+        (f_u_a, f_q_a),
+        filter_operator=oaseConst.DF_OPE_ORDER,
+        conclusion_label_inheritance_flag={"action"},
+        conclusion_label_settings=[
+            {"type": "a"},
+            {"B_eventid": "{{B.eventid}}"},
+            {"A_eventid": "{{A.eventid}}"},
+        ],
+        conclusion_ttl=20,
+    )
+    r2 = create_rule_row(
+        2,
+        "p92:r2",
+        f_u_a,
+        conclusion_label_inheritance_flag={"action"},
+        conclusion_label_settings=[
+            {"A_eventid": "{{A.eventid}}"},
+        ],
+        conclusion_ttl=20,
+    )
+
+    ws_db = DummyDB("ws1")
+    # 必要なテーブルデータを設定
+    ws_db.table_data["T_OASE_FILTER"] = [
+        f_u_a,
+        f_q_a,
+    ]
+    ws_db.table_data["T_OASE_RULE"] = [
+        r1,
+        r2,
+    ]
+    ws_db.table_data["T_OASE_ACTION"] = []
+    for jt in range(judge_time, judge_time + 30):
+        mock_mongo.test_events = [
+            event
+            for event in test_events
+            if event["labels"]["_exastro_fetched_time"] <= jt
+        ]
+        ev_obj = ManageEvents(mock_mongo, jt)
+        action_obj = Action(ws_db, ev_obj)
+
+        bm.JudgeMain(ws_db, jt, ev_obj, action_obj)
+
+        event_ids = {e["_id"] for e in test_events}
+        test_events.extend(
+            {
+                **event,
+                "labels": {
+                    **event["labels"],
+                    "_exastro_fetched_time": jt,
+                    "_exastro_end_time": event["labels"]["_exastro_end_time"]
+                    - event["labels"]["_exastro_fetched_time"],
+                },
+            }
+            for id_, event in ev_obj.labeled_events_dict.items()
+            if id_ not in event_ids
+        )
+
+    import pprint
+    pprint.pprint(test_events)
+
+    # 結論イベントが正しく作成されていることを確認
+    # conclusion_events = [
+    #     event
+    #     for event in ev_obj.labeled_events_dict.values()
+    #     if event["labels"].get("_exastro_type") == "conclusion"
+    # ]
+    # assert len(conclusion_events) == 4
+
+
+def test_scenario_order_b_only(
+    patch_global_g, patch_notification_and_writer, patch_common_functions, monkeypatch
+):
+    """JudgeMain: A → B の順序ルールで、Bのイベントのみが判定される場合に"""
+
+    mock_mongo = MockMONGOConnectWs()
+    monkeypatch.setattr(bm, "MONGOConnectWs", lambda: mock_mongo)
+
+    # イベント
+    event_b = create_event(
+        "p92",
+        "e026",
+        judge_time,
+        ttl=20,
+        custom_labels={"node": "z11", "type": "qa", "mode": "q3"},
+    )
+    test_events = [event_b]
+
+    # フィルター
+    f_u_a = create_filter_row(
+        oaseConst.DF_SEARCH_CONDITION_UNIQUE,
+        [
+            ("type", oaseConst.DF_TEST_EQ, "a"),
+        ],
+    )
+    f_q_a = create_filter_row(
+        oaseConst.DF_SEARCH_CONDITION_QUEUING,
+        [
+            ("type", oaseConst.DF_TEST_EQ, "qa"),
+        ],
+    )
+
+    # ルール
+    r1 = create_rule_row(
+        1,
+        "p92:r1",
+        (f_u_a, f_q_a),
+        filter_operator=oaseConst.DF_OPE_ORDER,
+        conclusion_label_inheritance_flag={"action"},
+        conclusion_label_settings=[
+            {"type": "a"},
+            {"B_eventid": "{{B.eventid}}"},
+            {"A_eventid": "{{A.eventid}}"},
+        ],
+        conclusion_ttl=20,
+    )
+    r2 = create_rule_row(
+        2,
+        "p92:r2",
+        f_u_a,
+        conclusion_label_inheritance_flag={"action"},
+        conclusion_label_settings=[
+            {"A_eventid": "{{A.eventid}}"},
+        ],
+        conclusion_ttl=20,
+    )
+
+    ws_db = DummyDB("ws1")
+    # 必要なテーブルデータを設定
+    ws_db.table_data["T_OASE_FILTER"] = [
+        f_u_a,
+        f_q_a,
+    ]
+    ws_db.table_data["T_OASE_RULE"] = [
+        r1,
+        r2,
+    ]
+    ws_db.table_data["T_OASE_ACTION"] = []
+    maximum_fetched_time = max(
+        (event["labels"]["_exastro_fetched_time"] for event in test_events),
+        default=judge_time,
+    )
+
+    for jt in range(
+        judge_time,
+        maximum_fetched_time + 1,
+    ):
+        mock_mongo.test_events = [
+            event
+            for event in test_events
+            if event["labels"]["_exastro_fetched_time"] <= jt
+        ]
+        ev_obj = ManageEvents(mock_mongo, jt)
+        action_obj = Action(ws_db, ev_obj)
+
+        bm.JudgeMain(ws_db, jt, ev_obj, action_obj)
+
+    # 未判定、既知、未タイムアウトであることを確認
+    assert event_b["labels"]["_exastro_evaluated"] == "0"
+    assert event_b["labels"]["_exastro_undetected"] == "0"
+    assert event_b["labels"]["_exastro_timeout"] == "0"
+
+    # 新規イベント通知済みであることを確認
+    assert event_b["labels"]["_exastro_checked"] == "1"

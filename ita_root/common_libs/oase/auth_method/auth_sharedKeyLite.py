@@ -7,7 +7,7 @@ class SharedKeyLiteAuthAPIClient(APIClientCommon):
         super().__init__(setting, last_fetched_event)
 
     def call_api(self):
-        self.current_datetime = datetime.datetime.now()
+        self.current_datetime = datetime.datetime.now(datetime.timezone.utc)
         self.fomatted_datetime = self.current_datetime.strftime("%a, %d %b %Y %H:%M:%S GMT")
         if self.headers is None:
             self.headers = {}

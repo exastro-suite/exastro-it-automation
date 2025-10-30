@@ -3879,7 +3879,7 @@ settingListModalOpen: function( settingData ) {
 
         _this.setSettingListEvents( modal, settingData );
         _this.setSettingListSelect2( modal );
-        _this.settingListCheckListDisabled( modal );
+        _this.settingListCheckListDisabled( modal, settingData );
     });
 },
 /*
@@ -3921,11 +3921,15 @@ settingListRowHtml( settingData, index = 0, value = [] ) {
    項目が１つの場合は移動と削除を無効化する
 ##################################################
 */
-settingListCheckListDisabled: function( modal ) {
+settingListCheckListDisabled: function( modal, settingData ) {
     const $tr = modal.$.dbody.find('.settingListTr');
 
     if ( $tr.length === 1 ) {
-        $tr.find('.settingListMove, .settingListDelete').addClass('disabled');
+        if ( settingData.required === '0') {
+            $tr.find('.settingListMove').addClass('disabled');
+        } else {
+            $tr.find('.settingListMove, .settingListDelete').addClass('disabled');
+        }
     } else {
         $tr.find('.settingListMove, .settingListDelete').removeClass('disabled');
     }
@@ -3951,21 +3955,26 @@ setSettingListEvents: function( modal, settingData ) {
         // 追加
         $listBlock.find('.settingListAddButton').on('click', function(){
             $listBlock.find('.settingListTbody').append( _this.settingListRowHtml( settingData) );
-            _this.settingListCheckListDisabled( modal );
+            _this.settingListCheckListDisabled( modal, settingData );
             _this.setSettingListSelect2( modal );
         });
 
         // クリア
         $listBlock.find('.settingListClearButton').on('click', function(){
             $listBlock.find('.settingListTbody').html( _this.settingListRowHtml( settingData ) );
-            _this.settingListCheckListDisabled( modal );
+            _this.settingListCheckListDisabled( modal, settingData );
             _this.setSettingListSelect2( modal );
         });
 
         // 削除
         $listBlock.on('click', '.settingListDelete', function(){
             $( this ).closest('.settingListTr').remove();
-            _this.settingListCheckListDisabled( modal );
+            // 行が無い場合は追加する
+            if ( $listBlock.find('.settingListTr').length === 0 ) {
+                $listBlock.find('.settingListTbody').append( _this.settingListRowHtml( settingData) );
+                _this.setSettingListSelect2( modal );
+            }
+            _this.settingListCheckListDisabled( modal, settingData );
         });
 
         // 移動
@@ -4501,6 +4510,10 @@ itaOriginalVariable: function() {
         '__ipaddress__'
     ];
 },
+// テキストエディタ使用時にITA独自変数一覧を読み込まないメニュー
+ignoreItaOriginalVariable: [
+    'notification_template_common'
+],
 /*
 ##################################################
    ファイル or BASE64をテキストに変換
@@ -4699,14 +4712,17 @@ fileEditor: function( fileData, fileName, mode = 'edit', option = {} ) {
                 aceEditor.session.setUseWrapMode( true );
 
                 // ITA独自変数
-                const rhymeCompleter = {
-                    getCompletions: function( editor, session, pos, prefix, callback ) {
-                        callback( null, cmn.itaOriginalVariable().map(function( val ){
-                            return { value: val, meta: getMessage.FTE00174 };
-                        }));
-                    }
-                };
-                langTools.addCompleter(rhymeCompleter);
+                const menuName = cmn.getParams().menu;
+                if ( !cmn.ignoreItaOriginalVariable.includes( menuName ) ) {
+                    const rhymeCompleter = {
+                        getCompletions: function( editor, session, pos, prefix, callback ) {
+                            callback( null, cmn.itaOriginalVariable().map(function( val ){
+                                return { value: val, meta: getMessage.FTE00174 };
+                            }));
+                        }
+                    };
+                    langTools.addCompleter(rhymeCompleter);
+                }
 
                 // ダウンロード
                 modal.btnFn.download = function() {

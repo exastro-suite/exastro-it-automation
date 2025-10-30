@@ -658,7 +658,7 @@ def get_exastro_platform_workspaces():
     else:
         # API呼出
         api_url = "http://{}:{}/internal-api/{}/platform/users/{}/workspaces".format(host_name, port, organization_id, user_id)
-        request_response = requests.get(api_url, headers=header_para)
+        request_response = requests.get(api_url, headers=header_para, timeout=(12, 600))
 
         response_data = json.loads(request_response.text)
 
@@ -717,7 +717,7 @@ def get_workspace_roles():
     else:
         # API呼出
         api_url = "http://{}:{}/internal-api/{}/platform/workspaces/{}/roles".format(host_name, port, organization_id, workspace_id)
-        request_response = requests.get(api_url, headers=header_para)
+        request_response = requests.get(api_url, headers=header_para, timeout=(12, 600))
 
         response_data = json.loads(request_response.text)
 
@@ -773,7 +773,7 @@ def get_exastro_platform_users():
     else:
         # API呼出
         api_url = "http://{}:{}/internal-api/{}/platform/workspaces/{}/users".format(host_name, port, organization_id, workspace_id)
-        request_response = requests.get(api_url, headers=header_para)
+        request_response = requests.get(api_url, headers=header_para, timeout=(12, 600))
 
         response_data = json.loads(request_response.text)
 
@@ -830,7 +830,7 @@ def get_all_execution_limit(limit_key):
 
     # API呼出
     api_url = "http://{}:{}/internal-api/platform/settings/common".format(host_name, port)
-    request_response = requests.get(api_url, headers=header_para)
+    request_response = requests.get(api_url, headers=header_para, timeout=(12, 600))
 
     response_data = json.loads(request_response.text)
 
@@ -865,7 +865,7 @@ def get_org_execution_limit(limit_key):
 
     # API呼出
     api_url = "http://{}:{}/internal-api/platform/limits".format(host_name, port)
-    request_response = requests.get(api_url, headers=header_para)
+    request_response = requests.get(api_url, headers=header_para, timeout=(12, 600))
 
     response_data = json.loads(request_response.text)
 
@@ -901,7 +901,7 @@ def _get_platform_limits(organization_id):
     }
     # API呼出
     api_url = "http://{}:{}/internal-api/{}/platform/limits".format(host_name, port, organization_id)
-    request_response = requests.get(api_url, headers=header_para)
+    request_response = requests.get(api_url, headers=header_para, timeout=(12, 600))
 
     if request_response.status_code != 200:
         raise AppException('999-00005', [api_url, response_data])
@@ -1314,7 +1314,7 @@ def get_maintenance_mode_setting():
 
     # API呼出
     api_url = "http://{}:{}/internal-api/platform/maintenance-mode-setting".format(host_name, port)
-    request_response = requests.get(api_url, headers=header_para)
+    request_response = requests.get(api_url, headers=header_para, timeout=(12, 600))
 
     response_data = json.loads(request_response.text)
 

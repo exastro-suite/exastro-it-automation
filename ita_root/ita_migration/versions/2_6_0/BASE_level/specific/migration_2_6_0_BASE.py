@@ -54,7 +54,7 @@ def main(work_dir_path, db_conn):
     g.applogger.info(f"[Trace] data=[{data_encode}]")
 
     # API呼出
-    request_response = requests.post(api_url, data=data_encode, headers=header_para)
+    request_response = requests.post(api_url, data=data_encode, headers=header_para, timeout=(12, 600))
 
     response_data = json.loads(request_response.text)
     if request_response.status_code not in [200, 409]:
@@ -98,7 +98,7 @@ def main(work_dir_path, db_conn):
     g.applogger.info(f"[Trace] data=[{data_encode}]")
 
     # API呼出
-    request_response = requests.post(api_url, data=data_encode, headers=header_para)
+    request_response = requests.post(api_url, data=data_encode, headers=header_para, timeout=(12, 600))
 
     response_data = json.loads(request_response.text)
     if request_response.status_code not in [200, 409]:

@@ -7,6 +7,45 @@ from bson import ObjectId
 
 from common_libs.oase.const import oaseConst
 
+# ===== グローバル変数 =====
+
+judge_time = 1760486660
+
+# V_OASE_LABEL_KEY_GROUPのラベルキー名からラベルキーIDへのマッピング
+V_OASE_LABEL_KEY_GROUP = {
+    # システム固定ラベル（T_OASE_LABEL_KEY_FIXED より）
+    "_exastro_event_collection_settings_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx01",
+    "_exastro_fetched_time": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx02",
+    "_exastro_end_time": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx03",
+    "_exastro_undetected": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx04",
+    "_exastro_evaluated": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx05",
+    "_exastro_timeout": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx06",
+    "_exastro_type": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx07",
+    "_exastro_rule_name": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx08",
+    "_exastro_host": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx09",
+    "_exastro_agent_name": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx10",
+    "_exastro_agent_version": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx11",
+    # 「新規イベント通知済み」だがT_OASE_LABEL_KEY_FIXEDに存在しない
+    # "_exastro_checked": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx12",
+    # テスト用カスタムラベル
+    "event_id": "cfaaf25d-a97e-4f8c-a76d-2ef04b250448",
+    "grp_label_1": "de17423c-c75b-4efa-af0f-1779b56f65f2",
+    "grp_label_2": "8120ba46-2c66-43d3-9e4c-2eab00c85630",
+    "grp_label_3": "b274a4a0-0522-44f6-9ed3-85e57ab37a0d",
+    "test_case": "4ae00b24-b194-40b8-a6a8-e57951181959",
+    "A_event_id": "f03dc6d8-25ba-4296-89e5-08342b615a66",
+    "type": "e2f3d1f2-4a5f-2e4f-2e4f-4a8f4a8f4a8f",
+    "mode": "f4a8f4a8-f4a8-f4a8-f4a8-f4a8f4a8f4a8",
+    "clock": "7de41b08-3df7-4e5a-80df-f26fdb520578",
+    "eventid": "d40efb31-3080-40e3-88c4-df9cf452dce4",
+    "excluded_flg": "bd4c4bb0-ed6f-4fe1-ab80-1459bcdb11cd",
+    "msg": "9909015e-845e-4e5f-a397-d73441c1043f",
+    "node": "9db8ef62-f915-424c-af3a-7a731a3c5f13",
+    "service": "a7418cae-5029-4580-997f-f41a1b2a14d6",
+    "severity": "ef992af9-4079-49bf-b9ca-eed079ebfed3",
+    "status": "0a6ded16-7f3b-4c9d-9fde-781b5609acc2",
+}
+
 # ===== ダミーデータ作成関数 =====
 
 
@@ -37,9 +76,10 @@ def get_label_key_id(label_name: str) -> str:
 def create_event(
     test_case: str,
     event_id: str,
-    fetched_time: int,
+    fetched_time: int = judge_time,
     end_time: int | None = None,
     *,
+    fetched_time_offset: int = 0,
     ttl: int = 10,
     id: ObjectId | bytes | str | None = None,
     exastro_type: str = "event",
@@ -50,6 +90,7 @@ def create_event(
     grouping_filter: str | dict | None = None,
 ):
     """テスト用イベントデータを作成"""
+    fetched_time += fetched_time_offset
     if end_time is None:
         end_time = fetched_time + ttl
     event_content = {"test_case": test_case, "event_id": event_id}
@@ -254,43 +295,3 @@ def create_rule_row(
         "TTL": conclusion_ttl,
         "RULE_LABEL_NAME": rule_name,
     }
-
-
-# ===== グローバル変数 =====
-
-judge_time = 1760486660
-
-# V_OASE_LABEL_KEY_GROUPのラベルキー名からラベルキーIDへのマッピング
-V_OASE_LABEL_KEY_GROUP = {
-    # システム固定ラベル（T_OASE_LABEL_KEY_FIXED より）
-    "_exastro_event_collection_settings_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx01",
-    "_exastro_fetched_time": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx02",
-    "_exastro_end_time": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx03",
-    "_exastro_undetected": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx04",
-    "_exastro_evaluated": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx05",
-    "_exastro_timeout": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx06",
-    "_exastro_type": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx07",
-    "_exastro_rule_name": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx08",
-    "_exastro_host": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx09",
-    "_exastro_agent_name": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx10",
-    "_exastro_agent_version": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx11",
-    # 「新規イベント通知済み」だがT_OASE_LABEL_KEY_FIXEDに存在しない
-    # "_exastro_checked": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx12",
-    # テスト用カスタムラベル
-    "event_id": "cfaaf25d-a97e-4f8c-a76d-2ef04b250448",
-    "grp_label_1": "de17423c-c75b-4efa-af0f-1779b56f65f2",
-    "grp_label_2": "8120ba46-2c66-43d3-9e4c-2eab00c85630",
-    "grp_label_3": "b274a4a0-0522-44f6-9ed3-85e57ab37a0d",
-    "test_case": "4ae00b24-b194-40b8-a6a8-e57951181959",
-    "A_event_id": "f03dc6d8-25ba-4296-89e5-08342b615a66",
-    "type": "e2f3d1f2-4a5f-2e4f-2e4f-4a8f4a8f4a8f",
-    "mode": "f4a8f4a8-f4a8-f4a8-f4a8-f4a8f4a8f4a8",
-    "clock": "7de41b08-3df7-4e5a-80df-f26fdb520578",
-    "eventid": "d40efb31-3080-40e3-88c4-df9cf452dce4",
-    "excluded_flg": "bd4c4bb0-ed6f-4fe1-ab80-1459bcdb11cd",
-    "msg": "9909015e-845e-4e5f-a397-d73441c1043f",
-    "node": "9db8ef62-f915-424c-af3a-7a731a3c5f13",
-    "service": "a7418cae-5029-4580-997f-f41a1b2a14d6",
-    "severity": "ef992af9-4079-49bf-b9ca-eed079ebfed3",
-    "status": "0a6ded16-7f3b-4c9d-9fde-781b5609acc2",
-}

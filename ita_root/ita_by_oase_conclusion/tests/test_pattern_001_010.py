@@ -12,10 +12,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-
 import backyard_main as bm
 from common_libs.oase.const import oaseConst
 from tests.common import create_event, create_filter_row, create_rule_row, judge_time
+from tests.event import e001, e002, e003, e004, e005
+from tests.filter import f_a4, f_a6
 
 
 def test_pattern_006(
@@ -34,103 +35,7 @@ def test_pattern_006(
     mock_datetime = patch_datetime
 
     # イベント
-    e001 = create_event(
-        "pattern",
-        "e001",
-        judge_time - 15,
-        ttl=20,
-        custom_labels={
-            "node": "z01",
-            "msg": "[systemA] Httpd Down",
-            "_exastro_host": "systemA",
-            "service": "Httpd",
-            "status": "Down",
-            "severity": "3",
-            "excluded_flg": "0",
-        },
-    )
-    e002 = create_event(
-        "pattern",
-        "e002",
-        judge_time - 10,
-        ttl=20,
-        custom_labels={
-            "node": "z01",
-            "msg": "[systemA] Httpd Down",
-            "_exastro_host": "systemA",
-            "service": "Httpd",
-            "status": "Down",
-            "severity": "3",
-            "excluded_flg": "0",
-        },
-    )
-    e003 = create_event(
-        "pattern",
-        "e003",
-        judge_time - 5,
-        ttl=20,
-        custom_labels={
-            "node": "z01",
-            "msg": "[systemA] Httpd Down",
-            "_exastro_host": "systemA",
-            "service": "Httpd",
-            "status": "Down",
-            "severity": "3",
-            "excluded_flg": "0",
-        },
-    )
-    e004 = create_event(
-        "pattern",
-        "e004",
-        judge_time - 15,
-        ttl=20,
-        custom_labels={
-            "node": "z01",
-            "msg": "[systemA] Httpd Down",
-            "_exastro_host": "systemB",
-            "service": "Httpd",
-            "status": "Down",
-            "severity": "3",
-            "excluded_flg": "0",
-        },
-    )
-    e005 = create_event(
-        "pattern",
-        "e005",
-        judge_time - 10,
-        ttl=20,
-        custom_labels={
-            "node": "z01",
-            "msg": "[systemA] Httpd Down",
-            "_exastro_host": "systemB",
-            "service": "Httpd",
-            "status": "Down",
-            "severity": "3",
-            "excluded_flg": "0",
-        },
-    )
     test_events = [e001, e002, e003, e004, e005]
-
-    # フィルター
-    f_a6 = create_filter_row(
-        oaseConst.DF_SEARCH_CONDITION_GROUPING,
-        [
-            ("excluded_flg", oaseConst.DF_TEST_EQ, "0"),
-            ("_exastro_host", oaseConst.DF_TEST_NE, "systemZ"),
-        ],
-        oaseConst.DF_GROUP_CONDITION_ID_NOT_TARGET,
-        ["node", "msg", "clock", "eventid"],
-    )
-    f_a4 = create_filter_row(
-        oaseConst.DF_SEARCH_CONDITION_GROUPING,
-        [
-            ("excluded_flg", oaseConst.DF_TEST_EQ, "0"),
-            ("service", oaseConst.DF_TEST_EQ, "Httpd"),
-            ("status", oaseConst.DF_TEST_EQ, "Down"),
-        ],
-        oaseConst.DF_GROUP_CONDITION_ID_NOT_TARGET,
-        ["node", "msg", "clock", "eventid", "_exastro_host"],
-    )
 
     # ルール
     r1 = create_rule_row(
@@ -161,11 +66,9 @@ def test_pattern_006(
     ]
     minimum_fetched_time = min(
         (event["labels"]["_exastro_fetched_time"] for event in test_events),
-        default=judge_time,
     )
     maximum_fetched_time = max(
         (event["labels"]["_exastro_fetched_time"] for event in test_events),
-        default=judge_time,
     )
     for jt in range(minimum_fetched_time, maximum_fetched_time + 1):
         mock_mongo.test_events = [

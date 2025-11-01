@@ -134,40 +134,6 @@ class APIClientCommon:
             parameter = json.loads(_parameter)
         except Exception:
             parameter = _parameter
-
-        if parameter is not None:
-        # 2.7以前の予約変数の置換処理
-            def replace_reserved_variable(value):
-                # 予約語を置換する
-                value = value.replace("EXASTRO_LAST_FETCHED_YY_MM_DD", str(self.last_fetched_Ymd))
-                value = value.replace("EXASTRO_LAST_FETCHED_DD_MM_YY", str(self.last_fetched_dmy))
-                value = value.replace("EXASTRO_LAST_FETCHED_TIMESTAMP", str(self.last_fetched_timestamp))
-                return value
-
-            def search_reserved_variable(parameter):
-                # パラメータの中から再帰的に置換する
-                parameter_type = type(parameter)
-                if parameter_type is dict:
-                    for key, value in parameter.items():
-                        value_type = type(value)
-                        if value_type is dict:
-                            parameter[key] = search_reserved_variable(value)
-                        elif value_type is list:
-                            parameter[key] = list(map(search_reserved_variable, value))
-                        elif value_type is str:
-                            parameter[key] = replace_reserved_variable(value)
-                        else:
-                            parameter[key] = value
-                    return parameter
-                elif parameter_type is list:
-                    return list(map(search_reserved_variable, parameter))
-                elif parameter_type is str:
-                    return replace_reserved_variable(parameter)
-                else:
-                    return parameter
-
-            parameter = search_reserved_variable(parameter)
-
         return parameter
 
     def call_api(self):

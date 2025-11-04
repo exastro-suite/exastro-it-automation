@@ -40,6 +40,7 @@ def __wrapper():
 
     with flask_app.app_context():
         g.USER_ID = os.environ.get("USER_ID", ITA_INIT_USER_ID)
+        g.SERVICE_NAME = os.environ.get("SERVICE_NAME", "ita-migration")
         g.LANGUAGE = os.environ.get("LANGUAGE", "en")
         g.STORAGEPATH = os.environ.get('STORAGEPATH')
         g.APPPATH = os.path.dirname(__file__)

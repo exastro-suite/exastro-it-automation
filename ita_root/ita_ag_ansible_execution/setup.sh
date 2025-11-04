@@ -1211,6 +1211,8 @@ _EOF_
     systemctl --user daemon-reload
     info "systemctl --user enable ${default_env_values['AGENT_NAME']}"
     systemctl --user enable "${default_env_values['AGENT_NAME']}"
+    info "sudo loginctl enable-linger ${EXASTRO_UNAME}"
+    sudo loginctl enable-linger ${EXASTRO_UNAME}
 
     read -r -p  "${interactive_llist['SERVICE_MSG_START']}" confirm
     echo ""

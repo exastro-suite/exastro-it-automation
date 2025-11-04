@@ -77,7 +77,8 @@ class Exastro_API:
                 auth=auth,
                 json=body,
                 params=query,
-                verify=False
+                verify=False,
+                timeout=(12, 600)
             )
 
             status_code = response.status_code
@@ -116,7 +117,8 @@ class Exastro_API:
                 json=body,
                 files=files,
                 params=query,
-                verify=False
+                verify=False,
+                timeout=(12, 600)
             )
 
             status_code = response.status_code
@@ -157,7 +159,8 @@ class Exastro_API:
                 params=query,
                 data=data,
                 verify=False,
-                stream=True
+                stream=True,
+                timeout=(12, 600)
             )
             status_code = response.status_code
 
@@ -203,6 +206,7 @@ class Exastro_API:
                 auth=auth,
                 data=stream,
                 verify=False,
+                timeout=(12, 600)
             )
 
             status_code = response.status_code
@@ -234,7 +238,8 @@ class Exastro_API:
                 url=f"{self.base_url}{endpoint}",
                 headers=headers,
                 data=body,
-                verify=False
+                verify=False,
+                timeout=(12, 600)
             )
 
             status_code = response.status_code

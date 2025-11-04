@@ -114,6 +114,7 @@ def create_events(event_ids: list[str], pattern_name: str) -> list[dict]:
         events.append(event)
     return events
 
+
 # pytest用イベント定義
 event_templates = {}
 event_templates["e001"] = {
@@ -126,6 +127,7 @@ event_templates["e001"] = {
         "service": "Httpd",
         "status": "Down",
         "severity": "3",
+        "excluded_flg": "0",
     },
 }
 event_templates["e002"] = {
@@ -138,6 +140,7 @@ event_templates["e002"] = {
         "service": "Httpd",
         "status": "Down",
         "severity": "3",
+        "excluded_flg": "0",
     },
 }
 event_templates["e003"] = {
@@ -150,6 +153,7 @@ event_templates["e003"] = {
         "service": "Httpd",
         "status": "Down",
         "severity": "3",
+        "excluded_flg": "0",
     },
 }
 event_templates["e003a"] = {
@@ -162,6 +166,7 @@ event_templates["e003a"] = {
         "service": "Httpd",
         "status": "Down",
         "severity": "3",
+        "excluded_flg": "0",
     },
 }
 event_templates["e004"] = {
@@ -174,6 +179,7 @@ event_templates["e004"] = {
         "service": "Httpd",
         "status": "Down",
         "severity": "3",
+        "excluded_flg": "0",
     },
 }
 event_templates["e005"] = {
@@ -186,6 +192,7 @@ event_templates["e005"] = {
         "service": "Httpd",
         "status": "Down",
         "severity": "3",
+        "excluded_flg": "0",
     },
 }
 event_templates["e005a"] = {
@@ -198,6 +205,7 @@ event_templates["e005a"] = {
         "service": "Httpd",
         "status": "Down",
         "severity": "3",
+        "excluded_flg": "0",
     },
 }
 event_templates["e005b"] = {
@@ -210,6 +218,7 @@ event_templates["e005b"] = {
         "service": "Httpd",
         "status": "Down",
         "severity": "3",
+        "excluded_flg": "0",
     },
 }
 event_templates["e005c"] = {
@@ -274,6 +283,7 @@ event_templates["e006"] = {
         "service": "Mysqld",
         "status": "Down",
         "severity": "3",
+        "excluded_flg": "0",
     },
 }
 event_templates["e007"] = {
@@ -286,6 +296,7 @@ event_templates["e007"] = {
         "service": "Mysqld",
         "status": "Down",
         "severity": "3",
+        "excluded_flg": "0",
     },
 }
 event_templates["e008"] = {
@@ -298,6 +309,7 @@ event_templates["e008"] = {
         "service": "Mysqld",
         "status": "Down",
         "severity": "3",
+        "excluded_flg": "0",
     },
 }
 event_templates["e009"] = {
@@ -323,6 +335,7 @@ event_templates["e014a"] = {
         "service": "Mysqld",
         "status": "Down",
         "severity": "3",
+        "excluded_flg": "0",
     },
 }
 event_templates["e014b"] = {
@@ -335,6 +348,7 @@ event_templates["e014b"] = {
         "service": "Mysqld",
         "status": "Down",
         "severity": "3",
+        "excluded_flg": "0",
     },
 }
 event_templates["e014c"] = {
@@ -347,6 +361,7 @@ event_templates["e014c"] = {
         "service": "Mysqld",
         "status": "Down",
         "severity": "3",
+        "excluded_flg": "0",
     },
 }
 event_templates["e014d"] = {
@@ -359,6 +374,7 @@ event_templates["e014d"] = {
         "service": "Mysqld",
         "status": "Down",
         "severity": "3",
+        "excluded_flg": "0",
     },
 }
 event_templates["e014e"] = {
@@ -371,6 +387,7 @@ event_templates["e014e"] = {
         "service": "Mysqld",
         "status": "Down",
         "severity": "3",
+        "excluded_flg": "0",
     },
 }
 event_templates["e010"] = {
@@ -383,6 +400,7 @@ event_templates["e010"] = {
         "service": "Disk",
         "status": "Full",
         "severity": "3",
+        "excluded_flg": "0",
     },
 }
 event_templates["e011"] = {
@@ -395,6 +413,7 @@ event_templates["e011"] = {
         "service": "Disk",
         "status": "Full",
         "severity": "3",
+        "excluded_flg": "0",
     },
 }
 event_templates["e012"] = {
@@ -420,6 +439,7 @@ event_templates["e013"] = {
         "service": "Disk",
         "status": "Full",
         "severity": "3",
+        "excluded_flg": "0",
     },
 }
 event_templates["e014"] = {
@@ -432,6 +452,7 @@ event_templates["e014"] = {
         "service": "Disk",
         "status": "Full",
         "severity": "3",
+        "excluded_flg": "0",
     },
 }
 event_templates["e015"] = {

@@ -11,6 +11,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+import copy
 
 from tests.common import create_event
 
@@ -109,7 +110,7 @@ def create_events(event_ids: list[str], pattern_name: str) -> list[dict]:
             event_id,
             fetched_time_offset=event_templates[event_id]['fetched_time_offset'],
             ttl=event_templates[event_id]['ttl'],
-            custom_labels=event_templates[event_id]['custom_labels'].deepcopy(),
+            custom_labels=copy.deepcopy(event_templates[event_id]['custom_labels']),
         )
         events.append(event)
     return events

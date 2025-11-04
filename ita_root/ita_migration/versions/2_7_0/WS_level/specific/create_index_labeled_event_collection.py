@@ -28,6 +28,11 @@ def main(work_dir_path, wsdb):
     # 【OASE】インデックスの追加
     ############################################################
     g.applogger.info("[Trace] create index mongodb 'labeled_event_collection'")
+    # mongodbに対するアップデートなので、migrationのときしか実行しない（menu-export-importの対象外とするため）
+    if g.SERVICE_NAME != "ita-migration":
+        g.applogger.info("[Trace] skipped create index mongodb 'labeled_event_collection'")
+        return 0
+
     common_db = DBConnectCommon()  # noqa: F405
 
     organization_id = g.ORGANIZATION_ID

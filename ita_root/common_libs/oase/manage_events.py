@@ -446,6 +446,11 @@ class ManageEvents:
         # ルール確定グループからフィルターIDでフィルター別属性集約グループを取得・作成する
 
         ttl_groups = self._get_ttl_groups(event, filter_row)
+
+        # 既にグループに存在する場合はイベントが持つ情報を返し、何もしない
+        if any(event == group["first_event"] or event in group["remaining_events"] for group in ttl_groups):
+            return event["exastro_filter_group"]["is_first_event"]
+
         match ttl_groups:
             case [*_, _ as latest_group] if (
                 event["labels"]["_exastro_fetched_time"] <= latest_group["end_time"]
@@ -510,9 +515,7 @@ class ManageEvents:
                 [ttl_group["first_event"]["_id"]], {"_exastro_end_time": new_end_time}
             )
 
-    def _get_attribute_key(
-        self, event: Event, filter_row: dict[str] | None = None
-    ) -> AttributeKey:
+    def _get_attribute_key(self, event: Event, filter_row: dict[str]) -> AttributeKey:
         """イベントから属性集約キーを取得する
 
         Args:
@@ -524,10 +527,13 @@ class ManageEvents:
         """
 
         # グループキーがキャッシュに存在する場合そこから取り出す
-        local_label: dict[str, AttributeKey] = event.setdefault(
+        local_label: dict[str, dict[str, AttributeKey]] = event.setdefault(
             oaseConst.DF_LOCAL_LABLE_NAME, {}
         )
-        attribute_key = local_label.get(oaseConst.DF_LOCAL_LABLE_ATTRIBUTE_KEY, None)
+        attribute_key_filter_map = local_label.setdefault(
+            oaseConst.DF_LOCAL_LABLE_ATTRIBUTE_KEY, {}
+        )
+        attribute_key = attribute_key_filter_map.get(filter_row["FILTER_ID"])
         if attribute_key:
             return attribute_key
 
@@ -555,10 +561,13 @@ class ManageEvents:
                 (key, value)
                 for (key, value) in labels.items()
                 # システム属性である_exastroで始まる属性は除外する(_exastro_hostは除外対象外)
-                if not (key in group_condition_labels or re.match("^_exastro(?!_host$)", key))
+                if not (
+                    key in group_condition_labels
+                    or re.match("^_exastro(?!_host$)", key)
+                )
             )
         # キャッシュに保存
-        local_label[oaseConst.DF_LOCAL_LABLE_ATTRIBUTE_KEY] = attribute_key
+        attribute_key_filter_map[filter_row["FILTER_ID"]] = attribute_key
         return attribute_key
 
     def is_first_event_when_grouping(self, event: Event, filter_row: dict[str]) -> bool:
@@ -574,6 +583,10 @@ class ManageEvents:
         """
 
         ttl_groups = self._get_ttl_groups(event, filter_row)
+
+        # 既にグループに存在する場合はイベントが持つ情報を返す
+        if any(event == group["first_event"] or event in group["remaining_events"] for group in ttl_groups):
+            return event["exastro_filter_group"]["is_first_event"]
 
         match ttl_groups:
             case [*_, _ as latest_group] if (

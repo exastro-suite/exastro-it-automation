@@ -485,8 +485,11 @@ class DummyWriterPM:
                 for k, v in filter.items()
             )
         )
+        
+        update_values_map = update.get("$set", {})
+        
         for event in matched_events:
-            for joined_key, expression in update.items():
+            for joined_key, expression in update_values_map.items():
                 remain_keys = joined_key.split(".")
                 target = event
                 # キーがネストされている場合に対応

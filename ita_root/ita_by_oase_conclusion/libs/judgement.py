@@ -407,7 +407,8 @@ class Judgement:
                     # IncidentDictから削除する
                     IncidentDict[filter_id].remove(event["_id"])
                     # 後続イベントを判定済み扱いとする
-                    self.EventObj.update_label_flag([event["_id"]], {'_exastro_evaluated': '1'})
+                    if event["labels"]["_exastro_evaluated"] != "1":
+                        self.EventObj.update_label_flag([event["_id"]], {'_exastro_evaluated': '1'})
                     # FilterResultDict['EventList']からの削除は不要(存在しない)
 
         if ret is True:

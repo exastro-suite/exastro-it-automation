@@ -61,7 +61,7 @@ p_group_condition_id = oaseConst.DF_GROUP_CONDITION_ID_NOT_TARGET
 p_group_label_names = "node,msg,clock,eventid".split(",")
 p_search_conditions = []
 p_search_conditions.append(("excluded_flg", oaseConst.DF_TEST_EQ, "0"))
-p_search_conditions.append(("7", oaseConst.DF_TEST_NE, "systemZ"))
+p_search_conditions.append(("_exastro_host", oaseConst.DF_TEST_NE, "systemZ"))
 f_a4 = create_filter_row(
     p_search_condition_id,
     (p_search_conditions if len(p_search_conditions) > 0 else None),

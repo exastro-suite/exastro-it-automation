@@ -1286,11 +1286,15 @@ def put_uploadfiles_jnl(ws_db, config_file_path, src_dir, dest_dir):
                                 os.unlink(file_path + previous_file_name)
                         # シンボリックリンクを作成する
                         try:
+                            # シンボリック先があれば削除する
+                            if os.path.islink(dir_path_file):
+                                os.unlink(dir_path_file)
                             os.symlink(old_file_path + file_name, dir_path_file)
-                        except Exception:
-                            retBool = False
+                        except Exception as e:
                             msg = g.appmsg.get_api_message('MSG-00015', [old_file_path + file_name, dir_path_file])
-                            return retBool, msg
+                            g.applogger.info(msg)
+                            g.applogger.info(traceback.format_exc())
+                            continue
 
         ws_db.db_commit()
 

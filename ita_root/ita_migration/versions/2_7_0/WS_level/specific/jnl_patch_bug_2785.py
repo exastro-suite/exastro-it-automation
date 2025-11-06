@@ -48,10 +48,18 @@ def main(work_dir_path, ws_db):
             ・JOURNAL_SEQ_NOが{}-2のレコードがない場合に、jnlパッチをあてる
     """
 
-    # 履歴内の{}-2のレコードがあれば、対象外
-    jnl_id = "{}-2".format("1")
-    jnl_record = ws_db.table_select(table_name_jnl, "WHERE `JOURNAL_SEQ_NO` = %s", [jnl_id])
-    if len(jnl_record) != 0:
+
+    jnl_patch_flg = False
+    uuid_list = ["1", "2", "3", "4"]
+    for uuid in uuid_list:
+        # 履歴内の{}-2のレコードがなければ対象
+        jnl_id = "{}-2".format(uuid)
+        jnl_record = ws_db.table_select(table_name_jnl, "WHERE `JOURNAL_SEQ_NO` = %s", [jnl_id])
+        if len(jnl_record) == 0:
+            jnl_patch_flg = True
+
+    if not jnl_patch_flg:
+        g.applogger.info("[Trace][skipped] bug fix issue2785")
         return 0
 
     # jnl patchをかける

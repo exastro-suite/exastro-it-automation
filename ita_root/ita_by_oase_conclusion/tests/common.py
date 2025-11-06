@@ -285,9 +285,9 @@ def create_rule_row(
         ),
         "CONCLUSION_LABEL_SETTINGS": json.dumps(
             [
-                {get_label_key_id(label_name): template}
+                {"label_key": get_label_key_id(label_name), "label_value": label_value}
                 for label_setting in conclusion_label_settings
-                for label_name, template in label_setting.items()
+                for label_name, label_value in label_setting.items()
             ]
             if conclusion_label_settings
             else []

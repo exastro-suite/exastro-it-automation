@@ -1406,3 +1406,165 @@ def test_scenario_order_b_only(
 
     # 新規イベント通知済みであることを確認
     assert event_b["labels"]["_exastro_checked"] == "1"
+
+
+def test_scenario_filtering_wildcard_pattern(
+    patch_global_g,
+    patch_notification_and_writer,
+    patch_common_functions,
+    patch_action_using_modules,
+    monkeypatch,
+    patch_database_connections,
+    patch_datetime,
+):
+    """「*」でのフィルタリングが正しく動作することを確認"""
+    ws_db, mock_mongo = patch_database_connections
+    mock_datetime = patch_datetime
+
+    # フィルター
+    f1 = create_filter_row(
+        oaseConst.DF_SEARCH_CONDITION_GROUPING,
+        [
+            ("node", oaseConst.DF_TEST_EQ, "*"),
+            ("type", oaseConst.DF_TEST_EQ, "grouping"),
+        ],
+        oaseConst.DF_GROUP_CONDITION_ID_TARGET,
+        ["node"],
+    )
+    f2 = create_filter_row(
+        oaseConst.DF_SEARCH_CONDITION_UNIQUE,
+        [
+            ("node", oaseConst.DF_TEST_EQ, "*"),
+            ("type", oaseConst.DF_TEST_EQ, "unique"),
+        ],
+        oaseConst.DF_GROUP_CONDITION_ID_TARGET,
+        ["node"],
+    )
+    f3 = create_filter_row(
+        oaseConst.DF_SEARCH_CONDITION_QUEUING,
+        [
+            ("node", oaseConst.DF_TEST_EQ, "*"),
+            ("type", oaseConst.DF_TEST_EQ, "queuing"),
+        ],
+        oaseConst.DF_GROUP_CONDITION_ID_TARGET,
+        ["node"],
+    )
+    f4 = create_filter_row(
+        oaseConst.DF_SEARCH_CONDITION_GROUPING,
+        [],
+        oaseConst.DF_GROUP_CONDITION_ID_TARGET,
+        ["node"],
+    )
+
+    # ルール
+    r1 = create_rule_row(
+        1,
+        "grouping_wildcard",
+        f1,
+        conclusion_label_settings=[{"type": "grouping"}],
+    )
+    r2 = create_rule_row(
+        2,
+        "unique_wildcard",
+        f2,
+        conclusion_label_settings=[{"type": "unique"}],
+    )
+    r3 = create_rule_row(
+        3,
+        "queuing_wildcard",
+        f3,
+        conclusion_label_settings=[{"type": "queuing"}],
+    )
+    r4 = create_rule_row(
+        4,
+        "all",
+        f4,
+    )
+
+    # 必要なテーブルデータを設定
+    ws_db.table_data["T_OASE_FILTER"] = [
+        f1,
+        f2,
+        f3,
+        f4,
+    ]
+    ws_db.table_data["T_OASE_RULE"] = [
+        r1,
+        r2,
+        r3,
+        r4,
+    ]
+    ws_db.table_data["T_OASE_ACTION"] = []
+    test_events = [
+        grouping_event := create_event(
+            "wildcard",
+            "grouping_wildcard",
+            custom_labels={"node": "z01", "type": "grouping"},
+        ),
+        unique_event := create_event(
+            "wildcard",
+            "unique_wildcard",
+            custom_labels={"node": "z02", "type": "unique"},
+        ),
+        queuing_event := create_event(
+            "wildcard",
+            "queuing_wildcard",
+            custom_labels={"node": "z03", "type": "queuing"},
+        ),
+    ]
+
+    mock_mongo.test_events = [
+        event
+        for event in test_events
+        if event["labels"]["_exastro_fetched_time"] <= judge_time
+    ]
+    mock_datetime.datetime.now.return_value.timestamp.return_value = judge_time
+    bm.backyard_main("org1", "ws1")
+
+    # グルーピングが正しく行われることの確認
+    conclusions = [
+        event
+        for event in mock_mongo.test_events
+        if event not in [grouping_event, unique_event, queuing_event]
+    ]
+
+    # グルーピング: ワイルドカードルールにマッチする
+    grouping_info = grouping_event.get("exastro_filter_group")
+    assert grouping_info is not None
+    assert grouping_info["group_id"] == repr(grouping_event["_id"])
+    assert grouping_info["filter_id"] == f1["FILTER_ID"]
+    assert grouping_info["is_first_event"]
+    assert grouping_event["labels"]["_exastro_evaluated"] == "1"
+    assert [
+        action_log
+        for action_log in ws_db.table_data[oaseConst.T_OASE_ACTION_LOG]
+        if repr(grouping_event["_id"]) in action_log["EVENT_ID_LIST"]
+        and action_log["RULE_ID"] == r1["RULE_ID"]
+    ]
+
+    # ユニーク: ワイルドカードルールにマッチする
+    assert "exastro_filter_group" not in unique_event
+    assert unique_event["labels"]["_exastro_evaluated"] == "1"
+    assert [
+        action_log
+        for action_log in ws_db.table_data[oaseConst.T_OASE_ACTION_LOG]
+        if repr(unique_event["_id"]) in action_log["EVENT_ID_LIST"]
+        and action_log["RULE_ID"] == r2["RULE_ID"]
+    ]
+
+    # キューイング: ワイルドカードルールにマッチする
+    assert "exastro_filter_group" not in queuing_event
+    assert queuing_event["labels"]["_exastro_evaluated"] == "1"
+    assert [
+        action_log
+        for action_log in ws_db.table_data[oaseConst.T_OASE_ACTION_LOG]
+        if repr(queuing_event["_id"]) in action_log["EVENT_ID_LIST"]
+        and action_log["RULE_ID"] == r3["RULE_ID"]
+    ]
+
+    # 無条件: ワイルドカードルールにはマッチしないが、無条件ルールにはマッチする
+    for conclusion in conclusions:
+        conclusion_grouping_info = conclusion.get("exastro_filter_group")
+        assert conclusion_grouping_info is not None
+        assert conclusion_grouping_info["filter_id"] == f4["FILTER_ID"]
+        assert conclusion["labels"]["_exastro_evaluated"] == "1"

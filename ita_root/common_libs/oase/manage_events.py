@@ -166,7 +166,8 @@ class ManageEvents:
                 hit = False
                 if key in labels:
                     if str(condition) == oaseConst.DF_TEST_EQ:
-                        if labels[key] == value:
+                        # 「*」はワイルドカードとして扱う
+                        if labels[key] == value or value == "*":
                             hit = True
                     else:
                         if labels[key] != value:

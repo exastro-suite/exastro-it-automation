@@ -28,6 +28,7 @@ from tests.common import (
     create_filter_row,
     create_rule_row,
     judge_time,
+    run_test_pattern,
 )
 from tests.test_double import DummyAction, DummyActionStatusMonitor
 
@@ -1316,16 +1317,17 @@ def test_scenario_order_b_only(
     patch_common_functions,
     monkeypatch,
     patch_database_connections,
+    patch_datetime,
 ):
     """JudgeMain: A → B の順序ルールで、Bのイベントのみが判定される場合に"""
-
+    g = patch_global_g
     ws_db, mock_mongo = patch_database_connections
+    mock_datetime = patch_datetime
 
     # イベント
     event_b = create_event(
         "p92",
         "e026",
-        judge_time,
         ttl=20,
         custom_labels={"node": "z11", "type": "qa", "mode": "q3"},
     )
@@ -1371,41 +1373,99 @@ def test_scenario_order_b_only(
     )
 
     # 必要なテーブルデータを設定
-    ws_db.table_data["T_OASE_FILTER"] = [
+    filters = [
         f_u_a,
         f_q_a,
     ]
-    ws_db.table_data["T_OASE_RULE"] = [
+    rules = [
         r1,
         r2,
     ]
-    ws_db.table_data["T_OASE_ACTION"] = []
-    maximum_fetched_time = max(
-        (event["labels"]["_exastro_fetched_time"] for event in test_events),
-        default=judge_time,
-    )
 
-    for jt in range(
-        judge_time,
-        maximum_fetched_time + 1,
-    ):
-        mock_mongo.test_events = [
-            event
-            for event in test_events
-            if event["labels"]["_exastro_fetched_time"] <= jt
-        ]
-        ev_obj = ManageEvents(mock_mongo, jt)
-        action_obj = Action(ws_db, ev_obj)
+    run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules)
 
-        bm.JudgeMain(ws_db, jt, ev_obj, action_obj)
-
-    # 未判定、既知、未タイムアウトであることを確認
+    # 未判定、既知、タイムアウトであることを確認
     assert event_b["labels"]["_exastro_evaluated"] == "0"
     assert event_b["labels"]["_exastro_undetected"] == "0"
-    assert event_b["labels"]["_exastro_timeout"] == "0"
+    assert event_b["labels"]["_exastro_timeout"] == "1"
 
     # 新規イベント通知済みであることを確認
     assert event_b["labels"]["_exastro_checked"] == "1"
+
+
+@patch.dict(os.environ, {"EVALUATE_LATENT_INFINITE_LOOP_LIMIT": "5"})
+def test_scenario_loop_limit_over(
+    patch_global_g,
+    patch_notification_and_writer,
+    patch_common_functions,
+    patch_action_using_modules,
+    monkeypatch,
+    patch_database_connections,
+    patch_datetime,
+):
+    """大量データで1ループに収まらなかった場合の動作確認"""
+    g = patch_global_g
+
+    ws_db, mock_mongo = patch_database_connections
+    mock_datetime = patch_datetime
+    ttl = 10
+
+    # フィルター
+    f1 = create_filter_row(
+        oaseConst.DF_SEARCH_CONDITION_GROUPING,
+        [
+            ("_exastro_type", oaseConst.DF_TEST_NE, "conclusion"),
+        ],
+        oaseConst.DF_GROUP_CONDITION_ID_TARGET,
+        ["node"],
+    )
+
+    # ルール
+    r1 = create_rule_row(
+        1,
+        "limit_over",
+        f1,
+        conclusion_label_settings=[{"event_id": "c-{{A.event_id}}"}],
+    )
+
+    # 必要なテーブルデータを設定
+    filters = [
+        f1,
+    ]
+    rules = [
+        r1,
+    ]
+    test_events = [
+        create_event(
+            "limit_over",
+            f"e{n:03}",
+            custom_labels={"node": "z01", "event_id": f"e{n:03}"},
+            ttl=ttl,
+        )
+        for n in range(int(os.getenv("EVALUATE_LATENT_INFINITE_LOOP_LIMIT")) * 10 + 1)
+    ]
+
+    run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules)
+
+    # タイムアウト、結論イベントを除くすべてが同じグループになることを確認
+    import itertools
+
+    group = {
+        k: [e.get("event", e["labels"]).get("event_id") for e in v]
+        for k, v in itertools.groupby(
+            (
+                event
+                for event in test_events
+                if event["labels"]["_exastro_timeout"] == "0"
+                and event["labels"]["_exastro_type"] != "conclusion"
+            ),
+            key=lambda e: e.get("exastro_filter_group", {}).get("group_id"),
+        )
+    }
+
+    __import__("pprint").pprint(group)
+
+    assert len(group) == 1
 
 
 def test_scenario_filtering_wildcard_pattern(
@@ -1418,6 +1478,7 @@ def test_scenario_filtering_wildcard_pattern(
     patch_datetime,
 ):
     """「*」でのフィルタリングが正しく動作することを確認"""
+    g = patch_global_g
     ws_db, mock_mongo = patch_database_connections
     mock_datetime = patch_datetime
 
@@ -1482,19 +1543,18 @@ def test_scenario_filtering_wildcard_pattern(
     )
 
     # 必要なテーブルデータを設定
-    ws_db.table_data["T_OASE_FILTER"] = [
+    filters = [
         f1,
         f2,
         f3,
         f4,
     ]
-    ws_db.table_data["T_OASE_RULE"] = [
+    rules = [
         r1,
         r2,
         r3,
         r4,
     ]
-    ws_db.table_data["T_OASE_ACTION"] = []
     test_events = [
         grouping_event := create_event(
             "wildcard",
@@ -1513,13 +1573,7 @@ def test_scenario_filtering_wildcard_pattern(
         ),
     ]
 
-    mock_mongo.test_events = [
-        event
-        for event in test_events
-        if event["labels"]["_exastro_fetched_time"] <= judge_time
-    ]
-    mock_datetime.datetime.now.return_value.timestamp.return_value = judge_time
-    bm.backyard_main("org1", "ws1")
+    run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules)
 
     # グルーピングが正しく行われることの確認
     conclusions = [

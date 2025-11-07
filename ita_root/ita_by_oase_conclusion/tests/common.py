@@ -1,3 +1,17 @@
+#   Copyright 2025 NEC Corporation
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
 from collections.abc import Iterable
 import datetime
 import json
@@ -295,3 +309,59 @@ def create_rule_row(
         "TTL": conclusion_ttl,
         "RULE_LABEL_NAME": rule_name,
     }
+
+
+def run_test_pattern(
+    g,
+    ws_db,
+    mock_mongo,
+    mock_datetime,
+    test_events,
+    filters,
+    rules,
+    actions: list[dict] | None = None,
+    # テストの基準時間
+    test_epoch: int = judge_time,
+    # 実行間隔
+    interval: int = 10,
+    # 前方の実行回数
+    before_epoch_runs: int = 3,
+    # 後方の実行回数
+    after_epoch_runs: int = 4,
+    # 一時情報の集約(デバッグ用)
+    local_label_collection: dict[int, dict[ObjectId, dict[str] | None]] | None = None,
+):
+    """共通テストロジック"""
+    import backyard_main as bm
+
+    # 必要なテーブルデータを設定
+    ws_db.table_data["T_OASE_FILTER"] = filters
+    ws_db.table_data["T_OASE_RULE"] = rules
+    ws_db.table_data["T_OASE_ACTION"] = actions or []
+
+    start_time = test_epoch - interval * before_epoch_runs
+    end_time = test_epoch + interval * after_epoch_runs
+    for jt in range(start_time, end_time + 1, interval):
+        mock_mongo.test_events = [
+            event
+            for event in test_events
+            if event["labels"]["_exastro_fetched_time"] <= jt
+        ]
+        mock_datetime.datetime.now.return_value.timestamp.return_value = jt
+        bm.backyard_main("org1", "ws1")
+        for event in mock_mongo.test_events:
+            # 一時情報が残っているので削除する
+            local_label_data = event.pop(oaseConst.DF_LOCAL_LABLE_NAME, None)
+            if local_label_collection is not None:
+                local_label_collection.setdefault(jt, {})[
+                    event["_id"]
+                ] = local_label_data
+            # 追加された結論イベントをテストイベントに含める
+            if event not in test_events:
+                test_events.append(event)
+
+    # エラーログが出ていないことを確認
+    tracebacks = [log for _, log in g.applogger.logs if "Traceback" in log]
+    for traceback in tracebacks:
+        print(traceback)
+    assert not tracebacks

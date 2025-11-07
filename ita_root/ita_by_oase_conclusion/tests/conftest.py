@@ -140,7 +140,7 @@ def patch_common_functions(monkeypatch):
     """共通関数をパッチ"""
 
     def dummy_addline_msg(msg):
-        return f"[ADDLINE] {msg}"
+        return msg
 
     monkeypatch.setattr(bm, "addline_msg", dummy_addline_msg)
 

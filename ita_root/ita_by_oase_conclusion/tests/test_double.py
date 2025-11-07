@@ -356,9 +356,23 @@ class MockCursor:
 
 
 class DummyAppMsg:
+    def __init__(self):
+        import sys
+        from pathlib import Path
+        import json
+
+        self.message = {}
+        message_file_pathes = (
+            p for f in sys.path if (p := Path(f) / "messages" / "LOG.json").exists()
+        )
+        if message_file := next(message_file_pathes, None):
+            self.message: dict[str, str] = json.load(
+                message_file.open("r", encoding="utf-8")
+            )
+
     def get_log_message(self, code, params):
-        # ログ本文はテストで詳細検証しないので簡略
-        return f"{code}:{params}"
+        message = self.message.get(code)
+        return f"{code}:{params if message is None else message.format(*params)}"
 
 
 class DummyLogger:
@@ -467,8 +481,9 @@ class DummyWriterPM:
     def insert_labeled_event_collection(self, event):
         if "_id" not in event:
             event["_id"] = ObjectId()
-        self.calls["insert_events"].append(copy.deepcopy(event))
-        self.mongo.test_events.append(event)
+        e = copy.deepcopy(event)
+        self.calls["insert_events"].append(e)
+        self.mongo.test_events.append(e)
         return event["_id"]  # 戻り値はイベントID
 
     def update_labeled_event_collection(self, filter, update):

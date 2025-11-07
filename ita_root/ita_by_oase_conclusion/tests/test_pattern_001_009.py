@@ -14,9 +14,8 @@
 
 import itertools
 
-import backyard_main as bm
 from common_libs.oase.const import oaseConst
-from tests.common import create_rule_row, judge_time
+from tests.common import create_rule_row, run_test_pattern
 from tests.event import create_events
 import tests.filter as filter
 
@@ -61,56 +60,37 @@ def test_pattern_006(
     )
 
     # 必要なテーブルデータを設定
-    ws_db.table_data["T_OASE_FILTER"] = [
+    filters = [
         filter.f_a6,
         filter.f_a4,
         filter.f_a99,
     ]
-    ws_db.table_data["T_OASE_RULE"] = [
+    rules = [
         r1,
         r2,
         r3,
     ]
-    ws_db.table_data["T_OASE_ACTION"] = [
+    actions = [
         {"ACTION_ID": "action1", "CONCLUSION_LABEL_SETTINGS": "{}", "DISUSE_FLAG": 0},
         {"ACTION_ID": "action2", "CONCLUSION_LABEL_SETTINGS": "{}", "DISUSE_FLAG": 0},
     ]
-    minimum_fetched_time = min(
-        (event["labels"]["_exastro_fetched_time"] for event in test_events),
+    run_test_pattern(
+        g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules, actions
     )
-    maximum_fetched_time = max(
-        (event["labels"]["_exastro_fetched_time"] for event in test_events),
-    )
-    for jt in range(minimum_fetched_time, maximum_fetched_time + 1):
-        mock_mongo.test_events = [
-            event
-            for event in test_events
-            if event["labels"]["_exastro_fetched_time"] <= jt
-        ]
-        mock_datetime.datetime.now.return_value.timestamp.return_value = jt
-        bm.backyard_main("org1", "ws1")
-
-    tracebacks = [log for _, log in g.applogger.logs if "Traceback" in log]
-    if tracebacks:
-        print(tracebacks[0])
-    assert not tracebacks
-
-    import pprint
-
-    pprint.pprint(test_events)
 
     # e001～e005が同じグループになることを確認
-    assert (
-        len(
-            {
-                event.get("exastro_filter_group", {}).get("group_id")
-                for event in test_events
-                if event["event"]["event_id"]
-                in ["e001", "e002", "e003", "e004", "e005"]
-            }
-        )
-        == 1
-    )
+    group = {}
+    for event in mock_mongo.test_events:
+        if (event_id := event.get("event", {}).get("event_id")) in {
+            "e001",
+            "e002",
+            "e003",
+            "e004",
+            "e005",
+        }:
+            group_id = event.get("exastro_filter_group", {}).get("group_id")
+            group.setdefault(group_id, []).append(event_id)
+    assert len(group) == 1
 
 
 def test_pattern_009(
@@ -160,9 +140,8 @@ def test_pattern_009(
         filter.f_a9,
     )
 
-    monkeypatch.setattr(bm, "DBConnectWs", lambda workspace_id: ws_db)
     # 必要なテーブルデータを設定
-    ws_db.table_data["T_OASE_FILTER"] = [
+    filters = [
         filter.f_a7,
         filter.f_a8,
         filter.f_a9,
@@ -170,48 +149,23 @@ def test_pattern_009(
         filter.f_u_b,
         filter.f_u_c,
     ]
-    ws_db.table_data["T_OASE_RULE"] = [
+    rules = [
         r1,
         r2,
         r3,
         r4,
     ]
-    ws_db.table_data["T_OASE_ACTION"] = []
-    minimum_fetched_time = min(
-        (event["labels"]["_exastro_fetched_time"] for event in test_events),
-        default=judge_time,
-    )
-    maximum_end_time = max(
-        (event["labels"]["_exastro_end_time"] for event in test_events),
-        default=judge_time,
-    )
-    for jt in range(minimum_fetched_time, maximum_end_time + 2):
-        mock_mongo.test_events = [
-            event
-            for event in test_events
-            if event["labels"]["_exastro_fetched_time"] <= jt
-        ]
-        mock_datetime.datetime.now.return_value.timestamp.return_value = jt
-        bm.backyard_main("org1", "ws1")
-
-    # エラーがないことを確認
-    tracebacks = [log for _, log in g.applogger.logs if "Traceback" in log]
-    if tracebacks:
-        print(tracebacks[0])
-    assert not tracebacks
-
-    import pprint
-
-    pprint.pprint(test_events)
+    run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules)
 
     # e010、e011、e013、e014が同じグループになることを確認
-    assert (
-        len(
-            {
-                event.get("exastro_filter_group", {}).get("group_id")
-                for event in test_events
-                if event["event"]["event_id"] in ["e010", "e011", "e013", "e014"]
-            }
-        )
-        == 1
-    )
+    group = {}
+    for event in mock_mongo.test_events:
+        if (event_id := event.get("event", {}).get("event_id")) in {
+            "e010",
+            "e011",
+            "e013",
+            "e014",
+        }:
+            group_id = event.get("exastro_filter_group", {}).get("group_id")
+            group.setdefault(group_id, []).append(event_id)
+    assert len(group) == 1

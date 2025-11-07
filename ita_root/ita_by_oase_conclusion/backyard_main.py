@@ -292,10 +292,19 @@ def JudgeMain(wsDb: DBConnectWs, judgeTime: int, EventObj: ManageEvents, actionO
             while newIncident_Flg is True:
                 newIncident_Flg = False
 
+                preserved_events = set()
                 # region レベル毎のルール判定のループ
                 for ruleInfo in TargetRuleList:
                     # ルール判定
-                    ret, UseEventIdList, judged_result_has_subsequent_event = judgeObj.RuleJudge(ruleInfo, IncidentDict, actionIdList, filterIDMap)
+                    ret, UseEventIdList, judged_result_has_subsequent_event = (
+                        judgeObj.RuleJudge(
+                            ruleInfo,
+                            IncidentDict,
+                            actionIdList,
+                            filterIDMap,
+                            preserved_events,
+                        )
+                    )
 
                     # ルール判定 マッチ
                     if ret is True:
@@ -349,13 +358,19 @@ def JudgeMain(wsDb: DBConnectWs, judgeTime: int, EventObj: ManageEvents, actionO
                                                     # 判定済みのものしかなかったので、結論イベントを追加する
                                                     IncidentDict[UsedFilterId] = judged_events + [ConclusionEventRow['_id']]
                                                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                                                    # 対応するルールの優先度が不明のため、結論イベントを予約済みとする
+                                                    preserved_events.add(ConclusionEventRow['_id'])
                                                 else:
+                                                    # 破棄するイベントを予約済みから取り除く
+                                                    preserved_events.difference_update(IncidentDict[UsedFilterId])
                                                     # 複数合致することになるので、未評価のもの（結論イベント含む）は破棄する→未知におとす予定
                                                     IncidentDict[UsedFilterId] = judged_events
                                             else:
                                                 # キューイングの場合
                                                 IncidentDict[UsedFilterId].append(ConclusionEventRow['_id'])
                                                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                                                # 対応するルールの優先度が不明のため、結論イベントを予約済みとする
+                                                preserved_events.add(ConclusionEventRow['_id'])
                                         else:
                                             # 空配列。既に未知判定（ユニーク検索かつ複数イベント合致）されているため、結論イベントも破棄する→未知におとす予定
                                             pass
@@ -363,6 +378,8 @@ def JudgeMain(wsDb: DBConnectWs, judgeTime: int, EventObj: ManageEvents, actionO
                                         # 初めてフィルターにかかった
                                         IncidentDict[UsedFilterId] = [ConclusionEventRow['_id']]
                                         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                                        # 対応するルールの優先度が不明のため、結論イベントを予約済みとする
+                                        preserved_events.add(ConclusionEventRow['_id'])
 
                                     newIncident_Flg = True
 

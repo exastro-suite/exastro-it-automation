@@ -12,52 +12,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import backyard_main as bm
 from common_libs.oase.const import oaseConst
-from tests.common import create_rule_row, judge_time
+from tests.common import create_rule_row, run_test_pattern
 from tests.event import create_events
 from tests.filter import f_a7, f_a8, f_a10, f_q_a, f_q_b
-
-
-def run_test_pattern(
-    g,
-    ws_db,
-    mock_mongo,
-    mock_datetime,
-    test_events,
-    filters,
-    rules,
-    actions,
-):
-    """共通テストロジック"""
-    # 必要なテーブルデータを設定
-    ws_db.table_data["T_OASE_FILTER"] = filters
-    ws_db.table_data["T_OASE_RULE"] = rules
-    ws_db.table_data["T_OASE_ACTION"] = actions
-
-    minimum_fetched_time = min(
-        (event["labels"]["_exastro_fetched_time"] for event in test_events),
-    )
-    maximum_fetched_time = max(
-        (event["labels"]["_exastro_fetched_time"] for event in test_events),
-    )
-    for jt in range(minimum_fetched_time, maximum_fetched_time + 1):
-        mock_mongo.test_events = [
-            event
-            for event in test_events
-            if event["labels"]["_exastro_fetched_time"] <= jt
-        ]
-        mock_datetime.datetime.now.return_value.timestamp.return_value = jt
-        bm.backyard_main("org1", "ws1")
-
-    tracebacks = [log for _, log in g.applogger.logs if "Traceback" in log]
-    if tracebacks:
-        print(tracebacks[0])
-    assert not tracebacks
-
-    import pprint
-
-    pprint.pprint(test_events)
 
 
 def test_pattern_070(
@@ -75,6 +33,8 @@ def test_pattern_070(
     mock_datetime = patch_datetime
 
     test_events = create_events(["e001", "e004", "e005a", "e005b", "e024", "e025", "e026b", "e037"], "p070")
+    e001, e004, e005a, e005b, e024, e025, e026b, e037 = test_events
+
     filters = [f_a7, f_q_a]
     rules = [
         create_rule_row(1, "p070:r1", (f_a7, f_q_a), filter_operator=oaseConst.DF_OPE_AND),
@@ -83,20 +43,21 @@ def test_pattern_070(
 
     run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules, actions)
 
-    # TODO: assertの修正を行うこと
-    assert (
-        len(
-            {
-                id
-                for id in (
-                    event.get("exastro_filter_group", {}).get("group_id")
-                    for event in test_events
-                )
-                if id is not None
-            }
-        )
-        == 1
-    )
+    assert e001["labels"]["_exastro_evaluated"] == "1"
+    assert e004["labels"]["_exastro_evaluated"] == "1"
+    assert e024["labels"]["_exastro_evaluated"] == "1"
+
+    assert e005a["labels"]["_exastro_evaluated"] == "1"
+    assert e005b["labels"]["_exastro_evaluated"] == "1"
+
+    assert e026b["labels"]["_exastro_timeout"] == "1"
+
+    # TODO: 結果の確認が必要
+    import pprint
+    pprint.pprint(test_events)
+
+    assert e037["labels"]["_exastro_evaluated"] == "1"  # _exastro_timeout == "1" になっている
+    assert e025["labels"]["_exastro_timeout"] == "1"  # _exastro_evaluated == "1" になっている
 
 
 def test_pattern_071(
@@ -114,6 +75,8 @@ def test_pattern_071(
     mock_datetime = patch_datetime
 
     test_events = create_events(["e006", "e007", "e014b", "e014c", "e027", "e027a"], "p071")
+    e006, e007, e014b, e014c, e027, e027a = test_events
+
     filters = [f_a8, f_q_b]
     rules = [
         create_rule_row(1, "p071:r1", (f_a8, f_q_b), filter_operator=oaseConst.DF_OPE_OR),
@@ -122,20 +85,17 @@ def test_pattern_071(
 
     run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules, actions)
 
-    # TODO: assertの修正を行うこと
-    assert (
-        len(
-            {
-                id
-                for id in (
-                    event.get("exastro_filter_group", {}).get("group_id")
-                    for event in test_events
-                )
-                if id is not None
-            }
-        )
-        == 1
-    )
+    assert e014b["labels"]["_exastro_evaluated"] == "1"
+    assert e014c["labels"]["_exastro_evaluated"] == "1"
+
+    # TODO: 結果の確認が必要
+    import pprint
+    pprint.pprint(test_events)
+
+    assert e006["labels"]["_exastro_undetected"] == "1"  # _exastro_evaluated == "1" になっている
+    assert e007["labels"]["_exastro_undetected"] == "1"  # _exastro_evaluated == "1" になっている
+    assert e027["labels"]["_exastro_undetected"] == "1"  # _exastro_evaluated == "1" になっている
+    assert e027a["labels"]["_exastro_undetected"] == "1"  # _exastro_evaluated == "1" になっている
 
 
 def test_pattern_072(
@@ -153,6 +113,8 @@ def test_pattern_072(
     mock_datetime = patch_datetime
 
     test_events = create_events(["e011", "e012", "e025", "e026b"], "p072")
+    e011, e012, e025, e026b = test_events
+
     filters = [f_a10, f_q_a]
     rules = [
         create_rule_row(1, "p072:r1", (f_a10, f_q_a), filter_operator=oaseConst.DF_OPE_ORDER),
@@ -161,20 +123,15 @@ def test_pattern_072(
 
     run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules, actions)
 
-    # TODO: assertの修正を行うこと
-    assert (
-        len(
-            {
-                id
-                for id in (
-                    event.get("exastro_filter_group", {}).get("group_id")
-                    for event in test_events
-                )
-                if id is not None
-            }
-        )
-        == 1
-    )
+    assert e011["labels"]["_exastro_evaluated"] == "1"
+    assert e012["labels"]["_exastro_evaluated"] == "1"
+    assert e025["labels"]["_exastro_evaluated"] == "1"
+
+    # TODO: 結果の確認が必要
+    import pprint
+    pprint.pprint(test_events)
+
+    assert e026b["labels"]["_exastro_evaluated"] == "1"  # _exastro_timeout == "1" になっている
 
 
 def test_pattern_073(
@@ -192,6 +149,8 @@ def test_pattern_073(
     mock_datetime = patch_datetime
 
     test_events = create_events(["e011", "e012", "e024", "e027", "e027a"], "p073")
+    e011, e012, e024, e027, e027a = test_events
+
     filters = [f_a10, f_q_a]
     rules = [
         create_rule_row(1, "p073:r1", (f_a10, f_q_a), filter_operator=oaseConst.DF_OPE_ORDER),
@@ -200,20 +159,12 @@ def test_pattern_073(
 
     run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules, actions)
 
-    # TODO: assertの修正を行うこと
-    assert (
-        len(
-            {
-                id
-                for id in (
-                    event.get("exastro_filter_group", {}).get("group_id")
-                    for event in test_events
-                )
-                if id is not None
-            }
-        )
-        == 1
-    )
+    assert e024["labels"]["_exastro_timeout"] == "1"
+    assert e011["labels"]["_exastro_timeout"] == "1"
+    assert e012["labels"]["_exastro_timeout"] == "1"
+
+    assert e027["labels"]["_exastro_undetected"] == "1"
+    assert e027a["labels"]["_exastro_undetected"] == "1"
 
 
 def test_pattern_077(
@@ -230,7 +181,9 @@ def test_pattern_077(
     ws_db, mock_mongo = patch_database_connections
     mock_datetime = patch_datetime
 
-    test_events = create_events(["e006", "e007", "e008", "e009", "e014a", "e014b", "e014c", "e014d", "e014e", "e025", "e033"], "p077")
+    test_events = create_events(["e006", "e007", "e008", "e009", "e014a", "e014b", "e014c", "e025", "e033"], "p077")
+    e006, e007, e008, e009, e014a, e014b, e014c, e025, e033 = test_events
+
     filters = [f_a8, f_q_a]
     rules = [
         create_rule_row(1, "p077:r1", (f_a8, f_q_a), filter_operator=oaseConst.DF_OPE_AND),
@@ -239,20 +192,22 @@ def test_pattern_077(
 
     run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules, actions)
 
-    # TODO: assertの修正を行うこと
-    assert (
-        len(
-            {
-                id
-                for id in (
-                    event.get("exastro_filter_group", {}).get("group_id")
-                    for event in test_events
-                )
-                if id is not None
-            }
-        )
-        == 1
-    )
+    assert e006["labels"]["_exastro_evaluated"] == "1"
+    assert e007["labels"]["_exastro_evaluated"] == "1"
+    assert e025["labels"]["_exastro_evaluated"] == "1"
+
+    assert e008["labels"]["_exastro_evaluated"] == "1"
+    assert e033["labels"]["_exastro_evaluated"] == "1"
+
+    assert e009["labels"]["_exastro_undetected"] == "1"
+
+    # TODO: 結果の確認が必要
+    import pprint
+    pprint.pprint(test_events)
+
+    assert e014a["labels"]["_exastro_evaluated"] == "1"  # _exastro_timeout == "1" になっている
+    assert e014b["labels"]["_exastro_evaluated"] == "1"  # _exastro_timeout == "1" になっている
+    assert e014c["labels"]["_exastro_evaluated"] == "1"  # _exastro_timeout == "1" になっている
 
 
 def test_pattern_079(
@@ -270,6 +225,8 @@ def test_pattern_079(
     mock_datetime = patch_datetime
 
     test_events = create_events(["e002", "e003", "e003a", "e005", "e005a", "e005b", "e027", "e027a", "e028", "e028a"], "p079")
+    e002, e003, e003a, e005, e005a, e005b, e027, e027a, e028, e028a = test_events
+
     filters = [f_q_b, f_a7]
     rules = [
         create_rule_row(1, "p079:r1", (f_q_b, f_a7), filter_operator=oaseConst.DF_OPE_ORDER),
@@ -278,17 +235,20 @@ def test_pattern_079(
 
     run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules, actions)
 
-    # TODO: assertの修正を行うこと
-    assert (
-        len(
-            {
-                id
-                for id in (
-                    event.get("exastro_filter_group", {}).get("group_id")
-                    for event in test_events
-                )
-                if id is not None
-            }
-        )
-        == 1
-    )
+    assert e027["labels"]["_exastro_evaluated"] == "1"
+    assert e002["labels"]["_exastro_evaluated"] == "1"
+    assert e003["labels"]["_exastro_evaluated"] == "1"
+    assert e003a["labels"]["_exastro_evaluated"] == "1"
+    assert e005["labels"]["_exastro_evaluated"] == "1"
+
+    assert e005a["labels"]["_exastro_evaluated"] == "1"
+    assert e005b["labels"]["_exastro_evaluated"] == "1"
+
+    assert e028["labels"]["_exastro_timeout"] == "1"
+    assert e028a["labels"]["_exastro_timeout"] == "1"
+
+    # TODO: 結果の確認が必要
+    import pprint
+    pprint.pprint(test_events)
+
+    assert e027a["labels"]["_exastro_evaluated"] == "1"  # _exastro_timeout == "1" になっている

@@ -274,3 +274,21 @@ UPDATE T_COMN_MENU_COLUMN_LINK_JNL      SET DESCRIPTION_JA = 'ラベルキー：
 条件値：検索したい値を入力します。検索方法でグルーピングを選択した場合に、*を入力すると、該当ラベルが存在するイベントのみを絞り込みます。', DESCRIPTION_EN = "Label key: Displays the label key created during label creation.
 Condition: == (match),≠ (mismatch)
 Condition value: Enter the value you want to search for.When 'Grouping' is selected as the search method and '*' is entered, it searches for whether the corresponding label exists.", LAST_UPDATE_TIMESTAMP = _____DATE_____  WHERE COLUMN_DEFINITION_ID = '11010704';
+
+-- ▼Issue 2849　ルールの「A or B」は「A xor B」のほうが適切である。
+UPDATE T_COMN_MENU_COLUMN_LINK      SET DESCRIPTION_JA = 'フィルター演算子を選択します。
+A and B：AとBの両方にマッチさせる場合
+A xor B：AもしくはBのどちらか一方のみが存在するときマッチさせる場合（排他的論理和）
+A -> B：AのあとにBが発生しているときにマッチさせる場合', DESCRIPTION_EN = 'Select a filter operator.
+A and B: To match both A and B
+A or B: To match A xor B (Exclusive OR)
+A -> B: To match when B occurs after A', LAST_UPDATE_TIMESTAMP = _____DATE_____  WHERE COLUMN_DEFINITION_ID = '11010907';
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL      SET DESCRIPTION_JA = 'フィルター演算子を選択します。
+A and B：AとBの両方にマッチさせる場合
+A xor B：AもしくはBのどちらか一方のみが存在するときマッチさせる場合（排他的論理和）
+A -> B：AのあとにBが発生しているときにマッチさせる場合', DESCRIPTION_EN = 'Select a filter operator.
+A and B: To match both A and B
+A or B: To match A xor B (Exclusive OR)
+A -> B: To match when B occurs after A', LAST_UPDATE_TIMESTAMP = _____DATE_____  WHERE COLUMN_DEFINITION_ID = '11010907';
+
+UPDATE T_OASE_FILTER_OPERATOR  SET OPERATION_NAME = 'A xor B', LAST_UPDATE_TIMESTAMP = _____DATE_____  WHERE OPERATION_ID = '1';

@@ -1904,6 +1904,8 @@
     "MSG-180003": "Identical filter conditions cannot be specified.",
     "MSG-180004": "If select 'Grouping' as the search method, please specify the 'Label' and 'Condition' for grouping.",
     "MSG-180005": "It is not possible to specify the same filter conditions and grouping target 'label' and 'condition'.",
+    "MSG-180006": "When 'Unique' or 'Queuing' is selected as the search method, wildcards (*) cannot be used in the filter condition values.",
+    "MSG-180007": "When using a wildcard (*) in the filter condition value, the '≠' operator cannot be used.",
     "BKY-00001": "-",
     "BKY-00002": "-",
     "BKY-00003": "-",

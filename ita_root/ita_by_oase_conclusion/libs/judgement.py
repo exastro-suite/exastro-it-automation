@@ -297,7 +297,14 @@ class Judgement:
 
         return TargetRuleList
 
-    def RuleJudge(self, RuleRow, IncidentDict, actionIdList, filterIDMap):
+    def RuleJudge(
+        self,
+        RuleRow: dict[str],
+        IncidentDict: dict[str, list[ObjectId]],
+        actionIdList: list[str],
+        filterIDMap: dict[str, dict[str]],
+        preserved_events: set[ObjectId],
+    ) -> tuple[bool, list[ObjectId], bool]:
         # 判定結果が後続イベントを含むかどうか
         judged_result_has_subsequent_event = False
         UseEventIdList = []
@@ -349,7 +356,7 @@ class Judgement:
             tmp_msg = g.appmsg.get_log_message("BKY-90052", [FilterId])
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-            ret, EventRow = self.getFilterJudge(FilterId, IncidentDict, filterIDMap)
+            ret, EventRow = self.getFilterJudge(FilterId, IncidentDict, preserved_events)
             filtered_event_map[FilterId] = EventRow
 
             # グルーピングの場合、追加で後続イベントチェックを行う
@@ -384,7 +391,7 @@ class Judgement:
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         # フィルタ判定結果に沿ったフィルターの適用
-        ret = self.apply_filter(FilterResultDict, IncidentDict)
+        ret = self.apply_filter(FilterResultDict, IncidentDict, preserved_events)
 
         # フィルターが適用された場合の処理
         if ret is not None:
@@ -404,6 +411,8 @@ class Judgement:
 
                     # 後続イベントの場合はOASE Conclusion上ではイベント扱いとしない
 
+                    # ルールがマッチした時と同じく予約済みとする
+                    preserved_events.update(IncidentDict[filter_id])
                     # IncidentDictから削除する
                     IncidentDict[filter_id].remove(event["_id"])
                     # 後続イベントを判定済み扱いとする
@@ -419,12 +428,25 @@ class Judgement:
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             return False, UseEventIdList, judged_result_has_subsequent_event
 
+        # ルールにマッチしたイベントを予約済みとする(下位ルールで使用しない)
+        preserved_events.update(
+            event_id
+            for filter_id in Filter_AB_List
+            if filter_id in IncidentDict
+            for event_id in IncidentDict[filter_id]
+        )
+
         for EventRow in FilterResultDict['EventList']:
             UseEventIdList.append(EventRow['_id'])
 
         return True, UseEventIdList, judged_result_has_subsequent_event
 
-    def getFilterJudge(self, FilterId, IncidentDict, filterIDMap):
+    def getFilterJudge(
+        self,
+        FilterId: str,
+        IncidentDict: dict[str, list[ObjectId]],
+        preserved_events: set[ObjectId] | None = None,
+    ) -> tuple[bool, dict[str]]:
         # メモリーに保持しているIncidentDict[フィルターID:イベント]形式のリストの中から、これから判定に使うべきイベントを選ぶ
         # 判定につかうイベントは一つを想定している
         # 複数イベントがヒットしている場合はフィルターの「検索方法」項目を見て適切な値を返す。
@@ -434,7 +456,7 @@ class Judgement:
             return False, {}
 
         # 未評価のイベントを取得
-        ret, EventRow = self.get_first_unevaluated_event(IncidentDict, FilterId)
+        ret, EventRow = self.get_first_unevaluated_event(IncidentDict, FilterId, preserved_events)
         if ret is True:
             return True, EventRow
         else:
@@ -442,12 +464,18 @@ class Judgement:
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             return False, {}
 
-    def apply_filter(self, FilterResultDict: dict[str], IncidentDict: dict[str, list[ObjectId]]) -> bool | None:
+    def apply_filter(
+        self,
+        FilterResultDict: dict[str],
+        IncidentDict: dict[str, list[ObjectId]],
+        preserved_events: set[ObjectId],
+    ) -> bool | None:
         """フィルター判定に沿ってフィルターを適用する
 
         Args:
             FilterResultDict (dict[str]): フィルター判定結果
-            IncidentDict (dict[str, list[ObjectId]]): 
+            IncidentDict (dict[str, list[ObjectId]]):
+            preserved_events (set[ObjectId]): 予約済みイベント
 
         Returns:
             (bool | None):
@@ -469,6 +497,8 @@ class Judgement:
                             remove_key_list.append(key)
 
                 for key in remove_key_list:
+                    # 下位ルールで使用できるように予約を解除する
+                    preserved_events.difference_update(IncidentDict[key])
                     del IncidentDict[key]
 
         elif FilterResultDict['Operator'] == oaseConst.DF_OPE_AND:
@@ -570,12 +600,18 @@ class Judgement:
 
         return True
 
-    def get_first_unevaluated_event(self, IncidentDict: dict[str, list[ObjectId]], FilterId: str):
+    def get_first_unevaluated_event(
+        self,
+        IncidentDict: dict[str, list[ObjectId]],
+        FilterId: str,
+        skip_events: set[ObjectId] | None = None,
+    ) -> tuple[bool, dict | None]:
         """指定フィルターの最初の未評価イベントを返します / Returns the first unevaluated event for the specified filter
 
         Args:
             IncidentDict (dict[str, list[ObjectId]]): イベントの辞書
             FilterId (str): フィルターID
+            skip_events (set[ObjectId] | frozenset[ObjectId] | None): スキップするイベントIDのセット
 
         Returns:
             boolean: True=exists event, False=not exists event
@@ -586,13 +622,22 @@ class Judgement:
 
         # 複数件イベントが存在する時は、先頭から未評価のイベントを探して、未評価のイベントがイベントが見つかったら、それを返す
         # １件のイベントの場合、該当イベントが未評価イベントの場合、それを返す
-        for event_id in IncidentDict[FilterId]:
+        incidents = (
+            IncidentDict[FilterId]
+            if skip_events is None
+            else (
+                incident
+                for incident in IncidentDict[FilterId]
+                if incident not in skip_events
+            )
+        )
+        for event_id in incidents:
             ret, EventRow = self.EventObj.get_events(event_id)
             if (
-                ret is True and
-                EventRow["labels"]["_exastro_evaluated"] == "0" and
-                EventRow["labels"]["_exastro_timeout"] == "0" and
-                EventRow["labels"]["_exastro_undetected"] == "0"
+                ret is True
+                and EventRow["labels"]["_exastro_evaluated"] == "0"
+                and EventRow["labels"]["_exastro_timeout"] == "0"
+                and EventRow["labels"]["_exastro_undetected"] == "0"
             ):
                 return True, EventRow
 

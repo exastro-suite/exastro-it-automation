@@ -12,8 +12,10 @@
 # limitations under the License.
 
 from flask import g
+import json
 from common_libs.oase.const import oaseConst
 
+# メニュー「OASE - フィルター」設定のバリデーション
 
 def external_valid_menu_before(objdbca, objtable, option):
     """メニューフィルターバリデーション / Menu Filter Validation
@@ -49,16 +51,22 @@ def external_valid_menu_before(objdbca, objtable, option):
     # フィルターID / Filter ID
     filter_id = parameter.get('filter_id')
     # フィルター条件 / Filter condition
-    filter_condition_json = parameter.get('filter_condition_json')
+    filter_condition_json_str = parameter.get('filter_condition_json')
+    try:
+        filter_condition_json = json.loads(filter_condition_json_str)
+    except:
+        retBool = False
+        msg = g.appmsg.get_api_message("MSG-20261")
+        return retBool, msg, option,
     # 検索条件 / Search condition
     try:
         search_condition_id = parameter.get("search_condition_id")
     except Exception:
         search_condition_id = ""
-        pass
-    # グループラベル / Group label
+
+    # グルーピング条件ラベル / Group label
     group_label_key_ids = parameter.get('group_label_key_ids')
-    # グループ条件 / Group condition
+    # グルーピング条件 / Group condition
     group_condition_id = parameter.get('group_condition_id')
 
     # 検索方式が「1:ユニーク」「2:キューイング」の場合
@@ -66,12 +74,12 @@ def external_valid_menu_before(objdbca, objtable, option):
     if search_condition_id in [oaseConst.DF_SEARCH_CONDITION_UNIQUE, oaseConst.DF_SEARCH_CONDITION_QUEUING]:
         # フィルター条件は必須とする
         # The filter condition is required
-        if not filter_condition_json or len(filter_condition_json) == 0:
+        if not filter_condition_json_str or len(filter_condition_json_str) == 0:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-180001")
             return retBool, msg, option,
 
-        # グループラベル、条件は入力不可とする
+        # グルーピング条件ラベル、条件は入力不可とする
         # Group labels and conditions cannot be entered
         if group_label_key_ids or group_condition_id or (group_label_key_ids and len(group_label_key_ids) > 0):
             retBool = False
@@ -80,29 +88,43 @@ def external_valid_menu_before(objdbca, objtable, option):
 
         # 同一フィルターのチェック
         # Check for identical filters
-        if db_filter_unique_check(objdbca, filter_id, filter_condition_json):
+        if db_filter_unique_check(objdbca, filter_id, filter_condition_json_str):
             retBool = False
             msg = g.appmsg.get_api_message("MSG-180003")
             return retBool, msg, option,
 
+        # 条件値に*（ワイルドカード）が含まれている場合はエラーとする
+        if '"condition_value": "*"' in filter_condition_json_str:
+            retBool = False
+            msg = g.appmsg.get_api_message("MSG-180006")
+            return retBool, msg, option,
     elif search_condition_id in [oaseConst.DF_SEARCH_CONDITION_GROUPING]:
-        # 検索方式が「3:グループ」の場合
+        # 検索方式が「3:グルーピング」の場合
         # If the search method is "3: Group"
 
-        # グループラベル、条件は必須とする
+        # グルーピング条件ラベル、条件は必須とする
         # Group labels and conditions are required
         if not (group_label_key_ids and group_condition_id):
             retBool = False
             msg = g.appmsg.get_api_message("MSG-180004")
             return retBool, msg, option,
 
-        # 同一フィルター、グループ対象のチェック
+        # 同一フィルター、グルーピング対象のチェック
         # Check for identical filters and group targets
-        if db_filter_group_unique_check(objdbca, filter_id, filter_condition_json, group_label_key_ids, group_condition_id):
+        if db_filter_group_unique_check(objdbca, filter_id, filter_condition_json_str, group_label_key_ids, group_condition_id):
             retBool = False
             msg = g.appmsg.get_api_message("MSG-180005")
             return retBool, msg, option,
 
+        # 条件値に*（ワイルドカード）が含まれている場合は、演算子に!=は許可しない
+        is_allowed_wildcard = True
+        for filter_condition in filter_condition_json:
+            if filter_condition["condition_type"] == "2" and filter_condition["condition_value"] == "*":
+                is_allowed_wildcard = False
+        if is_allowed_wildcard is False:
+            retBool = False
+            msg = g.appmsg.get_api_message("MSG-180007")
+            return retBool, msg, option,
     else:
         # 検索方式が未選択、または「その他」の場合は、ここ以外でエラーとなるためここは、処理しない
         # If the search method is unselected or "Other", it will result in an error elsewhere, so do not process here.
@@ -123,7 +145,7 @@ def db_filter_unique_check(objdbca, filter_id, target_value):
     Returns:
         boolean: true: exists / false: not exists
     """
-    
+
     bind_value_list = []
     where_str = ''
 
@@ -168,11 +190,11 @@ def db_filter_group_unique_check(objdbca, filter_id, target_value, group_label_k
     Returns:
         boolean: true: exists / false: not exists
     """
-    
+
     bind_value_list = []
     where_str = ''
 
-    # ・グループ条件の同一有無チェック
+    # ・グルーピング条件の同一有無チェック
     # Check for identical filter conditions and group conditions
     where_str = ' where `GROUP_LABEL_KEY_IDS` = %s' + \
                 ' and `GROUP_CONDITION_ID` = %s'
@@ -186,7 +208,7 @@ def db_filter_group_unique_check(objdbca, filter_id, target_value, group_label_k
         bind_value_list.append(target_value)
     else:
         where_str = where_str + ' and `FILTER_CONDITION_JSON` IS NULL'
-        
+
     # 更新時自身のIDを除外
     # Exclude own ID when updating
     if filter_id is not None:

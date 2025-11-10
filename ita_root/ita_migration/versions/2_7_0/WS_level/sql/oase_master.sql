@@ -206,7 +206,7 @@ UPDATE T_COMN_MENU_COLUMN_LINK
 SET DESCRIPTION_JA = '検索方法を選択します。
 ユニーク：一意のイベントの抽出しか許可しません。複数イベントがヒットした場合、ヒットしたイベントすべてを未知のイベントとして処理します。
 キューイング：一意のイベントを抽出しますが、複数イベントがヒットした場合、一番古いイベントを使用します。ルールに複数回マッチする可能性があるため、ご注意ください。
-グルーピング：グルーピング条件で指定したラベルと条件に該当するイベントをグルーピングします。フィルター条件の条件を指定することも可能です。'
+グルーピング：グルーピング条件で指定したラベルと条件に該当するイベントをグルーピングします。フィルター条件を指定することも可能です。'
 , DESCRIPTION_EN = 'Select a search method.
 Unique: Only allows extraction of unique events. If multiple events are hit, all hit events are treated as unknown events.
 Queuing: Extract unique events, but if multiple events are hit, use the oldest event. Please note that the rule may be matched multiple times.
@@ -217,7 +217,7 @@ UPDATE T_COMN_MENU_COLUMN_LINK_JNL
 SET DESCRIPTION_JA = '検索方法を選択します。
 ユニーク：一意のイベントの抽出しか許可しません。複数イベントがヒットした場合、ヒットしたイベントすべてを未知のイベントとして処理します。
 キューイング：一意のイベントを抽出しますが、複数イベントがヒットした場合、一番古いイベントを使用します。ルールに複数回マッチする可能性があるため、ご注意ください。
-グルーピング：グルーピング条件で指定したラベルと条件に該当するイベントをグルーピングします。フィルター条件の条件を指定することも可能です。'
+グルーピング：グルーピング条件で指定したラベルと条件に該当するイベントをグルーピングします。フィルター条件を指定することも可能です。'
 , DESCRIPTION_EN = 'Select a search method.
 Unique: Only allows extraction of unique events. If multiple events are hit, all hit events are treated as unknown events.
 Queuing: Extract unique events, but if multiple events are hit, use the oldest event. Please note that the rule may be matched multiple times.
@@ -262,3 +262,15 @@ INSERT INTO T_OASE_NOTIFICATION_TEMPLATE_COMMON (NOTIFICATION_TEMPLATE_ID,EVENT_
 INSERT INTO T_OASE_NOTIFICATION_TEMPLATE_COMMON_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,NOTIFICATION_TEMPLATE_ID,EVENT_TYPE,TEMPLATE_FILE,NOTIFICATION_DESTINATION,IS_DEFAULT,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('5',_____DATE_____,'INSERT','5','0010','New(received).j2',NULL,'●',NULL,'0',_____DATE_____,1);
 INSERT INTO T_OASE_NOTIFICATION_TEMPLATE_COMMON (NOTIFICATION_TEMPLATE_ID,EVENT_TYPE,TEMPLATE_FILE,NOTIFICATION_DESTINATION,IS_DEFAULT,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('6','0020','New(consolidated).j2',NULL,'●',NULL,'0',_____DATE_____,1);
 INSERT INTO T_OASE_NOTIFICATION_TEMPLATE_COMMON_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,NOTIFICATION_TEMPLATE_ID,EVENT_TYPE,TEMPLATE_FILE,NOTIFICATION_DESTINATION,IS_DEFAULT,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('6',_____DATE_____,'INSERT','6','0020','New(consolidated).j2',NULL,'●',NULL,'0',_____DATE_____,1);
+
+-- ▼Issue 2848【OASE】フィルター条件でワイルドカードを使えるようにする
+UPDATE T_COMN_MENU_COLUMN_LINK      SET DESCRIPTION_JA = 'ラベルキー：ラベル作成で作成したラベルキーが表示されます。
+条件：==（一致）,≠（不一致）
+条件値：検索したい値を入力します。検索方法でグルーピングを選択した場合に、*を入力すると、該当ラベルが存在するイベントのみを絞り込みます。', DESCRIPTION_EN = "Label key: Displays the label key created during label creation.
+Condition: == (match),≠ (mismatch)
+Condition value: Enter the value you want to search for.When 'Grouping' is selected as the search method and '*' is entered, it searches for whether the corresponding label exists.", LAST_UPDATE_TIMESTAMP = _____DATE_____  WHERE COLUMN_DEFINITION_ID = '11010704';
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL      SET DESCRIPTION_JA = 'ラベルキー：ラベル作成で作成したラベルキーが表示されます。
+条件：==（一致）,≠（不一致）
+条件値：検索したい値を入力します。検索方法でグルーピングを選択した場合に、*を入力すると、該当ラベルが存在するイベントのみを絞り込みます。', DESCRIPTION_EN = "Label key: Displays the label key created during label creation.
+Condition: == (match),≠ (mismatch)
+Condition value: Enter the value you want to search for.When 'Grouping' is selected as the search method and '*' is entered, it searches for whether the corresponding label exists.", LAST_UPDATE_TIMESTAMP = _____DATE_____  WHERE COLUMN_DEFINITION_ID = '11010704';

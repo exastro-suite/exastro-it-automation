@@ -12,52 +12,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import backyard_main as bm
 from common_libs.oase.const import oaseConst
-from tests.common import create_rule_row, judge_time
+from tests.common import create_rule_row, run_test_pattern
 from tests.event import create_events
 from tests.filter import f_u_b, f_u_c
-
-
-def run_test_pattern(
-    g,
-    ws_db,
-    mock_mongo,
-    mock_datetime,
-    test_events,
-    filters,
-    rules,
-    actions,
-):
-    """共通テストロジック"""
-    # 必要なテーブルデータを設定
-    ws_db.table_data["T_OASE_FILTER"] = filters
-    ws_db.table_data["T_OASE_RULE"] = rules
-    ws_db.table_data["T_OASE_ACTION"] = actions
-
-    minimum_fetched_time = min(
-        (event["labels"]["_exastro_fetched_time"] for event in test_events),
-    )
-    maximum_fetched_time = max(
-        (event["labels"]["_exastro_fetched_time"] for event in test_events),
-    )
-    for jt in range(minimum_fetched_time, maximum_fetched_time + 1):
-        mock_mongo.test_events = [
-            event
-            for event in test_events
-            if event["labels"]["_exastro_fetched_time"] <= jt
-        ]
-        mock_datetime.datetime.now.return_value.timestamp.return_value = jt
-        bm.backyard_main("org1", "ws1")
-
-    tracebacks = [log for _, log in g.applogger.logs if "Traceback" in log]
-    if tracebacks:
-        print(tracebacks[0])
-    assert not tracebacks
-
-    import pprint
-
-    pprint.pprint(test_events)
 
 
 def test_pattern_040(
@@ -75,6 +33,8 @@ def test_pattern_040(
     mock_datetime = patch_datetime
 
     test_events = create_events(["e018", "e018b", "e021"], "p040")
+    e018, e018b, e021 = test_events
+
     filters = [f_u_b, f_u_c]
     rules = [
         create_rule_row(1, "p040:r1", (f_u_b, f_u_c), filter_operator=oaseConst.DF_OPE_AND),
@@ -83,20 +43,10 @@ def test_pattern_040(
 
     run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules, actions)
 
-    # TODO: assertの修正を行うこと
-    assert (
-        len(
-            {
-                id
-                for id in (
-                    event.get("exastro_filter_group", {}).get("group_id")
-                    for event in test_events
-                )
-                if id is not None
-            }
-        )
-        == 1
-    )
+    assert e018["labels"]["_exastro_evaluated"] == "1"
+    assert e021["labels"]["_exastro_evaluated"] == "1"
+
+    assert e018b["labels"]["_exastro_timeout"] == "1"
 
 
 def test_pattern_041(
@@ -114,6 +64,8 @@ def test_pattern_041(
     mock_datetime = patch_datetime
 
     test_events = create_events(["e018", "e019", "e021", "e023b"], "p041")
+    e018, e019, e021, e023b = test_events
+
     filters = [f_u_b, f_u_c]
     rules = [
         create_rule_row(1, "p041:r1", (f_u_b, f_u_c), filter_operator=oaseConst.DF_OPE_OR),
@@ -122,20 +74,11 @@ def test_pattern_041(
 
     run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules, actions)
 
-    # TODO: assertの修正を行うこと
-    assert (
-        len(
-            {
-                id
-                for id in (
-                    event.get("exastro_filter_group", {}).get("group_id")
-                    for event in test_events
-                )
-                if id is not None
-            }
-        )
-        == 1
-    )
+    assert e018["labels"]["_exastro_evaluated"] == "1"
+    assert e023b["labels"]["_exastro_evaluated"] == "1"
+
+    assert e019["labels"]["_exastro_undetected"] == "1"
+    assert e021["labels"]["_exastro_undetected"] == "1"
 
 
 def test_pattern_042(
@@ -153,6 +96,8 @@ def test_pattern_042(
     mock_datetime = patch_datetime
 
     test_events = create_events(["e019", "e019b", "e023b", "e023b2"], "p042")
+    e019, e019b, e023b, e023b2 = test_events
+
     filters = [f_u_b, f_u_c]
     rules = [
         create_rule_row(1, "p042:r1", (f_u_b, f_u_c), filter_operator=oaseConst.DF_OPE_ORDER),
@@ -161,20 +106,15 @@ def test_pattern_042(
 
     run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules, actions)
 
-    # TODO: assertの修正を行うこと
-    assert (
-        len(
-            {
-                id
-                for id in (
-                    event.get("exastro_filter_group", {}).get("group_id")
-                    for event in test_events
-                )
-                if id is not None
-            }
-        )
-        == 1
-    )
+    assert e019b["labels"]["_exastro_timeout"] == "1"
+
+    # TODO: 結果の確認が必要
+    import pprint
+    pprint.pprint(test_events)
+
+    assert e019["labels"]["_exastro_evaluated"] == "1"  # _exastro_undetected == "1" になっている
+    assert e023b["labels"]["_exastro_evaluated"] == "1"  # _exastro_undetected == "1" になっている
+    assert e023b2["labels"]["_exastro_timeout"] == "1"  # _exastro_undetected == "1" になっている
 
 
 def test_pattern_043(
@@ -192,6 +132,8 @@ def test_pattern_043(
     mock_datetime = patch_datetime
 
     test_events = create_events(["e018"], "p043")
+    e018 = test_events[0]
+
     filters = [f_u_b]
     rules = [
         create_rule_row(1, "p043:r1", (f_u_b), filter_operator=oaseConst.DF_OPE_NONE),
@@ -200,20 +142,7 @@ def test_pattern_043(
 
     run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules, actions)
 
-    # TODO: assertの修正を行うこと
-    assert (
-        len(
-            {
-                id
-                for id in (
-                    event.get("exastro_filter_group", {}).get("group_id")
-                    for event in test_events
-                )
-                if id is not None
-            }
-        )
-        == 1
-    )
+    assert e018["labels"]["_exastro_evaluated"] == "1"
 
 
 def test_pattern_044(
@@ -231,6 +160,8 @@ def test_pattern_044(
     mock_datetime = patch_datetime
 
     test_events = create_events(["e018", "e018a"], "p044")
+    e018, e018a = test_events
+
     filters = [f_u_b]
     rules = [
         create_rule_row(1, "p044:r1", (f_u_b), filter_operator=oaseConst.DF_OPE_NONE),
@@ -239,17 +170,5 @@ def test_pattern_044(
 
     run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules, actions)
 
-    # TODO: assertの修正を行うこと
-    assert (
-        len(
-            {
-                id
-                for id in (
-                    event.get("exastro_filter_group", {}).get("group_id")
-                    for event in test_events
-                )
-                if id is not None
-            }
-        )
-        == 1
-    )
+    assert e018["labels"]["_exastro_undetected"] == "1"
+    assert e018a["labels"]["_exastro_undetected"] == "1"

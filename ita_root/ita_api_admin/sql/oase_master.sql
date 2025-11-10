@@ -811,17 +811,17 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA
 "max_length": 4000
 }',NULL,NULL,NULL,'ラベルキー：ラベル作成で作成したラベルキーが表示されます。
 条件：==（一致）,≠（不一致）
-条件値：検索条件を入力します。','Label key: Displays the label key created during label creation.
+条件値：検索したい値を入力します。検索方法でグルーピングを選択した場合に、*を入力すると、該当ラベルが存在するイベントのみを絞り込みます。','Label key: Displays the label key created during label creation.
 Condition: == (match),≠ (mismatch)
-Condition value: Enter the search condition.',NULL,'0',_____DATE_____,1);
+Condition value: Enter the value you want to search for.When 'Grouping' is selected as the search method and '*' is entered, it searches for whether the corresponding label exists.',NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(11010704,_____DATE_____,'INSERT','11010704','110107','フィルター条件','Filter Condition','filter_condition_json',NULL,'30',40,'V_OASE_LABEL_KEY_GROUP','LABEL_KEY_ID','LABEL_KEY_NAME',NULL,'0',NULL,NULL,NULL,NULL,'FILTER_CONDITION_JSON',NULL,'0','1','1','0','0','0','0','[["_exastro_type", "≠", "conclusion"]]','{
 "min_length": 0,
 "max_length": 4000
 }',NULL,NULL,NULL,'ラベルキー：ラベル作成で作成したラベルキーが表示されます。
 条件：==（一致）,≠（不一致）
-条件値：検索条件を入力します。','Label key: Displays the label key created during label creation.
+条件値：検索したい値を入力します。検索方法でグルーピングを選択した場合に、*を入力すると、該当ラベルが存在するイベントのみを絞り込みます。','Label key: Displays the label key created during label creation.
 Condition: == (match),≠ (mismatch)
-Condition value: Enter the search condition.',NULL,'0',_____DATE_____,1);
+Condition value: Enter the value you want to search for.When 'Grouping' is selected as the search method and '*' is entered, it searches for whether the corresponding label exists.',NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('11010705','110107','備考','Remarks','remarks',NULL,'12',60,NULL,NULL,NULL,NULL,'0',NULL,NULL,NULL,NULL,'NOTE',NULL,'0','1','1','0','0','1','0',NULL,'{
 "min_length": 0,
 "max_length": 4000
@@ -839,14 +839,14 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOU
 INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('11010709','110107','検索方法','Search Condition Id','search_condition_id',NULL,'7',50,'T_OASE_SEARCH_CONDITION','SEARCH_CONDITION_ID','SEARCH_CONDITION_NAME',NULL,'1',NULL,NULL,NULL,NULL,'SEARCH_CONDITION_ID',NULL,'0','1','1','0','1','0','0','1',NULL,NULL,NULL,NULL,'検索方法を選択します。
 ユニーク：一意のイベントの抽出しか許可しません。複数イベントがヒットした場合、ヒットしたイベントすべてを未知のイベントとして処理します。
 キューイング：一意のイベントを抽出しますが、複数イベントがヒットした場合、一番古いイベントを使用します。ルールに複数回マッチする可能性があるため、ご注意ください。
-グルーピング：グルーピング条件で指定したラベルと条件に該当するイベントをグルーピングします。フィルター条件の条件を指定することも可能です。','Select a search method.
+グルーピング：グルーピング条件で指定したラベルと条件に該当するイベントをグルーピングします。フィルター条件を指定することも可能です。','Select a search method.
 Unique: Only allows extraction of unique events. If multiple events are hit, all hit events are treated as unknown events.
 Queuing: Extract unique events, but if multiple events are hit, use the oldest event. Please note that the rule may be matched multiple times.
 Grouping: Groups events that correspond to the label and conditions specified in the grouping conditions. It is also possible to specify filter conditions.',NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(11010709,_____DATE_____,'INSERT','11010709','110107','検索方法','Search Condition Id','search_condition_id',NULL,'7',50,'T_OASE_SEARCH_CONDITION','SEARCH_CONDITION_ID','SEARCH_CONDITION_NAME',NULL,'1',NULL,NULL,NULL,NULL,'SEARCH_CONDITION_ID',NULL,'0','1','1','0','1','0','0','1',NULL,NULL,NULL,NULL,'検索方法を選択します。
 ユニーク：一意のイベントの抽出しか許可しません。複数イベントがヒットした場合、ヒットしたイベントすべてを未知のイベントとして処理します。
 キューイング：一意のイベントを抽出しますが、複数イベントがヒットした場合、一番古いイベントを使用します。ルールに複数回マッチする可能性があるため、ご注意ください。
-グルーピング：グルーピング条件で指定したラベルと条件に該当するイベントをグルーピングします。フィルター条件の条件を指定することも可能です。','Select a search method.
+グルーピング：グルーピング条件で指定したラベルと条件に該当するイベントをグルーピングします。フィルター条件を指定することも可能です。','Select a search method.
 Unique: Only allows extraction of unique events. If multiple events are hit, all hit events are treated as unknown events.
 Queuing: Extract unique events, but if multiple events are hit, use the oldest event. Please note that the rule may be matched multiple times.
 Grouping: Groups events that correspond to the label and conditions specified in the grouping conditions. It is also possible to specify filter conditions.',NULL,'0',_____DATE_____,1);

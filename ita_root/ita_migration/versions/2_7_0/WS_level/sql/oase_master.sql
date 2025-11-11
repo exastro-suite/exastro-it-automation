@@ -189,18 +189,6 @@ ex.
 ・If you want to set the first capture group + any value (.com) as the label value
 → \\1.com'  WHERE COLUMN_DEFINITION_ID = '11010609';
 
--- メニュー：フィルター：フィルター条件：説明文修正
-UPDATE T_COMN_MENU_COLUMN_LINK
-SET UNIQUE_ITEM = '0'
-, REQUIRED_ITEM = '0'
-, LAST_UPDATE_TIMESTAMP = _____DATE_____
-WHERE COLUMN_DEFINITION_ID = '11010704';
-UPDATE T_COMN_MENU_COLUMN_LINK_JNL
-SET UNIQUE_ITEM = '0'
-, REQUIRED_ITEM = '0'
-, LAST_UPDATE_TIMESTAMP = _____DATE_____
-WHERE COLUMN_DEFINITION_ID = '11010704';
-
 -- メニュー：フィルター：検索条件：説明文修正
 UPDATE T_COMN_MENU_COLUMN_LINK
 SET DESCRIPTION_JA = '検索方法を選択します。
@@ -264,16 +252,26 @@ INSERT INTO T_OASE_NOTIFICATION_TEMPLATE_COMMON (NOTIFICATION_TEMPLATE_ID,EVENT_
 INSERT INTO T_OASE_NOTIFICATION_TEMPLATE_COMMON_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,NOTIFICATION_TEMPLATE_ID,EVENT_TYPE,TEMPLATE_FILE,NOTIFICATION_DESTINATION,IS_DEFAULT,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('6',_____DATE_____,'INSERT','6','0020','New(consolidated).j2',NULL,'●',NULL,'0',_____DATE_____,1);
 
 -- ▼Issue 2848【OASE】フィルター条件でワイルドカードを使えるようにする
-UPDATE T_COMN_MENU_COLUMN_LINK      SET DESCRIPTION_JA = 'ラベルキー：ラベル作成で作成したラベルキーが表示されます。
+UPDATE T_COMN_MENU_COLUMN_LINK SET
+UNIQUE_ITEM = '0',
+DESCRIPTION_JA = 'ラベルキー：ラベル作成で作成したラベルキーが表示されます。
 条件：==（一致）,≠（不一致）
-条件値：検索したい値を入力します。検索方法でグルーピングを選択した場合に、*を入力すると、該当ラベルが存在するイベントのみを絞り込みます。', DESCRIPTION_EN = "Label key: Displays the label key created during label creation.
+条件値：検索したい値を入力します。検索方法でグルーピングを選択した場合に、*を入力すると、該当ラベルが存在するイベントのみを絞り込みます。',
+DESCRIPTION_EN = 'Label key: Displays the label key created during label creation.
 Condition: == (match),≠ (mismatch)
-Condition value: Enter the value you want to search for.When 'Grouping' is selected as the search method and '*' is entered, it searches for whether the corresponding label exists.", LAST_UPDATE_TIMESTAMP = _____DATE_____  WHERE COLUMN_DEFINITION_ID = '11010704';
-UPDATE T_COMN_MENU_COLUMN_LINK_JNL      SET DESCRIPTION_JA = 'ラベルキー：ラベル作成で作成したラベルキーが表示されます。
+Condition value: Enter the value you want to search for.When "Grouping" is selected as the search method and "*" is entered, it searches for whether the corresponding label exists.',
+LAST_UPDATE_TIMESTAMP = _____DATE_____
+WHERE COLUMN_DEFINITION_ID = '11010704';
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET
+UNIQUE_ITEM = '0',
+DESCRIPTION_JA = 'ラベルキー：ラベル作成で作成したラベルキーが表示されます。
 条件：==（一致）,≠（不一致）
-条件値：検索したい値を入力します。検索方法でグルーピングを選択した場合に、*を入力すると、該当ラベルが存在するイベントのみを絞り込みます。', DESCRIPTION_EN = "Label key: Displays the label key created during label creation.
+条件値：検索したい値を入力します。検索方法でグルーピングを選択した場合に、*を入力すると、該当ラベルが存在するイベントのみを絞り込みます。',
+DESCRIPTION_EN = 'Label key: Displays the label key created during label creation.
 Condition: == (match),≠ (mismatch)
-Condition value: Enter the value you want to search for.When 'Grouping' is selected as the search method and '*' is entered, it searches for whether the corresponding label exists.", LAST_UPDATE_TIMESTAMP = _____DATE_____  WHERE COLUMN_DEFINITION_ID = '11010704';
+Condition value: Enter the value you want to search for.When "Grouping" is selected as the search method and "*" is entered, it searches for whether the corresponding label exists.',
+LAST_UPDATE_TIMESTAMP = _____DATE_____
+WHERE COLUMN_DEFINITION_ID = '11010704';
 
 -- ▼Issue 2849　ルールの「A or B」は「A xor B」のほうが適切である。
 UPDATE T_COMN_MENU_COLUMN_LINK      SET DESCRIPTION_JA = 'フィルター演算子を選択します。

@@ -365,3 +365,258 @@ def run_test_pattern(
     for traceback in tracebacks:
         print(traceback)
     assert not tracebacks
+
+
+def search_event_by_test_id(events: list[dict[str]], test_id: str):
+    for event in events:
+        if event.get("event", {}).get("event_id") == test_id:
+            return event
+    assert False, f"Event with test_id {test_id} not found"
+
+
+def search_event_by_id(events: list[dict[str]], id: str):
+    for event in events:
+        if event["_id"] == id or repr(event["_id"]) == id:
+            return event
+
+
+def assert_event_logged_evaluated_result(
+    test_events: list[dict[str]],
+    db_data,
+    test_id: str,
+    rule_name: str,
+):
+    """イベントが評価結果に記録されていることをアサートする"""
+    event = search_event_by_test_id(test_events, test_id)
+    assert [
+        action_log
+        for action_log in db_data.table_data[oaseConst.T_OASE_ACTION_LOG]
+        if repr(event["_id"]) in action_log["EVENT_ID_LIST"]
+        and action_log["RULE_ID"]
+        in (
+            row["RULE_ID"]
+            for row in db_data.table_data[oaseConst.T_OASE_RULE]
+            if row["RULE_NAME"] == rule_name
+        )
+    ]
+
+
+def assert_event_not_logged_evaluated_result(
+    test_events: list[dict[str]],
+    db_data,
+    test_id: str,
+):
+    """イベントが評価結果に記録されていないことをアサートする"""
+    event = search_event_by_test_id(test_events, test_id)
+    assert not [
+        action_log
+        for action_log in db_data.table_data[oaseConst.T_OASE_ACTION_LOG]
+        if repr(event["_id"]) in action_log["EVENT_ID_LIST"]
+    ]
+
+
+def assert_event_in_group_as_first(
+    test_events: list[dict[str]],
+    db_data,
+    test_id: str,
+    filter_id: str | None = None,
+    rule_name: str | None = None,
+):
+    """グルーピングの先頭イベントとしてアサートする"""
+    grouping_event = search_event_by_test_id(test_events, test_id)
+    grouping_info = grouping_event.get("exastro_filter_group")
+    assert grouping_info is not None
+
+    # ログ用に実際の先頭イベントを取得
+    actual_first_event = search_event_by_id(test_events, grouping_info["group_id"])
+    actual_first_event_test_id = actual_first_event.get("event", {}).get("event_id")
+    # グルーピングIDが先頭イベント(自分自身)のIDと一致していることを確認
+    assert grouping_info["group_id"] == repr(grouping_event["_id"]), (
+        f"Event {test_id} group mismatch, "
+        f"expected {test_id} but got {actual_first_event_test_id}"
+    )
+
+    # 先頭イベントであることを確認
+    assert grouping_info[
+        "is_first_event"
+    ], f"Event {test_id} is not marked as first event in group"
+
+    # 先頭イベントは評価結果に記録される(ルールにマッチした場合、していない場合は記録されない)
+    if rule_name is not None:
+        assert_event_logged_evaluated_result(
+            test_events,
+            db_data,
+            test_id,
+            rule_name,
+        )
+    else:
+        assert_event_not_logged_evaluated_result(
+            test_events,
+            db_data,
+            test_id,
+        )
+    if filter_id is not None:
+        assert (
+            grouping_info["filter_id"] == filter_id
+        ), f"Event {test_id} filter_id mismatch"
+
+
+def assert_event_in_group_as_remaining(
+    test_events: list[dict[str]],
+    db_data,
+    first_event_test_id: str,
+    test_id: str,
+    filter_id: str | None = None,
+):
+    """グルーピングの後続イベントとしてアサートする"""
+    first_event = search_event_by_test_id(test_events, first_event_test_id)
+    grouping_event = search_event_by_test_id(test_events, test_id)
+    grouping_info = grouping_event.get("exastro_filter_group")
+    assert grouping_info is not None
+
+    # ログ用に実際の先頭イベントを取得
+    actual_first_event = search_event_by_id(test_events, grouping_info["group_id"])
+    actual_first_event_test_id = actual_first_event.get("event", {}).get("event_id")
+    # グルーピングIDが先頭イベントのIDと一致していることを確認
+    assert grouping_info["group_id"] == repr(first_event["_id"]), (
+        f"Event {test_id} group mismatch, "
+        f"expected {first_event_test_id} but got {actual_first_event_test_id}"
+    )
+
+    # 後続イベントであることを確認
+    assert not grouping_info[
+        "is_first_event"
+    ], f"Event {test_id} is marked as first event in group"
+
+    # 後続イベントは評価結果に記録されない
+    assert_event_not_logged_evaluated_result(
+        test_events,
+        db_data,
+        test_id,
+    )
+    if filter_id is not None:
+        assert (
+            grouping_info["filter_id"] == filter_id
+        ), f"Event {test_id} filter_id mismatch"
+
+    # 後続イベントは評価済みフラグが立っている
+    assert (
+        grouping_event["labels"]["_exastro_evaluated"] == "1"
+    ), f"Event {test_id} is not marked as evaluated"
+
+
+def assert_grouping(
+    test_events: list[dict[str]],
+    db_data,
+    test_event_ids: list[str],
+    filter_id: str | None = None,
+    rule_name: str | None = None,
+):
+    """グルーピングのアサーションを行う"""
+    first_event_test_id, *remaining_event_test_ids = test_event_ids
+    assert_event_in_group_as_first(
+        test_events,
+        db_data,
+        first_event_test_id,
+        filter_id,
+        rule_name,
+    )
+    for remaining_event_test_id in remaining_event_test_ids:
+        assert_event_in_group_as_remaining(
+            test_events,
+            db_data,
+            first_event_test_id,
+            remaining_event_test_id,
+            filter_id,
+        )
+
+
+def assert_expected_pattern_results(
+    ws_db,
+    test_events: list[dict[str]],
+    expected: list[tuple[str, list[str] | str | None, list[str] | str | None]],
+):
+    """パターンの期待結果をアサートする"""
+
+    for rule_name_or_unmatched_status, *filter_extract_info_pair in expected:
+        rule_name = None
+        filter_ids: tuple[str | None, str | None] = (None, None)
+        match rule_name_or_unmatched_status:
+            case "timeout":
+                # タイムアウトの場合、タイムアウトラベルの追加チェック
+
+                def additional_check(events):
+                    for event in events:
+                        assert event["labels"]["_exastro_timeout"] == "1"
+
+            case "undetected":
+                # 未知の場合、未知ラベルの追加チェック
+
+                def additional_check(events):
+                    for event in events:
+                        assert event["labels"]["_exastro_undetected"] == "1"
+
+            case rule_name:
+                # ルール名にマッチした場合、フィルターIDを取得かつラベルの正常判定チェック
+
+                filter_ids = next(
+                    (row["FILTER_A"], row["FILTER_B"])
+                    for row in ws_db.table_data[oaseConst.T_OASE_RULE]
+                    if row["RULE_NAME"] == rule_name
+                )
+
+                def additional_check(events):
+                    for event in events:
+                        assert event["labels"]["_exastro_timeout"] == "0"
+                        assert event["labels"]["_exastro_undetected"] == "0"
+                        assert event["labels"]["_exastro_evaluated"] == "1"
+
+        for filter_id, filter_extract_info in zip(filter_ids, filter_extract_info_pair):
+            match rule_name_or_unmatched_status, filter_extract_info:
+                case "undetected", list() as test_ids:
+                    # 未知かつ入力がリストの場合、評価結果未記録のアサーション
+                    for test_id in test_ids:
+                        assert_event_not_logged_evaluated_result(
+                            test_events,
+                            ws_db,
+                            test_id,
+                        )
+                    extracted_events = [
+                        search_event_by_test_id(test_events, test_id)
+                        for test_id in test_ids
+                    ]
+                case _, list() as test_ids:
+                    # 未知以外かつ入力がリストの場合、グルーピングのアサーション
+                    assert_grouping(
+                        test_events,
+                        ws_db,
+                        test_ids,
+                        filter_id=filter_id,
+                        rule_name=rule_name,
+                    )
+                    extracted_events = [
+                        search_event_by_test_id(test_events, test_id)
+                        for test_id in test_ids
+                    ]
+                case "undetected" | "timeout", str() as test_id:
+                    # ルールにマッチしない入力が文字列の場合、評価結果未記録のアサーション
+                    assert_event_not_logged_evaluated_result(
+                        test_events,
+                        ws_db,
+                        test_id,
+                    )
+                    extracted_events = [search_event_by_test_id(test_events, test_id)]
+                case _, str() as test_id:
+                    # ルールにまっちかつ入力が文字列の場合、評価結果記録のアサーション
+                    assert_event_logged_evaluated_result(
+                        test_events,
+                        ws_db,
+                        test_id,
+                        rule_name,
+                    )
+                    extracted_events = [search_event_by_test_id(test_events, test_id)]
+                case _, None:
+                    # 入力がNoneの場合、該当イベントなし
+                    continue
+            # フィルターにマッチした/しなかった場合固有の追加チェック
+            additional_check(extracted_events)

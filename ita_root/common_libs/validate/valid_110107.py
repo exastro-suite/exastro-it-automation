@@ -50,10 +50,11 @@ def external_valid_menu_before(objdbca, objtable, option):
 
     # フィルターID / Filter ID
     filter_id = parameter.get('filter_id')
+    print(parameter)
     # フィルター条件 / Filter condition
     filter_condition_json_str = parameter.get('filter_condition_json')
     try:
-        filter_condition_json = json.loads(filter_condition_json_str)
+        filter_condition_json = json.loads(filter_condition_json_str) if filter_condition_json_str is not None else [] # 実際には必須項目なのでNoneは来ない想定
     except:
         retBool = False
         msg = g.appmsg.get_api_message("MSG-20261")

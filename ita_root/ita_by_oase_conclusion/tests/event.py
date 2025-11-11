@@ -314,6 +314,32 @@ event_templates["e014e"] = {
         "excluded_flg": "0",
     },
 }
+event_templates["e014f"] = {
+    "ttl": 20,
+    "fetched_time_offset": 15,
+    "custom_labels": {
+        "node": "Z02",
+        "msg": "[systemC] Mysqld Down",
+        "_exastro_host": "systemC",
+        "service": "Mysqld",
+        "status": "Down",
+        "severity": "3",
+        "excluded_flg": "0",
+    },
+}
+event_templates["e014g"] = {
+    "ttl": 20,
+    "fetched_time_offset": 15,
+    "custom_labels": {
+        "node": "Z02",
+        "msg": "[systemC] Mysqld Down",
+        "_exastro_host": "systemC",
+        "service": "Mysqld",
+        "status": "Down",
+        "severity": "3",
+        "excluded_flg": "0",
+    },
+}
 event_templates["e010"] = {
     "ttl": 20,
     "fetched_time_offset": -30,
@@ -367,6 +393,19 @@ event_templates["e013"] = {
     },
 }
 event_templates["e014"] = {
+    "ttl": 20,
+    "fetched_time_offset": 0,
+    "custom_labels": {
+        "node": "Z02",
+        "msg": "[systemC] Disk Full",
+        "_exastro_host": "systemC",
+        "service": "Disk",
+        "status": "Full",
+        "severity": "3",
+        "excluded_flg": "0",
+    },
+}
+event_templates["e014h"] = {
     "ttl": 20,
     "fetched_time_offset": 0,
     "custom_labels": {
@@ -664,8 +703,27 @@ event_templates["e037"] = {
     "fetched_time_offset": -13,
     "custom_labels": {"node": "z11", "type": "qa", "mode": "q2"},
 }
-#
-#
+event_templates["e038"] = {
+    "ttl": 20,
+    "fetched_time_offset": -15,
+    "custom_labels": {"node": ""},
+}
+event_templates["e039"] = {
+    "ttl": 20,
+    "fetched_time_offset": -15,
+    "custom_labels": {"node": ""},
+}
+event_templates["e040"] = {
+    "ttl": 20,
+    "fetched_time_offset": -15,
+    "custom_labels": {"node": "z01"},
+}
+event_templates["e041"] = {
+    "ttl": 20,
+    "fetched_time_offset": -15,
+    "custom_labels": {"node": ""},
+}
+
 event_templates["e999"] = {
     "ttl": 20,
     "fetched_time_offset": 0,
@@ -674,6 +732,12 @@ event_templates["e999"] = {
         "msg": "[systemZ]未知の事態が発生しました。",
         "_exastro_host": "systemZ",
     },
+}
+
+event_templates["e1001"] = {
+    "ttl": 60,
+    "fetched_time_offset": -10,
+    "custom_labels": {"node": "VALUE"},
 }
 #
 # pytest用イベント定義

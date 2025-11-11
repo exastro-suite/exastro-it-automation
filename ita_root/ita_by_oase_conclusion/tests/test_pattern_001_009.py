@@ -492,10 +492,7 @@ def test_pattern_009(
         ("r2", ["e008"], None),
         ("r3", ["e010", "e011", "e013", "e014"], "e021"),
         ("timeout", "e020", None),
-        ("undetected", ["e006"], None),
-        ("undetected", "e007", None),
-        ("undetected", "e009", None),
-        ("undetected", "e018", None),
+        ("undetected", ["e006", "e007", "e009", "e018"], None),
     ]
 
     assert_expected_pattern_results(ws_db, test_events, expected)

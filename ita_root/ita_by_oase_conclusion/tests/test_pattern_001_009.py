@@ -15,9 +15,272 @@
 import itertools
 
 from common_libs.oase.const import oaseConst
-from tests.common import create_rule_row, run_test_pattern
+from tests.common import assert_expected_pattern_results, create_rule_row, run_test_pattern
 from tests.event import create_events
 import tests.filter as filter
+
+
+def test_pattern_001(
+    patch_global_g,
+    patch_notification_and_writer,
+    patch_common_functions,
+    patch_action_using_modules,
+    monkeypatch,
+    patch_database_connections,
+    patch_datetime,
+):
+    """「対象とする」のグルーピング"""
+    g = patch_global_g
+
+    ws_db, mock_mongo = patch_database_connections
+    mock_datetime = patch_datetime
+
+    # イベント
+    test_events = create_events(
+        [f"e{n:03}" for n in itertools.chain(range(1, 14 + 1), [999])], "p1"
+    )
+
+    # ルール
+    r1 = create_rule_row(
+        1,
+        "r1",
+        filter.f_a1,
+    )
+
+    # 必要なテーブルデータを設定
+    filters = [
+        filter.f_a1,
+    ]
+    rules = [
+        r1,
+    ]
+    run_test_pattern(
+        g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules
+    )
+
+    expected = [
+        ("r1", ["e001", "e002", "e003"], None),
+        ("r1", ["e004", "e005"], None),
+        ("r1", ["e006", "e007"], None),
+        ("r1", ["e008"], None),
+        ("r1", ["e009"], None),
+        ("r1", ["e010"], None),
+        ("r1", ["e011", "e013"], None),
+        ("r1", ["e012"], None),
+        ("r1", ["e014"], None),
+        ("r1", ["e999"], None),
+    ]
+
+    assert_expected_pattern_results(ws_db, test_events, expected)
+
+
+def test_pattern_002(
+    patch_global_g,
+    patch_notification_and_writer,
+    patch_common_functions,
+    patch_action_using_modules,
+    monkeypatch,
+    patch_database_connections,
+    patch_datetime,
+):
+    """「以外を対象とする」のグルーピング"""
+    g = patch_global_g
+
+    ws_db, mock_mongo = patch_database_connections
+    mock_datetime = patch_datetime
+
+    # イベント
+    test_events = create_events(
+        [f"e{n:03}" for n in itertools.chain(range(1, 14 + 1), [999])], "p1"
+    )
+
+    # ルール
+    r1 = create_rule_row(
+        1,
+        "r1",
+        filter.f_a2,
+    )
+
+    # 必要なテーブルデータを設定
+    filters = [
+        filter.f_a2,
+    ]
+    rules = [
+        r1,
+    ]
+    run_test_pattern(
+        g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules
+    )
+
+    expected = [
+        ("r1", ["e001", "e002", "e003"], None),
+        ("r1", ["e004", "e005"], None),
+        ("r1", ["e006", "e007"], None),
+        ("r1", ["e008"], None),
+        ("r1", ["e009"], None),
+        ("r1", ["e010"], None),
+        ("r1", ["e011", "e013"], None),
+        ("r1", ["e012"], None),
+        ("r1", ["e014"], None),
+        ("r1", ["e999"], None),
+    ]
+
+    assert_expected_pattern_results(ws_db, test_events, expected)
+
+
+def test_pattern_003(
+    patch_global_g,
+    patch_notification_and_writer,
+    patch_common_functions,
+    patch_action_using_modules,
+    monkeypatch,
+    patch_database_connections,
+    patch_datetime,
+):
+    """「対象とする」のグルーピング - ラベルを絞って、より大きなグルーピングをしてみる"""
+    g = patch_global_g
+
+    ws_db, mock_mongo = patch_database_connections
+    mock_datetime = patch_datetime
+
+    # イベント
+    test_events = create_events(
+        [f"e{n:03}" for n in itertools.chain(range(1, 14 + 1), [999])], "p1"
+    )
+
+    # ルール
+    r1 = create_rule_row(
+        1,
+        "r1",
+        filter.f_a3,
+    )
+
+    # 必要なテーブルデータを設定
+    filters = [
+        filter.f_a3,
+    ]
+    rules = [
+        r1,
+    ]
+    run_test_pattern(
+        g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules
+    )
+
+    expected = [
+        ("r1", ["e001", "e002", "e003"], None),
+        ("r1", ["e004", "e005"], None),
+        ("r1", ["e006", "e007"], None),
+        ("r1", ["e008"], None),
+        ("r1", ["e009"], None),
+        ("r1", ["e010", "e011", "e012", "e013", "e014"], None),
+        ("r1", ["e999"], None),
+    ]
+
+    assert_expected_pattern_results(ws_db, test_events, expected)
+
+
+def test_pattern_004(
+    patch_global_g,
+    patch_notification_and_writer,
+    patch_common_functions,
+    patch_action_using_modules,
+    monkeypatch,
+    patch_database_connections,
+    patch_datetime,
+):
+    """「以外を対象とする」のグルーピング + フィルター条件"""
+    g = patch_global_g
+
+    ws_db, mock_mongo = patch_database_connections
+    mock_datetime = patch_datetime
+
+    # イベント
+    test_events = create_events(
+        [f"e{n:03}" for n in itertools.chain(range(1, 14 + 1), [999])], "p1"
+    )
+
+    # ルール
+    r1 = create_rule_row(
+        1,
+        "r1",
+        filter.f_a4,
+    )
+
+    # 必要なテーブルデータを設定
+    filters = [
+        filter.f_a4,
+    ]
+    rules = [
+        r1,
+    ]
+    run_test_pattern(
+        g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules
+    )
+
+    expected = [
+        ("r1", ["e001", "e002", "e003"], None),
+        ("r1", ["e004", "e005"], None),
+        ("r1", ["e006", "e007"], None),
+        ("r1", ["e008"], None),
+        ("r1", ["e010"], None),
+        ("r1", ["e011", "e013"], None),
+        ("r1", ["e014"], None),
+        ("undetected", ["e009", "e012", "e999"], None),
+    ]
+
+    assert_expected_pattern_results(ws_db, test_events, expected)
+
+
+def test_pattern_005(
+    patch_global_g,
+    patch_notification_and_writer,
+    patch_common_functions,
+    patch_action_using_modules,
+    monkeypatch,
+    patch_database_connections,
+    patch_datetime,
+):
+    """「対象とする」のグルーピング + フィルター条件"""
+    g = patch_global_g
+
+    ws_db, mock_mongo = patch_database_connections
+    mock_datetime = patch_datetime
+
+    # イベント
+    test_events = create_events(
+        [f"e{n:03}" for n in itertools.chain(range(1, 14 + 1), [999])], "p1"
+    )
+
+    # ルール
+    r1 = create_rule_row(
+        1,
+        "r1",
+        filter.f_a5,
+    )
+
+    # 必要なテーブルデータを設定
+    filters = [
+        filter.f_a5,
+    ]
+    rules = [
+        r1,
+    ]
+    run_test_pattern(
+        g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules
+    )
+
+    expected = [
+        ("r1", ["e001", "e002", "e003"], None),
+        ("r1", ["e004", "e005"], None),
+        ("r1", ["e006", "e007"], None),
+        ("r1", ["e008"], None),
+        ("r1", ["e010"], None),
+        ("r1", ["e011", "e013"], None),
+        ("r1", ["e014"], None),
+        ("undetected", ["e009", "e012", "e999"], None),
+    ]
+
+    assert_expected_pattern_results(ws_db, test_events, expected)
 
 
 def test_pattern_006(
@@ -43,19 +306,19 @@ def test_pattern_006(
     # ルール
     r1 = create_rule_row(
         1,
-        "p6:r1",
+        "r1",
         filter.f_a6,
         action_id="action1",
     )
     r2 = create_rule_row(
         2,
-        "p6:r2",
+        "r2",
         filter.f_a4,
         action_id="action2",
     )
     r3 = create_rule_row(
         3,
-        "p6:r3",
+        "r3",
         filter.f_a99,
     )
 
@@ -78,19 +341,85 @@ def test_pattern_006(
         g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules, actions
     )
 
-    # e001～e005が同じグループになることを確認
-    group = {}
-    for event in mock_mongo.test_events:
-        if (event_id := event.get("event", {}).get("event_id")) in {
-            "e001",
-            "e002",
-            "e003",
-            "e004",
-            "e005",
-        }:
-            group_id = event.get("exastro_filter_group", {}).get("group_id")
-            group.setdefault(group_id, []).append(event_id)
-    assert len(group) == 1
+    expected = [
+        ("r1", ["e001", "e002", "e003", "e004", "e005"], None),
+        ("r2", ["e006", "e007"], None),
+        ("r2", ["e008"], None),
+        ("r2", ["e010"], None),
+        ("r2", ["e011", "e013"], None),
+        ("r2", ["e014"], None),
+        ("r3", ["e009"], None),
+        ("r3", ["e012"], None),
+        ("undetected", "e999", None),
+    ]
+
+    assert_expected_pattern_results(ws_db, test_events, expected)
+
+
+def test_pattern_008(
+    patch_global_g,
+    patch_notification_and_writer,
+    patch_common_functions,
+    patch_action_using_modules,
+    monkeypatch,
+    patch_database_connections,
+    patch_datetime,
+):
+    """「「対象とする」のグルーピング + フィルター条件」と「「以外を対象とする」のグルーピング + フィルター条件」が複数ルールある"""
+    g = patch_global_g
+
+    ws_db, mock_mongo = patch_database_connections
+    mock_datetime = patch_datetime
+
+    # イベント
+    test_events = create_events(
+        [f"e{n:03}" for n in itertools.chain(range(1, 14 + 1), [999])], "p6"
+    )
+
+    # ルール
+    r1 = create_rule_row(
+        1,
+        "r1",
+        filter.f_a7,
+        conclusion_label_inheritance_flag={"action", "event"}
+    )
+    r2 = create_rule_row(
+        2,
+        "r2",
+        filter.f_a8,
+        conclusion_label_inheritance_flag={"action", "event"}
+    )
+    r3 = create_rule_row(
+        3,
+        "r3",
+        filter.f_a9,
+        conclusion_label_inheritance_flag={"action", "event"}
+    )
+
+    # 必要なテーブルデータを設定
+    filters = [
+        filter.f_a7,
+        filter.f_a8,
+        filter.f_a9,
+    ]
+    rules = [
+        r1,
+        r2,
+        r3,
+    ]
+    run_test_pattern(
+        g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules
+    )
+
+    expected = [
+        ("r1", ["e001", "e002", "e003", "e004", "e005"], None),
+        ("r2", ["e006", "e007"], None),
+        ("r2", ["e008"], None),
+        ("r3", ["e010", "e011", "e013", "e014"], None),
+        ("undetected", ["e009", "e012", "e999"], None),
+    ]
+
+    assert_expected_pattern_results(ws_db, test_events, expected)
 
 
 def test_pattern_009(
@@ -110,7 +439,7 @@ def test_pattern_009(
 
     test_events = create_events(
         itertools.chain(
-            [f"e{n:03}" for n in range(10, 16 + 1)], ["e018", "e020", "e021"]
+            [f"e{n:03}" for n in range(1, 16 + 1)], ["e018", "e020", "e021"]
         ),
         "p9",
     )
@@ -118,25 +447,25 @@ def test_pattern_009(
     # ルール
     r1 = create_rule_row(
         1,
-        "p9:r1",
+        "r1",
         (filter.f_a7, filter.f_u_a),
         filter_operator=oaseConst.DF_OPE_AND,
     )
     r2 = create_rule_row(
         2,
-        "p9:r2",
+        "r2",
         (filter.f_a8, filter.f_u_b),
         filter_operator=oaseConst.DF_OPE_OR,
     )
     r3 = create_rule_row(
         3,
-        "p9:r3",
+        "r3",
         (filter.f_a9, filter.f_u_c),
         filter_operator=oaseConst.DF_OPE_ORDER,
     )
     r4 = create_rule_row(
         4,
-        "p9:r4",
+        "r4",
         filter.f_a9,
     )
 
@@ -157,15 +486,16 @@ def test_pattern_009(
     ]
     run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules)
 
-    # e010、e011、e013、e014が同じグループになることを確認
-    group = {}
-    for event in mock_mongo.test_events:
-        if (event_id := event.get("event", {}).get("event_id")) in {
-            "e010",
-            "e011",
-            "e013",
-            "e014",
-        }:
-            group_id = event.get("exastro_filter_group", {}).get("group_id")
-            group.setdefault(group_id, []).append(event_id)
-    assert len(group) == 1
+    expected = [
+        ("r1", ["e001", "e002", "e004", "e005"], "e015"),
+        ("r1", ["e003"], "e016"),
+        ("r2", ["e008"], None),
+        ("r3", ["e010", "e011", "e013", "e014"], "e021"),
+        ("timeout", "e020", None),
+        ("undetected", ["e006"], None),
+        ("undetected", "e007", None),
+        ("undetected", "e009", None),
+        ("undetected", "e018", None),
+    ]
+
+    assert_expected_pattern_results(ws_db, test_events, expected)

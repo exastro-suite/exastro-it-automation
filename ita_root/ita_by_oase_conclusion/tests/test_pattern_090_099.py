@@ -43,18 +43,39 @@ def test_pattern_090(
     ]
     actions = []
 
-    run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules, actions)
+    run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules, actions, after_epoch_runs=5)
 
     assert e018["labels"]["_exastro_evaluated"] == "1"
     assert e025["labels"]["_exastro_evaluated"] == "1"
 
-    # TODO: 結果の確認が必要
-    import pprint
-    pprint.pprint(test_events)
-
     assert e026["labels"]["_exastro_evaluated"] == "1"
-
     assert e026a["labels"]["_exastro_evaluated"] == "1"
+
+    # 結論イベントの確認
+    conclusion_events = [e for e in test_events if e["labels"]["_exastro_type"] == "conclusion"]
+    assert len(conclusion_events) == 4
+    conclusion_event_1 = conclusion_events[0]
+    conclusion_event_2 = conclusion_events[1]
+    conclusion_event_3 = conclusion_events[2]
+    conclusion_event_4 = conclusion_events[3]
+
+    assert f"ObjectId('{str(e018['_id'])}')" in conclusion_event_1['exastro_events']
+    assert f"ObjectId('{str(e025['_id'])}')" in conclusion_event_1['exastro_events']
+    assert conclusion_event_1['labels']['type'] == 'b'
+    assert conclusion_event_1['labels']["_exastro_evaluated"] == "1"
+
+    assert f"ObjectId('{str(conclusion_event_1['_id'])}')" in conclusion_event_2['exastro_events']
+    assert f"ObjectId('{str(e026['_id'])}')" in conclusion_event_2['exastro_events']
+    assert conclusion_event_2['labels']['type'] == 'b'
+    assert conclusion_event_2['labels']["_exastro_evaluated"] == "1"
+
+    assert f"ObjectId('{str(conclusion_event_2['_id'])}')" in conclusion_event_3['exastro_events']
+    assert f"ObjectId('{str(e026a['_id'])}')" in conclusion_event_3['exastro_events']
+    assert conclusion_event_3['labels']['type'] == 'b'
+    assert conclusion_event_3['labels']["_exastro_evaluated"] == "1"
+
+    assert f"ObjectId('{str(conclusion_event_3['_id'])}')" in conclusion_event_4['exastro_events']
+    assert conclusion_event_4['labels']["_exastro_undetected"] == "1"
 
 
 def test_pattern_091(
@@ -88,9 +109,12 @@ def test_pattern_091(
     assert e022["labels"]["_exastro_undetected"] == "1"
 
     assert e023f["labels"]["_exastro_undetected"] == "1"
-    assert e026["labels"]["_exastro_undetected"] == "1"
 
+    assert e026["labels"]["_exastro_undetected"] == "1"
     assert e026c["labels"]["_exastro_undetected"] == "1"
+
+    conclusion_events = [e for e in test_events if e["labels"]["_exastro_type"] == "conclusion"]
+    assert len(conclusion_events) == 0
 
 
 def test_pattern_092(
@@ -125,6 +149,9 @@ def test_pattern_092(
 
     assert e026["labels"]["_exastro_timeout"] == "1"
     assert e026a["labels"]["_exastro_timeout"] == "1"
+
+    conclusion_events = [e for e in test_events if e["labels"]["_exastro_type"] == "conclusion"]
+    assert len(conclusion_events) == 0
 
 
 def test_pattern_093(
@@ -162,8 +189,34 @@ def test_pattern_093(
     assert e028["labels"]["_exastro_evaluated"] == "1"
     assert e023b2["labels"]["_exastro_evaluated"] == "1"
 
-    # TODO: 結果の確認が必要
-    import pprint
-    pprint.pprint(test_events)
-
     assert e036["labels"]["_exastro_timeout"] == "1"
+
+    # 結論イベントの確認
+    conclusion_events = [e for e in test_events if e["labels"]["_exastro_type"] == "conclusion"]
+    assert len(conclusion_events) == 5
+    conclusion_event_1 = conclusion_events[0]
+    conclusion_event_2 = conclusion_events[1]
+    conclusion_event_3 = conclusion_events[2]
+    conclusion_event_4 = conclusion_events[3]
+    conclusion_event_5 = conclusion_events[4]
+
+    assert f"ObjectId('{str(e027['_id'])}')" in conclusion_event_1['exastro_events']
+    assert f"ObjectId('{str(e023c['_id'])}')" in conclusion_event_1['exastro_events']
+    assert conclusion_event_1['labels']['type'] == 'qb'
+    assert conclusion_event_1['labels']["_exastro_evaluated"] == "1"
+
+    assert f"ObjectId('{str(conclusion_event_1['_id'])}')" in conclusion_event_2['exastro_events']
+    assert f"ObjectId('{str(e023b['_id'])}')" in conclusion_event_2['exastro_events']
+    assert conclusion_event_2['labels']['type'] == 'qb'
+    assert conclusion_event_2['labels']["_exastro_evaluated"] == "1"
+
+    assert f"ObjectId('{str(e028['_id'])}')" in conclusion_event_3['exastro_events']
+    assert f"ObjectId('{str(e023b2['_id'])}')" in conclusion_event_3['exastro_events']
+    assert conclusion_event_3['labels']['type'] == 'qb'
+    assert conclusion_event_3['labels']["_exastro_evaluated"] == "1"
+
+    assert f"ObjectId('{str(conclusion_event_2['_id'])}')" in conclusion_event_4['exastro_events']
+    assert conclusion_event_4['labels']["_exastro_undetected"] == "1"
+
+    assert f"ObjectId('{str(conclusion_event_3['_id'])}')" in conclusion_event_5['exastro_events']
+    assert conclusion_event_5['labels']["_exastro_undetected"] == "1"

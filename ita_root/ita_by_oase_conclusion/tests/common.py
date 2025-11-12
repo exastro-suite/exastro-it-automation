@@ -347,7 +347,7 @@ def run_test_pattern(
             for event in test_events
             if event["labels"]["_exastro_fetched_time"] <= jt
         ]
-        mock_datetime.datetime.now.return_value.timestamp.return_value = jt
+        mock_datetime.judge_time = jt
         bm.backyard_main("org1", "ws1")
         for event in mock_mongo.test_events:
             # 一時情報が残っているので削除する

@@ -1,11 +1,13 @@
+import datetime
 import pytest
 from unittest.mock import Mock
 from flask import Flask, g
 
-from tests.test_double import DummyAppMsg, DummyConductorExecuteBkyLibs, DummyDB, DummyLogger, DummyNotificationPM, DummyWriterPM, MockMONGOConnectWs
-import backyard_main as bm
 import common_libs.oase.manage_events as clome
+import backyard_main as bm
 import libs.action as la
+import libs.common_functions as cf
+from tests.test_double import DummyAppMsg, DummyConductorExecuteBkyLibs, DummyDB, DummyLogger, DummyNotificationPM, DummyWriterPM, MockMONGOConnectWs
 
 
 @pytest.fixture
@@ -87,10 +89,14 @@ def patch_global_g(monkeypatch):
 def patch_datetime(monkeypatch):
     """datetime.datetime.nowをパッチして固定値を返す"""
     mock_datetime = Mock()
-    mock_datetime.datetime.now.return_value.timestamp.return_value = (
-        1640995200  # 2022-01-01 00:00:00
-    )
+    mock_datetime.judge_time = 1640995200  # 2022-01-01 00:00:00
+    mock_datetime.timezone = datetime.timezone
+    
+    def get_judge_time_as_datetime(tz=None):
+        return datetime.datetime.fromtimestamp(mock_datetime.judge_time, tz)
+    mock_datetime.datetime.now = get_judge_time_as_datetime
     monkeypatch.setattr(bm, "datetime", mock_datetime)
+    monkeypatch.setattr(cf, "datetime", mock_datetime)
     return mock_datetime
 
 

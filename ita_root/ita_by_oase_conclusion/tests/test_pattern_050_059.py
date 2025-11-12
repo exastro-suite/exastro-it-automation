@@ -27,7 +27,7 @@ def test_pattern_050(
     patch_database_connections,
     patch_datetime,
 ):
-    """ユニークとユニークのAND"""
+    """グルーピングとグルーピングのAND """
     g = patch_global_g
     ws_db, mock_mongo = patch_database_connections
     mock_datetime = patch_datetime
@@ -69,7 +69,7 @@ def test_pattern_050_2(
     patch_database_connections,
     patch_datetime,
 ):
-    """ユニークとユニークのOR"""
+    """グルーピングとグルーピングのAND （P50のフィルタ違い）"""
     g = patch_global_g
     ws_db, mock_mongo = patch_database_connections
     mock_datetime = patch_datetime
@@ -105,7 +105,7 @@ def test_pattern_051(
     patch_database_connections,
     patch_datetime,
 ):
-    """ユニークの後にユニーク"""
+    """グルーピングとグルーピングのOR"""
     g = patch_global_g
     ws_db, mock_mongo = patch_database_connections
     mock_datetime = patch_datetime
@@ -142,7 +142,7 @@ def test_pattern_052(
     patch_database_connections,
     patch_datetime,
 ):
-    """ユニーク単独"""
+    """グルーピングの後にグルーピング"""
     g = patch_global_g
     ws_db, mock_mongo = patch_database_connections
     mock_datetime = patch_datetime

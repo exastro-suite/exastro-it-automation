@@ -328,32 +328,76 @@ def get_populated_data_path(objdbca, organization_id, workspace_id, execution_no
 
     try:
         # tmp_pathの初期化
-        shutil.rmtree(tmp_base_path) if os.path.exists(tmp_base_path) else None
+        try:
+            g.applogger.debug(f"shutil.rmtree({tmp_base_path}) if os.path.exists({tmp_base_path}) else None")
+            shutil.rmtree(tmp_base_path) if os.path.exists(tmp_base_path) else None
+        except Exception as e:
+            g.applogger.info(e)
+            g.applogger.info("shutil.rmtree failed. file_path={}".format(tmp_base_path))
+            t = traceback.format_exc()
+            g.applogger.info(arrange_stacktrace_format(t))  # noqa: F405
+            raise e
+
+        # 低速ストレージ対応: @file_read_retry デコレータでリトライ処理を付与
+        # execution_no/* -> tmp_pathにコピー
+        @file_read_retry  # noqa: F405
+        def copy_dir_execution_no():
+            g.applogger.debug(f"copy_dir_execution_no called ({dir_path}, {tmp_path})")
+            try:
+                g.applogger.debug(f"shutil.copytree({dir_path}, {tmp_path})")
+                shutil.copytree(dir_path, tmp_path, dirs_exist_ok=True)
+                return True
+            except Exception as e:
+                g.applogger.info("copy_dir_execution_no failed. file_path={}".format(gztar_path))
+                t = traceback.format_exc()
+                g.applogger.info(arrange_stacktrace_format(t))  # noqa: F405
+                raise e
+
+        # __conductor_workflowdir__/* -> tmp_pathにコピー
+        @file_read_retry  # noqa: F405
+        def copy_dir_conductor():
+            g.applogger.debug(f"copy_dir_conductor called ({conductor_dir_path}, {tmp_c_path})")
+            try:
+                # conductor_dir_path -> tmp_c_path に移動: conductor_dir_path無ければ作成
+                g.applogger.debug(f"os.makedirs({conductor_dir_path})")
+                os.makedirs(conductor_dir_path, exist_ok=True)
+                os.chmod(conductor_dir_path, 0o777)
+                g.applogger.debug(f"shutil.copytree({conductor_dir_path}, {tmp_c_path})")
+                shutil.copytree(conductor_dir_path, tmp_c_path, dirs_exist_ok=True)
+                return True
+            except Exception as e:
+                g.applogger.info("copy_dir_conductor failed. file_path={}".format(tmp_c_path))
+                t = traceback.format_exc()
+                g.applogger.info(arrange_stacktrace_format(t))  # noqa: F405
+                raise e
+
+        # __conductor_workflowdir__を -> tmp_pathに作成
+        @file_read_retry  # noqa: F405
+        def mkdir_conductor():
+            g.applogger.debug(f"mkdir_conductor called ({tmp_c_path})")
+            # tmp_c_pathをdummyで空作成
+            try:
+                g.applogger.debug(f"os.makedirs, os.chmod, ({tmp_c_path})")
+                os.makedirs(tmp_c_path, exist_ok=True)
+                os.chmod(tmp_c_path, 0o777)
+                return True
+            except Exception as e:
+                g.applogger.info("mkdir_conductor failed. file_path={}".format(tmp_c_path))
+                t = traceback.format_exc()
+                g.applogger.info(arrange_stacktrace_format(t))  # noqa: F405
+                raise e
 
         # execution_no/*
         # dir_path -> tmp_path に移動
-        if os.path.exists(dir_path):
-            if not os.path.isdir(tmp_path):
-                shutil.copytree(dir_path, tmp_path)
-                g.applogger.debug(f"shutil.copytree({dir_path}, {tmp_path})")
+        copy_dir_execution_no()
 
         # __conductor_workflowdir__/*
         if conductor_instance_no:
             # conductor_dir_path -> tmp_c_path に移動: conductor_dir_path無ければ作成
-            if not os.path.exists(conductor_dir_path):
-                os.makedirs(conductor_dir_path)
-                os.chmod(conductor_dir_path, 0o777)
-                g.applogger.debug(f"os.makedirs, os.chmod, ({conductor_dir_path})")
-
-            if os.path.isdir(conductor_dir_path):
-                shutil.copytree(conductor_dir_path, tmp_c_path)
-                g.applogger.debug(f"shutil.copytree({conductor_dir_path}, {tmp_c_path})")
+            copy_dir_conductor()
         else:
             # tmp_c_pathをdummyで空作成
-            if not os.path.exists(tmp_c_path):
-                os.makedirs(tmp_c_path)
-                os.chmod(tmp_c_path, 0o777)
-                g.applogger.debug(f"os.makedirs, os.chmod, ({tmp_c_path})")
+            mkdir_conductor()
 
         # tar.gz
         @file_read_retry  # noqa: F405

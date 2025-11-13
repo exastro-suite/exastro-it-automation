@@ -497,10 +497,22 @@ def update_result(objdbca, organization_id, workspace_id, execution_no, paramete
         #  'parameters_tar_data': '/tmp/org1/ws2/driver/ansible/legacy/2ed69707-d211-4bb4-9c65-ec0165efddac/parameter.tar.gz'}
         g.applogger.debug("update_result file_path:" + str(file_path))
         for file_key, record_file_paths in file_path.items():
-            if not os.path.exists(tmp_path + file_key):
-                os.makedirs(tmp_path + file_key)
-            with tarfile.open(record_file_paths, 'r:gz') as tar:
-                tar.extractall(path=tmp_path + file_key)
+
+            # 低速ストレージ対応: @file_read_retry デコレータでリトライ処理を付与
+            @file_read_retry  # noqa: F405
+            def tarfile_extractall_path():
+                try:
+                    os.makedirs(tmp_path + file_key, exist_ok=True)
+                    with tarfile.open(record_file_paths, 'r:gz') as tar:
+                        tar.extractall(path=tmp_path + file_key)
+                    g.applogger.debug(f"tarfile.open({record_file_paths}, 'r:gz'):  tar.extractall({tmp_path + file_key})")
+                    return True
+                except Exception as e:
+                    g.applogger.info("tarfile_extractall_path failed. file_path={}".format(record_file_paths))
+                    t = traceback.format_exc()
+                    g.applogger.info(arrange_stacktrace_format(t))  # noqa: F405
+                    raise e
+            tarfile_extractall_path()
 
             # outディレクトリ更新
             if file_key == "out_tar_data":
@@ -710,9 +722,9 @@ def create_file_path(connexion_request, tmp_path, execution_no):
         if parameters["driver_id"] == "legacy":
             tmp_path = tmp_path + "/driver/ansible/legacy/" + execution_no
         elif parameters["driver_id"] == "pioneer":
-            tmp_path = tmp_path + "/driver/ansible/pioneer" + execution_no
+            tmp_path = tmp_path + "/driver/ansible/pioneer/" + execution_no
         elif parameters["driver_id"] == "legacy_role":
-            tmp_path = tmp_path + "/driver/ansible/legacy_role" + execution_no
+            tmp_path = tmp_path + "/driver/ansible/legacy_role/" + execution_no
 
         # set parameter['file'][rest_name]
         if connexion_request.files:

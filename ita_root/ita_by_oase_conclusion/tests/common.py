@@ -15,11 +15,21 @@
 from collections.abc import Iterable
 import datetime
 import json
-from typing import Literal, Set, overload
+from typing import Literal, Set, TypeAlias, TypedDict, overload
 import uuid
 from bson import ObjectId
 
 from common_libs.oase.const import oaseConst
+
+TestId: TypeAlias = str
+ExpectedConclusion = TypedDict(
+    "ExpectedConclusion",
+    {"type": Literal["conclusion"], "rule_name": str, "test_ids": list[TestId]},
+)
+ExpectedEvent = TypedDict(
+    "ExpectedEvent", {"type": Literal["event"], "event_id": TestId}
+)
+ExpectedDefinition: TypeAlias = ExpectedConclusion | ExpectedEvent | TestId
 
 # ===== グローバル変数 =====
 
@@ -223,7 +233,9 @@ def create_rule_row(
     before_notification: tuple[str, str] | None = None,
     after_notification: tuple[str, str] | None = None,
     conclusion_label_inheritance_flag: Set[Literal["action", "event"]] = frozenset(),
-    conclusion_label_settings: list[dict[str, str]] | None = None,
+    conclusion_label_settings: (
+        list[dict[str, str] | tuple[str, str] | list[str, str]] | None
+    ) = None,
     conclusion_ttl: int = 10,
 ) -> dict:
     """テスト用ルールデータを作成"""
@@ -242,7 +254,9 @@ def create_rule_row(
     before_notification: tuple[str, str] | None = None,
     after_notification: tuple[str, str] | None = None,
     conclusion_label_inheritance_flag: Set[Literal["action", "event"]] = frozenset(),
-    conclusion_label_settings: list[dict[str, str]] | None = None,
+    conclusion_label_settings: (
+        list[dict[str, str] | tuple[str, str] | list[str, str]] | None
+    ) = None,
     conclusion_ttl: int = 10,
 ) -> dict:
     """テスト用ルールデータを作成"""
@@ -260,7 +274,9 @@ def create_rule_row(
     before_notification: tuple[str, str] | None = None,
     after_notification: tuple[str, str] | None = None,
     conclusion_label_inheritance_flag: Set[Literal["action", "event"]] = frozenset(),
-    conclusion_label_settings: list[dict[str, str]] | None = None,
+    conclusion_label_settings: (
+        list[dict[str, str] | tuple[str, str] | list[str, str]] | None
+    ) = None,
     conclusion_ttl: int = 10,
 ) -> dict:
     """テスト用ルールデータを作成"""
@@ -301,7 +317,11 @@ def create_rule_row(
             [
                 {"label_key": get_label_key_id(label_name), "label_value": label_value}
                 for label_setting in conclusion_label_settings
-                for label_name, label_value in label_setting.items()
+                for label_name, label_value in (
+                    label_setting.items()
+                    if isinstance(label_setting, dict)
+                    else [label_setting]
+                )
             ]
             if conclusion_label_settings
             else []
@@ -367,14 +387,38 @@ def run_test_pattern(
     assert not tracebacks
 
 
-def search_event_by_test_id(events: list[dict[str]], test_id: str):
-    for event in events:
-        if event.get("event", {}).get("event_id") == test_id:
-            return event
+def search_event_by_test_id(
+    events: list[dict[str]], test_id: ExpectedDefinition
+) -> dict[str]:
+    """test_idでイベントを検索する"""
+    match test_id:
+        case {
+            "type": "conclusion",
+            "rule_name": rule_name,
+            "test_ids": test_ids,
+        }:
+            exastro_events = [
+                repr(search_event_by_test_id(events, test_id)["_id"])
+                for test_id in test_ids
+            ]
+
+            for event in events:
+                if (
+                    event["labels"]["_exastro_type"] == "conclusion"
+                    and event["labels"].get("_exastro_rule_name") == rule_name
+                    and event["exastro_events"] == exastro_events
+                ):
+                    return event
+
+        case {"type": "event", "event_id": (str() as test_id)} | (str() as test_id):
+            for event in events:
+                if event.get("event", {}).get("event_id") == test_id:
+                    return event
     assert False, f"Event with test_id {test_id} not found"
 
 
 def search_event_by_id(events: list[dict[str]], id: str):
+    """idでイベントを検索する"""
     for event in events:
         if event["_id"] == id or repr(event["_id"]) == id:
             return event
@@ -383,7 +427,7 @@ def search_event_by_id(events: list[dict[str]], id: str):
 def assert_event_logged_evaluated_result(
     test_events: list[dict[str]],
     db_data,
-    test_id: str,
+    test_id: ExpectedDefinition,
     rule_name: str,
 ):
     """イベントが評価結果に記録されていることをアサートする"""
@@ -404,7 +448,7 @@ def assert_event_logged_evaluated_result(
 def assert_event_not_logged_evaluated_result(
     test_events: list[dict[str]],
     db_data,
-    test_id: str,
+    test_id: ExpectedDefinition,
 ):
     """イベントが評価結果に記録されていないことをアサートする"""
     event = search_event_by_test_id(test_events, test_id)
@@ -417,12 +461,11 @@ def assert_event_not_logged_evaluated_result(
 
 def assert_event_in_group_as_first(
     test_events: list[dict[str]],
-    db_data,
-    test_id: str,
+    test_id: ExpectedDefinition,
     filter_id: str | None = None,
-    rule_name: str | None = None,
 ):
     """グルーピングの先頭イベントとしてアサートする"""
+
     grouping_event = search_event_by_test_id(test_events, test_id)
     grouping_info = grouping_event.get("exastro_filter_group")
     assert grouping_info is not None
@@ -441,20 +484,6 @@ def assert_event_in_group_as_first(
         "is_first_event"
     ], f"Event {test_id} is not marked as first event in group"
 
-    # 先頭イベントは評価結果に記録される(ルールにマッチした場合、していない場合は記録されない)
-    if rule_name is not None:
-        assert_event_logged_evaluated_result(
-            test_events,
-            db_data,
-            test_id,
-            rule_name,
-        )
-    else:
-        assert_event_not_logged_evaluated_result(
-            test_events,
-            db_data,
-            test_id,
-        )
     if filter_id is not None:
         assert (
             grouping_info["filter_id"] == filter_id
@@ -463,12 +492,12 @@ def assert_event_in_group_as_first(
 
 def assert_event_in_group_as_remaining(
     test_events: list[dict[str]],
-    db_data,
-    first_event_test_id: str,
-    test_id: str,
+    first_event_test_id: TestId,
+    test_id: ExpectedDefinition,
     filter_id: str | None = None,
 ):
     """グルーピングの後続イベントとしてアサートする"""
+
     first_event = search_event_by_test_id(test_events, first_event_test_id)
     grouping_event = search_event_by_test_id(test_events, test_id)
     grouping_info = grouping_event.get("exastro_filter_group")
@@ -488,12 +517,6 @@ def assert_event_in_group_as_remaining(
         "is_first_event"
     ], f"Event {test_id} is marked as first event in group"
 
-    # 後続イベントは評価結果に記録されない
-    assert_event_not_logged_evaluated_result(
-        test_events,
-        db_data,
-        test_id,
-    )
     if filter_id is not None:
         assert (
             grouping_info["filter_id"] == filter_id
@@ -508,33 +531,50 @@ def assert_event_in_group_as_remaining(
 def assert_grouping(
     test_events: list[dict[str]],
     db_data,
-    test_event_ids: list[str],
+    test_event_ids: list[ExpectedDefinition],
     filter_id: str | None = None,
     rule_name: str | None = None,
 ):
     """グルーピングのアサーションを行う"""
     first_event_test_id, *remaining_event_test_ids = test_event_ids
-    assert_event_in_group_as_first(
-        test_events,
-        db_data,
-        first_event_test_id,
-        filter_id,
-        rule_name,
-    )
+
+    # 先頭イベントの評価結果についてのアサーション
+    if rule_name is not None:
+        # ルールにマッチした場合、先頭イベントは評価結果に記録される
+        assert_event_logged_evaluated_result(
+            test_events, db_data, first_event_test_id, rule_name
+        )
+    else:
+        # ルールにマッチしなかった場合、先頭イベントは評価結果に記録されない
+        assert_event_not_logged_evaluated_result(
+            test_events, db_data, first_event_test_id
+        )
+
+    # 先頭イベントのグルーピングについてのアサーション
+    assert_event_in_group_as_first(test_events, first_event_test_id, filter_id)
     for remaining_event_test_id in remaining_event_test_ids:
+
+        # 後続イベントの評価結果についてのアサーション: 後続イベントは評価結果に記録されない
+        assert_event_not_logged_evaluated_result(
+            test_events, db_data, remaining_event_test_id
+        )
+
+        # 後続イベントのアサーション
         assert_event_in_group_as_remaining(
-            test_events,
-            db_data,
-            first_event_test_id,
-            remaining_event_test_id,
-            filter_id,
+            test_events, first_event_test_id, remaining_event_test_id, filter_id
         )
 
 
 def assert_expected_pattern_results(
     ws_db,
     test_events: list[dict[str]],
-    expected: list[tuple[str, list[str] | str | None, list[str] | str | None]],
+    expected: list[
+        tuple[
+            str,
+            list[ExpectedDefinition] | ExpectedDefinition | None,
+            list[ExpectedDefinition] | ExpectedDefinition | None,
+        ]
+    ],
 ):
     """パターンの期待結果をアサートする"""
 
@@ -544,32 +584,20 @@ def assert_expected_pattern_results(
         match rule_name_or_unmatched_status:
             case "timeout":
                 # タイムアウトの場合、タイムアウトラベルの追加チェック
-
-                def additional_check(events):
-                    for event in events:
-                        assert event["labels"]["_exastro_timeout"] == "1"
+                additional_check = _assert_events_all_timeout
 
             case "undetected":
                 # 未知の場合、未知ラベルの追加チェック
-
-                def additional_check(events):
-                    for event in events:
-                        assert event["labels"]["_exastro_undetected"] == "1"
+                additional_check = _assert_events_all_undetected
 
             case rule_name:
                 # ルール名にマッチした場合、フィルターIDを取得かつラベルの正常判定チェック
-
                 filter_ids = next(
                     (row["FILTER_A"], row["FILTER_B"])
                     for row in ws_db.table_data[oaseConst.T_OASE_RULE]
                     if row["RULE_NAME"] == rule_name
                 )
-
-                def additional_check(events):
-                    for event in events:
-                        assert event["labels"]["_exastro_timeout"] == "0"
-                        assert event["labels"]["_exastro_undetected"] == "0"
-                        assert event["labels"]["_exastro_evaluated"] == "1"
+                additional_check = _assert_events_all_evaluated
 
         for filter_id, filter_extract_info in zip(filter_ids, filter_extract_info_pair):
             match rule_name_or_unmatched_status, filter_extract_info:
@@ -620,3 +648,23 @@ def assert_expected_pattern_results(
                     continue
             # フィルターにマッチした/しなかった場合固有の追加チェック
             additional_check(extracted_events)
+
+
+def _assert_events_all_timeout(events):
+    """すべてのイベントがタイムアウトラベルを持つことをアサートする"""
+    for event in events:
+        assert event["labels"]["_exastro_timeout"] == "1"
+
+
+def _assert_events_all_undetected(events):
+    """すべてのイベントが未知ラベルを持つことをアサートする"""
+    for event in events:
+        assert event["labels"]["_exastro_undetected"] == "1"
+
+
+def _assert_events_all_evaluated(events):
+    """すべてのイベントが評価済みラベルを持つことをアサートする"""
+    for event in events:
+        assert event["labels"]["_exastro_timeout"] == "0"
+        assert event["labels"]["_exastro_undetected"] == "0"
+        assert event["labels"]["_exastro_evaluated"] == "1"

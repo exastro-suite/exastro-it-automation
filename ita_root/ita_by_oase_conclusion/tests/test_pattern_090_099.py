@@ -38,8 +38,8 @@ def test_pattern_090(
     filters = [f_u_b, f_q_a]
     rules = [
         create_rule_row(1, "p090:r1", (f_u_b, f_q_a), filter_operator=oaseConst.DF_OPE_AND,
-                        conclusion_label_inheritance_flag={"event"}, conclusion_label_settings=[{"type": "b"}], conclusion_ttl=20),
-        create_rule_row(1, "p090:r2", (f_u_b), filter_operator=oaseConst.DF_OPE_NONE),
+                        conclusion_label_settings=[{"type": "b"}], conclusion_ttl=20),
+        create_rule_row(2, "p090:r2", (f_u_b), filter_operator=oaseConst.DF_OPE_NONE),
     ]
     actions = []
 
@@ -54,28 +54,25 @@ def test_pattern_090(
     # 結論イベントの確認
     conclusion_events = [e for e in test_events if e["labels"]["_exastro_type"] == "conclusion"]
     assert len(conclusion_events) == 4
-    conclusion_event_1 = conclusion_events[0]
-    conclusion_event_2 = conclusion_events[1]
-    conclusion_event_3 = conclusion_events[2]
-    conclusion_event_4 = conclusion_events[3]
+    c_1, c_2, c_3, c_4 = conclusion_events
 
-    assert f"ObjectId('{str(e018['_id'])}')" in conclusion_event_1['exastro_events']
-    assert f"ObjectId('{str(e025['_id'])}')" in conclusion_event_1['exastro_events']
-    assert conclusion_event_1['labels']['type'] == 'b'
-    assert conclusion_event_1['labels']["_exastro_evaluated"] == "1"
+    assert f"ObjectId('{str(e018['_id'])}')" in c_1['exastro_events']
+    assert f"ObjectId('{str(e025['_id'])}')" in c_1['exastro_events']
+    assert c_1['labels']['type'] == 'b'
+    assert c_1['labels']["_exastro_evaluated"] == "1"
 
-    assert f"ObjectId('{str(conclusion_event_1['_id'])}')" in conclusion_event_2['exastro_events']
-    assert f"ObjectId('{str(e026['_id'])}')" in conclusion_event_2['exastro_events']
-    assert conclusion_event_2['labels']['type'] == 'b'
-    assert conclusion_event_2['labels']["_exastro_evaluated"] == "1"
+    assert f"ObjectId('{str(c_1['_id'])}')" in c_2['exastro_events']
+    assert f"ObjectId('{str(e026['_id'])}')" in c_2['exastro_events']
+    assert c_2['labels']['type'] == 'b'
+    assert c_2['labels']["_exastro_evaluated"] == "1"
 
-    assert f"ObjectId('{str(conclusion_event_2['_id'])}')" in conclusion_event_3['exastro_events']
-    assert f"ObjectId('{str(e026a['_id'])}')" in conclusion_event_3['exastro_events']
-    assert conclusion_event_3['labels']['type'] == 'b'
-    assert conclusion_event_3['labels']["_exastro_evaluated"] == "1"
+    assert f"ObjectId('{str(c_2['_id'])}')" in c_3['exastro_events']
+    assert f"ObjectId('{str(e026a['_id'])}')" in c_3['exastro_events']
+    assert c_3['labels']['type'] == 'b'
+    assert c_3['labels']["_exastro_evaluated"] == "1"
 
-    assert f"ObjectId('{str(conclusion_event_3['_id'])}')" in conclusion_event_4['exastro_events']
-    assert conclusion_event_4['labels']["_exastro_undetected"] == "1"
+    assert f"ObjectId('{str(c_3['_id'])}')" in c_4['exastro_events']
+    assert c_4['labels']["_exastro_undetected"] == "1"
 
 
 def test_pattern_091(
@@ -98,8 +95,8 @@ def test_pattern_091(
     filters = [f_u_c, f_q_3, f_u_b]
     rules = [
         create_rule_row(1, "p091:r1", (f_u_c, f_q_3), filter_operator=oaseConst.DF_OPE_OR,
-                        conclusion_label_inheritance_flag={"event"}, conclusion_label_settings=[{"type": "b"}], conclusion_ttl=20),
-        create_rule_row(1, "p091:r2", (f_u_b), filter_operator=oaseConst.DF_OPE_NONE),
+                        conclusion_label_settings=[{"type": "b"}], conclusion_ttl=20),
+        create_rule_row(2, "p091:r2", (f_u_b), filter_operator=oaseConst.DF_OPE_NONE),
     ]
     actions = []
 
@@ -137,8 +134,8 @@ def test_pattern_092(
     filters = [f_u_a, f_q_a]
     rules = [
         create_rule_row(1, "p092:r1", (f_u_a, f_q_a), filter_operator=oaseConst.DF_OPE_ORDER,
-                        conclusion_label_inheritance_flag={"event"}, conclusion_label_settings=[{"type": "a"}], conclusion_ttl=20),
-        create_rule_row(1, "p092:r2", (f_u_a), filter_operator=oaseConst.DF_OPE_NONE),
+                        conclusion_label_settings=[{"type": "a"}], conclusion_ttl=20),
+        create_rule_row(2, "p092:r2", (f_u_a), filter_operator=oaseConst.DF_OPE_NONE),
     ]
     actions = []
 
@@ -174,8 +171,8 @@ def test_pattern_093(
     filters = [f_q_b, f_u_c]
     rules = [
         create_rule_row(1, "p093:r1", (f_q_b, f_u_c), filter_operator=oaseConst.DF_OPE_ORDER,
-                        conclusion_label_inheritance_flag={"event"}, conclusion_label_settings=[{"type": "qb"}], conclusion_ttl=20),
-        create_rule_row(1, "p093:r2", (f_q_b), filter_operator=oaseConst.DF_OPE_NONE),
+                        conclusion_label_settings=[{"type": "qb"}], conclusion_ttl=20),
+        create_rule_row(2, "p093:r2", (f_q_b), filter_operator=oaseConst.DF_OPE_NONE),
     ]
     actions = []
 
@@ -194,29 +191,25 @@ def test_pattern_093(
     # 結論イベントの確認
     conclusion_events = [e for e in test_events if e["labels"]["_exastro_type"] == "conclusion"]
     assert len(conclusion_events) == 5
-    conclusion_event_1 = conclusion_events[0]
-    conclusion_event_2 = conclusion_events[1]
-    conclusion_event_3 = conclusion_events[2]
-    conclusion_event_4 = conclusion_events[3]
-    conclusion_event_5 = conclusion_events[4]
+    c_1, c_2, c_3, c_4, c_5 = conclusion_events
 
-    assert f"ObjectId('{str(e027['_id'])}')" in conclusion_event_1['exastro_events']
-    assert f"ObjectId('{str(e023c['_id'])}')" in conclusion_event_1['exastro_events']
-    assert conclusion_event_1['labels']['type'] == 'qb'
-    assert conclusion_event_1['labels']["_exastro_evaluated"] == "1"
+    assert f"ObjectId('{str(e027['_id'])}')" in c_1['exastro_events']
+    assert f"ObjectId('{str(e023c['_id'])}')" in c_1['exastro_events']
+    assert c_1['labels']['type'] == 'qb'
+    assert c_1['labels']["_exastro_evaluated"] == "1"
 
-    assert f"ObjectId('{str(conclusion_event_1['_id'])}')" in conclusion_event_2['exastro_events']
-    assert f"ObjectId('{str(e023b['_id'])}')" in conclusion_event_2['exastro_events']
-    assert conclusion_event_2['labels']['type'] == 'qb'
-    assert conclusion_event_2['labels']["_exastro_evaluated"] == "1"
+    assert f"ObjectId('{str(c_1['_id'])}')" in c_2['exastro_events']
+    assert f"ObjectId('{str(e023b['_id'])}')" in c_2['exastro_events']
+    assert c_2['labels']['type'] == 'qb'
+    assert c_2['labels']["_exastro_evaluated"] == "1"
 
-    assert f"ObjectId('{str(e028['_id'])}')" in conclusion_event_3['exastro_events']
-    assert f"ObjectId('{str(e023b2['_id'])}')" in conclusion_event_3['exastro_events']
-    assert conclusion_event_3['labels']['type'] == 'qb'
-    assert conclusion_event_3['labels']["_exastro_evaluated"] == "1"
+    assert f"ObjectId('{str(e028['_id'])}')" in c_3['exastro_events']
+    assert f"ObjectId('{str(e023b2['_id'])}')" in c_3['exastro_events']
+    assert c_3['labels']['type'] == 'qb'
+    assert c_3['labels']["_exastro_evaluated"] == "1"
 
-    assert f"ObjectId('{str(conclusion_event_2['_id'])}')" in conclusion_event_4['exastro_events']
-    assert conclusion_event_4['labels']["_exastro_undetected"] == "1"
+    assert f"ObjectId('{str(c_2['_id'])}')" in c_4['exastro_events']
+    assert c_4['labels']["_exastro_undetected"] == "1"
 
-    assert f"ObjectId('{str(conclusion_event_3['_id'])}')" in conclusion_event_5['exastro_events']
-    assert conclusion_event_5['labels']["_exastro_undetected"] == "1"
+    assert f"ObjectId('{str(c_3['_id'])}')" in c_5['exastro_events']
+    assert c_5['labels']["_exastro_undetected"] == "1"

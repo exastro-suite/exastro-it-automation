@@ -57,10 +57,10 @@ def test_pattern_070(
     grouped_events = [e for e in test_events if e.get("exastro_filter_group")]
     assert len(grouped_events) == 4
 
-    assert e001["exastro_filter_group"]["is_first_event"] is True
+    assert e001["exastro_filter_group"]["is_first_event"] == "1"
     assert e001["exastro_filter_group"]["group_id"] == e004["exastro_filter_group"]["group_id"]
 
-    assert e005a["exastro_filter_group"]["is_first_event"] is True
+    assert e005a["exastro_filter_group"]["is_first_event"] == "1"
     assert e005a["exastro_filter_group"]["group_id"] == e005b["exastro_filter_group"]["group_id"]
 
 
@@ -101,7 +101,7 @@ def test_pattern_071(
     grouped_events = [e for e in test_events if e.get("exastro_filter_group")]
     assert len(grouped_events) == 4
 
-    assert e014b["exastro_filter_group"]["is_first_event"] is True
+    assert e014b["exastro_filter_group"]["is_first_event"] == "1"
     assert e014b["exastro_filter_group"]["group_id"] == e014c["exastro_filter_group"]["group_id"]
     assert e014b["exastro_filter_group"]["group_id"] == e006["exastro_filter_group"]["group_id"]
     assert e014b["exastro_filter_group"]["group_id"] == e007["exastro_filter_group"]["group_id"]
@@ -142,7 +142,7 @@ def test_pattern_072(
     grouped_events = [e for e in test_events if e.get("exastro_filter_group")]
     assert len(grouped_events) == 2
 
-    assert e011["exastro_filter_group"]["is_first_event"] is True
+    assert e011["exastro_filter_group"]["is_first_event"] == "1"
     assert e011["exastro_filter_group"]["group_id"] == e012["exastro_filter_group"]["group_id"]
 
 
@@ -233,10 +233,10 @@ def test_pattern_077(
     grouped_events = [e for e in test_events if e.get("exastro_filter_group")]
     assert len(grouped_events) == 3
 
-    assert e006["exastro_filter_group"]["is_first_event"] is True
+    assert e006["exastro_filter_group"]["is_first_event"] == "1"
     assert e006["exastro_filter_group"]["group_id"] == e007["exastro_filter_group"]["group_id"]
 
-    assert e008["exastro_filter_group"]["is_first_event"] is True
+    assert e008["exastro_filter_group"]["is_first_event"] == "1"
 
 
 def test_pattern_079(
@@ -286,10 +286,10 @@ def test_pattern_079(
     grouped_events = [e for e in test_events if e.get("exastro_filter_group")]
     assert len(grouped_events) == 3
 
-    assert e002["exastro_filter_group"]["is_first_event"] is True
+    assert e002["exastro_filter_group"]["is_first_event"] == "1"
     assert e002["exastro_filter_group"]["group_id"] == e003["exastro_filter_group"]["group_id"]
     assert e002["exastro_filter_group"]["group_id"] == e003a["exastro_filter_group"]["group_id"]
     assert e002["exastro_filter_group"]["group_id"] == e005["exastro_filter_group"]["group_id"]
 
-    assert e005a["exastro_filter_group"]["is_first_event"] is True
+    assert e005a["exastro_filter_group"]["is_first_event"] == "1"
     assert e005a["exastro_filter_group"]["group_id"] == e005b["exastro_filter_group"]["group_id"]

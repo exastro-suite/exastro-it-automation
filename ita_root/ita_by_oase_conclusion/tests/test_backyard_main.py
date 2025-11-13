@@ -625,12 +625,12 @@ def test_scenario_grouping_target_2_same_label_events_to_1_group(
 
         if event["_id"] in head_event_ids:
             assert group_info["group_id"] == repr(event["_id"])
-            assert group_info["is_first_event"]
+            assert group_info["is_first_event"] == "1"
             first_group_id = event["_id"]
             first_exastro_end_time = event["labels"]["_exastro_end_time"]
         else:
             assert group_info["group_id"] == repr(first_group_id)
-            assert not group_info["is_first_event"]
+            assert group_info["is_first_event"] == "0"
             max_exastro_end_time = max(
                 max_exastro_end_time, event["labels"]["_exastro_end_time"]
             )
@@ -730,7 +730,7 @@ def test_scenario_grouping_target_2_different_label_events_to_2_groups(
         assert group_info is not None
         assert group_info["group_id"] == repr(event["_id"])
         assert group_info["filter_id"] == grouping_filter["FILTER_ID"]
-        assert group_info["is_first_event"]
+        assert group_info["is_first_event"] == "1"
 
         group_ids.add(group_info["group_id"])
 
@@ -860,7 +860,7 @@ def test_scenario_grouping_multiple_groups_has_multiple_subsequent_events(
 
         if event["_id"] in head_event_ids:
             assert group_info["group_id"] == repr(event["_id"])
-            assert group_info["is_first_event"]
+            assert group_info["is_first_event"] == "1"
 
             first_group_state_map[group_info["group_id"]] = {
                 "first_exastro_end_time": event["labels"]["_exastro_end_time"],
@@ -869,7 +869,7 @@ def test_scenario_grouping_multiple_groups_has_multiple_subsequent_events(
 
         else:
             assert group_info["group_id"] in first_group_state_map.keys()
-            assert not group_info["is_first_event"]
+            assert group_info["is_first_event"] == "0"
 
             first_group_state = first_group_state_map[group_info["group_id"]]
             first_group_state["max_exastro_end_time"] = max(
@@ -1092,14 +1092,14 @@ def test_scenario_grouping_without_filter_condition(
         event
         for event in without_conclusion_event_records
         if "exastro_filter_group" not in event
-        or event["exastro_filter_group"]["is_first_event"]
+        or event["exastro_filter_group"]["is_first_event"] == "1"
     ]
     # 実質的な結論イベント
     conclusion_events = [
         event
         for event in conclusion_event_records
         if "exastro_filter_group" not in event
-        or event["exastro_filter_group"]["is_first_event"]
+        or event["exastro_filter_group"]["is_first_event"] == "1"
     ]
 
     # 1. 1件目のイベント処理(F_A1にヒット→グループ1先頭イベント)
@@ -1587,7 +1587,7 @@ def test_scenario_filtering_wildcard_pattern(
     assert grouping_info is not None
     assert grouping_info["group_id"] == repr(grouping_event["_id"])
     assert grouping_info["filter_id"] == f1["FILTER_ID"]
-    assert grouping_info["is_first_event"]
+    assert grouping_info["is_first_event"] == "1"
     assert grouping_event["labels"]["_exastro_evaluated"] == "1"
     assert [
         action_log

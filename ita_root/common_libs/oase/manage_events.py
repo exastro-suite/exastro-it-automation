@@ -16,7 +16,7 @@ import inspect
 import json
 import os
 import re
-from typing import Any, NewType, TypedDict
+from typing import Any, Literal, NewType, TypedDict
 
 from bson import ObjectId
 from flask import g
@@ -57,7 +57,7 @@ class GroupingInformation(TypedDict):
     filter_id: str
     """フィルターID"""
 
-    is_first_event: bool
+    is_first_event: Literal["0", "1"]
     """先頭イベントフラグ"""
 
 
@@ -379,7 +379,7 @@ class ManageEvents:
                         "labels._exastro_timeout": "0",
                         "labels._exastro_evaluated": "1",
                         "labels._exastro_undetected": "0",
-                        "exastro_filter_group.is_first_event": True,
+                        "exastro_filter_group.is_first_event": "1",
                         "exastro_filter_group.filter_id": {
                             "$in": list(filter_map.keys())
                         },
@@ -469,7 +469,7 @@ class ManageEvents:
         group_info: GroupingInformation = event.setdefault("exastro_filter_group", {})
         group_info["filter_id"] = filter_row["FILTER_ID"]
         group_info["group_id"] = repr(latest_group["first_event"]["_id"])  # exastro_eventsに合わせてシリアライズ
-        group_info["is_first_event"] = is_first_event
+        group_info["is_first_event"] = "1" if is_first_event else "0"
         group_info["original_ttl"] = (
             event["labels"]["_exastro_end_time"] - event["labels"]["_exastro_fetched_time"]
         )
@@ -587,7 +587,7 @@ class ManageEvents:
 
         # 既にグループに存在する場合はイベントが持つ情報を返す
         if any(event == group["first_event"] or event in group["remaining_events"] for group in ttl_groups):
-            return event["exastro_filter_group"]["is_first_event"]
+            return event["exastro_filter_group"]["is_first_event"] == "1"
 
         match ttl_groups:
             case [*_, _ as latest_group] if (

@@ -151,7 +151,7 @@ def create_event(
         event["exastro_filter_group"] = {
             "filter_id": _get_filter_id(grouping_filter),
             "group_id": repr(event["_id"]),
-            "is_first_event": True,
+            "is_first_event": "1",
             "original_ttl": end_time - fetched_time,
         }
     return event
@@ -480,9 +480,9 @@ def assert_event_in_group_as_first(
     )
 
     # 先頭イベントであることを確認
-    assert grouping_info[
-        "is_first_event"
-    ], f"Event {test_id} is not marked as first event in group"
+    assert (
+        grouping_info["is_first_event"] == "1"
+    ), f"Event {test_id} is not marked as first event in group"
 
     if filter_id is not None:
         assert (
@@ -513,9 +513,9 @@ def assert_event_in_group_as_remaining(
     )
 
     # 後続イベントであることを確認
-    assert not grouping_info[
-        "is_first_event"
-    ], f"Event {test_id} is marked as first event in group"
+    assert (
+        grouping_info["is_first_event"] == "0"
+    ), f"Event {test_id} is marked as first event in group"
 
     if filter_id is not None:
         assert (

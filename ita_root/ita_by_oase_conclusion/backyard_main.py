@@ -381,7 +381,7 @@ def JudgeMain(wsDb: DBConnectWs, judgeTime: int, EventObj: ManageEvents, actionO
                                         # 対応するルールの優先度が不明のため、結論イベントを予約済みとする
                                         preserved_events.add(ConclusionEventRow['_id'])
 
-                                    newIncident_Flg = True
+                            newIncident_Flg = True
 
                             # 評価結果の更新（完了）
                             data_list = {

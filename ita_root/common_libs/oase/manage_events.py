@@ -16,7 +16,7 @@ import inspect
 import json
 import os
 import re
-from typing import Any, NewType, TypedDict
+from typing import Any, Literal, NewType, TypedDict
 
 from bson import ObjectId
 from flask import g
@@ -57,7 +57,7 @@ class GroupingInformation(TypedDict):
     filter_id: str
     """フィルターID"""
 
-    is_first_event: bool
+    is_first_event: Literal["0", "1"]
     """先頭イベントフラグ"""
 
 
@@ -166,7 +166,8 @@ class ManageEvents:
                 hit = False
                 if key in labels:
                     if str(condition) == oaseConst.DF_TEST_EQ:
-                        if labels[key] == value:
+                        # 「*」はワイルドカードとして扱う
+                        if labels[key] == value or value == "*":
                             hit = True
                     else:
                         if labels[key] != value:
@@ -378,7 +379,7 @@ class ManageEvents:
                         "labels._exastro_timeout": "0",
                         "labels._exastro_evaluated": "1",
                         "labels._exastro_undetected": "0",
-                        "exastro_filter_group.is_first_event": True,
+                        "exastro_filter_group.is_first_event": "1",
                         "exastro_filter_group.filter_id": {
                             "$in": list(filter_map.keys())
                         },
@@ -446,6 +447,11 @@ class ManageEvents:
         # ルール確定グループからフィルターIDでフィルター別属性集約グループを取得・作成する
 
         ttl_groups = self._get_ttl_groups(event, filter_row)
+
+        # 既にグループに存在する場合はイベントが持つ情報を返し、何もしない
+        if any(event == group["first_event"] or event in group["remaining_events"] for group in ttl_groups):
+            return event["exastro_filter_group"]["is_first_event"]
+
         match ttl_groups:
             case [*_, _ as latest_group] if (
                 event["labels"]["_exastro_fetched_time"] <= latest_group["end_time"]
@@ -463,7 +469,7 @@ class ManageEvents:
         group_info: GroupingInformation = event.setdefault("exastro_filter_group", {})
         group_info["filter_id"] = filter_row["FILTER_ID"]
         group_info["group_id"] = repr(latest_group["first_event"]["_id"])  # exastro_eventsに合わせてシリアライズ
-        group_info["is_first_event"] = is_first_event
+        group_info["is_first_event"] = "1" if is_first_event else "0"
         group_info["original_ttl"] = (
             event["labels"]["_exastro_end_time"] - event["labels"]["_exastro_fetched_time"]
         )
@@ -510,9 +516,7 @@ class ManageEvents:
                 [ttl_group["first_event"]["_id"]], {"_exastro_end_time": new_end_time}
             )
 
-    def _get_attribute_key(
-        self, event: Event, filter_row: dict[str] | None = None
-    ) -> AttributeKey:
+    def _get_attribute_key(self, event: Event, filter_row: dict[str]) -> AttributeKey:
         """イベントから属性集約キーを取得する
 
         Args:
@@ -524,10 +528,13 @@ class ManageEvents:
         """
 
         # グループキーがキャッシュに存在する場合そこから取り出す
-        local_label: dict[str, AttributeKey] = event.setdefault(
+        local_label: dict[str, dict[str, AttributeKey]] = event.setdefault(
             oaseConst.DF_LOCAL_LABLE_NAME, {}
         )
-        attribute_key = local_label.get(oaseConst.DF_LOCAL_LABLE_ATTRIBUTE_KEY, None)
+        attribute_key_filter_map = local_label.setdefault(
+            oaseConst.DF_LOCAL_LABLE_ATTRIBUTE_KEY, {}
+        )
+        attribute_key = attribute_key_filter_map.get(filter_row["FILTER_ID"])
         if attribute_key:
             return attribute_key
 
@@ -555,10 +562,13 @@ class ManageEvents:
                 (key, value)
                 for (key, value) in labels.items()
                 # システム属性である_exastroで始まる属性は除外する(_exastro_hostは除外対象外)
-                if not (key in group_condition_labels or re.match("^_exastro(?!_host$)", key))
+                if not (
+                    key in group_condition_labels
+                    or re.match("^_exastro(?!_host$)", key)
+                )
             )
         # キャッシュに保存
-        local_label[oaseConst.DF_LOCAL_LABLE_ATTRIBUTE_KEY] = attribute_key
+        attribute_key_filter_map[filter_row["FILTER_ID"]] = attribute_key
         return attribute_key
 
     def is_first_event_when_grouping(self, event: Event, filter_row: dict[str]) -> bool:
@@ -574,6 +584,10 @@ class ManageEvents:
         """
 
         ttl_groups = self._get_ttl_groups(event, filter_row)
+
+        # 既にグループに存在する場合はイベントが持つ情報を返す
+        if any(event == group["first_event"] or event in group["remaining_events"] for group in ttl_groups):
+            return event["exastro_filter_group"]["is_first_event"] == "1"
 
         match ttl_groups:
             case [*_, _ as latest_group] if (

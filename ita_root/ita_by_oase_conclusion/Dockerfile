@@ -52,6 +52,7 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
     python3.11 \
     python3.11-devel \
     python3.11-pip \
+    --exclude=python3.11-setuptools \
 &&  alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 10 \
 &&  alternatives --install /usr/bin/pip3 pip3 /usr/bin/pip3.11 10 \
 &&  alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 1 

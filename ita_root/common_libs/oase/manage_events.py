@@ -601,7 +601,18 @@ class ManageEvents:
 
         # グルーピング情報削除、無効のMongoDB更新
         WriterProcessManager.update_labeled_event_collection(
-            {"exastro_filter_group.group_id": group_id},
+            {
+                "exastro_filter_group.group_id": group_id,
+                # イベントのTTL(先頭イベントの場合、グループのTTL相当)内のものに限定
+                "labels._exastro_fetched_time": {
+                    "$gte": event["labels"]["_exastro_fetched_time"],
+                    "$lte": event["labels"]["_exastro_end_time"],
+                },
+                "labels._exastro_end_time": {
+                    "$gte": event["labels"]["_exastro_fetched_time"],
+                    "$lte": event["labels"]["_exastro_end_time"],
+                },
+            },
             {
                 "$unset": {"exastro_filter_group": ""},
                 "$set": {

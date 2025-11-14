@@ -2569,10 +2569,14 @@ html: {
             }
         }
 
-        return ``
-        + `<ul class="eventFlowLabelList">`
-            + html.join('')
-        + `</ul>`;
+        if ( html.length ) {
+            return ``
+            + `<ul class="eventFlowLabelList">`
+                + html.join('')
+            + `</ul>`;
+        } else {
+            return '';
+        }
     },
     // 「イベント収集設定名 – エージェント名」を表示する。※nダッシュ（–）を使用
     deduplicationListHtml: function( labels, exchangeData ) {
@@ -3545,7 +3549,7 @@ gotoErrPage: function( message ) {
             } else {
                 window.alert('Unknown error.');
             }
-            window.location.href = './system_error/';
+            //window.location.href = './system_error/';
         }
     } else {
         if ( message ) {

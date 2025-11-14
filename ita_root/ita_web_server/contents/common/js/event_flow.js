@@ -1,10 +1,10 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-//   Exastro IT Automation / event_relay.js
+//   Exastro IT Automation / event_flow.js
 //
 //   -----------------------------------------------------------------------------------------------
 //
-//   Copyright 2022 NEC Corporation
+//   Copyright 2025 NEC Corporation
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ class EventFlow {
 */
 constructor( id ) {
     this.id = id;
+    this.uiVersion = fn.getUiVersion();
 }
 /*
 ##################################################
@@ -37,17 +38,13 @@ constructor( id ) {
 setInitCanvasValue() {
     const er = this;
 
-    const now = Date.now();
-    er.loadStart = er.start = new Date( now - ( 60 * 60 * 1000 ) );
-    er.loadEnd = er.end = new Date( now );
-
-    er.initRange = '1h'; // 初期表示範囲
+    const initRange = 1;
+    er.initRange = initRange + 'h'; // 初期表示範囲
 
     er.intervalTime = fn.storage.get('eventflow_interval_time', 'local', false ); // 更新間隔
     if ( er.intervalTime === false ) er.intervalTime = 5000;
 
-    er.blockMargin = 48; // ブロックごとの重なり判定マージン
-    er.minFloor = 16; // 最小段数
+    
     er.maxRate = 50; // 最大拡大倍数
 
     // 倍率
@@ -91,26 +88,27 @@ setInitCanvasValue() {
         rule: getMessage.FTE13030
     };
 
-    // パターンアイコン
-    er.patternIcon = {
-        newEvent: 'e93b',
-        evaluated: 'e906',
-        unknown: 'e907',
-        timeout: 'e939',
-        conclusion: 'e935',
-        action: 'e913',
-        rule: 'e960',
-        ruleBack: 'e961'
-    };
+    // パターンID
+    er.patternId = [
+        'conclusion', // 再評価: 0
+        'unknown', // 未知: 1
+        'timeout', // 既知（時間切れ）: 2
+        'evaluated', // 既知（判定済）: 3
+        'newEvent', // 新規: 4
+        'action', // アクション: 5
+        'rule' // ルール: 6
+    ];
 
     // 各種フラグ
     er.flag = {
-        rangeSelect: false,
-        buttonInvalid: false
-    } ;
+        aggregate: false, // 集約モード
+        rangeSelect: false // 範囲選択モード
+    };
+    
+    er.canvasData = [];
 
-    // 履歴データ用
-    er.history = [];
+    // テーマ
+    this.colorMode = ( $('body').is('.darkmode') )? 'darkmode': '';
 
     // デバッグ用
     er.debug = fn.getParams().debug ?? false;
@@ -120,7 +118,7 @@ setInitCanvasValue() {
     Setup
 ##################################################
 */
-setup( target ) {
+async setup( target ) {
     const er = this;
 
     er.target = target;
@@ -134,7 +132,9 @@ setup( target ) {
     // jQuery object
     er.$ = {
         target: $target,
+        eventFrow: $target.find('.eventFlow'),
         header: $target.find('.eventFlowHeader'),
+        status: $target.find('.eventFlowStatus'),
         body: $target.find('.eventFlowBody'),
         footer: $target.find('.eventFlowFooter'),
         chart: $target.find('.eventFlowChart'),
@@ -148,42 +148,27 @@ setup( target ) {
         parts: $target.find('.eventFlowParts'),
     };
 
-    // Chart canvas
-    er.chartCanvas = {
-        line: er.$.body.find('.eventFlowChartPositionLineCanvas').get(0),
-        block: er.$.body.find('.eventFlowChartBlockCanvas').get(0),
-        incident: er.$.body.find('.eventFlowChartIncidentCanvas').get(0),
-        link: er.$.body.find('.eventFlowChartLinkCanvas').get(0)
-    };
-
-    // Chart canvas context
-    er.chartContext = {};
-    for ( const type in er.chartCanvas ) {
-        er.chartContext[ type ] = er.chartCanvas[ type ].getContext('2d');
-    }
-
-    // Date canvas
-    er.dateCanvas = er.$.body.find('.eventFlowDateCanvas').get(0);
-    er.dateContext = er.dateCanvas.getContext('2d');
-
-    // イベントフロー表示
-    const setEventFlow = function( label = []) {
-        er.label = label;
-        er.updateCanvas( true );
-        er.setupParts();
-    }
-
     // ラベルデータを読み込む
-    const
-    data = { discard: { NORMAL: '0'}},
-    option = { authorityErrMove: false };
+    const data = { discard: { NORMAL: '0'}};
+    const option = { authorityErrMove: false };
 
-    fn.fetch('/menu/label_creation/filter/', null, 'POST', data, option ).then(function( label ){
-        setEventFlow( label );
-    }).catch(function( error ){
+    // メッセージ表示
+    this.message = new Message();
+
+    try {
+        er.label = await fn.fetch('/menu/label_creation/filter/', null, 'POST', data, option );
+    } catch( error ) {
         console.error( error );
-        setEventFlow();
-    });
+        er.label = null;
+    } finally {
+        await er.setupParts();
+        $target.removeClass('nowLoading');
+        await er.initCanvas();
+        er.setEvents();
+        er.statusWaiting();
+    }
+
+    return;
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -205,6 +190,8 @@ mainHtml( id ) {
         + `<button class="eventFlowChartRangeClear"><span class="icon icon-cross"></span></button>`
     + `</div>`;
 
+    const aggregateFlag = ( er.flag.aggregate )? 'on': 'off';
+
     const menuList = {
         Main: [
             { html: { html: er.dateRangeSelectHTML() }},
@@ -213,49 +200,54 @@ mainHtml( id ) {
             { html: { html: er.patternSelectHTML() }, separate: true }
         ],
         Sub: [
-            { html: { html: er.updateIntervalSelectHTML() } }
+            { html: { html: er.statusBarHTML() }},
+            { html: { html: er.updateIntervalSelectHTML() } },
+            { button: { icon: 'menuGroup', text: getMessage.FTE13036, type: 'modeToggle', action: 'default',
+                toggle: { init: aggregateFlag, on: getMessage.FTE13038, off: getMessage.FTE13037 }}},
         ]
     };
 
     return ``
     + `<div id="${id}_eventFlow" class="eventFlowContainer">`
-        + `<div class="eventFlow">`
-            + `<div class="eventFlowHeader">`
-                + fn.html.operationMenu( menuList )
-            + `</div>`
-            + `<div class="eventFlowBody">`
-                + `<div class="eventFlowBodyInner">`
-                    + `<div class="eventFlowDate">`
-                        + `<canvas class="eventFlowDateCanvas"></canvas>`
-                    + `</div>`
-                    + `<div class="eventFlowChart">`
-                        + `<div class="eventFlowChartCanvas">`
-                            + `<canvas class="eventFlowChartPositionLineCanvas"></canvas>`
-                            + `<canvas class="eventFlowChartBlockCanvas"></canvas>`
-                            + `<canvas class="eventFlowChartIncidentCanvas"></canvas>`
-                            + `<canvas class="eventFlowChartLinkCanvas"></canvas>`
-                        + `</div>`
-                        + `<div class="eventFlowCurrentBorder"></div>`
-                        + `<div class="eventFlowPositionBorder"></div>`
-                    + `</div>`
-                    + `<div class="eventFlowChartBar" data-type="vertical">`
-                        + `<div class="eventFlowRange">`
-                            + `<div class="eventFlowRangeStart"></div>`
-                            + `<div class="eventFlowRangeEnd"></div>`
-                        + `</div>`
-                    + `</div>`
-                    + `<div class="eventFlowChartBar" data-type="horizontal">`
-                        + `<div class="eventFlowRange">`
-                            + `<div class="eventFlowRangeStart"></div>`
-                            + `<div class="eventFlowRangeEnd"></div>`
-                        + `</div>`
-                    + `</div>`
+        + `<div class="eventFlow tableLoading eventFlowAggregate_${aggregateFlag}">`
+            + `<div class="eventFlowInner">`
+                + `<div class="eventFlowHeader">`
+                    + fn.html.operationMenu( menuList )
                 + `</div>`
-                + `<div class="eventFlowEventInformation"></div>`
-                + `<div class="eventFlowPositionDate"></div>`
-                + `<div class="eventFlowNowDate"></div>`
+                + `<div class="eventFlowBody">`
+                    + `<div class="eventFlowBodyInner">`
+                        + `<div class="eventFlowDate">`
+                            + `<canvas class="eventFlowDateCanvas"></canvas>`
+                        + `</div>`
+                        + `<div class="eventFlowChart">`
+                            + `<div class="eventFlowChartCanvas">`
+                                + `<canvas class="eventFlowChartPositionLineCanvas"></canvas>`
+                                + `<canvas class="eventFlowChartBlockCanvas"></canvas>`
+                                + `<canvas class="eventFlowChartIncidentCanvas"></canvas>`
+                                + `<canvas class="eventFlowChartLinkCanvas"></canvas>`
+                            + `</div>`
+                            + `<div class="eventFlowCurrentBorder"></div>`
+                            + `<div class="eventFlowPositionBorder"></div>`
+                        + `</div>`
+                        + `<div class="eventFlowChartBar" data-type="vertical">`
+                            + `<div class="eventFlowRange">`
+                                + `<div class="eventFlowRangeStart"></div>`
+                                + `<div class="eventFlowRangeEnd"></div>`
+                            + `</div>`
+                        + `</div>`
+                        + `<div class="eventFlowChartBar" data-type="horizontal">`
+                            + `<div class="eventFlowRange">`
+                                + `<div class="eventFlowRangeStart"></div>`
+                                + `<div class="eventFlowRangeEnd"></div>`
+                            + `</div>`
+                        + `</div>`
+                    + `</div>`
+                    + `<div class="eventFlowEventInformation"></div>`
+                    + `<div class="eventFlowPositionDate"></div>`
+                    + `<div class="eventFlowNowDate"></div>`
+                + `</div>`
+                //+ `<div class="eventFlowFooter"></div>`
             + `</div>`
-            // + `<div class="eventFlowFooter"></div>`
         + `</div>`
         + `<div class="eventFlowWidthResizeBar"></div>`
         + `<div class="eventFlowParts">`
@@ -424,6 +416,405 @@ updateIntervalSelectHTML() {
         + `</div>`
     + `</div>`;
 }
+/*
+##################################################
+    Header ステータスバー
+##################################################
+*/
+statusBarHTML() {
+    this.statusResponseFlag = false;
+    return `<div class="eventFlowStatus"><div class="eventFlowStatusText"></div><div class="eventFlowStatusBar"></div></div>`;
+}
+statusWaiting() {
+    this.$.status.find('.eventFlowStatusBar').hide();
+    this.$.status.hide().find('.eventFlowStatusText').text('');
+    // 応答待機中の場合は表示する
+    if ( this.statusResponseFlag === true ) {
+        this.statusResponse();
+    }
+}
+statusProcessing() {
+    this.$.status.find('.eventFlowStatusBar').hide();
+    this.$.status.show().find('.eventFlowStatusText').text( getMessage.FTE13039 );
+}
+statusResponse() {
+    this.statusResponseFlag = true;
+    this.$.status.find('.eventFlowStatusBar').hide();
+    this.$.status.show().find('.eventFlowStatusText').text( getMessage.FTE13040 );
+}
+statusNone() {
+    this.$.status.find('.eventFlowStatusBar').hide();
+    this.$.status.hide().find('.eventFlowStatusText').text('');
+}
+statusProgress( result ) {
+    this.statusResponseFlag = false;
+    const per = Math.round( result.receivedLength / result.contentLength * 100 )  + '%';
+    this.$.status.show();
+    this.$.status.find('.eventFlowStatusText').text(`${getMessage.FTE13041}(${per})`);
+    this.$.status.find('.eventFlowStatusBar').show().css('width', per );
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//   Worker
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
+##################################################
+    Create WebWorker
+##################################################
+*/
+createWebWorker() {
+    const workerCode = this.createWorkerCode();
+    const blob = new Blob([ workerCode ], { type: "text/javascript" });
+    const url  = URL.createObjectURL( blob );
+    this.worker = new Worker( url );
+    this.worker.onmessage = e => this.workerOnMessage( e );
+    this.worker.init = false;
+}
+// Worker Code
+createWorkerCode() {
+    const commonUrl = new URL(`/_/ita/js/common.js?v=${this.uiVersion}`, location.href ).href;
+    const workerClassUrl = new URL(`/_/ita/js/event_flow_worker.js?v=${this.uiVersion}`, location.href ).href;
+    return ``
+    + `importScripts('${commonUrl}');`
+    + `importScripts('${workerClassUrl}');`
+    + `(function(){`
+        + `const eventFlowWorker = new EventFlowWorker();`
+        + `self.addEventListener('message', function( message ){`
+            + `eventFlowWorker.message( message.data );`
+        + `});`
+    + `}());`
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//  WebWorker on message
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
+##################################################
+    Workerメッセージ受信
+##################################################
+*/
+async workerOnMessage( e ) {
+    const result = e.data;
+    switch ( result.type ) {
+        case 'autoModeChange':
+            this.autoModeChange();
+            break;
+        case 'progress': 
+            this.progress( result );
+            break;
+        case 'updateToken':
+            this.workerMessageUpdateToken();
+            break;
+        case 'updateDate':
+            this.workerMessageUpdateDate( result );
+            break;
+        case 'nowLine': 
+            this.workerMessageNowLine( result.nowX );
+            break;
+        
+        // Resolve
+        case 'currentEnter':
+            this.worker.currentEnter.resolve( result.flag );
+            break;
+        case 'positionChange':
+            this.worker.positionChange.resolve();
+            break;
+        case 'blockEnter':
+            this.worker.blockEnter.resolve({
+                currentBlock: result.currentBlock,
+                grouping: result.grouping
+            });
+            break;
+        case 'modeChange':
+            this.worker.modeChange.resolve();
+            break;
+        case 'updateEventLink':
+            this.worker.updateEventLink.resolve();
+            break;
+        default: this.worker.resolve()
+    }
+}
+/*
+##################################################
+    進捗表示
+##################################################
+*/
+progress( result ) {
+    if ( result.text === 'start') {
+        this.statusResponse();
+    } else if ( result.text === 'end') {
+        this.statusWaiting();
+    } else if ( result.text === 'process') {
+        this.statusProcessing();
+    } else if ( result.receivedLength !== undefined && result.contentLength !== undefined ) {
+        this.statusProgress( result );
+    } else {
+        this.statusNone();
+    }
+}
+/*
+##################################################
+    集約モードに変更する
+##################################################
+*/
+autoModeChange() {
+    this.message.add('warning', getMessage.FTE13035 );
+    this.modeAggregateOn( this.$.header.find('.toggleButton') );
+}
+/*
+##################################################
+    トークンをWorkerに返す
+##################################################
+*/
+workerMessageUpdateToken() {
+    // Token
+    const token = ( fn.getCmmonAuthFlag() )? CommonAuth.getToken():
+        ( window.parent && window.parent.getToken )? window.parent.getToken(): null;    
+
+    this.worker.postMessage(
+        {
+            type: 'updateToken',
+            token: token
+        }
+    );
+}
+/*
+##################################################
+    現在時刻線
+##################################################
+*/
+workerMessageNowLine( nowX ) {
+    const paddingLeft = 16; // .eventFlowBodyInner
+    
+    if ( nowX > this.w ) {
+        this.$.nowDate.hide();
+    } else if ( nowX < 0 ) {
+        this.$.nowDate.show().addClass('noBorder').css({
+            left: paddingLeft,
+            width: this.w
+        });
+    } else {
+        this.$.nowDate.show().removeClass('noBorder').css({
+            left: nowX + paddingLeft,
+            width: this.w - nowX
+        });
+    }
+}
+/*
+##################################################
+    範囲時間更新
+##################################################
+*/
+workerMessageUpdateDate( date ) {
+    this.start = date.start;
+    this.end = date.end;
+    this.period = date.period;
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//  Web Worker post message
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
+##################################################
+    Worker Post
+##################################################
+*/
+workerPost( type, option, reslveType = false ) {
+    return new Promise(( resolve, reject ) => {
+        if ( reslveType === false ) {
+            this.worker.resolve = resolve;
+            this.worker.reject = reject;
+        } else {
+            this.worker[ type ] = {
+                resolve: resolve,
+                reject: reject
+            };
+        }
+        switch ( type ) {
+            case 'modeChange':
+                this.workerModeChange();
+                break;
+            case 'positionChange':
+                this.workerPositionChange();
+                break;
+            case 'currentEnter':
+                this.workerCurrentEnter( option );
+                break;
+            case 'blockEnter':
+                this.workerBlockEnter( option );
+                break;
+            case 'updateEventLink':
+                this.workerUpdateEventLink();
+                break;
+        }
+    });
+}
+/*
+##################################################
+    ポーリング開始
+##################################################
+*/
+workerPollingStart( mode ) {
+    // 時間をセット
+    const selectDateRange = this.$.header.find('.eventFlowDateRangeRadio:checked').val();
+
+    this.getCanvasSize();
+
+    this.worker.postMessage(
+        {
+            type: 'polling',
+            pollingStartMode: mode,
+            interval: this.intervalTime,
+            w: this.w,
+            h: this.h,
+            vRate: this.vRate,
+            vPosition: this.vPosition,
+            hRate: this.hRate,
+            hPosition: this.hPosition,
+            selectDateRange: selectDateRange,
+            rangeSelectFlag: this.flag.rangeSelect,
+            displayFlag: this.displayFlag,
+            aggregate: this.flag.aggregate
+        }
+    );
+}
+/*
+##################################################
+    モード変更
+##################################################
+*/
+workerModeChange() {
+    this.clickBlock = null;
+    this.currentBlock = null;
+    this.hideEventInfo();
+    this.positionReset();
+    this.worker.postMessage(
+        {
+            type: 'modeChange',
+            aggregate: this.flag.aggregate,
+            vRate: this.vRate,
+            vPosition: this.vPosition,
+            hRate: this.hRate,
+            hPosition: this.hPosition,
+            basisEventBlock: {
+                current: this.currentBlock,
+                click: this.clickBlock
+            } 
+        }
+    );
+}
+/*
+##################################################
+    範囲変更
+##################################################
+*/
+workerRangeChange() {
+    this.getCanvasSize();
+    this.worker.postMessage(
+        {
+            type: 'rangeChange',
+            start: this.start,
+            end: this.end,
+            w: this.w,
+            h: this.h,
+            rangeSelectFlag: this.flag.rangeSelect,
+            vRate: this.vRate,
+            vPosition: this.vPosition,
+            hRate: this.hRate,
+            hPosition: this.hPosition,
+            displayFlag: this.displayFlag
+        }
+    );
+}
+/*
+##################################################
+    範囲クリア
+##################################################
+*/
+workerRangeClear() {
+    this.worker.postMessage(
+        {
+            type: 'rangeClear',
+            start: null,
+            end: null,
+            rangeSelectFlag: this.flag.rangeSelect,
+            vRate: this.vRate,
+            vPosition: this.vPosition,
+            hRate: this.hRate,
+            hPosition: this.hPosition
+        }
+    );
+}
+/*
+##################################################
+    位置変更
+##################################################
+*/
+workerPositionChange() {
+    this.worker.postMessage(
+        {
+            type: 'updateCanvasPosition',
+            vRate: this.vRate,
+            vPosition: this.vPosition,
+            hRate: this.hRate,
+            hPosition: this.hPosition
+        }
+    );
+}
+/*
+##################################################
+    現在ホバーしているイベント判定
+##################################################
+*/
+workerCurrentEnter( position ) {
+    this.worker.postMessage(
+        {
+            type: 'currentEnter',
+            position: position
+        }
+    );
+}
+/*
+##################################################
+    ホバーイベント判定
+##################################################
+*/
+workerBlockEnter( position ) {
+    this.worker.postMessage(
+        {
+            type: 'blockEnter',
+            position: position
+        }
+    );
+}
+/*
+##################################################
+    イベント繋がり線を描画
+##################################################
+*/
+workerUpdateEventLink( event ) {
+    this.worker.postMessage(
+        {
+            type: 'updateEventLink',
+            basisEventBlock: {
+                current: this.currentBlock,
+                click: this.clickBlock
+            } 
+        }
+    );
+}
+/*
+##################################################
+    Canvasサイズ取得
+##################################################
+*/
+getCanvasSize() {
+    this.w = this.$.chart.outerWidth();
+    this.h = this.$.chart.outerHeight();
+}
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //  Canvas
@@ -431,1302 +822,62 @@ updateIntervalSelectHTML() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
 ##################################################
-    四捨五入
+    初期設定
 ##################################################
 */
-round( num ) {
-    return Math.round( num * 100 ) / 100;
-}
-/*
-##################################################
-    表示データの作成
-##################################################
-*/
-createCanvasData() {
-    const er = this;
-
-    // 履歴データを複製
-    const history = fn.arrayCopy( er.history );
-
-    const ruleList = [];
-    const ruleIdList = [];
-    er.groupingList = {};
-
-    // イベントのつながりを作成
-    // ルールリストの作成
-    for ( const e of history ) {
-
-        // パターン・座標
-        if ( e.type === 'event') {
-            e.pattern = er.checkEventPattern( e.item.labels );
-
-            // グルーピングイベントは座標を取得しスキップ
-            if (
-                e.pattern !== 'conclusion'
-                && e.item
-                && e.item.exastro_filter_group
-                && e.item.exastro_filter_group.is_first_event === false
-            ) {
-                const groupingId = e.item.exastro_filter_group.group_id;
-                if ( !er.groupingList[ groupingId ] ) {
-                    er.groupingList[ groupingId ] = {
-                        x: [],
-                        endX: 0,
-                        count: 0,
-                        data: []
-                    }
-                };
-                const groupData = er.groupingList[ groupingId ];
-                const x = er.getDateWidthPositionX( e.item.labels._exastro_fetched_time );
-                if ( x > groupData.endX ) groupData.endX = x;
-                groupData.count++;
-                groupData.x.push(x);
-                
-                // イベントデータ
-                if ( er.debug ) groupData.data.push(e);
-
-                // デバッグ時はグルーピングイベントを表示する
-                if ( !er.debug ) continue;
-            }            
-            e.x1 = er.getDateWidthPositionX( e.item.labels._exastro_fetched_time );
-            e.x2 = er.getDateWidthPositionX( e.item.labels._exastro_end_time );
-        } else {
-            e.pattern = e.type;
-            e.x1 = e.x2 = er.getDateWidthPositionX( e.datetime );
-        }
-
-        const eventList = er.getEventList(e);
-        const ruleInfo = er.getRuleInfo(e);
-        if ( eventList && ruleInfo ) {
-            // ユニークルールID
-            const ruleId = ruleInfo.id + eventList.toString();
-
-            // Inイベント
-            if ( !e.before ) e.before = [];
-            if ( e.before.indexOf( ruleId ) === -1 ) {
-                e.before.push( ruleId );
-            }
-
-            // ルール枠の作成
-            if ( ruleIdList.indexOf( ruleId ) === -1 ) {
-                ruleList.push( er.createRuleData( e, eventList, ruleId, ruleInfo ) );
-                ruleIdList.push( ruleId );
-            } else {
-                const rule = ruleList.find(function(r){
-                    return ruleId === r.id;
-                });
-
-                if ( rule ) {
-                    if ( rule.datetime > e.datetime ) {
-                        rule.datetime = e.datetime;
-                        rule.x1 = rule.x2 = e.x1;
-                    }
-                    rule.after.push( e.id );
-                }
-            }
-
-            // Outイベント
-            for ( const id of eventList ) {
-                const event = history.find(function(e){
-                    return e.id === id;
-                });
-                if ( event !== undefined ) {
-                    if ( !event.after ) event.after = [];
-                    if ( event.after.indexOf( ruleId ) === -1 ) {
-                        event.after.push( ruleId );
-                    }
-                }
-            }
-        }
-    }
-
-    // イベントをグループ化する
-    er.groupList = {
-        groupData: {},
-        groupInfo: {},
-        group: {},
-        singleData: []
-    };
-    let groupCount = 1;
-
-    // すでにいずれかのグループに入っているかチェック
-    const eventGroupCheck = function( id ){
-        for ( const key in er.groupList.group ) {
-            if ( er.groupList.group[ key ].indexOf( id ) !== -1 ) return true;
-        }
-        return false;
+async initCanvas() {
+    // Chart canvas
+    this.chartCanvas = {
+        line: this.$.body.find('.eventFlowChartPositionLineCanvas').get(0), // スケールライン
+        block: this.$.body.find('.eventFlowChartBlockCanvas').get(0), // 囲い
+        incident: this.$.body.find('.eventFlowChartIncidentCanvas').get(0), // イベント
+        link: this.$.body.find('.eventFlowChartLinkCanvas').get(0) // 繋がり線
     };
 
-    // つながりのあるIDをチェック
-    const eventLinkCheck = function( eventId, groupId ){
-        if ( eventGroupCheck( eventId ) ) return;
-
-        // チェック用IDリスト
-        if ( !er.groupList.group[ groupId ] ) er.groupList.group[ groupId ] = [];
-        er.groupList.group[ groupId ].push( eventId );
-
-        const e = list.find(function( item ){
-            return eventId === item.id;
-        });
-
-        if ( e ) {
-            e.group = groupId;
-
-            // グループごとの範囲
-            if ( !er.groupList.groupInfo[ groupId ] ) er.groupList.groupInfo[ groupId ] = {};
-            if ( !er.groupList.groupInfo[ groupId ].minX || er.groupList.groupInfo[ groupId ].minX > e.x1 ) er.groupList.groupInfo[ groupId ].minX = e.x1;
-            if ( !er.groupList.groupInfo[ groupId ].maxX || er.groupList.groupInfo[ groupId ].maxX < e.x2 ) er.groupList.groupInfo[ groupId ].maxX = e.x2;
-
-            // イベントデータ
-            if ( !er.groupList.groupData[ groupId ] ) er.groupList.groupData[ groupId ] = [];
-            er.groupList.groupData[ groupId ].push( e );
-
-            // 繋がり
-            if ( e.after ) {
-                for ( const id of e.after ) {
-                    eventLinkCheck( id, groupId );
-                }
-            }
-            if ( e.before ) {
-                for ( const id of e.before ) {
-                    eventLinkCheck( id, groupId );
-                }
-            }
-        }
-    };
-
-    // 履歴にルールを追加
-    const list = ruleList.concat( history );
-
-    // データの振り分け
-    for ( const e of list ) {
-        // 繋がりがあるかどうか
-        if ( e.after || e.before ) {
-            eventLinkCheck( e.id, 'group' + groupCount++ );
-        } else {
-            if ( !e.x1 ) continue;
-            er.groupList.singleData.push( e );
-        }
-    }
-
-    // 描画用イベント位置情報
-    er.canvasData = [];
-
-    // 階層
-    const floor = [];
-
-    const createFloorData = function( e, x1, x2 ){
-        // 表示パターンチェック
-        if ( er.displayFlag[ e.pattern ] === false ) return;
-
-        if ( !x1 ) x1 = e.x1;
-        if ( !x2 ) x2 = e.x2;
-
-        // 何段目のどの位置に入るか調べる
-        const m = er.blockMargin;
-        let f = 0;
-        while ( e.floor === undefined ) {
-            if ( !floor[f] ) floor[f] = [];
-
-            const l = floor[f].length;
-            if ( l === 0 || floor[f][l-1].x2 + m < x1 ) {
-                floor[f].push({ x1: x1, x2: x2 });
-                e.floor = f;
-            } else if ( floor[f][0].x1 - m > x2 ) {
-                floor[f].unshift({ x1: x1, x2: x2 });
-                e.floor = f;
-            } else if ( floor[f][0].x2 + m < x1 && x2 < floor[f][l-1].x1 - m ) {
-                for ( let i = 0; i <= l - 1; i++ ) {
-                    if ( floor[f][i].x2 + m < x1 && x2 < floor[f][i+1].x1 - m ) {
-                        floor[f].splice( i + 1, 0, { x1: x1, x2: x2 });
-                        e.floor = f;
-                        break;
-                    }
-                }
-            }
-            f++;
-        }
-        er.canvasData.push( e );
-    };
-
-    // グループの階層データの作成
-    const patternNumber = {
-        rule: 1,
-        conclusion: 2,
-        action: 3
-    };
-    for ( const groupId in er.groupList.groupData ) {
-        const group = er.groupList.groupData[ groupId ];
-
-        group.sort(function( a, b ){
-            if ( a.datetime < b.datetime ) {
-                return -1;
-            } else if ( a.datetime > b.datetime ) {
-                return 1;
-            } else {
-                // 同じ時間の場合
-                const a2 = ( patternNumber[ a.pattern ] )? patternNumber[ a.pattern ]: 0;
-                const b2 = ( patternNumber[ b.pattern ] )? patternNumber[ b.pattern ]: 0;
-                if ( a2 < b2 ) {
-                    return -1;
-                } else if ( a2 > b2 ) {
-                    return 1;
-                } else {
-                    return 0;
-                }
-            }
-        });
-
-        const
-        minX = er.groupList.groupInfo[ groupId ].minX,
-        maxX = er.groupList.groupInfo[ groupId ].maxX;
-
-        for ( const e of group ) {
-            createFloorData( e, minX, maxX );
-        }
-    }
-
-    // 単発イベント階層データの作成
-    for ( const e of er.groupList.singleData ) {
-        createFloorData( e );
-    }
-
-    // 段数
-    const floors = ( floor.length > er.minFloor )? floor.length: er.minFloor;
-    er.lineSpacing = Math.round( er.h / floors * 100 ) / 100;
-
-    if ( er.debug ) {
-        console.log('履歴表示データ', er.groupList);
-        console.log('グルーピング', er.groupingList );
-    }
-}
-/*
-##################################################
-    イベントデータからイベントリストを返す
-##################################################
-*/
-getEventList( e ) {
-    const exastro_events = (function(){
-        if ( e.type === 'action' && e.item && e.item.EVENT_ID_LIST ) {
-            // "EVENT_ID_LIST": "ObjectId('XXX1'),ObjectId('XXX2')"
-            return e.item.EVENT_ID_LIST.split(',');
-        } else if ( e.type === 'event' && e.item && e.item.exastro_events ) {
-            // "exastro_events": [
-            //    "ObjectId('XXX1')",
-            //    "ObjectId('XXX2')",
-            // ],
-            return e.item.exastro_events;
-        }
-        return null;
-    })();
-
-    if ( exastro_events ) {
-        const list = [];
-        for ( const id of exastro_events ) {
-            if ( fn.typeof( id ) === 'string' && id.match(/^ObjectId/) ) {
-                const rId = id.replace(/ObjectId\(\'(.+)\'\)/, "$1");
-                list.push( rId );
-            }
-        }
-        return list.sort();
-    } else {
-        return null;
-    }
-}
-/*
-##################################################
-    イベントデータからルール情報を返す
-##################################################
-*/
-getRuleInfo( e ) {
-    if ( e.type === 'action' && e.item && e.item.RULE_ID && e.item.RULE_NAME ) {
-        return {
-            id: e.item.RULE_ID,
-            name: e.item.RULE_NAME
-        };
-    } else if ( e.type === 'event' && e.item && e.item.exastro_rules && e.item.exastro_rules[0] ) {
-        const id = ( e.item.exastro_rules[0].id )? e.item.exastro_rules[0].id: '';
-        const name = ( e.item.exastro_rules[0].name )? e.item.exastro_rules[0].name: '';
-        return {
-            id: id,
-            name: name
-        };
-    } else {
-        return null;
-    }
-}
-/*
-##################################################
-    ルールデータの作成
-##################################################
-*/
-createRuleData( e, eventList, ruleId, ruleInfo ) {
-    const ruleData = {
-        id: ruleId,
-        type: 'rule',
-        datetime: e.datetime,
-        before: eventList,
-        after: [ e.id ],
-        x1: e.x1,
-        x2: e.x2,
-        info: ruleInfo,
-        pattern: 'rule'
-    };
-    return ruleData;
-}
-/*
-##################################################
-    イベントパターンを調べる
-##################################################
-*/
-checkEventPattern( labels ) {
-    // 再評価
-    if ( labels._exastro_type === 'conclusion') {
-        return 'conclusion';
-    }
-    // 未知
-    if ( labels._exastro_undetected === '1') {
-        return 'unknown';
-    }
-    // 既知（時間切れ）
-    if ( labels._exastro_timeout === '1') {
-        return 'timeout';
-    }
-    // 既知（判定済）
-    if ( labels._exastro_evaluated === '1') {
-        return 'evaluated';
-    }
-    // 新規
-    return 'newEvent';
-}
-/*
-##################################################
-    パターンカラー
-##################################################
-*/
-getPatternColor( pattern, opacity = 1 ) {
-    return `rgba(${this.patternColor[ pattern ]},${opacity})`;
-}
-/*
-##################################################
-    更新
-##################################################
-*/
-updateCanvas( initFlag = false ) {
-    const er = this;
-
-    er.colorMode = ( $('body').is('.darkmode') )? 'darkmode': '';
-
-    if ( er.controller ) er.controller.abort();
-    er.controller = new AbortController();
-
-    // 時間を再セット
-    const selectDate = er.$.header.find('.eventFlowDateRangeRadio:checked').val();
-    const newDate = er.updateDataTime( selectDate );
-
-    if ( er.flag.rangeSelect === false ) {
-        er.start = er.loadStart = newDate[0];
-        er.end = er.loadEnd = newDate[1];
-    } else {
-        er.loadStart = newDate[0];
-        er.loadEnd = newDate[1];
-    }
-
-    const postData = {
-        start_time: fn.date( er.loadStart, 'yyyy/MM/dd HH:mm:ss'),
-        end_time: fn.date( er.loadEnd, 'yyyy/MM/dd HH:mm:ss')
-    };
-
-    if (er.ignoreErrorCount == undefined) {
-        er.ignoreErrorCount = 0
-    }
-
-    fn.fetch('/oase/event_flow/history/', null, 'POST', postData, { controller: er.controller }, true, er.ignoreErrorCount ).then(function( history ){
-        if ( history === undefined ) return;
-
-        if ( initFlag ) {
-            er.$.target.removeClass('nowLoading');
-            er.setEvents();
-        }
-
-        if (history.errorIgnored == true) {
-            // エラーを無視した場合は、イベント情報の更新をしない
-            er.ignoreErrorCount += 1
-        } else {
-            er.ignoreErrorCount = undefined // エラーを無視した回数をリセット
-            er.history = history;
-        }
-
-        er.controller = null;
-        er.updateDate = Date.now();
-
-        // キャンバス
-        er.resetCanvas();
-
-        // 自動更新
-        if ( er.intervalTime !== 0 ) {
-            er.timerId = setTimeout(function(){
-                er.updateCanvas();
-            }, er.intervalTime );
-        } else {
-            er.timerId = null;
-        }
-    }).catch(function(error){
-        console.error( error );
-    });
-}
-/*
-##################################################
-    自動更新停止
-##################################################
-*/
-stopAutoUpdate() {
-    const er = this;
-
-    // 再開する際の時間
-    if ( er.updateDate ) {
-        const diff = Date.now() - er.updateDate;
-        er.resumeDate = ( er.intervalTime > diff )? ( diff < 1000 )? 1000: diff: er.intervalTime;
-    }
-
-    // クリアタイム
-    if ( er.timerId ) {
-        clearInterval( er.timerId );
-        er.timerId = null;
-    }
-
-    // 読み込み中の場合は停止
-    if ( er.controller ) {
-        er.controller.abort();
-        er.controller = null;
-    }
-}
-/*
-##################################################
-    自動更新再開
-##################################################
-*/
-resumeAutoUpdate() {
-    const er = this;
-
-    if ( er.checkAutoUpdate() ) {
-        // window.console.warn('resumeAutoUpdate() warning.');
-        return;
-    }
-
-    if ( er.intervalTime !== 0 ) {
-        er.timerId = setTimeout(function(){
-            er.updateCanvas();
-        }, er.resumeDate );
-    } else {
-        er.timerId = null;
-    }
-}
-/*
-##################################################
-    自動更新中チェック
-##################################################
-*/
-checkAutoUpdate() {
-    return this.timerId !== null;
-}
-/*
-##################################################
-    再表示
-##################################################
-*/
-resetCanvas( canvasSizeChangeFlag = false ) {
-    const er = this;
-
-    er.period = er.end.getTime() - er.start.getTime();
-
-    // Chart canvasサイズ
-    er.w = er.$.chart.outerWidth();
-    er.h = er.$.chart.outerHeight();
-
-    for ( const type in er.chartCanvas ) {
-        er.chartCanvas[ type ].width = er.w;
-        er.chartCanvas[ type ].height = er.h;
-    }
-
-    // Date canvasサイズ
-    er.dateCanvas.width = er.w;
-
-    // 表示用データ
-    if ( canvasSizeChangeFlag === false ) {
-        er.createCanvasData();
-    }
-
-    // 描画
-    er.setTimeScale();
-    er.setLine();
-
-    // 各種イベントブロック
-    er.setEventBlock();
-
-    // 繋がり線
-    if ( er.clickBlock ) er.setEventLink( er.clickBlock );
-    if ( er.currentBlock ) er.setEventLink( er.currentBlock );
-}
-/*
-##################################################
-    範囲変更
-##################################################
-*/
-changeDateReset( startDate, endDate, rangeFlag = false ) {
-    const er = this;
-
-    if ( rangeFlag ) {
-        er.start = startDate;
-        er.end = endDate;
-    } else {
-        er.loadStart = er.start = startDate;
-        er.loadEnd= er.end = endDate;
-    }
-
-    er.hRate = 1;
-    er.hPosition = 0;
-    er.$.hScroll.find('.eventFlowRange').css({
-        width: '100%',
-        left: 0
-    });
-
-    er.vRate = 1;
-    er.vPosition = 0;
-    er.$.vScroll.find('.eventFlowRange').css({
-        height: '100%',
-        top: 0
-    });
-
-    if ( rangeFlag ) {
-        er.resetCanvas();
-    } else {
-        er.updateCanvas();
-    }
-}
-/*
-##################################################
-    X座標から時間を取得
-##################################################
-*/
-getPositionDate( x ) {
-    const er = this;
-
-    return new Date( er.start.getTime() + er.period * ( ( x + er.hPosition ) / ( er.w * er.hRate ) ) );
-}
-/*
-##################################################
-    表示している範囲からX座標を取得する
-##################################################
-*/
-getDatePositionX( date ) {
-    const er = this;
-    return er.round( er.w * er.hRate * ( ( new Date( date ).getTime() - er.start.getTime() ) / er.period ) - er.hPosition );
-}
-/*
-##################################################
-    全体の範囲からX座標を取得する
-##################################################
-*/
-getDateWidthPositionX( date ) {
-    const er = this;
-    return er.round( er.w * ( ( new Date( date ).getTime() - er.start.getTime() ) / er.period ));
-}
-/*
-##################################################
-    階層からY座標を取得する
-##################################################
-*/
-getFloorPositonY( floor ) {
-    const er = this;
-    return er.round( floor * er.lineSpacing * er.vRate + ( er.lineSpacing * er.vRate / 2 ) - er.vPosition );
-}
-/*
-##################################################
-    線の色
-##################################################
-*/
-getBorderColor() {
-    return ( this.colorMode === 'darkmode')? '#666': '#CCC';
-}
-/*
-##################################################
-    テキストの色
-##################################################
-*/
-getTextColor() {
-    return ( this.colorMode === 'darkmode')? '#AAA': '#666';
-}
-/*
-##################################################
-    タイムスケールを描画する
-##################################################
-*/
-setTimeScale() {
-    const er = this;
-
-    const ctx = er.dateContext;
-    ctx.clearRect( 0, 0, er.dateCanvas.width, er.dateCanvas.height );
-
-    ctx.beginPath();
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = er.getBorderColor();
-
-    // テキスト共通
-    ctx.textBaseline = 'top';
-    ctx.fillStyle = er.getTextColor();
-
-    // 左端の線
-    ctx.moveTo( .5, .5 );
-    ctx.lineTo( .5, er.dateCanvas.height + .5 );
-    ctx.textAlign = 'left';
-    ctx.font = 'bold 14px Consolas';
-
-    const start = er.getPositionDate( 0 );
-    ctx.fillText( fn.date( start, 'yyyy/MM/dd HH:mm:ss'), 8, 0 );
-
-    // 右端の線
-    ctx.moveTo( er.dateCanvas.width - .5, .5 );
-    ctx.lineTo( er.dateCanvas.width - .5, er.dateCanvas.height + .5 );
-    ctx.textAlign = 'right';
-
-    const end = er.getPositionDate( er.w );
-    ctx.fillText( fn.date( end, 'yyyy/MM/dd HH:mm:ss'), er.w - 8, 0 );
-
-    // 目盛り
-    const diffDate = end.getTime() - start.getTime();
-
-    // 表示範囲からタイプを設定する
-    const mode = er.checkTimeScaleMode( diffDate );
-
-    const type = mode.slice(-1);
-    const interval = Number( mode.slice(0,-1) );
-
-    // 目盛り開始時間
-    const roundDate = function() {
-        switch( type ) {
-            case 'y': return 'yyyy/01/01 00:00:00';
-            case 'M': return 'yyyy/MM/01 00:00:00';
-            case 'w': case 'd': return 'yyyy/MM/dd 00:00:00';
-            case 'H': return 'yyyy/MM/dd HH:00:00';
-            case 'm': return 'yyyy/MM/dd HH:mm:00';
-            default: return 'yyyy/MM/dd HH:mm:ss';
-        }
-    };
-    const startLineDate = new Date( fn.date( start, roundDate() ) );
-
-    ctx.textAlign = 'center';
-    ctx.font = 'normal 12px Consolas';
-
-    let beforeTextX = -9999999;
-    while ( startLineDate < er.end ) {
-        const x = er.getDatePositionX( startLineDate );
-
-        let num = 0, text = '', y = 40;
-        switch( type ) {
-            case 'y':
-                num = startLineDate.getMonth();
-                text = fn.date( startLineDate, 'yyyy/MM/dd');
-                startLineDate.setMonth( num + interval );
-                break;
-            case 'M': case 'w':
-                num = startLineDate.getDate();
-                text = fn.date( startLineDate, 'yyyy/MM/dd');
-                startLineDate.setDate( num + interval );
-                break;
-            case 'd': case 'H':
-                num = startLineDate.getHours();
-                text = fn.date( startLineDate, 'HH:mm:ss');
-                startLineDate.setHours( num + interval );
-                break;
-            case 'm':
-                num = startLineDate.getMinutes();
-                text = fn.date( startLineDate, 'HH:mm:ss');
-                startLineDate.setMinutes( num + interval );
-                break;
-            default:
-                num = startLineDate.getSeconds();
-                text = fn.date( startLineDate, 'HH:mm:ss');
-                startLineDate.setSeconds( num + interval );
-        };
-
-        // テキストが重ならないかチェック
-        const size = ctx.measureText( text );
-        if ( beforeTextX < x - size.width / 2 ) {
-            ctx.fillText( text, x, 20 );
-            beforeTextX = x + size.width / 2 + 24;
-            y = 34;
-        }
-        er.line( ctx, x, y, x, 48 );
-
-    }
-    ctx.stroke();
-
-    // 現在時刻線
-    const paddingLeft = 16; // .eventFlowBodyInner
-    const nowX = er.getDatePositionX( Date.now() );
-    if ( nowX > er.w ) {
-        er.$.nowDate.hide();
-    } else if ( nowX < 0 ) {
-        er.$.nowDate.show().addClass('noBorder').css({
-            left: paddingLeft,
-            width: er.w
-        });
-    } else {
-        er.$.nowDate.show().removeClass('noBorder').css({
-            left: nowX + paddingLeft,
-            width: er.w - nowX
-        });
-    }
-}
-/*
-##################################################
-    表示範囲で目盛りをどうするか判定する
-##################################################
-*/
-checkTimeScaleMode( rangeDate ) {
-    if ( rangeDate >= 1000 * 60* 60 * 24 * 365 ) {
-        return '1y';
-    } else if ( rangeDate >= 1000 * 60 * 60 * 24 * 365 ) {
-        return '6M';
-    } else if ( rangeDate >= 1000 * 60 * 60 * 24 * 182.5 ) {
-        return '3M';
-    } else if ( rangeDate >= 1000 * 60 * 60 * 24 * 91.2501 ) {
-        return '1M';
-    } else if ( rangeDate >= 1000 * 60 * 60 * 24 * 7 ) {
-        return '1w';
-    } else if ( rangeDate >= 1000 * 60 * 60 * 24 * 3 ) {
-        return '1d';
-    } else if ( rangeDate >= 1000 * 60 * 60 * 6 ) {
-        return '1H';
-    } else if ( rangeDate >= 1000 * 60 * 3 ) {
-        return '1m';
-    } else {
-        return '1s';
-    }
-}
-/*
-##################################################
-    間隔線を描画する
-##################################################
-*/
-setLine() {
-    const er = this;
-
-    const ctx = er.chartContext.line;
-    er.clear( ctx );
-
-    const lineSpacingWidth = er.lineSpacing * er.vRate;
-    if ( lineSpacingWidth < 8 ) return;
-
-    const length = Math.floor( er.h / er.lineSpacing ) + 1;
-
-    ctx.beginPath();
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = er.getBorderColor();
-    ctx.setLineDash([]);
-    for ( let i = 0; i <= length; i++ ) {
-        const y = ( i * lineSpacingWidth ) - er.vPosition;
-        er.line( ctx, 0, y , er.w, y );
-    }
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = er.getBorderColor();
-    ctx.setLineDash([4,4]);
-    for ( let i = 0; i <= length; i++ ) {
-        const y = ( ( i * er.lineSpacing ) - ( er.lineSpacing / 2 ) ) * er.vRate - er.vPosition;
-        er.line( ctx, 0, y , er.w, y );
-    }
-    ctx.stroke();
-}
-/*
-##################################################
-    イベントブロックを描画する
-##################################################
-*/
-setEventBlock() {
-    const er = this;
-
-    const ico = er.chartContext.incident;
-    er.clear( ico );
-
-    const fontSize = er.lineSpacing * er.vRate * .5;
-    ico.textAlign = 'center';
-    ico.textBaseline = 'middle';
-    ico.font = fontSize + 'px exastro-ui-icons';
-
-    const ttl = er.chartContext.block;
-    er.clear( ttl );
-    ttl.lineWidth = 2;
-
-    for ( const event of er.canvasData ) {
-        const
-        x1 = er.round( event.x1 * er.hRate - er.hPosition ),
-        y = er.getFloorPositonY( event.floor );
-
-        // TTL 線
-        if ( event.type === 'event') {
-            const
-            x2 = er.round( event.x2 * er.hRate - er.hPosition ),
-            h = er.round( ( er.lineSpacing * er.vRate ) - ( er.lineSpacing * er.vRate * .4 ) );
-
-            ttl.beginPath();
-
-            ttl.strokeStyle = er.getPatternColor(event.pattern);
-
-            er.line( ttl, x1, y, x2, y ); // 横線
-            er.line( ttl, x1, y - h / 2, x1, y + h / 2 ); // 開始縦線
-            er.line( ttl, x2, y - h / 2, x2, y + h / 2 ); // 終了縦線
-            ttl.stroke();
-        }
-
-        const blockHeight = er.round( er.lineSpacing * er.vRate * .7 );
-        event.block = {
-            x: er.round( x1 - blockHeight / 2 ),
-            y: er.round( y - blockHeight / 2 ),
-            w: blockHeight,
-            h: blockHeight,
-            centerX: x1,
-            centerY: y
-        };
-        er.eventBlock( ico, event );
-    }
-}
-/*
-##################################################
-    ブロックを描画する
-##################################################
-*/
-eventBlock( ctx, e, opacity = 1 ) {
-    const er = this;
-
-    const r = e.block.h *.1;
-    if ( e.pattern !== 'rule') {
-        if (
-            e.pattern !== 'conclusion'
-            && e.item
-            && e.item.exastro_filter_group
-            && e.item.exastro_filter_group.is_first_event === true
-            && er.groupingList[ e.item.exastro_filter_group.group_id ]
-        ) {
-            // グルーピングブロック
-            const blockHeight = er.round( er.lineSpacing * er.vRate * .7 );
-            const x = er.round( er.groupingList[ e.item.exastro_filter_group.group_id ].endX * er.hRate - er.hPosition );
-            const block = {
-                x: e.block.x,
-                y: e.block.y,
-                w: x - e.block.x + blockHeight / 2,
-                h: e.block.h,
-                centerX: e.block.centerX,
-                centerY: e.block.centerY,
-            };
-            er.roundRect( ctx, block, r, er.getPatternColor( e.pattern, .4 ) );
-
-            // 各位置に丸を描画
-            const arcHeight = er.round( er.lineSpacing * er.vRate * .06 );
-            for ( const gX of er.groupingList[ e.item.exastro_filter_group.group_id ].x ) {
-                const setX = er.round( gX * er.hRate - er.hPosition );
-                ctx.beginPath();
-                er.arc( ctx, arcHeight, setX, e.block.centerY, er.getPatternColor( e.pattern, .8 ) );
-                ctx.closePath();
-                ctx.fill();
-            }
-
-            // 基本ブロック
-            er.roundRect( ctx, e.block, r, er.getPatternColor( e.pattern, opacity ) );
-        } else {
-            // 基本ブロック
-            er.roundRect( ctx, e.block, r, er.getPatternColor( e.pattern, opacity ) );
-        }
-    } else {
-        er.roundRect( ctx, e.block, r, er.getPatternColor( e.pattern, opacity ), null, null, true );
-    }
-
-    ctx.fillStyle = "#FFF";
-    ctx.fillText( er.getPatternIcon( e.pattern ), e.block.centerX, e.block.centerY );
-}
-/*
-##################################################
-    パターンアイコン
-##################################################
-*/
-getPatternIcon( pattern ) {
-    const er = this;
-
-    const
-    iconInt = parseInt( er.patternIcon[pattern], 16 ),
-    iconStr = String.fromCharCode( iconInt );
-
-    return iconStr;
-}
-/*
-##################################################
-    イベントの繋がりを描画する
-##################################################
-*/
-setEventLink( targetBlock ) {
-    if ( !targetBlock && !targetBlock.item ) return;
-
-    const er = this;
-
-    const groupData = (function(){
-        if ( targetBlock.group ) {
-            if ( er.groupList.groupData[ targetBlock.group ] ) {
-                return er.groupList.groupData[ targetBlock.group ];
-            } else {
-                return [];
-            }
-        } else {
-            const e = er.groupList.singleData.find(function(event){
-                return event.id === targetBlock.id;
-            });
-            if ( e !== undefined ) {
-                return [ e ]
-            } else {
-                return [];
-            }
-        }
-    }());
-
-    // 最新のデータに
-    const eventData = groupData.find(function( item ){
-        return item.id === targetBlock.id;
-    });
-    if ( !eventData ) return;
-
-    const ctx = er.chartContext.link;
-
-    // 線を描画する
-    const doneList = [];
-    const backLineColor = ( er.colorMode === 'darkmode')? '#111': '#FFF';
-    const lineColor = ( er.colorMode === 'darkmode')? '#577397': '#005BAC';
-    const lineColor2 = ( er.colorMode === 'darkmode')? '#99AAC0': '#577397';
-    const setLine = function( width, color, x1, y1 , x2, y2 ){
-        const lX = ( x1 < x2 )? x1: x2;
-        const lY = ( y1 > y2 )? y1: y2;
-        ctx.beginPath();
-        ctx.moveTo( x1, y1 );
-        ctx.lineTo( lX, lY );
-        ctx.lineTo( x2, y2 );
-        ctx.lineWidth = width;
-        ctx.strokeStyle = color;
-        ctx.stroke();
-        ctx.closePath();
-    };
-    const linkLine = function( x, y, targetId ){
-        if ( doneList.indexOf( targetId ) !== -1 ) return;
-        doneList.push( targetId );
-        const event  = groupData.find(function( e ){
-            return e.id === targetId;
-        });
-
-        if ( event && event.block ) {
-            setLine( 6, backLineColor, x, y, event.block.centerX, event.block.centerY );
-            setLine( 2, lineColor, x, y, event.block.centerX, event.block.centerY );
-
-            targetLink( event );
-        }
-    };
-    const targetLink = function( event ){
-        if ( event.before ) {
-            for ( const id of event.before ) {
-                linkLine( event.block.centerX, event.block.centerY, id );
-            }
-        }
-        if ( event.after ) {
-            for ( const id of event.after ) {
-                linkLine( event.block.centerX, event.block.centerY, id );
-            }
-        }
-    };
-    targetLink( eventData );
-
-    // 枠を描画する
-    for ( const e of groupData ) {
-        if ( e.block ) {
-            const ruleFlag = ( e.type === 'rule');
-            er.roundRect( ctx, e.block, e.block.h * .1, backLineColor, null, null, ruleFlag, true );
-
-
-            const hover = ( er.currentBlock && e.id === er.currentBlock.id )? ( er.colorMode !== 'darkmode')? 'rgba(255,255,255,.5)': 'rgba(0,0,0,.3)' : null;
-            if ( er.clickBlock && e.id === er.clickBlock.id ) {
-                er.roundRect( ctx, e.block, e.block.h * .1, null, backLineColor, 8, ruleFlag );
-                er.roundRect( ctx, e.block, e.block.h * .1, hover, lineColor, 4, ruleFlag );
-                er.roundRect( ctx, e.block, e.block.h * .1, hover, lineColor2, 2, ruleFlag );
-            } else {
-                er.roundRect( ctx, e.block, e.block.h * .1, null, backLineColor, 6, ruleFlag );
-                er.roundRect( ctx, e.block, e.block.h * .1, hover, lineColor, 2, ruleFlag );
-            }
-        }
-    }
-}
-clearEventLink() {
-    const er = this;
-
-    const ctx = er.chartContext.link;
-    er.clear( ctx )
-};
-/*
-##################################################
-    クリア
-##################################################
-*/
-clear( ctx ) {
-    ctx.clearRect( 0, 0, this.w, this.h );
-}
-/*
-##################################################
-    四角形
-##################################################
-*/
-rect( ctx, position, color ) {
-    ctx.fillStyle = color;
-    ctx.fillRect( position.x, position.y, position.w, position.h );
-}
-/*
-##################################################
-    四角形（角丸）
-##################################################
-*/
-roundRect( ctx, p, r, fill = null, stroke = null, lineWidth = 1, rotateFlag = false, clearFlag = false ) {
-    ctx.beginPath();
-
-    // 図形部分を消去する
-    if ( clearFlag ) ctx.globalCompositeOperation = 'destination-out';
-
-    // 菱形にする（45度回転）
-    let rotate = {};
-    if ( rotateFlag ) {
-        ctx.save();
-        ctx.translate( p.x + p.w / 2, p.y + p.h / 2 );
-        ctx.rotate( ( Math.PI / 180 ) * 45 );
-        ctx.scale( .85, .85);
-        ctx.translate( - ( p.x + p.w / 2 ), - ( p.y + p.h / 2 ) );
-    }
-
-    // 角丸四角形
-    ctx.moveTo( p.x + r, p.y );
-    ctx.lineTo( p.x + p.w - r, p.y );
-    ctx.arc( p.x + p.w - r, p.y + r, r, Math.PI * ( 3 / 2 ), 0, false );
-    ctx.lineTo( p.x + p.w, p.y + p.h - r );
-    ctx.arc( p.x + p.w - r, p.y + p.h - r, r, 0, Math.PI * ( 1 / 2 ), false );
-    ctx.lineTo( p.x + r, p.y + p.h );
-    ctx.arc( p.x + r, p.y + p.h - r, r, Math.PI * ( 1 / 2 ), Math.PI, false );
-    ctx.lineTo( p.x, p.y + r );
-    ctx.arc( p.x + r, p.y + r, r, Math.PI, Math.PI * ( 3 / 2 ), false );
-
-    // 塗り
-    if ( fill ) {
-        ctx.fillStyle = fill;
-        ctx.fill();
-    }
-
-    // 線
-    if ( stroke ) {
-        ctx.lineWidth = lineWidth;
-        ctx.strokeStyle = stroke;
-        ctx.stroke();
-    }
-
-    // 回転を戻す
-    if ( rotateFlag ) {
-        ctx.restore();
-    }
-
-    // 合成方法をデフォルトに戻す
-    if ( clearFlag ) ctx.globalCompositeOperation = 'source-over';
-
-    ctx.closePath();
-}
-/*
-##################################################
-    四角形クリア
-##################################################
-*/
-clearRect( ctx, position ) {
-    ctx.clearRect( position.x, position.y, position.w, position.h );
-}
-/*
-##################################################
-    線
-##################################################
-*/
-line( ctx, x1, y1, x2, y2 ) {
-    const er = this;
-
-    // 範囲外は描画しない
-    if (( x1 >= er.w && x2 >= er.w ) || ( x1 <= 0 && x2 <= 0 )) return;
-    if (( y1 >= er.h && y2 >= er.h ) || ( y1 <= 0 && y2 <= 0 )) return;
-
-    // 1px線の描画がボケるため、位置を調整する
-    ctx.moveTo( x1 + .5, y1 + .5 );
-    ctx.lineTo( x2 + .5, y2 + .5 );
-}
-/*
-##################################################
-    円
-##################################################
-*/
-arc( ctx, size, x, y, color ) {
-    ctx.fillStyle = color;
-    ctx.arc( x, y, size, 0, 360 * Math.PI / 180, false );
-}
-////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//  パーツ管理
-//
-////////////////////////////////////////////////////////////////////////////////////////////////////
-/*
-##################################################
-    各種読み込み開始
-##################################################
-*/
-setupParts() {
-    const er = this;
-
-    er.fetchParts('filter');
-    er.fetchParts('action');
-    er.fetchParts('rule');
-    er.fetchSettings('eventCollectionSettings');
-    er.fetchSettings('filterSettings');
-}
-/*
-##################################################
-    各種読み込み
-##################################################
-*/
-fetchParts( type ) {
-    const er = this;
-
-    const partsData = er.getPartsData( type );
-
-    fn.fetch( partsData.info ).then(function( info ){
-        const params = fn.getCommonParams();
-        params.menuNameRest = partsData.rest
-        er[ partsData.id ] = { info: info };
-
-        const option = {
-            parts: partsData
-        };
-
-        er[ partsData.id ].table = new DataTable( partsData.id, 'view', er[ partsData.id ].info, params, option );
-
-        // ソートセット
-        er[ partsData.id ].table.sort = [{ ASC: partsData.partsRestName }];
-
-        er.$.parts.find( partsData.target ).html( er[ partsData.id ].table.setup() );
-
-        // Filter及びRule場合ラベルデータを渡す
-        if ( type === 'filter' || type === 'rule') {
-            er[ partsData.id ].table.label = er.label;
-        }
-
-        // モードチェンジ
-        er[ partsData.id ].table.$.container.on({
-            'changePartsEditMode': function( e, type ){
-                er.$.target.addClass( type + 'EventFlowEditMode');
-                if ( type === 'rule') {
-                    er.ruleEditEventOn();
-                }
-                if ( type === 'rule' ||  type === 'filter') {
-                    er.labelSetEventOn( type );
-                }
+    // 目盛り Date canvas
+    this.dateCanvas = this.$.body.find('.eventFlowDateCanvas').get(0);
+
+    // ワーカー初期化
+    this.createWebWorker();
+
+    // フォントデータをArrayBufferとして転送
+    const fontResponse = await fetch('/_/ita/fonts/exastro-ui-icons.woff');
+    const fontBuffer = await fontResponse.arrayBuffer();
+
+    await new Promise(( resolve, reject ) => {
+        this.worker.resolve = resolve;
+        this.worker.reject = reject;
+
+        // 履歴取得API
+        const historyUrl = fn.getRestApiUrl('/oase/event_flow/history/');
+        const url = new URL( historyUrl, location.href ).href;
+
+        // Canvas要素の描画コントロールをOffscreenCanvasに委譲する
+        const line = this.chartCanvas.line.transferControlToOffscreen();
+        const block = this.chartCanvas.block.transferControlToOffscreen();
+        const incident = this.chartCanvas.incident.transferControlToOffscreen();
+        const link = this.chartCanvas.link.transferControlToOffscreen();
+        const date = this.dateCanvas.transferControlToOffscreen();
+
+        this.worker.postMessage(
+            {
+                type: 'init',
+                line: line,
+                block: block,
+                incident: incident,
+                link: link,
+                date: date,
+                url: url,
+                fontBuffer: fontBuffer,
+                debug: this.debug
             },
-            'changePartsViewMode': function( e, type ){
-                er.$.target.removeClass( type + 'EventFlowEditMode');
-                if ( type === 'rule') {
-                    er.ruleEditEventOff();
-                }
-                if ( type === 'rule' ||  type === 'filter') {
-                    er.labelSetEventOff( type );
-                }
-            }
-        });
-
-    }).catch(function( error ){
-        if ( error.message ) {
-            const message = `<div class="eventFlowPartsNoDate"><div class="eventFlowPartsNoDateInner">${error.message}</div></div>`;
-            er.$.parts.find( partsData.target ).html( message );
-        }
+            [ line, block, incident, link, date, fontBuffer ]
+        );
     });
-}
 
-// ID変換用にイベント収集設定・フィルター設定を取得
-fetchSettings( type ) {
-    const er = this;
-    const settingsData = er.getSettingsData( type );
-    fn.fetch( settingsData.info, null, 'POST', settingsData.data ).then(function( data ){
-        er[ type ] = data;
-
-    }).catch(function( error ){
-        er[ type ] = { error }
-    });
+    this.workerPollingStart('init');
+    this.$.eventFrow.removeClass('tableLoading');
 }
-/*
-##################################################
-    パーツデータ
-##################################################
-*/
-getPartsData( type ) {
-    switch ( type ) {
-        case 'filter':
-            return {
-                name: 'Filter',
-                className: 'Filter',
-                id: 'filter',
-                rest: 'filter',
-                info: '/menu/filter/info/',
-                target: '.eventFlowPartsBlockFilter',
-                partsRestId: 'filter_id',
-                partsRestName: 'filter_name'
-            };
-        case 'action':
-            return {
-                name: 'Action',
-                className: 'Action',
-                id: 'action',
-                rest: 'action',
-                info: '/menu/action/info/',
-                target: '.eventFlowPartsBlockAction',
-                partsRestId: 'action_id',
-                partsRestName: 'action_name'
-            };
-        case 'rule':
-            return {
-                name: 'Rule',
-                className: 'Rule',
-                id: 'rule',
-                rest: 'rule',
-                info: '/menu/rule/info/',
-                target: '.eventFlowPartsBlockRule',
-                partsRestId: 'rule_id',
-                partsRestName: 'rule_name'
-            };
-    }
-}
-
-// イベント収集設定・フィルター設定取得用パラメータ
-getSettingsData(type) {
-    switch ( type ) {
-        case 'eventCollectionSettings':
-            return {
-                info: '/menu/event_collection/filter/',
-                data: {
-                    discard: { NORMAL: '0'}
-                }
-            };
-        case 'filterSettings':
-            return {
-                info: '/menu/filter/filter/',
-                data: {
-                    discard: { NORMAL: '0'}
-                }
-            };
-    }
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //  Events
@@ -1749,6 +900,7 @@ setEvents() {
 
     er.setMenuButtonEvent();
     er.setTabEvent();
+    er.modeChangeEvent();
 }
 /*
 ##################################################
@@ -1765,22 +917,13 @@ canvasSizeResizeObserver() {
         if ( er.observeInit === false ) {
             clearTimeout( timer );
             timer = setTimeout( function() {
-                er.resetCanvas();
+                er.workerRangeChange();
             }, 500 );
         }
         er.observeInit = false;
     });
 
     observer.observe( er.$.chart.get(0) );
-}
-/*
-##################################################
-    判定
-##################################################
-*/
-blockEnterCheck( block, pointer ) {
-    if ( !block ) return;
-    return ( ( block.x <= pointer.x && block.x + block.w >= pointer.x ) && ( block.y <= pointer.y && block.y + block.h >= pointer.y ) );
 }
 /*
 ##################################################
@@ -1824,43 +967,76 @@ setChartEvents() {
 
     er.currentBlock = null;
 
-    const
-    $window = $( window ),
-    $rangeDate = er.$.header.find('.eventFlowChartRangeItem'),
-    $hRange = er.$.hScroll.find('.eventFlowRange');
+    const $window = $( window );
+    const $rangeDate = er.$.header.find('.eventFlowChartRangeItem');
+    const $vRange = er.$.vScroll.find('.eventFlowRange');
+    const $hRange = er.$.hScroll.find('.eventFlowRange');
 
     // leave
-    const blockLeave = function() {
-        // 最新のデータに更新
-        er.currentBlock = er.canvasData.find(function(item){
-            return item.id === er.currentBlock.id;
-        });
+    const blockLeave = async function() {
         if ( er.currentBlock ) {
             er.$.chart.css('cursor', 'default');
         }
         er.currentBlock = null;
 
         // 繋がり線
-        er.clearEventLink();
-        if ( er.clickBlock ) er.setEventLink( er.clickBlock );
+        await er.workerPost('updateEventLink', null, true );
     };
 
     // 範囲指定モードフラグ
     let dateRangeSelectMode = false;
 
-    er.$.chart.on({
-        'wheel': function( e ) {
-            e.preventDefault();
+    // 図の上に乗っているか
+    let chartEnterFlag = false;
 
-            const
-            chart = $( this ).get(0),
-            x = e.pageX - chart.getBoundingClientRect().left;
+    // ホイールで拡大・縮小
+    const rafWheelEvent =  er.rafThrottle( async function( e ) {
+        e.preventDefault();
 
-            // 位置割合
-            const positionRate = ( x + er.hPosition ) / ( er.w * er.hRate );
+        // 集約モードの場合は停止
+        if ( er.flag.aggregate ) return;
 
-            // ホイール向き
-            const delta = e.originalEvent.deltaY ? - ( e.originalEvent.deltaY ) : e.originalEvent.wheelDelta ? e.originalEvent.wheelDelta : - ( e.originalEvent.detail );
+        const chart = $( this ).get(0);
+        const delta = e.originalEvent.deltaY ?
+            - ( e.originalEvent.deltaY ):
+                e.originalEvent.wheelDelta?
+                    e.originalEvent.wheelDelta:
+                    - ( e.originalEvent.detail ); // ホイール向き
+
+        if ( e.shiftKey ){
+            const y = e.pageY - chart.getBoundingClientRect().top; // y
+            const positionRate = ( y + er.vPosition ) / ( er.h * er.vRate ); // 位置割合
+
+            // 拡大縮小
+            const rateNumber = Math.floor( er.vRate * 0.2 * 10 ) / 10;
+            if ( delta < 0 ) {
+                er.vRate -= rateNumber;
+            } else {
+                er.vRate += rateNumber;
+            }
+            if ( er.vRate <= 1 ) er.vRate = 1;
+            if ( er.vRate >= er.maxRate ) er.vRate = er.maxRate;
+
+            // 拡縮後サイズ
+            const afterHeight = er.h * er.vRate;
+
+            // 拡縮後の位置
+            const position = afterHeight - ( afterHeight * positionRate );
+            er.vPosition = afterHeight - position - y;
+
+            // はみ出る場合の調整
+            if ( er.vPosition < 0 ) er.vPosition = 0;
+            if ( afterHeight - er.vPosition < er.h ) er.vPosition = afterHeight - er.h;
+
+            // スクロールバーサイズ
+            $vRange.css({
+                height: ( 100 / er.vRate ) + '%',
+                top: ( er.vPosition / ( er.h * er.vRate ) * 100 ) + '%'
+            });
+            
+        } else {
+            const x = e.pageX - chart.getBoundingClientRect().left; // X
+            const positionRate = ( x + er.hPosition ) / ( er.w * er.hRate ); // 位置割合
 
             // 拡大縮小
             const rateNumber = Math.floor( er.hRate * 0.2 * 10 ) / 10;
@@ -1876,35 +1052,81 @@ setChartEvents() {
             const afterWidth = er.w * er.hRate;
 
             // 拡縮後の位置
-            const right = afterWidth - ( afterWidth * positionRate );
-            er.hPosition = afterWidth - right - x;
+            const position = afterWidth - ( afterWidth * positionRate );
+            er.hPosition = afterWidth - position - x;
 
             // はみ出る場合の調整
             if ( er.hPosition < 0 ) er.hPosition = 0;
             if ( afterWidth - er.hPosition < er.w ) er.hPosition = afterWidth - er.w;
 
-            // Canvas更新
-            er.setTimeScale();
-            er.setEventBlock();
-
-            er.clearEventLink();
-            if ( er.clickBlock ) er.setEventLink( er.clickBlock );
-
             // スクロールバーサイズ
             $hRange.css({
                 width: ( 100 / er.hRate ) + '%',
                 left: ( er.hPosition / ( er.w * er.hRate ) * 100 ) + '%'
-            })
-        },
+            });
+        }
+
+        // Canvas更新
+        await er.workerPost('positionChange', null, true );
+    } );
+
+    // ポインタームーブ
+    const rafPointerMoveEvent = er.rafThrottle( async function( e ) {
+        const
+        chart = $( this ).get(0),
+        x = e.pageX - chart.getBoundingClientRect().left,
+        y = e.pageY - chart.getBoundingClientRect().top;
+
+        if ( chartEnterFlag === false ) {
+            er.$.positionBorder.css('display', 'block');
+            er.$.positionDate.css('display', 'block');
+            chartEnterFlag = true;
+        }
+
+        if ( !dateRangeSelectMode ) {
+            // ポインター位置Xバー
+            er.$.positionBorder.css({
+                transform: `translateX(${x-1}px)`
+            });
+
+            er.viewCurrentInfo( x, e.pageX, e.pageY );
+
+            // 集約モードの場合は停止
+            if ( er.flag.aggregate ) return;
+
+            const position = {
+                x: x,
+                y: y,
+                current: er.currentBlock
+            };
+
+            // Block leave
+            if ( er.currentBlock ) {
+                const enterFlag = await er.workerPost('currentEnter', position, true );
+                if ( !enterFlag ) blockLeave();
+            }
+
+            const enterEvent = await er.workerPost('blockEnter', position, true );
+            if ( enterEvent.currentBlock !== null ) {
+                er.$.chart.css('cursor', 'pointer');
+                er.currentBlock = enterEvent.currentBlock;
+                if ( enterEvent.grouping ) er.currentGrouping = enterEvent.grouping;
+
+                await er.workerPost('updateEventLink', null, true );
+            }
+        } else {
+            // Block leave
+            if ( er.currentBlock ) blockLeave();
+        }
+    });
+
+    er.$.chart.on({
+        'wheel': rafWheelEvent,
         'pointerdown': function( e ) {
             const
             chart = $( this ).get(0),
             x = e.pageX - chart.getBoundingClientRect().left;
-
             fn.deselection();
-
-            // 自動更新ストップ
-            er.stopAutoUpdate();
 
             let pX, pW;
             $window.on({
@@ -1938,7 +1160,7 @@ setChartEvents() {
                         let start = er.getPositionDate( pX );
 
                         // 範囲が1秒未満の場合は１秒にする
-                        const diff = ( er.end.getTime() - er.start.getTime() ) / 1000;
+                        const diff = ( er.end - er.start ) / 1000;
                         if ( diff <= 1 ) start = new Date( end.getTime() - 1000 );
 
                         const
@@ -1946,36 +1168,37 @@ setChartEvents() {
                         endText = fn.date( end, 'yyyy/MM/dd HH:mm:ss');
                         $rangeDate.show().find('.eventFlowChartRangeDate').text(`${startText} to ${endText}`);
 
-                        er.changeDateReset( start, end, true );
+                        er.changeDateReset( start.getTime(), end.getTime(), true );
                         er.flag.rangeSelect = true;
-                    }
-
-                    if ( er.checkAutoUpdate ) {
-                        // 自動更新再開
-                        er.resumeAutoUpdate();
                     }
                 }
             });
         },
-        'pointerup': function( e ) {
+        'pointerup': async function( e ) {
             const
             chart = $( this ).get(0),
             x = e.pageX - chart.getBoundingClientRect().left;
-            er.clearEventLink();
 
             // イベント詳細情報表示
             if ( !dateRangeSelectMode && er.currentBlock ) {
-                er.viewEventInfo( x );
                 er.clickBlock = er.currentBlock;
-                er.setEventLink( er.clickBlock );
-            } else {
-                er.hideEventInfo( x );
-                if ( !dateRangeSelectMode ) er.clickBlock = null;
+                er.clickGrouping = er.currentGrouping;
+                er.viewEventInfo( x );
+            } else if ( !dateRangeSelectMode ) {
+                er.clickBlock = null;
+                er.clickGrouping = null;
+                er.hideEventInfo();
             }
+
+            // 集約モードの場合は停止
+            if ( er.flag.aggregate ) return;
+
+            await er.workerPost('updateEventLink', null, true );
         },
         'pointerenter': function() {
             er.$.positionBorder.css('display', 'block');
             er.$.positionDate.css('display', 'block');
+            chartEnterFlag = true;
         },
         'pointerleave': function() {
             if ( !dateRangeSelectMode ) {
@@ -1988,45 +1211,7 @@ setChartEvents() {
                 blockLeave();
             }
         },
-        'pointermove': function( e ) {
-            const
-            chart = $( this ).get(0),
-            x = e.pageX - chart.getBoundingClientRect().left,
-            y = e.pageY - chart.getBoundingClientRect().top;
-
-            if ( !dateRangeSelectMode ) {
-                // ポインター位置Xバー
-                er.$.positionBorder.css({
-                    transform: `translateX(${x-1}px)`
-                });
-
-                er.viewCurrentInfo( x, e.pageX, e.pageY );
-
-                const pointerPosition = {
-                    x: x,
-                    y: y
-                };
-
-                // Block leave
-                if ( er.currentBlock && !er.blockEnterCheck( er.currentBlock, pointerPosition ) ) {
-                    blockLeave();
-                }
-
-                // Block enter
-                for ( const e of er.canvasData ) {
-                    if ( er.blockEnterCheck( e.block, pointerPosition ) ) {
-                        er.currentBlock = e;
-                        er.$.chart.css('cursor', 'pointer');
-
-                        er.setEventLink( er.currentBlock );
-                        break;
-                    }
-                }
-            } else {
-                // Block leave
-                if ( er.currentBlock ) blockLeave();
-            }
-        }
+        'pointermove': rafPointerMoveEvent            
     });
 
     const
@@ -2037,7 +1222,7 @@ setChartEvents() {
     $rangeDate.find('.eventFlowChartRangeClear').on('click', function(){
         const date = er.$.header.find('.eventFlowDateRangeRadio').filter(':checked').val();
         $rangeDate.hide().find('.eventFlowChartRangeDate').text('');
-        er.updateDataRange( date, true );
+        er.clearDataRange( date, true );
         er.flag.rangeSelect = false;
     });
 
@@ -2046,14 +1231,731 @@ setChartEvents() {
         const $input = $( this );
         $dateRangeButton.text( $input.next('.radioTextLabel').text() );
 
-        er.stopAutoUpdate();
-        er.updateCanvas();
+        er.workerPollingStart('rangeChange');
 
         // リストが開いていたら閉じる
         if ( $dateRangeButton.is('.open') ) {
             $dateRangeButton.click();
         }
     });
+}
+/*
+##################################################
+    Header select button
+##################################################
+*/
+setSelectButtonToggleEvent() {
+    const er = this;
+
+    er.$.header.find('.eventFlowSelectButton').on('click', function(){
+        const
+        $window = $( window ),
+        $button = $( this ),
+        $wrap = $button.closest('.eventFlowSelectWrap'),
+        $block = $button.next('.eventFlowOpenBlock');
+
+        $button.toggleClass('open');
+        $block.toggle();
+
+        if ( $button.is('.open') ) {
+            $window.on('pointerdown.eventFlowSelect', function( e ){
+                if ( !$( e.target ).closest( $wrap ).length ) {
+                    $window.off('pointerdown.eventFlowSelect');
+                    $button.removeClass('open');
+                    $block.hide();
+                }
+            });
+
+            // 画面内に収まるように高さを調整
+            $block.css('height', 'auto'); // サイズリセット
+
+            const
+            margin = 8,
+            y = $block.get(0).getBoundingClientRect().top,
+            h = $block.outerHeight() + margin,
+            wH = window.innerHeight;
+
+            if ( y + h > wH ) {
+                let height = wH - y - margin;
+                if ( height < 160 ) height = 160;
+                $block.outerHeight( height );
+            }
+        } else {
+            $window.off('pointerdown.eventFlowSelect');
+            if ( $button.is('.eventFlowIntervalSelectButton') ) {
+                er.workerPollingStart('interval');
+            }
+        }
+    });
+}
+/*
+##################################################
+    パターン選択
+##################################################
+*/
+setPatternSelectEvent() {
+    const er = this;
+
+    const $patternCheckbox = er.$.header.find('.eventFlowPatternSelectCheckbox');
+
+    $patternCheckbox.on('change', function(){
+        $patternCheckbox.each(function(){
+            const
+            $check = $( this ),
+            value = $check.val(),
+            flag = $check.prop('checked');
+
+            er.displayFlag[ value ] = flag;
+        });
+        er.workerRangeChange();
+    });
+}
+/*
+##################################################
+    更新間隔選択
+##################################################
+*/
+setUpdateIntervalEvent() {
+    const er = this;
+
+    const
+    $button = er.$.header.find('.eventFlowIntervalSelectButton'),
+    $Num = er.$.header.find('.eventFlowIntervalSelectNumber'),
+    $radio = er.$.header.find('.eventFlowIntervalSelectRadio');
+
+    $radio.on('change', function(){
+        const val = Number( $( this ).val() );
+        er.intervalTime = er.resumeDate = val;
+
+        fn.storage.set('eventflow_interval_time', val, 'local', false );
+
+        const text = ( val !== 0 )? getMessage.FTE13028( val / 1000 ): getMessage.FTE13027;
+        $Num.text( text );
+        $button.click();
+    });
+}
+/*
+##################################################
+    Menu button
+##################################################
+*/
+setMenuButtonEvent() {
+    const er = this;
+    er.$.header.find('.operationMenuButton').on('click', function(){
+        const
+        $button = $( this ),
+        type = $button.attr('data-type');
+
+        switch ( type ) {
+            case 'timeRange':
+                er.selectDateRange();
+                break;
+        }
+    });
+}
+/*
+##################################################
+    日時指定
+##################################################
+*/
+selectDateRange() {
+    const er = this;
+
+    const checkedValue = er.$.header.find('.eventFlowDateRangeRadio:checked').val();
+
+    const date = { from: '', to: ''};
+    if ( checkedValue && checkedValue.match(/ to /) ) {
+        const fromto = checkedValue.split(' to ');
+        date.from = fromto[0];
+        date.to = fromto[1];
+    }
+
+    fn.datePickerDialog('fromTo', true, getMessage.FTE13014, date, true ).then(function( date ){
+        if ( date !== 'cancel') {
+            const value = `${date.from} to ${date.to}`;
+            er.addDateRadioList( value );
+        }
+    });
+}
+/*
+##################################################
+    範囲追加
+##################################################
+*/
+addDateRadioList( value ) {
+    const er = this;
+    const id = Date.now()
+    // リスト追加
+    const $list = er.$.header.find('.eventFlowDateRangeLog');
+    const $wrap = $list.closest('.eventFlowDateRangeLogWrap');
+
+    if ( $list.find(`[value="${value}"]`).length === 0 ) {
+        $list.prepend( er.addSelectRange( id, value, value ) );
+        if ( $wrap.is(':hidden') ) $wrap.addClass('setDate');
+    }
+
+    er.$.header.find('.eventFlowDateRangeRadio').val([ value ]).filter(`[value="${value}"]`).change();
+}
+/*
+##################################################
+    範囲設定
+##################################################
+*/
+setSelectDateRange() {
+    const er = this;
+
+    const value = $('.eventFlowChartRangeDate').text();
+    er.addDateRadioList( value );
+
+    er.$.header.find('.eventFlowChartRangeClear').click();
+}
+/*
+##################################################
+    Scroll bar event
+##################################################
+*/
+setScrollBarEvent() {
+    const er = this;
+
+    er.$.scroll.on('pointerdown.eventFlow', function( downEvent ){
+
+        // 選択を解除
+        getSelection().removeAllRanges();
+
+        // 集約モードの場合は停止
+        if ( er.flag.aggregate ) return;
+
+        const
+        $bar = $( this ),
+        $range = $bar.find('.eventFlowRange'),
+        $window = $( window );
+
+        const
+        barType = $bar.attr('data-type'),
+        partsType = downEvent.target.className;
+
+        const
+        barWidth = ( barType === 'vertical')? $bar.height(): $bar.width(),
+        rangeWidth = ( barType === 'vertical')? $range.height(): $range.width(),
+        rangePosition = ( barType === 'vertical')? $range.position().top: $range.position().left,
+        rangeMinWidth = Math.floor( barWidth / er.maxRate );
+
+        let
+        afterWidth = rangeWidth,
+        afterPosittion = rangePosition;
+
+        const widthCheck = function( width, max ) {
+            if ( max < width ) width = max;
+            if ( rangeMinWidth > width ) width = rangeMinWidth;
+            return width;
+        };
+
+        const positionCheck = function( position, max ) {
+            if ( position < 0 ) position = 0;
+            if ( position > max ) position = max;
+            return position;
+        };
+
+        const updateCanvasPosition = async function() {
+            if ( barType === 'vertical') {
+                er.vRate = Math.round( 1 / ( afterWidth / barWidth ) * 100 ) / 100;
+                er.vPosition = Math.round( er.h * ( afterPosittion / barWidth ) * er.vRate * 100 ) / 100;
+            } else {
+                er.hRate = Math.round( 1 / ( afterWidth / barWidth ) * 100 ) / 100;
+                er.hPosition = Math.round( er.w * ( afterPosittion / barWidth ) * er.hRate * 100 ) / 100;
+            }
+
+            await er.workerPost('positionChange', null, true );
+
+            er.$.chart.click();
+
+            if ( er.clickBlock ) {
+                await er.workerPost('updateEventLink', null, true );
+            }
+        };
+
+        const moveEvent = function( moveEvent ){
+            // 移動距離
+            const move = ( barType === 'vertical')? moveEvent.pageY - downEvent.pageY: moveEvent.pageX - downEvent.pageX;
+
+            if ( partsType === 'eventFlowRangeStart') {
+                // 開始位置移動
+                afterWidth = widthCheck( rangeWidth - move, barWidth - ( barWidth - afterPosittion - afterWidth ) );
+                afterPosittion = positionCheck( rangePosition + move, barWidth - ( barWidth - rangeWidth - rangePosition + rangeMinWidth ) );
+
+                if ( barType === 'vertical') {
+                    $range.css({
+                        top: afterPosittion,
+                        height: afterWidth
+                    });
+                } else {
+                    $range.css({
+                        left: afterPosittion,
+                        width: afterWidth
+                    });
+                }
+            } else if ( partsType === 'eventFlowRangeEnd') {
+                // 終了位置移動
+                afterWidth = widthCheck( rangeWidth + move, barWidth - afterPosittion );
+
+                if ( barType === 'vertical') {
+                    $range.css({
+                        height: afterWidth
+                    });
+                } else {
+                    $range.css({
+                        width: afterWidth
+                    });
+                }
+            } else {
+                // 位置移動
+                afterPosittion = positionCheck( rangePosition + move, barWidth - afterWidth );
+
+                if ( barType === 'vertical') {
+                    $range.css({
+                        top: afterPosittion
+                    });
+                } else {
+                    $range.css({
+                        left: afterPosittion
+                    });
+                }
+            }
+
+            updateCanvasPosition();
+        };
+
+        // 間引き処理
+        const rafMoveEvent = er.rafThrottle( moveEvent );
+
+        $window.on({
+            'pointermove.eventFlow': rafMoveEvent,
+            'pointerup.eventFlow': function(){
+                $window.off('pointermove.eventFlow pointerup.eventFlow');
+
+                // 幅のサイズを割合に変更する
+                if ( barType === 'vertical') {
+                    $range.css({
+                       height: ( afterWidth / barWidth * 100 ) + '%',
+                       top: ( afterPosittion / barWidth * 100 ) + '%'
+                    });
+                } else {
+                    $range.css({
+                       width: ( afterWidth / barWidth * 100 ) + '%',
+                       left: ( afterPosittion / barWidth * 100 ) + '%'
+                    });
+                }
+            }
+        });
+    });
+}
+/*
+##################################################
+    モード切替
+##################################################
+*/
+modeChangeEvent() {
+    this.$.header.find('.toggleButton').off('click').on('click', async ( e ) => {
+        const $button = $( e.currentTarget );
+        $button.prop('disabled', true );
+
+        const mode = $button.attr('data-toggle');
+        if ( mode === 'on') {
+            this.flag.aggregate = false;
+            $button.attr('data-toggle', 'off');
+            this.$.eventFrow.removeClass('eventFlowAggregate_on');
+            this.$.eventFrow.addClass('eventFlowAggregate_off');
+        } else {
+            this.modeAggregateOn( $button );
+        }
+        await this.workerPost('modeChange', null, true );
+        
+        $button.prop('disabled', false );
+    });
+}
+modeAggregateOn( $button ) {
+    this.flag.aggregate = true;
+    $button.attr('data-toggle', 'on');
+    this.$.eventFrow.removeClass('eventFlowAggregate_off');
+    this.$.eventFrow.addClass('eventFlowAggregate_on');
+}
+/*
+##################################################
+    範囲変更
+##################################################
+*/
+changeDateReset( startDate, endDate, rangeFlag = false ) {
+    this.positionReset();
+
+    if ( rangeFlag ) {
+        this.start = startDate;
+        this.end = endDate;
+        this.period = this.end - this.start;
+        this.workerRangeChange();
+    } else {
+        this.workerPollingStart('rangeChange');
+    }
+}
+/*
+##################################################
+    範囲をクリア
+##################################################
+*/
+clearDataRange() {
+    this.positionReset();
+    this.workerRangeClear();
+}
+/*
+##################################################
+    ポジションリセット
+##################################################
+*/
+positionReset() {
+    this.hRate = 1;
+    this.hPosition = 0;
+    this.$.hScroll.find('.eventFlowRange').css({
+        width: '100%',
+        left: 0
+    });
+
+    this.vRate = 1;
+    this.vPosition = 0;
+    this.$.vScroll.find('.eventFlowRange').css({
+        height: '100%',
+        top: 0
+    });
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//  イベント情報表示
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
+##################################################
+    イベントの詳細情報を表示
+##################################################
+*/
+viewEventInfo( x ) {
+    const er = this;
+
+    const d = er.currentBlock;
+
+    const css = {display: 'flex'};
+
+    // 表示位置（左右）
+    if ( x / er.w > .5 ) {
+        css.left = 0;
+        css.right = 'auto';
+    } else {
+        css.right = 40;
+        css.left = 'auto';
+    }
+
+    er.$.info.css(css);
+
+    // クリックしたアクション、ルールと関連するパーツを表示する
+    er.$.parts.find('.eventFlowPartsShow').removeClass('eventFlowPartsShow').show();
+    if ( d.type === 'action' || d.type === 'rule') {
+        const className = ( d.type === 'action')? 'Action': 'Rule';
+        const id = ( d.type === 'action')? d.item.ACTION_ID: ( d.info )? d.info.id: '';
+        er.$.parts.find(`li.eventFlowParts${className}`).addClass('eventFlowPartsShow').show()
+            .not(`[data-id="${fn.escape(id)}"]`).hide();
+    }
+
+    const html = [];
+    html.push( er.eventInfoRowHtml('Type', d.type ) );
+
+    if ( d.type === 'action') {
+        html.push( er.eventInfoRowHtml('Datetime', d.datetime ) );
+        html.push( er.eventInfoRowHtml('ID', d.id ) );
+        html.push( er.eventInfoRowHtml('Action Name', fn.cv( d.item.ACTION_NAME, '')));
+        html.push( er.eventInfoRowHtml('Conductor', fn.cv( d.item.CONDUCTOR_INSTANCE_NAME, '')));
+        html.push( er.eventInfoRowHtml('Operation', fn.cv( d.item.OPERATION_NAME, '')));
+        html.push( er.eventInfoRowHtml('Rule ID', fn.cv( d.item.RULE_ID, '')));
+        html.push( er.eventInfoRowHtml('Rule Name', fn.cv( d.item.RULE_NAME, '')));
+    } else if ( d.type === 'rule') {
+        if ( d.info ) {
+            html.push( er.eventInfoRowHtml('Rule ID', d.info.id ) );
+            html.push( er.eventInfoRowHtml('Rule Name', d.info.name ) );
+        }
+    } else {
+        html.push( er.eventInfoRowHtml('Datetime', d.datetime ) );
+        html.push( er.eventInfoRowHtml('ID', d.id ) );
+        const pattern = er.patternList[ er.patternId[ er.currentBlock._pattern ] ];
+        html.push( er.eventInfoRowHtml('Pattern', fn.cv( pattern, '')));
+        if ( d.item.exastro_rules && d.item.exastro_rules[0] ) {
+            html.push( er.eventInfoRowHtml('Rule ID', fn.cv( d.item.exastro_rules[0].id, ''), '') );
+            html.push( er.eventInfoRowHtml('Rule name', fn.cv( d.item.exastro_rules[0].name, ''), '') );
+        }
+        // ラベル
+        html.push( er.eventInfoRowHtml('Labels', '', 'eventInfoTableLabelsBlank') );
+        html.push(`<tr class="eventInfoTableTr"><td class="eventInfoTableTd eventInfoTableLabels" colspan="2">${fn.html.labelListHtml( d.item.labels, er.label )}</td></tr>`);
+
+        // 重複排除（イベントにexastro_duplicate_checkが付与されている時のみ表示）
+        if ( d.item.exastro_duplicate_check ) {
+            let eventCollectionSettingsExchange
+            if (er['eventCollectionSettings'].error ) {
+                eventCollectionSettingsExchange = null
+            } else {
+                eventCollectionSettingsExchange = er.eventCollectionSettings.reduce((acc, cur) => {
+                    acc[cur.parameter.event_collection_settings_id] = cur.parameter.event_collection_settings_name;
+                    return acc;
+                }, {});
+            }
+            html.push( er.eventInfoRowHtml('Deduplication', '', 'eventInfoTableLabelsBlank'));
+            html.push(`<tr class="eventInfoTableTr"><td class="eventInfoTableTd eventInfoTableLabels" colspan="2">${fn.html.deduplicationListHtml( d.item.exastro_duplicate_check, eventCollectionSettingsExchange )}</td></tr>`);
+        }
+
+        // グループ（イベントにexastro_filter_groupが付与されている時のみ表示）
+        if ( d.item.exastro_filter_group ) {
+            const targetFilter = ( er.filterSettings.error ) ? null : er.filterSettings.find(data => data.parameter.filter_id === d.item.exastro_filter_group.filter_id );
+            const groupData = {
+                group_id: d.item.exastro_filter_group.group_id,
+                filter_name: (targetFilter) ? targetFilter.parameter.filter_name : d.item.exastro_filter_group.filter_id,
+                first_event: d.item.exastro_filter_group.is_first_event.toString()
+            };
+            // グルーピングされている場合は件数を表示する
+            const groupId = d.item.exastro_filter_group.group_id;
+            const count = ( er.clickGrouping && er.clickGrouping[ groupId ] )? `(${er.clickGrouping[ groupId ].count})`: '';
+            html.push( er.eventInfoRowHtml(`Group${count}`, '', 'eventInfoTableLabelsBlank'));
+            html.push(`<tr class="eventInfoTableTr"><td class="eventInfoTableTd eventInfoTableLabels" colspan="2">${fn.html.labelListHtml( groupData, null, true )}</td></tr>`);
+        }
+    }
+
+    const tableHtml = `<table class="eventInfoTable">${html.join('')}</table>`;
+
+    if ( d.type === 'action') {
+        er.$.info.html(`<div class="eventFlowEventInformationInner">${tableHtml}</div>`);
+    } else if ( d.type === 'event' && d.item.event ) {
+        const json = fn.jsonStringify( d.item.event, '\t');
+
+        // 行数から高さを決める
+        const
+        lineHeight = 17,
+        match = json.match(/\n/g),
+        height = ( match.length + 2 ) * lineHeight;
+
+        // HTML
+        const infoHtml = `<div class="eventInfoContainer">`
+            + `<div class="eventInfoTabBlocks">`
+                + `<div class="eventInfoTabBlock open"><table class="eventInfoTable">${html.join('')}</table></div>`
+                + `<div class="eventInfoTabBlock"><div id="eventInfoJson"></div></div>`
+            + `</div>`
+            + `<div class="eventInfoTabs">`
+                + `<ul class="eventInfoTabList">`
+                    + `<li class="eventInfoTabItem open">${getMessage.FTE13026}</li>`
+                    + `<li class="eventInfoTabItem">${getMessage.FTE13025}</li>`
+                + `</ul>`
+            + `</div>`
+        + `</div>`;
+        er.$.info.html( infoHtml );
+        er.$.info.find('#eventInfoJson').height( height );
+
+        // テーマ
+        const aceTheme = ( $('body').is('.darkmode') )? 'monokai': 'chrome';
+
+        // Ace editor
+        const aceEditor = ace.edit('eventInfoJson', {
+            theme: `ace/theme/${aceTheme}`,
+            mode: `ace/mode/json`,
+            displayIndentGuides: true,
+            fontSize: '14px',
+            minLines: 2,
+            showPrintMargin: false,
+            readOnly: true,
+            wrapBehavioursEnabled: false,
+            enableBasicAutocompletion: true,
+            enableLiveAutocompletion: true
+        });
+        er.$.info.find('.ace_scrollbar').addClass('commonScroll');
+
+        // 値をセット
+        aceEditor.session.setValue( json );
+    } else {
+        er.$.info.html(`<div class="eventFlowEventInformationInner">${tableHtml}</div>`);
+    }
+}
+/*
+##################################################
+    イベントの詳細情報を表示
+##################################################
+*/
+hideEventInfo() {
+    this.$.info.hide();
+    this.$.parts.find('.eventFlowPartsShow').removeClass('eventFlowPartsShow').show();
+}
+/*
+##################################################
+    イベントの詳細情報　行HTML
+##################################################
+*/
+eventInfoRowHtml( thText, tdText, addClassName, escape = true ) {
+    const className = ['eventInfoTableTd'];
+    if ( addClassName ) className.push( addClassName );
+    return ``
+    + `<tr class="eventInfoTableTr">`
+        + `<th class="eventInfoTableTh">${fn.cv( thText, '', true )}</th>`
+        + `<td class="${className.join(' ')}">${fn.cv( tdText, '', escape )}</td>`
+    + `</tr>`;
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//  パーツ管理
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
+##################################################
+    各種読み込み開始
+##################################################
+*/
+async setupParts() {
+    const er = this;
+
+    await Promise.all([
+        er.fetchParts('filter'),
+        er.fetchParts('action'),
+        er.fetchParts('rule'),
+        er.fetchSettings('eventCollectionSettings'),
+        er.fetchSettings('filterSettings')
+    ]);
+
+    return;
+}
+/*
+##################################################
+    各種読み込み
+##################################################
+*/
+async fetchParts( type ) {
+    const er = this;
+
+    const partsData = er.getPartsData( type );
+
+    try {
+        const info = await fn.fetch( partsData.info );
+        const params = fn.getCommonParams();
+        params.menuNameRest = partsData.rest
+        er[ partsData.id ] = { info: info };
+
+        const option = {
+            parts: partsData
+        };
+
+        // パーツテーブル
+        er[ partsData.id ].table = new DataTable( partsData.id, 'view', er[ partsData.id ].info, params, option );
+
+        // ソートセット
+        er[ partsData.id ].table.sort = [{ ASC: partsData.partsRestName }];
+
+        // HTMLセット
+        er.$.parts.find( partsData.target ).html( er[ partsData.id ].table.setup() );
+
+        // Filter及びRule場合ラベルデータを渡す
+        if ( type === 'filter' || type === 'rule') {
+            er[ partsData.id ].table.label = er.label;
+        }
+
+        // モードチェンジイベント
+        er[ partsData.id ].table.$.container.on({
+            'changePartsEditMode': function( e, type ){
+                er.$.target.addClass( type + 'EventFlowEditMode');
+                if ( type === 'rule') {
+                    er.ruleEditEventOn();
+                }
+                if ( type === 'rule' ||  type === 'filter') {
+                    er.labelSetEventOn( type );
+                }
+            },
+            'changePartsViewMode': function( e, type ){
+                er.$.target.removeClass( type + 'EventFlowEditMode');
+                if ( type === 'rule') {
+                    er.ruleEditEventOff();
+                }
+                if ( type === 'rule' ||  type === 'filter') {
+                    er.labelSetEventOff( type );
+                }
+            }
+        });
+    } catch ( error ) {
+        if ( error.message ) {
+            const message = `<div class="eventFlowPartsNoDate"><div class="eventFlowPartsNoDateInner">${error.message}</div></div>`;
+            er.$.parts.find( partsData.target ).html( message );
+        }
+    };
+
+    return;
+}
+// ID変換用にイベント収集設定・フィルター設定を取得
+async fetchSettings( type ) {
+    const er = this;
+    const settingsData = er.getSettingsData( type );
+    try {
+        er[ type ] = await fn.fetch( settingsData.info, null, 'POST', settingsData.data );
+    } catch ( error ) {
+        er[ type ] = { error }
+    };
+    return;
+}
+/*
+##################################################
+    パーツデータ
+##################################################
+*/
+getPartsData( type ) {
+    switch ( type ) {
+        case 'filter':
+            return {
+                name: 'Filter',
+                className: 'Filter',
+                id: 'filter',
+                rest: 'filter',
+                info: '/menu/filter/info/',
+                target: '.eventFlowPartsBlockFilter',
+                partsRestId: 'filter_id',
+                partsRestName: 'filter_name'
+            };
+        case 'action':
+            return {
+                name: 'Action',
+                className: 'Action',
+                id: 'action',
+                rest: 'action',
+                info: '/menu/action/info/',
+                target: '.eventFlowPartsBlockAction',
+                partsRestId: 'action_id',
+                partsRestName: 'action_name'
+            };
+        case 'rule':
+            return {
+                name: 'Rule',
+                className: 'Rule',
+                id: 'rule',
+                rest: 'rule',
+                info: '/menu/rule/info/',
+                target: '.eventFlowPartsBlockRule',
+                partsRestId: 'rule_id',
+                partsRestName: 'rule_name'
+            };
+    }
+}
+// イベント収集設定・フィルター設定取得用パラメータ
+getSettingsData(type) {
+    switch ( type ) {
+        case 'eventCollectionSettings':
+            return {
+                info: '/menu/event_collection/filter/',
+                data: {
+                    discard: { NORMAL: '0'}
+                }
+            };
+        case 'filterSettings':
+            return {
+                info: '/menu/filter/filter/',
+                data: {
+                    discard: { NORMAL: '0'}
+                }
+            };
+    }
 }
 /*
 ##################################################
@@ -2223,548 +2125,45 @@ labelSetEventOff( type ) {
     er.$.info.off('mousedown.setLabel');
     er.$.info.removeClass('labelDragMode');
 }
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//  ユーティリティ
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
 ##################################################
-    イベントの詳細情報を表示
+    間引き処理
 ##################################################
 */
-viewEventInfo( x ) {
-    const er = this;
-
-    const d = er.currentBlock;
-
-    const css = {display: 'flex'};
-
-    // 表示位置（左右）
-    if ( x / er.w > .5 ) {
-        css.left = 0;
-        css.right = 'auto';
-    } else {
-        css.right = 40;
-        css.left = 'auto';
-    }
-
-    er.$.info.css(css);
-
-    // クリックしたアクション、ルールと関連するパーツを表示する
-    er.$.parts.find('.eventFlowPartsShow').removeClass('eventFlowPartsShow').show();
-    if ( d.type === 'action' || d.type === 'rule') {
-        const className = ( d.type === 'action')? 'Action': 'Rule';
-        const id = ( d.type === 'action')? d.item.ACTION_ID: ( d.info )? d.info.id: '';
-        er.$.parts.find(`li.eventFlowParts${className}`).addClass('eventFlowPartsShow').show()
-            .not(`[data-id="${fn.escape(id)}"]`).hide();
-    }
-
-    const html = [];
-    html.push( er.eventInfoRowHtml('Type', d.type ) );
-
-    if ( d.type === 'action') {
-        html.push( er.eventInfoRowHtml('Datetime', d.datetime ) );
-        html.push( er.eventInfoRowHtml('ID', d.id ) );
-        html.push( er.eventInfoRowHtml('Action Name', fn.cv( d.item.ACTION_NAME, '')));
-        html.push( er.eventInfoRowHtml('Conductor', fn.cv( d.item.CONDUCTOR_INSTANCE_NAME, '')));
-        html.push( er.eventInfoRowHtml('Operation', fn.cv( d.item.OPERATION_NAME, '')));
-        html.push( er.eventInfoRowHtml('Rule ID', fn.cv( d.item.RULE_ID, '')));
-        html.push( er.eventInfoRowHtml('Rule Name', fn.cv( d.item.RULE_NAME, '')));
-    } else if ( d.type === 'rule') {
-        if ( d.info ) {
-            html.push( er.eventInfoRowHtml('Rule ID', d.info.id ) );
-            html.push( er.eventInfoRowHtml('Rule Name', d.info.name ) );
-        }
-    } else {
-        html.push( er.eventInfoRowHtml('Datetime', d.datetime ) );
-        html.push( er.eventInfoRowHtml('ID', d.id ) );
-        html.push( er.eventInfoRowHtml('Pattern', fn.cv( er.patternList[ er.currentBlock.pattern ], '')));
-        if ( d.item.exastro_rules && d.item.exastro_rules[0] ) {
-            html.push( er.eventInfoRowHtml('Rule ID', fn.cv( d.item.exastro_rules[0].id, ''), '') );
-            html.push( er.eventInfoRowHtml('Rule name', fn.cv( d.item.exastro_rules[0].name, ''), '') );
-        }
-        // ラベル
-        html.push( er.eventInfoRowHtml('Labels', '', 'eventInfoTableLabelsBlank') );
-        html.push(`<tr class="eventInfoTableTr"><td class="eventInfoTableTd eventInfoTableLabels" colspan="2">${fn.html.labelListHtml( d.item.labels, er.label )}</td></tr>`);
-
-        // 重複排除（イベントにexastro_duplicate_checkが付与されている時のみ表示）
-        if ( d.item.exastro_duplicate_check ) {
-            let eventCollectionSettingsExchange
-            if (er['eventCollectionSettings'].error ) {
-                eventCollectionSettingsExchange = null
-            } else {
-                eventCollectionSettingsExchange = er.eventCollectionSettings.reduce((acc, cur) => {
-                    acc[cur.parameter.event_collection_settings_id] = cur.parameter.event_collection_settings_name;
-                    return acc;
-                }, {});
-            }
-            html.push( er.eventInfoRowHtml('Deduplication', '', 'eventInfoTableLabelsBlank'));
-            html.push(`<tr class="eventInfoTableTr"><td class="eventInfoTableTd eventInfoTableLabels" colspan="2">${fn.html.deduplicationListHtml( d.item.exastro_duplicate_check, eventCollectionSettingsExchange )}</td></tr>`);
-        }
-
-        // グループ（イベントにexastro_filter_groupが付与されている時のみ表示）
-        if ( d.item.exastro_filter_group ) {
-            const targetFilter = ( er.filterSettings.error ) ? null : er.filterSettings.find(data => data.parameter.filter_id === d.item.exastro_filter_group.filter_id );
-            const groupData = {
-                group_id: d.item.exastro_filter_group.group_id,
-                filter_name: (targetFilter) ? targetFilter.parameter.filter_name : d.item.exastro_filter_group.filter_id,
-                first_event: d.item.exastro_filter_group.is_first_event.toString()
-            };
-            html.push( er.eventInfoRowHtml('Group', '', 'eventInfoTableLabelsBlank'));
-            html.push(`<tr class="eventInfoTableTr"><td class="eventInfoTableTd eventInfoTableLabels" colspan="2">${fn.html.labelListHtml( groupData, null, true )}</td></tr>`);
-        }
-    }
-
-    const tableHtml = `<table class="eventInfoTable">${html.join('')}</table>`;
-
-    if ( d.type === 'action') {
-        er.$.info.html(`<div class="eventFlowEventInformationInner">${tableHtml}</div>`);
-    } else if ( d.type === 'event' && d.item.event ) {
-        const json = fn.jsonStringify( d.item.event, '\t');
-
-        // 行数から高さを決める
-        const
-        lineHeight = 17,
-        match = json.match(/\n/g),
-        height = ( match.length + 2 ) * lineHeight;
-
-        // HTML
-        const infoHtml = `<div class="eventInfoContainer">`
-            + `<div class="eventInfoTabBlocks">`
-                + `<div class="eventInfoTabBlock open"><table class="eventInfoTable">${html.join('')}</table></div>`
-                + `<div class="eventInfoTabBlock"><div id="eventInfoJson"></div></div>`
-            + `</div>`
-            + `<div class="eventInfoTabs">`
-                + `<ul class="eventInfoTabList">`
-                    + `<li class="eventInfoTabItem open">${getMessage.FTE13026}</li>`
-                    + `<li class="eventInfoTabItem">${getMessage.FTE13025}</li>`
-                + `</ul>`
-            + `</div>`
-        + `</div>`;
-        er.$.info.html( infoHtml );
-        er.$.info.find('#eventInfoJson').height( height );
-
-        // テーマ
-        const aceTheme = ( $('body').is('.darkmode') )? 'monokai': 'chrome';
-
-        // Ace editor
-        const aceEditor = ace.edit('eventInfoJson', {
-            theme: `ace/theme/${aceTheme}`,
-            mode: `ace/mode/json`,
-            displayIndentGuides: true,
-            fontSize: '14px',
-            minLines: 2,
-            showPrintMargin: false,
-            readOnly: true,
-            wrapBehavioursEnabled: false,
-            enableBasicAutocompletion: true,
-            enableLiveAutocompletion: true
-        });
-        er.$.info.find('.ace_scrollbar').addClass('commonScroll');
-
-        // 値をセット
-        aceEditor.session.setValue( json );
-    } else {
-        er.$.info.html(`<div class="eventFlowEventInformationInner">${tableHtml}</div>`);
-    }
-}
-/*
-##################################################
-    イベントの詳細情報を表示
-##################################################
-*/
-hideEventInfo() {
-    const er = this;
-
-    const d = er.clickBlock;
-
-    er.$.info.hide();
-    er.$.parts.find('.eventFlowPartsShow').removeClass('eventFlowPartsShow').show();
-}
-/*
-##################################################
-    イベントの詳細情報　行HTML
-##################################################
-*/
-eventInfoRowHtml( thText, tdText, addClassName, escape = true ) {
-    const className = ['eventInfoTableTd'];
-    if ( addClassName ) className.push( addClassName );
-    return ``
-    + `<tr class="eventInfoTableTr">`
-        + `<th class="eventInfoTableTh">${fn.cv( thText, '', true )}</th>`
-        + `<td class="${className.join(' ')}">${fn.cv( tdText, '', escape )}</td>`
-    + `</tr>`;
-}
-/*
-##################################################
-    指定の範囲で再描画する
-##################################################
-*/
-updateDataTime( range ) {
-    let s, e = new Date();
-
-    // 現在時刻から範囲の1/10を追加する
-    const endDate = function( start ) {
-        const now = Date.now();
-        return new Date( now + ( ( now - start.getTime() ) / 10 ) );
-    }
-
-    switch ( range ) {
-        case '5M': case '15M': case '30M': {
-            const m = Number( range.slice( 0, -1 ) );
-            s = new Date( e.getTime() - m * ( 60 * 1000 ) );
-            e = endDate(s);
-        } break;
-        case '1h': case '3h': case '6h': case '12h': case '24h': {
-            const h = Number( range.slice( 0, -1 ) );
-            s = new Date( e.getTime() - h * ( 60 * 60 * 1000 ) );
-            e = endDate(s);
-        } break;
-        case '2d': {
-            const h = Number( range.slice( 0, -1 ) ) * 24;
-            s = new Date( e.getTime() - h * ( 60 * 60 * 1000 ) );
-            e = endDate(s);
-        } break;
-        case '1w': {
-            const h = Number( range.slice( 0, -1 ) ) * 24 * 7;
-            s = new Date( e.getTime() - h * ( 60 * 60 * 1000 ) );
-            e = endDate(s);
-        } break;
-        case '1m': case '3m': case '6m':{
-            const m = Number( range.slice( 0, -1 ) );
-            const now = new Date();
-            s = new Date( now.setMonth( now.getMonth() - m ) );
-            e = endDate(s);
-        } break;
-        case '1y': case '2y': case '5y':{
-            const y = Number( range.slice( 0, -1 ) );
-            const now = new Date();
-            s = new Date( now.setFullYear( now.getFullYear() - y ) );
-            e = endDate(s);
-        } break;
-        default:
-            const date = range.split(' to ');
-            s = new Date( date[0] );
-            e = new Date( date[1] );
-    }
-    return [ s, e ];
-}
-/*
-##################################################
-    選択している時間から更新
-##################################################
-*/
-updateDataRange( range, rangeFlag = false ) {
-    const er = this;
-
-    const newRange = er.updateDataTime( range );
-    er.changeDateReset( newRange[0], newRange[1], rangeFlag );
-}
-/*
-##################################################
-    Header select button
-##################################################
-*/
-setSelectButtonToggleEvent() {
-    const er = this;
-
-    er.$.header.find('.eventFlowSelectButton').on('click', function(){
-        const
-        $window = $( window ),
-        $button = $( this ),
-        $wrap = $button.closest('.eventFlowSelectWrap'),
-        $block = $button.next('.eventFlowOpenBlock');
-
-        $button.toggleClass('open');
-        $block.toggle();
-
-        if ( $button.is('.open') ) {
-            $window.on('pointerdown.eventFlowSelect', function( e ){
-                if ( !$( e.target ).closest( $wrap ).length ) {
-                    $window.off('pointerdown.eventFlowSelect');
-                    $button.removeClass('open');
-                    $block.hide();
-                }
+rafThrottle( f ) {
+    let ticking = false, lastArgs, lastThis;
+    return function(...args) {
+        lastArgs = args;
+        lastThis = this;
+        if ( !ticking ) {
+            ticking = true;
+            requestAnimationFrame(() => {
+                ticking = false;
+                f.apply( lastThis, lastArgs );
             });
-
-            // 画面内に収まるように高さを調整
-            $block.css('height', 'auto'); // サイズリセット
-
-            const
-            margin = 8,
-            y = $block.get(0).getBoundingClientRect().top,
-            h = $block.outerHeight() + margin,
-            wH = window.innerHeight;
-
-            if ( y + h > wH ) {
-                let height = wH - y - margin;
-                if ( height < 160 ) height = 160;
-                $block.outerHeight( height );
-            }
-
-            if ( $button.is('.eventFlowIntervalSelectButton') ) {
-                er.stopAutoUpdate();
-            }
-        } else {
-            $window.off('pointerdown.eventFlowSelect');
-            if ( $button.is('.eventFlowIntervalSelectButton') ) {
-                er.resumeAutoUpdate();
-            }
         }
-    });
+    };
 }
 /*
 ##################################################
-    パターン選択
+    パターンカラー
 ##################################################
 */
-setPatternSelectEvent() {
-    const er = this;
-
-    const $patternCheckbox = er.$.header.find('.eventFlowPatternSelectCheckbox');
-
-    $patternCheckbox.on('change', function(){
-        $patternCheckbox.each(function(){
-            const
-            $check = $( this ),
-            value = $check.val(),
-            flag = $check.prop('checked');
-
-            er.displayFlag[ value ] = flag;
-
-            er.resetCanvas();
-        });
-    });
+getPatternColor( pattern, opacity = 1 ) {
+    return `rgba(${this.patternColor[ pattern ]},${opacity})`;
 }
 /*
 ##################################################
-    更新間隔選択
+    X座標から時間を取得
 ##################################################
 */
-setUpdateIntervalEvent() {
-    const er = this;
-
-    const
-    $button = er.$.header.find('.eventFlowIntervalSelectButton'),
-    $Num = er.$.header.find('.eventFlowIntervalSelectNumber'),
-    $radio = er.$.header.find('.eventFlowIntervalSelectRadio');
-
-    $radio.on('change', function(){
-        const val = Number( $( this ).val() );
-        er.intervalTime = er.resumeDate = val;
-
-        fn.storage.set('eventflow_interval_time', val, 'local', false );
-
-        const text = ( val !== 0 )? getMessage.FTE13028( val / 1000 ): getMessage.FTE13027;
-        $Num.text( text );
-        $button.click();
-    });
-}
-/*
-##################################################
-    Menu button
-##################################################
-*/
-setMenuButtonEvent() {
-    const er = this;
-    er.$.header.find('.operationMenuButton').on('click', function(){
-        const
-        $button = $( this ),
-        type = $button.attr('data-type');
-
-        switch ( type ) {
-            case 'timeRange':
-                er.selectDateRange();
-                break;
-        }
-    });
-}
-/*
-##################################################
-    日時指定
-##################################################
-*/
-selectDateRange() {
-    const er = this;
-
-    const checkedValue = er.$.header.find('.eventFlowDateRangeRadio:checked').val();
-
-    const date = { from: '', to: ''};
-    if ( checkedValue && checkedValue.match(/ to /) ) {
-        const fromto = checkedValue.split(' to ');
-        date.from = fromto[0];
-        date.to = fromto[1];
-    }
-
-    fn.datePickerDialog('fromTo', true, getMessage.FTE13014, date, true ).then(function( date ){
-        if ( date !== 'cancel') {
-            const value = `${date.from} to ${date.to}`;
-            er.addDateRadioList( value );
-        }
-    });
-}
-/*
-##################################################
-    範囲追加
-##################################################
-*/
-addDateRadioList( value ) {
-    const er = this;
-    const id = Date.now()
-    // リスト追加
-    const $list = er.$.header.find('.eventFlowDateRangeLog');
-    const $wrap = $list.closest('.eventFlowDateRangeLogWrap');
-
-    if ( $list.find(`[value="${value}"]`).length === 0 ) {
-        $list.prepend( er.addSelectRange( id, value, value ) );
-        if ( $wrap.is(':hidden') ) $wrap.addClass('setDate');
-    }
-
-    er.$.header.find('.eventFlowDateRangeRadio').val([ value ]).filter(`[value="${value}"]`).change();
-}
-/*
-##################################################
-    範囲設定
-##################################################
-*/
-setSelectDateRange() {
-    const er = this;
-
-    const value = $('.eventFlowChartRangeDate').text();
-    er.addDateRadioList( value );
-
-    er.$.header.find('.eventFlowChartRangeClear').click();
-}
-/*
-##################################################
-  Scroll bar event
-##################################################
-*/
-setScrollBarEvent() {
-    const er = this;
-
-    er.$.scroll.on('pointerdown.eventFlow', function( downEvent ){
-
-        // 選択を解除
-        getSelection().removeAllRanges();
-
-        const
-        $bar = $( this ),
-        $range = $bar.find('.eventFlowRange'),
-        $window = $( window );
-
-        const
-        barType = $bar.attr('data-type'),
-        partsType = downEvent.target.className;
-
-        const
-        barWidth = ( barType === 'vertical')? $bar.height(): $bar.width(),
-        rangeWidth = ( barType === 'vertical')? $range.height(): $range.width(),
-        rangePosition = ( barType === 'vertical')? $range.position().top: $range.position().left,
-        rangeMinWidth = Math.floor( barWidth / er.maxRate );
-
-        let
-        afterWidth = rangeWidth,
-        afterPosittion = rangePosition;
-
-        const widthCheck = function( width, max ) {
-            if ( max < width ) width = max;
-            if ( rangeMinWidth > width ) width = rangeMinWidth;
-            return width;
-        };
-
-        const positionCheck = function( position, max ) {
-            if ( position < 0 ) position = 0;
-            if ( position > max ) position = max;
-            return position;
-        };
-
-        const updateCanvasPosition = function() {
-            if ( barType === 'vertical') {
-                er.vRate = Math.round( 1 / ( afterWidth / barWidth ) * 100 ) / 100;
-                er.vPosition = Math.round( er.h * ( afterPosittion / barWidth ) * er.vRate * 100 ) / 100;
-
-                er.setLine();
-            } else {
-                er.hRate = Math.round( 1 / ( afterWidth / barWidth ) * 100 ) / 100;
-                er.hPosition = Math.round( er.w * ( afterPosittion / barWidth ) * er.hRate * 100 ) / 100;
-
-                er.setTimeScale();
-            }
-
-            er.clearEventLink();
-            er.setEventBlock();
-            er.$.chart.click();
-
-            if ( er.clickBlock ) er.setEventLink( er.clickBlock );
-        };
-
-        $window.on({
-            'pointermove.eventFlow': function( moveEvent ){
-                // 移動距離
-                const move = ( barType === 'vertical')? moveEvent.pageY - downEvent.pageY: moveEvent.pageX - downEvent.pageX;
-
-                if ( partsType === 'eventFlowRangeStart') {
-                    // 開始位置移動
-                    afterWidth = widthCheck( rangeWidth - move, barWidth - ( barWidth - afterPosittion - afterWidth ) );
-                    afterPosittion = positionCheck( rangePosition + move, barWidth - ( barWidth - rangeWidth - rangePosition + rangeMinWidth ) );
-
-                    if ( barType === 'vertical') {
-                        $range.css({
-                            top: afterPosittion,
-                            height: afterWidth
-                        });
-                    } else {
-                        $range.css({
-                            left: afterPosittion,
-                            width: afterWidth
-                        });
-                    }
-                } else if ( partsType === 'eventFlowRangeEnd') {
-                    // 終了位置移動
-                    afterWidth = widthCheck( rangeWidth + move, barWidth - afterPosittion );
-
-                    if ( barType === 'vertical') {
-                        $range.css({
-                            height: afterWidth
-                        });
-                    } else {
-                        $range.css({
-                            width: afterWidth
-                        });
-                    }
-                } else {
-                    // 位置移動
-                    afterPosittion = positionCheck( rangePosition + move, barWidth - afterWidth );
-
-                    if ( barType === 'vertical') {
-                        $range.css({
-                            top: afterPosittion
-                        });
-                    } else {
-                        $range.css({
-                            left: afterPosittion
-                        });
-                    }
-                }
-
-                updateCanvasPosition();
-
-            },
-            'pointerup.eventFlow': function(){
-                $window.off('pointermove.eventFlow pointerup.eventFlow');
-
-                // 幅のサイズを割合に変更する
-                if ( barType === 'vertical') {
-                    $range.css({
-                       height: ( afterWidth / barWidth * 100 ) + '%',
-                       top: ( afterPosittion / barWidth * 100 ) + '%'
-                    });
-                } else {
-                    $range.css({
-                       width: ( afterWidth / barWidth * 100 ) + '%',
-                       left: ( afterPosittion / barWidth * 100 ) + '%'
-                    });
-                }
-            }
-        });
-    });
+getPositionDate( x ) {
+    return new Date( this.start + this.period * ( ( x + this.hPosition ) / ( this.w * this.hRate ) ) );
 }
 
 }

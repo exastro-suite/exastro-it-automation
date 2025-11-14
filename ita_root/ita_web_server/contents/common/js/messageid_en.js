@@ -4,7 +4,7 @@
 //
 //   -----------------------------------------------------------------------------------------------
 //
-//   Copyright 2022 NEC Corporation
+//   Copyright 2025 NEC Corporation
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -1012,6 +1012,13 @@ export function messageid_en() {
         'FTE13032': '',
         'FTE13033': '',
         'FTE13034': '',
+        'FTE13035': 'Switched to aggregation mode because the number of rows exceeded 100.',
+        'FTE13036': 'View',
+        'FTE13037': 'Detail',
+        'FTE13038': 'Aggregate',
+        'FTE13039': 'Processing',
+        'FTE13040': 'Please wait',
+        'FTE13041': 'Fetch',
 
     };
 

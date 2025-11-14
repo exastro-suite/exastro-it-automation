@@ -56,7 +56,7 @@ def external_valid_menu_before(objdbca, objtable, option):
     # 「復活」の場合、currrent_parameterから各値を取得
     elif cmd_type == "Restore":
         try:
-            event_source_redundancy_group = json.loads(entry_parameter.get("event_source_redundancy_group")).get("id", {})
+            event_source_redundancy_group = json.loads(current_parameter.get("event_source_redundancy_group")).get("id", {})
         except:
             event_source_redundancy_group = []
         condition_labels = json.loads(current_parameter.get("condition_labels", {})).get("id", {}) if current_parameter.get("condition_labels") else {}

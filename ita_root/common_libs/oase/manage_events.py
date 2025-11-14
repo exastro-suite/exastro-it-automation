@@ -478,8 +478,10 @@ class ManageEvents:
         # 既にグループに存在する場合はイベントが持つ情報を返し、何もしない
         if any(
             event["_id"] == group["first_event"]["_id"]
-            or event["_id"]
-            in (remaining_event["_id"] for remaining_event in group["remaining_events"])
+            or any(
+                event["_id"] == remaining_event["_id"]
+                for remaining_event in group["remaining_events"]
+            )
             for group in ttl_groups
         ):
             return event["exastro_filter_group"]["is_first_event"]

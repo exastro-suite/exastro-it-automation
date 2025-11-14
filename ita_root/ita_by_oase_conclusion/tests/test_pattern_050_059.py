@@ -95,6 +95,41 @@ def test_pattern_050_2(
     assert e008["labels"]["_exastro_evaluated"] == "1"
     assert e009["labels"]["_exastro_evaluated"] == "1"
 
+    # 結論イベントの確認
+    conclusion_events = [e for e in test_events if e["labels"]["_exastro_type"] == "conclusion"]
+    assert len(conclusion_events) == 2
+    c_1, c_2 = conclusion_events
+
+    assert list(c_1["exastro_events"]).count(f"ObjectId('{str(e004['_id'])}')") == 1
+    assert list(c_1["exastro_events"]).count(f"ObjectId('{str(e005['_id'])}')") == 0
+    assert list(c_1["exastro_events"]).count(f"ObjectId('{str(e014a['_id'])}')") == 1
+    assert list(c_1["exastro_events"]).count(f"ObjectId('{str(e014b['_id'])}')") == 0
+    assert c_1["labels"]["_exastro_rule_name"] == "p050_2:r1"
+    assert c_1["labels"]["_exastro_undetected"] == "1"
+
+    assert list(c_2["exastro_events"]).count(f"ObjectId('{str(e005a['_id'])}')") == 1
+    assert list(c_2["exastro_events"]).count(f"ObjectId('{str(e005b['_id'])}')") == 0
+    assert list(c_2["exastro_events"]).count(f"ObjectId('{str(e008['_id'])}')") == 1
+    assert list(c_2["exastro_events"]).count(f"ObjectId('{str(e009['_id'])}')") == 0
+    assert c_2["labels"]["_exastro_rule_name"] == "p050_2:r1"
+    assert c_2["labels"]["_exastro_undetected"] == "1"
+
+    # グルーピングの確認
+    grouped_events = [e for e in test_events if e.get("exastro_filter_group")]
+    assert len(grouped_events) == 8
+
+    assert e004["exastro_filter_group"]["is_first_event"] == "1"
+    assert e004["exastro_filter_group"]["group_id"] == e005["exastro_filter_group"]["group_id"]
+
+    assert e014a["exastro_filter_group"]["is_first_event"] == "1"
+    assert e014a["exastro_filter_group"]["group_id"] == e014b["exastro_filter_group"]["group_id"]
+
+    assert e005a["exastro_filter_group"]["is_first_event"] == "1"
+    assert e005a["exastro_filter_group"]["group_id"] == e005b["exastro_filter_group"]["group_id"]
+
+    assert e008["exastro_filter_group"]["is_first_event"] == "1"
+    assert e008["exastro_filter_group"]["group_id"] == e009["exastro_filter_group"]["group_id"]
+
 
 def test_pattern_051(
     patch_global_g,
@@ -132,6 +167,31 @@ def test_pattern_051(
     assert e014f["labels"]["_exastro_undetected"] == "1"
     assert e014g["labels"]["_exastro_undetected"] == "1"
 
+    # 結論イベントの確認
+    conclusion_events = [e for e in test_events if e["labels"]["_exastro_type"] == "conclusion"]
+    assert len(conclusion_events) == 2
+    c_1, c_2 = conclusion_events
+
+    assert list(c_1["exastro_events"]).count(f"ObjectId('{str(e014b['_id'])}')") == 1
+    assert list(c_1["exastro_events"]).count(f"ObjectId('{str(e014c['_id'])}')") == 0
+    assert c_1["labels"]["_exastro_rule_name"] == "p051:r1"
+    assert c_1["labels"]["_exastro_undetected"] == "1"
+
+    assert list(c_2["exastro_events"]).count(f"ObjectId('{str(e001['_id'])}')") == 1
+    assert list(c_2["exastro_events"]).count(f"ObjectId('{str(e004['_id'])}')") == 0
+    assert c_2["labels"]["_exastro_rule_name"] == "p051:r1"
+    assert c_2["labels"]["_exastro_undetected"] == "1"
+
+    # グルーピングの確認
+    grouped_events = [e for e in test_events if e.get("exastro_filter_group")]
+    assert len(grouped_events) == 4
+
+    assert e014b["exastro_filter_group"]["is_first_event"] == "1"
+    assert e014b["exastro_filter_group"]["group_id"] == e014c["exastro_filter_group"]["group_id"]
+
+    assert e001["exastro_filter_group"]["is_first_event"] == "1"
+    assert e001["exastro_filter_group"]["group_id"] == e004["exastro_filter_group"]["group_id"]
+
 
 def test_pattern_052(
     patch_global_g,
@@ -166,3 +226,33 @@ def test_pattern_052(
 
     assert e006["labels"]["_exastro_timeout"] == "1"
     assert e007["labels"]["_exastro_timeout"] == "1"
+
+    # 結論イベントの確認
+    conclusion_events = [e for e in test_events if e["labels"]["_exastro_type"] == "conclusion"]
+    assert len(conclusion_events) == 1
+    c_1 = conclusion_events[0]
+
+    assert list(c_1["exastro_events"]).count(f"ObjectId('{str(e014a['_id'])}')") == 1
+    assert list(c_1["exastro_events"]).count(f"ObjectId('{str(e001['_id'])}')") == 1
+    assert list(c_1["exastro_events"]).count(f"ObjectId('{str(e004['_id'])}')") == 0
+    assert list(c_1["exastro_events"]).count(f"ObjectId('{str(e003['_id'])}')") == 0
+    assert list(c_1["exastro_events"]).count(f"ObjectId('{str(e003a['_id'])}')") == 0
+    assert c_1["labels"]["_exastro_rule_name"] == "p052:r1"
+    assert c_1["labels"]["_exastro_undetected"] == "1"
+
+    # TODO: 結果の確認が必要
+    import pprint
+    pprint.pprint(test_events)
+
+    # グルーピングの確認
+    grouped_events = [e for e in test_events if e.get("exastro_filter_group")]
+    assert len(grouped_events) == 5
+
+    assert e014a["exastro_filter_group"]["is_first_event"] == "1"
+
+    assert e001["exastro_filter_group"]["is_first_event"] == "1"
+    assert e001["exastro_filter_group"]["group_id"] == e004["exastro_filter_group"]["group_id"]
+    assert e001["exastro_filter_group"]["group_id"] == e003["exastro_filter_group"]["group_id"]
+    assert e001["exastro_filter_group"]["group_id"] == e003a["exastro_filter_group"]["group_id"]
+
+

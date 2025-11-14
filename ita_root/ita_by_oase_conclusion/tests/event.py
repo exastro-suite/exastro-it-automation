@@ -428,6 +428,11 @@ event_templates["e015a"] = {
     "fetched_time_offset": -30,
     "custom_labels": {"node": "z10", "type": "a"},
 }
+event_templates["e015b"] = {
+    "ttl": 20,
+    "fetched_time_offset": -35,
+    "custom_labels": {"node": "z10", "type": "a"},
+}
 event_templates["e016"] = {
     "ttl": 20,
     "fetched_time_offset": -5,
@@ -491,6 +496,11 @@ event_templates["e019a"] = {
 event_templates["e019b"] = {
     "ttl": 20,
     "fetched_time_offset": -25,
+    "custom_labels": {"node": "z11", "type": "b"},
+}
+event_templates["e019c"] = {
+    "ttl": 20,
+    "fetched_time_offset": 10,
     "custom_labels": {"node": "z11", "type": "b"},
 }
 event_templates["e020"] = {
@@ -598,6 +608,11 @@ event_templates["e026f"] = {
     "fetched_time_offset": 30,
     "custom_labels": {"node": "z11", "type": "qa", "mode": "q3"},
 }
+event_templates["e026g"] = {
+    "ttl": 20,
+    "fetched_time_offset": 9,
+    "custom_labels": {"node": "z11", "type": "qa", "mode": "q3"},
+}
 event_templates["e027"] = {
     "ttl": 20,
     "fetched_time_offset": -15,
@@ -621,6 +636,11 @@ event_templates["e028a"] = {
 event_templates["e028b"] = {
     "ttl": 20,
     "fetched_time_offset": 30,
+    "custom_labels": {"node": "z11", "type": "qb", "mode": "q1"},
+}
+event_templates["e028c"] = {
+    "ttl": 20,
+    "fetched_time_offset": -2,
     "custom_labels": {"node": "z11", "type": "qb", "mode": "q1"},
 }
 event_templates["e029"] = {

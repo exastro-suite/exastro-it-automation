@@ -4,7 +4,7 @@
 //
 //   -----------------------------------------------------------------------------------------------
 //
-//   Copyright 2022 NEC Corporation
+//   Copyright 2025 NEC Corporation
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -1018,6 +1018,13 @@ export function messageid_ja() {
         'FTE13032': '',
         'FTE13033': '',
         'FTE13034': '',
+        'FTE13035': '行数が100を超えたため、集約モードに変更しました。',
+        'FTE13036': '表示',
+        'FTE13037': '詳細',
+        'FTE13038': '集約',
+        'FTE13039': '処理中',
+        'FTE13040': '応答待機中',
+        'FTE13041': '読込',
     };
 
     return message;

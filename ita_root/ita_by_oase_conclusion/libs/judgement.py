@@ -498,7 +498,8 @@ class Judgement:
 
                 for key in remove_key_list:
                     # 下位ルールで使用できるように予約を解除する
-                    preserved_events.difference_update(IncidentDict[key])
+                    if (incidents := IncidentDict.get(key)) is not None:
+                        preserved_events.difference_update(incidents)
                     del IncidentDict[key]
 
         elif FilterResultDict['Operator'] == oaseConst.DF_OPE_AND:

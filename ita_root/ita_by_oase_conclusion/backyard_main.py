@@ -139,7 +139,7 @@ def JudgeMain(wsDb: DBConnectWs, judgeTime: int, EventObj: ManageEvents, actionO
     if len(timeout_Event_Id_List) > 0:
         # タイムアウトしているイベントの_exastro_timeoutを1に更新
         update_Flag_Dict = {"_exastro_timeout": '1'}
-        EventObj.update_label_flag(timeout_Event_Id_List, update_Flag_Dict)
+        EventObj.set_timeout(timeout_Event_Id_List)
         # Event updated. Timeout({}) ids: {}
         tmp_msg = g.appmsg.get_log_message("BKY-90007", [str(update_Flag_Dict), str(timeout_Event_Id_List)])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -443,7 +443,7 @@ def JudgeMain(wsDb: DBConnectWs, judgeTime: int, EventObj: ManageEvents, actionO
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         # 処理後タイムアウトの_exastro_timeoutを1に更新
         update_Flag_Dict = {"_exastro_timeout": '1'}
-        EventObj.update_label_flag(PostProcTimeoutEventIdList, update_Flag_Dict)
+        EventObj.set_timeout(PostProcTimeoutEventIdList)
         tmp_msg = g.appmsg.get_log_message("BKY-90028", [str(update_Flag_Dict), str(PostProcTimeoutEventIdList)])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
     else:
@@ -458,7 +458,7 @@ def JudgeMain(wsDb: DBConnectWs, judgeTime: int, EventObj: ManageEvents, actionO
         # MongoDBのインシデント情報を更新（一括で行う）
         # 未知イベントの_exastro_undetectedを1に更新
         update_Flag_Dict = {"_exastro_undetected": '1'}
-        EventObj.update_label_flag(UnusedEventIdList, update_Flag_Dict)
+        EventObj.set_undetected(UnusedEventIdList)
         tmp_msg = g.appmsg.get_log_message("BKY-90031", [str(update_Flag_Dict), str(UnusedEventIdList)])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
     else:

@@ -382,9 +382,9 @@ def run_test_pattern(
 
     # エラーログが出ていないことを確認
     tracebacks = [log for _, log in g.applogger.logs if "Traceback" in log]
-    for traceback in tracebacks:
-        print(traceback)
-    assert not tracebacks
+    assert (
+        not tracebacks
+    ), f"Errors occurred during test pattern execution, see logs above {tracebacks[0]}"
 
 
 def search_event_by_test_id(
@@ -432,7 +432,7 @@ def assert_event_logged_evaluated_result(
 ):
     """イベントが評価結果に記録されていることをアサートする"""
     event = search_event_by_test_id(test_events, test_id)
-    assert [
+    evaluated_result_logs = [
         action_log
         for action_log in db_data.table_data[oaseConst.T_OASE_ACTION_LOG]
         if repr(event["_id"]) in action_log["EVENT_ID_LIST"]
@@ -443,6 +443,8 @@ def assert_event_logged_evaluated_result(
             if row["RULE_NAME"] == rule_name
         )
     ]
+
+    assert evaluated_result_logs, f"Event {test_id} not logged in evaluated results for rule {rule_name}, event details: {event}"
 
 
 def assert_event_not_logged_evaluated_result(
@@ -651,20 +653,40 @@ def assert_expected_pattern_results(
 
 
 def _assert_events_all_timeout(events):
-    """すべてのイベントがタイムアウトラベルを持つことをアサートする"""
+    """すべてのイベントがタイムアウトであることをアサートする"""
     for event in events:
-        assert event["labels"]["_exastro_timeout"] == "1"
+        assert (
+            event["labels"]["_exastro_timeout"] == "1"
+        ), f"event {event} is not timeout"
+        assert (
+            event["labels"]["_exastro_undetected"] == "0"
+        ), f"event {event} is undetected"
+        # タイムアウトはグルーピングを持たない
+        assert (
+            "exastro_filter_group" not in event
+        ), f"event {event} has unexpected grouping info"
 
 
 def _assert_events_all_undetected(events):
-    """すべてのイベントが未知ラベルを持つことをアサートする"""
+    """すべてのイベントが未知であることをアサートする"""
     for event in events:
-        assert event["labels"]["_exastro_undetected"] == "1"
+        assert event["labels"]["_exastro_timeout"] == "0", f"event {event} is timeout"
+        assert (
+            event["labels"]["_exastro_undetected"] == "1"
+        ), f"event {event} is not undetected"
+        # 未知はグルーピングを持たない
+        assert (
+            "exastro_filter_group" not in event
+        ), f"event {event} has unexpected grouping info"
 
 
 def _assert_events_all_evaluated(events):
-    """すべてのイベントが評価済みラベルを持つことをアサートする"""
+    """すべてのイベントが評価済みであることをアサートする"""
     for event in events:
-        assert event["labels"]["_exastro_timeout"] == "0"
-        assert event["labels"]["_exastro_undetected"] == "0"
-        assert event["labels"]["_exastro_evaluated"] == "1"
+        assert event["labels"]["_exastro_timeout"] == "0", f"event {event} is timeout"
+        assert (
+            event["labels"]["_exastro_undetected"] == "0"
+        ), f"event {event} is undetected"
+        assert (
+            event["labels"]["_exastro_evaluated"] == "1"
+        ), f"event {event} is not evaluated"

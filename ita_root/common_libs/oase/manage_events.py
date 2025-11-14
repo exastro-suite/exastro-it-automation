@@ -16,7 +16,7 @@ import inspect
 import json
 import os
 import re
-from typing import Any, Literal, NewType, TypedDict
+from typing import Any, Literal, NewType, Required, TypedDict
 
 from bson import ObjectId
 from flask import g
@@ -27,11 +27,35 @@ from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
 from libs.common_functions import getIDtoLabelName
 from libs.writer_process import WriterProcessManager
 
-AttributeKey = NewType('AttributeKey', frozenset[tuple[str, Any]])
+AttributeKey = NewType("AttributeKey", frozenset[tuple[str, Any]])
 """属性集約キー"""
 
-Event = NewType('Event', dict[str, Any])
-"""イベント"""
+
+class GroupingInformation(TypedDict):
+    group_id: ObjectId
+    """グループID"""
+
+    filter_id: str
+    """フィルターID"""
+
+    is_first_event: Literal["0", "1"]
+    """先頭イベントフラグ"""
+
+
+class Event(TypedDict, total=False):
+    """イベント"""
+
+    _id: Required[ObjectId]
+    """イベントID"""
+
+    __exastro_local_labels__: dict[str, dict[str, Any]]
+    """ローカルラベル"""
+
+    exastro_filter_group: GroupingInformation
+    """グルーピング情報"""
+
+    labels: dict[str, str]
+    """ラベル情報"""
 
 
 class TtlGroup(TypedDict):
@@ -50,17 +74,6 @@ class TtlGroup(TypedDict):
     """グループの後続イベント"""
 
 
-class GroupingInformation(TypedDict):
-    group_id: ObjectId
-    """グループID"""
-
-    filter_id: str
-    """フィルターID"""
-
-    is_first_event: Literal["0", "1"]
-    """先頭イベントフラグ"""
-
-
 class ManageEvents:
     def __init__(self, ws_mongo: MONGOConnectWs, judge_time: int) -> None:
         self._label_master: dict[str, str] = {}
@@ -69,7 +82,9 @@ class ManageEvents:
         self.evaluated_event_groups: dict[str, dict[AttributeKey, list[TtlGroup]]] = {}
         """ルール確定グループ"""
 
-        self.labeled_event_collection = ws_mongo.collection(mongoConst.LABELED_EVENT_COLLECTION)
+        self.labeled_event_collection = ws_mongo.collection(
+            mongoConst.LABELED_EVENT_COLLECTION
+        )
 
         # イベントキャッシュの作成
 
@@ -77,11 +92,15 @@ class ManageEvents:
         undetermined_search_value = {
             "labels._exastro_timeout": "0",
             "labels._exastro_evaluated": "0",
-            "labels._exastro_undetected": "0"
+            "labels._exastro_undetected": "0",
         }
         labeled_events = self.labeled_event_collection.find(
             undetermined_search_value
-        ).sort("labels._exastro_fetched_time", 1)  # 取得日時昇順にしておかないとグルーピングで先頭イベントが決定できなくなる
+        ).sort(
+            # 取得日時昇順にしておかないとグルーピングで先頭イベントが決定できなくなる
+            "labels._exastro_fetched_time",
+            1,
+        )
 
         self.labeled_events_dict: dict[ObjectId, Event] = {}
         self.unevaluated_event_ids = set()
@@ -102,7 +121,7 @@ class ManageEvents:
                 event,
                 oaseConst.DF_LOCAL_LABLE_NAME,
                 oaseConst.DF_LOCAL_LABLE_STATUS,
-                event_status
+                event_status,
             )
             self.labeled_events_dict[event["_id"]] = event
 
@@ -148,10 +167,10 @@ class ManageEvents:
 
         for event_id, event in self.labeled_events_dict.items():
             # タイムアウトイベント判定
-            if str(event['labels']['_exastro_timeout']) != '0':
+            if str(event["labels"]["_exastro_timeout"]) != "0":
                 continue
             # 処理済みイベント判定
-            if str(event['labels']['_exastro_evaluated']) != '0':
+            if str(event["labels"]["_exastro_evaluated"]) != "0":
                 continue
             labels = event["labels"]
             judge_result = {}
@@ -229,7 +248,7 @@ class ManageEvents:
             event,
             oaseConst.DF_LOCAL_LABLE_NAME,
             oaseConst.DF_LOCAL_LABLE_STATUS,
-            oaseConst.DF_PROC_EVENT
+            oaseConst.DF_PROC_EVENT,
         )
         # キャッシュに保存
         self.labeled_events_dict[event["_id"]] = event
@@ -244,12 +263,15 @@ class ManageEvents:
         # タイムアウト（TTL*2）
         timeout_event_id_list = []
         for event_id, event in self.labeled_events_dict.items():
-            if event[oaseConst.DF_LOCAL_LABLE_NAME][oaseConst.DF_LOCAL_LABLE_STATUS] == oaseConst.DF_TIMEOUT_EVENT:
+            if (
+                event[oaseConst.DF_LOCAL_LABLE_NAME][oaseConst.DF_LOCAL_LABLE_STATUS]
+                == oaseConst.DF_TIMEOUT_EVENT
+            ):
                 timeout_event_id_list.append(event_id)
         return timeout_event_id_list
 
     def get_post_proc_timeout_event(self):
-        post_proc_timeout_event_ids = []
+        post_proc_timeout_event_ids: list[ObjectId] = []
         # 処理後にタイムアウトにするイベントを抽出
         for event_id, event in self.labeled_events_dict.items():
             # タイムアウトしたイベントは登録されているのでスキップ
@@ -259,7 +281,10 @@ class ManageEvents:
             if event["labels"]["_exastro_evaluated"] != "0":
                 continue
             # 処理後にタイムアウトにするイベント
-            if event[oaseConst.DF_LOCAL_LABLE_NAME][oaseConst.DF_LOCAL_LABLE_STATUS] == oaseConst.DF_POST_PROC_TIMEOUT_EVENT:
+            if (
+                event[oaseConst.DF_LOCAL_LABLE_NAME][oaseConst.DF_LOCAL_LABLE_STATUS]
+                == oaseConst.DF_POST_PROC_TIMEOUT_EVENT
+            ):
                 post_proc_timeout_event_ids.append(event_id)
 
         return post_proc_timeout_event_ids
@@ -315,7 +340,9 @@ class ManageEvents:
             self.collect_unevaluated_event(event_id)
 
             # MongoDB更新
-            WriterProcessManager.update_labeled_event_collection({"_id": event_id}, {"$set": {f"labels.{key}": value}})
+            WriterProcessManager.update_labeled_event_collection(
+                {"_id": event_id}, {"$set": {f"labels.{key}": value}}
+            )
 
         return True
 
@@ -438,7 +465,7 @@ class ManageEvents:
         Args:
             event (Event): グルーピング対象のイベント
             filter_row (dict[str]): フィルター情報
-        
+
         Returns:
             bool:
                 - True: イベントが先頭イベントになった場合
@@ -449,7 +476,12 @@ class ManageEvents:
         ttl_groups = self._get_ttl_groups(event, filter_row)
 
         # 既にグループに存在する場合はイベントが持つ情報を返し、何もしない
-        if any(event == group["first_event"] or event in group["remaining_events"] for group in ttl_groups):
+        if any(
+            event["_id"] == group["first_event"]["_id"]
+            or event["_id"]
+            in (remaining_event["_id"] for remaining_event in group["remaining_events"])
+            for group in ttl_groups
+        ):
             return event["exastro_filter_group"]["is_first_event"]
 
         match ttl_groups:
@@ -466,12 +498,15 @@ class ManageEvents:
                 is_first_event = True
 
         # イベントのグループ情報を追加
-        group_info: GroupingInformation = event.setdefault("exastro_filter_group", {})
+        group_info = event.setdefault("exastro_filter_group", GroupingInformation({}))
         group_info["filter_id"] = filter_row["FILTER_ID"]
-        group_info["group_id"] = repr(latest_group["first_event"]["_id"])  # exastro_eventsに合わせてシリアライズ
+        group_info["group_id"] = repr(
+            latest_group["first_event"]["_id"]
+        )  # exastro_eventsに合わせてシリアライズ
         group_info["is_first_event"] = "1" if is_first_event else "0"
         group_info["original_ttl"] = (
-            event["labels"]["_exastro_end_time"] - event["labels"]["_exastro_fetched_time"]
+            event["labels"]["_exastro_end_time"]
+            - event["labels"]["_exastro_fetched_time"]
         )
         # MongoDB更新
         WriterProcessManager.update_labeled_event_collection(
@@ -479,6 +514,99 @@ class ManageEvents:
         )
 
         return is_first_event
+
+    def set_timeout(self, events: Event | ObjectId | list[Event | ObjectId]) -> None:
+        """イベントをタイムアウトに設定する"""
+        self._disable_events(events, "timeout")
+
+    def set_undetected(self, events: Event | ObjectId | list[Event | ObjectId]) -> None:
+        """イベントを未知に設定する"""
+        self._disable_events(events, "undetected")
+
+    def _disable_events(
+        self,
+        events: Event | ObjectId | list[Event | ObjectId],
+        disable_type: Literal["timeout", "undetected"],
+    ) -> None:
+        """イベントを無効(タイムアウトまたは未知)に設定する"""
+        match events:
+            case list():
+                self.update_label_flag(
+                    (
+                        (event if isinstance(event, ObjectId) else event["_id"])
+                        for event in events
+                    ),
+                    {f"_exastro_{disable_type}": "1"},
+                )
+                for e in events:
+                    self._disable_event(e, disable_type)
+            case event:
+                self.update_label_flag(
+                    (event,) if isinstance(event, ObjectId) else (event["_id"],),
+                    {f"_exastro_{disable_type}": "1"},
+                )
+                self._disable_event(event, disable_type)
+
+    def _disable_event(
+        self,
+        event_or_id: Event | ObjectId,
+        disable_type: Literal["timeout", "undetected"],
+    ) -> None:
+        """イベントを無効(タイムアウトまたは未知)にする
+
+        Args:
+            event (Event): タイムアウトまたは未知に設定するイベント
+            disable_type (Literal["timeout", "undetected"]): 無効化の種類
+        """
+        match event_or_id:
+            # 必ずIDを見て管理下にあるイベントを取得する
+            case (ObjectId() as event_id) | {"_id": event_id}:
+                match self.get_events(event_id):
+                    case False, _:
+                        return
+                    case True, target:
+                        event = target
+            case _:
+                return
+
+        # グルーピング情報が存在する場合はグルーピングを処理する
+        if (grouping_info := event.get("exastro_filter_group")) is None:
+            return
+        group_id = grouping_info["group_id"]
+
+        # 属性集約キーキャッシュが存在する場合は、ルール確定グループ側を削除する
+        if (
+            oaseConst.DF_LOCAL_LABLE_NAME in event
+            and oaseConst.DF_LOCAL_LABLE_ATTRIBUTE_KEY
+            in event[oaseConst.DF_LOCAL_LABLE_NAME]
+        ):
+            filter_row = {"FILTER_ID": grouping_info["filter_id"]}
+            ttl_groups = self._get_ttl_groups(event, filter_row)
+            for ttl_group in ttl_groups:
+                # グループIDが一致しない場合はスキップ
+                if (
+                    group_id
+                    != ttl_group["first_event"]["exastro_filter_group"]["group_id"]
+                ):
+                    continue
+                # グループ削除
+                ttl_groups.remove(ttl_group)
+                # グループに含まれる後続イベントの無効化
+                for remaining_event in ttl_group["remaining_events"]:
+                    remaining_event["labels"][f"_exastro_{disable_type}"] = "1"
+                    del remaining_event["exastro_filter_group"]
+                break
+
+        # グルーピング情報削除、無効のMongoDB更新
+        WriterProcessManager.update_labeled_event_collection(
+            {"exastro_filter_group.group_id": group_id},
+            {
+                "$unset": {"exastro_filter_group": ""},
+                "$set": {
+                    f"labels._exastro_{disable_type}": "1",
+                },
+            },
+        )
 
     @staticmethod
     def _create_new_ttl_group(event: Event) -> TtlGroup:
@@ -586,7 +714,11 @@ class ManageEvents:
         ttl_groups = self._get_ttl_groups(event, filter_row)
 
         # 既にグループに存在する場合はイベントが持つ情報を返す
-        if any(event == group["first_event"] or event in group["remaining_events"] for group in ttl_groups):
+        if any(
+            event["_id"] == group["first_event"]["_id"]
+            or any(event["_id"] == e["_id"] for e in group["remaining_events"])
+            for group in ttl_groups
+        ):
             return event["exastro_filter_group"]["is_first_event"] == "1"
 
         match ttl_groups:
@@ -620,19 +752,21 @@ class ManageEvents:
 
     def print_event(self):
         for event_id, event in self.labeled_events_dict.items():
-            id = str(event['_id'])
-            evaluated = str(event['labels']['_exastro_evaluated'])
-            undetected = str(event['labels']['_exastro_undetected'])
+            id = str(event["_id"])
+            evaluated = str(event["labels"]["_exastro_evaluated"])
+            undetected = str(event["labels"]["_exastro_undetected"])
             timeout = str(event["labels"]["_exastro_timeout"])
-            localsts = str(event[oaseConst.DF_LOCAL_LABLE_NAME][oaseConst.DF_LOCAL_LABLE_STATUS])
+            localsts = str(
+                event[oaseConst.DF_LOCAL_LABLE_NAME][oaseConst.DF_LOCAL_LABLE_STATUS]
+            )
             status = "Unknown"  # 不明
-            if evaluated == '0' and undetected == '1' and timeout == '0':
+            if evaluated == "0" and undetected == "1" and timeout == "0":
                 status = "Undetected        "  # 未知
-            elif evaluated == '0' and undetected == '0' and timeout == '1':
+            elif evaluated == "0" and undetected == "0" and timeout == "1":
                 status = "Timeout"  # タイムアウト
-            elif evaluated == '0' and undetected == '0' and timeout == '0':
+            elif evaluated == "0" and undetected == "0" and timeout == "0":
                 status = "Currently no action required"  # 今は対応不要
-            elif evaluated == '1' and undetected == '0' and timeout == '0':
+            elif evaluated == "1" and undetected == "0" and timeout == "0":
                 status = "Action required      "  # 要対応
             if localsts == oaseConst.DF_PROC_EVENT:
                 localsts = "Process target:〇"  # 処理対象:〇
@@ -642,10 +776,14 @@ class ManageEvents:
                 localsts = "Timeout"  # タイムアウト
             elif localsts == oaseConst.DF_NOT_PROC_EVENT:
                 localsts = "Not target"  # 対象外
-            tmp_msg = "id:{} status:{}  _exastro_evaluated:{}  _exastro_undetected:{}  _exastro_timeout:{} local_status:{}".format(id, status, evaluated, undetected, timeout, localsts)
-            g.applogger.info(self.addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+            tmp_msg = "id:{} status:{}  _exastro_evaluated:{}  _exastro_undetected:{}  _exastro_timeout:{} local_status:{}".format(
+                id, status, evaluated, undetected, timeout, localsts
+            )
+            g.applogger.info(self.addline_msg("{}".format(tmp_msg)))  # noqa: F405
 
-    def addline_msg(self, msg=''):
+    def addline_msg(self, msg=""):
         info = inspect.getouterframes(inspect.currentframe())[1]
-        msg_line = "{} ({}:{})".format(msg, os.path.basename(info.filename), info.lineno)
+        msg_line = "{} ({}:{})".format(
+            msg, os.path.basename(info.filename), info.lineno
+        )
         return msg_line

@@ -4,6 +4,7 @@ import uuid
 
 from bson import ObjectId
 from common_libs.oase.const import oaseConst
+from common_libs.oase.manage_events import Event
 from tests.common import V_OASE_LABEL_KEY_GROUP, deep_merged
 
 
@@ -496,24 +497,58 @@ class DummyWriterPM:
             event
             for event in self.mongo.test_events
             if all(
-                event.get(k) == v
+                self._get_nested_keys(event, k) == v
                 for k, v in filter.items()
             )
         )
         
-        update_values_map = update.get("$set", {})
+        update_values_map: Event | None = update.get("$set")
+        remove_values_map: Event | None = update.get("$unset")
         
         for event in matched_events:
-            for joined_key, expression in update_values_map.items():
-                remain_keys = joined_key.split(".")
-                target = event
-                # キーがネストされている場合に対応
-                while remain_keys:
-                    key, *remain_keys = remain_keys
-                    if not remain_keys:
-                        target[key] = expression
-                    else:
-                        target = target.setdefault(key, {})
+            if update_values_map is not None:
+                self._update_nested_keys(update_values_map, event)
+            if remove_values_map is not None:
+                self._remove_nested_keys(remove_values_map, event)
+
+    def _get_nested_keys(self, event: Event, joined_key: str):
+        remain_keys = joined_key.split(".")
+        target = event
+        # キーがネストされている場合に対応
+        while remain_keys:
+            key, *remain_keys = remain_keys
+            if not isinstance(target, dict) or key not in target:
+                return None
+            target = target[key]
+            if not remain_keys:
+                return target
+        return target
+
+    def _remove_nested_keys(self, remove_values_map: dict[str], event: Event):
+        for joined_key in remove_values_map.keys():
+            remain_keys = joined_key.split(".")
+            target = event
+            # キーがネストされている場合に対応
+            while remain_keys:
+                key, *remain_keys = remain_keys
+                if not remain_keys:
+                    target.pop(key, None)
+                else:
+                    target = target.get(key)
+                    if target is None:
+                        break
+
+    def _update_nested_keys(self, update_values_map: dict[str], event: Event):
+        for joined_key, expression in update_values_map.items():
+            remain_keys = joined_key.split(".")
+            target = event
+            # キーがネストされている場合に対応
+            while remain_keys:
+                key, *remain_keys = remain_keys
+                if not remain_keys:
+                    target[key] = expression
+                else:
+                    target = target.setdefault(key, {})
 
     def insert_oase_action_log(self, data):
         data["ACTION_LOG_ID"] = str(uuid.uuid4())

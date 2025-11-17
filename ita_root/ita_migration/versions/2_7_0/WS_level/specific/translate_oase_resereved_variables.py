@@ -21,10 +21,10 @@ from common_libs.common.dbconnect import *  # noqa: F403
 
 def main(work_dir_path, ws_db):
     ###########################################################
-    # oase_2785
+    # translate oase resereved variables
     # 既にあった予約変数（EXASTRO_LAST_FETCHED_YY_MM_DDなど）をjinja2用の変数に置換を行う
     ###########################################################
-    g.applogger.info("[Trace] oase_2785.py start")
+    g.applogger.info("[Trace][start] translate oase resereved variables")
     common_db = DBConnectCommon()  # noqa: F405
 
     organization_id = g.ORGANIZATION_ID
@@ -37,6 +37,7 @@ def main(work_dir_path, ws_db):
     # oaseインストール済みの場合しか対応しない
     org_no_install_driver = json.loads(org_no_install_driver) if org_no_install_driver is not None else {}
     if 'oase' in org_no_install_driver:
+        g.applogger.info("[Trace][skipped] translate oase resereved variables")
         return 0
 
     records = ws_db.table_select('T_OASE_EVENT_COLLECTION_SETTINGS')
@@ -66,7 +67,7 @@ def main(work_dir_path, ws_db):
     # コミット
     ws_db.db_commit()
 
-    g.applogger.info("[Trace] oase_2785.py end")
+    g.applogger.info("[Trace][end] translate oase resereved variables")
     return 0
 
 

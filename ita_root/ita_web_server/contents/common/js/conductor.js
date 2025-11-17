@@ -1214,7 +1214,7 @@ initCanvas() {
     // --------------------------------------------------
     cd.$.area.on({
         'mousedown.canvas': function( e ) {
-            if ( e.buttons === 2 ) {
+            if ( e.buttons === 2 && e.target.className !== 'node-link') {
                 e.preventDefault();
 
                 cd.setAction('canvas-move');
@@ -1273,6 +1273,8 @@ initCanvas() {
             }
         },
         'contextmenu': function( e ) {
+            // リンクの場合は表示
+            if ( e.target.className === 'node-link') return;
             // コンテキストメニューは表示しない
             if ( cd.setting.debug === false ) e.preventDefault();
         }
@@ -1922,6 +1924,35 @@ initNode() {
         '5': 'TERC'   // Terraform CLI
     };
 
+    // 紐づけリンク
+    cd.setting.movementMenuLink = {
+        // Ansible Legacy
+        '1': {
+            menu: 'movement_playbook_link',
+            column: 'movement'
+        },
+        // Ansible Pioneer
+        '2': {
+            menu: 'movement_dialogue_type_link',
+            column: 'movement'
+        },
+        // Ansible Legacy Role
+        '3': {
+            menu: 'movement_role_link',
+            column: 'movement'
+        },
+        // Terraform Cloud/EP
+        '4': {
+            menu: 'movement_module_link_terraform_cloud_ep',
+            column: 'movement_name'
+        },
+        // Terraform CLI
+        '5': {
+            menu: 'movement_module_link_terraform_cli',
+            column: 'movement_name'
+        }
+    }
+
     // --------------------------------------------------
     // リストからノード追加（ドラッグアンドドロップ）
     // --------------------------------------------------
@@ -2114,6 +2145,11 @@ initNode() {
     // --------------------------------------------------
     cd.$.area.on('mousedown', function( e ){
         if ( e.buttons === 1 ) {
+            // リンクの場合何もしない
+            if ( $( e.target ).closest('.node-link').length ) {
+                return;
+            }
+
             // 拡大ノードがあれば解除
             if ( !$( e.target ).closest('.node-jump').length ) {
                 cd.$.artBoard.find('.hover-node').css('transform', `scale(1)`).removeClass('hover-node');
@@ -2912,7 +2948,19 @@ createNode( nodeID ) {
     // Node name
     typeCheck = ['start', 'end', 'movement'];
     if ( typeCheck.indexOf( nodeData.type ) !== -1 ) {
-        nodeHTML += '<div class="node-name"><span>' + fn.cv( nodeName, '', true ) + '</span></div>';
+        let nodeNameHtml;
+        if ( nodeData.type === 'movement') {
+            const linkData = cd.setting.movementMenuLink[ nodeData.orchestra_id ];
+            const linkFilter = {};
+            linkFilter[ linkData.column ] = {
+                LIST: [ nodeName ]
+            };
+            const link = `?menu=${linkData.menu}&filter=${fn.filterEncode(linkFilter)}`;
+            nodeNameHtml = `<a class="node-link" draggable="false" href="${link}">${fn.cv( nodeName, '', true )}</a>`;
+        } else {
+            nodeNameHtml = `<span>${fn.cv( nodeName, '', true )}</span>`;
+        }
+        nodeHTML += `<div class="node-name">${nodeNameHtml}</div>`;
     }
     if ( nodeData.type === 'call' ) {
         const callConductorId = nodeData['call_conductor_id'];

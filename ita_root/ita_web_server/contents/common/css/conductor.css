@@ -348,6 +348,19 @@ font-weight: bold;
 word-break: break-all;
 color: #222;
 }
+.node-link {
+    text-decoration: none;
+    cursor: pointer;
+}
+.node-link:link,
+.node-link:visited {
+	color: #222;
+}
+.node-link:hover,
+.node-link:active {
+	color: #1F58B5;
+    text-decoration: underline;
+}
 .node-in, .node-out {
 position: relative;
 z-index: 1;
@@ -1056,7 +1069,7 @@ opacity: 0.75;
 .end-status-select-list {
 position: relative;
 margin: 0; padding: 0;
-list-style: none;  
+list-style: none;
 }
 .end-status-select-item {
 overflow: hidden;

@@ -3957,6 +3957,12 @@ viewCellHtml( item, columnKey, journal ) {
         value = fn.escape( value );
     }
 
+    // 素材紐付カラム
+    const materialLink = tb.specialMenuMaterialLink[ tb.params.menuNameRest ];
+    if ( tb.mode === 'view' && materialLink && materialLink.linkColumn === columnName ) {
+        return tb.specialMenuMaterialLinkColumn( materialLink, value );
+    }
+
     // 変更履歴
     const checkJournal = function( val ) {
         if ( journal && journal[ columnName ] !== undefined ) {
@@ -4096,6 +4102,53 @@ viewCellHtml( item, columnKey, journal ) {
         // 不明
         default:
             return '?';
+    }
+}
+/*
+##################################################
+    特殊メニュー　素材リンク
+##################################################
+*/
+specialMenuMaterialLinkColumn( materialLink, value ) {
+    const filter = {};
+    let filterValue = value;
+    if ( materialLink.linkColumn === 'role_package_list') {
+        filterValue = filterValue.substring( 0, filterValue.lastIndexOf(':') );
+    }
+    filter[ materialLink.filterColumn ] = { LIST: filterValue };
+    return `<a href="?menu=${materialLink.linkMenu}&filter=${fn.filterEncode(filter)}">${value}</a>`;
+}
+// 対象メニュー
+specialMenuMaterialLink = {
+    // Ansible Legacy
+    'movement_playbook_link': {
+        linkColumn: 'playbook_file',
+        linkMenu: 'playbook_files',
+        filterColumn: 'playbook_name'
+    },
+    // Ansible Pioneer
+    'movement_dialogue_type_link': {
+        linkColumn: 'dialog_type',
+        linkMenu: 'dialog_files',
+        filterColumn: 'dialog_type'
+    },
+    // Ansible Legacy Role
+    'movement_role_link': {
+        linkColumn: 'role_package_name_role_name',
+        linkMenu: 'role_package_list',
+        filterColumn: 'role_package_name'
+    },
+    // Terraform Cloud/EP
+    'movement_module_link_terraform_cloud_ep': {
+        linkColumn: 'module_file',
+        linkMenu: 'module_files_terraform_cloud_ep',
+        filterColumn: 'module_file_name'
+    },
+    // Terraform CLI
+    'movement_module_link_terraform_cli': {
+        linkColumn: 'module_file',
+        linkMenu: 'module_files_terraform_cli',
+        filterColumn: 'module_file_name'
     }
 }
 /*

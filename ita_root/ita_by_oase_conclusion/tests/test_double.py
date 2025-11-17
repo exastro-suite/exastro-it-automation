@@ -4,6 +4,7 @@ import uuid
 
 from bson import ObjectId
 from common_libs.oase.const import oaseConst
+from common_libs.oase.manage_events import Event
 from tests.common import V_OASE_LABEL_KEY_GROUP, deep_merged
 
 
@@ -209,12 +210,12 @@ class MockCursor:
         """クエリに基づいてイベントをフィルタリング"""
         filtered_events = []
         for event in self._events:
-            if self._matches_query(event, self.query):
+            if self.matches_query(event, self.query):
                 filtered_events.append(event)
         return filtered_events
 
     @classmethod
-    def _matches_query(cls, event, query):
+    def matches_query(cls, event, query):
         """イベントがクエリにマッチするかチェック"""
         if not query:
             return True
@@ -241,12 +242,30 @@ class MockCursor:
     def _match_query_body(cls, event, target, expression):
         """クエリ本体にマッチするかチェック"""
         match expression:
+            case dict() if len(expression) > 1:
+                # 複数条件のAND検索
+                return all(
+                    cls._match_query_body(event, target, {key: sub_expression})
+                    for key, sub_expression in expression.items()
+                )
             case {"$in": [*values]}:
                 return target in values
             case {"$gte": value}:
                 return target >= value
+            case {"$lte": value}:
+                return target <= value
+            case {"$gt": value}:
+                return target > value
+            case {"$lt": value}:
+                return target < value
+            case {"$eq": value}:
+                return target == value
+            case {"$ne": value}:
+                return target != value
+            case {"$or": [*queries]}:
+                return any(cls.matches_query(target, query) for query in queries)
             case {"$and": [*queries]}:
-                return all(cls._matches_query(target, query) for query in queries)
+                return all(cls.matches_query(target, query) for query in queries)
             case {"$expr": expression}:
                 return cls._match_expression(event, expression)
             case value:
@@ -467,7 +486,12 @@ class DummyNotificationPM:
 
 
 class DummyWriterPM:
-    def __init__(self, calls, ws_db: DummyDB | None = None, mongo: MockMONGOConnectWs | None = None):
+    def __init__(
+        self,
+        calls,
+        ws_db: DummyDB | None = None,
+        mongo: MockMONGOConnectWs | None = None,
+    ):
         self.calls = calls
         self.ws_db = ws_db
         self.mongo = mongo
@@ -487,33 +511,78 @@ class DummyWriterPM:
         return event["_id"]  # 戻り値はイベントID
 
     def update_labeled_event_collection(self, filter, update):
+        def get_update_events_key(filter: dict) -> frozenset:
+            def _get_update_events_key(filter_item):
+                match filter_item:
+                    case dict():
+                        return frozenset((k, _get_update_events_key(v)) for k, v in filter_item.items())
+                    case list():
+                        return tuple(
+                            _get_update_events_key(item) for item in filter_item
+                        )
+                    case _:
+                        return filter_item
+
+            return _get_update_events_key(filter)
+
         update_events = self.calls["update_events"]
-        key = frozenset(filter.items())
+        key = get_update_events_key(filter)
         events = update_events.get(key, {})
         update_events[key] = deep_merged(events, update)
-        
+
         matched_events = (
             event
             for event in self.mongo.test_events
-            if all(
-                event.get(k) == v
-                for k, v in filter.items()
-            )
+            if MockCursor.matches_query(event, filter)
         )
-        
-        update_values_map = update.get("$set", {})
-        
+
+        update_values_map: Event | None = update.get("$set")
+        remove_values_map: Event | None = update.get("$unset")
+
         for event in matched_events:
-            for joined_key, expression in update_values_map.items():
-                remain_keys = joined_key.split(".")
-                target = event
-                # キーがネストされている場合に対応
-                while remain_keys:
-                    key, *remain_keys = remain_keys
-                    if not remain_keys:
-                        target[key] = expression
-                    else:
-                        target = target.setdefault(key, {})
+            if update_values_map is not None:
+                self._update_nested_keys(update_values_map, event)
+            if remove_values_map is not None:
+                self._remove_nested_keys(remove_values_map, event)
+
+    def _get_nested_keys(self, event: Event, joined_key: str):
+        remain_keys = joined_key.split(".")
+        target = event
+        # キーがネストされている場合に対応
+        while remain_keys:
+            key, *remain_keys = remain_keys
+            if not isinstance(target, dict) or key not in target:
+                return None
+            target = target[key]
+            if not remain_keys:
+                return target
+        return target
+
+    def _remove_nested_keys(self, remove_values_map: dict[str], event: Event):
+        for joined_key in remove_values_map.keys():
+            remain_keys = joined_key.split(".")
+            target = event
+            # キーがネストされている場合に対応
+            while remain_keys:
+                key, *remain_keys = remain_keys
+                if not remain_keys:
+                    target.pop(key, None)
+                else:
+                    target = target.get(key)
+                    if target is None:
+                        break
+
+    def _update_nested_keys(self, update_values_map: dict[str], event: Event):
+        for joined_key, expression in update_values_map.items():
+            remain_keys = joined_key.split(".")
+            target = event
+            # キーがネストされている場合に対応
+            while remain_keys:
+                key, *remain_keys = remain_keys
+                if not remain_keys:
+                    target[key] = expression
+                else:
+                    target = target.setdefault(key, {})
 
     def insert_oase_action_log(self, data):
         data["ACTION_LOG_ID"] = str(uuid.uuid4())

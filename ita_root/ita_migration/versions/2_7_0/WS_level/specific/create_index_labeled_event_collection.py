@@ -27,10 +27,10 @@ def main(work_dir_path, wsdb):
     ############################################################
     # 【OASE】インデックスの追加
     ############################################################
-    g.applogger.info("[Trace] create index mongodb 'labeled_event_collection'")
+    g.applogger.info("[Trace][start] create index mongodb 'labeled_event_collection'")
     # mongodbに対するアップデートなので、migrationのときしか実行しない（menu-export-importの対象外とするため）
     if g.SERVICE_NAME != "ita-migration":
-        g.applogger.info("[Trace] skipped create index mongodb 'labeled_event_collection'")
+        g.applogger.info("[Trace][skipped] create index mongodb 'labeled_event_collection'")
         return 0
 
     common_db = DBConnectCommon()  # noqa: F405
@@ -45,6 +45,7 @@ def main(work_dir_path, wsdb):
     # oaseインストール済みの場合しか対応しない
     org_no_install_driver = json.loads(org_no_install_driver) if org_no_install_driver is not None else {}
     if 'oase' in org_no_install_driver:
+        g.applogger.info("[Trace][skipped] create index mongodb 'labeled_event_collection'")
         return 0
 
     try:
@@ -63,5 +64,6 @@ def main(work_dir_path, wsdb):
         t = traceback.format_exc()
         g.applogger.error(arrange_stacktrace_format(t))
 
+    g.applogger.info("[Trace][end] create index mongodb 'labeled_event_collection'")
     return 0
 

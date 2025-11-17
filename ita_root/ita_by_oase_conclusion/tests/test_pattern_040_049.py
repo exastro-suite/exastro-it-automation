@@ -13,7 +13,7 @@
 #   limitations under the License.
 
 from common_libs.oase.const import oaseConst
-from tests.common import create_rule_row, run_test_pattern
+from tests.common import create_rule_row, run_test_pattern, assert_grouped_events
 from tests.event import create_events
 from tests.filter import f_u_b, f_u_c
 
@@ -48,6 +48,20 @@ def test_pattern_040(
 
     assert e018b["labels"]["_exastro_timeout"] == "1"
 
+    # 結論イベントの確認
+    conclusion_events = [e for e in test_events if e["labels"]["_exastro_type"] == "conclusion"]
+    assert len(conclusion_events) == 1
+    c_1 = conclusion_events[0]
+
+    assert len(c_1["exastro_events"]) == 2
+    assert list(c_1["exastro_events"]).count(f"ObjectId('{str(e018['_id'])}')") == 1
+    assert list(c_1["exastro_events"]).count(f"ObjectId('{str(e021['_id'])}')") == 1
+    assert c_1["labels"]["_exastro_rule_name"] == "p040:r1"
+    assert c_1["labels"]["_exastro_undetected"] == "1"
+
+    # グルーピングの確認
+    assert_grouped_events(test_events, [])
+
 
 def test_pattern_041(
     patch_global_g,
@@ -79,6 +93,24 @@ def test_pattern_041(
 
     assert e019["labels"]["_exastro_undetected"] == "1"
     assert e021["labels"]["_exastro_undetected"] == "1"
+
+    # 結論イベントの確認
+    conclusion_events = [e for e in test_events if e["labels"]["_exastro_type"] == "conclusion"]
+    assert len(conclusion_events) == 2
+    c_1, c_2 = conclusion_events
+
+    assert len(c_1["exastro_events"]) == 1
+    assert list(c_1["exastro_events"]).count(f"ObjectId('{str(e018['_id'])}')") == 1
+    assert c_1["labels"]["_exastro_rule_name"] == "p041:r1"
+    assert c_1["labels"]["_exastro_undetected"] == "1"
+
+    assert len(c_2["exastro_events"]) == 1
+    assert list(c_2["exastro_events"]).count(f"ObjectId('{str(e023b['_id'])}')") == 1
+    assert c_2["labels"]["_exastro_rule_name"] == "p041:r1"
+    assert c_2["labels"]["_exastro_undetected"] == "1"
+
+    # グルーピングの確認
+    assert_grouped_events(test_events, [])
 
 
 def test_pattern_042(
@@ -116,6 +148,20 @@ def test_pattern_042(
     assert e023b["labels"]["_exastro_evaluated"] == "1"  # _exastro_undetected == "1" になっている
     assert e023b2["labels"]["_exastro_timeout"] == "1"  # _exastro_undetected == "1" になっている
 
+    # 結論イベントの確認
+    conclusion_events = [e for e in test_events if e["labels"]["_exastro_type"] == "conclusion"]
+    assert len(conclusion_events) == 1
+    c_1 = conclusion_events[0]
+
+    assert len(c_1["exastro_events"]) == 2
+    assert list(c_1["exastro_events"]).count(f"ObjectId('{str(e019['_id'])}')") == 1
+    assert list(c_1["exastro_events"]).count(f"ObjectId('{str(e023b['_id'])}')") == 1
+    assert c_1["labels"]["_exastro_rule_name"] == "p042:r1"
+    assert c_1["labels"]["_exastro_undetected"] == "1"
+
+    # グルーピングの確認
+    assert_grouped_events(test_events, [])
+
 
 def test_pattern_043(
     patch_global_g,
@@ -143,6 +189,19 @@ def test_pattern_043(
     run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules, actions)
 
     assert e018["labels"]["_exastro_evaluated"] == "1"
+
+    # 結論イベントの確認
+    conclusion_events = [e for e in test_events if e["labels"]["_exastro_type"] == "conclusion"]
+    assert len(conclusion_events) == 1
+    c_1 = conclusion_events[0]
+
+    assert len(c_1["exastro_events"]) == 1
+    assert list(c_1["exastro_events"]).count(f"ObjectId('{str(e018['_id'])}')") == 1
+    assert c_1["labels"]["_exastro_rule_name"] == "p043:r1"
+    assert c_1["labels"]["_exastro_undetected"] == "1"
+
+    # グルーピングの確認
+    assert_grouped_events(test_events, [])
 
 
 def test_pattern_044(
@@ -172,3 +231,10 @@ def test_pattern_044(
 
     assert e018["labels"]["_exastro_undetected"] == "1"
     assert e018a["labels"]["_exastro_undetected"] == "1"
+
+    # 結論イベントの確認
+    conclusion_events = [e for e in test_events if e["labels"]["_exastro_type"] == "conclusion"]
+    assert len(conclusion_events) == 0
+
+    # グルーピングの確認
+    assert_grouped_events(test_events, [])

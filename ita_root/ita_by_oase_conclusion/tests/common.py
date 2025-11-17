@@ -690,3 +690,45 @@ def _assert_events_all_evaluated(events):
         assert (
             event["labels"]["_exastro_evaluated"] == "1"
         ), f"event {event} is not evaluated"
+
+
+def assert_grouped_events(test_events, expected_groups):
+    """グルーピングされたイベントが期待通りであることをアサートする
+
+    Args:
+        test_events (_type_): _description_
+        expected_groups (_type_): _description_
+    """
+    # グループ化されたイベントの数を確認
+    grouped_events = [e for e in test_events if e.get("exastro_filter_group")]
+    grouped_event_ids = {event["_id"] for group in expected_groups for event in group}
+    assert len(grouped_events) == len(grouped_event_ids), (
+        f"Mismatch in grouped events count: expected {len(grouped_event_ids)}, but got {len(grouped_events)}"
+    )
+
+    # expected_groups に含まれないイベントで exastro_filter_group を持つものがないことを確認
+    unexpected_grouped_events = [
+        e for e in grouped_events if e["_id"] not in grouped_event_ids
+    ]
+    assert not unexpected_grouped_events, f"Unexpected events with exastro_filter_group found: {unexpected_grouped_events}"
+
+    for group in expected_groups:
+        first_event = group[0]
+        assert first_event["exastro_filter_group"]["is_first_event"] == "1"
+        first_event_group_id = first_event["exastro_filter_group"]["group_id"]
+
+        # グループ内のイベントが同じ group_id を持つことを確認
+        assert all(event["exastro_filter_group"]["group_id"] == first_event_group_id for event in group), \
+            f"Events in group do not share the same group_id: {group}"
+
+        # グループ内で first_event 以外に is_first_event == "1" を持つイベントが存在しないことを確認
+        other_first_events = [
+            event for event in group[1:] if event["exastro_filter_group"].get("is_first_event") == "1"
+        ]
+        assert not other_first_events, f"Unexpected is_first_event == '1' found in group: {other_first_events}"
+
+        # グループ外に同じ group_id を持つイベントが存在しないことを確認
+        other_events_with_same_group_id = [
+            e for e in grouped_events if e["exastro_filter_group"]["group_id"] == first_event_group_id and e not in group
+        ]
+        assert not other_events_with_same_group_id, f"Unexpected events with group_id {first_event_group_id} found: {other_events_with_same_group_id}"

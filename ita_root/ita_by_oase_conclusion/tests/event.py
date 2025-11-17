@@ -573,6 +573,16 @@ event_templates["e025"] = {
     "fetched_time_offset": -5,
     "custom_labels": {"node": "z11", "type": "qa", "mode": "q2"},
 }
+event_templates["e025a"] = {
+    "ttl": 20,
+    "fetched_time_offset": -30,
+    "custom_labels": {"node": "z11", "type": "qa", "mode": "q2"},
+}
+event_templates["e025b"] = {
+    "ttl": 20,
+    "fetched_time_offset": -30,
+    "custom_labels": {"node": "z11", "type": "qa", "mode": "q2"},
+}
 event_templates["e026"] = {
     "ttl": 20,
     "fetched_time_offset": 7,
@@ -742,6 +752,16 @@ event_templates["e041"] = {
     "ttl": 20,
     "fetched_time_offset": -15,
     "custom_labels": {"node": ""},
+}
+event_templates["e042"] = {
+    "ttl": 20,
+    "fetched_time_offset": -15,
+    "custom_labels": {"node": "z21"},
+}
+event_templates["e043"] = {
+    "ttl": 20,
+    "fetched_time_offset": -15,
+    "custom_labels": {"node": "z21"},
 }
 
 event_templates["e999"] = {

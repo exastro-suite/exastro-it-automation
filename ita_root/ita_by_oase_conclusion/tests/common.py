@@ -29,7 +29,21 @@ ExpectedConclusion = TypedDict(
 ExpectedEvent = TypedDict(
     "ExpectedEvent", {"type": Literal["event"], "event_id": TestId}
 )
-ExpectedDefinition: TypeAlias = ExpectedConclusion | ExpectedEvent | TestId
+_ExpectedDefinition: TypeAlias = ExpectedConclusion | ExpectedEvent | TestId
+ExpectedDefinition: TypeAlias = (
+    _ExpectedDefinition
+    | tuple[
+        str,
+        list[_ExpectedDefinition] | _ExpectedDefinition | None,
+        list[_ExpectedDefinition] | _ExpectedDefinition | None,
+    ]
+    | tuple[str, list[_ExpectedDefinition] | _ExpectedDefinition]
+)
+ExpectedMatch: TypeAlias = tuple[
+    str,
+    list[ExpectedDefinition] | ExpectedDefinition | None,
+    list[ExpectedDefinition] | ExpectedDefinition | None,
+]
 
 # ===== グローバル変数 =====
 
@@ -68,6 +82,7 @@ V_OASE_LABEL_KEY_GROUP = {
     "service": "a7418cae-5029-4580-997f-f41a1b2a14d6",
     "severity": "ef992af9-4079-49bf-b9ca-eed079ebfed3",
     "status": "0a6ded16-7f3b-4c9d-9fde-781b5609acc2",
+    "used_space": "d3b8c6e1-3f4e-4c5d-8e6f-7a8b9c0d1e2f",
 }
 
 # ===== ダミーデータ作成関数 =====
@@ -347,7 +362,7 @@ def run_test_pattern(
     # 前方の実行回数
     before_epoch_runs: int = 3,
     # 後方の実行回数
-    after_epoch_runs: int = 4,
+    after_epoch_runs: int = 6,
     # 一時情報の集約(デバッグ用)
     local_label_collection: dict[int, dict[ObjectId, dict[str] | None]] | None = None,
 ):
@@ -392,14 +407,36 @@ def search_event_by_test_id(
 ) -> dict[str]:
     """test_idでイベントを検索する"""
     match test_id:
+        case (
+            rule_name,
+            # ルールの再帰定義またはグルーピング定義(必要なのは先頭イベントのみ)または単体定義
+            (tuple() as test_id_1) | [test_id_1, *_] | test_id_1,
+            (tuple() as test_id_2) | [test_id_2, *_] | test_id_2,
+        ):
+            # 結論イベントの期待値(ルールの定義形式)
+            exastro_events = [
+                repr(search_event_by_test_id(events, test_id)["_id"])
+                for test_id in (test_id_1, test_id_2)
+                if test_id is not None
+            ]
+
+            for event in events:
+                if (
+                    event["labels"]["_exastro_type"] == "conclusion"
+                    and event["labels"].get("_exastro_rule_name") == rule_name
+                    and event["exastro_events"] == exastro_events
+                ):
+                    return event
         case {
             "type": "conclusion",
             "rule_name": rule_name,
             "test_ids": test_ids,
         }:
+            # 結論イベントの期待値
             exastro_events = [
                 repr(search_event_by_test_id(events, test_id)["_id"])
                 for test_id in test_ids
+                if test_id is not None
             ]
 
             for event in events:
@@ -411,6 +448,7 @@ def search_event_by_test_id(
                     return event
 
         case {"type": "event", "event_id": (str() as test_id)} | (str() as test_id):
+            # イベントの期待値
             for event in events:
                 if event.get("event", {}).get("event_id") == test_id:
                     return event
@@ -444,7 +482,9 @@ def assert_event_logged_evaluated_result(
         )
     ]
 
-    assert evaluated_result_logs, f"Event {test_id} not logged in evaluated results for rule {rule_name}, event details: {event}"
+    assert (
+        evaluated_result_logs
+    ), f"Event {test_id} not logged in evaluated results for rule {rule_name}, event details: {event}"
 
 
 def assert_event_not_logged_evaluated_result(
@@ -570,13 +610,7 @@ def assert_grouping(
 def assert_expected_pattern_results(
     ws_db,
     test_events: list[dict[str]],
-    expected: list[
-        tuple[
-            str,
-            list[ExpectedDefinition] | ExpectedDefinition | None,
-            list[ExpectedDefinition] | ExpectedDefinition | None,
-        ]
-    ],
+    expected: list[ExpectedMatch],
 ):
     """パターンの期待結果をアサートする"""
 
@@ -586,11 +620,11 @@ def assert_expected_pattern_results(
         match rule_name_or_unmatched_status:
             case "timeout":
                 # タイムアウトの場合、タイムアウトラベルの追加チェック
-                additional_check = _assert_events_all_timeout
+                event_status_check = _assert_events_all_timeout
 
             case "undetected":
                 # 未知の場合、未知ラベルの追加チェック
-                additional_check = _assert_events_all_undetected
+                event_status_check = _assert_events_all_undetected
 
             case rule_name:
                 # ルール名にマッチした場合、フィルターIDを取得かつラベルの正常判定チェック
@@ -599,23 +633,30 @@ def assert_expected_pattern_results(
                     for row in ws_db.table_data[oaseConst.T_OASE_RULE]
                     if row["RULE_NAME"] == rule_name
                 )
-                additional_check = _assert_events_all_evaluated
+                event_status_check = _assert_events_all_evaluated
 
         for filter_id, filter_extract_info in zip(filter_ids, filter_extract_info_pair):
             match rule_name_or_unmatched_status, filter_extract_info:
-                case "undetected", list() as test_ids:
-                    # 未知かつ入力がリストの場合、評価結果未記録のアサーション
+                case _, None:
+                    # 入力がNoneの場合、無視
+                    continue
+                case "undetected" | "timeout", list() as test_ids:
+                    event_status_check(
+                        (search_event_by_test_id(test_events, test_id), test_id)
+                        for test_id in test_ids
+                    )
+                    # 未知かタイムアウトかつ入力がリストの場合、評価結果未記録のアサーション
                     for test_id in test_ids:
                         assert_event_not_logged_evaluated_result(
                             test_events,
                             ws_db,
                             test_id,
                         )
-                    extracted_events = [
-                        search_event_by_test_id(test_events, test_id)
-                        for test_id in test_ids
-                    ]
                 case _, list() as test_ids:
+                    event_status_check(
+                        (search_event_by_test_id(test_events, test_id), test_id)
+                        for test_id in test_ids
+                    )
                     # 未知以外かつ入力がリストの場合、グルーピングのアサーション
                     assert_grouping(
                         test_events,
@@ -624,72 +665,67 @@ def assert_expected_pattern_results(
                         filter_id=filter_id,
                         rule_name=rule_name,
                     )
-                    extracted_events = [
-                        search_event_by_test_id(test_events, test_id)
-                        for test_id in test_ids
-                    ]
-                case "undetected" | "timeout", str() as test_id:
-                    # ルールにマッチしない入力が文字列の場合、評価結果未記録のアサーション
+                case "undetected" | "timeout", _ as test_id:
+                    event_status_check(
+                        [(search_event_by_test_id(test_events, test_id), test_id)]
+                    )
+                    # ルールにマッチしない場合、評価結果未記録のアサーション
                     assert_event_not_logged_evaluated_result(
                         test_events,
                         ws_db,
                         test_id,
                     )
-                    extracted_events = [search_event_by_test_id(test_events, test_id)]
-                case _, str() as test_id:
-                    # ルールにまっちかつ入力が文字列の場合、評価結果記録のアサーション
+                case _, _ as test_id:
+                    event_status_check(
+                        [(search_event_by_test_id(test_events, test_id), test_id)]
+                    )
+                    # ルールにマッチの場合、評価結果記録のアサーション
                     assert_event_logged_evaluated_result(
                         test_events,
                         ws_db,
                         test_id,
                         rule_name,
                     )
-                    extracted_events = [search_event_by_test_id(test_events, test_id)]
-                case _, None:
-                    # 入力がNoneの場合、該当イベントなし
-                    continue
-            # フィルターにマッチした/しなかった場合固有の追加チェック
-            additional_check(extracted_events)
 
 
-def _assert_events_all_timeout(events):
+def _assert_events_all_timeout(events_and_ids):
     """すべてのイベントがタイムアウトであることをアサートする"""
-    for event in events:
+    for event, test_id in events_and_ids:
         assert (
             event["labels"]["_exastro_timeout"] == "1"
-        ), f"event {event} is not timeout"
+        ), f"event {test_id} is not timeout, details: {event}"
         assert (
             event["labels"]["_exastro_undetected"] == "0"
-        ), f"event {event} is undetected"
+        ), f"event {test_id} is undetected, details: {event}"
         # タイムアウトはグルーピングを持たない
         assert (
             "exastro_filter_group" not in event
-        ), f"event {event} has unexpected grouping info"
+        ), f"event {test_id} has unexpected grouping info, details: {event}"
 
 
-def _assert_events_all_undetected(events):
+def _assert_events_all_undetected(events_and_ids):
     """すべてのイベントが未知であることをアサートする"""
-    for event in events:
-        assert event["labels"]["_exastro_timeout"] == "0", f"event {event} is timeout"
+    for event, test_id in events_and_ids:
+        assert event["labels"]["_exastro_timeout"] == "0", f"event {test_id} is timeout, details: {event}"
         assert (
             event["labels"]["_exastro_undetected"] == "1"
-        ), f"event {event} is not undetected"
+        ), f"event {test_id} is not undetected, details: {event}"
         # 未知はグルーピングを持たない
         assert (
             "exastro_filter_group" not in event
-        ), f"event {event} has unexpected grouping info"
+        ), f"event {test_id} has unexpected grouping info, details: {event}"
 
 
-def _assert_events_all_evaluated(events):
+def _assert_events_all_evaluated(events_and_ids):
     """すべてのイベントが評価済みであることをアサートする"""
-    for event in events:
-        assert event["labels"]["_exastro_timeout"] == "0", f"event {event} is timeout"
+    for event, test_id in events_and_ids:
+        assert event["labels"]["_exastro_timeout"] == "0", f"event {test_id} is timeout, details: {event}"
         assert (
             event["labels"]["_exastro_undetected"] == "0"
-        ), f"event {event} is undetected"
+        ), f"event {test_id} is undetected, details: {event}"
         assert (
             event["labels"]["_exastro_evaluated"] == "1"
-        ), f"event {event} is not evaluated"
+        ), f"event {test_id} is not evaluated, details: {event}"
 
 
 def assert_grouped_events(test_events, expected_groups):
@@ -702,15 +738,17 @@ def assert_grouped_events(test_events, expected_groups):
     # グループ化されたイベントの数を確認
     grouped_events = [e for e in test_events if e.get("exastro_filter_group")]
     grouped_event_ids = {event["_id"] for group in expected_groups for event in group}
-    assert len(grouped_events) == len(grouped_event_ids), (
-        f"Mismatch in grouped events count: expected {len(grouped_event_ids)}, but got {len(grouped_events)}"
-    )
+    assert len(grouped_events) == len(
+        grouped_event_ids
+    ), f"Mismatch in grouped events count: expected {len(grouped_event_ids)}, but got {len(grouped_events)}"
 
     # expected_groups に含まれないイベントで exastro_filter_group を持つものがないことを確認
     unexpected_grouped_events = [
         e for e in grouped_events if e["_id"] not in grouped_event_ids
     ]
-    assert not unexpected_grouped_events, f"Unexpected events with exastro_filter_group found: {unexpected_grouped_events}"
+    assert (
+        not unexpected_grouped_events
+    ), f"Unexpected events with exastro_filter_group found: {unexpected_grouped_events}"
 
     for group in expected_groups:
         first_event = group[0]
@@ -718,17 +756,28 @@ def assert_grouped_events(test_events, expected_groups):
         first_event_group_id = first_event["exastro_filter_group"]["group_id"]
 
         # グループ内のイベントが同じ group_id を持つことを確認
-        assert all(event["exastro_filter_group"]["group_id"] == first_event_group_id for event in group), \
-            f"Events in group do not share the same group_id: {group}"
+        assert all(
+            event["exastro_filter_group"]["group_id"] == first_event_group_id
+            for event in group
+        ), f"Events in group do not share the same group_id: {group}"
 
         # グループ内で first_event 以外に is_first_event == "1" を持つイベントが存在しないことを確認
         other_first_events = [
-            event for event in group[1:] if event["exastro_filter_group"].get("is_first_event") == "1"
+            event
+            for event in group[1:]
+            if event["exastro_filter_group"].get("is_first_event") == "1"
         ]
-        assert not other_first_events, f"Unexpected is_first_event == '1' found in group: {other_first_events}"
+        assert (
+            not other_first_events
+        ), f"Unexpected is_first_event == '1' found in group: {other_first_events}"
 
         # グループ外に同じ group_id を持つイベントが存在しないことを確認
         other_events_with_same_group_id = [
-            e for e in grouped_events if e["exastro_filter_group"]["group_id"] == first_event_group_id and e not in group
+            e
+            for e in grouped_events
+            if e["exastro_filter_group"]["group_id"] == first_event_group_id
+            and e not in group
         ]
-        assert not other_events_with_same_group_id, f"Unexpected events with group_id {first_event_group_id} found: {other_events_with_same_group_id}"
+        assert (
+            not other_events_with_same_group_id
+        ), f"Unexpected events with group_id {first_event_group_id} found: {other_events_with_same_group_id}"

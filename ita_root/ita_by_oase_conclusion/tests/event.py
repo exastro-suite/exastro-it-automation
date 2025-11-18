@@ -31,9 +31,9 @@ def create_events(event_ids: list[str], pattern_name: str) -> list[dict]:
         event = create_event(
             pattern_name,
             event_id,
-            fetched_time_offset=event_templates[event_id]['fetched_time_offset'],
-            ttl=event_templates[event_id]['ttl'],
-            custom_labels=copy.deepcopy(event_templates[event_id]['custom_labels']),
+            fetched_time_offset=event_templates[event_id]["fetched_time_offset"],
+            ttl=event_templates[event_id]["ttl"],
+            custom_labels=copy.deepcopy(event_templates[event_id]["custom_labels"]),
         )
         events.append(event)
     return events
@@ -363,6 +363,7 @@ event_templates["e011"] = {
         "service": "Disk",
         "status": "Full",
         "severity": "3",
+        "used_space": "95%",
         "excluded_flg": "0",
     },
 }
@@ -376,6 +377,7 @@ event_templates["e012"] = {
         "service": "Disk",
         "status": "Full",
         "severity": "3",
+        "used_space": "95%",
         "excluded_flg": "1",
     },
 }
@@ -389,6 +391,7 @@ event_templates["e013"] = {
         "service": "Disk",
         "status": "Full",
         "severity": "3",
+        "used_space": "95%",
         "excluded_flg": "0",
     },
 }
@@ -746,12 +749,12 @@ event_templates["e039"] = {
 event_templates["e040"] = {
     "ttl": 20,
     "fetched_time_offset": -15,
-    "custom_labels": {"node": "z01"},
+    "custom_labels": {"node": "z22", "service": "mail", "status": ""},
 }
 event_templates["e041"] = {
     "ttl": 20,
     "fetched_time_offset": -15,
-    "custom_labels": {"node": ""},
+    "custom_labels": {"node": "z22"},
 }
 event_templates["e042"] = {
     "ttl": 20,
@@ -763,7 +766,7 @@ event_templates["e043"] = {
     "fetched_time_offset": -15,
     "custom_labels": {"node": "z21"},
 }
-
+#
 event_templates["e999"] = {
     "ttl": 20,
     "fetched_time_offset": 0,
@@ -773,11 +776,10 @@ event_templates["e999"] = {
         "_exastro_host": "systemZ",
     },
 }
-
+#
 event_templates["e1001"] = {
     "ttl": 60,
     "fetched_time_offset": -10,
     "custom_labels": {"node": "VALUE"},
 }
-#
 # pytest用イベント定義

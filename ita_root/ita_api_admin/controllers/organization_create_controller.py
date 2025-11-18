@@ -531,14 +531,6 @@ def organization_update(organization_id, body=None):  # noqa: E501
             "oase": [['oase.sql', 'oase_master.sql']],
         }
 
-        # インストール時に利用する削除対象ディレクトリのパスの一覧
-        add_driver_files = {
-            "terraform_cloud_ep": [''],
-            "terraform_cli": [''],
-            "ci_cd": [''],
-            "oase": ['/uploadfiles/110102'],
-        }
-
         # アンインストール時に利用するSQLファイル名の一覧
         remove_driver_sql = {
             "terraform_cloud_ep": [['terraform_cloud_ep.drop.sql', 'terraform_cloud_ep_master.delete.sql']],
@@ -552,7 +544,7 @@ def organization_update(organization_id, body=None):  # noqa: E501
             "terraform_cloud_ep": [['/driver/terraform_cloud_ep/', '/uploadfiles/80105'], ['', '/uploadfiles/80106'], ['', '/uploadfiles/80114']],
             "terraform_cli": [['/driver/terraform_cli/', '/uploadfiles/90104'], ['', '/uploadfiles/90109']],
             "ci_cd": [['/driver/cicd/repositories/', '']],
-            "oase": [['', '/uploadfiles/110109']],
+            "oase": [['', '/uploadfiles/110109'], ['', '/uploadfiles/110102']],
         }
 
         # terraform_commonの追加について
@@ -752,16 +744,6 @@ def organization_update(organization_id, body=None):  # noqa: E501
                             ws_db.sql_execute(sql, prepared_list)
                     ws_db.db_commit()
 
-                # 対象ドライバのディレクトリの削除を実行してから再作成を行う
-                remove_files_list = add_driver_files[install_driver]
-                for remove_files in remove_files_list:
-                    # /uploadfiles配下
-                    if remove_files != '':
-                        remove_path_uploadfiles = workspace_dir + remove_files
-                        if os.path.isdir(remove_path_uploadfiles):
-                            g.applogger.info(" remove " + remove_path_uploadfiles)
-                            shutil.rmtree(remove_path_uploadfiles)
-
                 # files配下のconfigファイルを取得し、インストール中のドライバと一致していたら実行する
                 if install_driver in config_file_dict:
                     dest_dir = os.path.join(workspace_dir, "uploadfiles")
@@ -846,29 +828,29 @@ def organization_update(organization_id, body=None):  # noqa: E501
                             g.applogger.info(" remove " + remove_path_uploadfiles)
                             shutil.rmtree(remove_path_uploadfiles)
 
-                    # MongoのDBがあれば削除
-                    if uninstall_driver == "oase":
-                        if workspace_data.get('MONGO_DATABASE'):
-                            # drop ws-mongodb and ws-mongodb-user
-                            org_mongo.drop_database(workspace_data['MONGO_DATABASE'])
-                            g.applogger.info(" Workspace MongoDB(ws_id={}) is cleaned".format(workspace_data['WORKSPACE_ID']))
-                            if mongo_owner is True:
-                                org_mongo.drop_user(workspace_data['MONGO_USER'], workspace_data['MONGO_DATABASE'])
-                                g.applogger.info(" Workspace MongoDB_USER(ws_id={}) is cleaned".format(workspace_data['WORKSPACE_ID']))
-                            ws_primary_key = workspace_data['PRIMARY_KEY']
-                            data = {
-                                "PRIMARY_KEY": ws_primary_key,
-                                "MONGO_CONNECTION_STRING": '',
-                                "MONGO_DATABASE": None,
-                                "MONGO_USER": None,
-                                "MONGO_PASSWORD": ''
-                            }
+                # MongoのDBがあれば削除
+                if uninstall_driver == "oase":
+                    if workspace_data.get('MONGO_DATABASE'):
+                        # drop ws-mongodb and ws-mongodb-user
+                        org_mongo.drop_database(workspace_data['MONGO_DATABASE'])
+                        g.applogger.info(" Workspace MongoDB(ws_id={}) is cleaned".format(workspace_data['WORKSPACE_ID']))
+                        if mongo_owner is True:
+                            org_mongo.drop_user(workspace_data['MONGO_USER'], workspace_data['MONGO_DATABASE'])
+                            g.applogger.info(" Workspace MongoDB_USER(ws_id={}) is cleaned".format(workspace_data['WORKSPACE_ID']))
+                        ws_primary_key = workspace_data['PRIMARY_KEY']
+                        data = {
+                            "PRIMARY_KEY": ws_primary_key,
+                            "MONGO_CONNECTION_STRING": '',
+                            "MONGO_DATABASE": None,
+                            "MONGO_USER": None,
+                            "MONGO_PASSWORD": ''
+                        }
 
-                            org_db.db_transaction_start()
-                            org_db.table_update("T_COMN_WORKSPACE_DB_INFO", data, "PRIMARY_KEY")
-                            org_db.db_commit()
+                        org_db.db_transaction_start()
+                        org_db.table_update("T_COMN_WORKSPACE_DB_INFO", data, "PRIMARY_KEY")
+                        org_db.db_commit()
 
-                            g.applogger.info(" Updating infomation of mongo on workspace(workspace_id = {})".format(workspace_id))
+                        g.applogger.info(" Updating infomation of mongo on workspace(workspace_id = {})".format(workspace_id))
 
                 # t_comn_workspace_db_infoテーブルのNO_INSTALL_DRIVERを更新する
                 ws_no_install_driver.append(uninstall_driver)

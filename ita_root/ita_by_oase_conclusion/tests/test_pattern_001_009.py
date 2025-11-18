@@ -45,6 +45,7 @@ def test_pattern_001(
         1,
         "r1",
         filter.f_a1,
+        conclusion_label_settings=[["node", "VALUE"]]
     )
 
     # 必要なテーブルデータを設定
@@ -99,6 +100,7 @@ def test_pattern_002(
         1,
         "r1",
         filter.f_a2,
+        conclusion_label_settings=[["node", "VALUE"]]
     )
 
     # 必要なテーブルデータを設定
@@ -153,6 +155,7 @@ def test_pattern_003(
         1,
         "r1",
         filter.f_a3,
+        conclusion_label_settings=[["node", "VALUE"]]
     )
 
     # 必要なテーブルデータを設定
@@ -170,8 +173,7 @@ def test_pattern_003(
         ("r1", ["e001", "e002", "e003"], None),
         ("r1", ["e004", "e005"], None),
         ("r1", ["e006", "e007"], None),
-        ("r1", ["e008"], None),
-        ("r1", ["e009"], None),
+        ("r1", ["e008", "e009"], None),
         ("r1", ["e010", "e011", "e012", "e013", "e014"], None),
         ("r1", ["e999"], None),
     ]
@@ -487,12 +489,12 @@ def test_pattern_009(
     run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules)
 
     expected = [
-        ("r1", ["e001", "e002", "e004", "e005"], "e015"),
-        ("r1", ["e003"], "e016"),
+        ("r1", ["e001", "e002", "e004", "e005", "e003"], "e015"),
+        ("timeout", None, "e016"),
         ("r2", ["e008"], None),
         ("r3", ["e010", "e011", "e013", "e014"], "e021"),
         ("timeout", "e020", None),
-        ("undetected", ["e006", "e007", "e009", "e018"], None),
+        ("undetected", ["e006", "e007", "e009", "e018", "e012"], None),
     ]
 
     assert_expected_pattern_results(ws_db, test_events, expected)

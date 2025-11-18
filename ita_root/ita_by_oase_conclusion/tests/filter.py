@@ -250,9 +250,9 @@ f_a16 = create_filter_row(
 "Fillter F_A17定義 ～"
 p_search_condition_id = oaseConst.DF_SEARCH_CONDITION_GROUPING
 p_group_condition_id = oaseConst.DF_GROUP_CONDITION_ID_TARGET
-p_group_label_names = "node".split(",")
+p_group_label_names = "service".split(",")
 p_search_conditions = []
-p_search_conditions.append(("node", oaseConst.DF_TEST_EQ, "*"))
+p_search_conditions.append(("service", oaseConst.DF_TEST_EQ, "*"))
 f_a17 = create_filter_row(
     p_search_condition_id,
     (p_search_conditions if len(p_search_conditions) > 0 else None),
@@ -263,11 +263,10 @@ f_a17 = create_filter_row(
 "Fillter F_A18定義 ～"
 p_search_condition_id = oaseConst.DF_SEARCH_CONDITION_GROUPING
 p_group_condition_id = oaseConst.DF_GROUP_CONDITION_ID_TARGET
-p_group_label_names = "node".split(",")
+p_group_label_names = "service".split(",")
 p_search_conditions = []
-p_search_conditions.append(("node", oaseConst.DF_TEST_EQ, "*"))
+p_search_conditions.append(("status", oaseConst.DF_TEST_EQ, "*"))
 p_search_conditions.append(("service", oaseConst.DF_TEST_EQ, "Httpd"))
-p_search_conditions.append(("status", oaseConst.DF_TEST_EQ, "Down"))
 f_a18 = create_filter_row(
     p_search_condition_id,
     (p_search_conditions if len(p_search_conditions) > 0 else None),
@@ -278,7 +277,7 @@ f_a18 = create_filter_row(
 "Fillter F_A19定義 ～"
 p_search_condition_id = oaseConst.DF_SEARCH_CONDITION_GROUPING
 p_group_condition_id = oaseConst.DF_GROUP_CONDITION_ID_TARGET
-p_group_label_names = "node".split(",")
+p_group_label_names = "service".split(",")
 p_search_conditions = []
 p_search_conditions.append(("status", oaseConst.DF_TEST_EQ, "*"))
 f_a19 = create_filter_row(

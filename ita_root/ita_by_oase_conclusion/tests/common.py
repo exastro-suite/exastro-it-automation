@@ -15,7 +15,7 @@
 from collections.abc import Iterable
 import datetime
 import json
-from typing import Literal, Set, TypeAlias, TypedDict, overload
+from typing import Any, Callable, Literal, Set, TypeAlias, TypedDict, overload
 import uuid
 from bson import ObjectId
 
@@ -365,10 +365,23 @@ def run_test_pattern(
     after_epoch_runs: int = 6,
     # 一時情報の集約(デバッグ用)
     local_label_collection: dict[int, dict[ObjectId, dict[str] | None]] | None = None,
+    # 実行毎のイベント出力キー選択関数(デバッグ用)
+    event_output_key_selector: Callable[[dict[str]], Any] | None = None,
 ):
     """共通テストロジック"""
     import backyard_main as bm
 
+    if event_output_key_selector:
+        print()
+        print(
+            "offset",
+            "input",
+            "unevaluated",
+            "evaluated",
+            "undetected",
+            "timeout",
+            sep="\t",
+        )
     # 必要なテーブルデータを設定
     ws_db.table_data["T_OASE_FILTER"] = filters
     ws_db.table_data["T_OASE_RULE"] = rules
@@ -382,8 +395,53 @@ def run_test_pattern(
             for event in test_events
             if event["labels"]["_exastro_fetched_time"] <= jt
         ]
+        if event_output_key_selector:
+            input = (
+                event_output_key_selector(d)
+                for d in sorted(
+                    (
+                        d
+                        for d in mock_mongo.test_events
+                        if d["labels"]["_exastro_evaluated"] == "0"
+                        and d["labels"]["_exastro_undetected"] == "0"
+                        and d["labels"]["_exastro_timeout"] == "0"
+                    ),
+                    key=lambda d: (d["labels"]["_exastro_fetched_time"], d["_id"]),
+                )
+            )
         mock_datetime.judge_time = jt
         bm.backyard_main("org1", "ws1")
+        if event_output_key_selector:
+            events = sorted(
+                mock_mongo.test_events,
+                key=lambda d: (d["labels"]["_exastro_fetched_time"], d["_id"]),
+            )
+            print(jt - judge_time, end="\t")
+            print(*input, sep=",", end="\t")
+            result_pattern = {
+                "unevaluated": (
+                    ("evaluated", "0"),
+                    ("undetected", "0"),
+                    ("timeout", "0"),
+                ),
+                "evaluated": (("evaluated", "1"),),
+                "undetected": (("undetected", "1"),),
+                "timeout": (("timeout", "1"),),
+            }
+            for status in ("unevaluated", "evaluated", "undetected", "timeout"):
+                conditions = result_pattern[status]
+                print(
+                    *(
+                        event_output_key_selector(d)
+                        for d in events
+                        if all(
+                            d["labels"][f"_exastro_{key}"] == value
+                            for key, value in conditions
+                        )
+                    ),
+                    sep=",",
+                    end="\t" if status != "timeout" else "\n",
+                )
         for event in mock_mongo.test_events:
             # 一時情報が残っているので削除する
             local_label_data = event.pop(oaseConst.DF_LOCAL_LABLE_NAME, None)
@@ -706,7 +764,9 @@ def _assert_events_all_timeout(events_and_ids):
 def _assert_events_all_undetected(events_and_ids):
     """すべてのイベントが未知であることをアサートする"""
     for event, test_id in events_and_ids:
-        assert event["labels"]["_exastro_timeout"] == "0", f"event {test_id} is timeout, details: {event}"
+        assert (
+            event["labels"]["_exastro_timeout"] == "0"
+        ), f"event {test_id} is timeout, details: {event}"
         assert (
             event["labels"]["_exastro_undetected"] == "1"
         ), f"event {test_id} is not undetected, details: {event}"
@@ -719,7 +779,9 @@ def _assert_events_all_undetected(events_and_ids):
 def _assert_events_all_evaluated(events_and_ids):
     """すべてのイベントが評価済みであることをアサートする"""
     for event, test_id in events_and_ids:
-        assert event["labels"]["_exastro_timeout"] == "0", f"event {test_id} is timeout, details: {event}"
+        assert (
+            event["labels"]["_exastro_timeout"] == "0"
+        ), f"event {test_id} is timeout, details: {event}"
         assert (
             event["labels"]["_exastro_undetected"] == "0"
         ), f"event {test_id} is undetected, details: {event}"

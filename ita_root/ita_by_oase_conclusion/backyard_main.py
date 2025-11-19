@@ -287,12 +287,12 @@ def JudgeMain(wsDb: DBConnectWs, judgeTime: int, EventObj: ManageEvents, actionO
             g.applogger.debug(addline_msg('TargetRuleList={}'.format(TargetRuleList)))  # noqa: F405
 
             newIncident_Flg = True
+            preserved_events = set()
 
             # region レベル毎の結論イベント未発生確認のループ
             while newIncident_Flg is True:
                 newIncident_Flg = False
 
-                preserved_events = set()
                 # region レベル毎のルール判定のループ
                 for ruleInfo in TargetRuleList:
                     # ルール判定

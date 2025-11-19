@@ -386,6 +386,21 @@ event_templates["e014g"] = {
         "excluded_flg": "0",
     },
 }
+event_templates["e014i"] = {
+    "ttl": 20,
+    "fetched_time_offset": -41,
+    "custom_labels": {
+        "eventid": "e014i",
+        "node": "Z02",
+        "clock": "9959",
+        "msg": "[systemC] Mysqld Down",
+        "_exastro_host": "systemC",
+        "service": "Mysqld",
+        "status": "Down",
+        "severity": "3",
+        "excluded_flg": "0",
+    },
+}
 event_templates["e010"] = {
     "ttl": 20,
     "fetched_time_offset": -30,
@@ -563,6 +578,11 @@ event_templates["e019c"] = {
     "ttl": 20,
     "fetched_time_offset": 10,
     "custom_labels": {"eventid": "e019c", "node": "z11", "clock": "10010", "type": "b"},
+}
+event_templates["e019d"] = {
+    "ttl": 20,
+    "fetched_time_offset": -30,
+    "custom_labels": {"eventid": "e019d", "node": "z11", "clock": "9970", "type": "b"},
 }
 event_templates["e020"] = {
     "ttl": 20,
@@ -1000,12 +1020,12 @@ event_templates["e037"] = {
 event_templates["e038"] = {
     "ttl": 20,
     "fetched_time_offset": -15,
-    "custom_labels": {"eventid": "e038", "node": "", "clock": "9985"},
+    "custom_labels": {"eventid": "e038", "node": "", "clock": "9985", "status": "true"},
 }
 event_templates["e039"] = {
     "ttl": 20,
     "fetched_time_offset": -15,
-    "custom_labels": {"eventid": "e039", "node": "", "clock": "9985"},
+    "custom_labels": {"eventid": "e039", "node": "", "clock": "9985", "status": "true"},
 }
 event_templates["e040"] = {
     "ttl": 20,
@@ -1015,7 +1035,6 @@ event_templates["e040"] = {
         "node": "z22",
         "clock": "9985",
         "service": "mail",
-        "status": "",
     },
 }
 event_templates["e041"] = {
@@ -1026,12 +1045,22 @@ event_templates["e041"] = {
 event_templates["e042"] = {
     "ttl": 20,
     "fetched_time_offset": -15,
-    "custom_labels": {"eventid": "e042", "node": "z21", "clock": "9985"},
+    "custom_labels": {
+        "eventid": "e042",
+        "node": "z21",
+        "clock": "9985",
+        "status": "false",
+    },
 }
 event_templates["e043"] = {
     "ttl": 20,
     "fetched_time_offset": -15,
-    "custom_labels": {"eventid": "e043", "node": "z21", "clock": "9985"},
+    "custom_labels": {
+        "eventid": "e043",
+        "node": "z21",
+        "clock": "9985",
+        "status": "false",
+    },
 }
 #
 event_templates["e999"] = {

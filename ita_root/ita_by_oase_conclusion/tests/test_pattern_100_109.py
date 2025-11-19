@@ -18,6 +18,9 @@ from tests.common import (
     create_rule_row,
     run_test_pattern,
     assert_grouped_events,
+    assert_event_timeout,
+    assert_event_evaluated,
+    assert_event_undetected
 )
 from tests.event import create_events
 from tests.filter import f_a7, f_a10, f_a8, f_a15, f_u_a, f_u_b, f_q_a, f_q_b
@@ -49,8 +52,7 @@ def test_pattern_100(
 
     run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules, actions)
 
-    assert e001["labels"]["_exastro_evaluated"] == "1"
-    assert e002["labels"]["_exastro_evaluated"] == "1"
+    assert_event_evaluated(e001, e002)
 
     # 結論イベントの確認
     conclusion_events = [e for e in test_events if e["labels"]["_exastro_type"] == "conclusion"]
@@ -64,7 +66,7 @@ def test_pattern_100(
     assert c_1["labels"]["status"] == "Down"
     assert c_1["labels"]["severity"] == "3"
     assert c_1["labels"]["_exastro_rule_name"] == "p100:r1"
-    assert c_1["labels"]["_exastro_evaluated"] == "1"
+    assert_event_evaluated(c_1)
 
     # グルーピングの確認
     assert_grouped_events(test_events, [
@@ -98,8 +100,7 @@ def test_pattern_100_2(
 
     run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules, actions)
 
-    assert e001["labels"]["_exastro_evaluated"] == "1"
-    assert e002["labels"]["_exastro_evaluated"] == "1"
+    assert_event_evaluated(e001, e002)
 
     # 結論イベントの確認
     conclusion_events = [e for e in test_events if e["labels"]["_exastro_type"] == "conclusion"]
@@ -113,7 +114,7 @@ def test_pattern_100_2(
     assert c_1["labels"]["status"] == "Down"
     assert c_1["labels"]["severity"] == "99"
     assert c_1["labels"]["_exastro_rule_name"] == "p100_2:r1"
-    assert c_1["labels"]["_exastro_evaluated"] == "1"
+    assert_event_evaluated(c_1)
 
     assert len(c_2["exastro_events"]) == 1
     assert list(c_2["exastro_events"]).count(f"ObjectId('{str(c_1['_id'])}')") == 1
@@ -122,7 +123,7 @@ def test_pattern_100_2(
     assert c_2["labels"]["status"] == "Down"
     assert c_2["labels"]["severity"] == "99"
     assert c_2["labels"]["_exastro_rule_name"] == "p100_2:r1"
-    assert c_2["labels"]["_exastro_evaluated"] == "1"
+    assert_event_evaluated(c_2)
 
     # グルーピングの確認
     assert_grouped_events(test_events, [
@@ -163,21 +164,10 @@ def test_pattern_101(
 
     run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules, actions, after_epoch_runs=6)
 
-    # TODO: 結果の確認が必要
-    import pprint
-    pprint.pprint(test_events)
-
-    assert e003["labels"]["_exastro_evaluated"] == "1"
-    assert e003a["labels"]["_exastro_evaluated"] == "1"
-    assert e012["labels"]["_exastro_evaluated"] == "1"
-    assert e013["labels"]["_exastro_evaluated"] == "1"
-
-    assert e005c["labels"]["_exastro_evaluated"] == "1"
-    assert e005d["labels"]["_exastro_evaluated"] == "1"
-
-    assert e018e["labels"]["_exastro_evaluated"] == "1"
-
-    assert e028b["labels"]["_exastro_evaluated"] == "1"
+    assert_event_evaluated(e003, e003a, e012, e013)
+    assert_event_evaluated(e005c, e005d)
+    assert_event_evaluated(e018e)
+    assert_event_evaluated(e026e, e028b)
 
     # 結論イベントの確認
     conclusion_events = [e for e in test_events if e["labels"]["_exastro_type"] == "conclusion"]
@@ -191,26 +181,28 @@ def test_pattern_101(
     assert c_1["labels"]["service"] == "Mysqld"
     assert c_1["labels"]["status"] == "Down"
     assert c_1["labels"]["_exastro_rule_name"] == "p101:r1"
-    assert c_1["labels"]["_exastro_evaluated"] == "1"
+    assert_event_evaluated(c_1)
 
     assert len(c_2["exastro_events"]) == 2
     assert list(c_2["exastro_events"]).count(f"ObjectId('{str(c_1['_id'])}')") == 1
     assert list(c_2["exastro_events"]).count(f"ObjectId('{str(e005c['_id'])}')") == 1
     assert c_2["labels"]["type"] == "a"
     assert c_2["labels"]["_exastro_rule_name"] == "p101:r2"
-    assert c_2["labels"]["_exastro_evaluated"] == "1"
+    assert_event_evaluated(c_2)
 
     assert len(c_3["exastro_events"]) == 2
     assert list(c_3["exastro_events"]).count(f"ObjectId('{str(c_2['_id'])}')") == 1
     assert list(c_3["exastro_events"]).count(f"ObjectId('{str(e018e['_id'])}')") == 1
     assert c_3["labels"]["type"] == "qa"
     assert c_3["labels"]["_exastro_rule_name"] == "p101:r3"
+    assert_event_timeout(c_3)
 
     assert len(c_4["exastro_events"]) == 2
+    assert list(c_4["exastro_events"]).count(f"ObjectId('{str(e026e['_id'])}')") == 1
     assert list(c_4["exastro_events"]).count(f"ObjectId('{str(e028b['_id'])}')") == 1
     assert c_4["labels"]["type"] == "qa"
     assert c_4["labels"]["_exastro_rule_name"] == "p101:r4"
-    assert c_4["labels"]["_exastro_timeout"] == "1"
+    assert_event_timeout(c_4)
 
     # グルーピングの確認
     assert_grouped_events(test_events, [
@@ -219,10 +211,6 @@ def test_pattern_101(
         [e012, e013],
         [e005c, e005d]
     ])
-
-    assert e026e["labels"]["_exastro_timeout"] == "1"  # _exastro_evaluated == "1" になっている
-    assert c_3["labels"]["_exastro_evaluated"] == "1"  # e026e が _exastro_evaluated になった為、_exastro_timeout == 1 になっている
-    assert list(c_4["exastro_events"]).count(f"ObjectId('{str(c_3['_id'])}')") == 1  # e026e が _exastro_evaluated になった為、そのIDが入っている
 
 
 def test_pattern_102(
@@ -245,7 +233,7 @@ def test_pattern_102(
     filters = [f_a7, f_a10, f_u_a, f_u_b]
     rules = [
         create_rule_row(1, "p102:r1", (f_a7, f_a10), filter_operator=oaseConst.DF_OPE_AND,
-                        conclusion_label_settings=[{"type": "a"}], conclusion_ttl=20),
+                        conclusion_label_settings=[{"type": "x"}], conclusion_ttl=20),
         create_rule_row(2, "p102:r2", (f_u_a, f_u_b), filter_operator=oaseConst.DF_OPE_AND,
                         conclusion_label_settings=[{"type": "qa"}], conclusion_ttl=20),
     ]
@@ -253,14 +241,7 @@ def test_pattern_102(
 
     run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules, actions, after_epoch_runs=6)
 
-    # TODO: 結果の確認が必要
-    import pprint
-    pprint.pprint(test_events)
-
-    assert e003["labels"]["_exastro_evaluated"] == "1"
-    assert e003a["labels"]["_exastro_evaluated"] == "1"
-    assert e012["labels"]["_exastro_evaluated"] == "1"
-    assert e013["labels"]["_exastro_evaluated"] == "1"
+    assert_event_evaluated(e003, e003a, e012, e013)
 
     # 結論イベントの確認
     conclusion_events = [e for e in test_events if e["labels"]["_exastro_type"] == "conclusion"]
@@ -270,9 +251,9 @@ def test_pattern_102(
     assert len(c_1["exastro_events"]) == 2
     assert list(c_1["exastro_events"]).count(f"ObjectId('{str(e003['_id'])}')") == 1
     assert list(c_1["exastro_events"]).count(f"ObjectId('{str(e012['_id'])}')") == 1
-    assert c_1["labels"]["type"] == "a"
+    assert c_1["labels"]["type"] == "x"
     assert c_1["labels"]["_exastro_rule_name"] == "p102:r1"
-    assert c_1["labels"]["_exastro_undetected"] == "1"  # _exastro_timeout == 1 になっている
+    assert_event_undetected(c_1)
 
     # グルーピングの確認
     assert_grouped_events(test_events, [
@@ -313,10 +294,8 @@ def test_pattern_103(
     import pprint
     pprint.pprint(test_events)
 
-    assert e003["labels"]["_exastro_evaluated"] == "1"
-    assert e003a["labels"]["_exastro_evaluated"] == "1"
-    assert e012["labels"]["_exastro_evaluated"] == "1"
-    assert e013["labels"]["_exastro_evaluated"] == "1"
+    assert_event_evaluated(e003, e003a, e012, e013)
+    assert_event_undetected(e019)
 
     assert e019["labels"]["_exastro_undetected"] == "1"  # r2に該当して _exastro_evaluated == "1" になっている
 
@@ -330,6 +309,7 @@ def test_pattern_103(
     assert list(c_1["exastro_events"]).count(f"ObjectId('{str(e012['_id'])}')") == 1
     assert c_1["labels"]["type"] == "a"
     assert c_1["labels"]["_exastro_rule_name"] == "p103:r1"
+    assert_event_undetected(c_1)
     assert c_1["labels"]["_exastro_undetected"] == "1"  # _exastro_timeout == 1 になっている
 
     # グルーピングの確認
@@ -371,12 +351,9 @@ def test_pattern_104(
 
     run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules, actions, after_epoch_runs=6)
 
-    assert e003["labels"]["_exastro_evaluated"] == "1"
-    assert e003a["labels"]["_exastro_evaluated"] == "1"
-
-    assert e014d["labels"]["_exastro_evaluated"] == "1"
-
-    assert e025["labels"]["_exastro_evaluated"] == "1"
+    assert_event_evaluated(e003, e003a)
+    assert_event_evaluated(e014d)
+    assert_event_evaluated(e025)
 
     # 結論イベントの確認
     conclusion_events = [e for e in test_events if e["labels"]["_exastro_type"] == "conclusion"]
@@ -389,37 +366,37 @@ def test_pattern_104(
     assert r1_c_1["labels"]["service"] == "Mysqld"
     assert r1_c_1["labels"]["status"] == "Down"
     assert r1_c_1["labels"]["_exastro_rule_name"] == "p104:r1"
-    assert r1_c_1["labels"]["_exastro_evaluated"] == "1"
+    assert_event_evaluated(r1_c_1)
 
     assert len(r2_c_1["exastro_events"]) == 1
     assert list(r2_c_1["exastro_events"]).count(f"ObjectId('{str(e014d['_id'])}')") == 1
     assert r2_c_1["labels"]["type"] == "qa"
     assert r2_c_1["labels"]["_exastro_rule_name"] == "p104:r2"
-    assert r2_c_1["labels"]["_exastro_evaluated"] == "1"
+    assert_event_evaluated(r2_c_1)
 
     assert len(r3_c_1["exastro_events"]) == 1
     assert list(r3_c_1["exastro_events"]).count(f"ObjectId('{str(e025['_id'])}')") == 1
     assert r3_c_1["labels"]["type"] == "a"
     assert r3_c_1["labels"]["_exastro_rule_name"] == "p104:r3"
-    assert r3_c_1["labels"]["_exastro_undetected"] == "1"
+    assert_event_undetected(r3_c_1)
 
     assert len(r2_c_2["exastro_events"]) == 1
     assert list(r2_c_2["exastro_events"]).count(f"ObjectId('{str(r1_c_1['_id'])}')") == 1
     assert r2_c_2["labels"]["type"] == "qa"
     assert r2_c_2["labels"]["_exastro_rule_name"] == "p104:r2"
-    assert r2_c_2["labels"]["_exastro_evaluated"] == "1"
+    assert_event_evaluated(r2_c_2)
 
     assert len(r3_c_2["exastro_events"]) == 1
     assert list(r3_c_2["exastro_events"]).count(f"ObjectId('{str(r2_c_1['_id'])}')") == 1
     assert r3_c_2["labels"]["type"] == "a"
     assert r3_c_2["labels"]["_exastro_rule_name"] == "p104:r3"
-    assert r3_c_2["labels"]["_exastro_undetected"] == "1"
+    assert_event_undetected(r3_c_2)
 
     assert len(r3_c_3["exastro_events"]) == 1
     assert list(r3_c_3["exastro_events"]).count(f"ObjectId('{str(r2_c_2['_id'])}')") == 1
     assert r3_c_3["labels"]["type"] == "a"
     assert r3_c_3["labels"]["_exastro_rule_name"] == "p104:r3"
-    assert r3_c_3["labels"]["_exastro_undetected"] == "1"
+    assert_event_undetected(r3_c_3)
 
     # グルーピングの確認
     assert_grouped_events(test_events, [
@@ -450,60 +427,26 @@ def test_pattern_105(
 
     # ルール
     r1 = create_rule_row(
-        1,
-        "r1",
-        (f_a7, f_a10),
-        filter_operator=oaseConst.DF_OPE_ORDER,
-        conclusion_label_settings=[
-            ["excluded_flg", "0"],
-            ["service", "Mysqld"],
-            ["status", "Down"],
-        ],
-        conclusion_ttl=20,
+        1, "r1", (f_a7, f_a10), filter_operator=oaseConst.DF_OPE_ORDER,
+        conclusion_label_settings=[["excluded_flg", "0"], ["service", "Mysqld"], ["status", "Down"], ], conclusion_ttl=20,
     )
     r2 = create_rule_row(
-        2,
-        "r2",
-        (f_a8, f_a15),
-        filter_operator=oaseConst.DF_OPE_ORDER,
-        conclusion_label_settings=[["type", "a"]],
-        conclusion_ttl=20,
+        2, "r2", (f_a8, f_a15), filter_operator=oaseConst.DF_OPE_ORDER,
+        conclusion_label_settings=[["type", "a"]], conclusion_ttl=20,
     )
     r3 = create_rule_row(
-        3,
-        "r3",
-        (f_u_a, f_u_b),
-        filter_operator=oaseConst.DF_OPE_ORDER,
-        conclusion_label_settings=[["type", "qa"]],
-        conclusion_ttl=20,
+        3, "r3", (f_u_a, f_u_b), filter_operator=oaseConst.DF_OPE_ORDER,
+        conclusion_label_settings=[["type", "qa"]], conclusion_ttl=20,
     )
     r4 = create_rule_row(
-        4,
-        "r4",
-        (f_q_a, f_q_b),
-        filter_operator=oaseConst.DF_OPE_ORDER,
-        conclusion_label_settings=[["type", "qa"]],
-        conclusion_ttl=20,
+        4, "r4", (f_q_a, f_q_b), filter_operator=oaseConst.DF_OPE_ORDER,
+        conclusion_label_settings=[["type", "qa"]], conclusion_ttl=20,
     )
 
     # 必要なテーブルデータを設定
-    filters = [
-        f_a7,
-        f_a10,
-        f_a8,
-        f_a15,
-        f_u_a,
-        f_u_b,
-        f_q_a,
-        f_q_b,
-    ]
-    rules = [
-        r1,
-        r2,
-        r3,
-        r4,
-    ]
-    run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules, test_epoch=1760486660 + 5)
+    filters = [f_a7, f_a10, f_a8, f_a15, f_u_a, f_u_b, f_q_a, f_q_b, ]
+    rules = [r1, r2, r3, r4, ]
+    run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules)
 
     c1 = {
         "type": "conclusion",

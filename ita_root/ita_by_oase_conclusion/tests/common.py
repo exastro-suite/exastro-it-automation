@@ -775,9 +775,32 @@ def assert_grouped_events(test_events, expected_groups):
         other_events_with_same_group_id = [
             e
             for e in grouped_events
-            if e["exastro_filter_group"]["group_id"] == first_event_group_id
-            and e not in group
+            if e["exastro_filter_group"]["group_id"] == first_event_group_id and e not in group
         ]
         assert (
             not other_events_with_same_group_id
         ), f"Unexpected events with group_id {first_event_group_id} found: {other_events_with_same_group_id}"
+
+
+def assert_event_timeout(*events):
+    """イベントが'_exastro_timeout'であることを確認"""
+    for event in events:
+        assert event["labels"]["_exastro_timeout"] == "1"
+        assert event["labels"]["_exastro_evaluated"] == "0"
+        assert event["labels"]["_exastro_undetected"] == "0"
+
+
+def assert_event_evaluated(*events):
+    """イベントが'_exastro_evaluated'であることを確認"""
+    for event in events:
+        assert event["labels"]["_exastro_timeout"] == "0"
+        assert event["labels"]["_exastro_evaluated"] == "1"
+        assert event["labels"]["_exastro_undetected"] == "0"
+
+
+def assert_event_undetected(*events):
+    """イベントが'_exastro_undetected'であることを確認"""
+    for event in events:
+        assert event["labels"]["_exastro_timeout"] == "0"
+        assert event["labels"]["_exastro_evaluated"] == "0"
+        assert event["labels"]["_exastro_undetected"] == "1"

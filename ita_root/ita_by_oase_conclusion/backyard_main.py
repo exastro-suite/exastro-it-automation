@@ -358,8 +358,17 @@ def JudgeMain(wsDb: DBConnectWs, judgeTime: int, EventObj: ManageEvents, actionO
                                                     # 判定済みのものしかなかったので、結論イベントを追加する
                                                     IncidentDict[UsedFilterId] = judged_events + [ConclusionEventRow['_id']]
                                                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-                                                    # 対応するルールの優先度が不明のため、結論イベントを予約済みとする
-                                                    preserved_events.add(ConclusionEventRow['_id'])
+                                                    # 結論イベントを抽出対象とするフィルターを含むルールのマッチ候補となるイベントも予約済みにする
+                                                    for rule in (
+                                                        rule
+                                                        for rule in ruleList
+                                                        if UsedFilterId
+                                                        in (rule["FILTER_A"], rule["FILTER_B"])
+                                                    ):
+                                                        preserved_events.update(
+                                                            IncidentDict.get(rule["FILTER_A"], ()),
+                                                            IncidentDict.get(rule["FILTER_B"], ()),
+                                                        )
                                                 else:
                                                     # 破棄するイベントを予約済みから取り除く
                                                     preserved_events.difference_update(IncidentDict[UsedFilterId])
@@ -369,8 +378,17 @@ def JudgeMain(wsDb: DBConnectWs, judgeTime: int, EventObj: ManageEvents, actionO
                                                 # キューイングの場合
                                                 IncidentDict[UsedFilterId].append(ConclusionEventRow['_id'])
                                                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-                                                # 対応するルールの優先度が不明のため、結論イベントを予約済みとする
-                                                preserved_events.add(ConclusionEventRow['_id'])
+                                                # 結論イベントを抽出対象とするフィルターを含むルールのマッチ候補となるイベントも予約済みにする
+                                                for rule in (
+                                                    rule
+                                                    for rule in ruleList
+                                                    if UsedFilterId
+                                                    in (rule["FILTER_A"], rule["FILTER_B"])
+                                                ):
+                                                    preserved_events.update(
+                                                        IncidentDict.get(rule["FILTER_A"], ()),
+                                                        IncidentDict.get(rule["FILTER_B"], ()),
+                                                    )
                                         else:
                                             # 空配列。既に未知判定（ユニーク検索かつ複数イベント合致）されているため、結論イベントも破棄する→未知におとす予定
                                             pass
@@ -378,8 +396,17 @@ def JudgeMain(wsDb: DBConnectWs, judgeTime: int, EventObj: ManageEvents, actionO
                                         # 初めてフィルターにかかった
                                         IncidentDict[UsedFilterId] = [ConclusionEventRow['_id']]
                                         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-                                        # 対応するルールの優先度が不明のため、結論イベントを予約済みとする
-                                        preserved_events.add(ConclusionEventRow['_id'])
+                                        # 結論イベントを抽出対象とするフィルターを含むルールのマッチ候補となるイベントも予約済みにする
+                                        for rule in (
+                                            rule
+                                            for rule in ruleList
+                                            if UsedFilterId
+                                            in (rule["FILTER_A"], rule["FILTER_B"])
+                                        ):
+                                            preserved_events.update(
+                                                IncidentDict.get(rule["FILTER_A"], ()),
+                                                IncidentDict.get(rule["FILTER_B"], ()),
+                                            )
 
                             newIncident_Flg = True
 

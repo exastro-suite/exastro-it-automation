@@ -1622,3 +1622,98 @@ def test_scenario_filtering_wildcard_pattern(
         assert conclusion_grouping_info is not None
         assert conclusion_grouping_info["filter_id"] == f4["FILTER_ID"]
         assert conclusion["labels"]["_exastro_evaluated"] == "1"
+
+
+@patch.dict(os.environ, {"EVALUATE_LATENT_INFINITE_LOOP_LIMIT": "5"})
+def test_scenario_level_3_rule_conclusion_event_causes_calm_infinite_loop(
+    patch_global_g,
+    patch_notification_and_writer,
+    patch_common_functions,
+    patch_action_using_modules,
+    monkeypatch,
+    patch_database_connections,
+    patch_datetime,
+):
+    """Level3ルールによって緩やかな無限ループが発生する場合の動作確認"""
+    g = patch_global_g
+    ws_db, mock_mongo = patch_database_connections
+    mock_datetime = patch_datetime
+
+    def _create_events(types: str, time: int):
+        yield from (
+            create_event(
+                "l3",
+                f"l3-{t}",
+                ttl=1,
+                fetched_time=time,
+                custom_labels={"type": t, "time": f"{time + i}"},
+            )
+            for i, t in enumerate(types)
+        )
+
+    filters = [
+        fa := create_filter_row(
+            oaseConst.DF_SEARCH_CONDITION_UNIQUE,
+            [("type", oaseConst.DF_TEST_EQ, "a")],
+        ),
+        fb := create_filter_row(
+            oaseConst.DF_SEARCH_CONDITION_QUEUING,
+            [("type", oaseConst.DF_TEST_EQ, "b")],
+        ),
+    ]
+    rules = [
+        create_rule_row(
+            1,
+            "rush260:r1",
+            (fa, fb),
+            filter_operator=oaseConst.DF_OPE_AND,
+            conclusion_label_settings=[{"type": "a"}],
+            conclusion_ttl=5,
+        ),
+        create_rule_row(
+            3,
+            "rush260:r3",
+            fa,
+            conclusion_label_settings=[{"type": "a"}],
+            conclusion_ttl=5,
+        ),
+    ]
+    actions = []
+
+    for n in range(1, 10 + 1):
+        test_events = [
+            *_create_events("ab", judge_time),
+        ]
+        # 実行1回目でA AND Bがマッチ、n回目でAがマッチし、緩やかな無限ループが発生することを確認
+        run_test_pattern(
+            g,
+            ws_db,
+            mock_mongo,
+            mock_datetime,
+            test_events,
+            filters,
+            rules,
+            actions,
+            before_epoch_runs=0,
+            after_epoch_runs=n,
+            event_output_key_selector=lambda e: e["labels"]["type"],
+        )
+
+        results = [
+            str.join(
+                "",
+                (
+                    d["labels"]["type"],
+                    d["labels"]["_exastro_evaluated"],
+                    d["labels"]["_exastro_undetected"],
+                    d["labels"]["_exastro_timeout"],
+                ),
+            )
+            for d in sorted(
+                test_events,
+                key=lambda d: (d["labels"]["_exastro_fetched_time"], d["_id"]),
+            )
+        ]
+
+        # 期待通りに緩やかな無限ループが発生し、最終的にA AND Bのイベントが1つ、Aのイベントがn個、未評価イベントが1つになることを確認
+        assert results == ["a100", "b100"] + ["a100"] * n + ["a000"]

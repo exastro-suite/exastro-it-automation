@@ -17,6 +17,7 @@ from unittest.mock import MagicMock, patch
 import mongomock
 import queue
 import time
+import datetime
 
 from common_libs.common.mongoconnect.const import Const as mongoConst
 
@@ -586,7 +587,6 @@ def test_case1(mock_db, mock_mongo):
             受信通知:6
             重複通知:2
     """
-    import datetime #####
 
     _dtime = datetime.datetime.now()
     _ft_time = int(_dtime.timestamp()) + 5
@@ -3440,9 +3440,488 @@ def test_case3(mock_db, mock_mongo):
     collection = mock_mongo.collection.return_value
     assert collection.count_documents({}) == 8
 
+
+def test_case3_imbalance(mock_db, mock_mongo):
+    """
+    エージェント、収集先冗長構成のテストケース
+        エージェント
+            ita-oase-agent-05
+            ita-oase-agent-06
+        収集設定名
+            Z5
+            Z6
+        重複排除設定
+            E5_E6_match: uuidが一致する
+        リクエスト数: 2
+        期待結果:
+            イベント数: 1
+            重複数: 1
+            受信通知: 2
+            重複通知: 1
+    """
+    import datetime
+
+    _dtime = datetime.datetime.now()
+    _ft_time = int(_dtime.timestamp()) + 5
+    recieve_num = 0
+    duplicate_num = 0
+
+    # Z5: ita-oase-agent-06/ita-oase-agent-05
+    labeled_event_list_11 = [
+        {
+            'event': {
+                'uuid': '00000000-0000-0000-0000-000000000002',
+                'value': '0199c20f-1169-75f5-af37-21b7515f93fb',
+                'service': 'httpd',
+                'collection_name': 'Z5',
+                'case': 'case3',
+                '_exastro_oase_event_id': 1759897391000001
+            },
+            'labels': {
+                '_exastro_event_collection_settings_id': 'b56e483a-0409-4186-b2ae-80dc970529f2',
+                '_exastro_fetched_time': _ft_time,
+                '_exastro_end_time': _ft_time,
+                '_exastro_agent_name': 'ita-oase-agent-05',
+                '_exastro_agent_version': '2.7.0',
+                '_exastro_type': 'event',
+                '_exastro_checked': '0',
+                '_exastro_evaluated': '0',
+                '_exastro_undetected': '0',
+                '_exastro_timeout': '0',
+                'service': 'httpd',
+                'uuid': '00000000-0000-0000-0000-000000000001',
+                'case': 'case3',
+                'value': '0199c20f-1169-75f5-af37-21b7515f93fb',
+                'collection_name': 'Z5'
+            },
+            'exastro_created_at': _dtime,
+            'exastro_labeling_settings': {
+                'service': '39dcee82-5ca8-40fc-9e52-45b182f9a3d7',
+                'uuid': '436bf638-798d-45a1-ac6a-31f38502e997',
+                'case': '47231aad-7fce-4e13-9932-048a7a2f895e',
+                'value': '54397eea-b91f-4c74-b3ca-1e30d3dfc62b',
+                'collection_name': '955ef4fe-3db5-4854-bbd8-f53c6fd515b8'
+            },
+            'exastro_label_key_inputs': {
+                'service': '40998b57-3786-4b46-9e6b-411442818bfc',
+                'uuid': '3c25bf29-337d-4b65-ba60-bd0c455157a2',
+                'case': '8d7c0bdc-06f3-41ee-827c-a55d552f75f9',
+                'value': 'b3537a94-2152-4ac1-be58-d203bd011743',
+                'collection_name': '67edaf08-ca73-4712-b7fb-bea286ba550b'
+            }
+        },
+        {
+            'event': {
+                'uuid': '00000000-0000-0000-0000-000000000002',
+                'value': '0199c20f-1386-7256-940f-6b1d57996e47',
+                'service': 'httpd',
+                'collection_name': 'Z5',
+                'case': 'case3',
+                '_exastro_oase_event_id': 1759897392000001
+            },
+            'labels': {
+                '_exastro_event_collection_settings_id': 'b56e483a-0409-4186-b2ae-80dc970529f2',
+                '_exastro_fetched_time': _ft_time,
+                '_exastro_end_time': _ft_time,
+                '_exastro_agent_name': 'ita-oase-agent-06',
+                '_exastro_agent_version': '2.7.0',
+                '_exastro_type': 'event',
+                '_exastro_checked': '0',
+                '_exastro_evaluated': '0',
+                '_exastro_undetected': '0',
+                '_exastro_timeout': '0',
+                'service': 'httpd',
+                'uuid': '00000000-0000-0000-0000-000000000001',
+                'case': 'case3',
+                'value': '0199c20f-1386-7256-940f-6b1d57996e47',
+                'collection_name': 'Z5'
+            },
+            'exastro_created_at': _dtime,
+            'exastro_labeling_settings': {
+                'service': '39dcee82-5ca8-40fc-9e52-45b182f9a3d7',
+                'uuid': '436bf638-798d-45a1-ac6a-31f38502e997',
+                'case': '47231aad-7fce-4e13-9932-048a7a2f895e',
+                'value': '54397eea-b91f-4c74-b3ca-1e30d3dfc62b',
+                'collection_name': '955ef4fe-3db5-4854-bbd8-f53c6fd515b8'
+            },
+            'exastro_label_key_inputs': {
+                'service': '40998b57-3786-4b46-9e6b-411442818bfc',
+                'uuid': '3c25bf29-337d-4b65-ba60-bd0c455157a2',
+                'case': '8d7c0bdc-06f3-41ee-827c-a55d552f75f9',
+                'value': 'b3537a94-2152-4ac1-be58-d203bd011743',
+                'collection_name': '67edaf08-ca73-4712-b7fb-bea286ba550b'
+            }
+        }
+    ]
+
+    _ft_time = int(_dtime.timestamp()) + 5
+
+    # Z6: ita-oase-agent-06/ita-oase-agent-05
+    labeled_event_list_12 = [
+        {
+            'event': {
+                'uuid': '00000000-0000-0000-0000-000000000002',
+                'value': '0199c20f-15af-768d-ace9-6347342246c2',
+                'service': 'httpd',
+                'collection_name': 'Z6',
+                'case': 'case3',
+                '_exastro_oase_event_id': 1759897392000001
+            },
+            'labels': {
+                '_exastro_event_collection_settings_id': 'cc787f28-6478-45d0-80d7-297c22fbd390',
+                '_exastro_fetched_time': _ft_time,
+                '_exastro_end_time': _ft_time,
+                '_exastro_agent_name': 'ita-oase-agent-05',
+                '_exastro_agent_version': '2.7.0',
+                '_exastro_type': 'event',
+                '_exastro_checked': '0',
+                '_exastro_evaluated': '0',
+                '_exastro_undetected': '0',
+                '_exastro_timeout': '0',
+                'case': 'case3',
+                'service': 'httpd',
+                'uuid': '00000000-0000-0000-0000-000000000001',
+                'value': '0199c20f-15af-768d-ace9-6347342246c2',
+                'collection_name': 'Z6'
+            },
+            'exastro_created_at': _dtime,
+            'exastro_labeling_settings': {
+                'case': '28bc80e2-0147-42d0-846b-5b8d750446c1',
+                'service': '2df0e854-0871-4840-8ae8-9895fb13709c',
+                'uuid': '852f92d1-d519-4172-85e9-8c27f0426feb',
+                'value': '91536751-2876-4e46-b048-4717d2a7ea74',
+                'collection_name': 'bbcf31f0-2fd2-4387-bbe2-2f4a8daebc7b'
+            },
+            'exastro_label_key_inputs': {
+                'case': '8d7c0bdc-06f3-41ee-827c-a55d552f75f9',
+                'service': '40998b57-3786-4b46-9e6b-411442818bfc',
+                'uuid': '3c25bf29-337d-4b65-ba60-bd0c455157a2',
+                'value': 'b3537a94-2152-4ac1-be58-d203bd011743',
+                'collection_name': '67edaf08-ca73-4712-b7fb-bea286ba550b'
+            }
+        },
+        {
+            'event': {
+                'uuid': '00000000-0000-0000-0000-000000000002',
+                'value': '0199c20f-17ed-7d69-90d8-93d2a32d0e9c',
+                'service': 'httpd',
+                'collection_name': 'Z6',
+                'case': 'case3',
+                '_exastro_oase_event_id': 1759897393000001
+            },
+            'labels': {
+                '_exastro_event_collection_settings_id': 'cc787f28-6478-45d0-80d7-297c22fbd390',
+                '_exastro_fetched_time': _ft_time,
+                '_exastro_end_time': _ft_time,
+                '_exastro_agent_name': 'ita-oase-agent-06',
+                '_exastro_agent_version': '2.7.0',
+                '_exastro_type': 'event',
+                '_exastro_checked': '0',
+                '_exastro_evaluated': '0',
+                '_exastro_undetected': '0',
+                '_exastro_timeout': '0',
+                'case': 'case3',
+                'service': 'httpd',
+                'uuid': '00000000-0000-0000-0000-000000000001',
+                'value': '0199c20f-17ed-7d69-90d8-93d2a32d0e9c',
+                'collection_name': 'Z6'
+            },
+            'exastro_created_at': _dtime,
+            'exastro_labeling_settings': {
+                'case': '28bc80e2-0147-42d0-846b-5b8d750446c1',
+                'service': '2df0e854-0871-4840-8ae8-9895fb13709c',
+                'uuid': '852f92d1-d519-4172-85e9-8c27f0426feb',
+                'value': '91536751-2876-4e46-b048-4717d2a7ea74',
+                'collection_name': 'bbcf31f0-2fd2-4387-bbe2-2f4a8daebc7b'
+            },
+            'exastro_label_key_inputs': {
+                'case': '8d7c0bdc-06f3-41ee-827c-a55d552f75f9',
+                'service': '40998b57-3786-4b46-9e6b-411442818bfc',
+                'uuid': '3c25bf29-337d-4b65-ba60-bd0c455157a2',
+                'value': 'b3537a94-2152-4ac1-be58-d203bd011743',
+                'collection_name': '67edaf08-ca73-4712-b7fb-bea286ba550b'
+            }
+        }
+    ]
+
+    label_key_map = {
+        '28522b7e-c90a-4ace-832d-9b747251ee8c': {
+            'LABEL_KEY_ID': '28522b7e-c90a-4ace-832d-9b747251ee8c',
+            'LABEL_KEY_NAME': 'ts',
+            'COLOR_CODE': None,
+            'NOTE': None,
+            'DISUSE_FLAG': '0',
+            'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 11, 9, 11, 26, 135958)
+        },
+        '3c25bf29-337d-4b65-ba60-bd0c455157a2': {
+            'LABEL_KEY_ID': '3c25bf29-337d-4b65-ba60-bd0c455157a2',
+            'LABEL_KEY_NAME': 'uuid',
+            'COLOR_CODE': '#FFFF00',
+            'NOTE': None,
+            'DISUSE_FLAG': '0',
+            'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 10, 9, 48, 46, 816860)
+        },
+        '40998b57-3786-4b46-9e6b-411442818bfc': {
+            'LABEL_KEY_ID': '40998b57-3786-4b46-9e6b-411442818bfc',
+            'LABEL_KEY_NAME': 'service',
+            'COLOR_CODE': '#FF0000',
+            'NOTE': None,
+            'DISUSE_FLAG': '0',
+            'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 10, 9, 48, 46, 809355)
+        },
+        '67edaf08-ca73-4712-b7fb-bea286ba550b': {
+            'LABEL_KEY_ID': '67edaf08-ca73-4712-b7fb-bea286ba550b',
+            'LABEL_KEY_NAME': 'collection_name',
+            'COLOR_CODE': '#0000FF',
+            'NOTE': None,
+            'DISUSE_FLAG': '0',
+            'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 11, 9, 39, 17, 883735)
+        },
+        '8d7c0bdc-06f3-41ee-827c-a55d552f75f9': {
+            'LABEL_KEY_ID': '8d7c0bdc-06f3-41ee-827c-a55d552f75f9',
+            'LABEL_KEY_NAME': 'case',
+            'COLOR_CODE': '#00FF00',
+            'NOTE': None,
+            'DISUSE_FLAG': '0',
+            'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 11, 9, 39, 34, 676339)
+        },
+        'b3537a94-2152-4ac1-be58-d203bd011743': {
+            'LABEL_KEY_ID': 'b3537a94-2152-4ac1-be58-d203bd011743',
+            'LABEL_KEY_NAME': 'value',
+            'COLOR_CODE': '#FF0000',
+            'NOTE': None,
+            'DISUSE_FLAG': '0',
+            'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 10, 9, 48, 46, 804867)
+        },
+        'bd5e48a1-9372-4bff-90db-d4d651f3f1cc': {
+            'LABEL_KEY_ID': 'bd5e48a1-9372-4bff-90db-d4d651f3f1cc',
+            'LABEL_KEY_NAME': 'ip',
+            'COLOR_CODE': '#FF0000',
+            'NOTE': None,
+            'DISUSE_FLAG': '0',
+            'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 8, 25, 17, 38, 11, 190326)
+        },
+        'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx01': {
+            'LABEL_KEY_ID': 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx01',
+            'LABEL_KEY_NAME': '_exastro_event_collection_settings_id',
+            'COLOR_CODE': None,
+            'NOTE': None,
+            'DISUSE_FLAG': '0',
+            'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 8, 25, 11, 36, 40, 936513),
+            'LAST_UPDATE_USER': '1'
+        },
+        'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx02': {
+            'LABEL_KEY_ID': 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx02',
+            'LABEL_KEY_NAME': '_exastro_fetched_time',
+            'COLOR_CODE': None,
+            'NOTE': None,
+            'DISUSE_FLAG': '0',
+            'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 8, 25, 11, 36, 40, 936513),
+            'LAST_UPDATE_USER': '1'
+        },
+        'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx03': {
+            'LABEL_KEY_ID': 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx03',
+            'LABEL_KEY_NAME': '_exastro_end_time',
+            'COLOR_CODE': None,
+            'NOTE': None,
+            'DISUSE_FLAG': '0',
+            'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 8, 25, 11, 36, 40, 936513),
+            'LAST_UPDATE_USER': '1'
+        },
+        'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx07': {
+            'LABEL_KEY_ID': 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx07',
+            'LABEL_KEY_NAME': '_exastro_type',
+            'COLOR_CODE': None,
+            'NOTE': None,
+            'DISUSE_FLAG': '0',
+            'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 8, 25, 11, 36, 40, 936513),
+            'LAST_UPDATE_USER': '1'
+        },
+        'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx09': {
+            'LABEL_KEY_ID': 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx09',
+            'LABEL_KEY_NAME': '_exastro_host',
+            'COLOR_CODE': None,
+            'NOTE': None,
+            'DISUSE_FLAG': '0',
+            'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 8, 25, 11, 36, 40, 936513),
+            'LAST_UPDATE_USER': '1'
+        },
+        'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx10': {
+            'LABEL_KEY_ID': 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx10',
+            'LABEL_KEY_NAME': '_exastro_agent_name',
+            'COLOR_CODE': None,
+            'NOTE': None,
+            'DISUSE_FLAG': '0',
+            'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 8, 25, 11, 36, 40, 936513),
+            'LAST_UPDATE_USER': '1'
+        },
+        'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx11': {
+            'LABEL_KEY_ID': 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx11',
+            'LABEL_KEY_NAME': '_exastro_agent_version',
+            'COLOR_CODE': None,
+            'NOTE': None,
+            'DISUSE_FLAG': '0',
+            'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 8, 25, 11, 36, 40, 936513),
+            'LAST_UPDATE_USER': '1'
+        }
+    }
+
+    duplication_settings_map = {
+        '9ca2fb77-7e00-442f-8d27-f9bf1e3f9f2d': {
+            'DEDUPLICATION_SETTING_ID': '9ca2fb77-7e00-442f-8d27-f9bf1e3f9f2d',
+            'DEDUPLICATION_SETTING_NAME': 'E1_match',
+            'SETTING_PRIORITY': 50,
+            'EVENT_SOURCE_REDUNDANCY_GROUP': ['3cd9fde9-ed6a-431f-9eb2-d963aee12a3a'],
+            'CONDITION_LABEL_KEY_IDS': ['3c25bf29-337d-4b65-ba60-bd0c455157a2'],
+            'CONDITION_EXPRESSION_ID': '1',
+            'NOTE': None,
+            'DISUSE_FLAG': '0',
+            'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 10, 10, 55, 52, 850675)
+        },
+        '90b87686-806f-45f2-b6c7-a22a165d4164': {
+            'DEDUPLICATION_SETTING_ID': '90b87686-806f-45f2-b6c7-a22a165d4164',
+            'DEDUPLICATION_SETTING_NAME': 'E3_E4_match',
+            'SETTING_PRIORITY': 50,
+            'EVENT_SOURCE_REDUNDANCY_GROUP': [
+                'd76d044c-f5b6-4716-99a7-6783b67aaa7e',
+                'dc705845-eda1-408b-b3cf-5cf5069444d5'
+            ],
+            'CONDITION_LABEL_KEY_IDS': ['3c25bf29-337d-4b65-ba60-bd0c455157a2'],
+            'CONDITION_EXPRESSION_ID': '1',
+            'NOTE': None,
+            'DISUSE_FLAG': '0',
+            'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 10, 15, 37, 2, 70586)
+        },
+        'f3407df3-d238-4419-9bda-3181651a464f': {
+            'DEDUPLICATION_SETTING_ID': 'f3407df3-d238-4419-9bda-3181651a464f',
+            'DEDUPLICATION_SETTING_NAME': 'E5_E6_2_match',
+            'SETTING_PRIORITY': 50,
+            'EVENT_SOURCE_REDUNDANCY_GROUP': [
+                '0dfe9922-2387-440f-bac6-1bcc12940a36',
+                '298e1dab-47de-4c74-a647-4651a275d720',
+                'a41e17d2-daae-4a2d-903a-efb35d87bbbc',
+                'ba493fa4-da39-4e20-8228-90c5ae71bc6d'
+            ],
+            'CONDITION_LABEL_KEY_IDS': ['3c25bf29-337d-4b65-ba60-bd0c455157a2'],
+            'CONDITION_EXPRESSION_ID': '1',
+            'NOTE': None,
+            'DISUSE_FLAG': '0',
+            'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 11, 16, 50, 42, 419883),
+        },
+        '9f1ec618-9de5-44dd-9dfc-c6d926c9f39a': {
+            'DEDUPLICATION_SETTING_ID': '9f1ec618-9de5-44dd-9dfc-c6d926c9f39a',
+            'DEDUPLICATION_SETTING_NAME': 'E5_E6_match',
+            'SETTING_PRIORITY': 50,
+            'EVENT_SOURCE_REDUNDANCY_GROUP': [
+                'b56e483a-0409-4186-b2ae-80dc970529f2',
+                'cc787f28-6478-45d0-80d7-297c22fbd390'
+            ],
+            'CONDITION_LABEL_KEY_IDS': ['3c25bf29-337d-4b65-ba60-bd0c455157a2'],
+            'CONDITION_EXPRESSION_ID': '1',
+            'NOTE': None,
+            'DISUSE_FLAG': '0',
+            'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 11, 8, 36, 53, 185093),
+        }
+    }
+    duplication_settings_ecs_map = {
+        '3cd9fde9-ed6a-431f-9eb2-d963aee12a3a': ['9ca2fb77-7e00-442f-8d27-f9bf1e3f9f2d'],
+        'd76d044c-f5b6-4716-99a7-6783b67aaa7e': ['90b87686-806f-45f2-b6c7-a22a165d4164'],
+        'dc705845-eda1-408b-b3cf-5cf5069444d5': ['90b87686-806f-45f2-b6c7-a22a165d4164'],
+        '0dfe9922-2387-440f-bac6-1bcc12940a36': ['f3407df3-d238-4419-9bda-3181651a464f'],
+        '298e1dab-47de-4c74-a647-4651a275d720': ['f3407df3-d238-4419-9bda-3181651a464f'],
+        'a41e17d2-daae-4a2d-903a-efb35d87bbbc': ['f3407df3-d238-4419-9bda-3181651a464f'],
+        'ba493fa4-da39-4e20-8228-90c5ae71bc6d': ['f3407df3-d238-4419-9bda-3181651a464f'],
+        'b56e483a-0409-4186-b2ae-80dc970529f2': ['9f1ec618-9de5-44dd-9dfc-c6d926c9f39a'],
+        'cc787f28-6478-45d0-80d7-297c22fbd390': ['9f1ec618-9de5-44dd-9dfc-c6d926c9f39a']
+    }
+
+    # 1回目登録
+    mock_db.table_select.return_value = [
+        {
+            'DEDUPLICATION_SETTING_ID': '9ca2fb77-7e00-442f-8d27-f9bf1e3f9f2d',
+            'DEDUPLICATION_SETTING_NAME': 'E1_match',
+            'SETTING_PRIORITY': 50, 'EVENT_SOURCE_REDUNDANCY_GROUP': '{"id": ["3cd9fde9-ed6a-431f-9eb2-d963aee12a3a"]}',
+            'CONDITION_LABEL_KEY_IDS': '{"id": ["3c25bf29-337d-4b65-ba60-bd0c455157a2"]}',
+            'CONDITION_EXPRESSION_ID': '1',
+            'NOTE': None, 'DISUSE_FLAG': '0',
+            'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 10, 10, 55, 52, 850675), },
+        {
+            'DEDUPLICATION_SETTING_ID': '90b87686-806f-45f2-b6c7-a22a165d4164',
+            'DEDUPLICATION_SETTING_NAME': 'E3_E4_match',
+            'SETTING_PRIORITY': 50, 'EVENT_SOURCE_REDUNDANCY_GROUP': '{"id": ["d76d044c-f5b6-4716-99a7-6783b67aaa7e", "dc705845-eda1-408b-b3cf-5cf5069444d5"]}',
+            'CONDITION_LABEL_KEY_IDS': '{"id": ["3c25bf29-337d-4b65-ba60-bd0c455157a2"]}',
+            'CONDITION_EXPRESSION_ID': '1',
+            'NOTE': None, 'DISUSE_FLAG': '0',
+            'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 10, 15, 37, 2, 70586), },
+        {
+            'DEDUPLICATION_SETTING_ID': '9f1ec618-9de5-44dd-9dfc-c6d926c9f39a',
+            'DEDUPLICATION_SETTING_NAME': 'E5_E6_match',
+            'SETTING_PRIORITY': 50, 'EVENT_SOURCE_REDUNDANCY_GROUP': '{"id": ["b56e483a-0409-4186-b2ae-80dc970529f2", "cc787f28-6478-45d0-80d7-297c22fbd390"]}',
+            'CONDITION_LABEL_KEY_IDS': '{"id": ["3c25bf29-337d-4b65-ba60-bd0c455157a2"]}',
+            'CONDITION_EXPRESSION_ID': '1',
+            'NOTE': None, 'DISUSE_FLAG': '0',
+            'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 11, 8, 36, 53, 185093), }
+    ]
+    with patch('libs.duplicate_check.LABEL_KEY_MAP', label_key_map):
+        with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_MAP', duplication_settings_map):
+            with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_ECS_MAP', duplication_settings_ecs_map):
+                duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_11)
+                recieve_num += len(recieve_notification_list)
+                duplicate_num += len(duplicate_notification_list)
+    # return値確認
+    assert duplicate_check_result is True
+    assert len(recieve_notification_list) == 1
+    assert len(duplicate_notification_list) == 0
+
+    # mongoDB確認
+    collection = mock_mongo.collection.return_value
+    assert collection.count_documents({}) == 1
+
+    # 2回目登録
+    mock_db.table_select.return_value = [
+        {
+            'DEDUPLICATION_SETTING_ID': '9ca2fb77-7e00-442f-8d27-f9bf1e3f9f2d',
+            'DEDUPLICATION_SETTING_NAME': 'E1_match',
+            'SETTING_PRIORITY': 50, 'EVENT_SOURCE_REDUNDANCY_GROUP': '{"id": ["3cd9fde9-ed6a-431f-9eb2-d963aee12a3a"]}',
+            'CONDITION_LABEL_KEY_IDS': '{"id": ["3c25bf29-337d-4b65-ba60-bd0c455157a2"]}',
+            'CONDITION_EXPRESSION_ID': '1',
+            'NOTE': None, 'DISUSE_FLAG': '0',
+            'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 10, 10, 55, 52, 850675), },
+        {
+            'DEDUPLICATION_SETTING_ID': '90b87686-806f-45f2-b6c7-a22a165d4164',
+            'DEDUPLICATION_SETTING_NAME': 'E3_E4_match',
+            'SETTING_PRIORITY': 50, 'EVENT_SOURCE_REDUNDANCY_GROUP': '{"id": ["d76d044c-f5b6-4716-99a7-6783b67aaa7e", "dc705845-eda1-408b-b3cf-5cf5069444d5"]}',
+            'CONDITION_LABEL_KEY_IDS': '{"id": ["3c25bf29-337d-4b65-ba60-bd0c455157a2"]}',
+            'CONDITION_EXPRESSION_ID': '1',
+            'NOTE': None, 'DISUSE_FLAG': '0',
+            'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 10, 15, 37, 2, 70586), },
+        {
+            'DEDUPLICATION_SETTING_ID': '9f1ec618-9de5-44dd-9dfc-c6d926c9f39a',
+            'DEDUPLICATION_SETTING_NAME': 'E5_E6_match',
+            'SETTING_PRIORITY': 50, 'EVENT_SOURCE_REDUNDANCY_GROUP': '{"id": ["b56e483a-0409-4186-b2ae-80dc970529f2", "cc787f28-6478-45d0-80d7-297c22fbd390"]}',
+            'CONDITION_LABEL_KEY_IDS': '{"id": ["3c25bf29-337d-4b65-ba60-bd0c455157a2"]}',
+            'CONDITION_EXPRESSION_ID': '1',
+            'NOTE': None, 'DISUSE_FLAG': '0',
+            'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 11, 8, 36, 53, 185093), }
+    ]
+    with patch('libs.duplicate_check.LABEL_KEY_MAP', label_key_map):
+        with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_MAP', duplication_settings_map):
+            with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_ECS_MAP', duplication_settings_ecs_map):
+                duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_12)
+                recieve_num += len(recieve_notification_list)
+                duplicate_num += len(duplicate_notification_list)
+    # return値確認
+    assert duplicate_check_result is True
+    assert len(recieve_notification_list) == 1
+    assert len(duplicate_notification_list) == 1
+
+    # mongoDB確認
+    collection = mock_mongo.collection.return_value
+    assert collection.count_documents({}) == 1
+
     # 通知の総数確認
-    assert recieve_num == 13
-    assert duplicate_num == 5
+    assert recieve_num == 2
+    assert duplicate_num == 1
 
 
 def test_case4_1(mock_db, mock_mongo):

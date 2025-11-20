@@ -61,14 +61,18 @@ def test_get_template_valid_file(app_context_with_mock_g, mocker):
     mock_access_file = mock_storage_access.return_value
     mock_access_file.read.return_value = b'template_content'
 
-    mocker.patch('common_libs.common.util.get_upload_file_path').return_value = {"file_path": os.path.join(os.environ.get('STORAGEPATH'), "mock_org_id/mock_workspace_id/uploadfiles/110102/template_file/mock_uuid/template.txt")}
+    upload_file_path = os.path.join(os.environ.get('STORAGEPATH'), "mock_org_id", "mock_workspace_id", "uploadfiles", "110102", "template_file", "mock_uuid", "template.txt")
+    tmp_file_path = os.path.join("/tmp", "mock_org_id", "mock_workspace_id", "tmp", "mock_tmp_uuid", "template.txt")
+
+    mocker.patch('common_libs.common.util.get_upload_file_path').return_value = {"file_path": upload_file_path}
+    mocker.patch('common_libs.notification.sub_classes.oase.get_tmp_file_path').return_value = {"file_path": tmp_file_path}
 
     fetch_data = {"NOTIFICATION_DESTINATION": [{"UUID": "mock_uuid", "TEMPLATE_FILE": "template.txt"}]}
     decision_info = {"notification_type": OASENotificationType.NEW}
 
     result = OASE._get_template(fetch_data, decision_info)
 
-    mock_access_file.open.assert_called_once_with(os.path.join(os.environ.get('STORAGEPATH'), "mock_org_id/mock_workspace_id/uploadfiles/110102/template_file/mock_uuid/template.txt"))
+    mock_access_file.open.assert_called_once_with(upload_file_path, tmp_path=tmp_file_path)
     mock_access_file.read.assert_called_once()
     mock_access_file.close.assert_called_once()
     assert result == [{"UUID": "mock_uuid", "TEMPLATE_FILE": "template.txt", "template": b'template_content'}]

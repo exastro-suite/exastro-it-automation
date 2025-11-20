@@ -158,7 +158,8 @@ def test_should_notify_event_returns_true_for_new_event():
         deduplication_setting_list,
         True,
         collection_settings_counts,
-        agents_counts
+        agents_counts,
+        "es1"
     )
     assert result is True
 
@@ -176,7 +177,8 @@ def test_should_notify_event_returns_false_for_single_redundancy_group():
         deduplication_setting_list,
         False,
         collection_settings_counts,
-        agents_counts
+        agents_counts,
+        "es1"
     )
     assert result is False
 
@@ -194,7 +196,8 @@ def test_should_notify_event_returns_false_for_empty_redundancy_group():
         deduplication_setting_list,
         False,
         collection_settings_counts,
-        agents_counts
+        agents_counts,
+        "es1"
     )
     assert result is False
 
@@ -212,7 +215,8 @@ def test_should_notify_event_with_single_agent_multiple_redundancy_groups():
         deduplication_setting_list,
         False,
         collection_settings_counts,
-        agents_counts
+        agents_counts,
+        "es1"
     )
     assert result is True
 
@@ -230,7 +234,8 @@ def test_should_notify_event_with_multiple_agents_single_event_source():
         deduplication_setting_list,
         False,
         collection_settings_counts,
-        agents_counts
+        agents_counts,
+        "es1"
     )
     assert result is False
 
@@ -246,7 +251,8 @@ def test_should_notify_event_with_empty_setting_ids():
         deduplication_setting_list,
         False,
         collection_settings_counts,
-        agents_counts
+        agents_counts,
+        "es1"
     )
     assert result is False
 
@@ -264,7 +270,8 @@ def test_should_notify_event_new_event_overrides_redundancy_check():
         deduplication_setting_list,
         True,
         collection_settings_counts,
-        agents_counts
+        agents_counts,
+        "es1"
     )
     assert result is True
 
@@ -281,6 +288,7 @@ def test_should_notify_event_with_none_counts():
         deduplication_setting_list,
         True,
         None,
+        None,
         None
     )
     assert result is True
@@ -291,9 +299,10 @@ def test_should_notify_event_with_none_counts():
         deduplication_setting_list,
         False,
         None,
+        None,
         None
     )
-    assert result is True
+    assert result is False
 
 
 # ===== is_duplicate_notification_needed function tests =====
@@ -310,7 +319,8 @@ def test_is_duplicate_notification_needed_returns_false_for_single_redundancy_gr
         deduplication_setting_ids,
         deduplication_setting_list,
         collection_settings_counts,
-        agents_counts
+        agents_counts,
+        "es1"
     )
     assert result is False
 
@@ -327,7 +337,8 @@ def test_is_duplicate_notification_needed_returns_false_for_empty_redundancy_gro
         deduplication_setting_ids,
         deduplication_setting_list,
         collection_settings_counts,
-        agents_counts
+        agents_counts,
+        "es1"
     )
     assert result is False
 
@@ -344,7 +355,8 @@ def test_is_duplicate_notification_needed_with_missing_redundancy_group_key():
         deduplication_setting_ids,
         deduplication_setting_list,
         collection_settings_counts,
-        agents_counts
+        agents_counts,
+        "es1"
     )
     assert result is False
 
@@ -359,7 +371,8 @@ def test_is_duplicate_notification_needed_with_empty_settings():
         deduplication_setting_ids,
         deduplication_setting_list,
         collection_settings_counts,
-        agents_counts
+        agents_counts,
+        ""
     )
     assert result is False
 
@@ -377,7 +390,8 @@ def test_is_duplicate_notification_needed_with_balanced_counts():
         deduplication_setting_ids,
         deduplication_setting_list,
         collection_settings_counts,
-        agents_counts
+        agents_counts,
+        "es1"
     )
     # 実装の詳細なロジックに応じて結果が決まる
     assert isinstance(result, bool)
@@ -396,13 +410,71 @@ def test_is_duplicate_notification_needed_with_unbalanced_counts():
         deduplication_setting_ids,
         deduplication_setting_list,
         collection_settings_counts,
-        agents_counts
+        agents_counts,
+        "es1"
     )
     assert result is False
 
 
-def test_is_duplicate_notification_needed_with_multiple_settings_any_single_group():
-    """複数設定で単一グループが含まれる場合、Falseを返すことを確認"""
+def test_is_duplicate_notification_needed_with_setting_name_none():
+    """設定IDがNoneの場合、Falseを返すことを確認"""
+    deduplication_setting_ids = ["ds1"]
+    deduplication_setting_list = {
+        "ds1": {"EVENT_SOURCE_REDUNDANCY_GROUP": ["es1", "es2"]}
+    }
+    # 条件を満たさないパターン
+    collection_settings_counts = {"es1": 3, "es2": 1}
+    agents_counts = {"agent1": 3, "agent2": 1}
+    result = is_duplicate_notification_needed(
+        deduplication_setting_ids,
+        deduplication_setting_list,
+        collection_settings_counts,
+        agents_counts,
+        None
+    )
+    assert result is False
+
+
+def test_is_duplicate_notification_needed_with_setting_name_0byte():
+    """設定IDが""の場合、Falseを返すことを確認"""
+    deduplication_setting_ids = ["ds1"]
+    deduplication_setting_list = {
+        "ds1": {"EVENT_SOURCE_REDUNDANCY_GROUP": ["es1", "es2"]}
+    }
+    # 条件を満たさないパターン
+    collection_settings_counts = {"es1": 3, "es2": 1}
+    agents_counts = {"agent1": 3, "agent2": 1}
+    result = is_duplicate_notification_needed(
+        deduplication_setting_ids,
+        deduplication_setting_list,
+        collection_settings_counts,
+        agents_counts,
+        ""
+    )
+    assert result is False
+
+
+def test_is_duplicate_notification_needed_with_setting_name_different():
+    """設定IDが異なる場合、Falseを返すことを確認"""
+    deduplication_setting_ids = ["ds1"]
+    deduplication_setting_list = {
+        "ds1": {"EVENT_SOURCE_REDUNDANCY_GROUP": ["es1", "es2"]}
+    }
+    # 条件を満たさないパターン
+    collection_settings_counts = {"es1": 3, "es2": 1}
+    agents_counts = {"agent1": 3, "agent2": 1}
+    result = is_duplicate_notification_needed(
+        deduplication_setting_ids,
+        deduplication_setting_list,
+        collection_settings_counts,
+        agents_counts,
+        "esxxx"
+    )
+    assert result is False
+
+
+def test_is_duplicate_notification_needed_with_multiple_settings_any_single_group_true():
+    """複数設定で複数の収集設定が設定されている重複排除が優先場合、Trueを返すことを確認"""
     deduplication_setting_ids = ["ds1", "ds2"]
     deduplication_setting_list = {
         "ds1": {"EVENT_SOURCE_REDUNDANCY_GROUP": ["es1", "es2"]},
@@ -414,12 +486,96 @@ def test_is_duplicate_notification_needed_with_multiple_settings_any_single_grou
         deduplication_setting_ids,
         deduplication_setting_list,
         collection_settings_counts,
-        agents_counts
+        agents_counts,
+        "es1"
+    )
+    assert result is True
+
+
+def test_is_duplicate_notification_needed_with_multiple_settings_any_single_group_false():
+    """複数設定で複数の収集設定が設定されている重複排除が優先場合、Falseを返すことを確認"""
+    deduplication_setting_ids = ["ds2", "ds1"]
+    deduplication_setting_list = {
+        "ds1": {"EVENT_SOURCE_REDUNDANCY_GROUP": ["es1", "es2"]},
+        "ds2": {"EVENT_SOURCE_REDUNDANCY_GROUP": ["es3"]}  # 単一グループ
+    }
+    collection_settings_counts = {"es1": 1, "es2": 1, "es3": 1}
+    agents_counts = {"agent1": 1, "agent2": 1, "agent3": 1}
+    result = is_duplicate_notification_needed(
+        deduplication_setting_ids,
+        deduplication_setting_list,
+        collection_settings_counts,
+        agents_counts,
+        "es3"
     )
     assert result is False
 
 
+@pytest.mark.parametrize("event_collection_settings_id, collection_settings_counts, agents_counts, expected", [
+    # パターン1: 収集設定冗長構成
+    ("es1", {"es1": 1}, {"agent1": 1}, False),
+    ("es2", {"es1": 1, "es2": 1}, {"agent1": 1, "agent2": 1}, True),
+    # パターン2： 収集設定*エージェント冗長構成（収集設定の分散）
+    ("es1", {"es1": 1}, {"agent1": 1}, False),
+    ("es2", {"es1": 1, "es2": 1}, {"agent1": 1, "agent2": 1}, True),
+    ("es1", {"es1": 2, "es2": 1}, {"agent1": 2, "agent2": 1}, False),
+    ("es2", {"es1": 2, "es2": 2}, {"agent1": 2, "agent2": 2}, False),
+    ("es2", {"es1": 2, "es2": 3}, {"agent1": 2, "agent2": 3}, False),
+    # パターン3： 収集設定*エージェント冗長構成（収集設定の集中）
+    ("es1", {"es1": 1}, {"agent1": 1}, False),
+    ("es1", {"es1": 2}, {"agent1": 1, "agent2": 1}, False),
+    ("es2", {"es1": 2, "es2": 1}, {"agent1": 2, "agent2": 1}, True),
+    ("es2", {"es1": 2, "es2": 2}, {"agent1": 2, "agent2": 2}, False),
+    ("es2", {"es1": 3, "es2": 2}, {"agent1": 3, "agent2": 2}, False),
+])
+def test_is_duplicate_notification_needed_pattern(event_collection_settings_id, collection_settings_counts, agents_counts, expected):
+    """is_duplicate_notification_needed関数の収集設定*エージェント件数遷移テスト"""
+    deduplication_setting_ids = ["ds1"]
+    deduplication_setting_list = {
+        "ds1": {"EVENT_SOURCE_REDUNDANCY_GROUP": ["es1", "es2"]},
+    }
+    result = is_duplicate_notification_needed(
+        deduplication_setting_ids,
+        deduplication_setting_list,
+        collection_settings_counts,
+        agents_counts,
+        event_collection_settings_id
+    )
+    assert result is expected
+
+
+@pytest.mark.parametrize("event_collection_settings_id, collection_settings_counts, agents_counts, expected", [
+    # パターン1: 収集設定冗長構成
+    ("es1", {"es1": 1}, {"agent1": 1}, True),
+    ("es2", {"es1": 1, "es2": 1}, {"agent1": 1, "agent2": 1}, True),
+    # パターン2： 収集設定*エージェント冗長構成（収集設定の分散）
+    ("es1", {"es1": 1}, {"agent1": 1}, True),
+    ("es2", {"es1": 1, "es2": 1}, {"agent1": 1, "agent2": 1}, True),
+    # パターン3： 収集設定*エージェント冗長構成（収集設定の集中）
+    ("es1", {"es1": 1}, {"agent1": 1}, True),
+    ("es1", {"es1": 2}, {"agent1": 1, "agent2": 1}, True),
+    # パターンX： イベントとして別になるので起きないパターン
+    ("es1", {"es1": 100}, {"agent1": 100}, True),
+    ("es1", {"es1": 200}, {"agent1": 100, "agent2": 100}, True),
+])
+def test_should_notify_event_needed_pattern(event_collection_settings_id, collection_settings_counts, agents_counts, expected):
+    """should_notify_event関数の収集設定*エージェント件数遷移テスト"""
+    deduplication_setting_ids = ["ds1"]
+    deduplication_setting_list = {
+        "ds1": {"EVENT_SOURCE_REDUNDANCY_GROUP": ["es1", "es2"]},
+    }
+    result = should_notify_event(
+        deduplication_setting_ids,
+        deduplication_setting_list,
+        True,
+        collection_settings_counts,
+        agents_counts,
+        event_collection_settings_id
+    )
+    assert result is expected
+
 # ===== Integration tests =====
+
 
 def test_typical_workflow_new_event():
     """新規イベントの典型的なワークフローテスト"""
@@ -448,7 +604,8 @@ def test_typical_workflow_new_event():
         deduplication_setting_list,
         True,
         collection_counts,
-        agents_counts
+        agents_counts,
+        "settings1"
     )
     assert result is True
 
@@ -480,7 +637,8 @@ def test_typical_workflow_duplicate_event():
         deduplication_setting_list,
         False,
         collection_counts,
-        agents_counts
+        agents_counts,
+        "settings1"
     )
     assert notify_result is False
 
@@ -489,7 +647,8 @@ def test_typical_workflow_duplicate_event():
         ["ds1"],
         deduplication_setting_list,
         collection_counts,
-        agents_counts
+        agents_counts,
+        "ds1"
     )
     assert isinstance(duplicate_result, bool)
 
@@ -516,7 +675,8 @@ def test_workflow_no_redundancy_group():
         deduplication_setting_list,
         False,
         collection_counts,
-        agents_counts
+        agents_counts,
+        "settings1"
     )
     assert notify_result is False
 
@@ -524,7 +684,8 @@ def test_workflow_no_redundancy_group():
         ["ds1"],
         deduplication_setting_list,
         collection_counts,
-        agents_counts
+        agents_counts,
+        "settings1"
     )
     assert duplicate_result is False
 
@@ -599,7 +760,8 @@ def test_should_notify_event_parametrized(is_event_inserted, redundancy_groups, 
         deduplication_setting_list,
         is_event_inserted,
         collection_settings_counts,
-        agents_counts
+        agents_counts,
+        "settings1"
     )
     assert result is expected
 
@@ -630,7 +792,8 @@ def test_should_notify_event_with_missing_keys():
         deduplication_setting_list,
         False,
         collection_settings_counts,
-        agents_counts
+        agents_counts,
+        ""
     )
     assert result is False
 
@@ -651,5 +814,6 @@ def test_should_notify_event_with_nonexistent_setting_id():
             deduplication_setting_list,
             False,
             collection_settings_counts,
-            agents_counts
+            agents_counts,
+            "es1"
         )

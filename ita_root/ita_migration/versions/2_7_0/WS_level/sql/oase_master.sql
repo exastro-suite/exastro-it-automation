@@ -279,14 +279,14 @@ A and B：AとBの両方にマッチさせる場合
 A xor B：AもしくはBのどちらか一方のみが存在するときマッチさせる場合（排他的論理和）
 A -> B：AのあとにBが発生しているときにマッチさせる場合', DESCRIPTION_EN = 'Select a filter operator.
 A and B: To match both A and B
-A or B: To match A xor B (Exclusive OR)
+A xor B: To match A xor B (Exclusive OR)
 A -> B: To match when B occurs after A', LAST_UPDATE_TIMESTAMP = _____DATE_____  WHERE COLUMN_DEFINITION_ID = '11010907';
 UPDATE T_COMN_MENU_COLUMN_LINK_JNL      SET DESCRIPTION_JA = 'フィルター演算子を選択します。
 A and B：AとBの両方にマッチさせる場合
 A xor B：AもしくはBのどちらか一方のみが存在するときマッチさせる場合（排他的論理和）
 A -> B：AのあとにBが発生しているときにマッチさせる場合', DESCRIPTION_EN = 'Select a filter operator.
 A and B: To match both A and B
-A or B: To match A xor B (Exclusive OR)
+A xor B: To match A xor B (Exclusive OR)
 A -> B: To match when B occurs after A', LAST_UPDATE_TIMESTAMP = _____DATE_____  WHERE COLUMN_DEFINITION_ID = '11010907';
 
 UPDATE T_OASE_FILTER_OPERATOR  SET OPERATION_NAME = 'A xor B', LAST_UPDATE_TIMESTAMP = _____DATE_____  WHERE OPERATION_ID = '1';

@@ -58,7 +58,7 @@ def test_pattern_010(
         2,
         "r2",
         (filter.f_a8, filter.f_u_b),
-        filter_operator=oaseConst.DF_OPE_OR,
+        filter_operator=oaseConst.DF_OPE_XOR,
     )
     r3 = create_rule_row(
         3,

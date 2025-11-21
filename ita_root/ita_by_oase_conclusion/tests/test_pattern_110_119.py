@@ -207,7 +207,7 @@ def test_pattern_114(
 
     filters = [f_q_c, f_q_3]
     rules = [
-        create_rule_row(1, "p114:r1", (f_q_c, f_q_3), filter_operator=oaseConst.DF_OPE_OR)
+        create_rule_row(1, "p114:r1", (f_q_c, f_q_3), filter_operator=oaseConst.DF_OPE_XOR)
     ]
     actions = []
 
@@ -232,7 +232,7 @@ def test_pattern_115(
     patch_database_connections,
     patch_datetime,
 ):
-    """AB両方のフィルタにマッチする場合(OR)２"""
+    """AB両方のフィルタにマッチする場合(XOR)２"""
     g = patch_global_g
     ws_db, mock_mongo = patch_database_connections
     mock_datetime = patch_datetime
@@ -242,7 +242,7 @@ def test_pattern_115(
 
     filters = [f_q_c, f_q_3]
     rules = [
-        create_rule_row(1, "p115:r1", (f_q_c, f_q_3), filter_operator=oaseConst.DF_OPE_OR)
+        create_rule_row(1, "p115:r1", (f_q_c, f_q_3), filter_operator=oaseConst.DF_OPE_XOR)
     ]
     actions = []
 

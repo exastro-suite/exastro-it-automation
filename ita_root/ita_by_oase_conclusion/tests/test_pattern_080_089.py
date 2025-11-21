@@ -84,7 +84,7 @@ def test_pattern_082(
     patch_database_connections,
     patch_datetime,
 ):
-    """ユニークとキューイングのOR(ユニークまたはキューイング）"""
+    """ユニークとキューイングのXOR(ユニークまたはキューイング）"""
     g = patch_global_g
     ws_db, mock_mongo = patch_database_connections
     mock_datetime = patch_datetime
@@ -94,7 +94,7 @@ def test_pattern_082(
 
     filters = [f_u_b, f_q_a]
     rules = [
-        create_rule_row(1, "p082:r1", (f_u_b, f_q_a), filter_operator=oaseConst.DF_OPE_OR),
+        create_rule_row(1, "p082:r1", (f_u_b, f_q_a), filter_operator=oaseConst.DF_OPE_XOR),
     ]
     actions = []
 

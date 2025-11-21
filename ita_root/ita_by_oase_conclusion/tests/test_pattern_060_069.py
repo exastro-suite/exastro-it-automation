@@ -149,7 +149,7 @@ def test_pattern_066(
     patch_database_connections,
     patch_datetime,
 ):
-    """キューイングとキューイングのOR(ORでマッチする場合とORでマッチしない場合)"""
+    """キューイングとキューイングのXOR(XORでマッチする場合とXORでマッチしない場合)"""
     g = patch_global_g
     ws_db, mock_mongo = patch_database_connections
     mock_datetime = patch_datetime
@@ -159,8 +159,8 @@ def test_pattern_066(
 
     filters = [f_q_a, f_q_b, f_q_3, f_q_1]
     rules = [
-        create_rule_row(1, "p066:r1", (f_q_a, f_q_3), filter_operator=oaseConst.DF_OPE_OR),
-        create_rule_row(2, "p066:r2", (f_q_b, f_q_1), filter_operator=oaseConst.DF_OPE_OR),
+        create_rule_row(1, "p066:r1", (f_q_a, f_q_3), filter_operator=oaseConst.DF_OPE_XOR),
+        create_rule_row(2, "p066:r2", (f_q_b, f_q_1), filter_operator=oaseConst.DF_OPE_XOR),
     ]
     actions = []
 

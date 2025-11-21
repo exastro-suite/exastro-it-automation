@@ -283,7 +283,7 @@ def test_pattern_103(
     rules = [
         create_rule_row(1, "p103:r1", (f_a7, f_a10), filter_operator=oaseConst.DF_OPE_AND,
                         conclusion_label_settings=[{"type": "a"}], conclusion_ttl=20),
-        create_rule_row(2, "p103:r2", (f_u_a, f_u_b), filter_operator=oaseConst.DF_OPE_OR,
+        create_rule_row(2, "p103:r2", (f_u_a, f_u_b), filter_operator=oaseConst.DF_OPE_XOR,
                         conclusion_label_settings=[{"type": "qa"}], conclusion_ttl=20),
     ]
     actions = []
@@ -328,7 +328,7 @@ def test_pattern_104(
     patch_database_connections,
     patch_datetime,
 ):
-    """ORで結論イベントが生まれr2以降でマッチする"""
+    """XORで結論イベントが生まれr2以降でマッチする"""
     g = patch_global_g
     ws_db, mock_mongo = patch_database_connections
     mock_datetime = patch_datetime
@@ -338,13 +338,13 @@ def test_pattern_104(
 
     filters = [f_a7, f_a10, f_a8, f_a15, f_u_a, f_u_b, f_q_a, f_q_b]
     rules = [
-        create_rule_row(1, "p104:r1", (f_a7, f_a10), filter_operator=oaseConst.DF_OPE_OR,
+        create_rule_row(1, "p104:r1", (f_a7, f_a10), filter_operator=oaseConst.DF_OPE_XOR,
                         conclusion_label_settings=[{"excluded_flg": "0"}, {"service": "Mysqld"}, {"status": "Down"}], conclusion_ttl=20),
-        create_rule_row(2, "p104:r2", (f_a8, f_a15), filter_operator=oaseConst.DF_OPE_OR,
+        create_rule_row(2, "p104:r2", (f_a8, f_a15), filter_operator=oaseConst.DF_OPE_XOR,
                         conclusion_label_settings=[{"type": "qa"}], conclusion_ttl=20),
-        create_rule_row(3, "p104:r3", (f_q_a, f_q_b), filter_operator=oaseConst.DF_OPE_OR,
+        create_rule_row(3, "p104:r3", (f_q_a, f_q_b), filter_operator=oaseConst.DF_OPE_XOR,
                         conclusion_label_settings=[{"type": "a"}], conclusion_ttl=20),
-        create_rule_row(4, "p104:r4", (f_u_a, f_u_b), filter_operator=oaseConst.DF_OPE_OR,
+        create_rule_row(4, "p104:r4", (f_u_a, f_u_b), filter_operator=oaseConst.DF_OPE_XOR,
                         conclusion_label_settings=[{"type": "x"}], conclusion_ttl=20),
     ]
     actions = []

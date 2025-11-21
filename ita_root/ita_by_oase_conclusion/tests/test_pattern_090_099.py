@@ -99,7 +99,7 @@ def test_pattern_091(
     patch_database_connections,
     patch_datetime,
 ):
-    """ユニークとキューイングをORで判定した結果、結論イベントが生まれる。生まれた結論イベントをまたルールで判定できるか？"""
+    """ユニークとキューイングをXORで判定した結果、結論イベントが生まれる。生まれた結論イベントをまたルールで判定できるか？"""
     g = patch_global_g
     ws_db, mock_mongo = patch_database_connections
     mock_datetime = patch_datetime
@@ -109,7 +109,7 @@ def test_pattern_091(
 
     filters = [f_u_c, f_q_3, f_u_b]
     rules = [
-        create_rule_row(1, "p091:r1", (f_u_c, f_q_3), filter_operator=oaseConst.DF_OPE_OR,
+        create_rule_row(1, "p091:r1", (f_u_c, f_q_3), filter_operator=oaseConst.DF_OPE_XOR,
                         conclusion_label_settings=[{"type": "b"}], conclusion_ttl=20),
         create_rule_row(2, "p091:r2", (f_u_b), filter_operator=oaseConst.DF_OPE_NONE),
     ]

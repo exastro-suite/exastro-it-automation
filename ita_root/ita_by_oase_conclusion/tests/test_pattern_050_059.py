@@ -140,7 +140,7 @@ def test_pattern_051(
     patch_database_connections,
     patch_datetime,
 ):
-    """グルーピングとグルーピングのOR"""
+    """グルーピングとグルーピングのXOR"""
     g = patch_global_g
     ws_db, mock_mongo = patch_database_connections
     mock_datetime = patch_datetime
@@ -150,7 +150,7 @@ def test_pattern_051(
 
     filters = [f_a7, f_a14]
     rules = [
-        create_rule_row(1, "p051:r1", (f_a7, f_a14), filter_operator=oaseConst.DF_OPE_OR),
+        create_rule_row(1, "p051:r1", (f_a7, f_a14), filter_operator=oaseConst.DF_OPE_XOR),
     ]
     actions = []
 

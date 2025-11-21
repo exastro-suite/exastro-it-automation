@@ -484,12 +484,12 @@ class Judgement:
                 - None=フィルター適用不可(ルール判定対象外)
         """
 
-        if FilterResultDict['Operator'] == oaseConst.DF_OPE_OR:
+        if FilterResultDict['Operator'] == oaseConst.DF_OPE_XOR:
             if FilterResultDict['True'] == 1:
-                # or条件の場合、片方がマッチした時のみTrueとする
+                # xor条件の場合、片方がマッチした時のみTrueとする
                 return True
             elif FilterResultDict['True'] == 2:
-                # or条件で両方のフィルターにマッチしていた場合は未知とするためIncidentDictから該当の要素を削除する
+                # xor条件で両方のフィルターにマッチしていた場合は未知とするためIncidentDictから該当の要素を削除する
                 remove_key_list = []
                 for event in FilterResultDict['EventList']:
                     for key, value_list in IncidentDict.items():
@@ -526,7 +526,7 @@ class Judgement:
     def checkRuleOperatorId(self, Operator):
         if not Operator:
             return True
-        if Operator in (oaseConst.DF_OPE_OR, oaseConst.DF_OPE_AND, oaseConst.DF_OPE_ORDER):
+        if Operator in (oaseConst.DF_OPE_XOR, oaseConst.DF_OPE_AND, oaseConst.DF_OPE_ORDER):
             return True
         return False
 

@@ -316,7 +316,7 @@ class ManageEvents:
             if event["labels"]["_exastro_evaluated"] != "0":
                 continue
 
-            # keyが削除されてincident_dictが空になっている場合（or条件で両方のフィルターにマッチしていた場合）があるのでここで判定する
+            # keyが削除されてincident_dictが空になっている場合（xor条件で両方のフィルターにマッチしていた場合）があるのでここで判定する
             if len(incident_dict) == 0:
                 unused_event_ids.append(event_id)
                 continue

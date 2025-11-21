@@ -87,7 +87,7 @@ def test_pattern_071(
     patch_database_connections,
     patch_datetime,
 ):
-    """グルーピングとキューイングのOR(グルーピングとキューイングがマッチしない場合とキューイングしたイベントが使われる場合)"""
+    """グルーピングとキューイングのXOR(グルーピングとキューイングがマッチしない場合とキューイングしたイベントが使われる場合)"""
     g = patch_global_g
     ws_db, mock_mongo = patch_database_connections
     mock_datetime = patch_datetime
@@ -97,7 +97,7 @@ def test_pattern_071(
 
     filters = [f_a8, f_q_b]
     rules = [
-        create_rule_row(1, "p071:r1", (f_a8, f_q_b), filter_operator=oaseConst.DF_OPE_OR),
+        create_rule_row(1, "p071:r1", (f_a8, f_q_b), filter_operator=oaseConst.DF_OPE_XOR),
     ]
     actions = []
 

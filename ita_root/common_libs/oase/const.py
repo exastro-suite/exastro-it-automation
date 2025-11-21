@@ -72,7 +72,7 @@ class oaseConst():
     DF_TEST_NE = '2'    # !=
     # 演算子
     DF_OPE_NONE = ''    # None
-    DF_OPE_OR = '1'     # OR
+    DF_OPE_XOR = '1'     # XOR
     DF_OPE_AND = '2'    # AND
     DF_OPE_ORDER = '3'  # ->
 

@@ -330,6 +330,10 @@ def _process_event_group(labeled_event_collection, event_group, q_findoneupdate_
             else:
                 findoneupdate_update_num += 1
 
+            # 通知のテンプレート用: 登録処理後(res:find_one_and_update後)に元データ(event:find_one_and_update前)で一部差し替え
+            for uk in [rk for rk in res.keys() if rk in event]:
+                res[uk] = event[uk]
+
             # 受信通知対象ならリストに追加: ReturnDocument.AFTER
             recieve_notification_list.append(res) if recieve_notification_flag else None
             # 重複排除済みならリストに追加: ReturnDocument.AFTER

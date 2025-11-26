@@ -57,6 +57,7 @@ async init( data ) {
     this.blockMargin = 48; // ブロックごとの重なり判定マージン
     this.minFloor = 16; // 最小段数
     this.api = data.url; // 履歴取得API URL
+    this.maxRate = data.maxRate; // 最大倍率
 
     // イベントカラー
     this.patternColor = [
@@ -180,9 +181,10 @@ async polling() {
     this.controller = new AbortController();
 
     // 読み込み範囲を変えた場合は自動モード変更フラグをリセット
-    if ( this.pollingStartMode !== 'interval') {
+    if ( this.pollingStartMode !== 'interval' && this.pollingStartMode !== null ) {
         this.autoModeChangeFlag = false;
     }
+    this.pollingStartMode = null;
 
     // 時間
     if ( this.selectDateRange ) {
@@ -192,7 +194,7 @@ async polling() {
     }
 
     // 範囲選択していない場合は読み込みと表示の時間を合わせる
-    if ( !this.rangeSelectFlag ) {
+    if ( this.rangeSelectFlag === false ) {
         this.start = this.loadStart;
         this.end = this.loadEnd;
     }
@@ -209,7 +211,6 @@ async polling() {
     });
 
     this.updateSize();
-    this.setTimeScale();
 
     try {
         // 読込開始
@@ -230,6 +231,7 @@ async polling() {
     this.progress('end');
 
     // 表示
+    this.setTimeScale();
     this.updateCanvas( true );
 
     if ( !this.interval ) return;
@@ -602,8 +604,11 @@ createEventData() {
     this.groupingEvents = {};
 
     for ( const e of events ) {
+        // ブロックのソートに使用
         const sortTime =
             ( e.item && e.item.exastro_created_at )? e.item.exastro_created_at:
+            // datetimeにはmsが無くAction=>Eventの順になる場合があるため.999を追加する
+            ( e.datetime && e.type === 'action')? e.datetime + '.999':
             ( e.datetime )? e.datetime:
             null;
         e._sortTime = this.parseToEpochMs( sortTime );
@@ -940,23 +945,24 @@ createDetailEventData( pollingMode ) {
     const singleLength = this.singleEvent.length;
     for ( let i = 0; i < singleLength; i++ ) {
         const e = this.singleEvent[i];
-        // ひとつ前のイベントとの差が1秒未満の場合はチェックする階層をその階層からにする
+        // ひとつ前のイベントとの差が1000ms未満の場合はチェックする階層をその階層からにする
         const p = this.singleEvent[i-1];
         let f = 0;
         if ( p && e._sortTime - p._sortTime < 1000 ) {
-            const newFloor = p.floor + 1;
-            floor[newFloor]
             f = p.floor + 1;
-        }        
+        }
         this.createFloorData( floor, e, f, null, null, pollingMode, 'single');
 
         // 100段を超えた場合
-        if ( this.autoModeChangeFlag === true ) return;
+        if ( this.autoModeChangeFlag === true ) {
+            return;
+        }
     }
 
     // 段数
     this.floorLength = ( floor.length > this.minFloor )? floor.length: this.minFloor;
-    this.lineSpacing = Math.round( this.h / this.floorLength * 100 ) / 100;
+    this.lineSpacing = Math.round( this.h / ( this.floorLength  ) * 10000 ) / 10000;
+    if ( this.debug ) console.log('最大階数', this.floorLength );
 }
 /*
 ##################################################
@@ -974,10 +980,9 @@ createFloorData( floor, e, f, x1, x2, pollingMode, eventType ) {
     // 繋がりの無いイベントは表示範囲外を除外する
     if ( eventType === 'single' && ( end < this.start || start > this.end ) ) return;
 
-    // 座標を計算
-    e.x1 = this.getDatePositionX( start );
+    e.x1 = this.getDateWidthPositionX( start );
     if ( end ) {
-        e.x2 = this.getDatePositionX( end );
+        e.x2 = this.getDateWidthPositionX( end );
     } else {
         e.x2 = e.x1;
     }
@@ -986,24 +991,32 @@ createFloorData( floor, e, f, x1, x2, pollingMode, eventType ) {
 
     // 重なり防止マージン
     const m = this.blockMargin;
-
     e.floor = undefined;
     while ( e.floor === undefined ) {
-        if ( floor[f] === undefined ) floor[f] = -Infinity;
-
+        if ( floor[f] === undefined ) floor[f] = -Infinity;        
         if ( floor[f] < x1 ) {
             floor[f] = x2 + m;
             e.floor = f;
         } else {
             f++;
-            if ( pollingMode === true && this.autoModeChangeFlag === false && f > 100 ) {
-                console.warn('Event block exceeds 100 lines. Change to aggregate mode.');
-                this.autoModeChangeFlag = true;
-                return;
-            }
         }
+        if ( this.autoModeChangeCheck( pollingMode, f ) ) return;
     }
     this.canvasData.push( e );
+}
+/*
+##################################################
+    段数チェック
+##################################################
+*/
+autoModeChangeCheck( pollingMode, f ) {
+    if ( pollingMode === true && this.autoModeChangeFlag === false && f > 99 ) {
+        console.warn('Event block exceeds 100 lines. Change to aggregate mode.');
+        this.autoModeChangeFlag = true;
+        return true;
+    } else {
+        return false
+    }
 }
 /*
 ##################################################
@@ -1014,17 +1027,28 @@ setLine() {
     const ctx = this.lineCtx;
     this.clear( ctx );
 
-    const lineSpacingWidth = this.lineSpacing * this.vRate;
+    this.vRateNum = this.vRate;
+    const maxRate = this.h / 8 / this.lineSpacing;
+    this.vRateNum = 1 + ( this.vRate - 1 ) * ((maxRate - 1) / this.maxRate );
+    this.vPositionNum = this.vPosition * ((maxRate - 1) / this.maxRate);
+
+    const lineSpacingWidth = this.lineSpacing * this.vRateNum;
     if ( lineSpacingWidth < 8 ) return;
 
+    const fontSize = ( lineSpacingWidth / 2 > 12 )? 12: lineSpacingWidth / 2;
     const length = Math.floor( this.h / this.lineSpacing ) + 1;
 
     ctx.beginPath();
     ctx.lineWidth = 1;
     ctx.strokeStyle = this.getBorderColor();
+    ctx.fillStyle = this.getTextColor();
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.font = `${fontSize}px Consolas`;
     ctx.setLineDash([]);
     for ( let i = 0; i <= length; i++ ) {
-        const y = ( i * lineSpacingWidth ) - this.vPosition;
+        const y = ( i * lineSpacingWidth ) - this.vPositionNum;
+        if ( y < 0 || y > this.h ) continue;
         this.line( ctx, 0, y , this.w, y );
     }
     ctx.stroke();
@@ -1034,8 +1058,10 @@ setLine() {
     ctx.strokeStyle = this.getBorderColor();
     ctx.setLineDash([4,4]);
     for ( let i = 0; i <= length; i++ ) {
-        const y = ( ( i * this.lineSpacing ) - ( this.lineSpacing / 2 ) ) * this.vRate - this.vPosition;
+        const y = ( ( i * this.lineSpacing ) - ( this.lineSpacing / 2 ) ) * this.vRateNum - this.vPositionNum;
+        if ( y < 0 || y > this.h ) continue;
         this.line( ctx, 0, y , this.w, y );
+        ctx.fillText(i, this.w - 8, y );
     }
     ctx.stroke();
 }
@@ -1050,7 +1076,7 @@ createDetailEventBlocks() {
     const ico = er.eventCtx;
     er.clear( ico );
 
-    const fontSize = er.lineSpacing * er.vRate * .5;
+    const fontSize = er.lineSpacing * er.vRateNum * .5;
     ico.textAlign = 'center';
     ico.textBaseline = 'middle';
     ico.font = fontSize + 'px UiFont';
@@ -1058,7 +1084,7 @@ createDetailEventBlocks() {
     const ttl = er.ttlCtx;
     er.clear( ttl );
 
-    const lineSpacingWidth = this.lineSpacing * this.vRate;
+    const lineSpacingWidth = this.lineSpacing * this.vRateNum;
     const lineWidth = ( lineSpacingWidth < 8 )? 1: 2;
     ttl.lineWidth = lineWidth;
 
@@ -1067,11 +1093,24 @@ createDetailEventBlocks() {
         x1 = er.round( event.x1 * er.hRate - er.hPosition ) - ( lineWidth / 2 - 1 ),
         y = er.getFloorPositonY( event.floor );
 
+        const blockHeight = er.round( er.lineSpacing * er.vRateNum * .7 );
+        event.block = {
+            x: er.round( x1 - blockHeight / 2 ),
+            y: er.round( y - blockHeight / 2 ),
+            w: blockHeight,
+            h: blockHeight,
+            centerX: x1,
+            centerY: y
+        };
+
+        // 画面外は描画しない
+        if ( y < 0 || y > this.h ) continue;
+
         // TTL 線
         if ( event.type === 'event') {
             const
-            x2 = er.round( event.x2 * er.hRate - er.hPosition )- ( lineWidth / 2 - 1 ),
-            h = er.round( ( er.lineSpacing * er.vRate ) - ( er.lineSpacing * er.vRate * .4 ) );
+            x2 = er.round( event.x2 * er.hRate - er.hPosition ) - ( lineWidth / 2 - 1 ),
+            h = er.round( ( er.lineSpacing * er.vRateNum ) - ( er.lineSpacing * er.vRateNum * .4 ) );
 
             ttl.beginPath();
 
@@ -1083,15 +1122,6 @@ createDetailEventBlocks() {
             ttl.stroke();
         }
 
-        const blockHeight = er.round( er.lineSpacing * er.vRate * .7 );
-        event.block = {
-            x: er.round( x1 - blockHeight / 2 ),
-            y: er.round( y - blockHeight / 2 ),
-            w: blockHeight,
-            h: blockHeight,
-            centerX: x1,
-            centerY: y
-        };
         er.eventBlock( ico, event );
     }
 }
@@ -1115,7 +1145,7 @@ eventBlock( ctx, e, opacity = 1 ) {
             // グルーピングブロック
             const groupId = e.item.exastro_filter_group.group_id;
             const groupEvent = er.groupingEvents[ groupId ];
-            const blockHeight = er.round( er.lineSpacing * er.vRate * .7 );
+            const blockHeight = er.round( er.lineSpacing * er.vRateNum * .7 );
             const endX = er.getDatePositionX( groupEvent.lastStartTime );
             const block = {
                 x: e.block.x,
@@ -1128,7 +1158,7 @@ eventBlock( ctx, e, opacity = 1 ) {
             er.roundRect( ctx, block, r, er.getPatternColor( e._pattern, .4 ) );
 
             // 各位置に丸を描画
-            const arcHeight = er.round( er.lineSpacing * er.vRate * .06 );
+            const arcHeight = er.round( er.lineSpacing * er.vRateNum * .06 );
             for ( const startTime of groupEvent.startTime ) {
                 const setX = er.getDatePositionX( startTime );
                 ctx.beginPath();
@@ -1711,7 +1741,7 @@ round( num ) {
 ##################################################
 */
 getFloorPositonY( floor ) {
-    return this.round( floor * this.lineSpacing * this.vRate + ( this.lineSpacing * this.vRate / 2 ) - this.vPosition );
+    return this.round( floor * this.lineSpacing * this.vRateNum + ( this.lineSpacing * this.vRateNum / 2 ) - this.vPositionNum );
 }
 /*
 ##################################################

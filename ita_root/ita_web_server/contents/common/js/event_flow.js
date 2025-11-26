@@ -427,7 +427,7 @@ statusBarHTML() {
 }
 statusWaiting() {
     this.$.status.find('.eventFlowStatusBar').hide();
-    this.$.status.hide().find('.eventFlowStatusText').text('');
+    this.$.status.css('visibility', 'hidden').find('.eventFlowStatusText').text('');
     // 応答待機中の場合は表示する
     if ( this.statusResponseFlag === true ) {
         this.statusResponse();
@@ -435,12 +435,12 @@ statusWaiting() {
 }
 statusProcessing() {
     this.$.status.find('.eventFlowStatusBar').hide();
-    this.$.status.show().find('.eventFlowStatusText').text( getMessage.FTE13039 );
+    this.$.status.css('visibility', 'visible').find('.eventFlowStatusText').text( getMessage.FTE13039 );
 }
 statusResponse() {
     this.statusResponseFlag = true;
     this.$.status.find('.eventFlowStatusBar').hide();
-    this.$.status.show().find('.eventFlowStatusText').text( getMessage.FTE13040 );
+    this.$.status.css('visibility', 'visible').find('.eventFlowStatusText').text( getMessage.FTE13040 );
 }
 statusNone() {
     this.$.status.find('.eventFlowStatusBar').hide();
@@ -449,7 +449,7 @@ statusNone() {
 statusProgress( result ) {
     this.statusResponseFlag = false;
     const per = Math.round( result.receivedLength / result.contentLength * 100 )  + '%';
-    this.$.status.show();
+    this.$.status.css('visibility', 'visible');
     this.$.status.find('.eventFlowStatusText').text(`${getMessage.FTE13041}(${per})`);
     this.$.status.find('.eventFlowStatusBar').show().css('width', per );
 }
@@ -869,7 +869,8 @@ async initCanvas() {
                 date: date,
                 url: url,
                 fontBuffer: fontBuffer,
-                debug: this.debug
+                debug: this.debug,
+                maxRate: this.maxRate
             },
             [ line, block, incident, link, date, fontBuffer ]
         );
@@ -917,6 +918,7 @@ canvasSizeResizeObserver() {
         if ( er.observeInit === false ) {
             clearTimeout( timer );
             timer = setTimeout( function() {
+                er.positionReset();
                 er.workerRangeChange();
             }, 500 );
         }
@@ -1168,8 +1170,8 @@ setChartEvents() {
                         endText = fn.date( end, 'yyyy/MM/dd HH:mm:ss');
                         $rangeDate.show().find('.eventFlowChartRangeDate').text(`${startText} to ${endText}`);
 
-                        er.changeDateReset( start.getTime(), end.getTime(), true );
                         er.flag.rangeSelect = true;
+                        er.changeDateReset( start.getTime(), end.getTime(), true );
                     }
                 }
             });
@@ -1222,8 +1224,8 @@ setChartEvents() {
     $rangeDate.find('.eventFlowChartRangeClear').on('click', function(){
         const date = er.$.header.find('.eventFlowDateRangeRadio').filter(':checked').val();
         $rangeDate.hide().find('.eventFlowChartRangeDate').text('');
-        er.clearDataRange( date, true );
         er.flag.rangeSelect = false;
+        er.clearDataRange( date, true );
     });
 
     // 表示範囲切替

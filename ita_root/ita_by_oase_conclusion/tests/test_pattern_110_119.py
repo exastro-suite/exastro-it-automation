@@ -120,7 +120,8 @@ def test_pattern_112(
 
     run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules, actions)
 
-    assert_event_evaluated(e030, e030a)
+    assert_event_evaluated(e030)
+    assert_event_evaluated(e030a)
 
     # 結論イベントの確認
     conclusion_events = [e for e in test_events if e["labels"]["_exastro_type"] == "conclusion"]
@@ -166,7 +167,8 @@ def test_pattern_113(
 
     run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules, actions)
 
-    assert_event_evaluated(e030, e030a)
+    assert_event_evaluated(e030)
+    assert_event_evaluated(e030a)
     assert_event_timeout(e026, e026c)
 
     # 結論イベントの確認
@@ -249,7 +251,8 @@ def test_pattern_115(
     run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules, actions)
 
     assert_event_undetected(e030, e030a)
-    assert_event_evaluated(e026, e026c)
+    assert_event_evaluated(e026)
+    assert_event_evaluated(e026c)
 
     # 結論イベントの確認
     conclusion_events = [e for e in test_events if e["labels"]["_exastro_type"] == "conclusion"]

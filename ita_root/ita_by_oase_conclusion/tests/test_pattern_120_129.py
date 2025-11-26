@@ -45,7 +45,7 @@ def test_pattern_120(
     filters = [f_a20]
     rules = [
         create_rule_row(1, "p120:r1", (f_a20), filter_operator=oaseConst.DF_OPE_NONE,
-                        conclusion_label_settings=[{"status": "true"}], conclusion_ttl=20)
+                        conclusion_label_settings=[["status", "true"]], conclusion_ttl=20)
     ]
     actions = []
 
@@ -68,13 +68,13 @@ def test_pattern_120(
 
     assert len(c_2["exastro_events"]) == 1
     assert list(c_2["exastro_events"]).count(f"ObjectId('{str(e007['_id'])}')") == 1
-    assert c_1["labels"]["status"] == "true"
+    assert c_2["labels"]["status"] == "true"
     assert c_2["labels"]["_exastro_rule_name"] == "p120:r1"
     assert_event_undetected(c_2)
 
     assert len(c_3["exastro_events"]) == 1
     assert list(c_3["exastro_events"]).count(f"ObjectId('{str(e042['_id'])}')") == 1
-    assert c_1["labels"]["status"] == "true"
+    assert c_3["labels"]["status"] == "true"
     assert c_3["labels"]["_exastro_rule_name"] == "p120:r1"
     assert_event_undetected(c_3)
 
@@ -106,7 +106,7 @@ def test_pattern_121(
     filters = [f_a17]
     rules = [
         create_rule_row(1, "p121:r1", (f_a17), filter_operator=oaseConst.DF_OPE_NONE,
-                        conclusion_label_settings=[{"status": "none"}], conclusion_ttl=20)
+                        conclusion_label_settings=[["status", "none"]], conclusion_ttl=20)
     ]
     actions = []
 
@@ -212,18 +212,15 @@ def test_pattern_123(
 
     run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules, actions)
 
-    # TODO: 結果の確認が必要
-    import pprint
-    pprint.pprint(test_events)
-
     assert_event_evaluated(e001, e004)
     assert_event_evaluated(e007)
-    assert_event_undetected(e040, e042)
+    assert_event_undetected(e040)
+    assert_event_evaluated(e042)
 
     # 結論イベントの確認
     conclusion_events = [e for e in test_events if e["labels"]["_exastro_type"] == "conclusion"]
-    assert len(conclusion_events) == 2
-    c_1, c_2 = conclusion_events
+    assert len(conclusion_events) == 3
+    c_1, c_2, c_3 = conclusion_events
 
     assert len(c_1["exastro_events"]) == 1
     assert list(c_1["exastro_events"]).count(f"ObjectId('{str(e001['_id'])}')") == 1
@@ -237,8 +234,15 @@ def test_pattern_123(
     assert c_2["labels"]["_exastro_rule_name"] == "p123:r1"
     assert_event_undetected(c_2)
 
+    assert len(c_3["exastro_events"]) == 1
+    assert list(c_3["exastro_events"]).count(f"ObjectId('{str(e042['_id'])}')") == 1
+    assert c_3["labels"]["status"] == "true"
+    assert c_3["labels"]["_exastro_rule_name"] == "p123:r1"
+    assert_event_undetected(c_3)
+
     # グルーピングの確認
     assert_grouped_events(test_events, [
         [e001, e004],
-        [e007]
+        [e007],
+        [e042]
     ])

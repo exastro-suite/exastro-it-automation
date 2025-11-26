@@ -45,7 +45,7 @@ def test_pattern_090(
     filters = [f_u_b, f_q_a]
     rules = [
         create_rule_row(1, "p090:r1", (f_u_b, f_q_a), filter_operator=oaseConst.DF_OPE_AND,
-                        conclusion_label_settings=[{"type": "b"}], conclusion_ttl=20),
+                        conclusion_label_settings=[["type", "b"]], conclusion_ttl=20),
         create_rule_row(2, "p090:r2", (f_u_b), filter_operator=oaseConst.DF_OPE_NONE),
     ]
     actions = []
@@ -53,7 +53,8 @@ def test_pattern_090(
     run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules, actions, after_epoch_runs=5)
 
     assert_event_evaluated(e018, e025)
-    assert_event_evaluated(e026, e026a)
+    assert_event_evaluated(e026)
+    assert_event_evaluated(e026a)
 
     # 結論イベントの確認
     conclusion_events = [e for e in test_events if e["labels"]["_exastro_type"] == "conclusion"]
@@ -110,7 +111,7 @@ def test_pattern_091(
     filters = [f_u_c, f_q_3, f_u_b]
     rules = [
         create_rule_row(1, "p091:r1", (f_u_c, f_q_3), filter_operator=oaseConst.DF_OPE_XOR,
-                        conclusion_label_settings=[{"type": "b"}], conclusion_ttl=20),
+                        conclusion_label_settings=[["type", "b"]], conclusion_ttl=20),
         create_rule_row(2, "p091:r2", (f_u_b), filter_operator=oaseConst.DF_OPE_NONE),
     ]
     actions = []
@@ -147,7 +148,7 @@ def test_pattern_092(
     filters = [f_u_a, f_q_a]
     rules = [
         create_rule_row(1, "p092:r1", (f_u_a, f_q_a), filter_operator=oaseConst.DF_OPE_ORDER,
-                        conclusion_label_settings=[{"type": "a"}], conclusion_ttl=20),
+                        conclusion_label_settings=[["type", "a"]], conclusion_ttl=20),
         create_rule_row(2, "p092:r2", (f_u_a), filter_operator=oaseConst.DF_OPE_NONE),
     ]
     actions = []
@@ -185,7 +186,7 @@ def test_pattern_093(
     filters = [f_q_b, f_u_c]
     rules = [
         create_rule_row(1, "p093:r1", (f_q_b, f_u_c), filter_operator=oaseConst.DF_OPE_ORDER,
-                        conclusion_label_settings=[{"type": "qb"}], conclusion_ttl=20),
+                        conclusion_label_settings=[["type", "qb"]], conclusion_ttl=20),
         create_rule_row(2, "p093:r2", (f_q_b), filter_operator=oaseConst.DF_OPE_NONE),
     ]
     actions = []

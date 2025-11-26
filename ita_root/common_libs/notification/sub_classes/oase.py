@@ -288,6 +288,10 @@ class OASE(Notification):
         if "_exastro_type" in item["labels"]:
             item["labels"]["_exastro_type"] = cls.DATA_CONVERT_MAP["_exastro_type"][item["labels"]["_exastro_type"]]
 
+        # raw_event_dataをセット(eventの内容をそのまま設定)
+        if "event" in item:
+            item["raw_event_data"] = item.get("event", {})
+
         return item
 
     @staticmethod

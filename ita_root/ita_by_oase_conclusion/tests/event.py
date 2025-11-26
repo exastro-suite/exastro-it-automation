@@ -416,6 +416,21 @@ event_templates["e010"] = {
         "excluded_flg": "0",
     },
 }
+event_templates["e010a"] = {
+    "ttl": 20,
+    "fetched_time_offset": -28,
+    "custom_labels": {
+        "eventid": "e010a",
+        "node": "Z02",
+        "clock": "9972",
+        "msg": "[systemC] Disk Full",
+        "_exastro_host": "systemC",
+        "service": "Disk",
+        "status": "Full",
+        "severity": "3",
+        "excluded_flg": "0",
+    },
+}
 event_templates["e011"] = {
     "ttl": 20,
     "fetched_time_offset": -25,
@@ -581,8 +596,8 @@ event_templates["e019c"] = {
 }
 event_templates["e019d"] = {
     "ttl": 20,
-    "fetched_time_offset": -30,
-    "custom_labels": {"eventid": "e019d", "node": "z11", "clock": "9970", "type": "b"},
+    "fetched_time_offset": -35,
+    "custom_labels": {"eventid": "e019d", "node": "z11", "clock": "9965", "type": "b"},
 }
 event_templates["e020"] = {
     "ttl": 20,

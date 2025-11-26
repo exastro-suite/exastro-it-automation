@@ -130,8 +130,8 @@ def test_pattern_042(
     ws_db, mock_mongo = patch_database_connections
     mock_datetime = patch_datetime
 
-    test_events = create_events(["e019", "e019d", "e023b", "e023b2"], "p042")
-    e019, e019d, e023b, e023b2 = test_events
+    test_events = create_events(["e019", "e019d", "e023b", "e023d"], "p042")
+    e019, e019d, e023b, e023d = test_events
 
     filters = [f_u_b, f_u_c]
     rules = [
@@ -139,15 +139,11 @@ def test_pattern_042(
     ]
     actions = []
 
-    run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules, actions)
-
-    # TODO: 結果の確認が必要
-    import pprint
-    pprint.pprint(test_events)
+    run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules, actions, after_epoch_runs=7)
 
     assert_event_timeout(e019d)
     assert_event_evaluated(e019, e023b)
-    assert_event_timeout(e023b2)
+    assert_event_timeout(e023d)
 
     # 結論イベントの確認
     conclusion_events = [e for e in test_events if e["labels"]["_exastro_type"] == "conclusion"]

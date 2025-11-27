@@ -929,6 +929,8 @@ def organization_update(organization_id, body=None):  # noqa: E501
                 try:
                     # db.labeled_event_collection.createIndex({"labels._exastro_fetched_time":1,"labels._exastro_end_time":1,"_id":1}, {"name": "default_sort"})
                     ws_mongo.collection(mongoConst.LABELED_EVENT_COLLECTION).create_index([("labels._exastro_fetched_time", ASCENDING), ("labels._exastro_end_time", ASCENDING), ("_id", ASCENDING)], name="default_sort")
+                    # 重複排除時の検索用
+                    ws_mongo.collection(mongoConst.LABELED_EVENT_COLLECTION).create_index([("labels._exastro_fetched_time", ASCENDING), ("exastro_created_at", ASCENDING)], name="duplicate_check")
                     # 新規(統合時) TTL切れの通知対象検索用
                     ws_mongo.collection(mongoConst.LABELED_EVENT_COLLECTION).create_index([("labels._exastro_end_time", ASCENDING), ("labels._exastro_event_collection_settings_id", ASCENDING), ("labels._exastro_fetched_time", ASCENDING)], name="consolidated_check")
                     g.applogger.info(" Index of mongo is made")

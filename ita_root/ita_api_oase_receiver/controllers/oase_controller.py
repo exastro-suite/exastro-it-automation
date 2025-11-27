@@ -219,7 +219,7 @@ def post_events(body: str, organization_id: str, workspace_id: str) -> tuple:  #
             collection_group_data["FETCHED_TIME"] = fetched_time
             collection_group_data["AGENT_NAME"] = exastro_agent.get("name")
 
-            # イベント収集経過テーブルからイベント収集設定IDを基準にfetched_timeの最新1件を取得し、送信されてきたfetched_timeと比較
+            # イベント収集経過テーブルからイベント収集設定IDとエージェント名を基準にfetched_timeの最新1件を取得し、送信されてきたfetched_timeと比較
             collection_progress = wsDb.table_select(oaseConst.T_OASE_EVENT_COLLECTION_PROGRESS, "WHERE EVENT_COLLECTION_SETTINGS_ID = %s AND AGENT_NAME = %s ORDER BY `FETCHED_TIME` DESC LIMIT 1", [event_collection_settings_id, collection_group_data["AGENT_NAME"]])  # noqa: E501
             if len(collection_progress) == 0:
                 collection_group_list.append(collection_group_data)
@@ -305,7 +305,7 @@ def post_events(body: str, organization_id: str, workspace_id: str) -> tuple:  #
         # 挿入したデータのEVENT_COLLECTION_SETTINGS_IDの中で、指定の期間を過ぎたものを抽出し、あれば削除
         event_collections_progress_ttl = int(float(os.getenv("EVENT_COLLECTION_PROGRESS_TTL", 72)) * 60 * 60)
         fetched_time_limit = int(datetime.datetime.now().timestamp()) - event_collections_progress_ttl
-        # exastro_agentはリクエスト内で同一の想定なので、最後の値を使ってしまう
+        # exastro_agentはリクエスト内で同一の想定なので、最後の値を使う
         values_list = [fetched_time_limit] + [exastro_agent.get("name")] + event_collection_settings_id_list
         ret = wsDb.table_count(oaseConst.T_OASE_EVENT_COLLECTION_PROGRESS, "WHERE `FETCHED_TIME` < %s AND `AGENT_NAME` = %s AND `EVENT_COLLECTION_SETTINGS_ID` in ({})".format(','.join(["%s"] * len(event_collection_settings_id_list))), values_list)  # noqa: F841
 

@@ -192,8 +192,8 @@ def test_pattern_052(
     ws_db, mock_mongo = patch_database_connections
     mock_datetime = patch_datetime
 
-    test_events = create_events(["e001", "e003", "e003a", "e004", "e006", "e007", "e014a"], "p052")
-    e001, e003, e003a, e004, e006, e007, e014a = test_events
+    test_events = create_events(["e001", "e003", "e003a", "e004", "e006", "e007", "e014i"], "p052")
+    e001, e003, e003a, e004, e006, e007, e014i = test_events
 
     filters = [f_a14, f_a7]
     rules = [
@@ -203,11 +203,7 @@ def test_pattern_052(
 
     run_test_pattern(g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules, actions, before_epoch_runs=5)
 
-    # TODO: 結果の確認が必要
-    import pprint
-    pprint.pprint(test_events)
-
-    assert_event_timeout(e014a)
+    assert_event_timeout(e014i)
     assert_event_evaluated(e006, e007, e001, e004, e003, e003a)
 
     # 結論イベントの確認

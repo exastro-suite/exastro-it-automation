@@ -39,6 +39,28 @@ def create_events(event_ids: list[str], pattern_name: str) -> list[dict]:
     return events
 
 
+def create_events_p130(event_num: int) -> list[dict]:
+    """p130用のeventリスト作成
+
+    Args:
+        event_num (int): イベント数
+
+    Returns:
+        list[dict]: eventリスト
+    """
+    events = []
+    for i in range(0, event_num):
+        event = create_event(
+            "p130",
+            f"e{1001 + i}",
+            fetched_time_offset=event_templates["e1001"]["fetched_time_offset"],
+            ttl=event_templates["e1001"]["ttl"],
+            custom_labels=copy.deepcopy(event_templates["e1001"]["custom_labels"]),
+        )
+        events.append(event)
+    return events
+
+
 # pytest用イベント定義
 event_templates = {}
 event_templates["e001"] = {
@@ -1093,6 +1115,11 @@ event_templates["e999"] = {
 event_templates["e1001"] = {
     "ttl": 60,
     "fetched_time_offset": -10,
-    "custom_labels": {"eventid": "e1001", "node": "VALUE", "clock": "9990"},
+    "custom_labels": {
+        "eventid": "e1001",
+        "node": "VALUE",
+        "clock": "9990",
+        "status": "false",
+    },
 }
 # pytest用イベント定義

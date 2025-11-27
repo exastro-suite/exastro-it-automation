@@ -166,3 +166,15 @@ def patch_action_using_modules(monkeypatch):
     monkeypatch.setattr(la, "apply", apply)
 
     return {}
+
+
+@pytest.fixture(autouse=True)
+def patch_manage_events_using_modules(monkeypatch):
+    """manage_eventsモジュールで使用するモジュールをパッチ"""
+
+    requests = Mock()
+    requests.Session.request.return_value.status_code = 200
+    requests.Session.request.return_value.json.return_value = {"data": []}
+    monkeypatch.setattr(clome, "requests", requests)
+
+    return {}

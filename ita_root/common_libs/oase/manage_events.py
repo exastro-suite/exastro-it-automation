@@ -810,7 +810,7 @@ class ManageEvents:
         )
         return msg_line
 
-    def get_dudup_eventRow(self, wsDb, judge_time: int) -> list[dict]:
+    def get_dudup_eventrow(self, wsDb, judge_time: int) -> list[dict]:
         """新規(統合時) TTL切れの通知対象となるイベントをフィルタする
 
         Args:

@@ -97,7 +97,7 @@ def backyard_main(organization_id, workspace_id):
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         # 「新規(統合時) TTL切れ」通知処理
-        dudup_eventrow_list = EventObj.get_dudup_eventRow(wsDb, judgeTime)
+        dudup_eventrow_list = EventObj.get_dudup_eventrow(wsDb, judgeTime)
         if len(dudup_eventrow_list) > 0:
             # 通知処理（新規(統合時) TTL切れ）：通知キューに入れる
             tmp_msg = g.appmsg.get_log_message("BKY-90008", ['New(consolidated)'])

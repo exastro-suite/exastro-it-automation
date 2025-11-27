@@ -205,15 +205,13 @@ def post_events(body: str, organization_id: str, workspace_id: str) -> tuple:  #
                 exastro_agent = event_group.get("agent", {})
                 # 空文字で来た場合も未定義扱い
                 for _k, _v in _undefined_exastro_agent.items():
-                    exastro_agent[_k] = exastro_agent[_k] or _v
+                    exastro_agent[_k] = exastro_agent[_k] if _k in exastro_agent and exastro_agent[_k] else _v
             else:
                 exastro_agent = _undefined_exastro_agent
 
             # エージェント名またはバージョンが未定義の場合に警告ログを出力
-            if exastro_agent.get("name") == _undefined_exastro_agent.name or exastro_agent.get("version") == _undefined_exastro_agent.version:
-                g.applogger.warning(
-                    f"agent infomation is not enough: {event_collection_settings_id=}"
-                )
+            if exastro_agent.get("name") == _undefined_exastro_agent.get("name") or exastro_agent.get("version") == _undefined_exastro_agent.get("version"):
+                g.applogger.warning(f"agent infomation is not enough: {event_collection_settings_id=}")
 
             # イベント収集設定ID x agent名 x 取得時間（fetched_time）をイベント収集経過テーブルに保存するためにcollection_group_listに追加する ※実際には、つのリクエストの中でagent名は全て同一の想定
             collection_group_data = {}
@@ -309,13 +307,13 @@ def post_events(body: str, organization_id: str, workspace_id: str) -> tuple:  #
         fetched_time_limit = int(datetime.datetime.now().timestamp()) - event_collections_progress_ttl
         # exastro_agentはリクエスト内で同一の想定なので、最後の値を使ってしまう
         values_list = [fetched_time_limit] + [exastro_agent.get("name")] + event_collection_settings_id_list
-        ret = wsDb.table_count(oaseConst.T_OASE_EVENT_COLLECTION_PROGRESS, "WHERE `FETCHED_TIME` < %s and `AND AGENT_NAME` = %s AND `EVENT_COLLECTION_SETTINGS_ID` in ({})".format(','.join(["%s"] * len(event_collection_settings_id_list))), values_list)  # noqa: F841
+        ret = wsDb.table_count(oaseConst.T_OASE_EVENT_COLLECTION_PROGRESS, "WHERE `FETCHED_TIME` < %s AND `AGENT_NAME` = %s AND `EVENT_COLLECTION_SETTINGS_ID` in ({})".format(','.join(["%s"] * len(event_collection_settings_id_list))), values_list)  # noqa: F841
 
         if ret > 0:
             wsDb.db_transaction_start()
             ret = wsDb.table_permanent_delete(
                 oaseConst.T_OASE_EVENT_COLLECTION_PROGRESS,
-                "WHERE `FETCHED_TIME` < %s and `EVENT_COLLECTION_SETTINGS_ID` in ({})".format(','.join(["%s"] * len(event_collection_settings_id_list))), values_list)  # noqa: F841
+                "WHERE `FETCHED_TIME` < %s AND `AGENT_NAME` = %s AND `EVENT_COLLECTION_SETTINGS_ID` in ({})".format(','.join(["%s"] * len(event_collection_settings_id_list))), values_list)  # noqa: F841
             wsDb.db_transaction_end(True)
 
     finally:

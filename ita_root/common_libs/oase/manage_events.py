@@ -278,6 +278,8 @@ class ManageEvents:
 
     def get_post_proc_timeout_event(self):
         post_proc_timeout_event_ids: list[ObjectId] = []
+        # イベント情報を通知用に返却する
+        post_proc_timeout_event_Rows = []
         # 処理後にタイムアウトにするイベントを抽出
         for event_id, event in self.labeled_events_dict.items():
             # タイムアウトしたイベントは登録されているのでスキップ
@@ -292,8 +294,9 @@ class ManageEvents:
                 == oaseConst.DF_POST_PROC_TIMEOUT_EVENT
             ):
                 post_proc_timeout_event_ids.append(event_id)
+                post_proc_timeout_event_Rows.append(event)
 
-        return post_proc_timeout_event_ids
+        return post_proc_timeout_event_ids, post_proc_timeout_event_Rows
 
     def get_unused_event(self, incident_dict: dict, filterIDMap):
         """

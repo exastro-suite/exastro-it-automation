@@ -457,7 +457,7 @@ def JudgeMain(wsDb: DBConnectWs, judgeTime: int, EventObj: ManageEvents, actionO
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     # 処理後タイムアウトイベント検出
-    PostProcTimeoutEventIdList = EventObj.get_post_proc_timeout_event()
+    PostProcTimeoutEventIdList, PostProcTimeoutEventRowList = EventObj.get_post_proc_timeout_event()
     if len(PostProcTimeoutEventIdList) > 0:
         tmp_msg = g.appmsg.get_log_message("BKY-90027", [str(PostProcTimeoutEventIdList)])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -466,6 +466,11 @@ def JudgeMain(wsDb: DBConnectWs, judgeTime: int, EventObj: ManageEvents, actionO
         EventObj.set_timeout(PostProcTimeoutEventIdList)
         tmp_msg = g.appmsg.get_log_message("BKY-90028", [str(update_Flag_Dict), str(PostProcTimeoutEventIdList)])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
+        # 通知処理（既知(時間切れ)）通知キューに入れる
+        tmp_msg = g.appmsg.get_log_message("BKY-90008", ['Known(timeout)'])
+        g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        NotificationProcessManager.send_notification(PostProcTimeoutEventRowList, {"notification_type": OASENotificationType.TIMEOUT})
     else:
         tmp_msg = g.appmsg.get_log_message("BKY-90029", [])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405

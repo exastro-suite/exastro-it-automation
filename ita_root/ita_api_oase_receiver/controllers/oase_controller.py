@@ -126,7 +126,7 @@ def post_events(body: str, organization_id: str, workspace_id: str) -> tuple:  #
 
         # 保存する、整形したイベント
         events = []
-        # 保存する、収集単位（ベント収集設定ID×取得時間（fetched_time）のリストを作る）
+        # 保存する、収集単位（ベント収集設定ID x agent名 x 取得時間（fetched_time）のリストを作る）
         collection_group_list = []
         # 保存できないイベント情報のメッセージを格納
         not_available_event_msg_list = []
@@ -137,8 +137,10 @@ def post_events(body: str, organization_id: str, workspace_id: str) -> tuple:  #
         duplicate_notification_list = []
 
         # エージェント名、バージョンの初期値
-        _undefined_agent_name = oaseConst.DF_AGENT_NAME
-        _undefined_agent_version = oaseConst.DF_AGENT_VERSION
+        _undefined_exastro_agent = {
+            "name": oaseConst.DF_AGENT_NAME,
+            "version": oaseConst.DF_AGENT_VERSION
+        }
 
         # eventsデータを取り出す
         event_group_list = body["events"]
@@ -199,10 +201,6 @@ def post_events(body: str, organization_id: str, workspace_id: str) -> tuple:  #
                 fetched_time = int(event_group["fetched_time"])
 
             # エージェントの識別情報を取得。無ければ固定値で埋める
-            _undefined_exastro_agent = {
-                "name": _undefined_agent_name,
-                "version": _undefined_agent_version
-            }
             if isinstance(event_group.get("agent"), dict):
                 exastro_agent = event_group.get("agent", {})
                 # 空文字で来た場合も未定義扱い
@@ -212,24 +210,19 @@ def post_events(body: str, organization_id: str, workspace_id: str) -> tuple:  #
                 exastro_agent = _undefined_exastro_agent
 
             # エージェント名またはバージョンが未定義の場合に警告ログを出力
-            undefined_items = []
-            if exastro_agent.get("name") == _undefined_agent_name:
-                undefined_items.append("name")
-            if exastro_agent.get("version") == _undefined_agent_version:
-                undefined_items.append("version")
-
-            if undefined_items:
+            if exastro_agent.get("name") == _undefined_exastro_agent.name or exastro_agent.get("version") == _undefined_exastro_agent.version:
                 g.applogger.warning(
-                    f"agent.{'/'.join(undefined_items)} is _undefined: {event_collection_settings_id=}"
+                    f"agent infomation is not enough: {event_collection_settings_id=}"
                 )
 
-            # イベント収集設定ID × 取得時間（fetched_time）をイベント収集経過テーブルに保存するためにcollection_group_listに追加する
+            # イベント収集設定ID x agent名 x 取得時間（fetched_time）をイベント収集経過テーブルに保存するためにcollection_group_listに追加する ※実際には、つのリクエストの中でagent名は全て同一の想定
             collection_group_data = {}
             collection_group_data["EVENT_COLLECTION_SETTINGS_ID"] = event_collection_settings_id
             collection_group_data["FETCHED_TIME"] = fetched_time
+            collection_group_data["AGENT_NAME"] = exastro_agent.get("name")
 
             # イベント収集経過テーブルからイベント収集設定IDを基準にfetched_timeの最新1件を取得し、送信されてきたfetched_timeと比較
-            collection_progress = wsDb.table_select(oaseConst.T_OASE_EVENT_COLLECTION_PROGRESS, "WHERE EVENT_COLLECTION_SETTINGS_ID = %s ORDER BY `FETCHED_TIME` DESC LIMIT 1", [event_collection_settings_id])  # noqa: E501
+            collection_progress = wsDb.table_select(oaseConst.T_OASE_EVENT_COLLECTION_PROGRESS, "WHERE EVENT_COLLECTION_SETTINGS_ID = %s AND AGENT_NAME = %s ORDER BY `FETCHED_TIME` DESC LIMIT 1", [event_collection_settings_id, collection_group_data["AGENT_NAME"]])  # noqa: E501
             if len(collection_progress) == 0:
                 collection_group_list.append(collection_group_data)
             else:
@@ -314,9 +307,9 @@ def post_events(body: str, organization_id: str, workspace_id: str) -> tuple:  #
         # 挿入したデータのEVENT_COLLECTION_SETTINGS_IDの中で、指定の期間を過ぎたものを抽出し、あれば削除
         event_collections_progress_ttl = int(float(os.getenv("EVENT_COLLECTION_PROGRESS_TTL", 72)) * 60 * 60)
         fetched_time_limit = int(datetime.datetime.now().timestamp()) - event_collections_progress_ttl
-
-        values_list = [fetched_time_limit] + event_collection_settings_id_list
-        ret = wsDb.table_count(oaseConst.T_OASE_EVENT_COLLECTION_PROGRESS, "WHERE `FETCHED_TIME` < %s and `EVENT_COLLECTION_SETTINGS_ID` in ({})".format(','.join(["%s"] * len(event_collection_settings_id_list))), values_list)  # noqa: F841
+        # exastro_agentはリクエスト内で同一の想定なので、最後の値を使ってしまう
+        values_list = [fetched_time_limit] + [exastro_agent.get("name")] + event_collection_settings_id_list
+        ret = wsDb.table_count(oaseConst.T_OASE_EVENT_COLLECTION_PROGRESS, "WHERE `FETCHED_TIME` < %s and `AND AGENT_NAME` = %s AND `EVENT_COLLECTION_SETTINGS_ID` in ({})".format(','.join(["%s"] * len(event_collection_settings_id_list))), values_list)  # noqa: F841
 
         if ret > 0:
             wsDb.db_transaction_start()

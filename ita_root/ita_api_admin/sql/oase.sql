@@ -415,6 +415,7 @@ CREATE TABLE IF NOT EXISTS T_OASE_EVENT_COLLECTION_PROGRESS
 (
     EVENT_COLLECTION_ID             VARCHAR(40),                                -- イベント収集ID
     EVENT_COLLECTION_SETTINGS_ID    VARCHAR(40),                                -- イベント収集設定ID
+    AGENT_NAME                      VARCHAR(1024),                              -- エージェント名
     FETCHED_TIME                    INT,                                        -- 経過時間
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ

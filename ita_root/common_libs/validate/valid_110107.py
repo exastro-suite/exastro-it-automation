@@ -50,7 +50,7 @@ def external_valid_menu_before(objdbca, objtable, option):
 
     # フィルターID / Filter ID
     filter_id = parameter.get('filter_id')
-    print(parameter)
+
     # フィルター条件 / Filter condition
     filter_condition_json_str = parameter.get('filter_condition_json')
     try:

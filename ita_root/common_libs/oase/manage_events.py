@@ -79,7 +79,7 @@ class TtlGroup(TypedDict):
 
 
 class ManageEvents:
-    def __init__(self, ws_mongo: MONGOConnectWs, judge_time: int, init_find=True) -> None:
+    def __init__(self, ws_mongo: MONGOConnectWs, judge_time: int) -> None:
         self._label_master: dict[str, str] = {}
         """ラベルマスタ"""
 
@@ -92,46 +92,44 @@ class ManageEvents:
 
         # イベントキャッシュの作成
 
-        # init_find=Falseで指定された場合はイベントキャッシュを作成しない
-        if init_find is True:
-            # 以下条件のイベントを取得
-            undetermined_search_value = {
-                "labels._exastro_timeout": "0",
-                "labels._exastro_evaluated": "0",
-                "labels._exastro_undetected": "0",
-            }
-            labeled_events = self.labeled_event_collection.find(
-                undetermined_search_value
-            ).sort(
-                # 取得日時昇順にしておかないとグルーピングで先頭イベントが決定できなくなる
-                "labels._exastro_fetched_time",
-                1,
+        # 以下条件のイベントを取得
+        undetermined_search_value = {
+            "labels._exastro_timeout": "0",
+            "labels._exastro_evaluated": "0",
+            "labels._exastro_undetected": "0",
+        }
+        labeled_events = self.labeled_event_collection.find(
+            undetermined_search_value
+        ).sort(
+            # 取得日時昇順にしておかないとグルーピングで先頭イベントが決定できなくなる
+            "labels._exastro_fetched_time",
+            1,
+        )
+
+        self.labeled_events_dict: dict[ObjectId, Event] = {}
+        self.unevaluated_event_ids = set()
+
+        for event in labeled_events:
+            event[oaseConst.DF_LOCAL_LABLE_NAME] = {}
+            event[oaseConst.DF_LOCAL_LABLE_NAME]["status"] = None
+
+            check_result, event_status = self.check_event_status(
+                int(judge_time),
+                int(event["labels"]["_exastro_fetched_time"]),
+                int(event["labels"]["_exastro_end_time"]),
             )
+            if check_result is False:
+                continue
 
-            self.labeled_events_dict: dict[ObjectId, Event] = {}
-            self.unevaluated_event_ids = set()
+            self.add_local_label(
+                event,
+                oaseConst.DF_LOCAL_LABLE_NAME,
+                oaseConst.DF_LOCAL_LABLE_STATUS,
+                event_status,
+            )
+            self.labeled_events_dict[event["_id"]] = event
 
-            for event in labeled_events:
-                event[oaseConst.DF_LOCAL_LABLE_NAME] = {}
-                event[oaseConst.DF_LOCAL_LABLE_NAME]["status"] = None
-
-                check_result, event_status = self.check_event_status(
-                    int(judge_time),
-                    int(event["labels"]["_exastro_fetched_time"]),
-                    int(event["labels"]["_exastro_end_time"]),
-                )
-                if check_result is False:
-                    continue
-
-                self.add_local_label(
-                    event,
-                    oaseConst.DF_LOCAL_LABLE_NAME,
-                    oaseConst.DF_LOCAL_LABLE_STATUS,
-                    event_status,
-                )
-                self.labeled_events_dict[event["_id"]] = event
-
-                self.collect_unevaluated_event(event["_id"], event, initial=True)
+            self.collect_unevaluated_event(event["_id"], event, initial=True)
 
     # イベント有効期間判定
     def check_event_status(self, judge_time, fetched_time, end_time):
@@ -279,7 +277,7 @@ class ManageEvents:
     def get_post_proc_timeout_event(self):
         post_proc_timeout_event_ids: list[ObjectId] = []
         # イベント情報を通知用に返却する
-        post_proc_timeout_event_Rows = []
+        post_proc_timeout_event_rows = []
         # 処理後にタイムアウトにするイベントを抽出
         for event_id, event in self.labeled_events_dict.items():
             # タイムアウトしたイベントは登録されているのでスキップ
@@ -294,9 +292,11 @@ class ManageEvents:
                 == oaseConst.DF_POST_PROC_TIMEOUT_EVENT
             ):
                 post_proc_timeout_event_ids.append(event_id)
-                post_proc_timeout_event_Rows.append(event)
+                # 通知用には labels._exastro_timeout: 1 に変更したものを返す
+                event["labels"]["_exastro_timeout"] = "1"
+                post_proc_timeout_event_rows.append(event)
 
-        return post_proc_timeout_event_ids, post_proc_timeout_event_Rows
+        return post_proc_timeout_event_ids, post_proc_timeout_event_rows
 
     def get_unused_event(self, incident_dict: dict, filterIDMap):
         """
@@ -865,7 +865,7 @@ class ManageEvents:
             return []
 
         # イベント検索処理
-        EventRow = []
+        eventrow = []
         # TTLを確認するためにイベント収集設定を取得
         collection_settings = wsDb.table_select(
             oaseConst.T_OASE_EVENT_COLLECTION_SETTINGS,
@@ -908,7 +908,7 @@ class ManageEvents:
                     ttl_merged_dict[last_merged_key].extend(ttl_unique_dict_asc[current_key])
         # TTL値毎にMongoで検索→更新を実施する
         for ttl, collection_settings_IdList in ttl_merged_dict.items():
-            Event_ids = []
+            event_ids = []
             # 以下の条件のイベントを取得
             deduplication_search_value = {
                 "exastro_duplicate_collection_settings_ids": {"$exists": True, "$not": {"$size": 0}},
@@ -917,6 +917,8 @@ class ManageEvents:
                 "labels._exastro_event_collection_settings_id": {"$in": collection_settings_IdList}
             }
             # 最低限、重複排除に関係あるイベントを取得
+            # 遅延書き込みが終了してから取得
+            WriterProcessManager.flush_buffer()
             target_events = self.labeled_event_collection.find(
                 deduplication_search_value
             ).sort("labels._exastro_fetched_time", 1)  # 取得日時昇順
@@ -924,14 +926,15 @@ class ManageEvents:
             for event in target_events:
                 if deduplication_timeout_filter(deduplication_settings, event) is True:
                     # MongoDBの更新対象にする
-                    Event_ids.append(event["_id"])
+                    event_ids.append(event["_id"])
                     # 通知用に返却するイベントデータも labels._exastro_dup_notification_queue: 1 に変更する
                     event["exastro_dup_notification_queue"] = "1"
-                    EventRow.append(event)
+                    eventrow.append(event)
             # TTL設定値毎にupdateManyしてMongo側も更新かける
-            if len(Event_ids) > 0:
-                self.labeled_event_collection.update_many(
-                    {"_id": {"$in": Event_ids}},
-                    {"$set": {"exastro_dup_notification_queue": "1"}}
+            if len(event_ids) > 0:
+                # WriterProcess経由で更新
+                WriterProcessManager.update_many_labeled_event_collection(
+                    {"_id": {"$in": event_ids}},
+                    {"$set": {"exastro_dup_notification_queue": "1"}},
                 )
-        return EventRow
+        return eventrow

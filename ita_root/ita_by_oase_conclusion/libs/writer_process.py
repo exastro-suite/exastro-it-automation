@@ -21,7 +21,7 @@ import time
 from flask import Flask, g
 from bson.objectid import ObjectId
 
-from pymongo.operations import InsertOne, UpdateOne
+from pymongo.operations import InsertOne, UpdateOne, UpdateMany
 from common_libs.conductor.classes.exec_util import get_iso_datetime, arrange_stacktrace_format
 
 from common_libs.common.queuing_logger import QueuingAppLogClient
@@ -184,6 +184,23 @@ class WriterProcessManager():
             "filter": filter,
             "update": update
         })
+        
+    @classmethod
+    def update_many_labeled_event_collection(cls, filter, update):
+        """labeled_event_collectionにupdate_manyを依頼する
+
+        Args:
+            filter (dict): update_many対象
+            update (dict): update_manyするドキュメント
+        """
+        if cls._process.is_alive() is False:
+            raise WriterProcessException("WriterProcess is not running.")
+
+        cls._queue.put({
+            "action": "update_many_labeled_event_collection",
+            "filter": filter,
+            "update": update
+        })
 
     @classmethod
     def insert_oase_action_log(cls, data: dict) -> list[dict]:
@@ -298,6 +315,9 @@ class WriterProcess():
 
                 elif data["action"] == "update_labeled_event_collection":
                     cls._labeled_event_collection.update(data["filter"], data["update"])
+
+                elif data["action"] == "update_many_labeled_event_collection":
+                    cls._labeled_event_collection.update_many(data["filter"], data["update"])
 
                 elif data["action"] == "insert_oase_action_log":
                     cls._t_oase_action_log.insert(data["data"])
@@ -450,6 +470,17 @@ class MongoBufferedWriter():
         if self._is_buffer_full():
             self.flush()
         self._bulk_buffer.append(UpdateOne(filter, update))
+
+    def update_many(self, filter: dict, update: dict):
+        """update_many用のデータをセットする
+
+        Args:
+            filter (dict): update_many対象
+            update (dict): update_manyするドキュメント
+        """
+        if self._is_buffer_full():
+            self.flush()
+        self._bulk_buffer.append(UpdateMany(filter, update))
 
     def _is_buffer_full(self) -> bool:
         """バッファが一杯かどうかを判定する

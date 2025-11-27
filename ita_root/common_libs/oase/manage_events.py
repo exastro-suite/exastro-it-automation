@@ -17,6 +17,9 @@ import json
 import os
 import re
 from typing import Any, Literal, NewType, Required, TypedDict
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util import Retry
 
 from bson import ObjectId
 from flask import g
@@ -24,7 +27,8 @@ from flask import g
 from common_libs.oase.const import oaseConst
 from common_libs.common.mongoconnect.const import Const as mongoConst
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
-from libs.common_functions import getIDtoLabelName
+from common_libs.notification.sub_classes.oase import OASENotificationType, OASE
+from libs.common_functions import getIDtoLabelName, deduplication_timeout_filter
 from libs.writer_process import WriterProcessManager
 
 AttributeKey = NewType("AttributeKey", frozenset[tuple[str, Any]])
@@ -272,6 +276,8 @@ class ManageEvents:
 
     def get_post_proc_timeout_event(self):
         post_proc_timeout_event_ids: list[ObjectId] = []
+        # イベント情報を通知用に返却する
+        post_proc_timeout_event_rows = []
         # 処理後にタイムアウトにするイベントを抽出
         for event_id, event in self.labeled_events_dict.items():
             # タイムアウトしたイベントは登録されているのでスキップ
@@ -286,8 +292,11 @@ class ManageEvents:
                 == oaseConst.DF_POST_PROC_TIMEOUT_EVENT
             ):
                 post_proc_timeout_event_ids.append(event_id)
+                # 通知用には labels._exastro_timeout: 1 に変更したものを返す
+                event["labels"]["_exastro_timeout"] = "1"
+                post_proc_timeout_event_rows.append(event)
 
-        return post_proc_timeout_event_ids
+        return post_proc_timeout_event_ids, post_proc_timeout_event_rows
 
     def get_unused_event(self, incident_dict: dict, filterIDMap):
         """
@@ -800,3 +809,132 @@ class ManageEvents:
             msg, os.path.basename(info.filename), info.lineno
         )
         return msg_line
+
+    def get_dudup_eventrow(self, wsDb, judge_time: int) -> list[dict]:
+        """新規(統合時) TTL切れの通知対象となるイベントをフィルタする
+
+        Args:
+            wsDb (DBConnectWs): MariaDBのコネクション
+            judge_time (int): 判定日時のタイムスタンプ
+
+        Returns:
+            List: 新規(統合時) TTL切れの通知対象となるイベントを要素に持つリスト
+        """
+        # 新規(統合時)の通知が必要かどうかを確認する
+        organization_id = g.get('ORGANIZATION_ID')
+        workspace_id = g.get('WORKSPACE_ID')
+        host_name = os.environ.get('PLATFORM_API_HOST')
+        port = os.environ.get('PLATFORM_API_PORT')
+        user_id = g.get('USER_ID')
+        language = g.get('LANGUAGE')
+
+        header_para = {
+            "User-Id": user_id,
+            "Language": language
+        }
+        # 新規(統合時)が有効な通知先のみ取得するようにクエリ指定
+        query_params = {}
+        query_params["event_type_true"] = OASE.DESTINATION_ID_FETCH_CONDITION[OASENotificationType.DUPLICATE]
+        # API呼出
+        api_url = f"http://{host_name}:{port}/internal-api/{organization_id}/platform/workspaces/{workspace_id}/settings/notifications"
+        s = requests.Session()
+        retries = Retry(total=5,
+                        backoff_factor=0.5)
+        s.mount('http://', HTTPAdapter(max_retries=retries))
+        s.mount('https://', HTTPAdapter(max_retries=retries))
+        # 後続処理遅延につながるためタイムアウトは1秒と短めに設定
+        request_response = s.request(method='GET', url=api_url, timeout=1, headers=header_para, params=query_params)
+        response_data = request_response.json()
+        if request_response.status_code != 200:
+            # 200応答が来なかったら処理スキップ(次回処理で実行することを期待)
+            g.applogger.info(g.appmsg.get_log_message('999-00005', [api_url, response_data]))
+            return []
+        else:
+            # 該当する通知先が無ければ処理スキップ
+            if 'data' in response_data and len(response_data['data']) == 0:
+                g.applogger.debug("No Notification settings for new_consolidated events. Skipping.")
+                return []
+        # 冗長グループを確認するため重複排除設定を確認
+        deduplication_settings = wsDb.table_select(
+            oaseConst.T_OASE_DEDUPLICATION_SETTINGS,
+            "WHERE DISUSE_FLAG='0' ORDER BY SETTING_PRIORITY, DEDUPLICATION_SETTING_NAME"
+        )
+        # 重複排除設定が無いなら処理自体をスキップ
+        if len(deduplication_settings) == 0:
+            g.applogger.debug("No records for deduplication settings. Skipping.")
+            return []
+
+        # イベント検索処理
+        eventrow = []
+        # TTLを確認するためにイベント収集設定を取得
+        collection_settings = wsDb.table_select(
+            oaseConst.T_OASE_EVENT_COLLECTION_SETTINGS,
+            "WHERE DISUSE_FLAG='0'"
+        )
+        # collection_settings_ttlはイベント収集設定のUUIDをキー、TTLを値とする辞書
+        collection_settings_ttl = {}
+        for collection_setting in collection_settings:
+            collection_settings_ttl[collection_setting["EVENT_COLLECTION_SETTINGS_ID"]] = collection_setting["TTL"]
+        # Mongoクエリに使用する辞書準備：TTL値をキーとし、該当のイベント収集設定UUIDリストを値とする
+        ttl_unique_dict = {}
+        for deduplication_setting in deduplication_settings:
+            # redundancy_idsは重複排除設定の同一冗長グループの、イベント収集設定のUUIDのリスト
+            redundancy_ids = json.loads(deduplication_setting["EVENT_SOURCE_REDUNDANCY_GROUP"])["id"]
+            # 重複排除設定の冗長グループに2つ以上のイベント収集設定が登録されている場合のみ、通知対象となるため処理
+            if len(redundancy_ids) > 1:
+                for uuid in redundancy_ids:
+                    # イベント収集設定のUUIDからTTL取得
+                    # 不正なUUID(ID連携失敗)の場合は取得しない
+                    if uuid in collection_settings_ttl:
+                        ttl_unique_dict.setdefault(int(collection_settings_ttl[uuid]), []).append(uuid)
+        # TTL値で昇順ソート
+        ttl_unique_dict_asc = {key: ttl_unique_dict[key] for key in sorted(ttl_unique_dict.keys())}
+        # TTL値で昇順ソートにした後、20秒以上TTLが空いてないなら間引きする(収集設定は前の要素に詰める)
+        ttl_unique_dict_keys = list(ttl_unique_dict_asc.keys())
+        ttl_merged_dict = {}
+        if len(ttl_unique_dict_keys) > 0:
+            # 最初の要素は基準点として登録
+            first_key = ttl_unique_dict_keys[0]
+            ttl_merged_dict[first_key] = ttl_unique_dict_asc[first_key]
+            last_merged_key = first_key
+            for i in range(1, len(ttl_unique_dict_keys)):
+                current_key = ttl_unique_dict_keys[i]
+                # 前回登録したTTLキーから20秒以上空いている場合のみ登録
+                if (current_key - last_merged_key) >= 20:
+                    ttl_merged_dict[current_key] = ttl_unique_dict_asc[current_key]
+                    last_merged_key = current_key
+                else:
+                    # 20秒未満の場合は前回登録したTTLキーにマージする
+                    ttl_merged_dict[last_merged_key].extend(ttl_unique_dict_asc[current_key])
+        # TTL値毎にMongoで検索→更新を実施する
+        for ttl, collection_settings_IdList in ttl_merged_dict.items():
+            event_ids = []
+            # 以下の条件のイベントを取得
+            deduplication_search_value = {
+                "exastro_duplicate_collection_settings_ids": {"$exists": True, "$not": {"$size": 0}},
+                "labels._exastro_end_time": {"$gte": (int(judge_time) - int(ttl) * 2), "$lte": int(judge_time)},
+                "exastro_dup_notification_queue": {"$exists": False},
+                "labels._exastro_event_collection_settings_id": {"$in": collection_settings_IdList}
+            }
+            # 最低限、重複排除に関係あるイベントを取得
+            # 遅延書き込みが終了してから取得
+            WriterProcessManager.flush_buffer()
+            target_events = self.labeled_event_collection.find(
+                deduplication_search_value
+            ).sort("labels._exastro_fetched_time", 1)  # 取得日時昇順
+
+            for event in target_events:
+                if deduplication_timeout_filter(deduplication_settings, event) is True:
+                    # MongoDBの更新対象にする
+                    event_ids.append(event["_id"])
+                    # 通知用に返却するイベントデータも labels._exastro_dup_notification_queue: 1 に変更する
+                    event["exastro_dup_notification_queue"] = "1"
+                    eventrow.append(event)
+            # TTL設定値毎にupdateManyしてMongo側も更新かける
+            if len(event_ids) > 0:
+                # WriterProcess経由で更新
+                WriterProcessManager.update_many_labeled_event_collection(
+                    {"_id": {"$in": event_ids}},
+                    {"$set": {"exastro_dup_notification_queue": "1"}},
+                )
+        return eventrow

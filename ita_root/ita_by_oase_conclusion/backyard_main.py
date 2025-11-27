@@ -95,6 +95,15 @@ def backyard_main(organization_id, workspace_id):
         action_status_monitor.checkExecuting()
         tmp_msg = g.appmsg.get_log_message("BKY-90002", ['Ended'])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
+        # 「新規(統合時) TTL切れ」通知処理
+        dudup_eventrow_list = EventObj.get_dudup_eventrow(wsDb, judgeTime)
+        if len(dudup_eventrow_list) > 0:
+            # 通知処理（新規(統合時) TTL切れ）：通知キューに入れる
+            tmp_msg = g.appmsg.get_log_message("BKY-90008", ['New(consolidated)'])
+            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+            NotificationProcessManager.send_notification(dudup_eventrow_list, {"notification_type": OASENotificationType.DUPLICATE})
+
     except Exception:
         t = traceback.format_exc()
         g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
@@ -145,34 +154,17 @@ def JudgeMain(wsDb: DBConnectWs, judgeTime: int, EventObj: ManageEvents, actionO
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         timeout_notification_list = []  # 通知処理（既知(時間切れ)）
-        timeout_consolidated_notification_list = []  # 通知処理（新規(統合時) TTL切れ）
-
-        # 新規(統合時) TTL切れ用に予め重複排除設定を取っておく
-        deduplication_settings = wsDb.table_select(
-            oaseConst.T_OASE_DEDUPLICATION_SETTINGS,
-            "WHERE DISUSE_FLAG='0' ORDER BY SETTING_PRIORITY, DEDUPLICATION_SETTING_NAME"
-        )
         for event_id in timeout_Event_Id_List:
             ret, EventRow = EventObj.get_events(event_id)
             if ret is True:
                 # 通知処理（既知(時間切れ)）用にリストに入れる
                 timeout_notification_list.append(EventRow)
-                # 通知処理（新規(統合時) TTL切れ）用にリストに入れる
-                if len(deduplication_settings) > 0 and deduplication_timeout_filter(deduplication_settings, EventRow) is True:
-                    timeout_consolidated_notification_list.append(EventRow)
 
         # 通知処理（既知(時間切れ)）通知キューに入れる
         if len(timeout_notification_list) > 0:
             tmp_msg = g.appmsg.get_log_message("BKY-90008", ['Known(timeout)'])
             g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             NotificationProcessManager.send_notification(timeout_notification_list, {"notification_type": OASENotificationType.TIMEOUT})
-
-        # 通知処理（新規(統合時) TTL切れ）通知キューに入れる
-        if len(timeout_consolidated_notification_list) > 0:
-            tmp_msg = g.appmsg.get_log_message("BKY-90008", ['New(consolidated)'])
-            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-            # 通知キューに入れておく
-            NotificationProcessManager.send_notification(timeout_consolidated_notification_list, {"notification_type": OASENotificationType.DUPLICATE})
 
     # 「フィルター管理」からレコードのリストを取得
     filterIDMap = getFilterIDMap(wsDb)
@@ -464,7 +456,7 @@ def JudgeMain(wsDb: DBConnectWs, judgeTime: int, EventObj: ManageEvents, actionO
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     # 処理後タイムアウトイベント検出
-    PostProcTimeoutEventIdList = EventObj.get_post_proc_timeout_event()
+    PostProcTimeoutEventIdList, PostProcTimeoutEventRowList = EventObj.get_post_proc_timeout_event()
     if len(PostProcTimeoutEventIdList) > 0:
         tmp_msg = g.appmsg.get_log_message("BKY-90027", [str(PostProcTimeoutEventIdList)])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -473,6 +465,11 @@ def JudgeMain(wsDb: DBConnectWs, judgeTime: int, EventObj: ManageEvents, actionO
         EventObj.set_timeout(PostProcTimeoutEventIdList)
         tmp_msg = g.appmsg.get_log_message("BKY-90028", [str(update_Flag_Dict), str(PostProcTimeoutEventIdList)])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
+        # 通知処理（既知(時間切れ)）通知キューに入れる
+        tmp_msg = g.appmsg.get_log_message("BKY-90008", ['Known(timeout)'])
+        g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        NotificationProcessManager.send_notification(PostProcTimeoutEventRowList, {"notification_type": OASENotificationType.TIMEOUT})
     else:
         tmp_msg = g.appmsg.get_log_message("BKY-90029", [])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405

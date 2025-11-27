@@ -348,6 +348,8 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
                 labeled_event_collection.create_index([("labels._exastro_fetched_time", ASCENDING), ("exastro_created_at", ASCENDING)], name="duplicate_check")
                 # # イベントデータの保持期限 90日
                 # ws_mongo.collection(mongoConst.LABELED_EVENT_COLLECTION).create_index([("exastro_created_at", ASCENDING)], expireAfterSeconds=7776000, name="data_ttl")
+                # 新規(統合時) TTL切れの通知対象検索用
+                labeled_event_collection.create_index([("labels._exastro_end_time", ASCENDING), ("labels._exastro_event_collection_settings_id", ASCENDING), ("labels._exastro_fetched_time", ASCENDING)], name="consolidated_check")
                 g.applogger.info("Index of mongo is made")
             except Exception as e:
                 t = traceback.format_exc()

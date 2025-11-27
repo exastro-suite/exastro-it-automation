@@ -27,10 +27,10 @@ def main(work_dir_path, wsdb):
     ############################################################
     # 【OASE】インデックスの追加
     ############################################################
-    g.applogger.info("[Trace][start] create index mongodb 'labeled_event_collection'")
+    g.applogger.info("[Trace] create index[consolidated_check] mongodb 'labeled_event_collection'")
     # mongodbに対するアップデートなので、migrationのときしか実行しない（menu-export-importの対象外とするため）
     if g.SERVICE_NAME != "ita-migration":
-        g.applogger.info("[Trace][skipped] create index mongodb 'labeled_event_collection'")
+        g.applogger.info("[Trace] skipped create index[consolidated_check] mongodb 'labeled_event_collection'")
         return 0
 
     common_db = DBConnectCommon()  # noqa: F405
@@ -45,7 +45,6 @@ def main(work_dir_path, wsdb):
     # oaseインストール済みの場合しか対応しない
     org_no_install_driver = json.loads(org_no_install_driver) if org_no_install_driver is not None else {}
     if 'oase' in org_no_install_driver:
-        g.applogger.info("[Trace][skipped] create index mongodb 'labeled_event_collection'")
         return 0
 
     try:
@@ -53,17 +52,16 @@ def main(work_dir_path, wsdb):
         labeled_event_collection = ws_mongo.collection(mongoConst.LABELED_EVENT_COLLECTION)
         # 既存のインデックス情報を取得し、その中にインデックス名が見つかれば、抜ける
         index_list = labeled_event_collection.index_information()
-        if "duplicate_check" in index_list:
-            g.applogger.info("[Trace] Index[duplicate_check] already exists in 'labeled_event_collection'")
+        if "consolidated_check" in index_list:
+            g.applogger.info("[Trace] Index[consolidated_check] already exists in 'labeled_event_collection'")
             ws_mongo.disconnect()
             return 0
 
-        labeled_event_collection.create_index([("labels._exastro_fetched_time", ASCENDING), ("exastro_created_at", ASCENDING)], name="duplicate_check")
+        labeled_event_collection.create_index([("labels._exastro_end_time", ASCENDING), ("labels._exastro_event_collection_settings_id", ASCENDING), ("labels._exastro_fetched_time", ASCENDING)], name="consolidated_check")
         ws_mongo.disconnect()
     except Exception:
         t = traceback.format_exc()
         g.applogger.error(arrange_stacktrace_format(t))
 
-    g.applogger.info("[Trace][end] create index mongodb 'labeled_event_collection'")
+    g.applogger.info("[Trace][end] create index[consolidated_check] mongodb 'labeled_event_collection'")
     return 0
-

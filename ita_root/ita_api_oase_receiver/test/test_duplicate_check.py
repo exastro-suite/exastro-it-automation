@@ -529,13 +529,13 @@ def test_process_event_group_upsert_insert(mock_mongo):
     ]
 
     mock_queue = queue.Queue()
-    mock_mongo.find_one_and_update.return_value = None  # マッチするドキュメントがない場合を想定
+    mock_mongo.find_one_and_update.return_value = event_group[0]  # ReturnDocument.AFTER
     with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_ECS_MAP', new={"ecs_01": {}}):
         with patch('libs.duplicate_check.is_new_event', new=MagicMock(return_value=True)):
             duplicate_check._process_event_group(mock_mongo, event_group, mock_queue)
 
     mock_mongo.find_one_and_update.assert_called_once()
-    assert mock_queue.get() == {"insert_num": 1, "update_num": 0, "duplicate_notification_list": [], "recieve_notification_list": [None]}
+    assert mock_queue.get() == {"insert_num": 1, "update_num": 0, "duplicate_notification_list": [], "recieve_notification_list": [event_group[0]]}
 
 
 def test_process_event_group_upsert_update(mock_mongo):

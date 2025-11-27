@@ -183,12 +183,22 @@ async setup( target ) {
 mainHtml( id ) {
     const er = this;
 
-    const rangeSelectHtml = ``
-    + `<div class="eventFlowChartRange">`
-        + `<span class="icon icon-search"></span>`
-        + `<div class="eventFlowChartRangeDate"></div>`
-        + `<button class="eventFlowChartRangeClear"><span class="icon icon-cross"></span></button>`
-    + `</div>`;
+    const rangeSelectHtml = `
+    <div class="eventFlowChartRange">
+        <span class="icon icon-search"></span>
+        <div class="eventFlowChartRangeDate">
+            <div class="eventFlowChartRangeDateStart"></div>
+            to
+            <div class="eventFlowChartRangeDateEnd"></div>
+        </div>
+        <div class="eventFlowChartRangeButtons">
+            <button class="eventFlowChartRangeButton eventFlowChartRangeChange popup" data-mode="left" title="${getMessage.FTE13043}"><span class="icon icon-prev"></span></button>
+            <button class="eventFlowChartRangeButton eventFlowChartRangeChange popup" data-mode="right" title="${getMessage.FTE13044}"><span class="icon icon-next"></span></button>
+            <button class="eventFlowChartRangeButton eventFlowChartRangeChange popup" data-mode="widen" title="${getMessage.FTE13045}"><span class="icon icon-sort"></span></button>
+            <button class="eventFlowChartRangeButton eventFlowChartRangeReload popup" title="${getMessage.FTE13046}"><span class="icon icon-update02"></span></button>
+            <button class="eventFlowChartRangeButton eventFlowChartRangeClear popup" title="${getMessage.FTE13047}"><span class="icon icon-cross"></span></button>
+        </div>
+    </div>`;
 
     const aggregateFlag = ( er.flag.aggregate )? 'on': 'off';
 
@@ -501,6 +511,9 @@ async workerOnMessage( e ) {
         case 'autoModeChange':
             this.autoModeChange();
             break;
+        case 'detailModeChange':
+            this.detailModeChange();
+            break;
         case 'progress': 
             this.progress( result );
             break;
@@ -565,6 +578,15 @@ autoModeChange() {
 }
 /*
 ##################################################
+    詳細モードに変更する
+##################################################
+*/
+detailModeChange() {
+    this.message.add('warning', getMessage.FTE13042 );
+    this.modeAggregateOff( this.$.header.find('.toggleButton') );
+}
+/*
+##################################################
     トークンをWorkerに返す
 ##################################################
 */
@@ -609,7 +631,9 @@ workerMessageNowLine( nowX ) {
 */
 workerMessageUpdateDate( date ) {
     this.start = date.start;
+    this.loadStart = date.loadStart;
     this.end = date.end;
+    this.loadEnd = date.loadEnd;
     this.period = date.period;
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -666,6 +690,8 @@ workerPollingStart( mode ) {
     this.worker.postMessage(
         {
             type: 'polling',
+            rangeChangeFlag: false,
+            aggregate: this.flag.aggregate,
             pollingStartMode: mode,
             interval: this.intervalTime,
             w: this.w,
@@ -694,6 +720,7 @@ workerModeChange() {
     this.worker.postMessage(
         {
             type: 'modeChange',
+            rangeChangeFlag: false,
             aggregate: this.flag.aggregate,
             vRate: this.vRate,
             vPosition: this.vPosition,
@@ -716,6 +743,8 @@ workerRangeChange() {
     this.worker.postMessage(
         {
             type: 'rangeChange',
+            rangeChangeFlag: true,
+            aggregate: this.flag.aggregate,
             start: this.start,
             end: this.end,
             w: this.w,
@@ -738,6 +767,8 @@ workerRangeClear() {
     this.worker.postMessage(
         {
             type: 'rangeClear',
+            rangeChangeFlag: false,
+            aggregate: this.flag.aggregate,
             start: null,
             end: null,
             rangeSelectFlag: this.flag.rangeSelect,
@@ -757,6 +788,8 @@ workerPositionChange() {
     this.worker.postMessage(
         {
             type: 'updateCanvasPosition',
+            rangeChangeFlag: false,
+            aggregate: this.flag.aggregate,
             vRate: this.vRate,
             vPosition: this.vPosition,
             hRate: this.hRate,
@@ -1165,13 +1198,9 @@ setChartEvents() {
                         const diff = ( er.end - er.start ) / 1000;
                         if ( diff <= 1 ) start = new Date( end.getTime() - 1000 );
 
-                        const
-                        startText = fn.date( start, 'yyyy/MM/dd HH:mm:ss'),
-                        endText = fn.date( end, 'yyyy/MM/dd HH:mm:ss');
-                        $rangeDate.show().find('.eventFlowChartRangeDate').text(`${startText} to ${endText}`);
-
+                        er.setRangeDate( start, end );
                         er.flag.rangeSelect = true;
-                        er.changeDateReset( start.getTime(), end.getTime(), true );
+                        er.changeDateReset( start.getTime(), end.getTime(), true, true, false );
                     }
                 }
             });
@@ -1220,12 +1249,32 @@ setChartEvents() {
     $dateRange = er.$.header.find('.eventFlowDateRangeBlock'),
     $dateRangeButton = er.$.header.find('.eventFlowDateRangeButton');
 
+    // 範囲変更
+    $rangeDate.find('.eventFlowChartRangeChange').on('click', function(){
+        const $button = $( this );
+        const mode = $button.attr('data-mode');
+        const date = $rangeDate.find('.eventFlowChartRangeDate').attr('data-date').split(' to ');
+        const start = new Date( date[0] );
+        const end = new Date( date[1] );
+        const newRange = er.setNewRange( start, end, mode );
+
+        er.setRangeDate( newRange.start, newRange.end );
+        er.flag.rangeSelect = true;
+        er.changeDateReset( newRange.start.getTime(), newRange.end.getTime(), true, false, false );
+    });
+
     // 絞り込みクリア
     $rangeDate.find('.eventFlowChartRangeClear').on('click', function(){
-        const date = er.$.header.find('.eventFlowDateRangeRadio').filter(':checked').val();
-        $rangeDate.hide().find('.eventFlowChartRangeDate').text('');
+        $rangeDate.hide().find('.eventFlowChartRangeDate').attr('data-date', '');
+        $rangeDate.find('.eventFlowChartRangeDateStart').text('');
+        $rangeDate.find('.eventFlowChartRangeDateEnd').text('');
         er.flag.rangeSelect = false;
-        er.clearDataRange( date, true );
+        er.clearDataRange();
+    });
+
+    // 絞り込み範囲読込
+    $rangeDate.find('.eventFlowChartRangeReload').on('click', function(){
+        er.setSelectDateRange();
     });
 
     // 表示範囲切替
@@ -1240,6 +1289,58 @@ setChartEvents() {
             $dateRangeButton.click();
         }
     });
+}
+/*
+##################################################
+    選択範囲を広げる、移動する
+##################################################
+*/
+setNewRange( start, end, mode ) {
+    const rate = 0.25;
+    const width = end - start;
+
+    let newStart, newEnd;
+    if ( mode === 'left') {
+        const offset = width * rate;
+        newStart = start.getTime() - offset;
+        newEnd = end.getTime() - offset;
+        if ( newStart < this.loadStart ) {
+            newStart = this.loadStart;
+            newEnd = this.loadStart + width;
+        }        
+    } else if ( mode === 'right') {
+        const offset = width * rate;
+        newStart = start.getTime() + offset;
+        newEnd = end.getTime() + offset;
+        if ( newEnd > this.loadEnd ) {
+            newStart = this.loadEnd - width;
+            newEnd = this.loadEnd;
+        }   
+    } else {
+        const offset = ( width * rate ) / 2;
+        newStart = start.getTime() - offset;
+        newEnd = end.getTime() + offset;
+        if ( newStart < this.loadStart ) newStart = this.loadStart;
+        if ( newEnd > this.loadEnd ) newEnd = this.loadEnd;
+    }
+
+    return {
+        start: new Date( newStart ),
+        end: new Date( newEnd )
+    };
+}
+/*
+##################################################
+    選択範囲をセット
+##################################################
+*/
+setRangeDate( start, end ) {
+    const $rangeDate = this.$.header.find('.eventFlowChartRangeItem');
+    const startText = fn.date( start, 'yyyy/MM/dd-HH:mm:ss').split('-');
+    const endText = fn.date( end, 'yyyy/MM/dd-HH:mm:ss').split('-');
+    $rangeDate.show().find('.eventFlowChartRangeDate').attr('data-date', `${startText[0]} ${startText[1]} to ${endText[0]} ${endText[1]}`);
+    $rangeDate.find('.eventFlowChartRangeDateStart').html(`${startText[0]}<br>${startText[1]}`);
+    $rangeDate.find('.eventFlowChartRangeDateEnd').html(`${endText[0]}<br>${endText[1]}`);
 }
 /*
 ##################################################
@@ -1406,7 +1507,7 @@ addDateRadioList( value ) {
 setSelectDateRange() {
     const er = this;
 
-    const value = $('.eventFlowChartRangeDate').text();
+    const value = $('.eventFlowChartRangeDate').attr('data-date');
     er.addDateRadioList( value );
 
     er.$.header.find('.eventFlowChartRangeClear').click();
@@ -1563,10 +1664,7 @@ modeChangeEvent() {
 
         const mode = $button.attr('data-toggle');
         if ( mode === 'on') {
-            this.flag.aggregate = false;
-            $button.attr('data-toggle', 'off');
-            this.$.eventFrow.removeClass('eventFlowAggregate_on');
-            this.$.eventFrow.addClass('eventFlowAggregate_off');
+            this.modeAggregateOff( $button );
         } else {
             this.modeAggregateOn( $button );
         }
@@ -1581,15 +1679,20 @@ modeAggregateOn( $button ) {
     this.$.eventFrow.removeClass('eventFlowAggregate_off');
     this.$.eventFrow.addClass('eventFlowAggregate_on');
 }
+modeAggregateOff( $button ) {
+    this.flag.aggregate = false;
+    $button.attr('data-toggle', 'off');
+    this.$.eventFrow.removeClass('eventFlowAggregate_on');
+    this.$.eventFrow.addClass('eventFlowAggregate_off');
+}
 /*
 ##################################################
     範囲変更
 ##################################################
 */
-changeDateReset( startDate, endDate, rangeFlag = false ) {
-    this.positionReset();
-
+changeDateReset( startDate, endDate, rangeFlag = false, h, v ) {
     if ( rangeFlag ) {
+        this.positionReset( h, v );
         this.start = startDate;
         this.end = endDate;
         this.period = this.end - this.start;
@@ -1612,20 +1715,24 @@ clearDataRange() {
     ポジションリセット
 ##################################################
 */
-positionReset() {
-    this.hRate = 1;
-    this.hPosition = 0;
-    this.$.hScroll.find('.eventFlowRange').css({
-        width: '100%',
-        left: 0
-    });
+positionReset( h = true, v = true ) {
+    if ( h === true ) {
+        this.hRate = 1;
+        this.hPosition = 0;
+        this.$.hScroll.find('.eventFlowRange').css({
+            width: '100%',
+            left: 0
+        });
+    }
 
-    this.vRate = 1;
-    this.vPosition = 0;
-    this.$.vScroll.find('.eventFlowRange').css({
-        height: '100%',
-        top: 0
-    });
+    if ( v === true ) {
+        this.vRate = 1;
+        this.vPosition = 0;
+        this.$.vScroll.find('.eventFlowRange').css({
+            height: '100%',
+            top: 0
+        });
+    }
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //

@@ -113,6 +113,7 @@ position: relative;
 display: flex;
 align-items: center;
 height: 100%;
+background-color: rgba(255,255,255,.3);
 border: 1px solid #CCC;
 border-radius: 4px;
 }
@@ -120,7 +121,10 @@ border-radius: 4px;
 border-color: rgba(255,255,255,.1);
 }
 .eventFlowChartRangeDate {
-padding: 0 32px 0 28px;
+padding: 0 142px 0 28px;
+display: flex;
+gap: 8px;
+align-items: center;
 }
 .darkmode .eventFlowChartRangeDate {
 color: #EEE;
@@ -132,11 +136,15 @@ transform: translateY(-50%);
 font-size: 14px;
 color: #888;
 }
-.eventFlowChartRangeClear {
+.eventFlowChartRangeButtons {
 position: absolute;
 right: 4px; top: 50%;
 transform: translateY(-50%);
-width: 25px; height: 25px;
+display: flex;
+border-left: 1px solid #CCC;
+}
+.eventFlowChartRangeButton {
+width: 24px; height: 24px;
 background-color: transparent;
 border: none;
 color: #888;
@@ -144,12 +152,20 @@ cursor: pointer;
 font-size: 12px;
 outline: none;
 }
-.eventFlowChartRangeClear:hover,
-.eventFlowChartRangeClear:focus {
+.eventFlowChartRangeButton:hover,
+.eventFlowChartRangeButton:focus {
 color: #CCC;
 }
-
-
+.eventFlowChartRangeChange[data-mode="widen"] .icon {
+transform: rotate(90deg) scaleX(2);
+display: inline-block;
+}
+.eventFlowChartRangeReload {
+    border-left: 1px solid #CCC;
+    padding-left: 8px;
+    margin-left: 4px;
+    width: 28px;
+}
 
 /*
 選択ボタン

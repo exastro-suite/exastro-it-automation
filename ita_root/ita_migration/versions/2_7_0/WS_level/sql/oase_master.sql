@@ -290,3 +290,6 @@ A xor B: To match A xor B (Exclusive OR)
 A -> B: To match when B occurs after A', LAST_UPDATE_TIMESTAMP = _____DATE_____  WHERE COLUMN_DEFINITION_ID = '11010907';
 
 UPDATE T_OASE_FILTER_OPERATOR  SET OPERATION_NAME = 'A xor B', LAST_UPDATE_TIMESTAMP = _____DATE_____  WHERE OPERATION_ID = '1';
+
+-- 重複排除機能の追加によってエージェント毎に収集経過を管理する必要があるため、収集経過管理テーブルにエージェントIDを追加。そのための古いデータの更新
+UPDATE T_OASE_EVENT_COLLECTION_PROGRESS      SET AGENT_NAME = "Unknown", LAST_UPDATE_TIMESTAMP = _____DATE_____ ;

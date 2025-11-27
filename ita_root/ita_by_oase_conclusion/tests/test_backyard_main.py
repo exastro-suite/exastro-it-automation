@@ -482,13 +482,13 @@ def test_judge_main_with_post_proc_timeout_events(
         for event in ev_obj.labeled_events_dict.values()
     )
 
-    # タイムアウトイベント通知が送信されないことを確認
+    # タイムアウトイベント通知が送信されることを確認
     timeout_notifications = [
-        n
-        for _, n in calls["notifications"]
+        ev
+        for ev, n in calls["notifications"]
         if n.get("notification_type") == OASENotificationType.TIMEOUT
     ]
-    assert len(timeout_notifications) == 0
+    assert len(timeout_notifications) == 1
 
 
 @patch.dict(os.environ, {"EVALUATE_LATENT_INFINITE_LOOP_LIMIT": "5"})

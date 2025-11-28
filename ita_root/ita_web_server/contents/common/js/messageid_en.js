@@ -1019,7 +1019,12 @@ export function messageid_en() {
         'FTE13039': 'Processing',
         'FTE13040': 'Please wait',
         'FTE13041': 'Fetch',
-
+        'FTE13042': 'Switched to detail mode because the number of rows is 50 or less.',
+        'FTE13043': 'Move Left',
+        'FTE13044': 'Move Right',
+        'FTE13045': 'Widen Range',
+        'FTE13046': 'Set Range specification',
+        'FTE13047': 'Clear',
     };
 
     return message;

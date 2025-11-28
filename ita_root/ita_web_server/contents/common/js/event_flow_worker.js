@@ -141,6 +141,9 @@ async init( data ) {
 
     // 自動モード変更フラグ
     this.autoModeChangeFlag = false;
+    this.autoModeChangeNumber = 99;
+    this.detailModeChangeFlag = false;
+    this.detailModeChangeNumber = 50;
 
     self.postMessage({
         type: 'init'
@@ -207,6 +210,8 @@ async polling() {
         type: 'updateDate',
         start: this.start,
         end: this.end,
+        loadStart: this.loadStart,
+        loadEnd: this.loadEnd,
         period: this.period
     });
 
@@ -245,12 +250,12 @@ async polling() {
     範囲変更
 ##################################################
 */
-rangeChange() {
+rangeChange( pollingMode ) {
     // 範囲
     this.period = this.end - this.start;    
     this.updateSize();
     this.setTimeScale();
-    this.updateCanvas();
+    this.updateCanvas( pollingMode );
 }
 /*
 ##################################################
@@ -260,13 +265,16 @@ rangeChange() {
 rangeClear() {
     this.start = this.loadStart;
     this.end = this.loadEnd;
-    this.rangeChange();
+    this.autoModeChangeFlag = false;
+    this.rangeChange( true );
 
     // クリア時の時間を画面に返す
     self.postMessage({
         type: 'updateDate',
         start: this.start,
         end: this.end,
+        loadStart: this.loadStart,
+        loadEnd: this.loadEnd,
         period: this.period
     });
 }
@@ -279,6 +287,19 @@ updateCanvas( pollingMode ) {
     this.progress('process');
     if ( this.aggregate ) {
         // 集約モード
+        this.detailModeChangeFlag = false;
+        this.createDetailEventData( pollingMode, true );
+        // 表示範囲変更時50行以内なら詳細モードに変更する        
+        if ( this.detailModeChangeFlag === true && this.rangeChangeFlag === true ) {
+            this.detailModeChangeFlag = false;
+            this.aggregate = false;
+            this.updateCanvas();
+            self.postMessage({
+                type: 'detailModeChange'
+            });
+            return;
+        }
+        this.clearEventLinkLine();
         this.createAggregateEventData();
         this.setAggregateLine();
         this.createAggregateEventBlocks();
@@ -296,8 +317,8 @@ updateCanvas( pollingMode ) {
         }
         this.setLine();
         this.createDetailEventBlocks();
+        this.updateLinkLine();
     }
-    this.updateLinkLine();
     this.progress('end');
 }
 /*
@@ -310,14 +331,15 @@ updateCanvasPosition() {
     this.setTimeScale();
     if ( this.aggregate ) {
         // 集約モード
+        this.clearEventLinkLine();
         this.setAggregateLine();
         this.createAggregateEventBlocks();
     } else {
         // 詳細モード
         this.setLine();
         this.createDetailEventBlocks();
+        this.updateLinkLine();
     }
-    this.updateLinkLine();
     this.progress('end');
     self.postMessage({
         type: 'positionChange'
@@ -894,7 +916,7 @@ checkEventPattern( labels ) {
     詳細データ作成
 ##################################################
 */
-createDetailEventData( pollingMode ) {
+createDetailEventData( pollingMode, floorCheckMode = false ) {
     // 描画用イベント位置情報
     this.canvasData = [];
 
@@ -931,15 +953,26 @@ createDetailEventData( pollingMode ) {
             }
         });
 
-        const
-        minX = this.getDatePositionX( this.linkEventList.groupInfo[ groupId ].minTime ),
-        maxX = this.getDatePositionX( this.linkEventList.groupInfo[ groupId ].maxTime );
+        const minTime = this.linkEventList.groupInfo[ groupId ].minTime;
+        const minX = this.getDatePositionX( minTime );
+        const maxTime = this.linkEventList.groupInfo[ groupId ].maxTime;
+        const maxX = this.getDatePositionX( maxTime );
+
+        // 範囲外のグループは表示しない
+        if ( maxTime < this.start || minTime > this.end ) continue;
 
         for ( const e of group ) {
             e.floor = undefined;
-            this.createFloorData( floor, e, 0, minX, maxX, null, 'group');
+            this.createFloorData( floor, e, 0, minX, maxX, null, 'group', floorCheckMode );
+            if ( this.autoModeChangeFlag === true ) return;
         }
     }
+
+    // 100行超えているか？
+    if ( this.autoModeChangeCheck( pollingMode, floor.length ) ) return;
+
+    // 集約モードで50行超えた場合は処理終了
+    if ( this.detailModeChangeCheck( floor.length ) ) return;
 
     // 単発イベント階層データの作成
     const singleLength = this.singleEvent.length;
@@ -951,25 +984,27 @@ createDetailEventData( pollingMode ) {
         if ( p && e._sortTime - p._sortTime < 1000 ) {
             f = p.floor + 1;
         }
-        this.createFloorData( floor, e, f, null, null, pollingMode, 'single');
-
-        // 100段を超えた場合
-        if ( this.autoModeChangeFlag === true ) {
-            return;
-        }
+        this.createFloorData( floor, e, f, null, null, pollingMode, 'single', floorCheckMode );
+        if ( this.autoModeChangeFlag === true ) return;
+        if ( this.detailModeChangeCheck( floor.length ) ) return;
     }
 
     // 段数
     this.floorLength = ( floor.length > this.minFloor )? floor.length: this.minFloor;
     this.lineSpacing = Math.round( this.h / ( this.floorLength  ) * 10000 ) / 10000;
     if ( this.debug ) console.log('最大階数', this.floorLength );
+
+    // 範囲変更時、集約モードで50行以内になるなら詳細モードに変更する
+    if ( floorCheckMode === true && this.floorLength <= this.detailModeChangeNumber ) {
+        this.detailModeChangeFlag = true;
+    }
 }
 /*
 ##################################################
     イベントの階層データを調べる
 ##################################################
 */
-createFloorData( floor, e, f, x1, x2, pollingMode, eventType ) {
+createFloorData( floor, e, f, x1, x2, pollingMode, eventType, floorCheckMode ) {
     // 表示パターンチェック
     const patternId = this.patternId[ e._pattern ];
     if ( this.displayFlag[ patternId ] === false ) return;
@@ -1001,6 +1036,7 @@ createFloorData( floor, e, f, x1, x2, pollingMode, eventType ) {
             f++;
         }
         if ( this.autoModeChangeCheck( pollingMode, f ) ) return;
+        if ( floorCheckMode === true && this.detailModeChangeCheck( f ) ) return;
     }
     this.canvasData.push( e );
 }
@@ -1010,13 +1046,21 @@ createFloorData( floor, e, f, x1, x2, pollingMode, eventType ) {
 ##################################################
 */
 autoModeChangeCheck( pollingMode, f ) {
-    if ( pollingMode === true && this.autoModeChangeFlag === false && f > 99 ) {
+    if ( pollingMode === true && this.autoModeChangeFlag === false && f > this.autoModeChangeNumber ) {
         console.warn('Event block exceeds 100 lines. Change to aggregate mode.');
         this.autoModeChangeFlag = true;
         return true;
     } else {
         return false
     }
+}
+/*
+##################################################
+    詳細モード段数チェック
+##################################################
+*/
+detailModeChangeCheck( f ) {
+    return this.aggregate === true && f > this.detailModeChangeNumber;
 }
 /*
 ##################################################

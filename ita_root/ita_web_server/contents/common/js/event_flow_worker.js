@@ -628,10 +628,13 @@ createEventData() {
     for ( const e of events ) {
         // ブロックのソートに使用
         const sortTime =
-            ( e.item && e.item.exastro_created_at )? e.item.exastro_created_at:
+            // _exastro_fetched_time（イベント発生日時）
+            ( e.item && e.item.labels && e.item.labels._exastro_fetched_time )? e.item.labels._exastro_fetched_time:
             // datetimeにはmsが無くAction=>Eventの順になる場合があるため.999を追加する
             ( e.datetime && e.type === 'action')? e.datetime + '.999':
             ( e.datetime )? e.datetime:
+            // exastro_created_at（ITAイベント取得日時）
+            ( e.item && e.item.exastro_created_at )? e.item.exastro_created_at:
             null;
         e._sortTime = this.parseToEpochMs( sortTime );
 
@@ -1816,44 +1819,63 @@ getDateWidthPositionX( date ) {
     new Dateを使用せずにdate形式に変換
 ##################################################
 */
-parseToEpochMs( s, defaultOffsetMinutes = 540 ) {
-    if ( !s ) return null;
+parseToEpochMs(s, defaultOffsetMinutes = 540) {
+    if (!s) return null;
 
     // 速判定：ISO(yyyy-mm-ddThh:mm:ssZ...) か？
     // 例: 2025-11-06T00:10:16.684000Z
     if (s.length >= 20 && s[4] === '-' && s[10] === 'T' && (s.endsWith('Z') || s.includes('Z'))) {
         const Y = (s.charCodeAt(0)-48)*1000 + (s.charCodeAt(1)-48)*100
-                + (s.charCodeAt(2)-48)*10   + (s.charCodeAt(3)-48);
+            + (s.charCodeAt(2)-48)*10   + (s.charCodeAt(3)-48);
         const M = (s.charCodeAt(5)-48)*10 + (s.charCodeAt(6)-48);
         const D = (s.charCodeAt(8)-48)*10 + (s.charCodeAt(9)-48);
         const h = (s.charCodeAt(11)-48)*10 + (s.charCodeAt(12)-48);
         const m = (s.charCodeAt(14)-48)*10 + (s.charCodeAt(15)-48);
         const sec = (s.charCodeAt(17)-48)*10 + (s.charCodeAt(18)-48);
+
         // .ffffff の上位3桁のみを読む（なければ0）
         let ms = 0;
         const dot = s.indexOf('.', 19);
         if (dot !== -1) {
-        // dot+1..dot+3 の3桁、足りなければ0埋め想定で安全読み
-        const c1 = s.charCodeAt(dot+1), c2 = s.charCodeAt(dot+2), c3 = s.charCodeAt(dot+3);
-        ms = ((c1>=48?c1-48:0)*100) + ((c2>=48?c2-48:0)*10) + ((c3>=48?c3-48:0));
+            const c1 = s.charCodeAt(dot+1);
+            const c2 = s.charCodeAt(dot+2);
+            const c3 = s.charCodeAt(dot+3);
+            if (c1 >= 48 && c1 <= 57) ms += (c1 - 48) * 100;
+            if (c2 >= 48 && c2 <= 57) ms += (c2 - 48) *  10;
+            if (c3 >= 48 && c3 <= 57) ms += (c3 - 48);
+            // 3桁未満なら、足りない桁は 0 埋め扱い（数字以外は無視）
         }
         return Date.UTC(Y, M-1, D, h, m, sec, ms); // そのままUTC
     }
 
-    // スラッシュ形式 "YYYY/MM/DD HH:MM:SS" をローカル(=defaultOffsetMinutes)として解釈
+    // スラッシュ形式 "YYYY/MM/DD HH:MM:SS[.fff]" をローカル(=defaultOffsetMinutes)として解釈
     // 例: 2025/11/06 09:10:16
-    // 前提：常にこの形（秒必須・タイムゾーン表記なし）
+    //     2025/11/06 09:10:16.999
+    // 前提：秒までは必須・タイムゾーン表記なし
     if (s.length >= 19 && s[4] === '/' && s[7] === '/' && (s[10] === ' ' || s[10] === 'T')) {
-        const Y = (s.charCodeAt(0)-48)*1000 + (s.charCodeAt(1)-48)*100
-                + (s.charCodeAt(2)-48)*10   + (s.charCodeAt(3)-48);
+        const Y  = (s.charCodeAt(0)-48)*1000 + (s.charCodeAt(1)-48)*100
+            + (s.charCodeAt(2)-48)*10   + (s.charCodeAt(3)-48);
         const Mo = (s.charCodeAt(5)-48)*10 + (s.charCodeAt(6)-48);
         const D  = (s.charCodeAt(8)-48)*10 + (s.charCodeAt(9)-48);
         const h  = (s.charCodeAt(11)-48)*10 + (s.charCodeAt(12)-48);
         const m  = (s.charCodeAt(14)-48)*10 + (s.charCodeAt(15)-48);
         const sec= (s.charCodeAt(17)-48)*10 + (s.charCodeAt(18)-48);
+
+        // ".fff" があればミリ秒として読む（上位3桁まで）
+        let ms = 0;
+        const dot = s.indexOf('.', 19); // "YYYY/MM/DD HH:MM:SS" までは19文字
+        if (dot !== -1) {
+            const c1 = s.charCodeAt(dot+1);
+            const c2 = s.charCodeAt(dot+2);
+            const c3 = s.charCodeAt(dot+3);
+            if (c1 >= 48 && c1 <= 57) ms += (c1 - 48) * 100;
+            if (c2 >= 48 && c2 <= 57) ms += (c2 - 48) *  10;
+            if (c3 >= 48 && c3 <= 57) ms += (c3 - 48);
+            // 2桁や1桁しかなくても、残りは 0 埋め扱い
+        }
+
         // ローカル(既定オフセット)→UTC へ変換
-        // Date.UTC は「UTCの数値」を受け取るので、ローカル時刻を一旦UTCとして組み立て、最後にオフセットを差し引く
-        const utcLike = Date.UTC(Y, Mo-1, D, h, m, sec, 0);
+        const utcLike = Date.UTC(Y, Mo-1, D, h, m, sec, ms);
         return utcLike - defaultOffsetMinutes * 60_000;
     }
 

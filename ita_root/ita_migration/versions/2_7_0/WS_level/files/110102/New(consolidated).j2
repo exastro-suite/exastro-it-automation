@@ -1,10 +1,12 @@
 [TITLE]
-Event Consolidated by Deduplication {% if labels._exastro_timeout == 1 %} (ttl expired) {% endif %};
+Event Consolidated by Deduplication {% if exastro_dup_notification_queue | default('0') == '1' %} (ttl expired) {% endif %};
 
 [BODY]
-Event Consolidated by Deduplication {% if labels._exastro_timeout == 1 %} (ttl expired) {% endif %};
+Event Consolidated by Deduplication {% if exastro_dup_notification_queue | default('0') == '1' %} (ttl expired) {% endif %};
 Detailed information
+{% if exastro_edit_count %}
   Event Factor             : {% if exastro_edit_count == 1 %}Primary Event{% else %}Consolidated Event{% endif %} ({{ exastro_edit_count }})
+{% endif %}
   Event collection settings: {{ labels._exastro_event_collection_settings_id }}
   Event fetch time         : {{ labels._exastro_fetched_time }}
   Event end time           : {{ labels._exastro_end_time }}
@@ -18,7 +20,9 @@ Detailed information
     ・{{ key }}: {{ value }}
     {% endfor %}
 
+{% if exastro_agents %}
   Agent:
     {% for key, value in exastro_agents.items() %}
     ・{{ key }}: {{ value }}
     {% endfor %}
+{% endif %}

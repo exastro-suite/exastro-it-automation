@@ -574,33 +574,32 @@ class FileUploadColumn(Column):
             old_file_path = path["old_file_path"]
             entity_file_path = path["old_file_path"]
 
-            # 履歴からファイルの配置先まで検索
-            if os.path.isfile(old_file_path) is False:
+            # 引数の target_uuid_jnl が 空の時（履歴レコードではなく、親レコードから呼ばれたとき）または、
+            # old_file_path にファイルが存在しないときに以下の処理を行う
+            if not old_file_path or os.path.isfile(old_file_path) is False:
+                # 最新の履歴からファイルの配置先を取得する
                 target_uuid_jnls = []
                 column_list, primary_key_list = self.objdbca.table_columns_get(self.get_table_name())
                 self.set_column_list(column_list)
                 self.set_primary_key(primary_key_list[0])
-                if journal_type == "1":
-                    query_str = textwrap.dedent("""
-                        SELECT * FROM `{table_name}`
-                        WHERE `{primary_key}` = %s
-                        AND `DISUSE_FLAG` = 0
-                        ORDER BY `JOURNAL_REG_DATETIME` DESC
-                    """).format(table_name=f"{self.get_table_name()}_JNL", primary_key=self.get_primary_key()).strip()
-                else:
-                    query_str = textwrap.dedent("""
-                        SELECT * FROM `{table_name}`
-                        WHERE `{primary_key}` = %s
-                        ORDER BY `JOURNAL_REG_DATETIME` DESC
-                    """).format(table_name=f"{self.get_table_name()}_JNL", primary_key=self.get_primary_key()).strip()
+                # 廃止含む・履歴なしデータをインポートした後の状態では、履歴が廃止レコード1件しか存在しない状態になるため、
+                # 廃止レコードを除いてしまうと履歴が1件も取得できずエラーが発生する為、廃止レコードも含めて検索
+                query_str = textwrap.dedent("""
+                    SELECT * FROM `{table_name}`
+                    WHERE `{primary_key}` = %s
+                    ORDER BY `JOURNAL_REG_DATETIME` DESC
+                """).format(table_name=f"{self.get_table_name()}_JNL", primary_key=self.get_primary_key()).strip()
                 query_result = self.objdbca.sql_execute(query_str, [target_uuid])
-                target_uuid_jnls = [ _row["JOURNAL_SEQ_NO"] for _row in query_result] if isinstance(query_result, list) else []
+                target_uuid_jnls = [_row["JOURNAL_SEQ_NO"] for _row in query_result] if isinstance(query_result, list) else []
+                # ファイル以外の更新を行った場合、その際の履歴ではold/配下に過去ファイルを作成しないため、
+                # 最新の履歴から順に過去ファイルを検索し、最初に見つかった履歴IDのパスのファイルを採用する
                 for _tuj in target_uuid_jnls:
+                    # 履歴IDのパスでファイル配置先を検索、存在しなかった場合は次の履歴IDで検索を続行
                     if not ret:
                         path = get_upload_file_path(workspace_id, menu_id, target_uuid, rest_name, file_name, _tuj)   # noqa:F405
                     else:
                         path = get_upload_file_path_specify(workspace_id, ret, target_uuid, file_name, _tuj)   # noqa:F405
-                    # 最新のファイル配置先を検索
+
                     if os.path.isfile(path["old_file_path"]):
                         old_file_path = path["old_file_path"]
                         entity_file_path = path["old_file_path"]

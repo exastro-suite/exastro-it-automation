@@ -16,6 +16,7 @@ import psutil
 import multiprocessing
 import time
 from flask import Flask, g
+import gc
 
 from common_libs.conductor.classes.exec_util import *
 
@@ -23,6 +24,10 @@ from common_libs.common.queuing_logger import QueuingAppLogClient
 from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common.message_class import MessageTemplate
 from common_libs.notification.sub_classes.oase import OASE
+
+# workspaceを一定数処理した度にgcするための間隔
+workspace_gc_trigger_interval = int(os.environ.get("WORKSPACE_GC_TRIGGER_INTERVAL", "100"))
+
 
 class NotificationProcessException(Exception):
     """書き込みプロセス例外クラス
@@ -136,6 +141,7 @@ class NotificationProcess():
     """
     _process_name = "NotificationProcess"
     _objdbca = None
+    _workspace_gc_trigger_counter = 0
 
     @classmethod
     def main(cls, ppid: int, queue: multiprocessing.Queue, complite: multiprocessing.Queue, exited):
@@ -201,6 +207,17 @@ class NotificationProcess():
                     OASE.buffered_send(cls._objdbca, data["event_list"], data["decision_information"])
 
                 elif data["action"] == "start_workspace_processing":
+                    # DBコネクションを切断
+                    if cls._objdbca is not None:
+                        cls._objdbca.db_disconnect()
+                        cls._objdbca = None
+
+                    # 一定数処理した度にガベージコレクションを実行
+                    cls._workspace_gc_trigger_counter += 1
+                    if cls._workspace_gc_trigger_counter % workspace_gc_trigger_interval == 0:
+                        g.applogger.debug("Execute Garbage Collection")
+                        gc.collect()
+
                     # ワークスペースの処理開始
                     cls._objdbca = DBConnectWs(workspace_id=data["workspace_id"], organization_id=data["oraganization_id"])
                     g.ORGANIZATION_ID = data["oraganization_id"]

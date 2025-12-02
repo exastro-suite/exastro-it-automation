@@ -16,6 +16,7 @@ from flask import g
 import os
 import datetime
 import traceback
+import gc
 
 from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common.util import arrange_stacktrace_format, get_iso_datetime
@@ -32,6 +33,10 @@ from libs.action_status_monitor import ActionStatusMonitor
 from libs.notification_process import NotificationProcessManager
 from libs.writer_process import WriterProcessManager
 
+# workspaceを一定数処理した度にgcするためのカウンタ/間隔
+workspace_gc_trigger_counter = 0
+workspace_gc_trigger_interval = int(os.environ.get("WORKSPACE_GC_TRIGGER_INTERVAL", "100"))
+
 
 def backyard_main(organization_id, workspace_id):
     """
@@ -41,9 +46,17 @@ def backyard_main(organization_id, workspace_id):
             workspace_id: Workspace ID
         RETURN:
     """
+    global workspace_gc_trigger_counter
+
     # メイン処理開始
     tmp_msg = g.appmsg.get_log_message("BKY-90000", ['Started'])
     g.applogger.debug(tmp_msg)  # noqa: F405
+
+    # ガベージコレクション実行
+    workspace_gc_trigger_counter += 1
+    if workspace_gc_trigger_counter % workspace_gc_trigger_interval == 0:
+        g.applogger.debug("Execute Garbage Collection")
+        gc.collect()
 
     # strage_path = os.environ.get('STORAGEPATH')
     # workspace_path = strage_path + "/".join([organization_id, workspace_id])

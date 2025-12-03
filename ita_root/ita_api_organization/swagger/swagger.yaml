@@ -5,7 +5,7 @@ info:
   license:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0
-  version: "2.5"
+  version: 2.7.0
 servers:
 - url: "https://{host}"
   description: API endpoint
@@ -3419,7 +3419,10 @@ paths:
     get:
       tags:
       - Driver Controll
-      description: 作業実行の投入データ取得
+      description: |
+        【2.5.0以降非推奨】作業実行の投入データ取得 <br>
+        下記[ファイルダウンロードAPI](#operations-Menu_Filter-downloadFile)の利用を推奨 <br>
+        /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/{uuid}/populated_data/file/
       operationId: get_execute_populated_data
       parameters:
       - name: organization_id
@@ -3473,12 +3476,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ERROR_TEMPLATE"
+      deprecated: true
       x-openapi-router-controller: controllers.driver_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/{execution_no}/result_data:
     get:
       tags:
       - Driver Controll
-      description: 作業実行の結果データ取得
+      description: |
+        【2.5.0以降非推奨】作業実行の結果データ取得 <br>
+        下記[ファイルダウンロードAPI](#operations-Menu_Filter-downloadFile)の利用を推奨 <br>
+        /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/{uuid}/result_data/file/
       operationId: get_execute_result_data
       parameters:
       - name: organization_id
@@ -3532,6 +3539,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ERROR_TEMPLATE"
+      deprecated: true
       x-openapi-router-controller: controllers.driver_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/{execution_no}/cancel/:
     patch:

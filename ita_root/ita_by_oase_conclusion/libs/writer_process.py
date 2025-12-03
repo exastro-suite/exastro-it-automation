@@ -19,6 +19,7 @@ import psutil
 import multiprocessing
 import time
 from flask import Flask, g
+import gc
 from bson.objectid import ObjectId
 
 from pymongo.operations import InsertOne, UpdateOne, UpdateMany
@@ -31,6 +32,9 @@ from common_libs.common.message_class import MessageTemplate
 from common_libs.common.mongoconnect.const import Const as mongoConst
 
 from common_libs.oase.const import oaseConst
+
+# workspaceを一定数処理した度にgcするための間隔
+workspace_gc_trigger_interval = int(os.environ.get("WORKSPACE_GC_TRIGGER_INTERVAL", "100"))
 
 
 class WriterProcessException(Exception):
@@ -234,6 +238,7 @@ class WriterProcess():
     _process_name = "WriterProcess"
     _objdbca = None
     _ws_mongo = None
+    _workspace_gc_trigger_counter = 0
     _labeled_event_collection = None
     _t_oase_action_log = None
 
@@ -351,6 +356,18 @@ class WriterProcess():
             oraganization_id (str): _description_
             workspace_id (str): _description_
         """
+        # DBコネクションを切断
+        if cls._objdbca is not None:
+            cls._objdbca.db_disconnect()
+            cls._objdbca = None
+
+        # 一定数処理した度にガベージコレクションを実行
+        cls._workspace_gc_trigger_counter += 1
+        if cls._workspace_gc_trigger_counter % workspace_gc_trigger_interval == 0:
+            g.applogger.debug("Execute Garbage Collection")
+            gc.collect()
+
+        # ワークスペースの処理開始
         cls._objdbca = DBConnectWs(workspace_id=workspace_id, organization_id=oraganization_id)
         g.ORGANIZATION_ID = oraganization_id
         g.WORKSPACE_ID = workspace_id

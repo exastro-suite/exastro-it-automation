@@ -3517,7 +3517,7 @@ paths:
       deprecated: true
       description: |
         【2.5.0以降非推奨】作業実行の投入データ取得 <br>
-        下記<a rel="noopener noreferrer" class="noZensmooth" href="#operations-Menu_Filter-downloadFile">ファイルダウンロードAPI</a>の利用を推奨 <br>
+        [Menu Filter](#Menu%20Filter)にある下記ファイルダウンロードAPIの利用を推奨 <br>
         /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/{uuid}/populated_data/file/
       operationId: getExecutePopulatedData
       x-openapi-router-controller: controllers.driver_controll_controller
@@ -3572,7 +3572,7 @@ paths:
       deprecated: true
       description: |
         【2.5.0以降非推奨】作業実行の結果データ取得 <br>
-        下記<a rel="noopener noreferrer" class="noZensmooth" href="#operations-Menu_Filter-downloadFile">ファイルダウンロードAPI</a>の利用を推奨 <br>
+        [Menu Filter](#Menu%20Filter)にある下記ファイルダウンロードAPIの利用を推奨 <br>
         /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/{uuid}/result_data/file/
       operationId: getExecuteResultData
       x-openapi-router-controller: controllers.driver_controll_controller

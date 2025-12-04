@@ -1683,19 +1683,23 @@ def _collect_files(objmenu, dir_path, menu, parameters, fileup_columns=[]):
                 g.applogger.debug(addline_msg('{}'.format(f'File does not exist: {tmp_file_path} ')))
                 continue
 
-            # ファイルをコピー or 複合化して配置
-            try:
-                if not entity_path:
-                    raise Exception("src file path is empty")
-                os.makedirs(tmp_dir_path, exist_ok=True)
-                g.applogger.info(addline_msg('{}'.format(f'{_pd["class_name"]} src={entity_path} dst={tmp_file_path}')))
-                g.applogger.info(addline_msg('{}'.format(f'Copy src file. {os.path.isfile(entity_path)} {entity_path}')))
-                shutil.copyfile(entity_path, tmp_file_path) if _pd['class_name'] == "FileUploadColumn" else None
-                file_decode_upload_file(entity_path, tmp_file_path) if _pd['class_name'] == "FileUploadEncryptColumn" else None
-                g.applogger.info(addline_msg('{}'.format(f'Copy dst file. {os.path.isfile(tmp_file_path)} {tmp_file_path}')))
-            except Exception as e:
-                g.applogger.error(f'file copy failed. parameter={_p} class_name={_pd["class_name"]}, src={entity_path}, dst={tmp_file_path}')
-                raise e
+            # 低速ストレージ対応: @file_read_retry デコレータでリトライ処理を付与
+            @file_read_retry  # noqa: F405
+            def _copyfile_to_destination():
+                # ファイルをコピー or 複合化して配置
+                try:
+                    if not entity_path:
+                        raise Exception("src file path is empty")
+                    os.makedirs(tmp_dir_path, exist_ok=True)
+                    g.applogger.info(addline_msg('{}'.format(f'{_pd["class_name"]} src={entity_path} dst={tmp_file_path}')))
+                    g.applogger.info(addline_msg('{}'.format(f'Copy src file. {os.path.isfile(entity_path)} {entity_path}')))
+                    shutil.copyfile(entity_path, tmp_file_path) if _pd['class_name'] == "FileUploadColumn" else None
+                    file_decode_upload_file(entity_path, tmp_file_path) if _pd['class_name'] == "FileUploadEncryptColumn" else None
+                    g.applogger.info(addline_msg('{}'.format(f'Copy dst file. {os.path.isfile(tmp_file_path)} {tmp_file_path}')))
+                except Exception as e:
+                    g.applogger.error(f'file copy failed. parameter={_p} class_name={_pd["class_name"]}, src={entity_path}, dst={tmp_file_path}')
+                    raise e
+            _copyfile_to_destination()
 
     del objmenu, parameters
 
@@ -3342,34 +3346,66 @@ def _bulk_register_file(objdbca, objmenu, execution_no_path, menu_name_rest, fil
                     tmp_f_entity = f"{execution_no_path}{_jfv['src']}"
 
                     g.applogger.debug(f"{os.path.isfile(tmp_f_entity)} {tmp_f_entity}")
-                    if not os.path.isfile(tmp_f_entity):
+
+                    # 低速ストレージ対応: @file_read_retry デコレータでリトライ処理を付与
+                    @file_read_retry  # noqa: F405
+                    def _isfile_tmpsrc_file():
+                        try:
+                            if os.path.isfile(tmp_f_entity):
+                                return True
+                        except:  # noqa: E722
+                            g.applogger.info(f"{tmp_f_entity} does not exist, _isfile_tmpsrc_file retry.")
+                            return False
+                        return False
+
+                    if _isfile_tmpsrc_file() is False:
                         # KYMファイル解凍後のuploadfiles配下にファイルが無い場合、SKIP
                         g.applogger.info(f"{tmp_f_entity} does not exist, so it will be skipped")
                         continue
 
-                    # makedirs -> remove
-                    os.makedirs(f_src_dir) if not os.path.isdir(f_src_dir) else None
-                    os.remove(tmp_f_src) if os.path.isfile(tmp_f_src) else None
-                    os.remove(f_src) if jnl_flg and os.path.isfile(f_src) else None
+                    @file_read_retry  # noqa: F405
+                    def _makedirs_to_destination():
+                        try:
+                            # makedirs -> remove
+                            os.makedirs(f_src_dir, exist_ok=True)
+                            os.remove(tmp_f_src) if os.path.isfile(tmp_f_src) else None
+                            os.remove(f_src) if jnl_flg and os.path.isfile(f_src) else None
+                        except:  # noqa: E722
+                            g.applogger.info(f"does not exist, so it will be cleared retry. tmp_src={tmp_f_src}, src={f_src}.")
+                            return False
+                        return True
+                    _makedirs_to_destination()
 
-                    try:
-                        # upload_file
-                        if _jfv['class_name'] == "FileUploadEncryptColumn":
-                            objsr = storage_read()
-                            objsr.open(tmp_f_entity, mode="rb")
-                            tmp_f_entity_f = base64.b64encode(objsr.read()).decode()
-                            objsr.close()
-                            encrypt_upload_file(f_src, tmp_f_entity_f, mode="w")
-                        else:
-                            shutil.copyfile(tmp_f_entity, f_src)
+                    @file_read_retry  # noqa: F405
+                    def _copyfile_to_destination():
+                        try:
+                            # upload_file
+                            if _jfv['class_name'] == "FileUploadEncryptColumn":
+                                objsr = storage_read()  # noqa: F405
+                                objsr.open(tmp_f_entity, mode="rb")
+                                tmp_f_entity_f = base64.b64encode(objsr.read()).decode()  # noqa: F405
+                                objsr.close()
+                                encrypt_upload_file(f_src, tmp_f_entity_f, mode="w")  # noqa: F405
+                            else:
+                                shutil.copyfile(tmp_f_entity, f_src)
+                        except Exception as e:
+                            g.applogger.error(f'file copy failed. retry. parameter={_jfd} class_name={_jfv["class_name"]}, src={tmp_f_entity}, dst={f_src}')
+                            raise e
+                        return True
+                    _copyfile_to_destination()
 
-                        # symlink
-                        if os.path.isfile(f_src):
+                    @file_read_retry  # noqa: F405
+                    def _symlink_to_destination():
+                        try:
+                            # symlink
                             os.unlink(f_dst) if os.path.islink(f_dst) else None
                             os.symlink(f_src, f_dst)
-                    except Exception as e:
-                        g.applogger.error(f'file copy, create symbolic link failed. parameter={_jfd} class_name={_jfv["class_name"]}, src={tmp_f_entity}, dst={f_src}')
-                        raise e
+                        except Exception as e:  # noqa: E722
+                            g.applogger.error(f'create symbolic link failed. retry. parameter={_jfd} class_name={_jfv["class_name"]}, src={tmp_f_entity}, dst={f_src}')
+                            raise e
+                        return True
+                    _symlink_to_destination()
+
         _json_f_data = []
 
     # データ読取共通処理

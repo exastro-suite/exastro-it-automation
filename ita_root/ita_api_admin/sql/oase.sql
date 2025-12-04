@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS T_OASE_EVENT_COLLECTION_SETTINGS_JNL
 -- イベント種別マスタ
 CREATE TABLE IF NOT EXISTS T_OASE_EVENT_TYPE
 (
-    EVENT_TYPE_ID                   VARCHAR(2),                                 -- イベント種別ID
+    EVENT_TYPE_ID                   VARCHAR(255),                               -- イベント種別ID
     EVENT_TYPE_NAME_JA              VARCHAR(255),                               -- イベント種別(ja)
     EVENT_TYPE_NAME_EN              VARCHAR(255),                               -- イベント種別(en)
     NOTE                            TEXT,                                       -- 備考
@@ -129,6 +129,8 @@ CREATE TABLE IF NOT EXISTS T_OASE_NOTIFICATION_TEMPLATE_COMMON
     NOTIFICATION_TEMPLATE_ID        VARCHAR(40),                                -- 通知テンプレートID
     EVENT_TYPE                      VARCHAR(255),                               -- イベント種別
     TEMPLATE_FILE                   VARCHAR(255),                               -- テンプレート
+    NOTIFICATION_DESTINATION        TEXT,                                       -- 通知先
+    IS_DEFAULT                      VARCHAR(10)  ,                              -- デフォルト
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -144,6 +146,8 @@ CREATE TABLE IF NOT EXISTS T_OASE_NOTIFICATION_TEMPLATE_COMMON_JNL
     NOTIFICATION_TEMPLATE_ID        VARCHAR(40),                                -- 通知テンプレートID
     EVENT_TYPE                      VARCHAR(255),                               -- イベント種別
     TEMPLATE_FILE                   VARCHAR(255),                               -- テンプレート
+    NOTIFICATION_DESTINATION        TEXT,                                       -- 通知先
+    IS_DEFAULT                      VARCHAR(10)  ,                              -- デフォルト
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -353,11 +357,65 @@ CREATE TABLE IF NOT EXISTS T_OASE_LABELING_SETTINGS_JNL
 
 
 
+-- 重複排除
+CREATE TABLE IF NOT EXISTS T_OASE_DEDUPLICATION_SETTINGS
+(
+    DEDUPLICATION_SETTING_ID        VARCHAR(40),                                -- 重複排除設定ID
+    DEDUPLICATION_SETTING_NAME      VARCHAR(255),                               -- 重複排除設定名
+    SETTING_PRIORITY                INT,                                        -- 優先順位
+    EVENT_SOURCE_REDUNDANCY_GROUP   TEXT,                                       -- 冗長グループ（イベント収集先）
+    CONDITION_LABEL_KEY_IDS         TEXT,                                       -- ラベル
+    CONDITION_EXPRESSION_ID         VARCHAR(2),                                 -- 式
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(DEDUPLICATION_SETTING_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+CREATE TABLE IF NOT EXISTS T_OASE_DEDUPLICATION_SETTINGS_JNL
+(
+    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
+    JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
+    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
+    DEDUPLICATION_SETTING_ID        VARCHAR(40),                                -- 重複排除設定ID
+    DEDUPLICATION_SETTING_NAME      VARCHAR(255),                               -- 重複排除設定名
+    SETTING_PRIORITY                INT,                                        -- 優先順位
+    EVENT_SOURCE_REDUNDANCY_GROUP   TEXT,                                       -- 冗長グループ（イベント収集先）
+    CONDITION_LABEL_KEY_IDS         TEXT,                                       -- ラベル
+    CONDITION_EXPRESSION_ID         VARCHAR(2),                                 -- 式
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(JOURNAL_SEQ_NO)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
+-- 重複排除条件式マスタ
+CREATE TABLE IF NOT EXISTS T_OASE_DEDUPLICATION_CONDITION_EXPRESSION
+(
+    EXPRESSION_ID                   VARCHAR(2),                                 -- 条件式ID
+    EXPRESSION_JA                   VARCHAR(255),                               -- 条件式（JA）
+    EXPRESSION_EN                   VARCHAR(255),                               -- 条件式（EN）
+    DISP_SEQ                        INT,                                        -- 表示順序
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(EXPRESSION_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
+
 -- イベント収集経過
 CREATE TABLE IF NOT EXISTS T_OASE_EVENT_COLLECTION_PROGRESS
 (
     EVENT_COLLECTION_ID             VARCHAR(40),                                -- イベント収集ID
     EVENT_COLLECTION_SETTINGS_ID    VARCHAR(40),                                -- イベント収集設定ID
+    AGENT_NAME                      VARCHAR(1024),                              -- エージェント名
     FETCHED_TIME                    INT,                                        -- 経過時間
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
@@ -392,6 +450,8 @@ CREATE TABLE IF NOT EXISTS T_OASE_FILTER
     FILTER_NAME                     VARCHAR(255),                               -- フィルター名
     FILTER_CONDITION_JSON           TEXT,                                       -- フィルター条件
     SEARCH_CONDITION_ID             VARCHAR(2),                                 -- 検索方法
+    GROUP_LABEL_KEY_IDS             TEXT,                                       -- グルーピングラベル
+    GROUP_CONDITION_ID              VARCHAR(2),                                 -- グルーピング条件ID
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -409,12 +469,31 @@ CREATE TABLE IF NOT EXISTS T_OASE_FILTER_JNL
     FILTER_NAME                     VARCHAR(255),                               -- フィルター名
     FILTER_CONDITION_JSON           TEXT,                                       -- フィルター条件
     SEARCH_CONDITION_ID             VARCHAR(2),                                 -- 検索方法
+    GROUP_LABEL_KEY_IDS             TEXT,                                       -- グルーピングラベル
+    GROUP_CONDITION_ID              VARCHAR(2),                                 -- グルーピング条件ID
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
     LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
     PRIMARY KEY(JOURNAL_SEQ_NO)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
+-- フィルターグルーピング条件マスタ
+CREATE TABLE IF NOT EXISTS T_OASE_FILTER_GROUP_CONDITION
+(
+    GROUP_CONDITION_ID              VARCHAR(2),                                 -- グルーピング条件ID
+    GROUP_CONDITION_JA              VARCHAR(255),                               -- グルーピング条件名（JA）
+    GROUP_CONDITION_EN              VARCHAR(255),                               -- グルーピング条件名（EN）
+    DISP_SEQ                        INT,                                        -- 表示順序
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(GROUP_CONDITION_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
 
 
 

@@ -20,6 +20,7 @@ class oaseConst():
     T_OASE_EVENT_COLLECTION_SETTINGS = 'T_OASE_EVENT_COLLECTION_SETTINGS'  # イベント収集の設定
     T_OASE_EVENT_COLLECTION_PROGRESS = 'T_OASE_EVENT_COLLECTION_PROGRESS'  # 収集時間の履歴
     T_OASE_LABELING_SETTINGS = 'T_OASE_LABELING_SETTINGS'  # ラベル付与の設定
+    T_OASE_DEDUPLICATION_SETTINGS = 'T_OASE_DEDUPLICATION_SETTINGS'  # 重複排除の設定
 
     T_OASE_FILTER = 'T_OASE_FILTER'  # フィルター
     T_OASE_RULE = 'T_OASE_RULE'  # ルール
@@ -39,7 +40,19 @@ class oaseConst():
     DF_EVENT_TYPE_EVENT = "1"
     DF_EVENT_TYPE_CONCLUSION = "2"
 
+    # フィルター検索条件 / Filter search conditions
+    DF_SEARCH_CONDITION_UNIQUE = '1'    # ユニーク / Unique
+    DF_SEARCH_CONDITION_QUEUING = '2'   # キューイング / Queuing
+    DF_SEARCH_CONDITION_GROUPING = '3'  # グルーピング / Grouping
+
+    # グルーピング条件 / Grouping conditions
+    DF_GROUP_CONDITION_ID_TARGET = '1'      # を対象とする / is the target
+    """グルーピング条件「を対象とする」"""
+    DF_GROUP_CONDITION_ID_NOT_TARGET = '2'  # 以外を対象とする / is not a target
+    """グルーピング条件「以外を対象とする」"""
+
     # イベントデータに一時的に追加する項目定期
+
     # 親ラベル
     DF_LOCAL_LABLE_NAME = "__exastro_local_labels__"
     # 子ラベル イベント状態
@@ -49,6 +62,9 @@ class oaseConst():
     DF_POST_PROC_TIMEOUT_EVENT = '1'    # 処理対象　処理後タイムアウト:●
     DF_TIMEOUT_EVENT = '2'           # タイムアウト（TTL*2）
     DF_NOT_PROC_EVENT = '3'       # 対象外
+    # 子ラベル グループキー
+    DF_LOCAL_LABLE_ATTRIBUTE_KEY = "group_key"
+    """子ラベル グループキー"""
 
     # ルール・フィルタ管理　JSON内の演算子・条件
     # 条件
@@ -56,7 +72,7 @@ class oaseConst():
     DF_TEST_NE = '2'    # !=
     # 演算子
     DF_OPE_NONE = ''    # None
-    DF_OPE_OR = '1'     # OR
+    DF_OPE_XOR = '1'     # XOR
     DF_OPE_AND = '2'    # AND
     DF_OPE_ORDER = '3'  # ->
 
@@ -84,3 +100,7 @@ class oaseConst():
     CSTS_Emergency_stop = "9"           # 緊急停止
     CSTS_Schedule_Cancel = "10"         # 予約取消
     CSTS_Unexpected_Error = "11"        # 想定外エラー
+
+    # OASEエージェントの識別情報(未設定時)
+    DF_AGENT_NAME = "Unknown"           # エージェント名未設定
+    DF_AGENT_VERSION = "Unknown"        # バージョン未設定

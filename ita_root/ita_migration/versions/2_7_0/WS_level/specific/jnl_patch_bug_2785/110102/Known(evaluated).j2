@@ -1,0 +1,19 @@
+[TITLE]
+A known(evaluated) event has occured.
+
+[BODY]
+Detailed information
+　Event ID                 : {{ _id }}
+　Event collection settings: {{ labels._exastro_event_collection_settings_id }}
+　Event fetch time         : {{ labels._exastro_fetched_time }}
+　Event end time           : {{ labels._exastro_end_time }}
+　Event type               : {{ labels._exastro_type }}
+
+　Re-evaluation
+　　Evaluation rule name   : {{ labels._exastro_rule_name }}
+　　Event                  : {{ exastro_events }}
+
+　Label:
+　  {% for key, value in labels.items() %}
+　　・{{ key }}: {{ value }}
+　　{% endfor %}

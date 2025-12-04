@@ -3303,7 +3303,6 @@ class bulkLoadTable(loadTable):
                         else:
                             where_str += table_tab + k + ' = ' + "'" + v + "' "
 
-
                 if mode not in ['jnl_all', 'excel_jnl_all', 'jnl_count_all', 'export_jnl']:
                     where_str = textwrap.dedent("""
                         where `{col_name}` IN ( %s )
@@ -3314,8 +3313,9 @@ class bulkLoadTable(loadTable):
                 if sort_key is not None:
                     str_orderby = ''
                     where_str = where_str + str_orderby
+
             # 履歴テーブル: 廃止を含まない
-            if abolished_type == "2" and mode == 'export_jnl'and self.get_history_flg():
+            if abolished_type == "2" and mode == 'export_jnl' and self.get_history_flg():
                 # 1:履歴あり /　2:履歴なし
                 if journal_type == "1":
                     query_str = textwrap.dedent("""
@@ -3348,10 +3348,10 @@ class bulkLoadTable(loadTable):
                                 LEFT JOIN `{table_name}` `TAB_B` ON ( `TAB_A`.`{col_name}` = `TAB_B`.`{col_name}` )
                                 {where_str}
                             ) AS subq
-                        GROUP BY `{col_name}`
+                        WHERE subq.`luc` = 1
                     """).format(
                         table_name_jnl=self.get_table_name_jnl(),
-                        table_name= self.get_table_name(),
+                        table_name=self.get_table_name(),
                         column_list=f'{", ".join([f"`{_c}`" for _c in jnl_column_list])}',
                         table_tab=table_tab,
                         where_str=where_str,
@@ -3365,13 +3365,17 @@ class bulkLoadTable(loadTable):
                     tmp_result = self.objdbca.sql_execute_cursor(query_str, bind_value_list)
                     return status_code, tmp_result, msg,
             # 履歴テーブル: 廃止を含む、履歴なし
-            elif journal_type == "2" and mode == 'export_jnl'and self.get_history_flg():
+            elif journal_type == "2" and mode == 'export_jnl' and self.get_history_flg():
                 jnl_column_list = [
                     COLNAME_JNL_SEQ_NO,
                     COLNAME_JNL_REG_DATETIME,
                     COLNAME_JNL_ACTION_CLASS
                 ]
                 jnl_column_list.extend(column_list)
+                if len(where_str) > 0:
+                    where_str += ' AND subq.`luc` = 1 '
+                else:
+                    where_str += 'WHERE subq.`luc` = 1 '
                 # 同一ROW_IDの最新の履歴のレコードのみ対象とする
                 query_str = textwrap.dedent("""
                     SELECT {column_list} FROM
@@ -3386,7 +3390,6 @@ class bulkLoadTable(loadTable):
                                 `{table_name_jnl}`
                         ) AS subq
                     {where_str}
-                    GROUP BY {table_tab}`{col_name}`
                 """).format(
                     table_name_jnl=self.get_table_name_jnl(),
                     column_list=f'{", ".join([f"`{_c}`" for _c in jnl_column_list])}',

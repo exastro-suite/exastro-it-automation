@@ -45,7 +45,7 @@ class Notification_data():
 
     # ルールのフィルター演算子のメッセージマップ
     rule_filter_operator_map = {
-        oaseConst.DF_OPE_OR : [ 'A or B', ' A or B' ],
+        oaseConst.DF_OPE_XOR : [ 'A xor B', ' A xor B' ],
         oaseConst.DF_OPE_AND : [ 'A and B', 'A and B' ],
         oaseConst.DF_OPE_ORDER : [ 'A -> B', 'A -> B' ]
     }

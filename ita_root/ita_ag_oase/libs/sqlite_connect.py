@@ -114,6 +114,11 @@ class sqliteConnect:
                     info["name"],
                     info["timestamp"]
                 )
+        except Exception as e:
+            g.applogger.info('insert_sent_timestamp error')
+            raise AppException("AGT-10027", [e, info])
+
+        try:
             # イベント取得で例外の場合は保存しない。(v2.4~)例外じゃなければ、0件でも保存する
             for data in event_collection_result_list:
                 if data["is_save"] is True:
@@ -122,8 +127,8 @@ class sqliteConnect:
                         data["fetched_time"]
                     )
         except Exception as e:
-            g.applogger.info('insert_events error')
-            raise AppException("AGT-10027", [e, info])
+            g.applogger.info('insert_last_fetched_time error')
+            raise AppException("AGT-10027", [e, data])
 
     def update_sent_flag(self, table_name, data_list):
         sql_proc_unit_num = int(os.environ.get("SQL_UPDATE_PROC_UNIT_NUM", 100))  # バルクアップデートするレコード数の単位

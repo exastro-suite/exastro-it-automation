@@ -28,7 +28,7 @@ from common_libs.api import api_filter_admin
 from common_libs.common.dbconnect import *  # noqa: F403
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectOrg, MONGOConnectWs
 from common_libs.common.mongoconnect.const import Const as mongoConst
-from common_libs.common.util import ky_encrypt, ky_decrypt, get_timestamp, url_check, arrange_stacktrace_format, put_uploadfiles
+from common_libs.common.util import ky_encrypt, ky_decrypt, get_timestamp, url_check, arrange_stacktrace_format, put_uploadfiles, put_uploadfiles_jnl
 from common_libs.ansible_driver.classes.gitlab import GitLabAgent
 from common_libs.common.exception import AppException
 
@@ -531,14 +531,6 @@ def organization_update(organization_id, body=None):  # noqa: E501
             "oase": [['oase.sql', 'oase_master.sql']],
         }
 
-        # インストール時に利用する削除対象ディレクトリのパスの一覧
-        add_driver_files = {
-            "terraform_cloud_ep": [''],
-            "terraform_cli": [''],
-            "ci_cd": [''],
-            "oase": ['/uploadfiles/110102'],
-        }
-
         # アンインストール時に利用するSQLファイル名の一覧
         remove_driver_sql = {
             "terraform_cloud_ep": [['terraform_cloud_ep.drop.sql', 'terraform_cloud_ep_master.delete.sql']],
@@ -552,7 +544,7 @@ def organization_update(organization_id, body=None):  # noqa: E501
             "terraform_cloud_ep": [['/driver/terraform_cloud_ep/', '/uploadfiles/80105'], ['', '/uploadfiles/80106'], ['', '/uploadfiles/80114']],
             "terraform_cli": [['/driver/terraform_cli/', '/uploadfiles/90104'], ['', '/uploadfiles/90109']],
             "ci_cd": [['/driver/cicd/repositories/', '']],
-            "oase": [['', '/uploadfiles/110109']],
+            "oase": [['', '/uploadfiles/110109'], ['', '/uploadfiles/110102']],
         }
 
         # terraform_commonの追加について
@@ -666,15 +658,29 @@ def organization_update(organization_id, body=None):  # noqa: E501
         config_file_dict = {}
         if len(add_drivers) != 0:
             # files配下のconfigファイルを取得する
-            src_dir = os.path.join(os.environ.get('PYTHONPATH'), "files")
-            g.applogger.info(f"[Trace] src_dir={src_dir}")
-            if os.path.isdir(src_dir):
-                config_file_list = [f for f in os.listdir(src_dir) if os.path.isfile(os.path.join(src_dir, f))]
+            src_file_dir = os.path.join(os.environ.get('PYTHONPATH'), "files")
+            g.applogger.info(f"[Trace] src_file_dir={src_file_dir}")
+            if os.path.isdir(src_file_dir):
+                config_file_list = [f for f in os.listdir(src_file_dir) if os.path.isfile(os.path.join(src_file_dir, f))]
                 g.applogger.info(f"[Trace] config_file_list={config_file_list}")
                 for config_file_name in config_file_list:
                     if config_file_name != "config.json":
                         driver_name = config_file_name.replace('_config.json', '')
                         config_file_dict[driver_name] = config_file_name
+
+        config_jnl_list = []
+        config_jnl_dict = {}
+        if len(add_drivers) != 0:
+            # jnl配下のconfigファイルを取得する
+            src_jnl_dir = os.path.join(os.environ.get('PYTHONPATH'), "jnl")
+            g.applogger.info(f"[Trace] src_jnl_dir={src_jnl_dir}")
+            if os.path.isdir(src_jnl_dir):
+                config_jnl_list = [f for f in os.listdir(src_jnl_dir) if os.path.isfile(os.path.join(src_jnl_dir, f))]
+                g.applogger.info(f"[Trace] config_jnl_list={config_jnl_list}")
+                for config_jnl_name in config_jnl_list:
+                    if config_jnl_name != "config.json":
+                        driver_name = config_jnl_name.replace('_config.json', '')
+                        config_jnl_dict[driver_name] = config_jnl_name
 
         # 対象のワークスペースをループし、追加するドライバについてのデータベース処理（SQLを実行しテーブルやレコードを作成）を行う
         for workspace_data in workspace_data_list:
@@ -738,24 +744,23 @@ def organization_update(organization_id, body=None):  # noqa: E501
                             ws_db.sql_execute(sql, prepared_list)
                     ws_db.db_commit()
 
-                # 対象ドライバのディレクトリの削除を実行してから再作成を行う
-                remove_files_list = add_driver_files[install_driver]
-                for remove_files in remove_files_list:
-                    # /uploadfiles配下
-                    if remove_files != '':
-                        remove_path_uploadfiles = workspace_dir + remove_files
-                        if os.path.isdir(remove_path_uploadfiles):
-                            g.applogger.info(" remove " + remove_path_uploadfiles)
-                            shutil.rmtree(remove_path_uploadfiles)
-
                 # files配下のconfigファイルを取得し、インストール中のドライバと一致していたら実行する
                 if install_driver in config_file_dict:
                     dest_dir = os.path.join(workspace_dir, "uploadfiles")
-                    config_file_path = os.path.join(src_dir, config_file_dict[install_driver])
+                    config_file_path = os.path.join(src_file_dir, config_file_dict[install_driver])
                     g.applogger.info(f" [Trace] dest_dir={dest_dir}")
                     g.applogger.info(f" [Trace] config_file_path={config_file_path}")
-                    put_uploadfiles(config_file_path, src_dir, dest_dir)
-                g.applogger.info(" set initial material files")
+                    put_uploadfiles(config_file_path, src_file_dir, dest_dir)
+                g.applogger.info(" set material files")
+
+                # jnl配下のconfigファイルを取得し、インストール中のドライバと一致していたら実行する
+                if install_driver in config_jnl_dict:
+                    dest_dir = os.path.join(workspace_dir, "uploadfiles")
+                    config_jnl_path = os.path.join(src_jnl_dir, config_jnl_dict[install_driver])
+                    g.applogger.info(f" [Trace] dest_dir={dest_dir}")
+                    g.applogger.info(f" [Trace] config_jnl_path={config_jnl_path}")
+                    put_uploadfiles_jnl(ws_db, config_jnl_path, src_jnl_dir, dest_dir)
+                g.applogger.info(" set jnl")
 
                 # t_comn_workspace_db_infoテーブルのNO_INSTALL_DRIVERを更新する
                 ws_no_install_driver.remove(install_driver)
@@ -823,29 +828,29 @@ def organization_update(organization_id, body=None):  # noqa: E501
                             g.applogger.info(" remove " + remove_path_uploadfiles)
                             shutil.rmtree(remove_path_uploadfiles)
 
-                    # MongoのDBがあれば削除
-                    if uninstall_driver == "oase":
-                        if workspace_data.get('MONGO_DATABASE'):
-                            # drop ws-mongodb and ws-mongodb-user
-                            org_mongo.drop_database(workspace_data['MONGO_DATABASE'])
-                            g.applogger.info(" Workspace MongoDB(ws_id={}) is cleaned".format(workspace_data['WORKSPACE_ID']))
-                            if mongo_owner is True:
-                                org_mongo.drop_user(workspace_data['MONGO_USER'], workspace_data['MONGO_DATABASE'])
-                                g.applogger.info(" Workspace MongoDB_USER(ws_id={}) is cleaned".format(workspace_data['WORKSPACE_ID']))
-                            ws_primary_key = workspace_data['PRIMARY_KEY']
-                            data = {
-                                "PRIMARY_KEY": ws_primary_key,
-                                "MONGO_CONNECTION_STRING": '',
-                                "MONGO_DATABASE": None,
-                                "MONGO_USER": None,
-                                "MONGO_PASSWORD": ''
-                            }
+                # MongoのDBがあれば削除
+                if uninstall_driver == "oase":
+                    if workspace_data.get('MONGO_DATABASE'):
+                        # drop ws-mongodb and ws-mongodb-user
+                        org_mongo.drop_database(workspace_data['MONGO_DATABASE'])
+                        g.applogger.info(" Workspace MongoDB(ws_id={}) is cleaned".format(workspace_data['WORKSPACE_ID']))
+                        if mongo_owner is True:
+                            org_mongo.drop_user(workspace_data['MONGO_USER'], workspace_data['MONGO_DATABASE'])
+                            g.applogger.info(" Workspace MongoDB_USER(ws_id={}) is cleaned".format(workspace_data['WORKSPACE_ID']))
+                        ws_primary_key = workspace_data['PRIMARY_KEY']
+                        data = {
+                            "PRIMARY_KEY": ws_primary_key,
+                            "MONGO_CONNECTION_STRING": '',
+                            "MONGO_DATABASE": None,
+                            "MONGO_USER": None,
+                            "MONGO_PASSWORD": ''
+                        }
 
-                            org_db.db_transaction_start()
-                            org_db.table_update("T_COMN_WORKSPACE_DB_INFO", data, "PRIMARY_KEY")
-                            org_db.db_commit()
+                        org_db.db_transaction_start()
+                        org_db.table_update("T_COMN_WORKSPACE_DB_INFO", data, "PRIMARY_KEY")
+                        org_db.db_commit()
 
-                            g.applogger.info(" Updating infomation of mongo on workspace(workspace_id = {})".format(workspace_id))
+                        g.applogger.info(" Updating infomation of mongo on workspace(workspace_id = {})".format(workspace_id))
 
                 # t_comn_workspace_db_infoテーブルのNO_INSTALL_DRIVERを更新する
                 ws_no_install_driver.append(uninstall_driver)
@@ -924,6 +929,10 @@ def organization_update(organization_id, body=None):  # noqa: E501
                 try:
                     # db.labeled_event_collection.createIndex({"labels._exastro_fetched_time":1,"labels._exastro_end_time":1,"_id":1}, {"name": "default_sort"})
                     ws_mongo.collection(mongoConst.LABELED_EVENT_COLLECTION).create_index([("labels._exastro_fetched_time", ASCENDING), ("labels._exastro_end_time", ASCENDING), ("_id", ASCENDING)], name="default_sort")
+                    # 重複排除時の検索用
+                    ws_mongo.collection(mongoConst.LABELED_EVENT_COLLECTION).create_index([("labels._exastro_fetched_time", ASCENDING), ("exastro_created_at", ASCENDING)], name="duplicate_check")
+                    # 新規(統合時) TTL切れの通知対象検索用
+                    ws_mongo.collection(mongoConst.LABELED_EVENT_COLLECTION).create_index([("labels._exastro_end_time", ASCENDING), ("labels._exastro_event_collection_settings_id", ASCENDING), ("labels._exastro_fetched_time", ASCENDING)], name="consolidated_check")
                     g.applogger.info(" Index of mongo is made")
                 except Exception as e:
                     # mongoのインデックス設定に失敗してもインストール作業は続ける

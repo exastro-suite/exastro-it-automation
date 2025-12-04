@@ -15,7 +15,7 @@ ARG USERNAME=app_user
 ARG GROUPNAME=app_user
 ARG APP_PATH=/exastro
 
-FROM    registry.access.redhat.com/ubi9/ubi-init:9.4 as common_build
+FROM    registry.access.redhat.com/ubi9/ubi-init:9.4 AS common_build
 ARG USERNAME
 ARG GROUPNAME
 ARG APP_PATH
@@ -28,12 +28,19 @@ ENV DB_CONNECT_TIMEOUT=10
 ENV DB_CONNECT_RETRY_SLEEP_TIME=0.5
 ENV DB_CONNECT_RETRY_LIMIT=2
 ENV SERVICE_NAME=ita-by-oase-conclusion
+ENV NOTIFICATION_BUFFER_SIZE=100
 
 ENV EVALUATE_LATENT_INFINITE_LOOP_LIMIT=1000
 # ハングアップ監視用ファイル
 ENV FILE_PATH_LIVENESS=/tmp/liveness
 
+# Docker公式のPyPyイメージでは/opt/pypy/binを優先している
+# そうするとpython3コマンドがPyPy固定化してしまう
+# alternativesを使いたいので/opt/pypy/binの優先を下げる
+ENV PATH ${PATH}:/opt/pypy/bin
+
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+    set -eux; \
     dnf install -y \
     gcc \
     openssh-clients \
@@ -41,32 +48,78 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
     wget \
     zip \
     unzip \
+    bzip2 \
     python3.11 \
     python3.11-devel \
     python3.11-pip \
-&&  alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 1000000 \
-&&  alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 100 \
-&&  alternatives --set python3 /usr/bin/python3.11 \
-&&  pip3.11 install poetry==1.8.4 \
+    --exclude=python3.11-setuptools \
+&&  alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 10 \
+&&  alternatives --install /usr/bin/pip3 pip3 /usr/bin/pip3.11 10 \
+&&  alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 1 
+# &&  alternatives --set python3 /usr/bin/python3.11 \
+#\
+# start pypy install  
+RUN set -eux; \
+# PyPyのバージョンはPyPyバージョン("v"major.minor.patch)とPythonバージョン(major.minor)の2つを持ちます
+# 例: PyPyバージョンv7.3.20ではPythonバージョンの3.11と2.7の2つを実装しています
+# PyPyを変更する場合はそれぞれpypy_version("v"を取り除くこと)とpython_versionを変更してください
+# どのようなバージョンがあるかは https://downloads.python.org/pypy/ を参照してください
+    python_version="3.11" \
+&&  pypy_version="7.3.20" \
+&&  unameArch="$(uname -m)" \
+&&  case "$unameArch" in \
+        'x86_64' | 'x64' | 'amd64') \
+            pypy_download_url="https://downloads.python.org/pypy/pypy${python_version}-v${pypy_version}-linux64.tar.bz2"; \
+        ;; \
+        'aarch64') \
+            pypy_download_url="https://downloads.python.org/pypy/pypy${python_version}-v${pypy_version}-aarch64.tar.bz2"; \
+        ;; \
+        'i686' | 'i386' | 'x86') \
+            pypy_download_url="https://downloads.python.org/pypy/pypy${python_version}-v${pypy_version}-linux32.tar.bz2"; \
+        ;; \
+        *) \
+            echo >&2 "error: current architecture ($unameArch) does not have a corresponding PyPy binary release"; \
+            exit 1 \
+        ;; \
+    esac \
+&&  wget --progress=dot:giga -O pypy.tar.bz2 "${pypy_download_url}" \
+&&  mkdir /opt/pypy \
+&&  tar -xjC /opt/pypy --strip-components=1 -f pypy.tar.bz2 \
+&&  find /opt/pypy/lib* -depth -type d -a \( -name test -o -name tests \) -exec rm -rf '{}' + \
+&&  rm pypy.tar.bz2 \
+&&  dnf remove -y bzip2 \
+&&  ln -sv '/opt/pypy/bin/pypy3' /usr/local/bin/ \
+&&  alternatives --install /usr/bin/python3 python3 /opt/pypy/bin/python3.11 100 \
+&&  alternatives --set python3 /opt/pypy/bin/python3.11 \
+&&  alternatives --install /usr/bin/pip3 pip3 /opt/pypy/bin/pip3.11 100 \
+&&  alternatives --set pip3 /opt/pypy/bin/pip3.11 \
+&&  python3 -m ensurepip \
+&&  pip3 install --disable-pip-version-check --no-cache-dir --no-compile 'wheel<0.46' \
+&& 	find /opt/pypy -depth \
+		\( \
+			\( -type d -a \( -name test -o -name tests \) \) \
+			-o \
+			\( -type f -a \( -name '*.pyc' -o -name '*.pyo' \) \) \
+		\) -exec rm -rf '{}' + \
+# end pypy install
+&&  pip3 install poetry==1.8.4 \
 &&  poetry config virtualenvs.create false \
-&&  groupadd $GROUPNAME \
-&&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
+&&  groupadd "$GROUPNAME" \
+&&  useradd -m -s /bin/bash -g "$GROUPNAME" "$USERNAME"
 
 WORKDIR $APP_PATH
 
 COPY ./ita_root/ita_by_oase_conclusion/pyproject.toml ./ita_root/ita_by_oase_conclusion/poetry.lock $APP_PATH/
 
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
-    poetry install --only first_install
-
-RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
-    poetry install --without develop_build
+    poetry install --only first_install \
+&&  poetry install --without develop_build
 
 #
 # Build for development
 #   Specify options when creating this image: --target develop_build
 #
-FROM    common_build as develop_build
+FROM    common_build AS develop_build
 ARG USERNAME
 ARG GROUPNAME
 ARG APP_PATH
@@ -83,7 +136,7 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
     iputils \
     docker-ce-cli \
     jq \
-&&  usermod -G wheel $USERNAME \
+&&  usermod -G wheel "$USERNAME" \
 &&  echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers \
 &&  echo "%${GROUPNAME} ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
@@ -122,7 +175,7 @@ COPY ./ita_root/messages/ $APP_PATH/messages/
 COPY ./ita_root/backyard/ $APP_PATH/backyard/
 
 USER root
-RUN chmod a+x $APP_PATH/backyard/entrypoint.sh
+RUN chmod a+x "$APP_PATH/backyard/entrypoint.sh"
 USER $USERNAME
 
 ENTRYPOINT ["bash", "./backyard/entrypoint.sh"]

@@ -91,7 +91,7 @@ class MultiSelectIDColumn(IDColumn):
 
     def json_key_to_keyname_convart(self, column_value, search_candidates, master_row):
         """
-            SON形式で格納されているKey(DB)を名称リストに変換
+            JSON形式で格納されているKey(DB)を名称リストに変換
             フィルタのプルダウン検索の表示する内容
             ARGS:
                 column_value:  JSON形式で格納されている{"id": ["key1", ..]}"

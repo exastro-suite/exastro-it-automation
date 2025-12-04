@@ -990,7 +990,7 @@ class CICD_GrandChildWorkflow():
         self.MatlLinkId = MatlLinkId
         self.DelvExecFlg = True if DelvFlg != 0 else False
 
-        self.cloneRepoDir = '/storage/%s/%s/driver/cicd/repositories/%s' % (org_id, ws_id, RepoId)
+        self.cloneRepoDir = os.path.join(os.environ.get("STORAGEPATH"), org_id, ws_id, "driver", "cicd", "repositories", RepoId)
 
         self.error_flag = 0
         self.MatlLinkUpdate_Flg = False
@@ -1046,7 +1046,7 @@ class CICD_GrandChildWorkflow():
 
     def CreateZipFile(self, inRolesDir, outRolesDir, zipFileName):
 
-        outRolesDir = "/storage/%s/%s/tmp/driver/cicd/zipdir_%s" % (self.org_id, self.ws_id, self.RepoId)
+        outRolesDir = os.path.join(os.environ.get("STORAGEPATH"), self.org_id, self.ws_id, "tmp", "driver", "cicd", f"zipdir_{self.RepoId}")
 
         subprocess.run(["/bin/rm", "-rf", outRolesDir], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         subprocess.run(["/bin/mkdir", "-p", outRolesDir], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -1688,7 +1688,7 @@ class CICD_ChildWorkflow():
         if RepoListRow['SYNC_STATUS_ROW_ID'] is None or RepoListRow['SYNC_STATUS_ROW_ID'] == TD_SYNC_STATUS_NAME_DEFINE.STS_RESTART:
             self.MatlListUpdateExeFlg = True
 
-        self.cloneRepoDir = '/storage/%s/%s/driver/cicd/repositories/%s' % (org_id, ws_id, RepoId)
+        self.cloneRepoDir = os.path.join(os.environ.get("STORAGEPATH"), org_id, ws_id, "driver", "cicd", "repositories", RepoId)
         libPath = '/exastro/common_libs/cicd/shells'
         GitCmdRsltParsStrFileNamePath = '/exastro/common_libs/cicd/shells/gitCommandResultParsingStringDefinition.ini'
         config.read(GitCmdRsltParsStrFileNamePath)

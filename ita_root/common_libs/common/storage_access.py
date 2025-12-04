@@ -23,16 +23,25 @@ from pathlib import Path
 import traceback
 import inspect
 
+
 class storage_base:
     def make_temp_path(self, file_path):
-        # ルートパスを/tmpに置き換える
-        tmp_dir_path = re.sub(os.environ.get('STORAGEPATH'), "/tmp/", os.path.dirname(file_path))
-        # なければディレクトリの作成
-        if os.path.isdir(tmp_dir_path) is False:
-            # exist_ok=Trueのoptionは、issue2432対策。azureストレージの初回アクセス対策
+        try:
+            # ルートパスを/tmpに置き換える
+            tmp_dir_path = re.sub(os.environ.get('STORAGEPATH'), "/tmp/", os.path.dirname(file_path))
+            tmp_file_path = "{}/{}".format(tmp_dir_path, os.path.basename(file_path))
             os.makedirs(tmp_dir_path, exist_ok=True)
-        tmp_file_path = "{}/{}".format(tmp_dir_path, os.path.basename(file_path))
+        except:  # noqa: E722
+            pass
         return tmp_file_path
+
+    def makedir_temp_path(self, file_path: str):
+        try:
+            tmp_dir_path = os.path.dirname(file_path)
+            os.makedirs(tmp_dir_path, exist_ok=True)
+        except:  # noqa: E722
+            pass
+        return file_path
 
     def path_check(self, file_path):
         root_dir = "^{}".format(os.environ.get('STORAGEPATH'))
@@ -58,22 +67,26 @@ class storage_base:
         can_save = int(free_space) >= int(file_size)
         return can_save, free_space
 
+
 class storage_read(storage_base):
     def __init__(self):
-        storage_file_path = None
-        tmp_file_path = None
-        tmp_dir_path = None
-        storage_path_flg = False
-        fd = None
+        self.storage_file_path = None
+        self.tmp_file_path = None
+        self.tmp_dir_path = None
+        self.storage_path_flg = False
+        self.fd = None
+        self.force_file_del = False
 
-    def open(self, file_path, mode = None):
+    def open(self, file_path, mode=None, tmp_path=None):
         self.storage_file_path = file_path
         self.tmp_file_path = file_path
-        root_dir = "^{}".format(os.environ.get('STORAGEPATH'))
+
         # ファイルパスが /storage か判定
         self.storage_flg = self.path_check(file_path)
+        # tmp_pathを使用する場合、強制削除フラグを立てる
+        self.force_file_del = False if tmp_path is None else True
         if self.storage_flg is True:
-            self.tmp_file_path = self.make_temp_path(file_path)
+            self.tmp_file_path = self.make_temp_path(file_path) if tmp_path is None else self.makedir_temp_path(tmp_path)
             #  /storageから/tmpにファイルコピー(パーミッション維持)
             shutil.copy2(self.storage_file_path, self.tmp_file_path)
         else:
@@ -93,31 +106,45 @@ class storage_read(storage_base):
         # read by chunk
         return self.fd.read(chunk)
 
-    def close(self, file_del = True):
+    def close(self, file_del=True):
         # close
         self.fd.close()
-        if self.storage_flg is True:
-            if file_del is True:
-                # /tmpの掃除
-                self.remove()
+        if self.storage_flg is True and file_del is True:
+            # /tmpの掃除
+            self.remove()
+        # openでtmp_path指定している場合は、強制削除
+        if self.force_file_del is True:
+            # /tmpの掃除: ファイル削除→ディレクトリ削除
+            self.remove()
+            self.remove_tmpdir()
 
     def remove(self):
-        if os.path.isfile(self.tmp_file_path) is True:
+        try:
             os.remove(self.tmp_file_path)
+        except:  # noqa: E722
+            pass
+
+    def remove_tmpdir(self):
+        try:
+            # /tmpに作成した作業ディレクトリの削除
+            if self.tmp_file_path.startswith("/tmp/"):
+                os.rmdir(os.path.dirname(self.tmp_file_path))
+        except:  # noqa: E722
+            pass
 
 
 class storage_write(storage_base):
     def __init__(self):
-        storage_file_path = None
-        tmp_file_path = None
-        tmp_dir_path = None
-        storage_flg = False
-        fd = None
+        self.storage_file_path = None
+        self.tmp_file_path = None
+        self.tmp_dir_path = None
+        self.storage_flg = False
+        self.fd = None
 
-    def open(self, file_path, mode = None):
+    def open(self, file_path, mode=None):
         self.storage_file_path = file_path
         self.tmp_file_path = file_path
-        root_dir = "^{}".format(os.environ.get('STORAGEPATH'))
+
         # ファイルパスが /storage か判定
         self.storage_flg = self.path_check(file_path)
         if self.storage_flg is True:
@@ -133,9 +160,9 @@ class storage_write(storage_base):
 
     def write(self, value):
         # write
-        resule = self.fd.write(value)
+        self.fd.write(value)
 
-    def close(self, file_del = True):
+    def close(self, file_del=True):
         # close
         self.fd.close()
         if self.storage_flg is True:
@@ -146,8 +173,11 @@ class storage_write(storage_base):
                 self.remove()
 
     def remove(self):
-        if os.path.isfile(self.tmp_file_path) is True:
+        try:
             os.remove(self.tmp_file_path)
+        except:  # noqa: E722
+            pass
+
 
 class storage_write_text(storage_base):
     def write_text(self, file_path, value, encoding="utf-8"):
@@ -165,8 +195,11 @@ class storage_write_text(storage_base):
             # /tmpから/stargeにコピー
             shutil.copy2(tmp_file_path, file_path)
             # /tmpの掃除
-            if os.path.isfile(tmp_file_path) is True:
+            try:
                 os.remove(tmp_file_path)
+            except:  # noqa: E722
+                pass
+
 
 class storage_read_text(storage_base):
     def read_text(self, file_path, encoding="utf-8"):
@@ -184,9 +217,12 @@ class storage_read_text(storage_base):
         value = Path(tmp_file_path).read_text(encoding=encoding)
         if storage_flg is True:
             # /tmpの掃除
-            if os.path.isfile(tmp_file_path) is True:
+            try:
                 os.remove(tmp_file_path)
+            except:  # noqa: E722
+                pass
         return value
+
 
 class storage_read_bytes(storage_base):
     def read_bytes(self, file_path):
@@ -202,12 +238,14 @@ class storage_read_bytes(storage_base):
             tmp_file_path = file_path
 
         chunks = []
-        with open(tmp_file_path ,"rb") as f:
+        with open(tmp_file_path, "rb") as f:
             while chunk := f.read(10000):
                 chunks.append(chunk)
         value = b''.join(chunks)
         if storage_flg is True:
             # /tmpの掃除
-            if os.path.isfile(tmp_file_path) is True:
+            try:
                 os.remove(tmp_file_path)
+            except:  # noqa: E722
+                pass
         return value

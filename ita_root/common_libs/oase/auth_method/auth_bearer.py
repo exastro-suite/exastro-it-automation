@@ -2,11 +2,11 @@ from common_libs.oase.api_client_common import APIClientCommon
 
 
 class BearerAuthAPIClient(APIClientCommon):
-    def __init__(self, auth_settings=None):
-        super().__init__(auth_settings)
+    def __init__(self, setting, last_fetched_event):
+        super().__init__(setting, last_fetched_event)
 
-    def call_api(self, parameter):
+    def call_api(self):
         if self.headers is None:
             self.headers = {}
         self.headers["Authorization"] = f"Bearer {self.auth_token}"
-        return super().call_api(parameter)
+        return super().call_api()

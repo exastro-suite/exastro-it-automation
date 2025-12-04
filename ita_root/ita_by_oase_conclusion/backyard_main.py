@@ -16,19 +16,27 @@ from flask import g
 import os
 import datetime
 import traceback
+import gc
 
-from common_libs.common.dbconnect import *  # noqa: F403
+from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common.util import arrange_stacktrace_format, get_iso_datetime
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
 
 from common_libs.oase.const import oaseConst
 from common_libs.oase.manage_events import ManageEvents
-from common_libs.notification.sub_classes.oase import OASE, OASENotificationType
+from common_libs.notification.sub_classes.oase import OASENotificationType
 
-from libs.common_functions import addline_msg, InsertConclusionEvent, getRuleList, getFilterIDMap
+from libs.common_functions import addline_msg, InsertConclusionEvent, getLabelGroup, getRuleList, getFilterIDMap, deduplication_timeout_filter
 from libs.judgement import Judgement
 from libs.action import Action
 from libs.action_status_monitor import ActionStatusMonitor
+from libs.notification_process import NotificationProcessManager
+from libs.writer_process import WriterProcessManager
+
+# workspaceを一定数処理した度にgcするためのカウンタ/間隔
+workspace_gc_trigger_counter = 0
+workspace_gc_trigger_interval = int(os.environ.get("WORKSPACE_GC_TRIGGER_INTERVAL", "100"))
+
 
 def backyard_main(organization_id, workspace_id):
     """
@@ -38,9 +46,17 @@ def backyard_main(organization_id, workspace_id):
             workspace_id: Workspace ID
         RETURN:
     """
+    global workspace_gc_trigger_counter
+
     # メイン処理開始
     tmp_msg = g.appmsg.get_log_message("BKY-90000", ['Started'])
     g.applogger.debug(tmp_msg)  # noqa: F405
+
+    # ガベージコレクション実行
+    workspace_gc_trigger_counter += 1
+    if workspace_gc_trigger_counter % workspace_gc_trigger_interval == 0:
+        g.applogger.debug("Execute Garbage Collection")
+        gc.collect()
 
     # strage_path = os.environ.get('STORAGEPATH')
     # workspace_path = strage_path + "/".join([organization_id, workspace_id])
@@ -50,6 +66,9 @@ def backyard_main(organization_id, workspace_id):
     # connect MariaDB
     wsDb = DBConnectWs(workspace_id)  # noqa: F405
 
+    NotificationProcessManager.start_workspace_processing(organization_id, workspace_id)
+    WriterProcessManager.start_workspace_processing(organization_id, workspace_id)
+    
     try:
         # 処理時間
         judgeTime = int(datetime.datetime.now().timestamp())
@@ -69,6 +88,10 @@ def backyard_main(organization_id, workspace_id):
             tmp_msg = g.appmsg.get_log_message("BKY-90001", ['Ended'])
             g.applogger.info(tmp_msg)  # noqa: F405
 
+        # WriterProcessManagerに遅延書き込みはここまでに完了させる
+        #   T_OASE_ACTION_LOGへの参照がここ以降で発生するため、ここまでに書き込みを完了させる
+        WriterProcessManager.flush_buffer()
+
         # 評価結果のステータスを監視するクラス
         action_status_monitor = ActionStatusMonitor(wsDb, EventObj)
 
@@ -85,12 +108,23 @@ def backyard_main(organization_id, workspace_id):
         action_status_monitor.checkExecuting()
         tmp_msg = g.appmsg.get_log_message("BKY-90002", ['Ended'])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-    except Exception as e:
+
+        # 「新規(統合時) TTL切れ」通知処理
+        dudup_eventrow_list = EventObj.get_dudup_eventrow(wsDb, judgeTime)
+        if len(dudup_eventrow_list) > 0:
+            # 通知処理（新規(統合時) TTL切れ）：通知キューに入れる
+            tmp_msg = g.appmsg.get_log_message("BKY-90008", ['New(consolidated)'])
+            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+            NotificationProcessManager.send_notification(dudup_eventrow_list, {"notification_type": OASENotificationType.DUPLICATE})
+
+    except Exception:
         t = traceback.format_exc()
         g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         tmp_msg = g.appmsg.get_log_message("BKY-90003", [])
         g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
     finally:
+        WriterProcessManager.finish_workspace_processing()
+        NotificationProcessManager.finish_workspace_processing()
         wsDb.db_transaction_end(False)
         wsDb.db_disconnect()
         wsMongo.disconnect()
@@ -102,7 +136,7 @@ def backyard_main(organization_id, workspace_id):
     return
 
 
-def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
+def JudgeMain(wsDb: DBConnectWs, judgeTime: int, EventObj: ManageEvents, actionObj: Action):
     IncidentDict = {}
 
     # 対象イベントがない
@@ -127,29 +161,30 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
     if len(timeout_Event_Id_List) > 0:
         # タイムアウトしているイベントの_exastro_timeoutを1に更新
         update_Flag_Dict = {"_exastro_timeout": '1'}
-        EventObj.update_label_flag(timeout_Event_Id_List, update_Flag_Dict)
+        EventObj.set_timeout(timeout_Event_Id_List)
         # Event updated. Timeout({}) ids: {}
         tmp_msg = g.appmsg.get_log_message("BKY-90007", [str(update_Flag_Dict), str(timeout_Event_Id_List)])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-        # 通知処理（既知(時間切れ)）
-        timeout_notification_list = []
+        timeout_notification_list = []  # 通知処理（既知(時間切れ)）
         for event_id in timeout_Event_Id_List:
             ret, EventRow = EventObj.get_events(event_id)
             if ret is True:
+                # 通知処理（既知(時間切れ)）用にリストに入れる
                 timeout_notification_list.append(EventRow)
 
+        # 通知処理（既知(時間切れ)）通知キューに入れる
         if len(timeout_notification_list) > 0:
             tmp_msg = g.appmsg.get_log_message("BKY-90008", ['Known(timeout)'])
             g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-            OASE.send(wsDb, timeout_notification_list, {"notification_type": OASENotificationType.TIMEOUT})
+            NotificationProcessManager.send_notification(timeout_notification_list, {"notification_type": OASENotificationType.TIMEOUT})
 
     # 「フィルター管理」からレコードのリストを取得
     filterIDMap = getFilterIDMap(wsDb)
     if filterIDMap is False:
         return False
 
-    #「ルール管理」からレコードのリストを取得（優先順位のソートあり）
+    # 「ルール管理」からレコードのリストを取得（優先順位のソートあり）
     ret_bool, ruleList = getRuleList(wsDb, True)
     if ret_bool is False:
         g.applogger.debug(addline_msg('{}'.format(ruleList)))  # noqa: F405
@@ -159,8 +194,13 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
     tmp_msg = g.appmsg.get_log_message("BKY-90011", [str(len(ruleList))])
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
+    # ラベルマスタの取得
+    label_master = getLabelGroup(wsDb)
+    EventObj.init_label_master(label_master)
+    # グルーピングの初期化
+    EventObj.init_grouping(judgeTime, filterIDMap)
     # ルール判定　クラス生成
-    judgeObj = Judgement(wsDb, EventObj)
+    judgeObj = Judgement(wsDb, EventObj, label_master)
 
     new_Event_List = []
     new_Event_id_List = []
@@ -178,7 +218,7 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
     if len(new_Event_List) > 0:
         tmp_msg = g.appmsg.get_log_message("BKY-90008", ['new'])
         g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        OASE.send(wsDb, new_Event_List, {"notification_type": OASENotificationType.NEW})
+        NotificationProcessManager.send_notification(new_Event_List, {"notification_type": OASENotificationType.NEW})
 
     # 新規イベント通知済みインシデントフラグを立てる  _exastro_checked='1'
     update_Flag_Dict = {"_exastro_checked": '1'}
@@ -232,14 +272,14 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
     # Level3:複数のルールで使用しているフィルタでタイムアウトを迎えるフィルタを使用しているルール
     JudgeLevelList = ['Level1', 'Level2', 'Level3']
 
-    # 全レベルループ -----
+    # region 全レベルループ
     newIncidentCount = {}
 
     # 無限ループ対策用のループ上限値を環境変数から取得
     evaluate_latent_infinite_loop_limit = int(os.environ.get("EVALUATE_LATENT_INFINITE_LOOP_LIMIT", 1000))
 
     while True:
-        # レベル毎のループ -----
+        # region レベル毎のループ
         for TargetLevel in JudgeLevelList:
             # Level{} Rule verdict Started
             tmp_msg = g.appmsg.get_log_message("BKY-90017", [TargetLevel, 'Started'])
@@ -247,26 +287,29 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
 
             newIncidentCount[TargetLevel] = 0
 
-            # イベント数が減らずにループしている回数のカウンタを初期化する（無限ループ対策用）
-            loops_without_events_reduction = 0
-
             # 各レベルに対応したルール抽出
             TargetRuleList = judgeObj.TargetRuleExtraction(TargetLevel, ruleList, FiltersUsedinRulesDict, IncidentDict)
             g.applogger.debug(addline_msg('TargetRuleList={}'.format(TargetRuleList)))  # noqa: F405
 
             newIncident_Flg = True
+            preserved_events = set()
 
-            # レベル毎の結論イベント未発生確認のループ -----
+            # region レベル毎の結論イベント未発生確認のループ
             while newIncident_Flg is True:
                 newIncident_Flg = False
 
-                # 判定前のイベント数を取得（無限ループ対策用）
-                prev_count_unevaluated_events = EventObj.count_unevaluated_events()
-
-                # レベル毎のルール判定のループ -----
+                # region レベル毎のルール判定のループ
                 for ruleInfo in TargetRuleList:
                     # ルール判定
-                    ret, UseEventIdList = judgeObj.RuleJudge(ruleInfo, IncidentDict, actionIdList, filterIDMap)
+                    ret, UseEventIdList, judged_result_has_subsequent_event = (
+                        judgeObj.RuleJudge(
+                            ruleInfo,
+                            IncidentDict,
+                            actionIdList,
+                            filterIDMap,
+                            preserved_events,
+                        )
+                    )
 
                     # ルール判定 マッチ
                     if ret is True:
@@ -278,6 +321,7 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
                             pass
                         else:
                             # アクションが設定されていない場合・・・すぐに結論イベントを出す
+
                             # 結論イベントの登録
                             ret, ConclusionEventRow = InsertConclusionEvent(EventObj, ruleInfo, UseEventIdList, action_log_row['CONCLUSION_EVENT_LABELS'])
                             # キャッシュに保存
@@ -297,15 +341,17 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
                                     if UsedFilterId in IncidentDict:
                                         if len(IncidentDict[UsedFilterId]) > 0:
                                             if filterIDMap[UsedFilterId]["SEARCH_CONDITION_ID"] == '1':
-                                            # ユニークのフィルターに既にイベントがある場合
-                                                judged_events = [] # 何かしら判定済みのイベントのリスト
-                                                unevaluated_events = [] # 未評価のイベントのリスト
+                                                # ユニークのフィルターに既にイベントがある場合
+                                                judged_events = []  # 何かしら判定済みのイベントのリスト
+                                                unevaluated_events = []  # 未評価のイベントのリスト
                                                 for event_id in IncidentDict[UsedFilterId]:
                                                     ret, EventRow = EventObj.get_events(event_id)
                                                     if ret is True:
-                                                        if EventRow['labels']['_exastro_evaluated'] == '0' \
-                                                        and EventRow['labels']['_exastro_timeout'] == '0' \
-                                                        and EventRow['labels']['_exastro_undetected'] == '0':
+                                                        if (
+                                                            EventRow['labels']['_exastro_evaluated'] == '0' and
+                                                            EventRow['labels']['_exastro_timeout'] == '0' and
+                                                            EventRow['labels']['_exastro_undetected'] == '0'
+                                                        ):
                                                             unevaluated_events.append(event_id)
                                                         else:
                                                             judged_events.append(event_id)
@@ -314,38 +360,75 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
                                                         pass
 
                                                 if len(unevaluated_events) == 0:
-                                                # 判定済みのものしかなかったので、結論イベントを追加する
+                                                    # 判定済みのものしかなかったので、結論イベントを追加する
                                                     IncidentDict[UsedFilterId] = judged_events + [ConclusionEventRow['_id']]
                                                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                                                    # 結論イベントを抽出対象とするフィルターを含むルールのマッチ候補となるイベントも予約済みにする
+                                                    for rule in (
+                                                        rule
+                                                        for rule in ruleList
+                                                        if UsedFilterId
+                                                        in (rule["FILTER_A"], rule["FILTER_B"])
+                                                    ):
+                                                        preserved_events.update(
+                                                            IncidentDict.get(rule["FILTER_A"], ()),
+                                                            IncidentDict.get(rule["FILTER_B"], ()),
+                                                        )
                                                 else:
-                                                # 複数合致することになるので、未評価のもの（結論イベント含む）は破棄する→未知におとす予定
+                                                    # 破棄するイベントを予約済みから取り除く
+                                                    preserved_events.difference_update(IncidentDict[UsedFilterId])
+                                                    # 複数合致することになるので、未評価のもの（結論イベント含む）は破棄する→未知におとす予定
                                                     IncidentDict[UsedFilterId] = judged_events
                                             else:
-                                            # キューイングの場合
+                                                # キューイングの場合
                                                 IncidentDict[UsedFilterId].append(ConclusionEventRow['_id'])
                                                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                                                # 結論イベントを抽出対象とするフィルターを含むルールのマッチ候補となるイベントも予約済みにする
+                                                for rule in (
+                                                    rule
+                                                    for rule in ruleList
+                                                    if UsedFilterId
+                                                    in (rule["FILTER_A"], rule["FILTER_B"])
+                                                ):
+                                                    preserved_events.update(
+                                                        IncidentDict.get(rule["FILTER_A"], ()),
+                                                        IncidentDict.get(rule["FILTER_B"], ()),
+                                                    )
                                         else:
-                                        # 空配列。既に未知判定（ユニーク検索かつ複数イベント合致）されているため、結論イベントも破棄する→未知におとす予定
+                                            # 空配列。既に未知判定（ユニーク検索かつ複数イベント合致）されているため、結論イベントも破棄する→未知におとす予定
                                             pass
                                     else:
-                                    # 初めてフィルターにかかった
+                                        # 初めてフィルターにかかった
                                         IncidentDict[UsedFilterId] = [ConclusionEventRow['_id']]
                                         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                                        # 結論イベントを抽出対象とするフィルターを含むルールのマッチ候補となるイベントも予約済みにする
+                                        for rule in (
+                                            rule
+                                            for rule in ruleList
+                                            if UsedFilterId
+                                            in (rule["FILTER_A"], rule["FILTER_B"])
+                                        ):
+                                            preserved_events.update(
+                                                IncidentDict.get(rule["FILTER_A"], ()),
+                                                IncidentDict.get(rule["FILTER_B"], ()),
+                                            )
 
-                                    newIncident_Flg = True
+                            newIncident_Flg = True
 
                             # 評価結果の更新（完了）
                             data_list = {
                                 "ACTION_LOG_ID": action_log_row["ACTION_LOG_ID"],
-                                "STATUS_ID": oaseConst.OSTS_Completed # "6"
+                                "STATUS_ID": oaseConst.OSTS_Completed  # "6"
                             }
-                            wsDb.table_update(oaseConst.T_OASE_ACTION_LOG, data_list, 'ACTION_LOG_ID')
-                            wsDb.db_commit()
+                            WriterProcessManager.update_oase_action_log(data_list)
                     else:
-                    # ルール判定 アンマッチ
-                        pass
+                        # ルール判定 アンマッチ
+                        if judged_result_has_subsequent_event:
+                            # 判定結果が後続イベントを含む場合は、ループ継続のために結論イベントが生じたものとして扱う
+                            newIncident_Flg = True
 
-                # ----- レベル毎のルール判定のループ
+                # endregion レベル毎のルール判定のループ
+
                 # 結論イベントの追加判定
                 if newIncident_Flg is True:
                     newIncidentCount[TargetLevel] += 1
@@ -354,15 +437,8 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
                     tmp_msg = g.appmsg.get_log_message("BKY-90024", [TargetLevel])
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-                    # 判定後のイベント数を取得（無限ループ対策用）
-                    count_unevaluated_events = EventObj.count_unevaluated_events()
-
-                    if prev_count_unevaluated_events == count_unevaluated_events:
-                        # 判定前後の未評価イベント数に変わりがなかった回数をカウントアップ（無限ループ対策用）
-                        loops_without_events_reduction += 1
-
-                    if loops_without_events_reduction > len(ruleList) or newIncidentCount[TargetLevel] > evaluate_latent_infinite_loop_limit:
-                        # 未判定イベントがルールの回数以上で変わらない、もしくは一定回数以上繰り返した場合は抜ける
+                    if newIncidentCount[TargetLevel] > evaluate_latent_infinite_loop_limit:
+                        # 未判定イベントが一定回数以上繰り返した場合は抜ける
                         # ※無限ループ（ルール⇒結論イベント⇒ルール）の発生を回避するための条件
                         # Reached maximum amount of loops.
                         tmp_msg = g.appmsg.get_log_message("BKY-90025", [])
@@ -374,11 +450,12 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
                     tmp_msg = g.appmsg.get_log_message("BKY-90026", [])
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-            # ----- レベル毎の結論イベント未発生確認のループ
-            tmp_msg = g.appmsg.get_log_message("BKY-90017", [TargetLevel, 'Ended']) # {} Rule verdict {}
+            # endregion レベル毎の結論イベント未発生確認のループ
+            tmp_msg = g.appmsg.get_log_message("BKY-90017", [TargetLevel, 'Ended'])  # {} Rule verdict {}
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-        # ----- レベル毎のループ
+        # endregion レベル毎のループ
+
         # 各レベルのルール判定で結論イベントが発生していないか確認
         total = 0
         for TargetLevel in JudgeLevelList:
@@ -387,20 +464,25 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
         if total == 0:
             break
 
-    # ----- 全レベルループ
+    # endregion 全レベルループ
     tmp_msg = g.appmsg.get_log_message("BKY-90016", ['Ended'])
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     # 処理後タイムアウトイベント検出
-    PostProcTimeoutEventIdList = EventObj.get_post_proc_timeout_event()
+    PostProcTimeoutEventIdList, PostProcTimeoutEventRowList = EventObj.get_post_proc_timeout_event()
     if len(PostProcTimeoutEventIdList) > 0:
         tmp_msg = g.appmsg.get_log_message("BKY-90027", [str(PostProcTimeoutEventIdList)])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         # 処理後タイムアウトの_exastro_timeoutを1に更新
         update_Flag_Dict = {"_exastro_timeout": '1'}
-        EventObj.update_label_flag(PostProcTimeoutEventIdList, update_Flag_Dict)
+        EventObj.set_timeout(PostProcTimeoutEventIdList)
         tmp_msg = g.appmsg.get_log_message("BKY-90028", [str(update_Flag_Dict), str(PostProcTimeoutEventIdList)])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
+        # 通知処理（既知(時間切れ)）通知キューに入れる
+        tmp_msg = g.appmsg.get_log_message("BKY-90008", ['Known(timeout)'])
+        g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        NotificationProcessManager.send_notification(PostProcTimeoutEventRowList, {"notification_type": OASENotificationType.TIMEOUT})
     else:
         tmp_msg = g.appmsg.get_log_message("BKY-90029", [])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -413,7 +495,7 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
         # MongoDBのインシデント情報を更新（一括で行う）
         # 未知イベントの_exastro_undetectedを1に更新
         update_Flag_Dict = {"_exastro_undetected": '1'}
-        EventObj.update_label_flag(UnusedEventIdList, update_Flag_Dict)
+        EventObj.set_undetected(UnusedEventIdList)
         tmp_msg = g.appmsg.get_log_message("BKY-90031", [str(update_Flag_Dict), str(UnusedEventIdList)])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
     else:
@@ -434,4 +516,14 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
     if len(unused_notification_list) > 0:
         tmp_msg = g.appmsg.get_log_message("BKY-90008", ['Undetected'])
         g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        OASE.send(wsDb, unused_notification_list, {"notification_type": OASENotificationType.UNDETECTED})
+        NotificationProcessManager.send_notification(unused_notification_list, {"notification_type": OASENotificationType.UNDETECTED})
+
+
+def on_start_process(*args, **kwargs):
+    NotificationProcessManager.start_process()
+    WriterProcessManager.start_process()
+
+
+def on_exit_process(*args, **kwargs):
+    NotificationProcessManager.stop_process()
+    WriterProcessManager.stop_process()

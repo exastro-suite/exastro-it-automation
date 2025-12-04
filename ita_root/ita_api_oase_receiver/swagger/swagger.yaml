@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Exastro ITA OASE Receiver API
   description: Exastro ITA OASE Receiver API
-  version: "2.4"
+  version: 2.7.0
 servers:
 - url: "https://{host}"
   description: API endpoint
@@ -59,7 +59,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/event_collection_settings_body'
+              $ref: "#/components/schemas/event_collection_settings_body"
         required: true
       responses:
         "200":
@@ -67,19 +67,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200'
+                $ref: "#/components/schemas/inline_response_200"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.oase_controller
   /api/{organization_id}/workspaces/{workspace_id}/oase_agent/events:
     post:
@@ -108,7 +108,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/oase_agent_events_body'
+              $ref: "#/components/schemas/oase_agent_events_body"
         required: true
       responses:
         "200":
@@ -116,19 +116,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_1'
+                $ref: "#/components/schemas/inline_response_200_1"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.oase_controller
   /internal-api/health-check/liveness:
     get:
@@ -142,13 +142,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_1'
+                $ref: "#/components/schemas/inline_response_200_1"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.internal_health_check_service_controller
   /internal-api/health-check/readiness:
     get:
@@ -162,13 +162,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_1'
+                $ref: "#/components/schemas/inline_response_200_1"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.internal_health_check_service_controller
 components:
   schemas:
@@ -205,6 +205,17 @@ components:
         - {}
         - {}
         message: message
+    apiorganization_idworkspacesworkspace_idoase_agentevents_agent:
+      type: object
+      properties:
+        name:
+          type: string
+          description: OASEエージェントの名称(AGENT_NAME)を記載
+          example: agent-oase-01
+        version:
+          type: string
+          description: OASEエージェントのバージョン情報を記載
+          example: 2.x.y
     apiorganization_idworkspacesworkspace_idoase_agentevents_events:
       required:
       - event
@@ -225,12 +236,14 @@ components:
         event_collection_settings_id:
           type: string
           example: setting_id
+        agent:
+          $ref: "#/components/schemas/apiorganization_idworkspacesworkspace_idoase_agentevents_agent"
     oase_agent_events_body:
       properties:
         events:
           type: array
           items:
-            $ref: '#/components/schemas/apiorganization_idworkspacesworkspace_idoase_agentevents_events'
+            $ref: "#/components/schemas/apiorganization_idworkspacesworkspace_idoase_agentevents_events"
       description: イベントのJSONデータ、取得した時間、イベント収集設定IDを記載
     inline_response_200_1:
       type: object

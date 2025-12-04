@@ -47,7 +47,7 @@ def main(work_dir_path, db_conn):
 
     # API呼出
     api_url = "http://{}:{}//internal-api/platform/plan_items".format(host_name, port)
-    request_response = requests.post(api_url, data=data_encode, headers=header_para)
+    request_response = requests.post(api_url, data=data_encode, headers=header_para, timeout=(12, 600))
 
     response_data = json.loads(request_response.text)
     if request_response.status_code not in [200, 409]:

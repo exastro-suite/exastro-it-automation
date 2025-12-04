@@ -526,7 +526,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
 
         # 初期化の場合、uploadfiles/<menu_id>/配下をクリア #2489
         if create_type == 'initialize':
-            menu_upload_dir = f"/storage/{g.ORGANIZATION_ID}/{g.WORKSPACE_ID}/uploadfiles/{input_menu_uuid}/"
+            menu_upload_dir = os.path.join(os.environ.get("STORAGEPATH"), g.ORGANIZATION_ID, g.WORKSPACE_ID, "uploadfiles", input_menu_uuid, "")
             if os.path.isdir(menu_upload_dir):
                 shutil.rmtree(menu_upload_dir)
                 g.applogger.info(f"shutil.rmtree: {menu_upload_dir=}")

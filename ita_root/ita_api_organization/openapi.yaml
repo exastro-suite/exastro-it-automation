@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Exastro IT Automation API
   description: Exastro IT Automation API
-  version: "2.5"
+  version: "2.7.0"
 
 servers:
   - url: "https://{host}"
@@ -3740,7 +3740,11 @@ paths:
     get:
       tags:
         - Driver Controll
-      description: 作業実行の投入データ取得
+      deprecated: true
+      description: |
+        【2.5.0以降非推奨】作業実行の投入データ取得 <br>
+        下記[ファイルダウンロードAPI](#operations-Menu_Filter-downloadFile)の利用を推奨 <br>
+        /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/{uuid}/populated_data/file/
       operationId: getExecutePopulatedData
       x-openapi-router-controller: controllers.driver_controll_controller
       parameters:
@@ -3800,7 +3804,11 @@ paths:
     get:
       tags:
         - Driver Controll
-      description: 作業実行の結果データ取得
+      deprecated: true
+      description: |
+        【2.5.0以降非推奨】作業実行の結果データ取得 <br>
+        下記[ファイルダウンロードAPI](#operations-Menu_Filter-downloadFile)の利用を推奨 <br>
+        /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/{uuid}/result_data/file/
       operationId: getExecuteResultData
       x-openapi-router-controller: controllers.driver_controll_controller
       parameters:

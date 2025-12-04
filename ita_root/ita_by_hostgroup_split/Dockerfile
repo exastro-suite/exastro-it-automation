@@ -41,6 +41,7 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
     python3.11-devel \
     python3.11-mod_wsgi \
     python3.11-pip \
+    --exclude=python3.11-setuptools \
 &&  alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 1000000 \
 &&  alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 100 \
 &&  alternatives --set python3 /usr/bin/python3.11 \
@@ -48,6 +49,8 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
 &&  poetry config virtualenvs.create false \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
+
+# &&  dnf remove -y python3.11-setuptools \
 
 WORKDIR $APP_PATH
 

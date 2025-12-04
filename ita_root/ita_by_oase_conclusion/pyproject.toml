@@ -18,6 +18,7 @@ chardet = ">=0.0.0"
 pycryptodome = ">=0.0.0"
 pymongo = ">=0.0.0"
 jsonlines = ">=0.0.0"
+psutil = ">=0.0.0"
 
 
 [tool.poetry.group.first_install.dependencies]
@@ -28,6 +29,13 @@ certifi = ">=0.0.0"
 debugpy = ">=0.0.0"
 flake8 = ">=0.0.0"
 autopep8 = ">=0.0.0"
+psutil = ">=0.0.0"
+pytest = ">=0.0.0"
+pytest-env = ">=0.0.0"
+pytest-cov = ">=0.0.0"
+pytest-docker = ">=0.0.0"
+pytest-mock = ">=0.0.0"
+requests-mock = ">=0.0.0"
 
 [build-system]
 requires = ["poetry-core"]

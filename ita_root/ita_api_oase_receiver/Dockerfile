@@ -34,6 +34,8 @@ ENV DB_CONNECT_RETRY_SLEEP_TIME=0.5
 ENV DB_CONNECT_RETRY_LIMIT=2
 ENV SERVICE_NAME=ita-api-oase-receiver
 ENV EVENT_COLLECTION_PROGRESS_TTL   72
+ENV MAX_WORKER_THREAD_POOL_SIZE      12
+ENV NOTIFICATION_BATCH_SIZE         100
 
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
     dnf install -y \
@@ -47,6 +49,7 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
     python3.11-devel \
     python3.11-pip \
     python3.11-mod_wsgi \
+    --exclude=python3.11-setuptools \
 &&  alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 1000000 \
 &&  alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 100 \
 &&  alternatives --set python3 /usr/bin/python3.11 \

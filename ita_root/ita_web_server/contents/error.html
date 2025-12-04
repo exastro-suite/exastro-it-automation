@@ -1,4 +1,4 @@
-<!-- 
+<!--
       Exastro IT Automation
 
    -----------------------------------------------------------------------------------------------
@@ -55,7 +55,7 @@
         }
         .systemError::after {
             bottom: 0;
-        }        
+        }
         h1 {
             margin-bottom: 32px;
             line-height: 1.5;
@@ -70,17 +70,21 @@
             font-size: 20px;
             color: #555;
         }
-        #link {
+        .transitionButton {
             display: inline-block;
             padding: 3px 16px 2px;
             text-decoration: none;
             border: 1px solid #555;
             color: 555;
         }
-        #link:active,
-        #link:visited,
-        #link:hover {
+        .transitionButton:active,
+        .transitionButton:visited,
+        .transitionButton:hover {
             opacity: .5;
+        }
+        .flex-container {
+            display: flex;
+            gap: 32px;
         }
     </style>
 </head>
@@ -104,7 +108,10 @@
                     <h1>SYSTEM ERROR</h1>
                     <p>A system error has occurred.<br>
                     Please contact the administrator.</p>
-                    <p style="margin-top: 20px;"><a id="link" href="/">TOP</a></p>
+                    <div class="flex-container">
+                        <p style="margin-top: 20px;"><a id="back" class="transitionButton" href="/">BACK</a></p>
+                        <p style="margin-top: 20px;"><a id="link" class="transitionButton" href="/">TOP</a></p>
+                    </div>
                 </div>
                         <script>
                             let url = location.href;
@@ -114,6 +121,26 @@
                             let result = '/' + path + '/';
                             let target = document.getElementById("link");
                             target.href = result;
+                            let referrer = document.referrer;
+                            let referrerOrigin = null;
+                            let firstPath = null;
+                            if (referrer) {
+                                try {
+                                    const referrerUrl = new URL(referrer);
+                                    referrerOrigin = referrerUrl.origin;
+                                    const referrerPath = referrerUrl.pathname;
+                                    const parts = referrerPath.split('/');
+                                    firstPath = '/' + parts[1];
+                                } catch (e) {
+                                    console.error("Invalid referrer URL:", e);
+                                }
+                            }
+                            let targetBack = document.getElementById("back");
+                            if (referrerOrigin == window.location.origin && firstPath != "/auth"){
+                                targetBack.href = referrer;
+                            } else {
+                                targetBack.parentNode.remove();
+                            }
                         </script>
             </main>
         </div>

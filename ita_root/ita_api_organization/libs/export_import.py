@@ -2090,11 +2090,11 @@ def create_upload_parameters(connexion_request, key_name, organization_id, works
 
 def clear_files(clear_path_list, mode="tmp_only"):
     if mode == "tmp_only":
-        clear_path_list = [_path.replace("/storage/", "/tmp/") for _path in clear_path_list]
+        clear_path_list = [_path.replace(os.environ.get("STORAGEPATH"), "/tmp/") for _path in clear_path_list]
     else:
         # add /storage -> /tmp
         _clear_path_list = []
-        [_clear_path_list.append(_path.replace("/storage/", "/tmp/")) for _path in clear_path_list]
+        [_clear_path_list.append(_path.replace(os.environ.get("STORAGEPATH"), "/tmp/")) for _path in clear_path_list]
         clear_path_list.extend(_clear_path_list)
 
     for _path in clear_path_list:

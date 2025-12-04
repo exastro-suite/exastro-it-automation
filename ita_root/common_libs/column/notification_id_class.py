@@ -27,14 +27,14 @@ class NotificationIDColumn(MultiSelectIDColumn):
     def search_id_data_list(self):
         """
             データリストを検索する
-            ARGS:
+
+            Args:
                 なし
-            RETRUN:
+            Returns:
                 データリスト
         """
-        values = Notification.fetch_notification_destination_dict()
+        values = Notification.fetch_notification_destination_dict(use_cache=False)
 
         self.data_list_set_flg = True
 
         return values
-

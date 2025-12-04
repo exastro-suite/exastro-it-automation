@@ -332,7 +332,7 @@ class KubernetesMode(AnsibleAgent):
         """
         # create command string
         ansible_role_driver_middle_path = "driver/ansible/%s" % (ansConstObj.vg_OrchestratorSubId_dir)
-        container_mount_path_driver = "/storage/%s/%s/%s/%s" % (self._organization_id, self._workspace_id, ansible_role_driver_middle_path, execution_no)  # noqa E501
+        container_mount_path_driver = os.path.join(os.environ.get("STORAGEPATH"), self._organization_id, self._workspace_id, ansible_role_driver_middle_path, execution_no)  # noqa E501
         exec_manifest = "%s/.tmp/.k8s_pod.yml" % (container_mount_path_driver)
 
         command = ["/usr/local/bin/kubectl", "delete", "-f", exec_manifest, "--force=true", "--grace-period=0"]

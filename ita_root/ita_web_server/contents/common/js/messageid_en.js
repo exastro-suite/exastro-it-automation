@@ -4,7 +4,7 @@
 //
 //   -----------------------------------------------------------------------------------------------
 //
-//   Copyright 2022 NEC Corporation
+//   Copyright 2025 NEC Corporation
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -903,13 +903,13 @@ export function messageid_en() {
         'FTE10094': 'Filter reset',
         'FTE10095': 'Due to maintenance, the newly registered Conductor and each driver work execution, Parameter sheet create, Menu export/import, Bulk excel export/import will not be executed.',
         'FTE10096': 'Due to maintenance, data cannot be registered/updated/deleted. In addition, it is not possible to execute the work of Conductor and each driver, Parameter sheet create, Menu export/import, and Bulk excel export/import.',
-        'FTE00097' : "Confirmation of execution",
-        'FTE00098' : "Deleted records/files will no longer be accessible.",
-        'FTE00099' : "Yes, delete",
-        'FTE00100' : "Cancel",
-        'FTE00101' : "Warning",
-        'FTE00102' : 'If you want to continue, please enter <span style="font-weight: bold;">{0}</span>.',
-        'FTE00103' : 'Please enter <span style="font-weight: bold;">{0}</span>.',
+        'FTE10097' : "Confirmation of execution",
+        'FTE10098' : "Deleted records/files will no longer be accessible.",
+        'FTE10099' : "Yes, delete",
+        'FTE10100' : "Cancel",
+        'FTE10101' : "Warning",
+        'FTE10102' : 'If you want to continue, please enter <span style="font-weight: bold;">{0}</span>.',
+        'FTE10103' : 'Please enter <span style="font-weight: bold;">{0}</span>.',
         'FTE10104': 'Deletion successful',
 
         // Parameter collection
@@ -1008,11 +1008,23 @@ export function messageid_en() {
         'FTE13028': function( sec ){ return `${sec}sec`},
         'FTE13029': 'Auto Update',
         'FTE13030': 'Rule',
-        'FTE13031': '',
+        'FTE13031': 'is the target',
         'FTE13032': '',
         'FTE13033': '',
         'FTE13034': '',
-
+        'FTE13035': 'Switched to aggregation mode because the number of rows exceeded 100.',
+        'FTE13036': 'View',
+        'FTE13037': 'Detail',
+        'FTE13038': 'Aggregate',
+        'FTE13039': 'Processing',
+        'FTE13040': 'Please wait',
+        'FTE13041': 'Fetch',
+        'FTE13042': 'Switched to detail mode because the number of rows is 50 or less.',
+        'FTE13043': 'Move Left',
+        'FTE13044': 'Move Right',
+        'FTE13045': 'Widen Range',
+        'FTE13046': 'Set Range specification',
+        'FTE13047': 'Clear',
     };
 
     return message;

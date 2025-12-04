@@ -74,7 +74,7 @@ class GitLabAgent:
         g.applogger.info('[Trace] gitlab api request start. (url:{} method:{})'.format(method, url)) # 外部アプリへの処理開始・終了ログ
 
         g.applogger.debug('gitlab api request: url={}:{}, headers={}, params={}, data={}'.format(method, url, headers, get_params, data_json))
-        response = eval('requests.{}'.format(method.lower()))(url, headers=headers, params=get_params, data=data_json)
+        response = eval('requests.{}'.format(method.lower()))(url, headers=headers, params=get_params, data=data_json, timeout=(12, 600))
 
         if response.headers.get('Content-Type') == 'application/json':
             if 200 <= response.status_code < 400:

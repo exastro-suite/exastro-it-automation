@@ -3268,6 +3268,9 @@ class CreateAnsibleExecFiles():
                 mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_CONDUCTOR_ID] = self.LC_ANS_UNDEFINE_NAME
             mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_ANS_EXECUTION_NO] = execution_no
             mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_ANS_MOVEMENT_ID] = movement_id
+            mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_ORGANIZATION_ID] = g.ORGANIZATION_ID
+            mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_WORKSPACE_ID] = g.WORKSPACE_ID
+            mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_EXTERNAL_URL] = os.environ.get("EXTERNAL_URL", "__undefinesymbol__")
 
         return mt_host_vars
 
@@ -4617,7 +4620,7 @@ class CreateAnsibleExecFiles():
         if isinstance(GBL_vars_info, dict):
             if '1' in GBL_vars_info.keys():
                 for var_name, dummy in GBL_vars_info['1'].items():
-                    if var_name not in self.lva_global_vars_list:
+                    if not (var_name in self.lva_global_vars_list or var_name in self.lva_global_sensitive_vars_list):
                         msgstr = g.appmsg.get_api_message("MSG-10530", [os.path.basename(templatefile), var_name])
                         self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
                                            str(inspect.currentframe().f_lineno), msgstr)
@@ -5423,19 +5426,27 @@ class CreateAnsibleExecFiles():
                                str(inspect.currentframe().f_lineno), msgstr)
             return False, mt_host_vars, mt_pioneer_template_host_vars
 
+        operation_date = rows[0]['OPERATION_DATE']
+        operation_name = rows[0]['OPERATION_NAME']
         operationStr = ""
-        operationStr = "{}_{}:{}".format(rows[0]['OPERATION_DATE'], in_operation_id, rows[0]['OPERATION_NAME'])
+        operationStr = "{}_{}:{}".format(operation_date, in_operation_id, operation_name)
 
         # オペレーション用の予約変数生成
         for host_name, hostinfo in ina_hostinfolist.items():
             if host_name not in mt_host_vars:
                 mt_host_vars[host_name] = {}
-            mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_OPERATION_VAR_NAME] = operationStr
+            mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_OPERATION_STRING] = operationStr
+            mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_OPERATION_ID] = in_operation_id
+            mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_OPERATION_NAME] = operation_name
+            mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_OPERATION_DATETIME] = operation_date
 
             if self.getAnsibleDriverID() == self.AnscObj.DF_PIONEER_DRIVER_ID:
                 if host_name not in mt_pioneer_template_host_vars:
                     mt_pioneer_template_host_vars[host_name] = {}
-                mt_pioneer_template_host_vars[host_name][self.AnscObj.ITA_SP_VAR_OPERATION_VAR_NAME] = operationStr
+                mt_pioneer_template_host_vars[host_name][self.AnscObj.ITA_SP_VAR_OPERATION_STRING] = operationStr
+                mt_pioneer_template_host_vars[host_name][self.AnscObj.ITA_SP_VAR_OPERATION_ID] = in_operation_id
+                mt_pioneer_template_host_vars[host_name][self.AnscObj.ITA_SP_VAR_OPERATION_NAME] = operation_name
+                mt_pioneer_template_host_vars[host_name][self.AnscObj.ITA_SP_VAR_OPERATION_DATETIME] = operation_date
         return True, mt_host_vars, mt_pioneer_template_host_vars
 
     def CreateSSHAgentConfigInfoFile(self, file, hostname, ssh_key_file, pssphrase):
@@ -6258,7 +6269,7 @@ class CreateAnsibleExecFiles():
             if '1' in GBL_vars_info.keys():
                 # テンプレートに登録されているグローバル変数のデータベース登録確認
                 for var_name, dummy in GBL_vars_info['1'].items():
-                    if var_name not in self.lva_global_vars_list:
+                    if not (var_name in self.lva_global_vars_list or var_name in self.lva_global_sensitive_vars_list):
                         msgstr = g.appmsg.get_api_message("MSG-10530", [os.path.basename(templatefile), var_name])
                         self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
                                            str(inspect.currentframe().f_lineno), msgstr)
@@ -6448,12 +6459,6 @@ class CreateAnsibleExecFiles():
                 obj.SimpleFillterVerSearch(self.AnscObj.DF_HOST_GBL_HED, dataString, file_global_vars_list, varsArray, local_vars, FillterVars)
 
                 if len(file_global_vars_list) != 0:
-                    # グローバル変数管理にグローバル変数が未定義の判定
-                    if len(self.lva_global_vars_list) == 0:
-                        msgstr = g.appmsg.get_api_message("MSG-10461", [])
-                        self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                                        str(inspect.currentframe().f_lineno), msgstr)
-                        return False
 
                     # Playbookから抜き出したグローバル変数がグローバル変数管理、グローバル変数(センシティブ)管理に登録されているか判定
                     for var_list in file_global_vars_list:
@@ -7614,12 +7619,6 @@ class CreateAnsibleExecFiles():
 
                         globalvarSetTo = []
                         if len(file_global_vars_list) != 0:
-                            # グローバル変数管理にグローバル変数が未定義の判定
-                            if len(self.lva_global_vars_list) == 0:
-                                msgstr = g.appmsg.get_api_message("MSG-10459", [])
-                                self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                                                   str(inspect.currentframe().f_lineno), msgstr)
-                                return False
 
                             # 対話ファイルから抜き出したグローバル変数がグローバル変数管理、グローバル変数(センシティブ)管理に登録されているか判定
                             for var_list in file_global_vars_list:

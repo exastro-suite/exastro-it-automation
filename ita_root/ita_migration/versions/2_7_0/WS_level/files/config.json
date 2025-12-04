@@ -1,0 +1,7 @@
+{
+    "110102":
+    [
+        {"New(received).j2":["/template_file/5/old/5/","/template_file/5/"]},
+        {"New(consolidated).j2":["/template_file/6/old/6/","/template_file/6/"]}
+    ]
+}

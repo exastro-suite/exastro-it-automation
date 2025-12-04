@@ -20,10 +20,11 @@ class AnsibleExexutionVersion:
         エージェントのバージョンに対応する、ITAのバージョンリストを定義する
     """
 
-    # バージョンリスト
+    # バージョンリスト ※新しいバージョンを後ろに記載
     VERSION_MATRIX = {
-        "2.5.1": ["2.5.1", "2.5.2", "2.5.3", "2.5.4", "2.6.0"],
-        "2.6.0": ["2.5.1", "2.5.2", "2.5.3", "2.5.4", "2.6.0"]
+        "2.5.1": ["2.5.1", "2.5.2", "2.5.3", "2.5.4", "2.6.0", "2.6.1", "2.6.2", "2.7.0"],
+        "2.6.0": ["2.5.1", "2.5.2", "2.5.3", "2.5.4", "2.6.0", "2.6.1", "2.6.2", "2.7.0"],
+        "2.7.0": ["2.5.1", "2.5.2", "2.5.3", "2.5.4", "2.6.0", "2.6.1", "2.6.2", "2.7.0"]
     }
 
     # ステータス
@@ -51,16 +52,25 @@ class AnsibleExexutionVersion:
         common_db.db_disconnect()
 
         # ITAの対応するバージョンと比較
-        if agent_version in AnsibleExexutionVersion.VERSION_MATRIX.keys():
-            if ita_version in AnsibleExexutionVersion.VERSION_MATRIX[agent_version]:
-                # エージェントのバージョンは対応しているが最新ではない
-                if agent_version < ita_version:
-                    return AnsibleExexutionVersion.COMPATIBLE
+        if agent_version in self.VERSION_MATRIX.keys():
+            if ita_version in self.VERSION_MATRIX[agent_version]:
+                # エージェントの最新バージョンを確認
+                latest_agent_version = ""
+                for _agent_version in reversed(self.VERSION_MATRIX.keys()):
+                    if latest_agent_version == "" and ita_version in self.VERSION_MATRIX[_agent_version]:
+                        latest_agent_version = _agent_version
+                        break
 
-                return AnsibleExexutionVersion.COMPATIBLE_NEWEST
+                if latest_agent_version != "":
+                    if agent_version == latest_agent_version:
+                        # 最新
+                        return self.COMPATIBLE_NEWEST
+                    else:
+                        # エージェントのバージョンは対応しているが最新ではない
+                        return self.COMPATIBLE
             else:
                 # 対応するバージョンリストにない
-                return AnsibleExexutionVersion.NOT_COMPATIBLE_OLD
+                return self.NOT_COMPATIBLE_OLD
         else:
             # 対応するバージョンリストにない
-            return AnsibleExexutionVersion.NOT_COMPATIBLE_OLD
+            return self.NOT_COMPATIBLE_OLD

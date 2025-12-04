@@ -461,6 +461,9 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
 
         # nsible Agentの場合、Ansible Vault用 のパスワードファイルを追加する
         option_parameter += " --vault-password-file .vault-password-file "
+        # Ansible Agentの場合、ドライランではチェックモード動作とするオプションを追加する
+        if execute_data["RUN_MODE"] == '2':
+            option_parameter += " --check "
 
     else:
         file_path = "{}/{}".format(zip_data_source_dir, "AnsibleExecOption.txt")

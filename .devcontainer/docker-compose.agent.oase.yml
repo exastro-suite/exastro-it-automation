@@ -15,6 +15,7 @@ version: '3.7'
 services:
   ita-ag-oase:
     user: 1000:1000
+    hostname: ${AGENT_NAME:-ita-oase-agent-01}
     build:
       dockerfile: ./ita_root/ita_ag_oase/Dockerfile
       context: ../.

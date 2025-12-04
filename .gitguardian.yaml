@@ -1,0 +1,8 @@
+version: 2
+secret:
+  # 以下に追加した場合は、".github/secret_scanning.yml"にも記載すること
+  ignored_paths:
+    - 'ita_root/ita_api_organization/pytest.ini.sample'
+    - 'ita_root/ita_api_organization/tests/db/exports/**'
+    - 'ita_root/ita_by_oase_conclusion/pytest.ini.sample'
+    - 'ita_root/ita_by_oase_conclusion/tests/db/exports/**'

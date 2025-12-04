@@ -17,9 +17,7 @@ import operator
 import re
 import jmespath
 import json
-from common_libs.common.exception import AppException
 from common_libs.common.util import stacktrace
-from common_libs.common.mongoconnect.const import Const as mongoConst
 # oase
 from common_libs.oase.const import oaseConst
 
@@ -67,12 +65,12 @@ TARGET_VALUE_TYPE = {
 LABEL_KEY_MAP = {}
 
 
-# イベントにラベルを付与し、MongDBに保存する
+# イベントにラベルを付与する
 def label_event(wsDb, wsMongo, events):  # noqa: C901
     # ラベル付与の設定を取得
     labeling_settings = wsDb.table_select(
         oaseConst.T_OASE_LABELING_SETTINGS,
-        "WHERE DISUSE_FLAG=0"
+        "WHERE DISUSE_FLAG=0 ORDER BY LABELING_SETTINGS_NAME ASC"
     )
     if len(labeling_settings) == 0:
         # ラベル付与設定を取得できませんでした。
@@ -93,46 +91,17 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
         for label_key in label_keys:
             LABEL_KEY_MAP[label_key["LABEL_KEY_ID"]] = label_key
 
-    # ラベル付与したイベントデータを保存するためのコレクション
-    labeled_event_collection = wsMongo.collection(mongoConst.LABELED_EVENT_COLLECTION)
     # ラベル付与されたイベント配列（MongoDBに保存予定）
     labeled_events = []
 
-    # 収集してきたJSONデータをイベント単位でループ（exastro用ラベルのみ付与する）
-    for single_event in events:
-        exastro_labeled_event = {}
-        original_event = single_event
-        exastro_labeled_event["event"] = original_event
-        # exastro用ラベルを貼る
-        exastro_labeled_event["labels"] = {
-            "_exastro_event_collection_settings_id": single_event["_exastro_event_collection_settings_id"],
-            "_exastro_fetched_time": single_event["_exastro_fetched_time"],
-            "_exastro_end_time": single_event["_exastro_end_time"],
-            "_exastro_type": "event",
-            "_exastro_checked": "0",
-            "_exastro_evaluated": "0",
-            "_exastro_undetected": "0",
-            "_exastro_timeout": "0",
-        }
-        exastro_labeled_event["exastro_created_at"] = single_event["_exastro_created_at"]
-        # 重複して不要なexastro用ラベルを削除
-        del exastro_labeled_event["event"]["_exastro_event_collection_settings_id"]
-        del exastro_labeled_event["event"]["_exastro_event_collection_settings_name"]
-        del exastro_labeled_event["event"]["_exastro_fetched_time"]
-        del exastro_labeled_event["event"]["_exastro_end_time"]
-        del exastro_labeled_event["event"]["_exastro_created_at"]
-        # （エージェントで無理矢理、取り込んだ）利用できないイベントのフラグ
-        if "_exastro_not_available" in single_event:
-            exastro_labeled_event["labels"]["_exastro_not_available"] = single_event["_exastro_not_available"]
-            del exastro_labeled_event["event"]["_exastro_not_available"]
-        labeled_events.append(exastro_labeled_event)
-    events = []
+    # イベント単位でループ
+    for event in events:
+        # exastro用ラベルを付与
+        labeled_event = add_exastro_label(event)
+        labeled_events.append(labeled_event)
 
-    # exastro用ラベルを貼った後のデータをイベント単位でループ
-    for labeled_event in labeled_events:
-        # 利用できないイベントは、あらかじめ未知に流す
-        if "_exastro_not_available" in labeled_event["labels"]:
-            labeled_event["labels"]["_exastro_undetected"] = "1"
+        # 未知に流すことが決まっているものはラベル付け処理をスキップ
+        if labeled_event["labels"]["_exastro_undetected"] == "1":
             continue
 
         labeled_event["exastro_labeling_settings"] = {}
@@ -216,14 +185,44 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
                 err_msg = g.appmsg.get_log_message("499-01806", [e])
                 g.applogger.info(err_msg)
                 continue
+    events = []
 
-    # ラベル付与したデータをMongoDBに保存
-    try:
-        labeled_event_collection.insert_many(labeled_events)
-    except Exception as e:
-        g.applogger.error(stacktrace())
-        err_code = "499-01803"
-        raise AppException(err_code, [e], [e])
+    return labeled_events
+
+# exastro用ラベルを付与して、OASE標準のイベントの形に整形する
+def add_exastro_label(event):
+    labeled_event = {}
+    labeled_event["event"] = event
+    # exastro用ラベルを貼る
+    labeled_event["labels"] = {
+        "_exastro_event_collection_settings_id": event["_exastro_event_collection_settings_id"],
+        "_exastro_fetched_time": event["_exastro_fetched_time"],
+        "_exastro_end_time": event["_exastro_end_time"],
+        "_exastro_agent_name": event["_exastro_agent_name"],
+        "_exastro_agent_version": event["_exastro_agent_version"],
+        "_exastro_type": "event",
+        "_exastro_checked": "0",
+        "_exastro_evaluated": "0",
+        "_exastro_undetected": "0",
+        "_exastro_timeout": "0",
+    }
+    labeled_event["exastro_created_at"] = event["_exastro_created_at"]
+    # 重複して不要なexastro用ラベルを削除
+    del labeled_event["event"]["_exastro_event_collection_settings_id"]
+    del labeled_event["event"]["_exastro_event_collection_settings_name"]
+    del labeled_event["event"]["_exastro_fetched_time"]
+    del labeled_event["event"]["_exastro_end_time"]
+    del labeled_event["event"]["_exastro_agent_name"]
+    del labeled_event["event"]["_exastro_agent_version"]
+    del labeled_event["event"]["_exastro_created_at"]
+    # （エージェントで無理矢理、取り込んだ）利用できないイベントのフラグ
+    if "_exastro_not_available" in event:
+        labeled_event["labels"]["_exastro_not_available"] = event["_exastro_not_available"]
+        del labeled_event["event"]["_exastro_not_available"]
+        # 利用できないイベントは、あらかじめ未知に流す
+        labeled_event["labels"]["_exastro_undetected"] = "1"
+
+    return labeled_event
 
 
 # json構造を検索するためのクエリを生成

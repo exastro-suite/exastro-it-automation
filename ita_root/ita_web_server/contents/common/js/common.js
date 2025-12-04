@@ -29,7 +29,7 @@ const fn = ( function() {
     'use strict';
 
     // バージョン
-    const version = '2.6.0';
+    const version = '2.7.0';
 
     // AbortController
     const controller = new AbortController();
@@ -2542,7 +2542,7 @@ html: {
 
         return `<div class="operationMenu">${html.join('')}</div>`;
     },
-    labelListHtml: function( labels, labelData ) {
+    labelListHtml: function( labels, labelData, uncoloredLabel=false ) {
         const html = [];
 
         if ( !labelData ) labelData = [];
@@ -2553,24 +2553,52 @@ html: {
         // ラベルリストの形式
         if ( cmn.typeof( labels ) === 'array') {
             for ( const label of labels ) {
-                if ( label.length === 2 ) {
-                    html.push( this.labelHtml( labelData, label[0], label[1] ) );
-                } else {
-                    html.push( this.labelHtml( labelData, label[0], label[2], label[1] ) );
+                if ( typeof(label) == 'string' ) {  // 例：'label_01'
+                    html.push( this.labelHtml( labelData, label ) );
+                } else {  // 例：['label_01', '==', 'e_01']
+                    if ( label.length === 2 ) {
+                        html.push( this.labelHtml( labelData, label[0], label[1] ) );
+                    } else {
+                        html.push( this.labelHtml( labelData, label[0], label[2], label[1] ) );
+                    }
                 }
             }
         } else if ( cmn.typeof( labels ) === 'object') {
             for ( const key in labels ) {
-                html.push( this.labelHtml( labelData, key, labels[ key ] ) );
+                html.push( this.labelHtml( labelData, key, labels[ key ], undefined, uncoloredLabel ) );
             }
         }
 
-        return ``
-        + `<ul class="eventFlowLabelList">`
-            + html.join('')
-        + `</ul>`;
+        if ( html.length ) {
+            return ``
+            + `<ul class="eventFlowLabelList">`
+                + html.join('')
+            + `</ul>`;
+        } else {
+            return '';
+        }
     },
-    labelHtml: function( labelData, key, value, condition ) {
+    // 「イベント収集設定名 – エージェント名」を表示する。※nダッシュ（–）を使用
+    deduplicationListHtml: function( labels, exchangeData ) {
+        const html = [];
+        if (labels) {
+            for ( const label of labels ) {
+                const index = label.indexOf( '_' )
+                const settingStr = ( exchangeData ) ? `${exchangeData[label.slice(0, index)]} – ${label.slice(index + 1)}` : `${label.slice(0, index)} – ${label.slice(index + 1)}`;
+                html.push( this.labelHtml( [], '', settingStr ) );
+            }
+
+            return ``
+            + `<ul class="eventFlowLabelList">`
+                + html.join('')
+            + `</ul>`;
+        } else{
+            return ``
+            + `<ul class="eventFlowLabelList">`
+            + `</ul>`;
+        }
+    },
+    labelHtml: function( labelData, key, value, condition, uncoloredLabel=false ) {
         // 色の取得
         const label = labelData.find(function( item ){
             return key === item.parameter.label_key_name;
@@ -2579,8 +2607,14 @@ html: {
         const exastroLabelColor = '#CCC'; // _exastro_xxxラベル
         const defaultLabelColor = '#002B62'; // ラベル設定の無いラベル
 
-        const color = ( label && label.parameter && label.parameter.color_code )? label.parameter.color_code:
-            ( key.indexOf('_exastro_') === 0 )? exastroLabelColor: defaultLabelColor;
+        let color
+        // ラベルの色コード、ラベル名が無い場合はexastroLabelColor、_exastro_xxxラベルはexastroLabelColor、uncoloredLabelがtrueの場合はdefaultLabelColor
+        if ( uncoloredLabel ) {
+            color = exastroLabelColor;
+        } else {
+            color = ( label && label.parameter && label.parameter.color_code )? label.parameter.color_code:
+                ( !key )? exastroLabelColor : ( key.indexOf('_exastro_') === 0 )? exastroLabelColor: defaultLabelColor;
+        }
 
         const
         keyColor = cmn.blackOrWhite( color, 1 ),
@@ -2593,9 +2627,9 @@ html: {
         return ``
         + `<li class="eventFlowLabelItem">`
             + `<div class="eventFlowLabel" style="background-color:${color}">`
-                + `<div class="eventFlowLabelKey"><span class="eventFlowLabelText" style="color:${keyColor}">${fn.cv( key, '', true )}</span></div>`
+                + ( ( key )? `<div class="eventFlowLabelKey"><span class="eventFlowLabelText" style="color:${keyColor}">${fn.cv( key, '', true )}</span></div>` : ``)
                 + ( ( condition )? `<div class="eventFlowLabelCondition" style="color:${conColor}">${fn.cv( condition, '', true )}</div>`: ``)
-                + `<div class="eventFlowLabelValue"><span class="eventFlowLabelText" style="color:${valColor}">${fn.cv( value, '', true )}</span></div>`
+                + ( ( value )?`<div class="eventFlowLabelValue"><span class="eventFlowLabelText" style="color:${valColor}">${fn.cv( value, '', true )}</span></div>`: ``)
             + `</div>`
         + `</li>`;
     }
@@ -3515,7 +3549,7 @@ gotoErrPage: function( message ) {
             } else {
                 window.alert('Unknown error.');
             }
-            window.location.href = './system_error/';
+            //window.location.href = './system_error/';
         }
     } else {
         if ( message ) {
@@ -3849,7 +3883,7 @@ settingListModalOpen: function( settingData ) {
 
         _this.setSettingListEvents( modal, settingData );
         _this.setSettingListSelect2( modal );
-        _this.settingListCheckListDisabled( modal );
+        _this.settingListCheckListDisabled( modal, settingData );
     });
 },
 /*
@@ -3891,11 +3925,15 @@ settingListRowHtml( settingData, index = 0, value = [] ) {
    項目が１つの場合は移動と削除を無効化する
 ##################################################
 */
-settingListCheckListDisabled: function( modal ) {
+settingListCheckListDisabled: function( modal, settingData ) {
     const $tr = modal.$.dbody.find('.settingListTr');
 
     if ( $tr.length === 1 ) {
-        $tr.find('.settingListMove, .settingListDelete').addClass('disabled');
+        if ( settingData.required === '0') {
+            $tr.find('.settingListMove').addClass('disabled');
+        } else {
+            $tr.find('.settingListMove, .settingListDelete').addClass('disabled');
+        }
     } else {
         $tr.find('.settingListMove, .settingListDelete').removeClass('disabled');
     }
@@ -3921,21 +3959,26 @@ setSettingListEvents: function( modal, settingData ) {
         // 追加
         $listBlock.find('.settingListAddButton').on('click', function(){
             $listBlock.find('.settingListTbody').append( _this.settingListRowHtml( settingData) );
-            _this.settingListCheckListDisabled( modal );
+            _this.settingListCheckListDisabled( modal, settingData );
             _this.setSettingListSelect2( modal );
         });
 
         // クリア
         $listBlock.find('.settingListClearButton').on('click', function(){
             $listBlock.find('.settingListTbody').html( _this.settingListRowHtml( settingData ) );
-            _this.settingListCheckListDisabled( modal );
+            _this.settingListCheckListDisabled( modal, settingData );
             _this.setSettingListSelect2( modal );
         });
 
         // 削除
         $listBlock.on('click', '.settingListDelete', function(){
             $( this ).closest('.settingListTr').remove();
-            _this.settingListCheckListDisabled( modal );
+            // 行が無い場合は追加する
+            if ( $listBlock.find('.settingListTr').length === 0 ) {
+                $listBlock.find('.settingListTbody').append( _this.settingListRowHtml( settingData) );
+                _this.setSettingListSelect2( modal );
+            }
+            _this.settingListCheckListDisabled( modal, settingData );
         });
 
         // 移動
@@ -4455,6 +4498,12 @@ itaOriginalVariable: function() {
         '__workflowdir__',
         '__conductor_workflowdir__',
         '__operation__',
+        '__operation_id__',
+        '__operation_name__',
+        '__operation_datetime__',
+        '__organization_id__',
+        '__workspace_id__',
+        '__external_url__',
         '__parameters_dir_for_epc__',
         '__parameters_file_dir_for_epc__',
         '__parameter_dir__',
@@ -4465,6 +4514,10 @@ itaOriginalVariable: function() {
         '__ipaddress__'
     ];
 },
+// テキストエディタ使用時にITA独自変数一覧を読み込まないメニュー
+ignoreItaOriginalVariable: [
+    'notification_template_common'
+],
 /*
 ##################################################
    ファイル or BASE64をテキストに変換
@@ -4663,14 +4716,17 @@ fileEditor: function( fileData, fileName, mode = 'edit', option = {} ) {
                 aceEditor.session.setUseWrapMode( true );
 
                 // ITA独自変数
-                const rhymeCompleter = {
-                    getCompletions: function( editor, session, pos, prefix, callback ) {
-                        callback( null, cmn.itaOriginalVariable().map(function( val ){
-                            return { value: val, meta: getMessage.FTE00174 };
-                        }));
-                    }
-                };
-                langTools.addCompleter(rhymeCompleter);
+                const menuName = cmn.getParams().menu;
+                if ( !cmn.ignoreItaOriginalVariable.includes( menuName ) ) {
+                    const rhymeCompleter = {
+                        getCompletions: function( editor, session, pos, prefix, callback ) {
+                            callback( null, cmn.itaOriginalVariable().map(function( val ){
+                                return { value: val, meta: getMessage.FTE00174 };
+                            }));
+                        }
+                    };
+                    langTools.addCompleter(rhymeCompleter);
+                }
 
                 // ダウンロード
                 modal.btnFn.download = function() {

@@ -32,6 +32,7 @@ import shutil
 import inspect
 import traceback
 from urllib.parse import urlparse
+import uuid as uuid_lib
 
 from common_libs.common.exception import AppException
 from common_libs.common.encrypt import *
@@ -503,6 +504,24 @@ def get_upload_file_path(workspace_id, menu_id, uuid, column_name_rest, file_nam
     return {"file_path": file_path, "old_file_path": old_file_path}
 
 
+def get_tmp_file_path(workspace_id: str, file_name: str) -> dict:
+    """
+    Get filepath(tmp)
+
+    Arguments:
+        workspace_id: workspace_id
+        file_name: Target file name
+
+    Returns:
+        filepath: /tmp/{organization_id}/{workspace_id}/tmp/{uuid}/{file_name}
+    """
+    organization_id = g.get("ORGANIZATION_ID")
+    _uuid = str(uuid_lib.uuid4())
+    file_path = safe_path_join("/tmp", organization_id, workspace_id, 'tmp', _uuid, file_name)
+
+    return {"file_path": file_path}
+
+
 def get_upload_file_path_specify(workspace_id, place, uuid, file_name, uuid_jnl):
     """
     Get filepath
@@ -517,11 +536,11 @@ def get_upload_file_path_specify(workspace_id, place, uuid, file_name, uuid_jnl)
         filepath
     """
     organization_id = g.get("ORGANIZATION_ID")
-    file_path = "/storage/{}/{}{}/{}/{}".format(organization_id, workspace_id, place, uuid, file_name)
+    file_path = safe_path_join(os.environ.get("STORAGEPATH"), organization_id, f"{workspace_id}{place}", uuid, file_name)
     old_file_path = ""
     if uuid_jnl is not None:
         if len(uuid_jnl) > 0:
-            old_file_path = "/storage/{}/{}{}/{}/old/{}/{}".format(organization_id, workspace_id, place, uuid, uuid_jnl, file_name)  # noqa: E501
+            old_file_path = safe_path_join(os.environ.get("STORAGEPATH"), organization_id, f"{workspace_id}{place}", uuid, "old", uuid_jnl, file_name)  # noqa: E501
 
     return {"file_path": file_path, "old_file_path": old_file_path}
 
@@ -639,7 +658,7 @@ def get_exastro_platform_workspaces():
     else:
         # API呼出
         api_url = "http://{}:{}/internal-api/{}/platform/users/{}/workspaces".format(host_name, port, organization_id, user_id)
-        request_response = requests.get(api_url, headers=header_para)
+        request_response = requests.get(api_url, headers=header_para, timeout=(12, 600))
 
         response_data = json.loads(request_response.text)
 
@@ -698,7 +717,7 @@ def get_workspace_roles():
     else:
         # API呼出
         api_url = "http://{}:{}/internal-api/{}/platform/workspaces/{}/roles".format(host_name, port, organization_id, workspace_id)
-        request_response = requests.get(api_url, headers=header_para)
+        request_response = requests.get(api_url, headers=header_para, timeout=(12, 600))
 
         response_data = json.loads(request_response.text)
 
@@ -754,7 +773,7 @@ def get_exastro_platform_users():
     else:
         # API呼出
         api_url = "http://{}:{}/internal-api/{}/platform/workspaces/{}/users".format(host_name, port, organization_id, workspace_id)
-        request_response = requests.get(api_url, headers=header_para)
+        request_response = requests.get(api_url, headers=header_para, timeout=(12, 600))
 
         response_data = json.loads(request_response.text)
 
@@ -811,7 +830,7 @@ def get_all_execution_limit(limit_key):
 
     # API呼出
     api_url = "http://{}:{}/internal-api/platform/settings/common".format(host_name, port)
-    request_response = requests.get(api_url, headers=header_para)
+    request_response = requests.get(api_url, headers=header_para, timeout=(12, 600))
 
     response_data = json.loads(request_response.text)
 
@@ -846,7 +865,7 @@ def get_org_execution_limit(limit_key):
 
     # API呼出
     api_url = "http://{}:{}/internal-api/platform/limits".format(host_name, port)
-    request_response = requests.get(api_url, headers=header_para)
+    request_response = requests.get(api_url, headers=header_para, timeout=(12, 600))
 
     response_data = json.loads(request_response.text)
 
@@ -882,7 +901,7 @@ def _get_platform_limits(organization_id):
     }
     # API呼出
     api_url = "http://{}:{}/internal-api/{}/platform/limits".format(host_name, port, organization_id)
-    request_response = requests.get(api_url, headers=header_para)
+    request_response = requests.get(api_url, headers=header_para, timeout=(12, 600))
 
     if request_response.status_code != 200:
         raise AppException('999-00005', [api_url, response_data])
@@ -1267,11 +1286,15 @@ def put_uploadfiles_jnl(ws_db, config_file_path, src_dir, dest_dir):
                                 os.unlink(file_path + previous_file_name)
                         # シンボリックリンクを作成する
                         try:
+                            # シンボリック先があれば削除する
+                            if os.path.islink(dir_path_file):
+                                os.unlink(dir_path_file)
                             os.symlink(old_file_path + file_name, dir_path_file)
-                        except Exception:
-                            retBool = False
+                        except Exception as e:
                             msg = g.appmsg.get_api_message('MSG-00015', [old_file_path + file_name, dir_path_file])
-                            return retBool, msg
+                            g.applogger.info(msg)
+                            g.applogger.info(traceback.format_exc())
+                            continue
 
         ws_db.db_commit()
 
@@ -1295,7 +1318,7 @@ def get_maintenance_mode_setting():
 
     # API呼出
     api_url = "http://{}:{}/internal-api/platform/maintenance-mode-setting".format(host_name, port)
-    request_response = requests.get(api_url, headers=header_para)
+    request_response = requests.get(api_url, headers=header_para, timeout=(12, 600))
 
     response_data = json.loads(request_response.text)
 

@@ -1,5 +1,5 @@
 -- Conductorインターフェース
-CREATE TABLE T_COMN_CONDUCTOR_IF_INFO
+CREATE TABLE IF NOT EXISTS T_COMN_CONDUCTOR_IF_INFO
 (
     CONDUCTOR_IF_INFO_ID            VARCHAR(40),                                -- ConductorインターフェースID
     CONDUCTOR_REFRESH_INTERVAL      INT,                                        -- 状態監視周期(単位ミリ秒)
@@ -10,7 +10,7 @@ CREATE TABLE T_COMN_CONDUCTOR_IF_INFO
     PRIMARY KEY(CONDUCTOR_IF_INFO_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_COMN_CONDUCTOR_IF_INFO_JNL
+CREATE TABLE IF NOT EXISTS T_COMN_CONDUCTOR_IF_INFO_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -27,16 +27,16 @@ CREATE TABLE T_COMN_CONDUCTOR_IF_INFO_JNL
 
 
 -- Conductor通知
-CREATE TABLE T_COMN_CONDUCTOR_NOTICE
+CREATE TABLE IF NOT EXISTS T_COMN_CONDUCTOR_NOTICE
 (
     CONDUCTOR_NOTICE_ID             VARCHAR(40),                                -- Conductor通知ID
     NOTICE_NAME                     VARCHAR(255),                               -- 通知名称
-    NOTICE_URL                      VARCHAR(255),                               -- 通知先
-    HEADER                          VARCHAR(255),                               -- ヘッダー
+    NOTICE_URL                      VARCHAR(4096),                              -- 通知先
+    HEADER                          TEXT,                                       -- ヘッダー
     FIELDS                          TEXT,                                       -- メッセージ
-    PROXY_URL                       VARCHAR(255),                               -- Proxy URL
+    PROXY_URL                       VARCHAR(4096),                              -- Proxy URL
     PROXY_PORT                      INT,                                        -- Proxy Port
-    FQDN                            VARCHAR(255),                               -- 作業確認URL
+    FQDN                            VARCHAR(4096),                              -- 作業確認URL
     OTHER                           VARCHAR(255),                               -- その他
     SUPPRESS_START                  DATETIME(6),                                -- 抑止開始日時
     SUPPRESS_END                    DATETIME(6),                                -- 抑止終了日時
@@ -47,19 +47,19 @@ CREATE TABLE T_COMN_CONDUCTOR_NOTICE
     PRIMARY KEY(CONDUCTOR_NOTICE_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_COMN_CONDUCTOR_NOTICE_JNL
+CREATE TABLE IF NOT EXISTS T_COMN_CONDUCTOR_NOTICE_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
     CONDUCTOR_NOTICE_ID             VARCHAR(40),                                -- Conductor通知ID
     NOTICE_NAME                     VARCHAR(255),                               -- 通知名称
-    NOTICE_URL                      VARCHAR(255),                               -- 通知先
-    HEADER                          VARCHAR(255),                               -- ヘッダー
+    NOTICE_URL                      VARCHAR(4096),                              -- 通知先
+    HEADER                          TEXT,                                       -- ヘッダー
     FIELDS                          TEXT,                                       -- メッセージ
-    PROXY_URL                       VARCHAR(255),                               -- Proxy URL
+    PROXY_URL                       VARCHAR(4096),                              -- Proxy URL
     PROXY_PORT                      INT,                                        -- Proxy Port
-    FQDN                            VARCHAR(255),                               -- 作業確認URL
+    FQDN                            VARCHAR(4096),                              -- 作業確認URL
     OTHER                           VARCHAR(255),                               -- その他
     SUPPRESS_START                  DATETIME(6),                                -- 抑止開始日時
     SUPPRESS_END                    DATETIME(6),                                -- 抑止終了日時
@@ -73,7 +73,7 @@ CREATE TABLE T_COMN_CONDUCTOR_NOTICE_JNL
 
 
 -- Conductorクラス
-CREATE TABLE T_COMN_CONDUCTOR_CLASS
+CREATE TABLE IF NOT EXISTS T_COMN_CONDUCTOR_CLASS
 (
     CONDUCTOR_CLASS_ID              VARCHAR(40),                                -- ConductorクラスID
     CONDUCTOR_NAME                  VARCHAR(255),                               -- Conductor名称
@@ -85,7 +85,7 @@ CREATE TABLE T_COMN_CONDUCTOR_CLASS
     PRIMARY KEY(CONDUCTOR_CLASS_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_COMN_CONDUCTOR_CLASS_JNL
+CREATE TABLE IF NOT EXISTS T_COMN_CONDUCTOR_CLASS_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -103,7 +103,7 @@ CREATE TABLE T_COMN_CONDUCTOR_CLASS_JNL
 
 
 -- Conductorインスタンス
-CREATE TABLE T_COMN_CONDUCTOR_INSTANCE
+CREATE TABLE IF NOT EXISTS T_COMN_CONDUCTOR_INSTANCE
 (
     CONDUCTOR_INSTANCE_ID           VARCHAR(40),                                -- ConductorインスタンスID
     CONDUCTOR_INSTANCE_NAME         VARCHAR(255),                               -- Conductor名称
@@ -136,7 +136,7 @@ CREATE TABLE T_COMN_CONDUCTOR_INSTANCE
     PRIMARY KEY(CONDUCTOR_INSTANCE_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_COMN_CONDUCTOR_INSTANCE_JNL
+CREATE TABLE IF NOT EXISTS T_COMN_CONDUCTOR_INSTANCE_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -175,7 +175,7 @@ CREATE TABLE T_COMN_CONDUCTOR_INSTANCE_JNL
 
 
 -- ConductorNodeインスタンス
-CREATE TABLE T_COMN_CONDUCTOR_NODE_INSTANCE
+CREATE TABLE IF NOT EXISTS T_COMN_CONDUCTOR_NODE_INSTANCE
 (
     NODE_INSTANCE_ID                VARCHAR(40),                                -- NodeインスタンスID
     I_NODE_NAME                     VARCHAR(255),                               -- インスタンス元のNode名
@@ -211,7 +211,7 @@ CREATE TABLE T_COMN_CONDUCTOR_NODE_INSTANCE
     PRIMARY KEY(NODE_INSTANCE_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_COMN_CONDUCTOR_NODE_INSTANCE_JNL
+CREATE TABLE IF NOT EXISTS T_COMN_CONDUCTOR_NODE_INSTANCE_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -253,7 +253,7 @@ CREATE TABLE T_COMN_CONDUCTOR_NODE_INSTANCE_JNL
 
 
 -- Conductorステータスマスタ
-CREATE TABLE T_COMN_CONDUCTOR_STATUS
+CREATE TABLE IF NOT EXISTS T_COMN_CONDUCTOR_STATUS
 (
     STATUS_ID                       VARCHAR(2),                                 -- 主キー
     STATUS_NAME_JA                  VARCHAR(255),                               -- 表示名
@@ -270,7 +270,7 @@ CREATE TABLE T_COMN_CONDUCTOR_STATUS
 
 
 -- ConductorNodeステータスマスタ
-CREATE TABLE T_COMN_CONDUCTOR_NODE_STATUS
+CREATE TABLE IF NOT EXISTS T_COMN_CONDUCTOR_NODE_STATUS
 (
     STATUS_ID                       VARCHAR(2),                                 -- 主キー
     STATUS_NAME_JA                  VARCHAR(255),                               -- 表示名
@@ -287,7 +287,7 @@ CREATE TABLE T_COMN_CONDUCTOR_NODE_STATUS
 
 
 -- ConductorNodeマスタ
-CREATE TABLE T_COMN_CONDUCTOR_NODE
+CREATE TABLE IF NOT EXISTS T_COMN_CONDUCTOR_NODE
 (
     NODE_TYPE_ID                    VARCHAR(40),                                -- 主キー
     NODE_TYPE_NAME                  VARCHAR(255),                               -- 表示名
@@ -303,7 +303,7 @@ CREATE TABLE T_COMN_CONDUCTOR_NODE
 
 
 -- Conductor定期作業実行リスト
-CREATE TABLE T_COMN_CONDUCTOR_REGULARLY_LIST
+CREATE TABLE IF NOT EXISTS T_COMN_CONDUCTOR_REGULARLY_LIST
 (
     REGULARLY_ID                    VARCHAR(40),                                -- 定期作業実行ID
     CONDUCTOR_CLASS_ID              VARCHAR(40),                                -- ConductorクラスID
@@ -329,7 +329,7 @@ CREATE TABLE T_COMN_CONDUCTOR_REGULARLY_LIST
     PRIMARY KEY(REGULARLY_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_COMN_CONDUCTOR_REGULARLY_LIST_JNL
+CREATE TABLE IF NOT EXISTS T_COMN_CONDUCTOR_REGULARLY_LIST_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -361,7 +361,7 @@ CREATE TABLE T_COMN_CONDUCTOR_REGULARLY_LIST_JNL
 
 
 -- Conductor定期作業実行周期マスタ
-CREATE TABLE T_COMN_CONDUCTOR_REGULARLY_PERIOD
+CREATE TABLE IF NOT EXISTS T_COMN_CONDUCTOR_REGULARLY_PERIOD
 (
     REGULARLY_PERIOD_ID             VARCHAR(2),                                 -- Conductor定期作業実行パターンID
     REGULARLY_PERIOD_NAME_JA        VARCHAR(32),                                -- Conductor定期作業実行パターン名称
@@ -378,7 +378,7 @@ CREATE TABLE T_COMN_CONDUCTOR_REGULARLY_PERIOD
 
 
 -- Conductor曜日マスタ
-CREATE TABLE T_COMN_CONDUCTOR_DAY_OF_WEEK
+CREATE TABLE IF NOT EXISTS T_COMN_CONDUCTOR_DAY_OF_WEEK
 (
     DAY_OF_WEEK_ID                  VARCHAR(2),                                 -- 曜日ID
     DAY_OF_WEEK_NAME_JA             VARCHAR(16),                                -- 曜日名称
@@ -395,7 +395,7 @@ CREATE TABLE T_COMN_CONDUCTOR_DAY_OF_WEEK
 
 
 -- Conductor週番号マスタ
-CREATE TABLE T_COMN_CONDUCTOR_WEEK_NUMBER
+CREATE TABLE IF NOT EXISTS T_COMN_CONDUCTOR_WEEK_NUMBER
 (
     WEEK_NUMBER_ID                  VARCHAR(2),                                 -- 週番号ID
     WEEK_NUMBER_NAME_JA             VARCHAR(16),                                -- 週番号名称
@@ -412,7 +412,7 @@ CREATE TABLE T_COMN_CONDUCTOR_WEEK_NUMBER
 
 
 -- Conductor定期作業実行ステータスマスタ
-CREATE TABLE T_COMN_CONDUCTOR_REGULARLY_STATUS
+CREATE TABLE IF NOT EXISTS T_COMN_CONDUCTOR_REGULARLY_STATUS
 (
     REGULARLY_STATUS_ID             VARCHAR(2),                                 -- 主キー
     REGULARLY_STATUS_NAME_JA        VARCHAR(255),                               -- 表示名
@@ -429,7 +429,7 @@ CREATE TABLE T_COMN_CONDUCTOR_REGULARLY_STATUS
 
 
 -- ConductorNodeインスタンスビュー
-CREATE VIEW V_COMN_CONDUCTOR_NODE_INSTANCE AS
+CREATE OR REPLACE VIEW V_COMN_CONDUCTOR_NODE_INSTANCE AS
 SELECT
   TAB_A.*,
   TAB_B.OPERATION_ID
@@ -437,7 +437,7 @@ FROM
   T_COMN_CONDUCTOR_NODE_INSTANCE TAB_A
   LEFT JOIN
   T_COMN_CONDUCTOR_INSTANCE TAB_B ON (TAB_A.CONDUCTOR_INSTANCE_ID = TAB_B.CONDUCTOR_INSTANCE_ID);
-CREATE VIEW V_COMN_CONDUCTOR_NODE_INSTANCE_JNL AS
+CREATE OR REPLACE VIEW V_COMN_CONDUCTOR_NODE_INSTANCE_JNL AS
 SELECT
   TAB_A.*,
   TAB_B.OPERATION_ID

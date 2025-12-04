@@ -16,7 +16,7 @@ openapi: 3.0.3
 info:
   title: Exastro IT Automation API
   description: Exastro IT Automation API
-  version: "2.5"
+  version: "2.7.0"
   license:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0

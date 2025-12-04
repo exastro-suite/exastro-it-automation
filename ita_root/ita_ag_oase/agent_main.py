@@ -70,6 +70,10 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
     else:
         g.applogger.debug(g.appmsg.get_log_message("AGT-10005", []))
 
+    g.AGENT_INFO = {}
+    g.AGENT_INFO["name"] = os.environ.get("HOSTNAME")
+    g.AGENT_INFO["version"] = get_agent_version()
+
     while True:
         print("")
         print("")
@@ -222,6 +226,7 @@ def collection_logic(sqliteDB, organization_id, workspace_id, exastro_api):
             fetched_time = item[2]
             unsent_event["fetched_time"] = fetched_time
             unsent_event["event_collection_settings_name"] = event_collection_settings_name
+            unsent_event["agent"] = g.AGENT_INFO
             unsent_event["event"] = []
 
             sqliteDB.db_cursor.execute(
@@ -349,3 +354,18 @@ def collection_logic(sqliteDB, organization_id, workspace_id, exastro_api):
             app_exception(e)
 
     return
+
+
+def get_agent_version():
+    """
+        agent_versionの取得
+    Returns:
+        agent_version
+    """
+    # ファイルが存在しない／読めなかった等はエラー落ちとする
+    version_file_path = os.path.join(os.environ.get("PYTHONPATH"), "VERSION.txt")
+    with open(version_file_path, mode='r') as f:
+        agent_version = f.read()
+        # 末尾の改行があった場合、取り除く
+        agent_version = agent_version.strip()
+    return agent_version

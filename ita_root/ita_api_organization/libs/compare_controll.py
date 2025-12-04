@@ -964,21 +964,26 @@ def _get_unified_diff(accept_compare_file_list, filename_1, filename_2, mimetype
     file_diff = False
     str_rdiff = ""
     try:
+        # 現実装ではfile_required is Trueは呼ばれない
         if file_required is True:
             data_1_linebreak = base64.b64decode(data_1.encode()).decode().splitlines()
             data_2_linebreak = base64.b64decode(data_2.encode()).decode().splitlines()
         else:
             data_1_linebreak = []
             data_2_linebreak = []
+            # テキストファイルの比較
             if data_1:
-                with open(data_1, "rb") as tmp_data_1:
-                    while chunk_1:= tmp_data_1.read(chunk_byte):
-                        data_1_linebreak.extend(chunk_1.decode().splitlines())
+                with open(data_1, "r") as tmp_data_1:
+                    for line in tmp_data_1:
+                        # テキストモードで読む際は改行コードは"\n"に統一されるため、rstripで除去する
+                        data_1_linebreak.append(line.rstrip("\n"))
             if data_2:
-                with open(data_2, "rb") as tmp_data_2:
-                    while chunk_2:= tmp_data_2.read(chunk_byte):
-                        data_2_linebreak.extend(chunk_2.decode().splitlines())
+                with open(data_2, "r") as tmp_data_2:
+                    for line in tmp_data_2:
+                        # テキストモードで読む際は改行コードは"\n"に統一されるため、rstripで除去する
+                        data_2_linebreak.append(line.rstrip("\n"))
     except (UnicodeDecodeError, ValueError):
+        # バイナリファイルの比較
         if not data_1 and not data_2:
             file_diff = False
         elif not data_1 or not data_2:
@@ -989,6 +994,8 @@ def _get_unified_diff(accept_compare_file_list, filename_1, filename_2, mimetype
                     chunk_2 = tmp_data_2.read(chunk_byte)
                     if chunk_1 != chunk_2:
                         file_diff = True
+                        # バイナリファイルの比較では差分詳細は不要
+                        break
         return file_diff, str_rdiff
     except Exception:
         t = traceback.format_exc()

@@ -100,14 +100,9 @@ def unexecuted_instance(objdbca, body={}):
                 where +=  f" AND I_AG_EXECUTION_ENVIRONMENT_NAME IN ({prepared_list})"
                 parameter.extend(execution_environment_names)
 
-            ret = objdbca.table_select(t_exec_sts_inst, where, parameter)
-
-            # 各作業実行関連テーブルの行ロック
-            execution_no_list = [_r.get(exec_sts_inst_pkey) for _r in ret if _r.get(exec_sts_inst_pkey)]
-            if len(execution_no_list) != 0:
-                sql_str = f"SELECT `{exec_sts_inst_pkey}` FROM `{t_exec_sts_inst}` WHERE `{exec_sts_inst_pkey}` IN (%s) FOR UPDATE"
-                objdbca.sql_execute(sql_str, [",".join(execution_no_list)])
-                g.applogger.debug(f"SELECT FOR UPDATE :{exec_sts_inst_pkey}, [{execution_no_list}]")
+            sql_str = f"SELECT `I_AG_EXECUTION_ENVIRONMENT_NAME`, `EXECUTION_NO` FROM `{t_exec_sts_inst}` {where} FOR UPDATE"
+            g.applogger.debug(f"SELECT FOR UPDATE : {t_exec_sts_inst}")
+            ret = objdbca.sql_execute(sql_str, parameter)
 
             for record in ret:
                 # 実行環境名

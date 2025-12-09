@@ -66,6 +66,9 @@ def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
         g.applogger.info(msg)
         return False, recieve_notification_list, duplicate_notification_list
 
+    DEDUPLICATION_SETTINGS_MAP = {}
+    DEDUPLICATION_SETTINGS_ECS_MAP = {}
+
     labeled_event_collection = wsMongo.collection(mongoConst.LABELED_EVENT_COLLECTION)  # ラベル付与したイベントデータを保存するためのコレクション
 
     # IDとイベント収集設定IDから引けるように整形しておく

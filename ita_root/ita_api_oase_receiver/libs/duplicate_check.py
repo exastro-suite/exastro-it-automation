@@ -27,13 +27,6 @@ from common_libs.oase.const import oaseConst
 from libs.label_event import LABEL_KEY_MAP
 
 
-# T_OASE_DEDUPLICATION_SETTINGS
-# 重複排除の設定をIDから引けるようにしたもの
-DEDUPLICATION_SETTINGS_MAP = {}
-# イベント収集設定から、重複排除の設定を引けるようにしたもの
-DEDUPLICATION_SETTINGS_ECS_MAP = {}
-
-
 # 重複排除
 def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
     """重複排除を行う
@@ -66,7 +59,10 @@ def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
         g.applogger.info(msg)
         return False, recieve_notification_list, duplicate_notification_list
 
+    # T_OASE_DEDUPLICATION_SETTINGS
+    # 重複排除の設定をIDから引けるようにしたもの
     DEDUPLICATION_SETTINGS_MAP = {}
+    # イベント収集設定から、重複排除の設定を引けるようにしたもの
     DEDUPLICATION_SETTINGS_ECS_MAP = {}
 
     labeled_event_collection = wsMongo.collection(mongoConst.LABELED_EVENT_COLLECTION)  # ラベル付与したイベントデータを保存するためのコレクション
@@ -227,7 +223,7 @@ def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
             # 各グループを処理するタスクを投入
             future_to_group = []
             for duplicate_check_key, event_group in findoneupdate_event_group.items():
-                future_to_group.append(executor.submit(_process_event_group, labeled_event_collection, event_group, q_findoneupdate_num))
+                future_to_group.append(executor.submit(_process_event_group, labeled_event_collection, event_group, q_findoneupdate_num, DEDUPLICATION_SETTINGS_MAP, DEDUPLICATION_SETTINGS_ECS_MAP))
             findoneupdate_event_group = None
             # 全てのタスクの完了を待ち、例外が発生した場合はログに出力
             for future in concurrent.futures.as_completed(future_to_group):
@@ -255,7 +251,7 @@ def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
     return True, recieve_notification_list, duplicate_notification_list
 
 
-def _process_event_group(labeled_event_collection, event_group, q_findoneupdate_num):
+def _process_event_group(labeled_event_collection, event_group, q_findoneupdate_num, DEDUPLICATION_SETTINGS_MAP, DEDUPLICATION_SETTINGS_ECS_MAP):
     """
     同じ重複チェックキーを持つイベントグループを逐次処理するワーカー関数。
     各イベントに対して find_one_and_update を実行する。

@@ -100,14 +100,9 @@ def unexecuted_instance(objdbca, body={}):
                 where +=  f" AND I_AG_EXECUTION_ENVIRONMENT_NAME IN ({prepared_list})"
                 parameter.extend(execution_environment_names)
 
-            ret = objdbca.table_select(t_exec_sts_inst, where, parameter)
-
-            # 各作業実行関連テーブルの行ロック
-            execution_no_list = [_r.get(exec_sts_inst_pkey) for _r in ret if _r.get(exec_sts_inst_pkey)]
-            if len(execution_no_list) != 0:
-                sql_str = f"SELECT `{exec_sts_inst_pkey}` FROM `{t_exec_sts_inst}` WHERE `{exec_sts_inst_pkey}` IN (%s) FOR UPDATE"
-                objdbca.sql_execute(sql_str, [",".join(execution_no_list)])
-                g.applogger.debug(f"SELECT FOR UPDATE :{exec_sts_inst_pkey}, [{execution_no_list}]")
+            sql_str = f"SELECT `I_AG_EXECUTION_ENVIRONMENT_NAME`, `EXECUTION_NO` FROM `{t_exec_sts_inst}` {where} FOR UPDATE"
+            g.applogger.debug(f"SELECT FOR UPDATE : {t_exec_sts_inst}")
+            ret = objdbca.sql_execute(sql_str, parameter)
 
             for record in ret:
                 # 実行環境名
@@ -330,32 +325,76 @@ def get_populated_data_path(objdbca, organization_id, workspace_id, execution_no
 
     try:
         # tmp_pathの初期化
-        shutil.rmtree(tmp_base_path) if os.path.exists(tmp_base_path) else None
+        try:
+            g.applogger.debug(f"shutil.rmtree({tmp_base_path}) if os.path.exists({tmp_base_path}) else None")
+            shutil.rmtree(tmp_base_path) if os.path.exists(tmp_base_path) else None
+        except Exception as e:
+            g.applogger.info(e)
+            g.applogger.info("shutil.rmtree failed. file_path={}".format(tmp_base_path))
+            t = traceback.format_exc()
+            g.applogger.info(arrange_stacktrace_format(t))  # noqa: F405
+            raise e
+
+        # 低速ストレージ対応: @file_read_retry デコレータでリトライ処理を付与
+        # execution_no/* -> tmp_pathにコピー
+        @file_read_retry  # noqa: F405
+        def copy_dir_execution_no():
+            g.applogger.debug(f"copy_dir_execution_no called ({dir_path}, {tmp_path})")
+            try:
+                g.applogger.debug(f"shutil.copytree({dir_path}, {tmp_path})")
+                shutil.copytree(dir_path, tmp_path, dirs_exist_ok=True)
+                return True
+            except Exception as e:
+                g.applogger.info("copy_dir_execution_no failed. file_path={}".format(dir_path))
+                t = traceback.format_exc()
+                g.applogger.info(arrange_stacktrace_format(t))  # noqa: F405
+                raise e
+
+        # __conductor_workflowdir__/* -> tmp_pathにコピー
+        @file_read_retry  # noqa: F405
+        def copy_dir_conductor():
+            g.applogger.debug(f"copy_dir_conductor called ({conductor_dir_path}, {tmp_c_path})")
+            try:
+                # conductor_dir_path -> tmp_c_path に移動: conductor_dir_path無ければ作成
+                g.applogger.debug(f"os.makedirs({conductor_dir_path})")
+                os.makedirs(conductor_dir_path, exist_ok=True)
+                os.chmod(conductor_dir_path, 0o777)
+                g.applogger.debug(f"shutil.copytree({conductor_dir_path}, {tmp_c_path})")
+                shutil.copytree(conductor_dir_path, tmp_c_path, dirs_exist_ok=True)
+                return True
+            except Exception as e:
+                g.applogger.info("copy_dir_conductor failed. file_path={}".format(tmp_c_path))
+                t = traceback.format_exc()
+                g.applogger.info(arrange_stacktrace_format(t))  # noqa: F405
+                raise e
+
+        # __conductor_workflowdir__を -> tmp_pathに作成
+        @file_read_retry  # noqa: F405
+        def mkdir_conductor():
+            g.applogger.debug(f"mkdir_conductor called ({tmp_c_path})")
+            # tmp_c_pathをdummyで空作成
+            try:
+                g.applogger.debug(f"os.makedirs, os.chmod, ({tmp_c_path})")
+                os.makedirs(tmp_c_path, exist_ok=True)
+                os.chmod(tmp_c_path, 0o777)
+                return True
+            except Exception as e:
+                g.applogger.info("mkdir_conductor failed. file_path={}".format(tmp_c_path))
+                t = traceback.format_exc()
+                g.applogger.info(arrange_stacktrace_format(t))  # noqa: F405
+                raise e
 
         # execution_no/*
         # dir_path -> tmp_path に移動
-        if os.path.exists(dir_path):
-            if not os.path.isdir(tmp_path):
-                shutil.copytree(dir_path, tmp_path)
-                g.applogger.debug(f"shutil.copytree({dir_path}, {tmp_path})")
+        copy_dir_execution_no()
 
         # __conductor_workflowdir__/*
         if conductor_instance_no:
             # conductor_dir_path -> tmp_c_path に移動: conductor_dir_path無ければ作成
-            if not os.path.exists(conductor_dir_path):
-                os.makedirs(conductor_dir_path)
-                os.chmod(conductor_dir_path, 0o777)
-                g.applogger.debug(f"os.makedirs, os.chmod, ({conductor_dir_path})")
-
-            if os.path.isdir(conductor_dir_path):
-                shutil.copytree(conductor_dir_path, tmp_c_path)
-                g.applogger.debug(f"shutil.copytree({conductor_dir_path}, {tmp_c_path})")
+            copy_dir_conductor()
         else:
             # tmp_c_pathをdummyで空作成
-            if not os.path.exists(tmp_c_path):
-                os.makedirs(tmp_c_path)
-                os.chmod(tmp_c_path, 0o777)
-                g.applogger.debug(f"os.makedirs, os.chmod, ({tmp_c_path})")
+            mkdir_conductor()
 
         # tar.gz
         @file_read_retry
@@ -465,10 +504,22 @@ def update_result(objdbca, organization_id, workspace_id, execution_no, paramete
         #  'parameters_tar_data': '/tmp/org1/ws2/driver/ansible/legacy/2ed69707-d211-4bb4-9c65-ec0165efddac/parameter.tar.gz'}
         g.applogger.debug("update_result file_path:" + str(file_path))
         for file_key, record_file_paths in file_path.items():
-            if not os.path.exists(tmp_path + file_key):
-                os.makedirs(tmp_path + file_key)
-            with tarfile.open(record_file_paths, 'r:gz') as tar:
-                tar.extractall(path=tmp_path + file_key)
+
+            # 低速ストレージ対応: @file_read_retry デコレータでリトライ処理を付与
+            @file_read_retry  # noqa: F405
+            def tarfile_extractall_path():
+                try:
+                    os.makedirs(tmp_path + file_key, exist_ok=True)
+                    with tarfile.open(record_file_paths, 'r:gz') as tar:
+                        tar.extractall(path=tmp_path + file_key)
+                    g.applogger.debug(f"tarfile.open({record_file_paths}, 'r:gz'):  tar.extractall({tmp_path + file_key})")
+                    return True
+                except Exception as e:
+                    g.applogger.info("tarfile_extractall_path failed. file_path={}".format(record_file_paths))
+                    t = traceback.format_exc()
+                    g.applogger.info(arrange_stacktrace_format(t))  # noqa: F405
+                    raise e
+            tarfile_extractall_path()
 
             # outディレクトリ更新
             if file_key == "out_tar_data":
@@ -676,9 +727,9 @@ def create_file_path(connexion_request, tmp_path, execution_no):
         if parameters["driver_id"] == "legacy":
             tmp_path = tmp_path + "/driver/ansible/legacy/" + execution_no
         elif parameters["driver_id"] == "pioneer":
-            tmp_path = tmp_path + "/driver/ansible/pioneer" + execution_no
+            tmp_path = tmp_path + "/driver/ansible/pioneer/" + execution_no
         elif parameters["driver_id"] == "legacy_role":
-            tmp_path = tmp_path + "/driver/ansible/legacy_role" + execution_no
+            tmp_path = tmp_path + "/driver/ansible/legacy_role/" + execution_no
 
         # set parameter['file'][rest_name]
         if connexion_request.files:

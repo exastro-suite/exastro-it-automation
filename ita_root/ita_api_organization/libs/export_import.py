@@ -36,6 +36,7 @@ from common_libs.common import storage_access
 from common_libs.column import *  # noqa: F403
 from common_libs.common.util import print_exception_msg, get_ita_version
 
+
 def get_menu_export_list(objdbca, organization_id, workspace_id):
     """
         メニューエクスポート対象メニュー一覧取得
@@ -139,6 +140,7 @@ def get_menu_export_list(objdbca, organization_id, workspace_id):
     }
 
     return menus_data
+
 
 def get_excel_bulk_export_list(objdbca, organization_id, workspace_id):
     """
@@ -246,6 +248,7 @@ def get_excel_bulk_export_list(objdbca, organization_id, workspace_id):
 
     return menus_data
 
+
 def execute_menu_bulk_export(objdbca, menu, body):
     """
         メニュー一括エクスポート実行
@@ -348,6 +351,9 @@ def execute_menu_bulk_export(objdbca, menu, body):
         journal_type = ret_dp_journal_type[0].get('JOURNAL_TYPE_NAME_' + lang.upper(), "1")
 
         user_name = util.get_user_name(user_id)
+
+        # 親子メニューグループの際にメニューが重複することがあり、重複排除を行う事にする
+        body["menu"] = list(dict.fromkeys(body["menu"]))
 
         # 登録用パラメータを作成
         parameters = {
@@ -454,6 +460,9 @@ def execute_excel_bulk_export(objdbca, menu, body):
 
         user_name = util.get_user_name(user_id)
 
+        # 親子メニューグループの際にメニューが重複することがあり、重複排除を行う事にする
+        body["menu"] = list(dict.fromkeys(body["menu"]))
+
         # 登録用パラメータを作成
         parameters = {
             "parameter": {
@@ -495,6 +504,7 @@ def execute_excel_bulk_export(objdbca, menu, body):
     result_data = {'execution_no': execution_no}
 
     return result_data
+
 
 def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca, path_data):
     """

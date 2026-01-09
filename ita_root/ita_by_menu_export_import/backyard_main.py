@@ -1098,7 +1098,11 @@ def _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_
             for ck, _ in column_type.items():
                 dtyp[ck] = "object"
 
-            df = pd.read_json(StringIO(json_data), orient='records', dtype=dtyp)
+            # デフォルトはconvert_dates=Trueのため、特定のカラム名（例えば、_at, _time, timestamp, modified, dateなどで終わる、または一致するカラム）に
+            # 含まれる文字列が日付形式と判断されると、自動的にdatetime型に変換されるため、フラグをFalseにする
+            # Set convert_dates=False to prevent automatic datetime conversion for date-formatted strings in columns 
+            # with names ending in or matching _at, _time, timestamp, modified, date, etc. (default is convert_dates=True)
+            df = pd.read_json(StringIO(json_data), orient='records', dtype=dtyp, convert_dates=False)
             df = df.where(df.notnull(), None)
             g.applogger.debug(df.dtypes)
             g.applogger.debug(df)
@@ -3234,7 +3238,11 @@ def _export_sandboxdb_bulk_register_maindb(objdbca, ws_db_sb, objmenu, workspace
                 for ck, cv in column_type.items():
                     dtyp[ck] = "object"
 
-                df = pd.read_json(StringIO(json_data), orient='records', dtype=dtyp)
+                # デフォルトはconvert_dates=Trueのため、特定のカラム名（例えば、_at, _time, timestamp, modified, dateなどで終わる、または一致するカラム）に
+                # 含まれる文字列が日付形式と判断されると、自動的にdatetime型に変換されるため、フラグをFalseにする
+                # Set convert_dates=False to prevent automatic datetime conversion for date-formatted strings in columns 
+                # with names ending in or matching _at, _time, timestamp, modified, date, etc. (default is convert_dates=True)
+                df = pd.read_json(StringIO(json_data), orient='records', dtype=dtyp, convert_dates=False)
                 df = df.where(df.notnull(), None)
                 g.applogger.debug(df.dtypes)
                 g.applogger.debug(df)

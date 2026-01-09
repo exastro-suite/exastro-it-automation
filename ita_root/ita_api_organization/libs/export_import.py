@@ -378,7 +378,7 @@ def execute_menu_bulk_export(objdbca, menu, body):
         if not exec_result[0]:
             result_msg = _format_loadtable_msg(exec_result[2])
             result_msg = json.dumps(result_msg, ensure_ascii=False)
-            raise Exception("499-00701", [result_msg])  # loadTableバリデーションエラー
+            raise AppException("499-00701", [result_msg])  # loadTableバリデーションエラー
 
         # コミット/トランザクション終了
         objdbca.db_transaction_end(True)
@@ -489,14 +489,10 @@ def execute_excel_bulk_export(objdbca, menu, body):
         # コミット/トランザクション終了
         objdbca.db_transaction_end(True)
 
-    except AppException as e:
-        print_exception_msg(e)
+    except Exception as e:
         # ロールバック トランザクション終了
         objdbca.db_transaction_end(False)
-
-        result_code = e.args[0]
-        msg_args = e.args[1]
-        return False, result_code, msg_args, None
+        raise e
 
     # 返却用の値を取得
     execution_no = exec_result[1].get('execution_no')
@@ -1972,22 +1968,6 @@ def _decode_zip_file(file_path, base64Data):
 
     return True
 
-def _format_loadtable_msg(loadtable_msg):
-    """
-        【内部呼び出し用】loadTableから受け取ったバリデーションエラーメッセージをフォーマットする
-        ARGS:
-            loadtable_msg: loadTableから返却されたメッセージ(dict)
-        RETRUN:
-            format_msg
-    """
-    result_msg = {}
-    for key, value_list in loadtable_msg.items():
-        msg_list = []
-        for value in value_list:
-            msg_list.append(value.get('msg'))
-        result_msg[key] = msg_list
-
-    return result_msg
 
 def generate_path_data(organization_id, workspace_id, excel=False):
     """

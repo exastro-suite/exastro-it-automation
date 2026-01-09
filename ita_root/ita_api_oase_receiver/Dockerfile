@@ -111,6 +111,7 @@ WORKDIR $APP_PATH
 
 COPY ./ita_root/ita_api_oase_receiver/config/httpd.conf/httpd.conf /etc/httpd/conf/httpd.conf
 COPY ./ita_root/ita_api_oase_receiver/config/httpd.conf/wsgi.conf /etc/httpd/conf.d/wsgi.conf
+COPY ./ita_root/ita_api_oase_receiver/config/httpd.conf/00-mpm.conf /etc/httpd/conf.modules.d/00-mpm.conf
 
 COPY ./ita_root/ita_api_oase_receiver/ $APP_PATH/
 COPY ./ita_root/common_libs/ $APP_PATH/common_libs/

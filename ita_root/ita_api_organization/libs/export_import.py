@@ -36,6 +36,7 @@ from common_libs.common import storage_access
 from common_libs.column import *  # noqa: F403
 from common_libs.common.util import print_exception_msg, get_ita_version
 
+
 def get_menu_export_list(objdbca, organization_id, workspace_id):
     """
         メニューエクスポート対象メニュー一覧取得
@@ -139,6 +140,7 @@ def get_menu_export_list(objdbca, organization_id, workspace_id):
     }
 
     return menus_data
+
 
 def get_excel_bulk_export_list(objdbca, organization_id, workspace_id):
     """
@@ -246,6 +248,7 @@ def get_excel_bulk_export_list(objdbca, organization_id, workspace_id):
 
     return menus_data
 
+
 def execute_menu_bulk_export(objdbca, menu, body):
     """
         メニュー一括エクスポート実行
@@ -349,6 +352,9 @@ def execute_menu_bulk_export(objdbca, menu, body):
 
         user_name = util.get_user_name(user_id)
 
+        # 親子メニューグループの際にメニューが重複することがあり、重複排除を行う事にする
+        body["menu"] = list(dict.fromkeys(body["menu"]))
+
         # 登録用パラメータを作成
         parameters = {
             "parameter": {
@@ -372,15 +378,16 @@ def execute_menu_bulk_export(objdbca, menu, body):
         if not exec_result[0]:
             result_msg = _format_loadtable_msg(exec_result[2])
             result_msg = json.dumps(result_msg, ensure_ascii=False)
-            raise Exception("499-00701", [result_msg])  # loadTableバリデーションエラー
+            raise AppException("499-00701", [result_msg])  # loadTableバリデーションエラー
 
         # コミット/トランザクション終了
         objdbca.db_transaction_end(True)
 
-    except Exception as e:
+    except Exception:
         # ロールバック トランザクション終了
         objdbca.db_transaction_end(False)
-        raise e
+        # エラー箇所を上書きしてしまわないように e 無しで raiseする
+        raise
 
     # 返却用の値を取得
     execution_no = exec_result[1].get('execution_no')
@@ -454,6 +461,9 @@ def execute_excel_bulk_export(objdbca, menu, body):
 
         user_name = util.get_user_name(user_id)
 
+        # 親子メニューグループの際にメニューが重複することがあり、重複排除を行う事にする
+        body["menu"] = list(dict.fromkeys(body["menu"]))
+
         # 登録用パラメータを作成
         parameters = {
             "parameter": {
@@ -480,14 +490,11 @@ def execute_excel_bulk_export(objdbca, menu, body):
         # コミット/トランザクション終了
         objdbca.db_transaction_end(True)
 
-    except AppException as e:
-        print_exception_msg(e)
+    except Exception:
         # ロールバック トランザクション終了
         objdbca.db_transaction_end(False)
-
-        result_code = e.args[0]
-        msg_args = e.args[1]
-        return False, result_code, msg_args, None
+        # エラー箇所を上書きしてしまわないように e 無しで raiseする
+        raise
 
     # 返却用の値を取得
     execution_no = exec_result[1].get('execution_no')
@@ -495,6 +502,7 @@ def execute_excel_bulk_export(objdbca, menu, body):
     result_data = {'execution_no': execution_no}
 
     return result_data
+
 
 def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca, path_data):
     """
@@ -1962,22 +1970,6 @@ def _decode_zip_file(file_path, base64Data):
 
     return True
 
-def _format_loadtable_msg(loadtable_msg):
-    """
-        【内部呼び出し用】loadTableから受け取ったバリデーションエラーメッセージをフォーマットする
-        ARGS:
-            loadtable_msg: loadTableから返却されたメッセージ(dict)
-        RETRUN:
-            format_msg
-    """
-    result_msg = {}
-    for key, value_list in loadtable_msg.items():
-        msg_list = []
-        for value in value_list:
-            msg_list.append(value.get('msg'))
-        result_msg[key] = msg_list
-
-    return result_msg
 
 def generate_path_data(organization_id, workspace_id, excel=False):
     """

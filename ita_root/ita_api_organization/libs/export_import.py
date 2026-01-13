@@ -383,10 +383,11 @@ def execute_menu_bulk_export(objdbca, menu, body):
         # コミット/トランザクション終了
         objdbca.db_transaction_end(True)
 
-    except Exception as e:
+    except Exception:
         # ロールバック トランザクション終了
         objdbca.db_transaction_end(False)
-        raise e
+        # エラー箇所を上書きしてしまわないように e 無しで raiseする
+        raise
 
     # 返却用の値を取得
     execution_no = exec_result[1].get('execution_no')
@@ -489,10 +490,11 @@ def execute_excel_bulk_export(objdbca, menu, body):
         # コミット/トランザクション終了
         objdbca.db_transaction_end(True)
 
-    except Exception as e:
+    except Exception:
         # ロールバック トランザクション終了
         objdbca.db_transaction_end(False)
-        raise e
+        # エラー箇所を上書きしてしまわないように e 無しで raiseする
+        raise
 
     # 返却用の値を取得
     execution_no = exec_result[1].get('execution_no')

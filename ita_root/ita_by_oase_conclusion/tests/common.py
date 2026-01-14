@@ -195,7 +195,7 @@ def create_filter_row(
 
 @overload
 def create_filter_row(
-    search_condition_id: Literal["3"],
+    search_condition_id: Literal["3", "4"],
     conditions: Iterable[tuple[str, Literal["1", "2"], str]],
     group_condition_id: Literal["1", "2"],
     group_label_names: list[str],
@@ -207,7 +207,7 @@ def create_filter_row(
 
 
 def create_filter_row(
-    search_condition_id: Literal["1", "2", "3"],
+    search_condition_id: Literal["1", "2", "3", "4"],
     search_conditions: Iterable[tuple[str, Literal["1", "2"], str]] | None,
     group_condition_id: Literal["1", "2"] | None = None,
     group_label_names: list[str] | None = None,

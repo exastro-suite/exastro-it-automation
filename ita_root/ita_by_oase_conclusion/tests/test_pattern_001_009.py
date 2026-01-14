@@ -181,6 +181,58 @@ def test_pattern_003(
     assert_expected_pattern_results(ws_db, test_events, expected)
 
 
+def test_pattern_003_no_period_extension(
+    patch_global_g,
+    patch_notification_and_writer,
+    patch_common_functions,
+    patch_action_using_modules,
+    monkeypatch,
+    patch_database_connections,
+    patch_datetime,
+):
+    """「対象とする」のグルーピング（期間延長なし） - 期間延長なしでグループが分かれるケースを確認"""
+    g = patch_global_g
+
+    ws_db, mock_mongo = patch_database_connections
+    mock_datetime = patch_datetime
+
+    # イベント
+    test_events = create_events(
+        [f"e{n:03}" for n in itertools.chain(range(1, 14 + 1), [999])], "p3-npe"
+    )
+
+    # ルール
+    r1 = create_rule_row(
+        1,
+        "r1",
+        filter.f_a3_no_period_extension,
+        conclusion_label_settings=[["node", "VALUE"]]
+    )
+
+    # 必要なテーブルデータを設定
+    filters = [
+        filter.f_a3_no_period_extension,
+    ]
+    rules = [
+        r1,
+    ]
+    run_test_pattern(
+        g, ws_db, mock_mongo, mock_datetime, test_events, filters, rules
+    )
+
+    expected = [
+        ("r1", ["e001", "e002", "e003"], None),
+        ("r1", ["e004", "e005"], None),
+        ("r1", ["e006", "e007"], None),
+        ("r1", ["e008", "e009"], None),
+        ("r1", ["e010", "e011", "e012"], None),
+        ("r1", ["e013", "e014"], None),
+        ("r1", ["e999"], None),
+    ]
+
+    assert_expected_pattern_results(ws_db, test_events, expected)
+
+
 def test_pattern_004(
     patch_global_g,
     patch_notification_and_writer,

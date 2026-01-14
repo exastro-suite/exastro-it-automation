@@ -400,9 +400,13 @@ class ManageEvents:
             filter_map (dict[str, dict[str, str]]): フィルターIDをキー、フィルター情報を値とする辞書
         """
 
-        # フィルターに検索条件がグルーピングのものが含まれていない場合は処理しない
+        # フィルターに検索条件が「グルーピング」または「グルーピング（期間延長なし）」のものが含まれていない場合は処理しない
         if not any(
-            filter_row["SEARCH_CONDITION_ID"] == oaseConst.DF_SEARCH_CONDITION_GROUPING
+            filter_row["SEARCH_CONDITION_ID"]
+            in (
+                oaseConst.DF_SEARCH_CONDITION_GROUPING,
+                oaseConst.DF_SEARCH_CONDITION_GROUPING_NO_PERIOD_EXTENSION,
+            )
             for filter_row in filter_map.values()
         ):
             return
@@ -500,7 +504,7 @@ class ManageEvents:
                 event["labels"]["_exastro_fetched_time"] <= latest_group["end_time"]
             ):
                 # 最新グループが取得でき、イベントがTTL内の場合は、後続イベントとして最新グループにイベントを追加
-                self._append_ttl_group(latest_group, event)
+                self._append_ttl_group(latest_group, event, filter_row)
                 is_first_event = False
             case _:
                 # グループが空の場合、またはイベントがTTL外の場合は新規グループを作成
@@ -647,7 +651,7 @@ class ManageEvents:
             "remaining_events": [],
         }
 
-    def _append_ttl_group(self, ttl_group: TtlGroup, event: Event) -> None:
+    def _append_ttl_group(self, ttl_group: TtlGroup, event: Event, filter_row: dict[str]) -> None:
         """グループにイベントを追加する
 
         Args:
@@ -655,6 +659,10 @@ class ManageEvents:
             event (Event): グループに追加するイベント
         """
         ttl_group["remaining_events"].append(event)
+
+        # 「グルーピング（期間延長なし）」の場合は終了時間の更新を行わない
+        if filter_row["SEARCH_CONDITION_ID"] == oaseConst.DF_SEARCH_CONDITION_GROUPING_NO_PERIOD_EXTENSION:
+            return
 
         # グループの終了時間の変更を確認
         new_end_time = event["labels"]["_exastro_end_time"]

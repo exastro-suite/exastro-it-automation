@@ -36,6 +36,7 @@ from common_libs.common import storage_access
 from common_libs.column import *  # noqa: F403
 from common_libs.common.util import print_exception_msg, get_ita_version
 
+
 def get_menu_export_list(objdbca, organization_id, workspace_id):
     """
         メニューエクスポート対象メニュー一覧取得
@@ -45,23 +46,10 @@ def get_menu_export_list(objdbca, organization_id, workspace_id):
             result
     """
     # テーブル名
-    t_common_menu = 'T_COMN_MENU'
-    t_common_menu_group = 'T_COMN_MENU_GROUP'
-    t_common_menu_table_link = 'T_COMN_MENU_TABLE_LINK'
     t_dp_hide_menu_list = 'T_DP_HIDE_MENU_LIST'
 
-    # 変数定義
-    lang = g.get('LANGUAGE')
-
-    # 『メニュー-テーブル紐付管理』の対象シートタイプ
-    sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
-
     # 『メニュー-テーブル紐付管理』テーブルから対象のデータを取得
-    ret_menu_table_link = objdbca.table_select(t_common_menu_table_link, 'WHERE SHEET_TYPE IN %s AND DISUSE_FLAG = %s ORDER BY MENU_ID', [sheet_type_list, 0])
-    # 対象メニューIDをリスト化
-    menu_id_list = []
-    for record in ret_menu_table_link:
-        menu_id_list.append(record.get('MENU_ID'))
+    menu_id_list = _get_target_menu_id_list(objdbca)
 
     # 『非表示メニュー』テーブルから対象外にするメニューIDを取得
     ret_dp_hide_menu_list = objdbca.table_select(t_dp_hide_menu_list, 'ORDER BY MENU_ID')
@@ -72,73 +60,10 @@ def get_menu_export_list(objdbca, organization_id, workspace_id):
         if hide_menu_id in menu_id_list:
             menu_id_list.remove(hide_menu_id)
 
-    # 『メニュー管理』テーブルから対象メニューを取得
-    # メニュー名を取得
-    ret_menu = objdbca.table_select(t_common_menu, 'WHERE MENU_ID IN %s AND DISUSE_FLAG = %s', [menu_id_list, 0])
+    # メニューとメニューグループのデータを処理
+    return _create_export_menu_data(objdbca, menu_id_list)
 
-    menu_group_id_list = []
-    menus = {}
-    for record in ret_menu:
-        menu_group_id = record.get('MENU_GROUP_ID')
-        menu_group_id_list.append(menu_group_id)
-        if menu_group_id not in menus:
-            menus[menu_group_id] = []
 
-        add_menu = {}
-        add_menu['id'] = record.get('MENU_ID')
-        add_menu['menu_name'] = record.get('MENU_NAME_' + lang.upper())
-        add_menu['menu_name_rest'] = record.get('MENU_NAME_REST')
-        add_menu['disp_seq'] = record.get('DISP_SEQ')
-        menus[record.get('MENU_GROUP_ID')].append(add_menu)
-
-    # 『メニューグループ管理』テーブルから対象のデータを取得
-    # メニューグループ名を取得
-    ret_menu_group = objdbca.table_select(t_common_menu_group, 'WHERE MENU_GROUP_ID IN %s AND DISUSE_FLAG = %s ORDER BY DISP_SEQ', [menu_group_id_list, 0])
-
-    # MENU_GROUP_ID:MENU_GROUP_NAMEのdict
-    dict_menu_group_id_name = {}
-    # MENU_GROUP_ID:DISP_SEQのdict
-    dict_menu_group_id_seq = {}
-    # メニューグループの一覧を作成し、メニュー一覧も格納する
-    menu_group_list = []
-    for record in ret_menu_group:
-        menu_group_id = record.get('MENU_GROUP_ID')
-        dict_menu_group_id_name[record.get('MENU_GROUP_ID')] = record.get('MENU_GROUP_NAME_' + lang.upper())
-        dict_menu_group_id_seq[record.get('MENU_GROUP_ID')] = record.get('DISP_SEQ')
-
-        add_menu_group = {}
-        add_menu_group['parent_id'] = record.get('PARENT_MENU_GROUP_ID')
-        add_menu_group['id'] = menu_group_id
-        add_menu_group['menu_group_name'] = record.get('MENU_GROUP_NAME_' + lang.upper())
-        add_menu_group['disp_seq'] = record.get('DISP_SEQ')
-        add_menu_group['menus'] = menus.get(menu_group_id)
-
-        # 親メニューグループ情報を取得
-        parent_menu_group = {}
-        parent_flg = False
-        parent_id = add_menu_group['parent_id']
-        if parent_id is not None:
-            for data in menu_group_list:
-                if parent_id == data['id']:
-                    parent_flg = True
-
-            # 親メニューグループがすでに追加されているか確認
-            if parent_flg is False:
-                parent_menu_group_info = getParentMenuGroupInfo(parent_id, objdbca)
-                parent_menu_group['parent_id'] = None
-                parent_menu_group['id'] = parent_id
-                parent_menu_group['menu_group_name'] = parent_menu_group_info["MENU_GROUP_NAME_" + g.LANGUAGE.upper()]
-                parent_menu_group["disp_seq"] = parent_menu_group_info["DISP_SEQ"]
-                parent_menu_group['menus'] = []
-                menu_group_list.append(parent_menu_group)
-
-        menu_group_list.append(add_menu_group)
-
-    menus_data = {
-        "menu_groups": menu_group_list,
-    }
-
-    return menus_data
 
 def get_excel_bulk_export_list(objdbca, organization_id, workspace_id):
     """
@@ -149,25 +74,13 @@ def get_excel_bulk_export_list(objdbca, organization_id, workspace_id):
             result
     """
     # テーブル名
-    t_common_menu = 'T_COMN_MENU'
-    t_common_menu_group = 'T_COMN_MENU_GROUP'
-    t_common_menu_table_link = 'T_COMN_MENU_TABLE_LINK'
     t_comn_role_menu_link = 'T_COMN_ROLE_MENU_LINK'
 
     # 変数定義
-    lang = g.get('LANGUAGE')
     role_id_list = g.get('ROLES')
 
-    # 『メニュー-テーブル紐付管理』の対象シートタイプ
-    sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
-
     # 『メニュー-テーブル紐付管理』テーブルから対象のデータを取得
-    ret_menu_table_link = objdbca.table_select(t_common_menu_table_link, 'WHERE SHEET_TYPE IN %s AND DISUSE_FLAG = %s ORDER BY MENU_ID', [sheet_type_list, 0])
-
-    # 対象メニューIDをリスト化
-    menu_id_list = []
-    for record in ret_menu_table_link:
-        menu_id_list.append(record.get('MENU_ID'))
+    menu_id_list = _get_target_menu_id_list(objdbca)
 
     # 『ロール-メニュー紐付管理』テーブルから対象のデータを取得
     # 自分のロールが「メンテナンス可」,「閲覧のみ」,「メンテナンス可＋削除可」
@@ -177,6 +90,46 @@ def get_excel_bulk_export_list(objdbca, organization_id, workspace_id):
     menu_id_list = []
     for record in ret_role_menu_link:
         menu_id_list.append(record.get('MENU_ID'))
+
+    # メニューとメニューグループのデータを処理
+    return _create_export_menu_data(objdbca, menu_id_list)
+
+
+def _get_target_menu_id_list(objdbca):
+    """
+        メニュー-テーブル紐付管理から対象メニューIDリストを取得
+        ARGS:
+            objdbca: DB接クラス DBConnectWs()
+        RETURN:
+            menu_id_list: メニューIDリスト
+    """
+    t_common_menu_table_link = 'T_COMN_MENU_TABLE_LINK'
+    sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
+
+    ret_menu_table_link = objdbca.table_select(t_common_menu_table_link, 'WHERE SHEET_TYPE IN %s AND DISUSE_FLAG = %s ORDER BY MENU_ID', [sheet_type_list, 0])
+
+    menu_id_list = []
+    for record in ret_menu_table_link:
+        menu_id_list.append(record.get('MENU_ID'))
+
+    return menu_id_list
+
+
+def _create_export_menu_data(objdbca, menu_id_list):
+    """
+        メニューとメニューグループのデータを処理
+        ARGS:
+            objdbca: DB接クラス DBConnectWs()
+            menu_id_list: 対象メニューIDリスト
+        RETURN:
+            menus_data: メニューグループとメニューのデータ
+    """
+    # テーブル名
+    t_common_menu = 'T_COMN_MENU'
+    t_common_menu_group = 'T_COMN_MENU_GROUP'
+
+    # 変数定義
+    lang = g.get('LANGUAGE')
 
     # 『メニュー管理』テーブルから対象メニューを取得
     # メニュー名を取得
@@ -201,16 +154,10 @@ def get_excel_bulk_export_list(objdbca, organization_id, workspace_id):
     # メニューグループ名を取得
     ret_menu_group = objdbca.table_select(t_common_menu_group, 'WHERE MENU_GROUP_ID IN %s AND DISUSE_FLAG = %s ORDER BY DISP_SEQ', [menu_group_id_list, 0])
 
-    # MENU_GROUP_ID:MENU_GROUP_NAMEのdict
-    dict_menu_group_id_name = {}
-    # MENU_GROUP_ID:DISP_SEQのdict
-    dict_menu_group_id_seq = {}
     # メニューグループの一覧を作成し、メニュー一覧も格納する
     menu_group_list = []
     for record in ret_menu_group:
         menu_group_id = record.get('MENU_GROUP_ID')
-        dict_menu_group_id_name[record.get('MENU_GROUP_ID')] = record.get('MENU_GROUP_NAME_' + lang.upper())
-        dict_menu_group_id_seq[record.get('MENU_GROUP_ID')] = record.get('DISP_SEQ')
 
         add_menu_group = {}
         add_menu_group['parent_id'] = record.get('PARENT_MENU_GROUP_ID')
@@ -220,17 +167,15 @@ def get_excel_bulk_export_list(objdbca, organization_id, workspace_id):
         add_menu_group['menus'] = menus.get(menu_group_id)
 
         # 親メニューグループ情報を取得
-        parent_menu_group = {}
-        parent_flg = False
         parent_id = add_menu_group['parent_id']
         if parent_id is not None:
-            for data in menu_group_list:
-                if parent_id == data['id']:
-                    parent_flg = True
+            # 親メニューグループが重複して追加されないように、ret_menu_group にも menu_group_list にも存在しない場合のみ追加
+            parent_exists_in_ret_menu_group = any(record['MENU_GROUP_ID'] == parent_id for record in ret_menu_group)
+            parent_exists_in_menu_group_list = any(data['id'] == parent_id for data in menu_group_list)
 
-            # 親メニューグループがすでに追加されているか確認
-            if parent_flg is False:
+            if not parent_exists_in_ret_menu_group and not parent_exists_in_menu_group_list:
                 parent_menu_group_info = getParentMenuGroupInfo(parent_id, objdbca)
+                parent_menu_group = {}
                 parent_menu_group['parent_id'] = None
                 parent_menu_group['id'] = parent_id
                 parent_menu_group['menu_group_name'] = parent_menu_group_info["MENU_GROUP_NAME_" + g.LANGUAGE.upper()]
@@ -245,6 +190,7 @@ def get_excel_bulk_export_list(objdbca, organization_id, workspace_id):
     }
 
     return menus_data
+
 
 def execute_menu_bulk_export(objdbca, menu, body):
     """
@@ -349,6 +295,9 @@ def execute_menu_bulk_export(objdbca, menu, body):
 
         user_name = util.get_user_name(user_id)
 
+        # 親子メニューグループの際にメニューが重複することがあり、重複排除を行う事にする
+        body["menu"] = list(dict.fromkeys(body["menu"]))
+
         # 登録用パラメータを作成
         parameters = {
             "parameter": {
@@ -372,15 +321,16 @@ def execute_menu_bulk_export(objdbca, menu, body):
         if not exec_result[0]:
             result_msg = _format_loadtable_msg(exec_result[2])
             result_msg = json.dumps(result_msg, ensure_ascii=False)
-            raise Exception("499-00701", [result_msg])  # loadTableバリデーションエラー
+            raise AppException("499-00701", [result_msg])  # loadTableバリデーションエラー
 
         # コミット/トランザクション終了
         objdbca.db_transaction_end(True)
 
-    except Exception as e:
+    except Exception:
         # ロールバック トランザクション終了
         objdbca.db_transaction_end(False)
-        raise e
+        # エラー箇所を上書きしてしまわないように e 無しで raiseする
+        raise
 
     # 返却用の値を取得
     execution_no = exec_result[1].get('execution_no')
@@ -454,6 +404,9 @@ def execute_excel_bulk_export(objdbca, menu, body):
 
         user_name = util.get_user_name(user_id)
 
+        # 親子メニューグループの際にメニューが重複することがあり、重複排除を行う事にする
+        body["menu"] = list(dict.fromkeys(body["menu"]))
+
         # 登録用パラメータを作成
         parameters = {
             "parameter": {
@@ -480,14 +433,11 @@ def execute_excel_bulk_export(objdbca, menu, body):
         # コミット/トランザクション終了
         objdbca.db_transaction_end(True)
 
-    except AppException as e:
-        print_exception_msg(e)
+    except Exception:
         # ロールバック トランザクション終了
         objdbca.db_transaction_end(False)
-
-        result_code = e.args[0]
-        msg_args = e.args[1]
-        return False, result_code, msg_args, None
+        # エラー箇所を上書きしてしまわないように e 無しで raiseする
+        raise
 
     # 返却用の値を取得
     execution_no = exec_result[1].get('execution_no')
@@ -495,6 +445,7 @@ def execute_excel_bulk_export(objdbca, menu, body):
     result_data = {'execution_no': execution_no}
 
     return result_data
+
 
 def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca, path_data):
     """
@@ -1962,22 +1913,6 @@ def _decode_zip_file(file_path, base64Data):
 
     return True
 
-def _format_loadtable_msg(loadtable_msg):
-    """
-        【内部呼び出し用】loadTableから受け取ったバリデーションエラーメッセージをフォーマットする
-        ARGS:
-            loadtable_msg: loadTableから返却されたメッセージ(dict)
-        RETRUN:
-            format_msg
-    """
-    result_msg = {}
-    for key, value_list in loadtable_msg.items():
-        msg_list = []
-        for value in value_list:
-            msg_list.append(value.get('msg'))
-        result_msg[key] = msg_list
-
-    return result_msg
 
 def generate_path_data(organization_id, workspace_id, excel=False):
     """

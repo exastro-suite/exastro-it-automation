@@ -59,6 +59,19 @@ def external_valid_menu_before(objdbca, objtable, option):
         retBool = False
         msg = g.appmsg.get_api_message("MSG-20261")
         return retBool, msg, option,
+
+    # フィルター条件は必須とする
+    # The filter condition is required
+    if not filter_condition_json_str or len(filter_condition_json_str) == 0:
+        retBool = False
+        msg = g.appmsg.get_api_message("MSG-180001")
+        return retBool, msg, option,
+    for filter_condition in filter_condition_json:
+        if "condition_type" not in filter_condition or "condition_value" not in filter_condition or filter_condition["condition_value"] == "":
+            retBool = False
+            msg = g.appmsg.get_api_message("MSG-180001")
+            return retBool, msg, option,
+
     # 検索条件 / Search condition
     try:
         search_condition_id = parameter.get("search_condition_id")
@@ -73,13 +86,6 @@ def external_valid_menu_before(objdbca, objtable, option):
     # 検索方式が「1:ユニーク」「2:キューイング」の場合
     # If the search method is "1: Unique" or "2: Queuing"
     if search_condition_id in [oaseConst.DF_SEARCH_CONDITION_UNIQUE, oaseConst.DF_SEARCH_CONDITION_QUEUING]:
-        # フィルター条件は必須とする
-        # The filter condition is required
-        if not filter_condition_json_str or len(filter_condition_json_str) == 0:
-            retBool = False
-            msg = g.appmsg.get_api_message("MSG-180001")
-            return retBool, msg, option,
-
         # グルーピング条件ラベル、条件は入力不可とする
         # Group labels and conditions cannot be entered
         if group_label_key_ids or group_condition_id or (group_label_key_ids and len(group_label_key_ids) > 0):
@@ -99,9 +105,9 @@ def external_valid_menu_before(objdbca, objtable, option):
             retBool = False
             msg = g.appmsg.get_api_message("MSG-180006")
             return retBool, msg, option,
-    elif search_condition_id in [oaseConst.DF_SEARCH_CONDITION_GROUPING]:
+    elif search_condition_id in [oaseConst.DF_SEARCH_CONDITION_GROUPING, oaseConst.DF_SEARCH_CONDITION_GROUPING_NO_PERIOD_EXTENSION]:
         # 検索方式が「3:グルーピング」の場合
-        # If the search method is "3: Group"
+        # If the search method is 3 or 4: Grouping (Period Extension) or Grouping (No Period Extension)
 
         # グルーピング条件ラベル、条件は必須とする
         # Group labels and conditions are required
@@ -164,8 +170,13 @@ def db_filter_unique_check(objdbca, filter_id, target_value):
 
     # 検索方法「グルーピング」を対象外
     # Exclude search method "Grouping"
-    where_str = where_str + " and `SEARCH_CONDITION_ID` <> %s"
-    bind_value_list.append(oaseConst.DF_SEARCH_CONDITION_GROUPING)
+    grouping_values = [
+        oaseConst.DF_SEARCH_CONDITION_GROUPING,
+        oaseConst.DF_SEARCH_CONDITION_GROUPING_NO_PERIOD_EXTENSION
+    ]
+    placeholders = ', '.join(['%s'] * len(grouping_values))
+    where_str = where_str + f" and `SEARCH_CONDITION_ID` NOT IN ({placeholders})"
+    bind_value_list.extend(grouping_values)
 
     # 廃止を対象外
     # Exclude abolition
@@ -204,11 +215,8 @@ def db_filter_group_unique_check(objdbca, filter_id, target_value, group_label_k
 
     # フォルター条件が設定されていたら除外
     # Exclude if filter condition is set
-    if target_value is not None:
-        where_str = where_str + ' and `FILTER_CONDITION_JSON` = %s'
-        bind_value_list.append(target_value)
-    else:
-        where_str = where_str + ' and `FILTER_CONDITION_JSON` IS NULL'
+    where_str = where_str + ' and `FILTER_CONDITION_JSON` = %s'
+    bind_value_list.append(target_value)
 
     # 更新時自身のIDを除外
     # Exclude own ID when updating
@@ -219,8 +227,13 @@ def db_filter_group_unique_check(objdbca, filter_id, target_value, group_label_k
 
     # 検索方法「グルーピング」を対象
     # Target search method "Grouping"
-    where_str = where_str + " and `SEARCH_CONDITION_ID` = %s"
-    bind_value_list.append(oaseConst.DF_SEARCH_CONDITION_GROUPING)
+    grouping_values = [
+        oaseConst.DF_SEARCH_CONDITION_GROUPING,
+        oaseConst.DF_SEARCH_CONDITION_GROUPING_NO_PERIOD_EXTENSION
+    ]
+    placeholders = ', '.join(['%s'] * len(grouping_values))
+    where_str = where_str + f" and `SEARCH_CONDITION_ID` IN ({placeholders})"
+    bind_value_list.extend(grouping_values)
 
     # 廃止を対象外
     # Exclude abolition

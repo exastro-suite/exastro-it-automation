@@ -362,10 +362,14 @@ class Judgement:
             # グルーピングの場合、追加で後続イベントチェックを行う
             filter_row = filterIDMap[FilterId]
             if (
-                ret and
-                filter_row["SEARCH_CONDITION_ID"] == oaseConst.DF_SEARCH_CONDITION_GROUPING and
+                ret
+                and filter_row["SEARCH_CONDITION_ID"]
+                in (
+                    oaseConst.DF_SEARCH_CONDITION_GROUPING,
+                    oaseConst.DF_SEARCH_CONDITION_GROUPING_NO_PERIOD_EXTENSION,
+                )
                 # ここでグルーピングすると不整合になるケースがあるため、グルーピングした際に先頭になるかどうかのチェックのみ
-                not self.EventObj.is_first_event_when_grouping(EventRow, filter_row)
+                and not self.EventObj.is_first_event_when_grouping(EventRow, filter_row)
             ):
                 # 後続イベントはOASE Conclusion上ではイベント扱いとしないため、判定結果をFalseにする
                 ret = False
@@ -400,8 +404,12 @@ class Judgement:
                 filter_row = filterIDMap[filter_id]
                 event = filtered_event_map[filter_id]
                 if (
-                    filter_row["SEARCH_CONDITION_ID"] != oaseConst.DF_SEARCH_CONDITION_GROUPING or
-                    not event
+                    filter_row["SEARCH_CONDITION_ID"]
+                    not in (
+                        oaseConst.DF_SEARCH_CONDITION_GROUPING,
+                        oaseConst.DF_SEARCH_CONDITION_GROUPING_NO_PERIOD_EXTENSION,
+                    )
+                    or not event
                 ):
                     continue
                 # グルーピングの実行

@@ -44,6 +44,7 @@ class oaseConst():
     DF_SEARCH_CONDITION_UNIQUE = '1'    # ユニーク / Unique
     DF_SEARCH_CONDITION_QUEUING = '2'   # キューイング / Queuing
     DF_SEARCH_CONDITION_GROUPING = '3'  # グルーピング / Grouping
+    DF_SEARCH_CONDITION_GROUPING_NO_PERIOD_EXTENSION = '4'  # グルーピング（期間延長なし） / Grouping (No Period Extension)
 
     # グルーピング条件 / Grouping conditions
     DF_GROUP_CONDITION_ID_TARGET = '1'      # を対象とする / is the target

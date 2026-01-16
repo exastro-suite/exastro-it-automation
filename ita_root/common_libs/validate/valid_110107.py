@@ -84,7 +84,7 @@ def external_valid_menu_before(objdbca, objtable, option):
     group_condition_id = parameter.get('group_condition_id')
 
     # 検索方式が「1:ユニーク」「2:キューイング」の場合
-    # If the search method is "1: Unique" or "2: Queuing"
+    # If the search method is 1 or 2: Unique or Queuing
     if search_condition_id in [oaseConst.DF_SEARCH_CONDITION_UNIQUE, oaseConst.DF_SEARCH_CONDITION_QUEUING]:
         # グルーピング条件ラベル、条件は入力不可とする
         # Group labels and conditions cannot be entered
@@ -106,7 +106,7 @@ def external_valid_menu_before(objdbca, objtable, option):
             msg = g.appmsg.get_api_message("MSG-180006")
             return retBool, msg, option,
     elif search_condition_id in [oaseConst.DF_SEARCH_CONDITION_GROUPING, oaseConst.DF_SEARCH_CONDITION_GROUPING_NO_PERIOD_EXTENSION]:
-        # 検索方式が「3:グルーピング」の場合
+        # 検索方式が「3:グルーピング（期間延長あり）」or「4:グルーピング（期間延長なし）」の場合
         # If the search method is 3 or 4: Grouping (Period Extension) or Grouping (No Period Extension)
 
         # グルーピング条件ラベル、条件は必須とする

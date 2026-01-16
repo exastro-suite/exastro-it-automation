@@ -43,7 +43,7 @@ class oaseConst():
     # フィルター検索条件 / Filter search conditions
     DF_SEARCH_CONDITION_UNIQUE = '1'    # ユニーク / Unique
     DF_SEARCH_CONDITION_QUEUING = '2'   # キューイング / Queuing
-    DF_SEARCH_CONDITION_GROUPING = '3'  # グルーピング / Grouping
+    DF_SEARCH_CONDITION_GROUPING = '3'  # グルーピング（期間延長あり） / Grouping (Period Extension)
     DF_SEARCH_CONDITION_GROUPING_NO_PERIOD_EXTENSION = '4'  # グルーピング（期間延長なし） / Grouping (No Period Extension)
 
     # グルーピング条件 / Grouping conditions

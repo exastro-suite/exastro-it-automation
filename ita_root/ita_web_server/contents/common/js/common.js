@@ -3805,7 +3805,7 @@ settingListModalOpen: function( settingData ) {
             },
             footer: {
                 button: {
-                    ok: { text: getMessage.FTE00143, action: 'default', width: '200px'},
+                    ok: { text: getMessage.FTE00143, action: 'default', width: '200px', className: 'dialogPositive'},
                     cancel: { text: getMessage.FTE00144, action: 'normal'}
                 }
             }
@@ -3884,6 +3884,7 @@ settingListModalOpen: function( settingData ) {
         _this.setSettingListEvents( modal, settingData );
         _this.setSettingListSelect2( modal );
         _this.settingListCheckListDisabled( modal, settingData );
+        _this.setSettingListRequiredCheck( modal );
     });
 },
 /*
@@ -3908,8 +3909,9 @@ settingListRowHtml( settingData, index = 0, value = [] ) {
         idName = `${item.id}_${item.type}_${Date.now()}_${index}`,
         val = ( value[i] !== undefined )? value[i]: null,
         rVal = ( val !== null )? cmn.nlcEscape( cmn.escape( val ) ): val,
-        input = ( item.type === 'text')? this.html.inputText('settingListInputText', rVal, idName ):
-            this.html.select( item.list, 'settingListInputSelect', val, idName, {}, { sort: false } );
+        requiredClassName = ( settingData.required )? ' requiredItem': '',
+        input = ( item.type === 'text')? this.html.inputText('settingListInputText' + requiredClassName, rVal, idName ):
+            this.html.select( item.list, 'settingListInputSelect' + requiredClassName, val, idName, {}, { sort: false } );
 
         row.push(``
         + `<td class="settingListTd" style="width:${width}"><div class="settingListInput">`
@@ -3948,6 +3950,25 @@ setSettingListSelect2: function( modal ) {
 },
 /*
 ##################################################
+   必須チェック
+##################################################
+*/
+setSettingListRequiredCheck: function( modal ) {
+    let requiredCheck = false;
+    modal.$.dbody.find('.requiredItem').each( function() {
+        const $input = $( this );
+        const val = $input.val();
+        if ( val === '') {
+            if ( requiredCheck === false ) requiredCheck = true;
+            $input.addClass('tableEditRequiredError');
+        } else {
+            $input.removeClass('tableEditRequiredError');
+        }
+    });
+    modal.buttonPositiveDisabled( requiredCheck );
+},
+/*
+##################################################
    設定リストイベント
 ##################################################
 */
@@ -3961,6 +3982,7 @@ setSettingListEvents: function( modal, settingData ) {
             $listBlock.find('.settingListTbody').append( _this.settingListRowHtml( settingData) );
             _this.settingListCheckListDisabled( modal, settingData );
             _this.setSettingListSelect2( modal );
+            _this.setSettingListRequiredCheck( modal );
         });
 
         // クリア
@@ -3968,6 +3990,12 @@ setSettingListEvents: function( modal, settingData ) {
             $listBlock.find('.settingListTbody').html( _this.settingListRowHtml( settingData ) );
             _this.settingListCheckListDisabled( modal, settingData );
             _this.setSettingListSelect2( modal );
+            _this.setSettingListRequiredCheck( modal );
+        });
+
+        // 必須入力チェック
+        $listBlock.on('input', '.requiredItem', function(){
+            _this.setSettingListRequiredCheck( modal );
         });
 
         // 削除
@@ -3979,6 +4007,7 @@ setSettingListEvents: function( modal, settingData ) {
                 _this.setSettingListSelect2( modal );
             }
             _this.settingListCheckListDisabled( modal, settingData );
+            _this.setSettingListRequiredCheck( modal );
         });
 
         // 移動

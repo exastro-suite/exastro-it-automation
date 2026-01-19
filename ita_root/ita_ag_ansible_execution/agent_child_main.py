@@ -505,6 +505,9 @@ def decompress_tar_file(organization_id, workspace_id, driver_id, dir_path, file
     storagepath = os.environ.get('STORAGEPATH')
     root_dir_path = f"{storagepath}/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{execution_no}"
 
+    # 移動前に作業用ディレクトリを作成しておく
+    os.makedirs(root_dir_path, exist_ok=True)
+
     # 展開したファイルを移動する
     move_dir = ""
     for dir_name in lst:

@@ -30,7 +30,7 @@ import time
 from common_libs.common.dbconnect import *
 from common_libs.common.exception import AppException, ValidationException
 from common_libs.ansible_driver.functions.util import InstanceRecodeUpdate, createTmpZipFile
-from common_libs.common.util import get_timestamp, file_encode, ky_encrypt
+from common_libs.common.util import get_timestamp, file_encode, ky_encrypt, retry_makedirs
 
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_driver.classes.AnslConstClass import AnslConst
@@ -98,18 +98,14 @@ def backyard_child_main(organization_id, workspace_id):
         container_driver_path = getAnsibleExecutDirPath(ansc_const, execution_no)
 
         work_dir = container_driver_path + "/in"
-        if not os.path.isdir(work_dir):
-            os.makedirs(work_dir)
+        retry_makedirs(work_dir)
         work_dir = container_driver_path + "/out"
-        if not os.path.isdir(work_dir):
-            os.makedirs(work_dir)
+        retry_makedirs(work_dir)
         driver_error_log_file = work_dir + "/error.log"
         work_dir = container_driver_path + "/.tmp"
-        if not os.path.isdir(work_dir):
-            os.makedirs(work_dir)
+        retry_makedirs(work_dir)
         work_dir = getDataRelayStorageDir() + "/driver/conductor/dummy"
-        if not os.path.isdir(work_dir):
-            os.makedirs(work_dir)
+        retry_makedirs(work_dir)
 
         result = main_logic(wsDb, execution_no, driver_id, rerun_mode, workspace_id)
         if result[0] is True:

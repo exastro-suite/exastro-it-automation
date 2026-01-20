@@ -38,6 +38,7 @@ from common_libs.ansible_driver.functions.util import addAnsibleCreateFilesPath
 from common_libs.ansible_driver.functions.util import get_OSTmpPath
 from common_libs.ansible_driver.classes.WrappedStringReplaceAdmin import WrappedStringReplaceAdmin
 from common_libs.common.storage_access import storage_read_text, storage_read_bytes
+from common_libs.common.util import retry_rmtree, retry_zip_extract
 
 #################################################################################
 # rolesディレクトリ解析
@@ -149,10 +150,9 @@ class CheckAnsibleRoleFiles():
         try:
             if del_flag is True:
                 if os.path.isdir(in_dist_path):
-                    shutil.rmtree(in_dist_path)
+                    retry_rmtree(in_dist_path)
 
-            with zipfile.ZipFile(in_zip_path) as zip:
-                zip.extractall(in_dist_path)
+            retry_zip_extract(in_zip_path, in_dist_path)
 
         except Exception as e:
             msgstr = g.appmsg.get_api_message("MSG-10259")
@@ -4361,7 +4361,7 @@ class VarStructAnalysisFileAccess():
 
             is_dir = os.path.isdir(outdir)
             if is_dir is True:
-                shutil.rmtree(outdir)
+                retry_rmtree(outdir)
 
             # ロール名一覧取得
             role_name_list = roleObj.getrolename()

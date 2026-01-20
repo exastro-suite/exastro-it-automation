@@ -1711,7 +1711,7 @@ class loadTable():
         current_file = {}
         current_file_path = {}
         tmp_path = '/tmp/' + datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
-        os.mkdir(tmp_path)
+        retry_makedirs(tmp_path)  # noqa: F405
 
         try:
             # 更新時
@@ -1816,7 +1816,7 @@ class loadTable():
                                     continue
 
                                 tmp_file_dir = os.path.join(tmp_path, rest_key)
-                                os.mkdir(tmp_file_dir)
+                                retry_makedirs(tmp_file_dir)  # noqa: F405
                                 tmp_file_path = os.path.join(tmp_file_dir, rest_val)
                                 upload_file(tmp_file_path, entry_file[rest_key])
                                 record_file_paths[rest_key] = tmp_file_path
@@ -2117,7 +2117,7 @@ class loadTable():
             raise e
         finally:
             if os.path.isdir(tmp_path):
-                shutil.rmtree(tmp_path)
+                retry_rmtree(tmp_path)  # noqa: F405
 
         return retBool, result
 

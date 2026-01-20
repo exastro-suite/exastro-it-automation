@@ -22,6 +22,7 @@ from flask import g
 import os
 from common_libs.common.storage_access import storage_base
 import shutil
+from common_libs.common.util import retry_copy2, retry_remove
 
 class MaterialVarsAnalyzer():
 
@@ -93,7 +94,7 @@ class MaterialVarsAnalyzer():
             # /storage
             tmp_file_path = obj.make_temp_path(file_path)
             # /storageから/tmpにコピー
-            shutil.copy2(file_path, tmp_file_path)
+            retry_copy2(file_path, tmp_file_path)
         else:
             # not /storage
             tmp_file_path = file_path
@@ -104,7 +105,7 @@ class MaterialVarsAnalyzer():
         if storage_flg is True:
             # /tmpゴミ掃除
             if os.path.isfile(tmp_file_path) is True:
-                os.remove(tmp_file_path)
+                retry_remove(tmp_file_path)
 
         return result
 

@@ -978,9 +978,8 @@ def unzip_custom_menu_item(wsdb_istc, menu):
     # zip解凍先パス
     uploadPath = os.environ.get('STORAGEPATH') + "/".join([g.get('ORGANIZATION_ID'), g.get('WORKSPACE_ID')]) + "/tmp/" + menu_id
 
-    if not os.path.exists(uploadPath):
-        os.makedirs(uploadPath)
-        os.chmod(uploadPath, 0o777)
+    retry_makedirs(uploadPath)  # noqa: F405
+    retry_chmod(uploadPath, 0o777)  # noqa: F405
 
     ret = unzip_file(file_path + '/' + file_name, uploadPath)
 
@@ -989,7 +988,7 @@ def unzip_custom_menu_item(wsdb_istc, menu):
         custom_file_list = convert_to_base64(uploadPath)
 
     if os.path.exists(uploadPath):
-        shutil.rmtree(uploadPath)
+        retry_rmtree(uploadPath)  # noqa: F405
 
     return custom_file_list
 
@@ -1058,6 +1057,6 @@ def convert_to_base64(file_path):
         custom_file_list[file] = ret
 
     if os.path.exists(file_path):
-        shutil.rmtree(file_path)
+        retry_rmtree(file_path)  # noqa: F405
 
     return custom_file_list

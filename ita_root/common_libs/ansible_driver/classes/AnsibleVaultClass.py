@@ -55,7 +55,7 @@ class AnsibleVault:
           Returns:
             なし
         """
-        os.remove(self.VaultPasswordFilePath)
+        retry_remove(self.VaultPasswordFilePath)  # noqa: F405
 
     def Vault(self, ansible_path, exec_user, password_file, value, indento, engine_virtualenv_path, passwdFileDel=True):
         """
@@ -123,7 +123,7 @@ class AnsibleVault:
         fd.close()
 
         # パーミッション設定
-        os.chmod(strExecshellName, 0o777)
+        retry_chmod(strExecshellName, 0o777)  # noqa: F405
         # Ansible_vault実行Commnad発行
         if exec_user.strip() != "":
             cmd = "sudo -u {} -i {} {}".format(exec_user, strExecshellName, virtualenv_flg)
@@ -134,8 +134,8 @@ class AnsibleVault:
 
         # 一時ファイル削除
 
-        os.remove(vault_value_file)
-        os.remove(strExecshellName)
+        retry_remove(vault_value_file)  # noqa: F405
+        retry_remove(strExecshellName)  # noqa: F405
 
         if passwdFileDel is True:
             self.RemoveVaultPasswordFile()

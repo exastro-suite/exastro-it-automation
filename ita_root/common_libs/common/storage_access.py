@@ -22,6 +22,9 @@ import shutil
 from pathlib import Path
 import traceback
 import inspect
+import time
+import datetime
+import pytz
 
 
 class storage_base:
@@ -30,7 +33,7 @@ class storage_base:
             # ルートパスを/tmpに置き換える
             tmp_dir_path = re.sub(os.environ.get('STORAGEPATH'), "/tmp/", os.path.dirname(file_path))
             tmp_file_path = "{}/{}".format(tmp_dir_path, os.path.basename(file_path))
-            os.makedirs(tmp_dir_path, exist_ok=True)
+            retry_makedirs(tmp_dir_path)
         except:  # noqa: E722
             pass
         return tmp_file_path
@@ -38,7 +41,7 @@ class storage_base:
     def makedir_temp_path(self, file_path: str):
         try:
             tmp_dir_path = os.path.dirname(file_path)
-            os.makedirs(tmp_dir_path, exist_ok=True)
+            retry_makedirs(tmp_dir_path)
         except:  # noqa: E722
             pass
         return file_path
@@ -88,7 +91,7 @@ class storage_read(storage_base):
         if self.storage_flg is True:
             self.tmp_file_path = self.make_temp_path(file_path) if tmp_path is None else self.makedir_temp_path(tmp_path)
             #  /storageから/tmpにファイルコピー(パーミッション維持)
-            shutil.copy2(self.storage_file_path, self.tmp_file_path)
+            retry_copy2(self.storage_file_path, self.tmp_file_path)
         else:
             self.tmp_file_path = file_path
         # open
@@ -120,7 +123,7 @@ class storage_read(storage_base):
 
     def remove(self):
         try:
-            os.remove(self.tmp_file_path)
+            retry_remove(self.tmp_file_path)
         except:  # noqa: E722
             pass
 
@@ -128,7 +131,7 @@ class storage_read(storage_base):
         try:
             # /tmpに作成した作業ディレクトリの削除
             if self.tmp_file_path.startswith("/tmp/"):
-                os.rmdir(os.path.dirname(self.tmp_file_path))
+                retry_rmdir(os.path.dirname(self.tmp_file_path))
         except:  # noqa: E722
             pass
 
@@ -150,8 +153,9 @@ class storage_write(storage_base):
         if self.storage_flg is True:
             self.tmp_file_path = self.make_temp_path(file_path)
             # open('xxx', 'a')のケースがあるのでファイルコピー
+            # 新規作成でコピー元が存在しないこともある
             if os.path.isfile(file_path) is True:
-                shutil.copy2(self.storage_file_path, self.tmp_file_path)
+                retry_copy2(self.storage_file_path, self.tmp_file_path)
         else:
             self.tmp_file_path = file_path
         # open
@@ -167,14 +171,14 @@ class storage_write(storage_base):
         self.fd.close()
         if self.storage_flg is True:
             # /tmpから/stargeにコピー
-            shutil.copy2(self.tmp_file_path, self.storage_file_path)
+            retry_copy2(self.tmp_file_path, self.storage_file_path)
             if file_del is True:
                 # /tmpの掃除
                 self.remove()
 
     def remove(self):
         try:
-            os.remove(self.tmp_file_path)
+            retry_remove(self.tmp_file_path)
         except:  # noqa: E722
             pass
 
@@ -192,11 +196,11 @@ class storage_write_text(storage_base):
 
         Path(tmp_file_path).write_text(value, encoding=encoding)
         if storage_flg is True:
-            # /tmpから/stargeにコピー
-            shutil.copy2(tmp_file_path, file_path)
+            # /tmpから/storageにコピー
+            retry_copy2(tmp_file_path, file_path)
             # /tmpの掃除
             try:
-                os.remove(tmp_file_path)
+                retry_remove(tmp_file_path)
             except:  # noqa: E722
                 pass
 
@@ -209,7 +213,7 @@ class storage_read_text(storage_base):
             # /storage
             tmp_file_path = self.make_temp_path(file_path)
             # /storageから/tmpにコピー
-            shutil.copy2(file_path, tmp_file_path)
+            retry_copy2(file_path, tmp_file_path)
         else:
             # not /storage
             tmp_file_path = file_path
@@ -218,7 +222,7 @@ class storage_read_text(storage_base):
         if storage_flg is True:
             # /tmpの掃除
             try:
-                os.remove(tmp_file_path)
+                retry_remove(tmp_file_path)
             except:  # noqa: E722
                 pass
         return value
@@ -232,7 +236,7 @@ class storage_read_bytes(storage_base):
             # /storage
             tmp_file_path = self.make_temp_path(file_path)
             # /storageから/tmpにコピー
-            shutil.copy2(file_path, tmp_file_path)
+            retry_copy2(file_path, tmp_file_path)
         else:
             # not /storage
             tmp_file_path = file_path
@@ -245,7 +249,183 @@ class storage_read_bytes(storage_base):
         if storage_flg is True:
             # /tmpの掃除
             try:
-                os.remove(tmp_file_path)
+                retry_remove(tmp_file_path)
             except:  # noqa: E722
                 pass
         return value
+
+
+# 低速ストレージ対応: @file_read_retry デコレータでリトライ処理を付与
+# storage_access.pyの中ではutil.pyの関数は使用できないため、個別で記載する
+def print_exception_msg(e):
+    """
+    例外メッセージを、infoログに出力する
+    """
+
+    # 例外と、発生したファイ名と行番号を出力
+    info = inspect.getouterframes(inspect.currentframe())[1]
+    msg_line = "({}:{})".format(os.path.basename(info.filename), info.lineno)
+    exception_msg = "exception_msg='{}'".format(e)
+    g.applogger.info('[timestamp={}] {} {}'.format(datetime_to_str(datetime.datetime.now()), exception_msg, msg_line))
+
+
+def datetime_to_str(p_datetime):
+    """datetime to string (ISO format)
+    Args:
+        p_datetime (datetime): datetime
+    Returns:
+        str: datetime formated string (UTC)
+    """
+    if p_datetime is None:
+        return None
+
+    if p_datetime.tzinfo is None:
+        aware_datetime = pytz.timezone(os.environ.get('TZ', 'UTC')).localize(p_datetime)
+    else:
+        aware_datetime = p_datetime
+
+    utc_datetime = aware_datetime.astimezone(datetime.timezone.utc)
+    return utc_datetime.isoformat(timespec='milliseconds').replace('+00:00', 'Z')
+
+
+def file_read_retry(func):
+    """
+    file_read_retry
+        ファイルストレージへの書き込み直後の読み込みが遅い場合向けの対策
+        Measures to take when reading is slow immediately after writing to file storage
+
+        「FileNotFoundError: [Errno 2] No such file or directory」が出るため、リトライを行う
+        "FileNotFoundError: [Errno 2] No such file or directory" appears, so retry.
+
+        デコレーター関数 / decorator function
+        ・util.pyと同等
+    """
+    #
+    def wrapper(*args, **kwargs):
+        retry_delay_time = 0.1  # リトライのインターバル
+        retBool = False
+        i = 1
+        max = 3  # リトライ回数
+        # ▼試験用なので削除する
+        g.applogger.debug("file_read_retry Called! func_name:{}".format(func.__name__))
+        while True:
+            try:
+                retBool = func(*args, **kwargs)
+                if retBool is True:
+                    # ▼試験用なので削除する
+                    g.applogger.debug("file_read_retry End! func_name:{}".format(func.__name__))
+                    break
+            except Exception as e:
+                # raiseしたくない場合は、funcの中でログを出力し、（エラーを抑止して）Falseを返却してください
+                if i == max:
+                    # 最後のログ出力のみ、stacktraceを出力
+                    # Output stacktrace only the last log output
+                    # ▼試験用なので削除する
+                    g.applogger.info("file_read_retry Failed! raise E!!! func_name:{}".format(func.__name__))
+                    t = traceback.format_exc()
+                    g.applogger.debug(str(t))
+                    raise e
+                else:
+                    # retry分は、メッセージのみを出力
+                    # For retry minutes, only the message is output
+                    g.applogger.info(print_exception_msg(e))
+
+            if i == max:
+                break
+            time.sleep(retry_delay_time)
+            i = i + 1
+
+    return wrapper
+
+
+# ディレクトリ作成
+@file_read_retry
+def retry_makedirs(dir_path, raise_error=True):
+    """
+        `os.makedirs(dir_path, exist_ok=True)` を`@file_read_retry`付きで実行する
+        Args:
+            dir_path: 作成するディレクトリパス
+            raise_error: リトライを実施してもエラーが発生した際に例外スローするか (True: 例外スロー&ログ出力/ False: ログ出力のみ)
+    """
+    g.applogger.debug(f"os.makedirs({dir_path})")
+    try:
+        os.makedirs(dir_path, exist_ok=True)
+        return True
+    except Exception as e:
+        g.applogger.info("retry_makedirs failed. dir_path={}".format(dir_path))
+        t = traceback.format_exc()
+        g.applogger.debug(str(t))
+        if raise_error is True:
+            raise e
+        else:
+            return False
+
+
+# ファイルコピー(shutil.copy2)
+@file_read_retry
+def retry_copy2(src_path, dest_path, raise_error=True):
+    """
+        `shutil.copy(src_path, dest_path)` を`@file_read_retry`付きで実行する
+        Args:
+            src_path: コピー元のファイルパス
+            dest_path: コピー先のファイルパス
+            raise_error: リトライを実施してもエラーが発生した際に例外スローするか (True: 例外スロー&ログ出力/ False: ログ出力のみ)
+    """
+    g.applogger.debug(f"shutil.copy2({src_path, dest_path})")
+    try:
+        shutil.copy2(src_path, dest_path)
+        return True
+    except Exception as e:
+        g.applogger.info("retry_copy2 failed. src_path={}, dest_path={}".format(src_path, dest_path))
+        t = traceback.format_exc()
+        g.applogger.debug(str(t))
+        if raise_error is True:
+            raise e
+        else:
+            return False
+
+
+# 空ディレクトリ削除(os.rmdir)
+@file_read_retry
+def retry_rmdir(dir_path, raise_error=True):
+    """
+        `os.rmdir(dir_path)` を`@file_read_retry`付きで実行する
+        Args:
+            dir_path: 削除するディレクトリパス
+            raise_error: リトライを実施してもエラーが発生した際に例外スローするか (True: 例外スロー&ログ出力/ False: ログ出力のみ)
+    """
+    g.applogger.debug(f"os.rmdir({dir_path})")
+    try:
+        os.rmdir(dir_path)
+        return True
+    except Exception as e:
+        g.applogger.info("retry_rmdir failed. dir_path={}".format(dir_path))
+        t = traceback.format_exc()
+        g.applogger.debug(str(t))
+        if raise_error is True:
+            raise e
+        else:
+            return False
+
+
+# ファイル削除(os.remove)
+@file_read_retry
+def retry_remove(file_path, raise_error=True):
+    """
+        `os.remove(file_path)` を`@file_read_retry`付きで実行する
+        Args:
+            file_path: 削除するファイルパス
+            raise_error: リトライを実施してもエラーが発生した際に例外スローするか (True: 例外スロー&ログ出力/ False: ログ出力のみ)
+    """
+    g.applogger.debug(f"os.remove({file_path})")
+    try:
+        os.remove(file_path)
+        return True
+    except Exception as e:
+        g.applogger.info("retry_remove failed. file_path={}".format(file_path))
+        t = traceback.format_exc()
+        g.applogger.debug(str(t))
+        if raise_error is True:
+            raise e
+        else:
+            return False

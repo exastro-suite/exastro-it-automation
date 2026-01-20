@@ -232,7 +232,7 @@ from common_libs.ansible_driver.functions.util import getAnsibleConst
 from common_libs.ansible_driver.functions.util import getPioneerDialogUploadDirPath
 from common_libs.ansible_driver.functions.util import getLegacyPlaybookUploadDirPath
 from common_libs.ansible_driver.functions.util import get_AnsibleDriverShellPath
-from common_libs.common.util import ky_encrypt, ky_decrypt, ky_file_encrypt, ky_file_decrypt
+from common_libs.common.util import ky_encrypt, ky_decrypt, ky_file_encrypt, ky_file_decrypt, retry_makedirs, retry_chmod, retry_copy, retry_copyfile, retry_copytree, retry_remove, retry_rmtree
 from common_libs.common.storage_access import storage_base, storage_read, storage_write, storage_base
 from common_libs.ansible_driver.functions.ag_util import CreateAG_ITABuilderShellFiles, CreateAG_ITARunnerShellFiles, Replace_HostVrasFilepath
 
@@ -451,9 +451,8 @@ class CreateAnsibleExecFiles():
         # self.lv_AnsibleTmpDirAry["BASE_DIR"]をaddAnsibleCreateFilesPathでゴミ掃除リストに追加はここでは不要
         dir_name = self.lv_AnsibleTmpDirAry["BASE_DIR"]
         # 作成用一時ディレクトリ作成
-        if os.path.isdir(dir_name) is False:
-            os.mkdir(dir_name)
-        os.chmod(dir_name, 0o777)
+        retry_makedirs(dir_name)
+        retry_chmod(dir_name, 0o777)
 
     def getAnsibleWorkingDirectories(self, in_oct_id, in_execno):
         """
@@ -572,21 +571,19 @@ class CreateAnsibleExecFiles():
                                str(inspect.currentframe().f_lineno), msgstr)
             return False, mt_rolenames, mt_rolevars, mt_roleglobalvars, mt_role_rolepackage_id, mt_def_vars_list, mt_def_array_vars_list
         else:
-            os.chmod(c_dir, 0o777)
+            retry_chmod(c_dir, 0o777)
 
         # /{storage}/{organization_id}/{workspace_id}/driver/ansible/{legacy / pioneer / legacy_role}/作業番号
         # 作業番号作成
         c_dir = aryRetAnsibleWorkingDir[2]
-        if os.path.isdir(c_dir) is False:
-            os.mkdir(c_dir)
-        os.chmod(c_dir, 0o777)
+        retry_makedirs(c_dir)
+        retry_chmod(c_dir, 0o777)
 
         # /{storage}/{organization_id}/{workspace_id}/driver/ansible/{legacy / pioneer / legacy_role}/作業番号/out
         # outディレクトリ作成
         c_outdir = aryRetAnsibleWorkingDir[4]
-        if os.path.isdir(c_outdir) is False:
-            os.mkdir(c_outdir)
-        os.chmod(c_outdir, 0o777)
+        retry_makedirs(c_outdir)
+        retry_chmod(c_outdir, 0o777)
 
         # outディレクトリ名を記憶
         self.setAnsible_out_Dir(c_outdir)
@@ -607,10 +604,9 @@ class CreateAnsibleExecFiles():
         # ユーザー公開用データリレイストレージパス
         # /{storage}/{organization_id}/{workspace_id}/driver/ansible/{legacy / pioneer / legacy_role}/作業番号/out/user_files
         user_out_Dir = "{}/{}".format(c_outdir, self.LC_ANS_OUTDIR_DIR)
-        # isdirでディレクトリ有無チェック
-        if os.path.isdir(user_out_Dir) is False:
-            os.mkdir(user_out_Dir)
-        os.chmod(user_out_Dir, 0o777)
+        # user_filesディレクトリ作成
+        retry_makedirs(user_out_Dir)
+        retry_chmod(user_out_Dir, 0o777)
 
         # ホスト変数定義ファイルに記載するパスなのでAnsible側のストレージパスに変更
         self.lv_user_out_Dir = self.setAnsibleSideFilePath(user_out_Dir, self.LC_ITA_OUT_DIR)
@@ -639,10 +635,9 @@ class CreateAnsibleExecFiles():
         # /{storage}/{organization_id}/{workspace_id}/driver/ansible/{legacy / pioneer / legacy_role}/作業番号/in
         # inディレクトリ作成
         c_indir = aryRetAnsibleWorkingDir[3]
-        if os.path.isdir(c_indir) is False:
-            os.mkdir(c_indir)
         # ansible.cfgを配置した場合の考慮
-        os.chmod(c_indir, 0o755)
+        retry_makedirs(c_indir)
+        retry_chmod(c_indir, 0o755)
 
         # INディレクトリ名を記憶
         self.setAnsible_in_Dir(c_indir)
@@ -651,10 +646,8 @@ class CreateAnsibleExecFiles():
         if self.getAnsibleDriverID() == self.AnscObj.DF_LEGACY_DRIVER_ID:
             # child_playbooksディレクトリ作成
             c_dirwk = c_indir + "/" + self.LC_ANS_CHILD_PLAYBOOKS_DIR
-            # isdirでディレクトリ有無チェック
-            if os.path.isdir(c_dirwk) is False:
-                os.mkdir(c_dirwk)
-            os.chmod(c_dirwk, 0o777)
+            retry_makedirs(c_dirwk)
+            retry_chmod(c_dirwk, 0o777)
 
             # child_playbooksディレクトリ名を記憶
             self.setAnsible_child_playbooks_Dir(c_dirwk)
@@ -662,10 +655,8 @@ class CreateAnsibleExecFiles():
             self.setPlaybook_child_playbooks_Dir(self.LC_ANS_CHILD_PLAYBOOKS_DIR)
         # template_filesディレクトリ作成
         c_dirwk = c_indir + "/" + self.LC_ANS_TEMPLATE_FILES_DIR
-        # isdirでディレクトリ有無チェック
-        if os.path.isdir(c_dirwk) is False:
-            os.mkdir(c_dirwk)
-        os.chmod(c_dirwk, 0o777)
+        retry_makedirs(c_dirwk)
+        retry_chmod(c_dirwk, 0o777)
         self.setAnsible_template_files_Dir(c_dirwk)
 
         # ホスト変数ファイル内 template_filesディレクトリパスを記憶
@@ -674,62 +665,48 @@ class CreateAnsibleExecFiles():
         # ドライバ区分がLEGACYかPioneer、ROLEの場合にcopy_filesディレクトリを作成する。
         # copy_filesディレクトリ作成
         c_dirwk = c_indir + "/" + self.LC_ANS_COPY_FILES_DIR
-        # isdirでディレクトリ有無チェック
-        if os.path.isdir(c_dirwk) is False:
-            os.mkdir(c_dirwk)
-        os.chmod(c_dirwk, 0o777)
+        retry_makedirs(c_dirwk)
+        retry_chmod(c_dirwk, 0o777)
         self.setAnsible_copy_files_Dir(c_dirwk)
 
         self.setHostvarsfile_copy_file_Dir(c_dirwk)
 
         # upload_filesディレクトリ作成
         c_dirwk = c_indir + "/" + self.LC_ANS_UPLOAD_FILES_DIR
-        # isdirでディレクトリ有無チェック
-        if os.path.isdir(c_dirwk) is False:
-            os.mkdir(c_dirwk)
-        os.chmod(c_dirwk, 0o777)
+        retry_makedirs(c_dirwk)
+        retry_chmod(c_dirwk, 0o777)
         self.setAnsible_upload_files_Dir(c_dirwk)
 
         # ssh_key_filesディレクトリ作成
         c_dirwk = c_indir + "/" + self.LC_ANS_SSH_KEY_FILES_DIR
-        # isdirでディレクトリ有無チェック
-        if os.path.isdir(c_dirwk) is False:
-            os.mkdir(c_dirwk)
-        os.chmod(c_dirwk, 0o777)
+        retry_makedirs(c_dirwk)
+        retry_chmod(c_dirwk, 0o777)
         self.setAnsible_ssh_key_files_Dir(c_dirwk)
 
         # win_ca_filesディレクトリ作成
         c_dirwk = c_indir + "/" + self.LC_ANS_WIN_KEY_FILES_DIR
-        # isdirでディレクトリ有無チェック
-        if os.path.isdir(c_dirwk) is False:
-            os.mkdir(c_dirwk)
-        os.chmod(c_dirwk, 0o777)
+        retry_makedirs(c_dirwk)
+        retry_chmod(c_dirwk, 0o777)
         self.setAnsible_win_key_files_Dir(c_dirwk)
 
         # ドライバ区分がPIONEERの場合にdialog_filesディレクトリ作成
         if self.getAnsibleDriverID() == self.AnscObj.DF_PIONEER_DRIVER_ID:
             # dialog_filesディレクトリ作成
             c_dirwk = c_indir + "/" + self.LC_ANS_DIALOG_FILES_DIR
-            # isdirでディレクトリ有無チェック
-            if os.path.isdir(c_dirwk) is False:
-                os.mkdir(c_dirwk)
-            os.chmod(c_dirwk, 0o777)
+            retry_makedirs(c_dirwk)
+            retry_chmod(c_dirwk, 0o777)
             self.setAnsible_dialog_files_Dir(c_dirwk)
 
             # original_dialog_filesディレクトリ作成
             c_dirwk = c_indir + "/" + self.LC_ANS_ORG_DIALOG_FILES_DIR
-            # isdirでディレクトリ有無チェック
-            if os.path.isdir(c_dirwk) is False:
-                os.mkdir(c_dirwk)
-            os.chmod(c_dirwk, 0o777)
+            retry_makedirs(c_dirwk)
+            retry_chmod(c_dirwk, 0o777)
             self.setAnsible_in_original_dialog_files_Dir(c_dirwk)
 
             # 対話ファイル実行に必要な資材配置ディレクトリ作成
             c_dirwk = c_indir + "/" + self.LC_ANS_PIONEER_LIBRARY_DIR
-            # isdirでディレクトリ有無チェック
-            if os.path.isdir(c_dirwk) is False:
-                os.mkdir(c_dirwk)
-            os.chmod(c_dirwk, 0o777)
+            retry_makedirs(c_dirwk)
+            retry_chmod(c_dirwk, 0o777)
 
             # 対話ファイル実行に必要な資材配置ディレクトリ配置
             src_files = []
@@ -739,28 +716,26 @@ class CreateAnsibleExecFiles():
             for src_file in src_files:
                 dest_file = c_dirwk + "/" + os.path.basename(src_file)
                 # 対話ファイル実行に必要な資材をコピーする。
-                shutil.copyfile(src_file, dest_file)
-                os.chmod(dest_file, 0o777)
+                retry_copyfile(src_file, dest_file)
+                retry_chmod(dest_file, 0o777)
 
         # Ansible Egent用のディレクトリを作成
         if self.lv_exec_mode == AnscConst.DF_EXEC_MODE_AG:
             # Ansible Agentの場合、inventoryディレクトリ作成
             c_dirwk = c_indir + "/" + self.LC_ANS_INVENTORY_DIR
-            if os.path.isdir(c_dirwk) is False:
-                os.mkdir(c_dirwk)
-            os.chmod(c_dirwk, 0o777)
+            retry_makedirs(c_dirwk)
+            retry_chmod(c_dirwk, 0o777)
             self.setAnsible_in_inventory_Dir(c_dirwk)
 
             # Ansible Agentの場合、envディレクトリ作成
             c_dirwk = c_indir + "/" + self.LC_ANS_ENV_DIR
-            if os.path.isdir(c_dirwk) is False:
-                os.mkdir(c_dirwk)
-            os.chmod(c_dirwk, 0o777)
+            retry_makedirs(c_dirwk)
+            retry_chmod(c_dirwk, 0o777)
             tgtdir = self.setAnsible_in_env_Dir(c_dirwk)
 
             # Ansible Agentの場合、envディレクトリ配下にsettingsファイル生成
             tgtfile = "{}/{}".format(c_dirwk, "settings")
-            shutil.copy("{}/ky_ansible_runner_settings_file.txt".format(get_AnsibleDriverShellPath()), tgtfile)
+            retry_copy("{}/ky_ansible_runner_settings_file.txt".format(get_AnsibleDriverShellPath()), tgtfile)
 
             # movementの情報を取得
             sql = "SELECT * FROM {} WHERE MOVEMENT_ID = %s AND DISUSE_FLAG = '0'".format(self.AnscObj.vg_ansible_pattern_listDB)
@@ -769,16 +744,14 @@ class CreateAnsibleExecFiles():
 
             # Ansible Agentの場合、builder_executable_filesディレクトリを生成する
             c_dirwk = c_indir + "/" + self.LC_ANS_BUILDER_EXECUTABLE_FILES_DIR
-            if os.path.isdir(c_dirwk) is False:
-                os.mkdir(c_dirwk)
-            os.chmod(c_dirwk, 0o777)
+            retry_makedirs(c_dirwk)
+            retry_chmod(c_dirwk, 0o777)
             self.setAnsible_in_builder_files_Dir(c_dirwk)
 
             # 実行エンジンがAnsible Agentの場合、runner_executable_filesディレクトリを生成する
             c_dirwk = c_indir + "/" + self.LC_ANS_RUNNER_EXECUTABLE_FILES_DIR
-            if os.path.isdir(c_dirwk) is False:
-                os.mkdir(c_dirwk)
-            os.chmod(c_dirwk, 0o777)
+            retry_makedirs(c_dirwk)
+            retry_chmod(c_dirwk, 0o777)
             self.setAnsible_in_runner_files_Dir(c_dirwk)
 
         # グローバル変数管理からグローバル変数の情報を取得
@@ -1038,50 +1011,47 @@ class CreateAnsibleExecFiles():
             is_file = os.path.isfile(path)
 
             if is_file is True:
-                os.remove(path)
+                retry_remove(path)
 
             # 展開先にホスト変数ディレクトリがあれば削除する。
             path = "{}/{}".format(c_indir, self.LC_ANS_HOST_VARS_DIR)
             is_dir = os.path.isdir(path)
 
             if is_dir is True:
-                shutil.rmtree(path)
+                retry_rmtree(path)
 
             # 展開先にホストグループ変数ディレクトリがあれば削除する。
             path = "{}/{}".format(c_indir, self.LC_ANS_GROUP_VARS_DIR)
             is_dir = os.path.isdir(path)
 
             if is_dir is True:
-                shutil.rmtree(path)
+                retry_rmtree(path)
 
             # ITA独自ディレクトリの存在を確認し削除
             path = "{}/{}".format(c_indir, self.LC_ITA_OUT_DIR)
             is_dir = os.path.isdir(path)
 
             if is_dir is True:
-                shutil.rmtree(path)
+                retry_rmtree(path)
 
             path = "{}/{}".format(c_indir, self.LC_ITA_TMP_DIR)
             is_dir = os.path.isdir(path)
 
             if is_dir is True:
-                shutil.rmtree(path)
+                retry_rmtree(path)
 
         # host_varsディレクトリ作成
         c_dirwk = "{}/{}".format(c_indir, self.LC_ANS_HOST_VARS_DIR)
-        # isdirでディレクトリ有無チェック
-        if os.path.isdir(c_dirwk) is False:
-            os.mkdir(c_dirwk)
-        os.chmod(c_dirwk, 0o777)
+        retry_makedirs(c_dirwk)
+        retry_chmod(c_dirwk, 0o777)
 
         # host_varsディレクトリ名を記憶
         self.setAnsible_host_vars_Dir(c_dirwk)
 
         # tmpディレクトリ作成
         c_tmpdir = "{}/{}".format(c_dir, self.LC_ANS_TMP_DIR)
-        if os.path.isdir(c_tmpdir) is False:
-            os.mkdir(c_tmpdir)
-        os.chmod(c_tmpdir, 0o777)
+        retry_makedirs(c_tmpdir)
+        retry_chmod(c_tmpdir, 0o777)
 
         # tmpディレクトリ名を記憶
         self.setAnsible_tmp_Dir(c_tmpdir)
@@ -1098,58 +1068,44 @@ class CreateAnsibleExecFiles():
         # Tower用のconductorディレクトリ生成
         if in_conductor_instance_no:
             c_dirwk = "{}/{}".format(c_tmpdir, self.LC_ITA_CONDUCTOR_DIR)
-            # isdirでディレクトリ有無チェック
-            if os.path.isdir(c_dirwk) is False:
-                os.mkdir(c_dirwk)
-            os.chmod(c_dirwk, 0o777)
+            retry_makedirs(c_dirwk)
+            retry_chmod(c_dirwk, 0o777)
             c_dirwk = "{}/{}/{}".format(c_tmpdir, self.LC_ITA_CONDUCTOR_DIR, in_conductor_instance_no)
-            # isdirでディレクトリ有無チェック
-            if os.path.isdir(c_dirwk) is False:
-                os.mkdir(c_dirwk)
-            os.chmod(c_dirwk, 0o777)
+            retry_makedirs(c_dirwk)
+            retry_chmod(c_dirwk, 0o777)
 
         # ドライバ区分がPIONEERの場合にPIONEER用作業ディレクトリ作成
         if self.getAnsibleDriverID() == self.AnscObj.DF_PIONEER_DRIVER_ID:
             # original_dialog_filesディレクトリ作成
             c_dirwk = c_tmpdir + "/" + self.LC_ANS_ORG_DIALOG_FILES_DIR
-            # isdirでディレクトリ有無チェック
-            if os.path.isdir(c_dirwk) is False:
-                os.mkdir(c_dirwk)
-            os.chmod(c_dirwk, 0o777)
+            retry_makedirs(c_dirwk)
+            retry_chmod(c_dirwk, 0o777)
             self.setAnsible_original_dialog_files_Dir(c_dirwk)
 
             # original_host_varsディレクトリ作成
             c_dirwk = c_tmpdir + "/" + self.LC_ANS_ORG_HOST_VARS_DIR
-            # isdirでディレクトリ有無チェック
-            if os.path.isdir(c_dirwk) is False:
-                os.mkdir(c_dirwk)
-            os.chmod(c_dirwk, 0o777)
+            retry_makedirs(c_dirwk)
+            retry_chmod(c_dirwk, 0o777)
             self.setAnsible_original_hosts_vars_Dir(c_dirwk)
 
             # vault_host_varsディレクトリ作成
             c_dirwk = c_tmpdir + "/" + self.LC_ANS_VAULT_HOST_VARS_DIR
-            # isdirでディレクトリ有無チェック
-            if os.path.isdir(c_dirwk) is False:
-                os.mkdir(c_dirwk)
-            os.chmod(c_dirwk, 0o777)
+            retry_makedirs(c_dirwk)
+            retry_chmod(c_dirwk, 0o777)
             self.setAnsible_vault_hosts_vars_Dir(c_dirwk)
 
             # pioneer_template_host_varsディレクトリ作成
             c_dirwk = c_tmpdir + "/" + self.LC_ANS_PIONEER_TEMPLATE_HOST_VARS_DIR
-            # isdirでディレクトリ有無チェック
-            if os.path.isdir(c_dirwk) is False:
-                os.mkdir(c_dirwk)
-            os.chmod(c_dirwk, 0o777)
+            retry_makedirs(c_dirwk)
+            retry_chmod(c_dirwk, 0o777)
             self.setAnsible_pioneer_template_hosts_vars_Dir(c_dirwk)
 
         # ansible-vault用ディレクトリ作成
         self.ansible_vault_password_file_dir = c_dir
         c_tmpdir = c_dir + "/.tmp"
 
-        is_dir = os.path.isdir(c_tmpdir)
-        if is_dir is False:
-            os.mkdir(c_tmpdir)
-            os.chmod(c_tmpdir, 0o777)
+        retry_makedirs(c_tmpdir)
+        retry_chmod(c_tmpdir, 0o777)
 
         self.setTemporary_file_Dir(c_tmpdir)
 
@@ -1764,7 +1720,7 @@ class CreateAnsibleExecFiles():
         obj = YamlParse()
         ret = obj.Parse(tmpFile)
 
-        os.remove(tmpFile)
+        retry_remove(tmpFile)
         if ret is False:
             mt_error_line = obj.GetLastError()
             return False, mt_yaml_array, mt_error_line
@@ -3432,7 +3388,7 @@ class CreateAnsibleExecFiles():
                 continue
 
             # inディレクトリ配下にテンプレートファイルをコピー
-            shutil.copyfile(src_file, dst_file)
+            retry_copyfile(src_file, dst_file)
 
         return True
 
@@ -3855,7 +3811,7 @@ class CreateAnsibleExecFiles():
                 # 既にコピー済み
                 return True
 
-            shutil.copyfile(src_file, dst_file)
+            retry_copyfile(src_file, dst_file)
 
         return True
 
@@ -4440,7 +4396,7 @@ class CreateAnsibleExecFiles():
             return False, ssh_key_file
 
         # パミッション設定
-        os.chmod(dst_file, 0o600)
+        retry_chmod(dst_file, 0o600)
 
         # Ansible実行時のSSH秘密鍵ファイルパス退避
         ssh_key_file = dst_file
@@ -4526,10 +4482,10 @@ class CreateAnsibleExecFiles():
         dst_file = self.getIN_win_key_file(in_pkey, in_win_key_file)
 
         # Ansible実行時のwinRM公開鍵ファイルをansible用ディレクトリにコピーする。
-        shutil.copyfile(src_file, dst_file)
+        retry_copyfile(src_file, dst_file)
 
         # パミッション設定
-        os.chmod(dst_file, 0o600)
+        retry_chmod(dst_file, 0o600)
 
         # 今後修正が必要
         # 実行ユーザーがroot以外の場合、鍵ファイルのオーナーを変更
@@ -4561,10 +4517,10 @@ class CreateAnsibleExecFiles():
         dst_file = self.getIN_win_key_file(in_pkey, in_win_key_file)
 
         # サーバー証明書をansible用ディレクトリにコピーする。
-        shutil.copyfile(src_file, dst_file)
+        retry_copyfile(src_file, dst_file)
 
         # パミッション設定
-        os.chmod(dst_file, 0o600)
+        retry_chmod(dst_file, 0o600)
 
         # Ansible実行時のwinrm秘密鍵ファイルパス退避
         win_key_file = dst_file
@@ -5307,9 +5263,10 @@ class CreateAnsibleExecFiles():
         makeDirName = ""
         for dir in dirsLlist:
             makeDirName += "/" + dir
+            # 既存で作成・パーミッション設定したディレクトリを上書きしないようにする
             if os.path.isdir(makeDirName) is False:
-                os.mkdir(makeDirName)
-                os.chmod(makeDirName, 0o777)
+                retry_makedirs(makeDirName)
+                retry_chmod(makeDirName, 0o777)
 
     def CreateMovementStatusFileVariables(self, ina_hostinfolist, mt_host_vars, mt_pioneer_template_host_vars):
         """
@@ -5499,14 +5456,14 @@ class CreateAnsibleExecFiles():
         ITADestDirPath = "{}/{}".format(self.getAnsible_upload_files_Dir(), row['ASSIGN_ID'])
 
         AnsDestDirPath = self.setAnsibleSideFilePath(ITADestDirPath, self.LC_ITA_IN_DIR)
-        if os.path.isdir(ITADestDirPath) is False:
-            os.mkdir(ITADestDirPath)
-            os.chmod(ITADestDirPath, 0o777)
+        # 該当ディレクトリ作成
+        retry_makedirs(ITADestDirPath)
+        retry_chmod(ITADestDirPath, 0o777)
 
         ITADestDirPath += "/" + row['VARS_ENTRY_FILE']
         AnsDestDirPath += "/" + row['VARS_ENTRY_FILE']
 
-        shutil.copyfile(srcFilePath, ITADestDirPath)
+        retry_copyfile(srcFilePath, ITADestDirPath)
 
         # 実行エンジンがAnsible Agentの場合、ホスト変数のパスを加工する
         if self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_AG:
@@ -5651,7 +5608,7 @@ class CreateAnsibleExecFiles():
             self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
                                str(inspect.currentframe().f_lineno), msgstr)
             return False
-        shutil.copyfile(src_file, dest_file)
+        retry_copyfile(src_file, dest_file)
         return True
 
     def CopysshAgentExpectfile(self):
@@ -5665,7 +5622,7 @@ class CreateAnsibleExecFiles():
         src_file = "/exastro/common_libs/ansible_driver/shells/{}".format(self.LC_ANS_SSHAGENTEXPECT_FILE)
         dest_file = "{}/.{}".format(self.getTemporary_file_Dir(), self.LC_ANS_SSHAGENTEXPECT_FILE)
         if os.path.isfile(dest_file) is False:
-            shutil.copyfile(src_file, dest_file)
+            retry_copyfile(src_file, dest_file)
         return True
 
     def CreateHostvarsfiles(self, ina_host_vars, ina_pioneer_template_host_vars,
@@ -6413,7 +6370,7 @@ class CreateAnsibleExecFiles():
                 dst_file = self.getAnsible_child_playbiook_file(pkey, playbook)
 
                 # 子Playbookをansible用ディレクトリにコピーする。
-                shutil.copyfile(src_file, dst_file)
+                retry_copyfile(src_file, dst_file)
 
         return True
 
@@ -6952,7 +6909,7 @@ class CreateAnsibleExecFiles():
                 # Pioneerの場合、オリジナル ホスト変数ファイルを生成
                 src_file = self.getAnsible_host_var_file(host_vars_file)
                 dest_file = self.getAnsible_org_host_var_file(host_vars_file)
-                shutil.copyfile(src_file, dest_file)
+                retry_copyfile(src_file, dest_file)
 
         return True
 
@@ -7136,7 +7093,7 @@ class CreateAnsibleExecFiles():
                     return False
 
         # in/original_dialog_filesに加工前の対話ファイルをコピー
-        shutil.copytree(self.getAnsible_original_dialog_files_Dir(), self.getAnsible_in_original_dialog_files_Dir(), dirs_exist_ok=True)
+        retry_copytree(self.getAnsible_original_dialog_files_Dir(), self.getAnsible_in_original_dialog_files_Dir())
 
         # 親PlayBookファイル作成(Pioneer)
         # var_name_list [通番][pkey固定][変数名(var%d)]
@@ -7168,27 +7125,25 @@ class CreateAnsibleExecFiles():
                 # 該当ホスト用加工前対話ファイルディレクトリ取得
                 c_dir = self.getAnsible_org_dialog_file_host_Dir(in_hostname)
 
-                # ディレクトリが存在している場合はなにもしない
-                if os.path.isdir(c_dir) is False:
-                    os.mkdir(c_dir)
-                    os.chmod(c_dir, 0o777)
+                # 該当ディレクトリ作成
+                retry_makedirs(c_dir)
+                retry_chmod(c_dir, 0o777)
 
                 # 対話ファイルをオリジナル用対話ファイルディレクトリにコピーする。
                 dst_file = self.getAnsible_org_dialog_file(in_hostname, pkey, dialogfile)
 
-                shutil.copyfile(src_file, dst_file)
+                retry_copyfile(src_file, dst_file)
 
                 # 該当ホスト用加工後対話ファイルディレクトリ取得
                 c_dir = self.getAnsible_dialog_file_host_Dir(in_hostname)
 
-                # ディレクトリが存在している場合はなにもしない
-                if os.path.isdir(c_dir) is False:
-                    os.mkdir(c_dir)
-                    os.chmod(c_dir, 0o777)
+                # 該当ディレクトリ作成
+                retry_makedirs(c_dir)
+                retry_chmod(c_dir, 0o777)
 
                 # 対話ファイルをansible用加工後対話ファイルディレクトリにコピーする。
                 dst_file = self.getAnsible_dialog_file(in_hostname, pkey, dialogfile)
-                shutil.copyfile(src_file, dst_file)
+                retry_copyfile(src_file, dst_file)
 
         return True
 

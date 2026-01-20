@@ -74,7 +74,7 @@ def maintenance_all(organization_id, workspace_id, menu, body=None, **kwargs):  
             api_msg_args = [menu]
             raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
-        os.mkdir(tmp_path)
+        retry_makedirs(tmp_path)  # noqa: F405
         retBool, parameters, file_paths = menu_maintenance_all.create_maintenance_parameters(connexion.request, tmp_path)
 
         if retBool is False:
@@ -107,6 +107,6 @@ def maintenance_all(organization_id, workspace_id, menu, body=None, **kwargs):  
         raise e
     finally:
         if os.path.isdir(tmp_path):
-            shutil.rmtree(tmp_path)
+            retry_rmtree(tmp_path)  # noqa: F405
         objdbca.db_disconnect()
     return result_data,

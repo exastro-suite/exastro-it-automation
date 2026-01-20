@@ -20,6 +20,7 @@ from common_libs.ansible_driver.functions.util import get_OSTmpPath
 from common_libs.ansible_driver.functions.util import addAnsibleCreateFilesPath
 from common_libs.ansible_driver.functions.util import rmAnsibleCreateFiles
 from common_libs.common.exception import AppException
+from common_libs.common.util import retry_remove
 
 
 def external_valid_menu_before(objdbca, objtable, option):
@@ -73,7 +74,7 @@ def external_valid_menu_before(objdbca, objtable, option):
         fd.close()
         obj = YamlParse()
         ret = obj.Parse(tmpFile)
-        os.remove(tmpFile)
+        retry_remove(tmpFile)
         if ret is False:
             retBool = False
             error_detail = obj.GetLastError()

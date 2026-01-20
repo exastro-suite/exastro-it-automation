@@ -2483,8 +2483,7 @@ def _create_outputfile(objdbca, compare_config, data, options, output_base64=Fal
         ws_target_host_create_table(wb, file_name, tmp_exec_time, config, compare_data, compare_diff_flg, tbl_start_str, tbl_end_str)
 
         # create work dir
-        if os.path.isdir(work_dir_path) is False:
-            os.makedirs(work_dir_path, exist_ok=True)
+        retry_makedirs(work_dir_path)  # noqa: F405
 
         # save book
         wb.save(file_path)  # noqa: E303
@@ -2494,19 +2493,19 @@ def _create_outputfile(objdbca, compare_config, data, options, output_base64=Fal
             wbEncode = file_encode(file_path)  # noqa: F405 F841
             # clear tmp file
             if work_dir_path is not None and os.path.isdir(work_dir_path) is True:
-                shutil.rmtree(work_dir_path)
+                retry_rmtree(work_dir_path)  # noqa: F405
             result["file_name"] = file_name
             result["file_data"] = wbEncode
 
     except AppException as _app_e:  # noqa: F405
         # clear work_dir
         if work_dir_path is not None and os.path.isdir(work_dir_path) is True:
-            shutil.rmtree(work_dir_path)
+            retry_rmtree(work_dir_path)  # noqa: F405
         raise AppException(_app_e)  # noqa: F405
     except Exception as e:
         # clear work_dir
         if work_dir_path is not None and os.path.isdir(work_dir_path) is True:
-            shutil.rmtree(work_dir_path)
+            retry_rmtree(work_dir_path)  # noqa: F405
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
         g.applogger.info(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))

@@ -2021,12 +2021,12 @@ class SubValueAutoReg():
         old_dir_path = path["old_file_path"]
 
         # オリジナルのファイルをold配下にコピー
-        os.makedirs(os.path.dirname(old_dir_path), exist_ok=True)
-        shutil.copy2(org_fil_path, old_dir_path)
+        retry_makedirs(os.path.dirname(old_dir_path))  # noqa: F405
+        retry_copy2(org_fil_path, old_dir_path)  # noqa: F405
 
         # シンボリックリンク作成
         try:
-            os.symlink(old_dir_path, dir_path)
+            retry_symlink(old_dir_path, dir_path)  # noqa: F405
         except Exception:
             retBool = False
             msg = ""

@@ -22,7 +22,7 @@ import zipfile
 from common_libs.common import storage_access
 from common_libs.common.exception import AppException
 from common_libs.common.dbconnect import *  # noqa: F403
-from common_libs.common.util import get_timestamp, ky_encrypt, get_iso_datetime, arrange_stacktrace_format, print_exception_msg
+from common_libs.common.util import get_timestamp, ky_encrypt, get_iso_datetime, arrange_stacktrace_format, print_exception_msg, retry_rename
 
 from common_libs.terraform_driver.cloud_ep.Const import Const as TFCloudEPConst
 from common_libs.terraform_driver.cloud_ep.terraform_restapi import *  # noqa: F403
@@ -482,7 +482,7 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
                 # zipファイル名を変更 [execution_no].zip > ResultData_[execution_no].zip
                 result_data_rename_dir_path = base_dir + TFCloudEPConst.DIR_TEMP
                 result_data_rename_path = result_data_rename_dir_path + '/ResultData_' + execution_no + '.zip'
-                os.rename(result_data_path, result_data_rename_path)
+                retry_rename(result_data_path, result_data_rename_path)
                 if os.path.exists(result_data_rename_path) is False:
                     log_msg = g.appmsg.get_log_message("MSG-82009", [tf_workspace_name])
                     g.applogger.error(log_msg)

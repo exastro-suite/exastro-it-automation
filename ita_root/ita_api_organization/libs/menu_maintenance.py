@@ -109,7 +109,7 @@ def create_maintenance_parameters(connexion_request, cmd_type='Register', tmp_pa
                     _file_data = connexion_request.files[_file_key]
                     file_name = _file_data.filename
                     tmp_file_path = os.path.join(tmp_path, _file_key)
-                    os.makedirs(tmp_file_path)
+                    retry_makedirs(tmp_file_path)  # noqa: F405
                     file_path = os.path.join(tmp_file_path, file_name)
                     file_paths[_file_key] = file_path
 

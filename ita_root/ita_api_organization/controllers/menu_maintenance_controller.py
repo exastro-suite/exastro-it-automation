@@ -73,7 +73,7 @@ def maintenance_register(organization_id, workspace_id, menu, body=None, **kwarg
         cmd_type = 'Register'
         target_uuid = ''
         parameter = {}
-        os.mkdir(tmp_path)
+        retry_makedirs(tmp_path)  # noqa: F405
         retBool, parameter, file_paths = menu_maintenance.create_maintenance_parameters(connexion.request, cmd_type, tmp_path)
         if retBool is False:
             status_code = "400-00003"
@@ -87,7 +87,7 @@ def maintenance_register(organization_id, workspace_id, menu, body=None, **kwarg
         raise e
     finally:
         if os.path.isdir(tmp_path):
-            shutil.rmtree(tmp_path)
+            retry_rmtree(tmp_path)  # noqa: F405
         objdbca.db_disconnect()
     return result_data,
 
@@ -140,7 +140,7 @@ def maintenance_update(organization_id, workspace_id, menu, uuid, body=None, **k
         cmd_type = 'Update'
         target_uuid = uuid
         parameter = {}
-        os.mkdir(tmp_path)
+        retry_makedirs(tmp_path)  # noqa: F405
         retBool, parameter, file_paths = menu_maintenance.create_maintenance_parameters(connexion.request, cmd_type, tmp_path)
         if retBool is False:
             status_code = "400-00003"
@@ -154,6 +154,6 @@ def maintenance_update(organization_id, workspace_id, menu, uuid, body=None, **k
         raise e
     finally:
         if os.path.isdir(tmp_path):
-            shutil.rmtree(tmp_path)
+            retry_rmtree(tmp_path)  # noqa: F405
         objdbca.db_disconnect()
     return result_data,

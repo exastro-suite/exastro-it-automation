@@ -178,12 +178,12 @@ def backyard_main(organization_id, workspace_id):
 
                             if is_file_target_path:
                                 # ファイル削除
-                                os.remove(target_path)  # noqa: F405
+                                retry_remove(target_path)  # noqa: F405
                                 tmp_msg = g.appmsg.get_log_message("BKY-60009", ['file', target_path])
                                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                             elif is_dir_target_path:
                                 # サブディレクトリ削除
-                                shutil.rmtree(target_path)
+                                retry_rmtree(target_path)  # noqa: F405
                                 tmp_msg = g.appmsg.get_log_message("BKY-60009", ['dir', target_path])
                                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                             else:

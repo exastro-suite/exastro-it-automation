@@ -140,21 +140,13 @@ def agent_child():
     response.close()
 
     # ログファイルの作成
-    if not os.path.isfile(exec_log_pass):
-        p = pathlib.Path(exec_log_pass)
-        p.touch()
+    pathlib.Path(exec_log_pass).touch(exist_ok=True)
 
-    if not os.path.isfile(error_log_pass):
-        p = pathlib.Path(error_log_pass)
-        p.touch()
+    pathlib.Path(error_log_pass).touch(exist_ok=True)
 
-    if not os.path.isfile(child_exec_log_pass):
-        p = pathlib.Path(child_exec_log_pass)
-        p.touch()
+    pathlib.Path(child_exec_log_pass).touch(exist_ok=True)
 
-    if not os.path.isfile(child_error_log_pass):
-        p = pathlib.Path(child_error_log_pass)
-        p.touch()
+    pathlib.Path(child_error_log_pass).touch(exist_ok=True)
 
     # 実行環境構築方法がITAの場合builder.sh実行
     if build_type == "2":

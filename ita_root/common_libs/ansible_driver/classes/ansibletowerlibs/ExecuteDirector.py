@@ -696,11 +696,9 @@ class ExecuteDirector():
                 self.ExceptionErrorLog(e, errorMessage, "", "")
                 return False
 
-            if os.path.isfile(tmp_log_file):
-                retry_unlink(tmp_log_file)
+            retry_unlink(tmp_log_file)
 
-            if os.path.isfile(tmp_TowerInfo_File):
-                retry_unlink(tmp_TowerInfo_File)
+            retry_unlink(tmp_TowerInfo_File)
 
             if credential['node_type'] == AnscConst.DF_CONTROL_NODE:
                 # 実行エンジンを判定  Towerの場合にTowerプロジェクトディレクトリ(/var/lib/awx/projects)に資材展開
@@ -749,6 +747,7 @@ class ExecuteDirector():
                         return False
                 """
 
+                # 前処理で既に消しているのでこの時点では存在していないはず
                 if os.path.isfile(tmp_log_file):
                     retry_unlink(tmp_log_file)
 
@@ -834,11 +833,9 @@ class ExecuteDirector():
                     self.ExceptionErrorLog(e, errorMessage, "", "")
                     result_code = False
 
-                if os.path.isfile(tmp_log_file):
-                    retry_unlink(tmp_log_file)
+                retry_unlink(tmp_log_file)
 
-                if os.path.isfile(tmp_TowerInfo_File):
-                    retry_unlink(tmp_TowerInfo_File)
+                retry_unlink(tmp_TowerInfo_File)
 
         return result_code
 
@@ -925,11 +922,9 @@ class ExecuteDirector():
                         self.ExceptionErrorLog(e, errorMessage, "", "")
                         return False
 
-            if os.path.isfile(tmp_log_file):
-                retry_unlink(tmp_log_file)
+            retry_unlink(tmp_log_file)
 
-            if os.path.isfile(tmp_TowerInfo_File):
-                retry_unlink(tmp_TowerInfo_File)
+            retry_unlink(tmp_TowerInfo_File)
 
             ########################################################################################################
             # ITA作業ディレクトリ配下のoutディレクトリ(__ita_out_dir__)をITAに転送
@@ -986,11 +981,9 @@ class ExecuteDirector():
                     self.ExceptionErrorLog(e, errorMessage, "", "")
                     return False
 
-            if os.path.isfile(tmp_log_file):
-                retry_unlink(tmp_log_file)
+            retry_unlink(tmp_log_file)
 
-            if os.path.isfile(tmp_TowerInfo_File):
-                retry_unlink(tmp_TowerInfo_File)
+            retry_unlink(tmp_TowerInfo_File)
 
             ########################################################################################################
             # ITA作業ディレクトリ配下の_parameters配下をITAに転送
@@ -1047,11 +1040,9 @@ class ExecuteDirector():
                     self.ExceptionErrorLog(e, errorMessage, "", "")
                     return False
 
-            if os.path.isfile(tmp_log_file):
-                retry_unlink(tmp_log_file)
+            retry_unlink(tmp_log_file)
 
-            if os.path.isfile(tmp_TowerInfo_File):
-                retry_unlink(tmp_TowerInfo_File)
+            retry_unlink(tmp_TowerInfo_File)
 
             ########################################################################################################
             # Towerプロジェクトディレクトリ配下の_parameters_file配下をITAに転送
@@ -1106,11 +1097,9 @@ class ExecuteDirector():
                     self.ExceptionErrorLog(e, errorMessage, "", "")
                     return False
 
-            if os.path.isfile(tmp_log_file):
-                retry_unlink(tmp_log_file)
+            retry_unlink(tmp_log_file)
 
-            if os.path.isfile(tmp_TowerInfo_File):
-                retry_unlink(tmp_TowerInfo_File)
+            retry_unlink(tmp_TowerInfo_File)
 
         return result_code
 

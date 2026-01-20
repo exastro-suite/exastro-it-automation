@@ -5621,8 +5621,7 @@ class CreateAnsibleExecFiles():
         """
         src_file = "/exastro/common_libs/ansible_driver/shells/{}".format(self.LC_ANS_SSHAGENTEXPECT_FILE)
         dest_file = "{}/.{}".format(self.getTemporary_file_Dir(), self.LC_ANS_SSHAGENTEXPECT_FILE)
-        if os.path.isfile(dest_file) is False:
-            retry_copyfile(src_file, dest_file)
+        retry_copyfile(src_file, dest_file)
         return True
 
     def CreateHostvarsfiles(self, ina_host_vars, ina_pioneer_template_host_vars,

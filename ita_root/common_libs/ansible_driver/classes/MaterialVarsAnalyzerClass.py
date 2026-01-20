@@ -104,8 +104,7 @@ class MaterialVarsAnalyzer():
 
         if storage_flg is True:
             # /tmpゴミ掃除
-            if os.path.isfile(tmp_file_path) is True:
-                retry_remove(tmp_file_path)
+            retry_remove(tmp_file_path)
 
         return result
 

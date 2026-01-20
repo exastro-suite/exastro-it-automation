@@ -413,8 +413,7 @@ def file_decode(file_path):
 
     if storage_flg is True:
         # /tmpゴミ掃除
-        if os.path.isfile(tmp_file_path) is True:
-            retry_remove(tmp_file_path)
+        retry_remove(tmp_file_path)
 
     text_decrypt = ky_decrypt(text)
     return base64.b64encode(text_decrypt.encode()).decode()

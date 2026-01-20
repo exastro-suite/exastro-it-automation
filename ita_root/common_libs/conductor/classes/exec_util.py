@@ -2604,8 +2604,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
                     obj.close()
                     result.setdefault('file_name', zip_file_name)
                     result.setdefault('file_data', zip_base64_str)
-                    if os.path.isfile(zip_file_path) is True:  # noqa: F405
-                        retry_remove(zip_file_path)  # noqa: F405
+                    retry_remove(zip_file_path)  # noqa: F405
                 else:
                     # Zipファイルが作成されたpathを返却
                     result = zip_file_path

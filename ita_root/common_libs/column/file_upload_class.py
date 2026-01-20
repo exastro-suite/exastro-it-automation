@@ -243,8 +243,7 @@ class FileUploadColumn(Column):
         if move_flg:
             # old配下にファイルアップロード
             if len(old_dir_path) > 0:
-                if os.path.isfile(entry_file_path):
-                    retry_copy(entry_file_path, old_dir_path)   # noqa:F405
+                retry_copy(entry_file_path, old_dir_path)   # noqa:F405
             else:
                 retBool = False
                 msg = g.appmsg.get_api_message('MSG-00013', [])

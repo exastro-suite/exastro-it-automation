@@ -408,8 +408,7 @@ def createTmpZipFile(execution_no, zip_data_source_dir, zip_type, zip_file_pfx, 
         tmp_zip_data_source_dir = "/tmp/{}{}_zip".format(zip_file_pfx, execution_no)
 
         # /tmpにzipに纏めるディレクトリの確認
-        if os.path.isdir(tmp_zip_data_source_dir) is True:
-            retry_rmtree(tmp_zip_data_source_dir)
+        retry_rmtree(tmp_zip_data_source_dir)
 
         # /tmpにzipに纏める資材コピー
         retry_copytree(zip_data_source_dir, tmp_zip_data_source_dir)

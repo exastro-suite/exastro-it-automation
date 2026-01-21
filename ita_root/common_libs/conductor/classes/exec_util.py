@@ -2560,9 +2560,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
                 zip_file_name = "{}.{}".format(tmp_file_name, ext)
 
                 # 一時作業ディレクトリ作成、掃除
-                tmp_isdir = os.path.isdir(tmp_work_path)  # noqa: F405
-                if tmp_isdir is True:
-                    retry_rmtree(tmp_work_path)  # noqa: F405
+                retry_rmtree(tmp_work_path)  # noqa: F405
                 retry_makedirs(tmp_work_path)  # noqa: F405
 
                 # 対象MVの作業関連ファイルを一時作業ディレクトリへCP
@@ -2616,10 +2614,8 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
         finally:
             # 一時作業ディレクトリ掃除
             if tmp_work_dir_path != '':
-                if os.path.isdir(tmp_work_dir_path + "/input") is True:  # noqa: F405
-                    retry_rmtree(tmp_work_dir_path + "/input")   # noqa:F405
-                elif os.path.isdir(tmp_work_dir_path + "/result") is True:  # noqa: F405
-                    retry_rmtree(tmp_work_dir_path + "/result")   # noqa:F405
+                retry_rmtree(tmp_work_dir_path + "/input")   # noqa:F405
+                retry_rmtree(tmp_work_dir_path + "/result")   # noqa:F405
 
         return retBool, result,
 

@@ -548,9 +548,8 @@ def update_result(objdbca, organization_id, workspace_id, execution_no, paramete
         exception(e)
     finally:
         # clear tmp_path
-        if os.path.isdir(tmp_path):
-            retry_rmtree(tmp_path)  # noqa: F405
-            g.applogger.debug(f"shutil.rmtree({tmp_path})")
+        retry_rmtree(tmp_path)  # noqa: F405
+        g.applogger.debug(f"shutil.rmtree({tmp_path})")
 
     return {}
 

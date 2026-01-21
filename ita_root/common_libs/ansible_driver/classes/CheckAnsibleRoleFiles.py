@@ -149,8 +149,7 @@ class CheckAnsibleRoleFiles():
 
         try:
             if del_flag is True:
-                if os.path.isdir(in_dist_path):
-                    retry_rmtree(in_dist_path)
+                retry_rmtree(in_dist_path)
 
             retry_zip_extract(in_zip_path, in_dist_path)
 
@@ -4359,9 +4358,7 @@ class VarStructAnalysisFileAccess():
                     arryErrMsg = roleObj.getlasterror()
                     strErrMsg = arryErrMsg[0]
 
-            is_dir = os.path.isdir(outdir)
-            if is_dir is True:
-                retry_rmtree(outdir)
+            retry_rmtree(outdir)
 
             # ロール名一覧取得
             role_name_list = roleObj.getrolename()

@@ -404,11 +404,10 @@ class MainFunctions():
         for Pkey in PkeyList:
             for TgtPath in DelList['FILE_UPLOAD_COLUMNS']:
                 DelPath = "{}/{}/{}".format(self.getDataRelayStorageDir(), TgtPath, Pkey)
-                if os.path.isdir(DelPath):
-                    # [処理] テーブルに紐づく不要ディレクトリ削除(テーブル名:({}) ディレクトリ名:({}))
-                    FREE_LOG = g.appmsg.get_api_message("MSG-100009", [DelList["TABLE_NAME"], DelPath])
-                    g.applogger.debug(FREE_LOG)
-                    retry_rmtree(DelPath)
+                # [処理] テーブルに紐づく不要ディレクトリ削除(テーブル名:({}) ディレクトリ名:({}))
+                FREE_LOG = g.appmsg.get_api_message("MSG-100009", [DelList["TABLE_NAME"], DelPath])
+                g.applogger.debug(FREE_LOG)
+                retry_rmtree(DelPath)
 
         # [処理] テーブルから保管期限切れレコードの物理削除(テーブル名:{})
         FREE_LOG = g.appmsg.get_api_message("MSG-100008", [DelList["TABLE_NAME"]])
@@ -457,11 +456,10 @@ class MainFunctions():
             for Pkey in PkeyList:
                 for TgtPath in DelList['FILE_UPLOAD_COLUMNS']:
                     DelPath = "{}/{}/{}".format(self.getDataRelayStorageDir(), TgtPath, Pkey)
-                    if os.path.isdir(DelPath):
-                        # [処理] テーブルに紐づく不要ディレクトリ削除(テーブル名:({}) ディレクトリ名:({}))
-                        FREE_LOG = g.appmsg.get_api_message("MSG-100009", [DelList["TABLE_NAME"], DelPath])
-                        g.applogger.debug(FREE_LOG)
-                        retry_rmtree(DelPath)
+                    # [処理] テーブルに紐づく不要ディレクトリ削除(テーブル名:({}) ディレクトリ名:({}))
+                    FREE_LOG = g.appmsg.get_api_message("MSG-100009", [DelList["TABLE_NAME"], DelPath])
+                    g.applogger.debug(FREE_LOG)
+                    retry_rmtree(DelPath)
 
             n = len(PkeyList) if int(g.max_allowed_packet) >= 40 * 40 * len(PkeyList) else int(g.max_allowed_packet) / 40 / 40
             for i in range(0, len(PkeyList), int(n)):

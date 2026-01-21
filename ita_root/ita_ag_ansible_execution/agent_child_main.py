@@ -125,7 +125,7 @@ def agent_child():
 
     # tarファイル解凍
     dir_path = f"/tmp/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/{execution_no}/"
-    retry_rmtree(dir_path) if os.path.isdir(dir_path) else None  # noqa: F405
+    retry_rmtree(dir_path)  # noqa: F405
     retry_makedirs(dir_path)  # noqa: F405
     file_name = f"{execution_no}.tar.gz"
     with open(dir_path + file_name, 'wb') as f:
@@ -535,22 +535,19 @@ def decompress_tar_file(organization_id, workspace_id, driver_id, dir_path, file
 
 def clear_execution_tmpdir(organization_id, workspace_id, driver_id, execution_no):
     _path = f"/tmp/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}"
-    if os.path.isdir(_path):
-        retry_rmtree(_path)  # noqa: F405
-        g.applogger.debug(f"remove execution tmp dirs. (path:{_path})")
+    retry_rmtree(_path)  # noqa: F405
+    g.applogger.debug(f"remove execution tmp dirs. (path:{_path})")
 
 def clear_execution_dir(organization_id, workspace_id, driver_id, execution_no, runtime_data_del):
     # インターフェース情報の実行時削除がTrueの場合
     if runtime_data_del == "1":
         storagepath = os.environ.get('STORAGEPATH')
         _path = f"{storagepath}/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{execution_no}"
-        if os.path.isdir(_path):
-            retry_rmtree(_path)  # noqa: F405
-            g.applogger.debug(f"remove execution dirs. (path:{_path})")
+        retry_rmtree(_path)  # noqa: F405
+        g.applogger.debug(f"remove execution dirs. (path:{_path})")
         _path = f"{storagepath}/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}"
-        if os.path.isdir(_path):
-            retry_rmtree(_path)  # noqa: F405
-            g.applogger.debug(f"remove execution dirs. (path:{_path})")
+        retry_rmtree(_path)  # noqa: F405
+        g.applogger.debug(f"remove execution dirs. (path:{_path})")
 
 
 def post_upload_file_and_status(exastro_api, organization_id, workspace_id, execution_no, status, driver_id):

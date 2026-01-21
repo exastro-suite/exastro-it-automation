@@ -463,8 +463,7 @@ def workspace_delete(organization_id, workspace_id):  # noqa: E501
                 g.applogger.info("Workspace MongoDB_USER is cleaned")
 
         # delete storage directory for workspace
-        if os.path.isdir(workspace_dir):
-            retry_rmtree(workspace_dir)
+        retry_rmtree(workspace_dir)
         g.applogger.info("Storage is cleaned")
 
     except AppException as e:

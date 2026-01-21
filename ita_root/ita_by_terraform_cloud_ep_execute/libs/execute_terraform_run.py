@@ -511,8 +511,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
 
         # ディレクトリ/ファイル削除
         if temp_dir:
-            if os.path.isdir(temp_dir) is True:
-                retry_rmtree(temp_dir)
+            retry_rmtree(temp_dir)
         if gztar_path:
             if os.path.isfile(gztar_path) is True:
                 retry_remove(gztar_path)
@@ -532,8 +531,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
 
         # ディレクトリ/ファイル削除
         if temp_dir:
-            if os.path.isdir(temp_dir) is True:
-                retry_rmtree(temp_dir)
+            retry_rmtree(temp_dir)
         if gztar_path:
             if os.path.isfile(gztar_path) is True:
                 retry_remove(gztar_path)

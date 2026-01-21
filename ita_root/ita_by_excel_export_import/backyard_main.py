@@ -229,11 +229,11 @@ def backyard_main(organization_id, workspace_id):
                     # ステータスを完了(異常)に更新
                     result, msg = util.setStatus(task['EXECUTION_NO'], STATUS_FAILURE, objdbca)
                     # 一時ディレクトリ削除
-                    retry_rmtree(EXPORT_PATH + "/" + taskId, False)  # noqa: F405
+                    retry_rmtree(EXPORT_PATH + "/" + taskId)  # noqa: F405
                     continue
 
                 # 一時ディレクトリ削除
-                retry_rmtree(EXPORT_PATH + "/" + taskId, False)  # noqa: F405
+                retry_rmtree(EXPORT_PATH + "/" + taskId)  # noqa: F405
 
             # インポート
             elif task["EXECUTION_TYPE"] == "2":

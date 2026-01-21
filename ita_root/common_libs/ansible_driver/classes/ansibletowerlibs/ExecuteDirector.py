@@ -84,7 +84,7 @@ import traceback
 
 from flask import g
 
-from common_libs.common.util import ky_decrypt, ky_file_decrypt, arrange_stacktrace_format, retry_makedirs, retry_copy2, retry_unlink, retry_chmod, retry_copy, retry_copytree
+from common_libs.common.util import ky_decrypt, ky_file_decrypt, arrange_stacktrace_format, retry_makedirs, retry_copy2, retry_unlink, retry_chmod, retry_copy, retry_copytree, retry_rmtree
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_driver.classes.menu_required_check import AuthTypeParameterRequiredCheck
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiConfig import AnsibleTowerRestApiConfig
@@ -2509,7 +2509,7 @@ class ExecuteDirector():
                 if AnscConst.DF_GITREPO_CONDUCTOR_PATH in self.vg_TowerProjectsScpPathArray else None
             if conductor_path:
                 git_local_conductor_path = f"{self.gitLoaclRepositoriesPath}/__ita_tmp_dir__/__ita_conductor_dir__"
-                shutil.rmtree(git_local_conductor_path) if os.path.isdir(git_local_conductor_path) else None
+                retry_rmtree(git_local_conductor_path)
                 g.applogger.debug(f"[Trace] shutil.rmtree. src: {git_local_conductor_path}")
 
             os.chdir(self.gitLoaclRepositoriesPath)

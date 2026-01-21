@@ -2116,8 +2116,7 @@ class loadTable():
         except Exception as e:
             raise e
         finally:
-            if os.path.isdir(tmp_path):
-                retry_rmtree(tmp_path)  # noqa: F405
+            retry_rmtree(tmp_path)  # noqa: F405
 
         return retBool, result
 

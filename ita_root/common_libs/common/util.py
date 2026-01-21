@@ -1681,6 +1681,11 @@ def retry_rmtree(dir_path, raise_error=True):
     """
     g.applogger.debug(f"shutil.rmtree({dir_path})")
     try:
+        # 低速ストレージ（読み書きが不安定なストレージ）対応:
+        # - 存在しないケースがあるディレクトリに対してもos.path.isdirで存在確認をせずに削除するため
+        # - 作成することでキャッシュをクリアできる可能性もあるため
+        # 一旦作成してから削除する
+        os.makedirs(dir_path, exist_ok=True)
         shutil.rmtree(dir_path)
         return True
     except Exception as e:

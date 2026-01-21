@@ -229,8 +229,8 @@ def backyard_main(organization_id, workspace_id):
         tmp_workspace_path = "/tmp/" + "/".join([organization_id, workspace_id])
         # 一時使用領域(/tmp/<organization_id>/<workspace_id>配下)の初期化
         g.applogger.debug(f"clear {tmp_workspace_path}")
-        retry_rmtree(tmp_workspace_path, False)  # noqa: F405
-        retry_makedirs(tmp_workspace_path, False)  # noqa: F405
+        retry_rmtree(tmp_workspace_path)  # noqa: F405
+        retry_makedirs(tmp_workspace_path)  # noqa: F405
 
         objdbca.db_disconnect()
         del objdbca
@@ -369,12 +369,9 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
             # 正常終了時はバックアップファイルを削除する
             retry_remove(backupsql_path)  # noqa: F405
 
-        if os.path.isdir(backupfile_dir):
-            retry_rmtree(backupfile_dir)  # noqa: F405
+        retry_rmtree(backupfile_dir)  # noqa: F405
 
-        if os.path.isdir(execution_no_path):
-            # 展開した一時ファイル群の削除
-            retry_rmtree(execution_no_path)  # noqa: F405
+        retry_rmtree(execution_no_path)  # noqa: F405
 
         # 正常系リターン
         return True, msg, None
@@ -398,9 +395,8 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
         restoreTables(objdbca, workspace_path)
         restoreFiles(workspace_path, uploadfiles_dir)
 
-        if os.path.isdir(execution_no_path):
-            # 展開した一時ファイル群の削除
-            retry_rmtree(execution_no_path)  # noqa: F405
+        # 展開した一時ファイル群の削除
+        retry_rmtree(execution_no_path)  # noqa: F405
 
 
         # 異常系リターン
@@ -419,9 +415,8 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
         restoreTables(objdbca, workspace_path)
         restoreFiles(workspace_path, uploadfiles_dir)
 
-        if os.path.isdir(execution_no_path):
-            # 展開した一時ファイル群の削除
-            retry_rmtree(execution_no_path)  # noqa: F405
+        # 展開した一時ファイル群の削除
+        retry_rmtree(execution_no_path)  # noqa: F405
 
 
         # 異常系リターン
@@ -1620,8 +1615,7 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
         trace_msg = None
 
         # エラー時はtmpの作業ファイルを削除する
-        if os.path.isdir(export_menu_dir):
-            retry_rmtree(export_menu_dir, False)  # noqa: F405
+        retry_rmtree(export_menu_dir)  # noqa: F405
         # 異常系リターン
         return False, msg, trace_msg
     except Exception as msg:
@@ -1630,8 +1624,7 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
         g.applogger.info(f"{record=}, {workspace_id=}, {export_menu_dir=}")
 
         # エラー時はtmpの作業ファイルを削除する
-        if os.path.isdir(export_menu_dir):
-            retry_rmtree(export_menu_dir, False)  # noqa: F405
+        retry_rmtree(export_menu_dir)  # noqa: F405
 
         # 異常系リターン
         return False, msg, trace_msg
@@ -2175,7 +2168,7 @@ def import_table_and_data(
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     if len(chk_table_rtn) != 0:
                         # uploadfiles配下のデータを削除する
-                        if os.path.isdir(uploadfiles_dir + '/' + menu_id) and menu_id not in clear_uploadfiles_exclusion_list:
+                        if menu_id not in clear_uploadfiles_exclusion_list:
                             retry_rmtree(uploadfiles_dir + '/' + menu_id)  # noqa: F405
                     rpt.set_time(f"{menu_name_rest}: clear uploadfiles")
             create_table_flg = True
@@ -2478,8 +2471,7 @@ def menu_import_exec_same_version(
         for menu_id in menu_id_list:
             menu_dir = uploadfiles_dir + '/' + menu_id
             # ディレクトリ存在チェック
-            if os.path.isdir(menu_dir) is True:
-                retry_rmtree(menu_dir)  # noqa: F405
+            retry_rmtree(menu_dir)  # noqa: F405
 
     # 環境移行にて削除したテーブル名を記憶する用
     imported_table_list = []
@@ -3028,8 +3020,7 @@ def sandbox_workspace_menu_import(
     file_path_info.update(_file_path_info_cm)
 
     _tmp_dir = f"{execution_no_path}/_tmp"
-    if os.path.isdir(_tmp_dir) is True:
-        retry_rmtree(_tmp_dir)  # noqa: F405
+    retry_rmtree(_tmp_dir)  # noqa: F405
     retry_makedirs(_tmp_dir)    # noqa: F405
 
     return file_path_info
@@ -3063,8 +3054,8 @@ def import_from_sandbox_to_maindb(
         for menu_id in menu_id_list:
             menu_dir = uploadfiles_dir + '/' + menu_id
             # ディレクトリ存在チェック
-            if os.path.isdir(menu_dir) is True and menu_id not in clear_uploadfiles_exclusion_list:
-                retry_rmtree(menu_dir, False)  # noqa: F405
+            if menu_id not in clear_uploadfiles_exclusion_list:
+                retry_rmtree(menu_dir)  # noqa: F405
 
     # 環境移行にて削除したテーブル名を記憶する用
     imported_table_list = []
@@ -3534,7 +3525,7 @@ def clear_uploadfiles_for_exclusion(objdbca, target_menus):
             for id in gvg_dirs:
                 garbage_dir = os.path.join(menu_path, id)
                 g.applogger.info(f"clear {garbage_dir=}")
-                retry_rmtree(garbage_dir) if os.path.isdir(garbage_dir) else None # noqa: F405
+                retry_rmtree(garbage_dir)  # noqa: F405
 
 def json_serial(obj):
     """

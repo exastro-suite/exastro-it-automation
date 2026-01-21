@@ -86,8 +86,7 @@ def maintenance_register(organization_id, workspace_id, menu, body=None, **kwarg
     except Exception as e:
         raise e
     finally:
-        if os.path.isdir(tmp_path):
-            retry_rmtree(tmp_path)  # noqa: F405
+        retry_rmtree(tmp_path)  # noqa: F405
         objdbca.db_disconnect()
     return result_data,
 
@@ -153,7 +152,6 @@ def maintenance_update(organization_id, workspace_id, menu, uuid, body=None, **k
     except Exception as e:
         raise e
     finally:
-        if os.path.isdir(tmp_path):
-            retry_rmtree(tmp_path)  # noqa: F405
+        retry_rmtree(tmp_path)  # noqa: F405
         objdbca.db_disconnect()
     return result_data,

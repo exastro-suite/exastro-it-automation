@@ -106,7 +106,6 @@ def maintenance_all(organization_id, workspace_id, menu, body=None, **kwargs):  
     except Exception as e:
         raise e
     finally:
-        if os.path.isdir(tmp_path):
-            retry_rmtree(tmp_path)  # noqa: F405
+        retry_rmtree(tmp_path)  # noqa: F405
         objdbca.db_disconnect()
     return result_data,

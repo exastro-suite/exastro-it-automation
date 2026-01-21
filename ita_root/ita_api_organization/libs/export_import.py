@@ -1652,8 +1652,7 @@ def _menu_import_execution_from_rest(objdbca, menu, dp_info, import_path, file_n
 
     try:
         # import_menu/import/アップロードIDのディレクトリを削除する
-        if os.path.isdir(import_path):
-            retry_rmtree(import_path)  # noqa: F405
+        retry_rmtree(import_path)  # noqa: F405
     except Exception as e:
         g.applogger.info("Failed to delete: {} ({})".format(e, import_path))
 

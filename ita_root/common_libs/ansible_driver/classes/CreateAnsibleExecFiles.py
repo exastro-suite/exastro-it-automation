@@ -1015,30 +1015,18 @@ class CreateAnsibleExecFiles():
 
             # 展開先にホスト変数ディレクトリがあれば削除する。
             path = "{}/{}".format(c_indir, self.LC_ANS_HOST_VARS_DIR)
-            is_dir = os.path.isdir(path)
-
-            if is_dir is True:
-                retry_rmtree(path)
+            retry_rmtree(path)
 
             # 展開先にホストグループ変数ディレクトリがあれば削除する。
             path = "{}/{}".format(c_indir, self.LC_ANS_GROUP_VARS_DIR)
-            is_dir = os.path.isdir(path)
-
-            if is_dir is True:
-                retry_rmtree(path)
+            retry_rmtree(path)
 
             # ITA独自ディレクトリの存在を確認し削除
             path = "{}/{}".format(c_indir, self.LC_ITA_OUT_DIR)
-            is_dir = os.path.isdir(path)
-
-            if is_dir is True:
-                retry_rmtree(path)
+            retry_rmtree(path)
 
             path = "{}/{}".format(c_indir, self.LC_ITA_TMP_DIR)
-            is_dir = os.path.isdir(path)
-
-            if is_dir is True:
-                retry_rmtree(path)
+            retry_rmtree(path)
 
         # host_varsディレクトリ作成
         c_dirwk = "{}/{}".format(c_indir, self.LC_ANS_HOST_VARS_DIR)

@@ -329,8 +329,7 @@ def organization_delete(organization_id):  # noqa: E501
         # delete storage directory for organization
         strage_path = os.environ.get('STORAGEPATH')
         organization_dir = strage_path + organization_id + "/"
-        if os.path.isdir(organization_dir):
-            retry_rmtree(organization_dir)
+        retry_rmtree(organization_dir)
         g.applogger.info("Storage is cleaned")
 
         if 'oase' not in no_install_driver:
@@ -814,19 +813,17 @@ def organization_update(organization_id, body=None):  # noqa: E501
                     # /driver配下
                     if remove_files[0] != '':
                         remove_path = workspace_dir + remove_files[0]
-                        if os.path.isdir(remove_path):
-                            # /driver配下のディレクトリを作成する
-                            g.applogger.info(" remove " + remove_path)
-                            retry_rmtree(remove_path)
-                            g.applogger.info(" remake " + remove_path)
-                            retry_makedirs(remove_path)
+                        # /driver配下のディレクトリを作成する
+                        g.applogger.info(" remove " + remove_path)
+                        retry_rmtree(remove_path)
+                        g.applogger.info(" remake " + remove_path)
+                        retry_makedirs(remove_path)
 
                     # /uploadfiles配下
                     if remove_files[1] != '':
                         remove_path_uploadfiles = workspace_dir + remove_files[1]
-                        if os.path.isdir(remove_path_uploadfiles):
-                            g.applogger.info(" remove " + remove_path_uploadfiles)
-                            retry_rmtree(remove_path_uploadfiles)
+                        g.applogger.info(" remove " + remove_path_uploadfiles)
+                        retry_rmtree(remove_path_uploadfiles)
 
                 # MongoのDBがあれば削除
                 if uninstall_driver == "oase":

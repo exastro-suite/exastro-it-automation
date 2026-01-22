@@ -71,6 +71,21 @@ f_a3_no_period_extension = create_filter_row(
     p_group_label_names,
 )
 "Fillter F_A3_no_period_extension定義"
+"Fillter F_A3_fixed_period定義 ～"
+p_search_condition_id = oaseConst.DF_SEARCH_CONDITION_GROUPING_NO_PERIOD_EXTENSION
+p_group_condition_id = oaseConst.DF_GROUP_CONDITION_ID_TARGET
+p_group_label_names = "_exastro_host,severity,service,status,severity".split(",")
+p_group_period = 5
+p_search_conditions = []
+p_search_conditions.append(("node", oaseConst.DF_TEST_NE, "VALUE"))
+f_a3_fixed_period = create_filter_row(
+    p_search_condition_id,
+    (p_search_conditions if len(p_search_conditions) > 0 else None),
+    p_group_condition_id,
+    p_group_label_names,
+    p_group_period
+)
+"Fillter F_A3_fixed_period定義"
 "Fillter F_A4定義 ～"
 p_search_condition_id = oaseConst.DF_SEARCH_CONDITION_GROUPING
 p_group_condition_id = oaseConst.DF_GROUP_CONDITION_ID_NOT_TARGET

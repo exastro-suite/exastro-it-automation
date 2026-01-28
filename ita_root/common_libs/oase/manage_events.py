@@ -45,6 +45,9 @@ class GroupingInformation(TypedDict):
     is_first_event: Literal["0", "1"]
     """先頭イベントフラグ"""
 
+    end_time: int | None
+    """グループ終了時間"""
+
 
 class Event(TypedDict, total=False):
     """イベント"""
@@ -64,12 +67,6 @@ class Event(TypedDict, total=False):
 
 class TtlGroup(TypedDict):
     """時間集約グループ"""
-
-    fetched_time: int
-    """グループの先頭イベントのイベント取得日時"""
-
-    end_time: int
-    """グループの最大イベント有効日時"""
 
     first_event: Event
     """グループの先頭イベント"""
@@ -463,6 +460,7 @@ class ManageEvents:
             filter_row = filter_map[
                 evaluated_first_event["exastro_filter_group"]["filter_id"]
             ]
+            ManageEvents._set_group_end_time(evaluated_first_event, filter_row)
             ttl_groups = self._get_ttl_groups(evaluated_first_event, filter_row)
 
             # 有効な判定済み先頭イベントなので必ず新規グループになる
@@ -499,15 +497,20 @@ class ManageEvents:
         ):
             return event["exastro_filter_group"]["is_first_event"]
 
+        fetched_time = event["labels"]["_exastro_fetched_time"]
+
         match ttl_groups:
-            case [*_, _ as latest_group] if (
-                event["labels"]["_exastro_fetched_time"] <= latest_group["end_time"]
+            case [
+                *_,
+                {"first_event": _ as first_event} as latest_group,
+            ] if fetched_time <= ManageEvents._get_group_end_time(
+                first_event, filter_row
             ):
-                # 最新グループが取得でき、イベントがTTL内の場合は、後続イベントとして最新グループにイベントを追加
+                # 最新グループが取得でき、イベントがグループ終了時間内の場合は、後続イベントとして最新グループにイベントを追加
                 self._append_ttl_group(latest_group, event, filter_row)
                 is_first_event = False
             case _:
-                # グループが空の場合、またはイベントがTTL外の場合は新規グループを作成
+                # グループが空の場合、またはイベントがグループ終了時間外の場合は新規グループを作成
                 latest_group = ManageEvents._create_new_ttl_group(event)
                 ttl_groups.append(latest_group)
                 is_first_event = True
@@ -515,19 +518,25 @@ class ManageEvents:
         # イベントのグループ情報を追加
         group_info = event.setdefault("exastro_filter_group", GroupingInformation({}))
         group_info["filter_id"] = filter_row["FILTER_ID"]
+        first_event = latest_group["first_event"]
         group_info["group_id"] = repr(
-            latest_group["first_event"]["_id"]
+            first_event["_id"]
         )  # exastro_eventsに合わせてシリアライズ
         group_info["is_first_event"] = "1" if is_first_event else "0"
-        group_info["original_ttl"] = (
-            event["labels"]["_exastro_end_time"]
-            - event["labels"]["_exastro_fetched_time"]
+        group_info["original_ttl"] = event["labels"]["_exastro_end_time"] - fetched_time
+        group_end_time_updated = ManageEvents._set_group_end_time(
+            first_event, filter_row
         )
         # MongoDB更新
         WriterProcessManager.update_labeled_event_collection(
             {"_id": event["_id"]}, {"$set": {"exastro_filter_group": group_info}}
         )
-
+        if not is_first_event and group_end_time_updated:
+            # 先頭イベント以外を処理していて、グループ終了時間を更新した場合は先頭イベントのMongoDB更新
+            WriterProcessManager.update_labeled_event_collection(
+                {"_id": first_event["_id"]},
+                {"$set": {"exastro_filter_group": first_event["exastro_filter_group"]}},
+            )
         return is_first_event
 
     def set_timeout(self, events: Event | ObjectId | list[Event | ObjectId]) -> None:
@@ -561,6 +570,58 @@ class ManageEvents:
                     {f"_exastro_{disable_type}": "1"},
                 )
                 self._disable_event(event, disable_type)
+
+    @staticmethod
+    def _set_group_end_time(
+        event: Event,
+        filter_row: dict[str, Any],
+        updating_group: GroupingInformation | None = None,
+    ) -> bool:
+        """グループ終了時間を設定する
+
+        Args:
+            event (Event): イベント
+            filter_row (dict[str, Any]): フィルター情報
+            updating_group (GroupingInformation | None, optional): 追加先のグルーピング情報。Noneの場合はイベントのグルーピング情報を使用する。デフォルトはNone。
+        Returns:
+            bool: グループ終了時間を更新した場合True
+        """
+        group_info = updating_group or event["exastro_filter_group"]
+        current_group_end_time = group_info.get("end_time")
+        group_end_time = ManageEvents._get_group_end_time(
+            event, filter_row, no_cache=True
+        )
+        group_info["end_time"] = group_end_time
+        return current_group_end_time != group_end_time
+
+    @staticmethod
+    def _get_group_end_time(
+        event: Event, filter_row: dict[str, Any], no_cache: bool = False
+    ) -> int:
+        """グループ終了時間を取得する
+
+        Args:
+            event (Event): イベント
+            filter_row (dict[str, Any]): フィルター情報
+            no_cache (bool, optional): グルーピング情報キャッシュを使用せずに取得する場合True。デフォルトはFalse。
+
+        Returns:
+            int: グループ終了時間
+        """
+        match event, filter_row, no_cache:
+            case {"exastro_filter_group": {"end_time": int() as end_time}}, _, False:
+                # キャッシュが存在する場合はキャッシュを返す
+                return end_time
+            case (
+                {"labels": {"_exastro_fetched_time": int() as fetched_time}},
+                {"GROUP_PERIOD": int() as period},
+                _,
+            ):
+                # グルーピング対象期間を使用して終了時間を計算する
+                return fetched_time + period
+            case {"labels": {"_exastro_end_time": int() as end_time}}, _, _:
+                # グルーピング対象期間が存在しない場合はイベントの有効期間を返す
+                return end_time
 
     def _disable_event(
         self,
@@ -645,13 +706,13 @@ class ManageEvents:
             Group: 新しいグループ
         """
         return {
-            "fetched_time": event["labels"]["_exastro_fetched_time"],
-            "end_time": event["labels"]["_exastro_end_time"],
             "first_event": event,
             "remaining_events": [],
         }
 
-    def _append_ttl_group(self, ttl_group: TtlGroup, event: Event, filter_row: dict[str]) -> None:
+    def _append_ttl_group(
+        self, ttl_group: TtlGroup, event: Event, filter_row: dict[str]
+    ) -> None:
         """グループにイベントを追加する
 
         Args:
@@ -661,17 +722,19 @@ class ManageEvents:
         ttl_group["remaining_events"].append(event)
 
         # 「グルーピング（期間延長なし）」の場合は終了時間の更新を行わない
-        if filter_row["SEARCH_CONDITION_ID"] == oaseConst.DF_SEARCH_CONDITION_GROUPING_NO_PERIOD_EXTENSION:
+        if (
+            filter_row["SEARCH_CONDITION_ID"]
+            == oaseConst.DF_SEARCH_CONDITION_GROUPING_NO_PERIOD_EXTENSION
+        ):
             return
 
         # グループの終了時間の変更を確認
         new_end_time = event["labels"]["_exastro_end_time"]
-        if new_end_time > ttl_group["end_time"]:
-            # グループの終了時間を更新
-            ttl_group["end_time"] = new_end_time
+        first_event = ttl_group["first_event"]
+        if new_end_time > ManageEvents._get_group_end_time(first_event, filter_row):
             # 先頭イベントの終了時間を更新(イベントキャッシュに存在しないケースも強制更新)
             self._update_label_force(
-                [ttl_group["first_event"]["_id"]], {"_exastro_end_time": new_end_time}
+                [first_event["_id"]], {"_exastro_end_time": new_end_time}
             )
 
     def _get_attribute_key(self, event: Event, filter_row: dict[str]) -> AttributeKey:
@@ -751,10 +814,16 @@ class ManageEvents:
         ):
             return event["exastro_filter_group"]["is_first_event"] == "1"
 
+        fetched_time = event["labels"]["_exastro_fetched_time"]
+
         match ttl_groups:
-            case [*_, _ as latest_group] if (
-                event["labels"]["_exastro_fetched_time"] <= latest_group["end_time"]
+            case [
+                *_,
+                {"first_event": _ as first_event},
+            ] if fetched_time <= ManageEvents._get_group_end_time(
+                first_event, filter_row
             ):
+                # 最新グループが取得でき、イベントがグループ終了時間内の場合は、後続イベントになる
                 return False
             case _:
                 return True

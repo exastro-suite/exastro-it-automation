@@ -82,13 +82,15 @@ def external_valid_menu_before(objdbca, objtable, option):
     group_label_key_ids = parameter.get('group_label_key_ids')
     # グルーピング条件 / Group condition
     group_condition_id = parameter.get('group_condition_id')
+    # グルーピング対象期間 / Group period
+    group_period = parameter.get('group_period')
 
     # 検索方式が「1:ユニーク」「2:キューイング」の場合
     # If the search method is 1 or 2: Unique or Queuing
     if search_condition_id in [oaseConst.DF_SEARCH_CONDITION_UNIQUE, oaseConst.DF_SEARCH_CONDITION_QUEUING]:
-        # グルーピング条件ラベル、条件は入力不可とする
+        # グルーピング条件ラベル、条件、グルーピング対象期間は入力不可とする
         # Group labels and conditions cannot be entered
-        if group_label_key_ids or group_condition_id or (group_label_key_ids and len(group_label_key_ids) > 0):
+        if group_label_key_ids or group_condition_id or (group_label_key_ids and len(group_label_key_ids) > 0) or group_period:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-180002")
             return retBool, msg, option,

@@ -2499,9 +2499,7 @@ class ExecuteDirector():
             g.applogger.info("[Trace] git clone done.")
 
             retry_copytree(SrcFilePath.replace("/*", ""),
-                            self.gitLoaclRepositoriesPath,
-                            dirs_exist_ok=True,
-                            )
+                            self.gitLoaclRepositoriesPath)
             g.applogger.debug(f"[Trace] shutil.copytree. src: {SrcFilePath}, dst: {self.gitLoaclRepositoriesPath}")
 
             # __ita_tmp_dir__配下のconductor_workflowr_dirに使う資材は不要なので除外する

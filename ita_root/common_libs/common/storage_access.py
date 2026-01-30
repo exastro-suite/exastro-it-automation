@@ -306,22 +306,16 @@ def file_read_retry(func):
         retBool = False
         i = 1
         max = 3  # リトライ回数
-        # ▼試験用なので削除する
-        g.applogger.debug("file_read_retry Called! func_name:{}".format(func.__name__))
         while True:
             try:
                 retBool = func(*args, **kwargs)
                 if retBool is True:
-                    # ▼試験用なので削除する
-                    g.applogger.debug("file_read_retry End! func_name:{}".format(func.__name__))
                     break
             except Exception as e:
                 # raiseしたくない場合は、funcの中でログを出力し、（エラーを抑止して）Falseを返却してください
                 if i == max:
                     # 最後のログ出力のみ、stacktraceを出力
                     # Output stacktrace only the last log output
-                    # ▼試験用なので削除する
-                    g.applogger.info("file_read_retry Failed! raise E!!! func_name:{}".format(func.__name__))
                     t = traceback.format_exc()
                     g.applogger.debug(str(t))
                     raise e

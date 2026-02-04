@@ -118,6 +118,13 @@ def external_valid_menu_before(objdbca, objtable, option):
             msg = g.appmsg.get_api_message("MSG-180004")
             return retBool, msg, option,
 
+        # 検索方式が「3:グルーピング（期間延長あり）」の場合、グルーピング対象期間の入力を不可とする
+        if search_condition_id == oaseConst.DF_SEARCH_CONDITION_GROUPING:
+            if group_period:
+                retBool = False
+                msg = g.appmsg.get_api_message("MSG-180008")
+                return retBool, msg, option,
+
         # 同一フィルター、グルーピング対象のチェック
         # Check for identical filters and group targets
         if db_filter_group_unique_check(objdbca, filter_id, filter_condition_json_str, group_label_key_ids, group_condition_id):

@@ -199,6 +199,7 @@ def create_filter_row(
     conditions: Iterable[tuple[str, Literal["1", "2"], str]],
     group_condition_id: Literal["1", "2"],
     group_label_names: list[str],
+    group_period: int | None = None,
     *,
     filter_id: str | None = None,
 ) -> dict:
@@ -211,6 +212,7 @@ def create_filter_row(
     search_conditions: Iterable[tuple[str, Literal["1", "2"], str]] | None,
     group_condition_id: Literal["1", "2"] | None = None,
     group_label_names: list[str] | None = None,
+    group_period: int | None = None,
     *,
     filter_id: str | None = None,
 ) -> dict:
@@ -234,6 +236,7 @@ def create_filter_row(
             else {}
         ),
         "GROUP_CONDITION_ID": group_condition_id,
+        "GROUP_PERIOD": group_period,
     }
 
 
@@ -346,8 +349,8 @@ def create_rule_row(
     }
 
 
-def run_test_pattern(
-    g,
+def run_test_pattern(  # noqa: S3776
+    g,  # noqa: S107
     ws_db,
     mock_mongo,
     mock_datetime,
@@ -396,7 +399,7 @@ def run_test_pattern(
             if event["labels"]["_exastro_fetched_time"] <= jt
         ]
         if event_output_key_selector:
-            input = (
+            input_ = (
                 event_output_key_selector(d)
                 for d in sorted(
                     (
@@ -417,7 +420,7 @@ def run_test_pattern(
                 key=lambda d: (d["labels"]["_exastro_fetched_time"], d["_id"]),
             )
             print(jt - judge_time, end="\t")
-            print(*input, sep=",", end="\t")
+            print(*input_, sep=",", end="\t")
             result_pattern = {
                 "unevaluated": (
                     ("evaluated", "0"),
@@ -464,6 +467,7 @@ def search_event_by_test_id(
     events: list[dict[str]], test_id: ExpectedDefinition
 ) -> dict[str]:
     """test_idでイベントを検索する"""
+    exastro_events = None
     match test_id:
         case (
             rule_name,
@@ -478,13 +482,6 @@ def search_event_by_test_id(
                 if test_id is not None
             ]
 
-            for event in events:
-                if (
-                    event["labels"]["_exastro_type"] == "conclusion"
-                    and event["labels"].get("_exastro_rule_name") == rule_name
-                    and event["exastro_events"] == exastro_events
-                ):
-                    return event
         case {
             "type": "conclusion",
             "rule_name": rule_name,
@@ -497,19 +494,25 @@ def search_event_by_test_id(
                 if test_id is not None
             ]
 
-            for event in events:
-                if (
-                    event["labels"]["_exastro_type"] == "conclusion"
-                    and event["labels"].get("_exastro_rule_name") == rule_name
-                    and event["exastro_events"] == exastro_events
-                ):
-                    return event
-
         case {"type": "event", "event_id": (str() as test_id)} | (str() as test_id):
             # イベントの期待値
             for event in events:
                 if event.get("event", {}).get("event_id") == test_id:
                     return event
+
+    # 結論イベントの期待値が存在する場合のチェック
+    if exastro_events is not None:
+        for event in (
+            event
+            for event in events
+            if (
+                event["labels"]["_exastro_type"] == "conclusion"
+                and event["labels"].get("_exastro_rule_name") == rule_name
+                and event["exastro_events"] == exastro_events
+            )
+        ):
+            return event
+
     assert False, f"Event with test_id {test_id} not found"
 
 
@@ -837,7 +840,8 @@ def assert_grouped_events(test_events, expected_groups):
         other_events_with_same_group_id = [
             e
             for e in grouped_events
-            if e["exastro_filter_group"]["group_id"] == first_event_group_id and e not in group
+            if e["exastro_filter_group"]["group_id"] == first_event_group_id
+            and e not in group
         ]
         assert (
             not other_events_with_same_group_id

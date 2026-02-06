@@ -813,12 +813,12 @@ git_clone(){
     if [ "${SETUP_VERSION}" != "main" ]; then
         git_branch_cnt=`git branch -a | grep "${SETUP_VERSION}" | wc -l`
         git_tag_cnt=`git tag | grep "${SETUP_VERSION}" | wc -l`
-        if [ $git_tag_cnt -ge 1 ]; then
-            info "git checkout -f -b dummy_${SETUP_VERSION} ${SETUP_VERSION}"
-            git checkout -f -b "dummy_${SETUP_VERSION}" "${SETUP_VERSION}"
-        elif [ $git_branch_cnt -ge 1 ]; then
+        if [ $git_branch_cnt -ge 1 ]; then
             info "git switch ${SETUP_VERSION}"
             git switch ${SETUP_VERSION}
+        elif [ $git_tag_cnt -ge 1 ]; then
+            info "git checkout -f -b dummy_${SETUP_VERSION} ${SETUP_VERSION}"
+            git checkout -f -b "dummy_${SETUP_VERSION}" "${SETUP_VERSION}"
         else
             info "${interactive_llist['INVALID_SETUP_VERSION']} ${SETUP_VERSION}"
             exit 2

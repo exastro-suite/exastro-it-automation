@@ -112,14 +112,15 @@ class storage_read(storage_base):
     def close(self, file_del=True):
         # close
         self.fd.close()
-        if self.storage_flg is True and file_del is True:
-            # /tmpの掃除
-            self.remove()
         # openでtmp_path指定している場合は、強制削除
         if self.force_file_del is True:
             # /tmpの掃除: ファイル削除→ディレクトリ削除
             self.remove()
             self.remove_tmpdir()
+        else:
+            if self.storage_flg is True and file_del is True:
+                # /tmpの掃除
+                self.remove()
 
     def remove(self):
         try:

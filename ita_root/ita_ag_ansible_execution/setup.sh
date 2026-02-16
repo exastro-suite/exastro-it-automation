@@ -42,6 +42,7 @@ SOURCE_DIR_PATH="ita_root/ita_ag_ansible_execution"
 # repos
 declare -A rhel8_repos
 declare -A rhel9_repos
+declare -A rhel10_repos
 
 rhel8_repos["base"]="rhel-8-for-x86_64-baseos-rpms"
 rhel8_repos["appstream"]="rhel-8-for-x86_64-appstream-rpms"
@@ -50,6 +51,10 @@ rhel8_repos["aap"]="ansible-automation-platform-2.5-for-rhel-8-x86_64-rpms"
 rhel9_repos["base"]="rhel-9-for-x86_64-baseos-rpms"
 rhel9_repos["appstream"]="rhel-9-for-x86_64-appstream-rpms"
 rhel9_repos["aap"]="ansible-automation-platform-2.5-for-rhel-9-x86_64-rpms"
+
+rhel10_repos["base"]="rhel-10-for-x86_64-baseos-rpms"
+rhel10_repos["appstream"]="rhel-10-for-x86_64-appstream-rpms"
+rhel10_repos["aap"]="ansible-automation-platform-2.5-for-rhel-10-x86_64-rpms"
 
 # dnf install list: common
 dnf_install_list_common=(
@@ -73,6 +78,12 @@ dnf_install_list_rhel9=(
     # "python3.11"
     # "python3.11-pip"
     "python3-requests"
+)
+dnf_install_list_rhel10=(
+    "python3"
+    "python3-devel"
+    "python3-requests"
+    "python3-pip"
 )
 dnf_install_list_almaLinux8=(
     "podman-docker"
@@ -312,7 +323,31 @@ get_system_info() {
         error "Not supported OS."
     fi
 
-    ARCH=$(uname -p)
+    ARCH=$(uname -m)
+    # Normalize architecture names
+    case "${ARCH}" in
+        aarch64)
+            ARCH="aarch64"
+            ARCH_COMPOSE="aarch64"
+            ;;
+        arm64)
+            ARCH="aarch64"
+            ARCH_COMPOSE="aarch64"
+            ;;
+        x86_64)
+            ARCH="x86_64"
+            ARCH_COMPOSE="x86_64"
+            ;;
+        amd64)
+            ARCH="x86_64"
+            ARCH_COMPOSE="x86_64"
+            ;;
+        *)
+            ARCH="${ARCH}"
+            ARCH_COMPOSE="${ARCH}"
+            ;;
+    esac
+
     OS_TYPE=$(uname)
     OS_NAME=$(awk -F= '$1=="NAME" { print $2; }' /etc/os-release | tr -d '"')
     VERSION_ID=$(awk -F= '$1=="VERSION_ID" { print $2; }' /etc/os-release | tr -d '"')
@@ -328,6 +363,9 @@ get_system_info() {
         fi
         if [ $(expr "${VERSION_ID}" : "^9\..*") != 0 ]; then
             DEP_PATTERN="RHEL9"
+        fi
+        if [ $(expr "${VERSION_ID}" : "^10\..*") != 0 ]; then
+            DEP_PATTERN="RHEL10"
         fi
     elif [ "${OS_NAME}" = "AlmaLinux" ]; then
         if [ $(expr "${VERSION_ID}" : "^8\..*") != 0 ]; then
@@ -392,6 +430,8 @@ check_system() {
             ;;
         RHEL9 )
             ;;
+        RHEL10 )
+            ;;
         AlmaLinux8 )
             ;;
         AlmaLinux9 )
@@ -420,13 +460,13 @@ check_security() {
     SELINUX_STATUS=$(sudo getenforce 2>/dev/null || :)
     if [ "${SELINUX_STATUS}" = "Permissive" ]; then
         info "SELinux is now Permissive mode."
-        if [ "${DEP_PATTERN}" != "RHEL8" ] && [ "${DEP_PATTERN}" != "RHEL9" ]; then
+        if [ "${DEP_PATTERN}" != "RHEL8" ] && [ "${DEP_PATTERN}" != "RHEL9" ] && [ "${DEP_PATTERN}" != "RHEL10" ]; then
             printf "\r\033[2F\033[K$(date) [INFO]: Checking running security services.............check\n" | tee -a "${LOG_FILE}"
             printf "\r\033[2E\033[K" | tee -a "${LOG_FILE}"
         fi
     else
         info "SELinux is not Permissive mode."
-        if [ "${DEP_PATTERN}" = "RHEL8" ] || [ "${DEP_PATTERN}" = "RHEL9" ]; then
+        if [ "${DEP_PATTERN}" = "RHEL8" ] || [ "${DEP_PATTERN}" = "RHEL9" ] || [ "${DEP_PATTERN}" = "RHEL10" ]; then
             printf "\r\033[2F\033[K$(date) [INFO]: Checking running security services.............ng\n" | tee -a "${LOG_FILE}"
             printf "\r\033[2E\033[K" | tee -a "${LOG_FILE}"
             error "In Rootless Podman environment, SELinux only supports Permissive mode."
@@ -499,7 +539,7 @@ check_resource() {
         printf "\r\033[2E\033[K" | tee -a "${LOG_FILE}"
     fi
 
-    if [ "${DEP_PATTERN}" != "RHEL8" ] && [ "${DEP_PATTERN}" != "RHEL9" ]; then
+    if [ "${DEP_PATTERN}" != "RHEL8" ] && [ "${DEP_PATTERN}" != "RHEL9" ] && [ "${DEP_PATTERN}" != "RHEL10" ]; then
         # Check free space of /var
         info "'/var' free space (MiB):      $(df -m /var | awk 'NR==2 {print $4}')"
         if [ $(df -m /var | awk 'NR==2 {print $4}') -lt ${REQUIRED_FREE_FOR_CONTAINER_IMAGE} ]; then
@@ -538,7 +578,7 @@ check_resource() {
 ### Installation container engine
 installation_container_engine() {
     info "Installing container engine..."
-    if [ "${DEP_PATTERN}" = "RHEL8" ] || [ "${DEP_PATTERN}" = "RHEL9" ]; then
+    if [ "${DEP_PATTERN}" = "RHEL8" ] || [ "${DEP_PATTERN}" = "RHEL9" ] || [ "${DEP_PATTERN}" = "RHEL10" ]; then
         installation_podman_on_rhel8
     elif [ "${DEP_PATTERN}" = "AlmaLinux8" ] || [ "${DEP_PATTERN}" = "AlmaLinux9" ]; then
         installation_docker_on_alamalinux8
@@ -733,8 +773,12 @@ dnf_install(){
             update_pip_rhel8
             ;;
         RHEL9 )
-            dnf_install_rhel8
+            dnf_install_rhel9
             update_pip_rhel8
+            ;;
+        RHEL10 )
+            dnf_install_rhel10
+            update_pip_rhel10
             ;;
         AlmaLinux8 )
             dnf_install_almaLinux8
@@ -762,6 +806,26 @@ update_pip_rhel8(){
     pip3 install -U requests
 }
 
+update_pip_rhel10(){
+    # Ensure pip3 exists (order fix: install list processed before this)
+    if ! command -v pip3 >/dev/null 2>&1; then
+        info "pip3 not found. Installing python3-pip."
+        sudo dnf install -y python3-pip || warn "python3-pip install failed. Trying ensurepip."
+    fi
+    if ! command -v pip3 >/dev/null 2>&1; then
+        if python3 -m ensurepip --upgrade >/dev/null 2>&1; then
+            info "Bootstrapped pip via ensurepip."
+        else
+            warn "ensurepip failed; pip3 still unavailable."
+        fi
+    fi
+    if command -v pip3 >/dev/null 2>&1; then
+        pip3 install -U requests || warn "pip3 requests upgrade failed."
+    else
+        warn "Skip requests upgrade; pip3 not available."
+    fi
+}
+
 dnf_install_rhel8(){
     install_list=(${dnf_install_list_common[@]})
     install_list+=(${dnf_install_list_rhel8[@]})
@@ -770,6 +834,11 @@ dnf_install_rhel8(){
 dnf_install_rhel9(){
     install_list=(${dnf_install_list_common[@]})
     install_list+=(${dnf_install_list_rhel9[@]})
+}
+
+dnf_install_rhel10(){
+    install_list=(${dnf_install_list_common[@]})
+    install_list+=(${dnf_install_list_rhel10[@]})
 }
 
 dnf_install_almaLinux8(){
@@ -993,7 +1062,7 @@ create_env(){
     echo ""
     info "create_env :${DEP_PATTERN} start"
 
-    if [ "${DEP_PATTERN}" = "RHEL8" ] || [ "${DEP_PATTERN}" = "RHEL9" ]; then
+    if [ "${DEP_PATTERN}" = "RHEL8" ] || [ "${DEP_PATTERN}" = "RHEL9" ] || [ "${DEP_PATTERN}" = "RHEL10" ]; then
         which_poetry=`which poetry`
         poetry_path="`ls ${which_poetry}`"" run python3"
         default_env_values["PYTHON_CMD"]=$poetry_path
@@ -1029,7 +1098,7 @@ poetry_install(){
 
 ansible_additional_install(){
     if [ ${default_env_values["ANSIBLE_SUPPORT"]} = "2" ]; then
-        if [ "${DEP_PATTERN}" = "RHEL8" ] || [ "${DEP_PATTERN}" = "RHEL9" ]; then
+        if [ "${DEP_PATTERN}" = "RHEL8" ] || [ "${DEP_PATTERN}" = "RHEL9" ] || [ "${DEP_PATTERN}" = "RHEL10" ]; then
             info "uninstall ansible-builder ansible-runner"
             poetry run pip3 uninstall -y ansible-builder ansible-runner
             info "sudo dnf install -y ansible-builder ansible-runner"
@@ -1131,6 +1200,9 @@ install_agent_service(){
         RHEL9 )
             install_agent_service_rhel8
             ;;
+        RHEL10 )
+            install_agent_service_rhel8
+            ;;
         AlmaLinux8 )
             install_agent_service_almaLinux8
             ;;
@@ -1159,7 +1231,7 @@ _EOF_
 
 install_agent_service_rhel8(){
 
-    if [ "${DEP_PATTERN}" = "RHEL8" ] || [ "${DEP_PATTERN}" = "RHEL9" ]; then
+    if [ "${DEP_PATTERN}" = "RHEL8" ] || [ "${DEP_PATTERN}" = "RHEL9" ] || [ "${DEP_PATTERN}" = "RHEL10" ]; then
         HOST_DOCKER_GID=${EXASTRO_GID}
         HOST_DOCKER_SOCKET_PATH="/run/user/${EXASTRO_UID}/podman/podman.sock"
     else
@@ -1556,7 +1628,7 @@ uninstall_type(){
                         continue
                     fi
                 elif [ ${env_key} = "SERVICE_NAME" ]; then
-                    if [ "${DEP_PATTERN}" = "RHEL8" ] || [ "${DEP_PATTERN}" = "RHEL9" ]; then
+                    if [ "${DEP_PATTERN}" = "RHEL8" ] || [ "${DEP_PATTERN}" = "RHEL9" ] || [ "${DEP_PATTERN}" = "RHEL10" ]; then
                         chk_service=`ls ${HOME}/.config/systemd/user/ | grep "ita-ag-ansible-execution-" | grep ${tmp_value} | wc -l`
                     else
                         chk_service=`ls /usr/lib/systemd/system/ | grep "ita-ag-ansible-execution-" | grep ${tmp_value} | wc -l`
@@ -1600,7 +1672,7 @@ uninstall(){
 
 uninstall_service(){
     SERVICE_NAME="${default_env_values['SERVICE_NAME']}"
-    if [ "${DEP_PATTERN}" = "RHEL8" ] || [ "${DEP_PATTERN}" = "RHEL9" ]; then
+    if [ "${DEP_PATTERN}" = "RHEL8" ] || [ "${DEP_PATTERN}" = "RHEL9" ] || [ "${DEP_PATTERN}" = "RHEL10" ]; then
         info "systemctl --user disable --now ${SERVICE_NAME}"
         systemctl --user disable --now ${SERVICE_NAME}
         info "rm ${HOME}/.config/systemd/user/${SERVICE_NAME}.service"
@@ -1631,7 +1703,7 @@ uninstall_data(){
         exit 2
     fi
 
-    if [ "${DEP_PATTERN}" = "RHEL8" ] || [ "${DEP_PATTERN}" = "RHEL9" ]; then
+    if [ "${DEP_PATTERN}" = "RHEL8" ] || [ "${DEP_PATTERN}" = "RHEL9" ] || [ "${DEP_PATTERN}" = "RHEL10" ]; then
         info "rm -rd ${STORAGE_PATH}"
         rm -rfd  ${STORAGE_PATH}
     else

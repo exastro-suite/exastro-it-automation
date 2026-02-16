@@ -95,7 +95,8 @@ class NotificationProcessManager():
         cls._queue.put({
             "action": "start_workspace_processing",
             "oraganization_id": oraganization_id,
-            "workspace_id": workspace_id
+            "workspace_id": workspace_id,
+            "log_level": g.applogger.getEffectiveLevel()
         })
 
     @classmethod
@@ -217,6 +218,10 @@ class NotificationProcess():
                     if cls._workspace_gc_trigger_counter % workspace_gc_trigger_interval == 0:
                         g.applogger.debug("Execute Garbage Collection")
                         gc.collect()
+
+                    # ログレベルをそろえる(現状はDEBUG反映のみ)
+                    if "log_level" in data:
+                        g.applogger.setLevel(int(data["log_level"]))
 
                     # ワークスペースの処理開始
                     cls._objdbca = DBConnectWs(workspace_id=data["workspace_id"], organization_id=data["oraganization_id"])

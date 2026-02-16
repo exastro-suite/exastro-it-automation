@@ -3775,6 +3775,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
                     if execution_id is not None:
                         execute_flg = True
                         node_filter_data['parameter']['execution_id'] = execution_id
+                        g.applogger.info(f"{node_options.get('conductor_instance_id')} Kick-> {execution_id}")
                     else:
                         pass
             else:

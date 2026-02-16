@@ -43,6 +43,7 @@ class ActionStatusMonitor():
             self.wsDb.db_commit()
 
             # action実行
+            g.applogger.info(f"RULE_ID:{action_log_row_info.get('RULE_ID')}, EVENT_ID_LIST:{action_log_row_info.get('EVENT_ID_LIST')}")
             retBool, result = actionObj.run(action_log_row_info)
             if retBool is False:
                 # Actionのセットに失敗
@@ -60,7 +61,7 @@ class ActionStatusMonitor():
                 # Actionのセットに成功
                 conductor_instance_id = result['conductor_instance_id']
                 tmp_msg = g.appmsg.get_log_message("BKY-90020", [conductor_instance_id])
-                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
                 # 評価結果の更新（コンダクター情報のみをセット）
                 data_list = {

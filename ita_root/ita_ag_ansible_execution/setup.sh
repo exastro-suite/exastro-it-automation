@@ -974,7 +974,7 @@ inquiry_env(){
                         continue
                     fi
                 elif [ ${env_key} = "AGENT_SERVICE_ID" ]; then
-                    if echo $tmp_value | grep -q -e "^[0-9a-zA-Z\-_]*$"; then
+                    if echo $tmp_value | grep -q -e "^[0-9a-zA-Z_-]*$"; then
                         default_env_values[$env_key]=$tmp_value
                         break
                     else

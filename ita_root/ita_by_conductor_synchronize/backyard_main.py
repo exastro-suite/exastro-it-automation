@@ -55,7 +55,7 @@ def backyard_main(organization_id, workspace_id):
     g.LANGUAGE = 'en'
 
     tmp_msg = g.appmsg.get_log_message("BKY-41000", ['Start'])
-    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
@@ -98,11 +98,14 @@ def backyard_main(organization_id, workspace_id):
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             return True,
 
+        g.applogger.info(f"Target count: {len(target_conductor_list)}")  # noqa: F405
+
         # Conductor毎に繰り返し処理
         execute_conductor_cnt = 0
         for conductor_instance_id, tmp_info in target_conductor_list.items():
+
             tmp_msg = g.appmsg.get_log_message("BKY-41005", ['Start', conductor_instance_id])
-            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             ci_status = tmp_info.get('status')
 
             # トランザクション開始
@@ -110,11 +113,12 @@ def backyard_main(organization_id, workspace_id):
             tmp_msg = g.appmsg.get_log_message("BKY-41006", [])
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-            # テーブルロック
-            locktable_list = ['T_COMN_CONDUCTOR_INSTANCE', 'T_COMN_CONDUCTOR_NODE_INSTANCE']
-            tmp_result = objdbca.table_lock(locktable_list)
-            tmp_msg = g.appmsg.get_log_message("BKY-41007", [",".join(locktable_list)])
-            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+            sql = "SELECT * FROM `T_COMN_CONDUCTOR_INSTANCE` WHERE `CONDUCTOR_INSTANCE_ID` = %s FOR UPDATE"
+            res = objdbca.sql_execute(sql, [conductor_instance_id])
+            if res is False:
+                tmp_msg = f"SELECT FOR UPDATE failed. conductor_instance_id={conductor_instance_id}"
+                g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                return False,
 
             # update_flg = ON
             ci_update_flg = 1
@@ -295,16 +299,16 @@ def backyard_main(organization_id, workspace_id):
                         conductor_storage_path_file_remove()
 
             tmp_msg = g.appmsg.get_log_message("BKY-41005", ['End', conductor_instance_id])
-            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     finally:
         # DB切断
         objdbca.db_disconnect()
 
     tmp_msg = g.appmsg.get_log_message("BKY-41022", [execute_conductor_cnt])
-    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     tmp_msg = g.appmsg.get_log_message("BKY-41000", ['End'])
-    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     return retBool, result,

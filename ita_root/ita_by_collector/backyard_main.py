@@ -23,7 +23,7 @@ import shutil
 from flask import g
 
 from common_libs.common.dbconnect.dbconnect_ws import DBConnectWs
-from common_libs.common.util import get_upload_file_path, file_encode
+from common_libs.common.util import get_upload_file_path, file_encode, retry_rmtree, retry_makedirs
 from common_libs.loadtable import *
 from common_libs.ansible_driver.classes.YamlParseClass import YamlParse
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
@@ -898,7 +898,7 @@ def backyard_main(organization_id, workspace_id):
 
                         # logを一時ファイルに書き込み
                         tmp_log_dir = f"/tmp/{execNo}"
-                        os.makedirs(tmp_log_dir, exist_ok=True)
+                        retry_makedirs(tmp_log_dir)
                         tmp_log_path = f"{tmp_log_dir}/{tmpCollectlogfile}"
                         log_lines = collection_log.splitlines()
                         with open(tmp_log_path, "w") as f:
@@ -919,7 +919,7 @@ def backyard_main(organization_id, workspace_id):
                         ret = objmenu_orch.exec_maintenance(request_param, request_param['parameter']['execution_no'], load_table.CMD_UPDATE, pk_use_flg=False, auth_check=False, record_file_paths=uploadFiles)
 
                         # 一時ファイルを削除
-                        shutil.rmtree(tmp_log_dir)
+                        retry_rmtree(tmp_log_dir)
 
                         if ret[0] is False:
                             dbAccess.db_rollback()

@@ -302,7 +302,7 @@ def backyard_main(organization_id, workspace_id):
         objdbca.db_disconnect()
 
     tmp_msg = g.appmsg.get_log_message("BKY-41022", [execute_conductor_cnt])
-    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     tmp_msg = g.appmsg.get_log_message("BKY-41000", ['End'])
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405

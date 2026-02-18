@@ -1019,9 +1019,8 @@ def collect_excel_journal(
     strage_path = os.environ.get('STORAGEPATH')
     excel_dir = strage_path + \
         "/".join([organization_id, workspace_id]) + "/tmp/excel"
-    if not os.path.isdir(excel_dir):
-        os.makedirs(excel_dir)
-        g.applogger.debug("made excel_dir")
+    retry_makedirs(excel_dir)   # noqa:F405
+    g.applogger.debug("made excel_dir")
 
     mode = 'excel_jnl_all'
     objmenu = load_table.loadTable(objdbca, menu)   # noqa: F405
@@ -1213,7 +1212,7 @@ def collect_excel_journal(
         # 編集してきたエクセルファイルをエンコードする
         wbEncode = file_encode(file_path)  # noqa: F405 F841
         # エンコード後wbは削除する
-        os.remove(file_path)
+        retry_remove(file_path)   # noqa:F405
         return wbEncode
 
     return file_path
@@ -1255,9 +1254,8 @@ def collect_excel_filter(
     strage_path = os.environ.get('STORAGEPATH')
     excel_dir = strage_path + \
         "/".join([organization_id, workspace_id]) + "/tmp/excel"
-    if not os.path.isdir(excel_dir):
-        os.makedirs(excel_dir)
-        g.applogger.debug("made excel_dir")
+    retry_makedirs(excel_dir)   # noqa:F405
+    g.applogger.debug("made excel_dir")
 
     result = {}
     if filter_parameter is not None:
@@ -1509,7 +1507,7 @@ def collect_excel_filter(
         # 編集してきたエクセルファイルをエンコードする
         wbEncode = file_encode(file_path)  # noqa: F405 F841
         # エンコード後wbは削除する
-        os.remove(file_path)    # noqa: F405
+        retry_remove(file_path)    # noqa: F405
         return wbEncode
 
     return file_path
@@ -1561,9 +1559,8 @@ def execute_excel_maintenance(
         strage_path = os.environ.get('STORAGEPATH')
         excel_dir = strage_path + \
             "/".join([organization_id, workspace_id]) + "/tmp/excel"
-        if not os.path.isdir(excel_dir):
-            os.makedirs(excel_dir)
-            g.applogger.debug("made excel_dir")
+        retry_makedirs(excel_dir)   # noqa:F405
+        g.applogger.debug("made excel_dir")
 
         wbDecode = base64.b64decode(excel_data.encode('utf-8'))
         # 受け取ったデータを編集用として一時的にエクセルファイルに保存
@@ -1732,7 +1729,7 @@ def execute_excel_maintenance(
     except AppException as e:
         # エラー判定
         # 処理が終わったらwbは削除する
-        os.remove(file_path)
+        retry_remove(file_path)   # noqa:F405
         # result_codeとmsg_argsを取得
         result_code = '{}'.format(e.args[0])
         err_msgs = e.args[1]
@@ -1759,7 +1756,7 @@ def execute_excel_maintenance(
         raise AppException(result_code, log_msg_args, api_msg_args)  # noqa: F405
 
     # 処理が終わったらwbは削除する
-    os.remove(file_path)
+    retry_remove(file_path)   # noqa:F405
 
     return result_data
 
@@ -1809,8 +1806,7 @@ def create_upload_parameters(connexion_request, organization_id, workspace_id):
         strage_path = os.environ.get('STORAGEPATH')
         excel_dir = strage_path + \
             "/".join([organization_id, workspace_id]) + "/tmp/excel"
-        if not os.path.isdir(excel_dir):
-            os.makedirs(excel_dir)
+        retry_makedirs(excel_dir)   # noqa:F405
         excel_data = excel_dir + "/" + 'post_excel_maintenance_tmp.xlsx'
 
         for _file_key in connexion_request.files:

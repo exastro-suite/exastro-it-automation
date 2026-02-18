@@ -2115,13 +2115,13 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             tmp_isdir = os.path.isdir(data_storage_path)  # noqa: F405
             if tmp_isdir is False:
                 # パスにディレクトリ無ければ作成
-                os.makedirs(data_storage_path, exist_ok=True)  # noqa: F405
+                retry_makedirs(data_storage_path)  # noqa: F405
                 tmp_msg = 'makedirs {}'.format(data_storage_path)
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             elif tmp_isdir is True and status_id in ['1', '2']:
                 # 未実行、未実行(予約)時　and パスにディレクトリがあれば、空にしてディレクトリ作成
-                shutil.rmtree(data_storage_path)
-                os.makedirs(data_storage_path, exist_ok=True)  # noqa: F405
+                retry_rmtree(data_storage_path)  # noqa:F405
+                retry_makedirs(data_storage_path)  # noqa: F405
                 tmp_msg = 'rmtree -> makedirs {}'.format(data_storage_path)
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         except Exception:
@@ -2560,12 +2560,8 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
                 zip_file_name = "{}.{}".format(tmp_file_name, ext)
 
                 # 一時作業ディレクトリ作成、掃除
-                tmp_isdir = os.path.isdir(tmp_work_path)  # noqa: F405
-                if tmp_isdir is False:
-                    os.makedirs(tmp_work_path, exist_ok=True)  # noqa: F405
-                else:
-                    shutil.rmtree(tmp_work_path)
-                    os.makedirs(tmp_work_path, exist_ok=True)  # noqa: F405
+                retry_rmtree(tmp_work_path)  # noqa: F405
+                retry_makedirs(tmp_work_path)  # noqa: F405
 
                 # 対象MVの作業関連ファイルを一時作業ディレクトリへCP
                 for execution_id, execution_info in execution_data.items():
@@ -2574,7 +2570,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
                     target_movement_path = movement_path[1].get(tmp_target_dir)
                     target_mv_zip = "{}/{}_{}.zip".format(target_movement_path, tmp_data_prefix, execution_id)
                     if os.path.isfile(target_mv_zip) is True:  # noqa: F405
-                        shutil.copy2(target_mv_zip, tmp_work_path + '/')
+                        retry_copy2(target_mv_zip, tmp_work_path + '/')  # noqa: F405
 
                 # 全MVをzip化,base64
                 with zipfile.ZipFile(file=zip_file_path, mode='w') as z:
@@ -2606,8 +2602,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
                     obj.close()
                     result.setdefault('file_name', zip_file_name)
                     result.setdefault('file_data', zip_base64_str)
-                    if os.path.isfile(zip_file_path) is True:  # noqa: F405
-                        os.remove(zip_file_path)  # noqa: F405
+                    retry_remove(zip_file_path)  # noqa: F405
                 else:
                     # Zipファイルが作成されたpathを返却
                     result = zip_file_path
@@ -2619,10 +2614,8 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
         finally:
             # 一時作業ディレクトリ掃除
             if tmp_work_dir_path != '':
-                if os.path.isdir(tmp_work_dir_path + "/input") is True:  # noqa: F405
-                    shutil.rmtree(tmp_work_dir_path + "/input")
-                elif os.path.isdir(tmp_work_dir_path + "/result") is True:  # noqa: F405
-                    shutil.rmtree(tmp_work_dir_path + "/result")
+                retry_rmtree(tmp_work_dir_path + "/input")   # noqa:F405
+                retry_rmtree(tmp_work_dir_path + "/result")   # noqa:F405
 
         return retBool, result,
 
@@ -3782,6 +3775,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
                     if execution_id is not None:
                         execute_flg = True
                         node_filter_data['parameter']['execution_id'] = execution_id
+                        g.applogger.info(f"{node_options.get('conductor_instance_id')} Kick-> {execution_id}")
                     else:
                         pass
             else:

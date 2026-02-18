@@ -24,6 +24,7 @@ from flask import g
 from abc import ABC, abstractclassmethod
 from jinja2 import FileSystemLoader, Environment
 from common_libs.common.storage_access import storage_write
+from common_libs.common.util import retry_makedirs, retry_copytree
 
 
 class AnsibleAgent(ABC):
@@ -92,8 +93,7 @@ class DockerMode(AnsibleAgent):
 
         host_mount_path_driver = os.environ.get('HOST_STORAGEPATH') + driver_path
         container_mount_path_driver = os.environ.get('STORAGEPATH') + driver_path
-        if not os.path.isdir(container_mount_path_driver):
-            os.makedirs(container_mount_path_driver)
+        retry_makedirs(container_mount_path_driver)
         host_mount_path_conductor = os.environ.get('HOST_STORAGEPATH') + conductor_path
         container_mount_path_conductor = os.environ.get('STORAGEPATH') + conductor_path
         project_name = self.get_unique_name(execution_no)
@@ -124,7 +124,7 @@ class DockerMode(AnsibleAgent):
         obj.close()
 
         dir_tmp = "%s/.tmp/work/" % (container_mount_path_driver)
-        shutil.copytree('/exastro/templates/work/', dir_tmp)
+        retry_copytree('/exastro/templates/work/', dir_tmp)
 
         # # create command string
         # command = ["/usr/local/bin/docker-compose", "-f", exec_manifest, "-p", project_name, "build"]
@@ -273,8 +273,7 @@ class KubernetesMode(AnsibleAgent):
 
         host_mount_path_driver = driver_path
         container_mount_path_driver = os.environ.get('STORAGEPATH') + driver_path
-        if not os.path.isdir(container_mount_path_driver):
-            os.makedirs(container_mount_path_driver)
+        retry_makedirs(container_mount_path_driver)
         host_mount_path_conductor = conductor_path
         container_mount_path_conductor = os.environ.get('STORAGEPATH') + conductor_path
         unique_name = self.get_unique_name(execution_no)

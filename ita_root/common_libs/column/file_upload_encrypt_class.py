@@ -121,7 +121,7 @@ class FileUploadEncryptColumn(FileUploadColumn):
                         old_file_path = filepath + "/" + filelist[0]
 
                         try:
-                            os.unlink(old_file_path)
+                            retry_unlink(old_file_path)  # noqa: F405
                         except Exception as e:
                             print_exception_msg(e)
                             retBool = False
@@ -130,7 +130,7 @@ class FileUploadEncryptColumn(FileUploadColumn):
 
                 # シンボリックリンク作成
                 try:
-                    os.symlink(old_dir_path, dir_path)
+                    retry_symlink(old_dir_path, dir_path)  # noqa: F405
                 except Exception as e:
                     retBool = False
                     msg = g.appmsg.get_api_message('MSG-00015', [old_dir_path, dir_path])

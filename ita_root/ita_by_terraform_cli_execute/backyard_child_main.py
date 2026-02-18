@@ -25,7 +25,7 @@ from zc.lockfile import LockError
 
 from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common.exception import AppException
-from common_libs.common.util import get_timestamp, ky_encrypt, ky_decrypt, get_iso_datetime, arrange_stacktrace_format
+from common_libs.common.util import get_timestamp, ky_encrypt, ky_decrypt, get_iso_datetime, arrange_stacktrace_format, retry_makedirs, retry_chmod
 from common_libs.ci.util import log_err
 from common_libs.driver.functions import operation_LAST_EXECUTE_TIMESTAMP_update
 from common_libs.terraform_driver.cli.Const import Const as TFCLIConst
@@ -175,8 +175,8 @@ def main_logic(wsDb: DBConnectWs):  # noqa: C901
     if os.path.exists(workspace_work_dir) is False:
         return False, execute_data
 
-    os.makedirs(tmp_execution_dir, exist_ok=True)
-    os.chmod(tmp_execution_dir, 0o777)
+    retry_makedirs(tmp_execution_dir)
+    retry_chmod(tmp_execution_dir, 0o777)
 
     # 前回の実行ファイルの削除
     # destroy以外・・・stateファイル以外の全てを削除
@@ -234,8 +234,8 @@ def instance_execution(wsDb: DBConnectWs, execute_data):
     plan_log = log_dir + "plan.log"
     apply_log = log_dir + "apply.log"
 
-    os.makedirs(log_dir, exist_ok=True)
-    os.chmod(log_dir, 0o777)
+    retry_makedirs(log_dir)  # noqa: F405
+    retry_chmod(log_dir, 0o777)  # noqa: F405
 
     # 投入ZIPファイルを作成する(ITAダウンロード用)
     # エラーを無視する
@@ -651,7 +651,7 @@ def output_conducor(conductor_instance_no):
         return
 
     output_dir = base_dir + "/driver/conductor/{}".format(conductor_instance_no)
-    os.makedirs(output_dir, exist_ok=True)
+    retry_makedirs(output_dir)  # noqa: F405
     output_file_name = 'terraform_output_' + execution_no + '.json'
     output_file_path = output_dir + "/" + output_file_name
 

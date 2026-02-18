@@ -98,15 +98,14 @@ def backyard_main(organization_id, workspace_id):
         import_menu_dir = workspace_path + "/tmp/driver/import_menu"
         uploadfiles_dir = workspace_path + "/uploadfiles"
         uploadfiles_60103_dir = workspace_path + "/uploadfiles/60103"
-        if not os.path.isdir(uploadfiles_60103_dir):
-            os.makedirs(uploadfiles_60103_dir)
-            g.applogger.debug("made uploadfiles/60103")
+        retry_makedirs(uploadfiles_60103_dir)  # noqa: F405
+        g.applogger.debug("made uploadfiles/60103")
 
         # 一時使用領域(/tmp/<organization_id>/<workspace_id>配下)の初期化
         if os.path.isdir(tmp_workspace_path):
             g.applogger.debug(f"clear {tmp_workspace_path}")
-            shutil.rmtree(tmp_workspace_path)
-            os.makedirs(tmp_workspace_path)
+            retry_rmtree(tmp_workspace_path)  # noqa: F405
+            retry_makedirs(tmp_workspace_path)  # noqa: F405
 
         # テーブル名
         t_menu_export_import = 'T_MENU_EXPORT_IMPORT'  # メニューエクスポート・インポート管理
@@ -229,10 +228,9 @@ def backyard_main(organization_id, workspace_id):
     finally:
         tmp_workspace_path = "/tmp/" + "/".join([organization_id, workspace_id])
         # 一時使用領域(/tmp/<organization_id>/<workspace_id>配下)の初期化
-        if os.path.isdir(tmp_workspace_path):
-            g.applogger.debug(f"clear {tmp_workspace_path}")
-            shutil.rmtree(tmp_workspace_path)
-            os.makedirs(tmp_workspace_path)
+        g.applogger.debug(f"clear {tmp_workspace_path}")
+        retry_rmtree(tmp_workspace_path)  # noqa: F405
+        retry_makedirs(tmp_workspace_path)  # noqa: F405
 
         objdbca.db_disconnect()
         del objdbca
@@ -279,18 +277,18 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
         # 一時作業用: /tmp/<execution_no>
         execution_no_path = '/tmp/' + execution_no
         tmp_file_path = execution_no_path + '/' + file_name
-        if not os.path.isdir(execution_no_path):
-            os.makedirs(execution_no_path)
+        retry_makedirs(execution_no_path)  # noqa: F405
 
         # KYMファイルを一時作業用へコピー
-        file_path = shutil.copyfile(ori_file_path, tmp_file_path)
+        retry_copyfile(ori_file_path, tmp_file_path)  # noqa: F405
+        file_path = tmp_file_path
+
         if os.path.isfile(tmp_file_path) is False:
             # 対象ファイルなし
             raise AppException("MSG-140002", [file_name], [file_name])
 
-        # zip解凍
-        with tarfile.open(file_path, 'r:gz') as tar:
-            tar.extractall(path=execution_no_path)
+        # tar解凍
+        retry_extract(file_path, execution_no_path)  # noqa: F405
 
         if os.path.isfile(execution_no_path + '/T_COMN_MENU_TABLE_LINK_DATA') is False:
             # 対象ファイルなし
@@ -312,17 +310,15 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
 
         backupsql_dir = workspace_path + "/tmp/driver/import_menu/backup"
         backupsql_path = backupsql_dir + '/backup.sql'
-        if not os.path.isdir(backupsql_dir):
-            os.makedirs(backupsql_dir)
-            g.applogger.debug("made backup_dir")
+        retry_makedirs(backupsql_dir)  # noqa: F405
+        g.applogger.debug("made backup_dir")
 
         db_reconnention(objdbca) if objdbca else None
         menu_id_list = backup_table(objdbca, backupsql_path, menu_name_rest_list)
 
         backupfile_dir = workspace_path + "/tmp/driver/import_menu/uploadfiles"
-        if not os.path.isdir(backupfile_dir):
-            os.makedirs(backupfile_dir)
-            g.applogger.debug("made backupfile_dir")
+        retry_makedirs(backupfile_dir)  # noqa: F405
+        g.applogger.debug("made backupfile_dir")
         fileBackup(backupfile_dir, uploadfiles_dir, menu_id_list)
 
         db_reconnention(objdbca) if objdbca else None
@@ -371,14 +367,11 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
 
         if os.path.isfile(backupsql_path) is True:
             # 正常終了時はバックアップファイルを削除する
-            os.remove(backupsql_path)
+            retry_remove(backupsql_path)  # noqa: F405
 
-        if os.path.isdir(backupfile_dir):
-            shutil.rmtree(backupfile_dir)
+        retry_rmtree(backupfile_dir)  # noqa: F405
 
-        if os.path.isdir(execution_no_path):
-            # 展開した一時ファイル群の削除
-            shutil.rmtree(execution_no_path)
+        retry_rmtree(execution_no_path)  # noqa: F405
 
         # 正常系リターン
         return True, msg, None
@@ -402,9 +395,8 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
         restoreTables(objdbca, workspace_path)
         restoreFiles(workspace_path, uploadfiles_dir)
 
-        if os.path.isdir(execution_no_path):
-            # 展開した一時ファイル群の削除
-            shutil.rmtree(execution_no_path)
+        # 展開した一時ファイル群の削除
+        retry_rmtree(execution_no_path)  # noqa: F405
 
 
         # 異常系リターン
@@ -423,9 +415,8 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
         restoreTables(objdbca, workspace_path)
         restoreFiles(workspace_path, uploadfiles_dir)
 
-        if os.path.isdir(execution_no_path):
-            # 展開した一時ファイル群の削除
-            shutil.rmtree(execution_no_path)
+        # 展開した一時ファイル群の削除
+        retry_rmtree(execution_no_path)  # noqa: F405
 
 
         # 異常系リターン
@@ -434,7 +425,7 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
     finally:
         # サービススキップファイルが存在する場合は削除する
         if os.path.exists(workspace_path + '/tmp/driver/import_menu/skip_all_service'):
-            os.remove(workspace_path + '/tmp/driver/import_menu/skip_all_service')
+            retry_remove(workspace_path + '/tmp/driver/import_menu/skip_all_service')  # noqa: F405
 
 
 def _dp_preparation(objdbca, workspace_id, menu_name_rest_list, execution_no_path, imported_table_list, dp_mode, file_put_flg=True):
@@ -556,8 +547,7 @@ def _update_t_menu_export_import(objdbca, execution_no, status, user_language="e
                 objcolumn = FileUploadColumn(objdbca, objmenu.objtable, rest_key,'')
                 file_path = objcolumn.get_file_data_path(execute_log, execution_no, target_uuid_jnl='', file_chk=False)
                 dir_path = file_path.replace(log_filename, "")
-                if not os.path.isdir(dir_path):
-                    os.makedirs(dir_path)
+                retry_makedirs(dir_path)  # noqa: F405
                 if file_path and error_msg:
                     data_list.setdefault("EXEC_LOG", log_filename)
                 del objcolumn, objmenu
@@ -797,8 +787,8 @@ def _register_basic_data(objdbca, workspace_id, execution_no_path, menu_name_res
                     # symlink
                     if os.path.isfile(old_file_path) and file_path:
                         if os.path.islink(file_path):
-                            os.unlink(file_path)
-                        os.symlink(old_file_path, file_path)
+                            retry_unlink(file_path)  # noqa: F405
+                        retry_symlink(old_file_path, file_path)  # noqa: F405
 
 
 def _register_history_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name, dp_mode="1"):
@@ -924,12 +914,11 @@ def _register_history_data(objdbca, objmenu, workspace_id, execution_no_path, me
                     if old_file_path and param.get(file_column) and file_param.get(file_column):
                         old_dir_path = old_file_path.replace(param[file_column], "")
 
-                        if not os.path.isdir(old_dir_path):
-                            os.makedirs(old_dir_path)
+                        retry_makedirs(old_dir_path)  # noqa: F405
 
                         _tmp_old_file_path = old_file_path.replace(os.environ.get('STORAGEPATH'), "/tmp/")
                         if os.path.isfile(_tmp_old_file_path):
-                            os.remove(_tmp_old_file_path)
+                            retry_remove(_tmp_old_file_path)  # noqa: F405
 
                         if not os.path.isfile(old_file_path):
                             if col_class_name == "FileUploadColumn":
@@ -939,7 +928,7 @@ def _register_history_data(objdbca, objmenu, workspace_id, execution_no_path, me
 
                         _tmp_old_file_path = old_file_path.replace(os.environ.get('STORAGEPATH'), "/tmp/")
                         if os.path.isfile(_tmp_old_file_path):
-                            os.remove(_tmp_old_file_path)
+                            retry_remove(_tmp_old_file_path)  # noqa: F405
                 else:
                     pass
 
@@ -1077,7 +1066,7 @@ def _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_
         # LOAD DATA LOCAL INFILE用CSV変換
         try:
             _tmp_dir = f"{execution_no_path}/_tmp"
-            os.makedirs(_tmp_dir, exist_ok=True)  if not os.path.isdir(_tmp_dir) else None
+            retry_makedirs(_tmp_dir)  # noqa: F405
             json_path = f"{_tmp_dir}/{table_name}.json"
             csv_path = f"/{_tmp_dir}/{table_name}.csv"
             g.applogger.debug(f"{os.path.isdir(_tmp_dir)} {_tmp_dir=}")
@@ -1143,8 +1132,8 @@ def _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_
             g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(trace_msg)))
             raise
         finally:
-            os.remove(csv_path) if os.path.isfile(csv_path) else None
-            os.remove(json_path) if os.path.isfile(json_path) else None
+            retry_remove(csv_path)  # noqa: F405
+            retry_remove(json_path)  # noqa: F405
         gc.collect()
 
         return []
@@ -1303,9 +1292,8 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
 
         dir_name = 'ita_exportdata_' + datetime.datetime.now().strftime('%Y%m%d%H%M%S')
         dir_path = export_menu_dir + '/' + dir_name
-        if not os.path.isdir(dir_path):
-            os.makedirs(dir_path)
-            g.applogger.debug("made export_dir")
+        retry_makedirs(dir_path)  # noqa: F405
+        g.applogger.debug("made export_dir")
 
         # 対象のDBの存在チェック
         menu_list = json_storage_item["menu"]
@@ -1544,7 +1532,7 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
         wsdb_sql_path = f"{os.getenv('PYTHONPATH')}sql"
         expoet_db_sql_path = dir_path + '/sql'
         if os.path.isdir(wsdb_sql_path):
-            shutil.copytree(wsdb_sql_path, expoet_db_sql_path)
+            retry_copytree(wsdb_sql_path, expoet_db_sql_path)  # noqa: F405
 
         # インポート環境で対応が必要なメニュー-カラム-カラムクラスを確保しておく: 暗号化、ファイル配置、ロール置換
         action_column_info = _collect_action_column_class(objdbca)
@@ -1560,10 +1548,10 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
         # kymファイルに変換(拡張子変更)
         kym_name = dir_name + '.kym'
         kym_path = export_menu_dir + '/' + kym_name
-        shutil.move(gztar_path, kym_path)
+        retry_move(gztar_path, kym_path)  # noqa: F405
 
         # tmpに作成したデータは削除する
-        shutil.rmtree(dir_path)
+        retry_rmtree(dir_path)  # noqa: F405
 
         db_reconnention(objdbca, True) if objdbca else None
 
@@ -1586,8 +1574,8 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
         }
         tmp_kym_path = kym_path.replace(os.environ.get('STORAGEPATH'), "/tmp/")
         tmp_kym_dir_path = tmp_kym_path.replace(os.path.basename(kym_path), "")
-        os.makedirs(tmp_kym_dir_path, exist_ok=True)
-        shutil.move(kym_path, tmp_kym_dir_path)
+        retry_makedirs(tmp_kym_dir_path)  # noqa: F405
+        retry_move(kym_path, tmp_kym_dir_path)  # noqa: F405
         record_file_paths = {
             "file_name": tmp_kym_path
         }
@@ -1612,8 +1600,8 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
             raise Exception("499-00701", [result_msg])  # loadTableバリデーションエラー
 
         # 更新が正常に終了したらtmpの作業ファイルを削除する
-        os.remove(kym_path) if os.path.isfile(kym_path) else None
-        os.remove(tmp_kym_path) if os.path.isfile(tmp_kym_path) else None
+        retry_remove(kym_path) if os.path.isfile(kym_path) else None  # noqa: F405
+        retry_remove(tmp_kym_path) if os.path.isfile(tmp_kym_path) else None  # noqa: F405
 
         del objmenu, exec_result, objdbca
         gc.collect()
@@ -1627,8 +1615,7 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
         trace_msg = None
 
         # エラー時はtmpの作業ファイルを削除する
-        if os.path.isdir(export_menu_dir):
-            shutil.rmtree(export_menu_dir)
+        retry_rmtree(export_menu_dir)  # noqa: F405
         # 異常系リターン
         return False, msg, trace_msg
     except Exception as msg:
@@ -1637,8 +1624,7 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
         g.applogger.info(f"{record=}, {workspace_id=}, {export_menu_dir=}")
 
         # エラー時はtmpの作業ファイルを削除する
-        if os.path.isdir(export_menu_dir):
-            shutil.rmtree(export_menu_dir)
+        retry_rmtree(export_menu_dir)  # noqa: F405
 
         # 異常系リターン
         return False, msg, trace_msg
@@ -1690,10 +1676,10 @@ def _collect_files(objmenu, dir_path, menu, parameters, fileup_columns=[]):
                 try:
                     if not entity_path:
                         raise Exception("src file path is empty")
-                    os.makedirs(tmp_dir_path, exist_ok=True)
+                    retry_makedirs(tmp_dir_path)  # noqa: F405
                     g.applogger.info(addline_msg('{}'.format(f'{_pd["class_name"]} src={entity_path} dst={tmp_file_path}')))
                     g.applogger.info(addline_msg('{}'.format(f'Copy src file. {os.path.isfile(entity_path)} {entity_path}')))
-                    shutil.copyfile(entity_path, tmp_file_path) if _pd['class_name'] == "FileUploadColumn" else None
+                    retry_copyfile(entity_path, tmp_file_path) if _pd['class_name'] == "FileUploadColumn" else None  # noqa: F405
                     file_decode_upload_file(entity_path, tmp_file_path) if _pd['class_name'] == "FileUploadEncryptColumn" else None
                     g.applogger.info(addline_msg('{}'.format(f'Copy dst file. {os.path.isfile(tmp_file_path)} {tmp_file_path}')))
                 except Exception as e:
@@ -1906,7 +1892,7 @@ def restoreTables(objdbca, workspace_path):
 
     if os.path.isfile(backupsql_path) is True:
         # リストア終了時にバックアップファイルを削除する
-        os.remove(backupsql_path)
+        retry_remove(backupsql_path)  # noqa: F405
 
     g.applogger.debug("restoreTables end")
 
@@ -1982,7 +1968,7 @@ def restoreFiles(workspace_path, uploadfiles_dir):
     files = os.listdir(uploadfiles_dir)
     for f in files:
         if f not in uploadfiles_dir_list:
-            shutil.rmtree(uploadfiles_dir + '/' + f)
+            retry_rmtree(uploadfiles_dir + '/' + f)  # noqa: F405
 
     if os.path.isfile(backupfile_dir + '/BACKUP_MENU_ID_LIST') is False:
         # 対象ファイルなし
@@ -1995,9 +1981,9 @@ def restoreFiles(workspace_path, uploadfiles_dir):
     for dir in backup_menu_id_list:
         if os.path.isdir(uploadfiles_dir + '/' + dir):
             # インポート途中のファイルがあると不整合を起こすので削除する
-            shutil.rmtree(uploadfiles_dir + '/' + dir)
+            retry_rmtree(uploadfiles_dir + '/' + dir)  # noqa: F405
             if os.path.isdir(backupfile_dir + '/' + dir):
-                os.mkdir(uploadfiles_dir + '/' + dir)
+                retry_makedirs(uploadfiles_dir + '/' + dir)  # noqa: F405
             else:
                 continue
         elif os.path.isdir(backupfile_dir + '/' + dir) is False:
@@ -2015,7 +2001,7 @@ def restoreFiles(workspace_path, uploadfiles_dir):
             raise AppException("MSG-140007", log_msg_args, api_msg_args)
 
     # リストア終了時にバックアップ用フォルダを削除する
-    shutil.rmtree(backupfile_dir)
+    retry_rmtree(backupfile_dir)  # noqa: F405
 
     g.applogger.debug("restoreFiles end")
 
@@ -2054,7 +2040,7 @@ def file_open_write_close(path, mode, value, encoding='utf-8', file_del=True):
         objsw.write(value)
         objsw.close(file_del)
         if os.path.isfile(objsw.make_temp_path(path)):
-            os.remove(objsw.make_temp_path(path))
+            retry_remove(objsw.make_temp_path(path))  # noqa: F405
     except Exception as e:
         trace_msg = traceback.format_exc()
         g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(trace_msg)))
@@ -2182,9 +2168,8 @@ def import_table_and_data(
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     if len(chk_table_rtn) != 0:
                         # uploadfiles配下のデータを削除する
-                        if os.path.isdir(uploadfiles_dir + '/' + menu_id):
-                            shutil.rmtree(uploadfiles_dir + '/' + menu_id) \
-                                if menu_id not in clear_uploadfiles_exclusion_list else None
+                        if menu_id not in clear_uploadfiles_exclusion_list:
+                            retry_rmtree(uploadfiles_dir + '/' + menu_id)  # noqa: F405
                     rpt.set_time(f"{menu_name_rest}: clear uploadfiles")
             create_table_flg = True
         else:
@@ -2407,7 +2392,7 @@ def file_decode_upload_file(src_path, dst_path):
         # /storage
         tmp_file_path = obj.make_temp_path(src_path)
         # /storageから/tmpにコピー
-        shutil.copy2(src_path, tmp_file_path)
+        retry_copy2(src_path, tmp_file_path)  # noqa: F405
     else:
         # not /storage
         tmp_file_path = src_path
@@ -2419,7 +2404,7 @@ def file_decode_upload_file(src_path, dst_path):
     if storage_flg is True:
         # /tmpゴミ掃除
         if os.path.isfile(tmp_file_path) is True:
-            os.remove(tmp_file_path)
+            retry_remove(tmp_file_path)  # noqa: F405
 
     text_decrypt = ky_decrypt(text)
 
@@ -2486,8 +2471,7 @@ def menu_import_exec_same_version(
         for menu_id in menu_id_list:
             menu_dir = uploadfiles_dir + '/' + menu_id
             # ディレクトリ存在チェック
-            if os.path.isdir(menu_dir) is True:
-                shutil.rmtree(menu_dir)
+            retry_rmtree(menu_dir)  # noqa: F405
 
     # 環境移行にて削除したテーブル名を記憶する用
     imported_table_list = []
@@ -3036,9 +3020,8 @@ def sandbox_workspace_menu_import(
     file_path_info.update(_file_path_info_cm)
 
     _tmp_dir = f"{execution_no_path}/_tmp"
-    if os.path.isdir(_tmp_dir) is True:
-        shutil.rmtree(_tmp_dir)
-        os.makedirs(_tmp_dir, exist_ok=True)
+    retry_rmtree(_tmp_dir)  # noqa: F405
+    retry_makedirs(_tmp_dir)    # noqa: F405
 
     return file_path_info
 
@@ -3071,9 +3054,8 @@ def import_from_sandbox_to_maindb(
         for menu_id in menu_id_list:
             menu_dir = uploadfiles_dir + '/' + menu_id
             # ディレクトリ存在チェック
-            if os.path.isdir(menu_dir) is True:
-                shutil.rmtree(menu_dir) \
-                    if menu_id not in clear_uploadfiles_exclusion_list else None
+            if menu_id not in clear_uploadfiles_exclusion_list:
+                retry_rmtree(menu_dir)  # noqa: F405
 
     # 環境移行にて削除したテーブル名を記憶する用
     imported_table_list = []
@@ -3204,7 +3186,7 @@ def _export_sandboxdb_bulk_register_maindb(objdbca, ws_db_sb, objmenu, workspace
     # LOAD DATA LOCAL INFILE用CSV変換
     try:
         _tmp_dir = f"{execution_no_path}/_tmp"
-        os.makedirs(_tmp_dir, exist_ok=True)  if not os.path.isdir(_tmp_dir) else None
+        retry_makedirs(_tmp_dir)  # noqa: F405
         json_path = f"{_tmp_dir}/{table_name}.json"
         csv_path = f"/{_tmp_dir}/{table_name}.csv"
         g.applogger.debug(f"{os.path.isdir(_tmp_dir)} {_tmp_dir=}")
@@ -3281,8 +3263,8 @@ def _export_sandboxdb_bulk_register_maindb(objdbca, ws_db_sb, objmenu, workspace
         g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(trace_msg)))
         raise e
     finally:
-        os.remove(csv_path) if os.path.isfile(csv_path) else None
-        os.remove(json_path) if os.path.isfile(json_path) else None
+        retry_remove(csv_path) if os.path.isfile(csv_path) else None  # noqa: F405
+        retry_remove(json_path) if os.path.isfile(json_path) else None  # noqa: F405
 
     return objmenu, []
 
@@ -3398,8 +3380,8 @@ def _bulk_register_file(objdbca, objmenu, execution_no_path, menu_name_rest, fil
                     def _symlink_to_destination():
                         try:
                             # symlink
-                            os.unlink(f_dst) if os.path.islink(f_dst) else None
-                            os.symlink(f_src, f_dst)
+                            retry_unlink(f_dst) if os.path.islink(f_dst) else None  # noqa: F405
+                            retry_symlink(f_src, f_dst)  # noqa: F405
                         except Exception as e:  # noqa: E722
                             g.applogger.error(f'create symbolic link failed. retry. parameter={_jfd} class_name={_jfv["class_name"]}, src={tmp_f_entity}, dst={f_src}')
                             raise e
@@ -3543,7 +3525,7 @@ def clear_uploadfiles_for_exclusion(objdbca, target_menus):
             for id in gvg_dirs:
                 garbage_dir = os.path.join(menu_path, id)
                 g.applogger.info(f"clear {garbage_dir=}")
-                shutil.rmtree(garbage_dir) if os.path.isdir(garbage_dir) else None
+                retry_rmtree(garbage_dir)  # noqa: F405
 
 def json_serial(obj):
     """

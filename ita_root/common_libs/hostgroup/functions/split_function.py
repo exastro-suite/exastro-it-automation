@@ -1500,23 +1500,23 @@ def copy_upload_file(copy_file_array):
                 # コピー先のディレクトリ作成
                 tmp_msg = 'makedir: {}'.format(copy_file['dest_dir'])
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-                os.makedirs(copy_file['dest_dir'], exist_ok=True)  # noqa: F405
+                retry_makedirs(copy_file['dest_dir'])  # noqa: F405
 
                 # ファイルコピー
                 tmp_msg = 'copy src:{} dest:{}'.format(copy_file['src'], copy_file['dest'])
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-                shutil.copy2(copy_file['src'], copy_file['dest'])
+                retry_copy2(copy_file['src'], copy_file['dest'])  # noqa: F405
 
                 # シンボリックリンク解除
                 if os.path.islink(copy_file['link']):
                     tmp_msg = 'unlink: {}'.format(copy_file['link'])
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-                    os.unlink(copy_file['link'])
+                    retry_unlink(copy_file['link'])  # noqa: F405
 
                 # シンボリックリンク作成
                 tmp_msg = 'symlink src:{} link:{}'.format(copy_file['dest'], copy_file['link'])
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-                os.symlink(copy_file['dest'], copy_file['link'])  # noqa: F405
+                retry_symlink(copy_file['dest'], copy_file['link'])  # noqa: F405
 
         except Exception as e:
             tmp_msg = e
@@ -1527,12 +1527,12 @@ def copy_upload_file(copy_file_array):
                 if os.path.islink(copy_file['link']):
                     tmp_msg = g.appmsg.get_log_message("BKY-70010", [copy_file['link']])
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-                    os.unlink(copy_file['link'])
+                    retry_unlink(copy_file['link'])   # noqa:F405
 
                 # シンボリックリンク作成
                 tmp_msg = g.appmsg.get_log_message("BKY-70011", [copy_file['dest'], copy_file['link']])
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-                os.symlink(copy_file['old_dest'], copy_file['link'])  # noqa: F405
+                retry_symlink(copy_file['old_dest'], copy_file['link'])  # noqa: F405
             except Exception as e:
                 tmp_msg = e
                 g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405

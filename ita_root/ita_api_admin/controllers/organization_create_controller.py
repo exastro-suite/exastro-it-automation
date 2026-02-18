@@ -28,7 +28,7 @@ from common_libs.api import api_filter_admin
 from common_libs.common.dbconnect import *  # noqa: F403
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectOrg, MONGOConnectWs
 from common_libs.common.mongoconnect.const import Const as mongoConst
-from common_libs.common.util import ky_encrypt, ky_decrypt, get_timestamp, url_check, arrange_stacktrace_format, put_uploadfiles, put_uploadfiles_jnl
+from common_libs.common.util import ky_encrypt, ky_decrypt, get_timestamp, url_check, arrange_stacktrace_format, put_uploadfiles, put_uploadfiles_jnl, retry_makedirs, retry_rmtree
 from common_libs.ansible_driver.classes.gitlab import GitLabAgent
 from common_libs.common.exception import AppException
 
@@ -135,7 +135,7 @@ def organization_create(body, organization_id):
     strage_path = os.environ.get('STORAGEPATH')
     organization_dir = strage_path + organization_id + "/"
     if not os.path.isdir(organization_dir):
-        os.makedirs(organization_dir)
+        retry_makedirs(organization_dir)
         g.applogger.info("made organization_dir")
     else:
         # Already exists.(target{}: {})
@@ -217,7 +217,7 @@ def organization_create(body, organization_id):
         g.applogger.info("organization is created")
 
     except Exception as e:
-        shutil.rmtree(organization_dir)
+        retry_rmtree(organization_dir)
         common_db.db_rollback()
 
         if 'org_root_db' in locals():
@@ -329,8 +329,7 @@ def organization_delete(organization_id):  # noqa: E501
         # delete storage directory for organization
         strage_path = os.environ.get('STORAGEPATH')
         organization_dir = strage_path + organization_id + "/"
-        if os.path.isdir(organization_dir):
-            shutil.rmtree(organization_dir)
+        retry_rmtree(organization_dir)
         g.applogger.info("Storage is cleaned")
 
         if 'oase' not in no_install_driver:
@@ -814,19 +813,17 @@ def organization_update(organization_id, body=None):  # noqa: E501
                     # /driver配下
                     if remove_files[0] != '':
                         remove_path = workspace_dir + remove_files[0]
-                        if os.path.isdir(remove_path):
-                            # /driver配下のディレクトリを作成する
-                            g.applogger.info(" remove " + remove_path)
-                            shutil.rmtree(remove_path)
-                            g.applogger.info(" remake " + remove_path)
-                            os.mkdir(remove_path)
+                        # /driver配下のディレクトリを作成する
+                        g.applogger.info(" remove " + remove_path)
+                        retry_rmtree(remove_path)
+                        g.applogger.info(" remake " + remove_path)
+                        retry_makedirs(remove_path)
 
                     # /uploadfiles配下
                     if remove_files[1] != '':
                         remove_path_uploadfiles = workspace_dir + remove_files[1]
-                        if os.path.isdir(remove_path_uploadfiles):
-                            g.applogger.info(" remove " + remove_path_uploadfiles)
-                            shutil.rmtree(remove_path_uploadfiles)
+                        g.applogger.info(" remove " + remove_path_uploadfiles)
+                        retry_rmtree(remove_path_uploadfiles)
 
                 # MongoのDBがあれば削除
                 if uninstall_driver == "oase":

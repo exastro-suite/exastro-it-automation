@@ -235,16 +235,15 @@ class FileUploadColumn(Column):
 
         dir_path = path["file_path"]
         old_dir_path = path["old_file_path"]
-        os.makedirs(os.path.dirname(old_dir_path))
+        retry_makedirs(os.path.dirname(old_dir_path))   # noqa:F405
 
         if copy_flg:
-            shutil.copy(current_file_path, old_dir_path)
+            retry_copy(current_file_path, old_dir_path)   # noqa:F405
 
         if move_flg:
             # old配下にファイルアップロード
             if len(old_dir_path) > 0:
-                if os.path.isfile(entry_file_path):
-                    shutil.copy(entry_file_path, old_dir_path)
+                retry_copy(entry_file_path, old_dir_path)   # noqa:F405
             else:
                 retBool = False
                 msg = g.appmsg.get_api_message('MSG-00013', [])
@@ -263,7 +262,7 @@ class FileUploadColumn(Column):
                 old_file_path = filepath + "/" + filelist[0]
 
                 try:
-                    os.unlink(old_file_path)
+                    retry_unlink(old_file_path)  # noqa: F405
                 except Exception:
                     retBool = False
                     msg = g.appmsg.get_api_message('MSG-00014', [old_file_path])
@@ -271,11 +270,11 @@ class FileUploadColumn(Column):
 
         # シンボリックリンクが既にある場合は削除してから作成を行う
         if os.path.isfile(dir_path):
-            os.unlink(dir_path)
+            retry_unlink(dir_path)   # noqa:F405
 
         # シンボリックリンク作成
         try:
-            os.symlink(old_dir_path, dir_path)
+            retry_symlink(old_dir_path, dir_path)   # noqa:F405
         except Exception:
             retBool = False
             msg = g.appmsg.get_api_message('MSG-00015', [old_dir_path, dir_path])
@@ -501,14 +500,14 @@ class FileUploadColumn(Column):
                 if cmd_type != "Discard":
                     try:
                         # シンボリックリンク,oldのファイル,ディレクトリの削除
-                        os.unlink(dir_path)
+                        retry_unlink(dir_path)   # noqa:F405
 
-                        os.remove(old_dir_path)
+                        retry_remove(old_dir_path)   # noqa:F405
 
-                        os.rmdir(old_dir_path.replace(val, ''))
+                        retry_rmdir(old_dir_path.replace(val, ''))   # noqa:F405
                         # 登録時は、対象のIDのディレクトリ削除
                         if cmd_type == "Register":
-                            os.rmdir(dir_path.replace(val, ''))
+                            retry_rmdir(dir_path.replace(val, ''))   # noqa:F405
 
                     except Exception:
                         retBool = False
@@ -529,7 +528,7 @@ class FileUploadColumn(Column):
                             old_recovery_path = tmp_recovery_path.get('old_file_path')
                             if old_recovery_path is not None:
                                 if os.path.isfile(old_recovery_path) is True:
-                                    os.symlink(old_recovery_path, recovery_path)
+                                    retry_symlink(old_recovery_path, recovery_path)   # noqa:F405
                                     break
                     except Exception:
                         retBool = False

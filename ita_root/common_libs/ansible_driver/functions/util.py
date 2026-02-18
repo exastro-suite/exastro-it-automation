@@ -23,6 +23,7 @@ from common_libs.ansible_driver.classes.AnslConstClass import AnslConst
 from common_libs.ansible_driver.classes.AnspConstClass import AnspConst
 from common_libs.ansible_driver.classes.AnsrConstClass import AnsrConst
 from common_libs.loadtable import load_table
+from common_libs.common.util import retry_rmtree, retry_remove, retry_copytree
 
 """
   Ansible共通モジュール
@@ -244,14 +245,14 @@ def rmAnsibleCreateFiles():
     """
     for del_path in getAnsibleCreateFilesPath():
         if os.path.isdir(del_path):
-            shutil.rmtree(del_path)
+            retry_rmtree(del_path)
         elif os.path.isfile(del_path):
-            os.remove(del_path)
+            retry_remove(del_path)
 
     file_name = g.AnsibleCreateFilesPath
 
     if os.path.isfile(file_name):
-      os.remove(file_name)
+        retry_remove(file_name)
 
 def get_AnsibleDriverTmpPath():
     """
@@ -407,11 +408,10 @@ def createTmpZipFile(execution_no, zip_data_source_dir, zip_type, zip_file_pfx, 
         tmp_zip_data_source_dir = "/tmp/{}{}_zip".format(zip_file_pfx, execution_no)
 
         # /tmpにzipに纏めるディレクトリの確認
-        if os.path.isdir(tmp_zip_data_source_dir) is True:
-            shutil.rmtree(tmp_zip_data_source_dir)
+        retry_rmtree(tmp_zip_data_source_dir)
 
         # /tmpにzipに纏める資材コピー
-        shutil.copytree(zip_data_source_dir, tmp_zip_data_source_dir)
+        retry_copytree(zip_data_source_dir, tmp_zip_data_source_dir)
 
         # ----ZIPファイルを作成する
         zip_file_name = zip_file_pfx + execution_no + '.zip'

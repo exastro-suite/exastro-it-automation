@@ -414,7 +414,7 @@ def update_error_executions(organization_id, workspace_id, exastro_api, error_ps
             # enomoto /ag_parent_error.logパス確認
             storagepath = os.environ.get('STORAGEPATH')
             _base_dir = f"{storagepath}/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{del_execution}"
-            [os.makedirs(f"{_base_dir}/{_c}") for _c in ["out"] if not os.path.isdir(f"{_base_dir}/{_c}")]
+            retry_makedirs(f"{_base_dir}/out")  # noqa: F405
             # ログファイルのパス取得
             exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass = get_log_file_path(organization_id, workspace_id, driver_id, del_execution)  # noqa: F405
 

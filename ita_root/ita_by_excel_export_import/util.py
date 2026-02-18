@@ -110,9 +110,8 @@ def dumpResultMsg(msg, taskId, uploadDir):
     # ファイルの作成
     # 書き込みはtmp配下で行う
     file_write = storage_access.storage_write()
-    if not os.path.isdir(uploadDir + "/" + taskId):
-        os.makedirs(uploadDir + "/" + taskId)
-        os.chmod(uploadDir + "/" + taskId, 0o777)
+    retry_makedirs(uploadDir + "/" + taskId)  # noqa: F405
+    retry_chmod(uploadDir + "/" + taskId, 0o777)  # noqa: F405
     if os.path.exists(uploadFilePath):
         file_write.open(uploadFilePath, mode="a")
         file_write.write(msg)
@@ -144,7 +143,7 @@ def zip(execution_no, dirPath, status_id, zipFileName, objdbca):
     # tmp配下でzipに固める
     tmp_dir_path = "/tmp/{}/{}".format(g.get('ORGANIZATION_ID'), g.get('WORKSPACE_ID')) + "/tmp_zip"
     tmp_dir_file_path = tmp_dir_path + '.zip'
-    shutil.copytree(dirPath + "/tmp_zip", tmp_dir_path)
+    retry_copytree(dirPath + "/tmp_zip", tmp_dir_path)  # noqa: F405
 
     with zipfile.ZipFile(file=tmp_dir_file_path, mode='w') as z:
         # input_pathがファイルだった場合の処理
@@ -213,8 +212,8 @@ def zip(execution_no, dirPath, status_id, zipFileName, objdbca):
         return False
 
     # tmp配下削除
-    shutil.rmtree(tmp_dir_path)
-    os.remove(tmp_dir_file_path)
+    retry_rmtree(tmp_dir_path)  # noqa: F405
+    retry_remove(tmp_dir_file_path)  # noqa: F405
 
     return result
 

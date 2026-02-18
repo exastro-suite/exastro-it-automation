@@ -30,7 +30,7 @@ from common_libs.api import api_filter_admin, check_request_body_key
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectOrg, MONGOConnectWs
 from common_libs.common.mongoconnect.const import Const as mongoConst
 from common_libs.common.dbconnect import *  # noqa: F403
-from common_libs.common.util import ky_decrypt, ky_encrypt, get_timestamp, create_dirs, put_uploadfiles, arrange_stacktrace_format, put_uploadfiles_jnl
+from common_libs.common.util import ky_decrypt, ky_encrypt, get_timestamp, create_dirs, put_uploadfiles, arrange_stacktrace_format, put_uploadfiles_jnl, retry_makedirs, retry_rmtree, retry_remove
 from libs.admin_common import initial_settings_ansible
 from common_libs.common.exception import AppException
 
@@ -75,7 +75,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
     strage_path = os.environ.get('STORAGEPATH')
     workspace_dir = strage_path + "/".join([organization_id, workspace_id]) + "/"
     if not os.path.isdir(workspace_dir):
-        os.makedirs(workspace_dir)
+        retry_makedirs(workspace_dir)
         g.applogger.info("made workspace_dir")
     else:
         org_db.db_disconnect()
@@ -357,7 +357,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
                 raise AppException("490-01002", [e], [e])
 
     except Exception as e:
-        shutil.rmtree(workspace_dir)
+        retry_rmtree(workspace_dir)
         if 'ws_db' in locals():
             ws_db.db_rollback()
         org_db.db_rollback()
@@ -463,27 +463,20 @@ def workspace_delete(organization_id, workspace_id):  # noqa: E501
                 g.applogger.info("Workspace MongoDB_USER is cleaned")
 
         # delete storage directory for workspace
-        while os.path.isdir(workspace_dir):
-            try:
-                shutil.rmtree(workspace_dir)
-                break
-            except FileNotFoundError:
-                # 削除時にFileNotFoundErrorが出る場合があるので、その場合は再度削除を行う
-                time.sleep(1)
-                continue
+        retry_rmtree(workspace_dir)
         g.applogger.info("Storage is cleaned")
 
     except AppException as e:
         # スキップファイルが存在する場合は削除する
         if os.path.exists(workspace_dir + '/skip_all_service_for_ws_del'):
-            os.remove(workspace_dir + '/skip_all_service_for_ws_del')
+            retry_remove(workspace_dir + '/skip_all_service_for_ws_del')
 
         exception_flg = True
         raise AppException(e)
     except Exception as e:
         # スキップファイルが存在する場合は削除する
         if os.path.exists(workspace_dir + '/skip_all_service_for_ws_del'):
-            os.remove(workspace_dir + '/skip_all_service_for_ws_del')
+            retry_remove(workspace_dir + '/skip_all_service_for_ws_del')
 
         exception_flg = True
         raise e

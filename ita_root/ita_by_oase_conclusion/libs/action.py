@@ -343,6 +343,9 @@ class Action():
             msg = g.appmsg.get_log_message("BKY-90075", ['host_name', action_log_id])
             return False, msg
 
+        # パラメータでEVENTIDを使用できるようにする
+        action_parameters["_exastro_ObjectId"] = action_log_row.get("EVENT_ID_LIST")
+
         # パラメータを生成してAPIに投げる
         ret_bool, request_data = self.generate_parameter_4apply_api(action_log_id, conductor_class_name, operation_name, parameter_sheet_name_rest, host_name, action_parameters)
         if ret_bool is False:
@@ -486,16 +489,19 @@ class Action():
                 ret_bool = True
                 self.wsDb.db_transaction_end(True)
             else:
+                g.applogger.info(f"apply-api failed. {status_code=} {request_data=}")
                 self.wsDb.db_transaction_end(False)
         except AppException as e:
             result_code, log_msg_args, api_msg_args = e.args
             log_msg = g.appmsg.get_log_message(result_code, log_msg_args)
             result_data = addline_msg('{}'.format(log_msg))
+            g.applogger.info(f"apply-api failed. {request_data=}")
         except Exception as e:
             t = traceback.format_exc()
             g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
             log_msg = g.appmsg.get_log_message("BKY-90076", [action_log_id, e])
             result_data = addline_msg('{}'.format(log_msg))
+            g.applogger.info(f"apply-api failed. {request_data=}")
         finally:
             self.wsDb.db_transaction_end(False)
 

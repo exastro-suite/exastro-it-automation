@@ -532,7 +532,7 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca, path
         ret = upload_file(uploadFilePath, body_zipfile['base64'])
         if ret == 0:
             if os.path.exists(uploadPath + fileName):
-                os.remove(uploadPath + fileName)
+                retry_remove(uploadPath + fileName)  # noqa: F405
 
     # fileName = upload_id + '_ita_data.zip'
 
@@ -540,20 +540,19 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca, path
     # zip解凍
     # 解凍はtmp配下で行う
     tmp_dir_path = "/tmp/{}/{}".format(g.get('ORGANIZATION_ID'), g.get('WORKSPACE_ID')) + "/upload"
-    if os.path.isdir(tmp_dir_path) is False:
-        os.makedirs(tmp_dir_path)
-        os.chmod(tmp_dir_path, 0o777)
-    shutil.copy2(uploadPath + fileName, tmp_dir_path)
+    retry_makedirs(tmp_dir_path)  # noqa: F405
+    retry_chmod(tmp_dir_path, 0o777)  # noqa: F405
+    retry_copy2(uploadPath + fileName, tmp_dir_path)  # noqa: F405
 
     ret = unzip_file(fileName, tmp_dir_path, upload_id)
 
     if ret is False:
         unzip_file_cmd(fileName, tmp_dir_path, upload_id)
 
-    shutil.copytree(tmp_dir_path + "/" + upload_id, uploadPath + upload_id)
+    retry_copytree(tmp_dir_path + "/" + upload_id, uploadPath + upload_id)  # noqa: F405
 
     # tmp配下のファイル削除
-    shutil.rmtree(tmp_dir_path)
+    retry_rmtree(tmp_dir_path)  # noqa: F405
 
     # zipファイルの中身確認
     declare_list = checkZipFile(upload_id, organization_id, workspace_id)
@@ -567,7 +566,7 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca, path
         raise AppException("499-01305", [], [])
 
     # zipファイル削除
-    os.remove(importPath + fileName)
+    retry_remove(importPath + fileName)  # noqa: F405
 
     retImportAry = {}
     retUnImportAry = {}
@@ -867,8 +866,8 @@ def checkZipFile(upload_id, organization_id, workspace_id):
 
     if len(fileAry) == 0:
         if os.path.exists(uploadPath + fileName):
-            os.remove(uploadPath + fileName)
-        shutil.rmtree(uploadPath + upload_id)
+            retry_remove(uploadPath + fileName)  # noqa: F405
+        retry_rmtree(uploadPath + upload_id)  # noqa: F405
 
         raise AppException("499-01301", [], [])
 
@@ -882,16 +881,16 @@ def checkZipFile(upload_id, organization_id, workspace_id):
     if errFlg == 1:
         errCnt += 1
         if os.path.exists(uploadPath + fileName):
-            os.remove(uploadPath + fileName)
-        shutil.rmtree(uploadPath + upload_id)
+            retry_remove(uploadPath + fileName)  # noqa: F405
+        retry_rmtree(uploadPath + upload_id)  # noqa: F405
 
         raise AppException("499-01302", [], [])
 
     if not os.path.exists(uploadPath + upload_id + '/MENU_LIST.txt'):
         errCnt += 1
         if os.path.exists(uploadPath + fileName):
-            os.remove(uploadPath + fileName)
-        shutil.rmtree(uploadPath + upload_id)
+            retry_remove(uploadPath + fileName)  # noqa: F405
+        retry_rmtree(uploadPath + upload_id)  # noqa: F405
 
         raise AppException("499-01302", [], [])
 
@@ -901,27 +900,25 @@ def checkZipFile(upload_id, organization_id, workspace_id):
     file_read.close()
     if tmp_menu_list == "":
         if os.path.exists(uploadPath + fileName):
-            os.remove(uploadPath + fileName)
-        shutil.rmtree(uploadPath + upload_id)
+            retry_remove(uploadPath + fileName)  # noqa: F405
+        retry_rmtree(uploadPath + upload_id)  # noqa: F405
 
         raise AppException("499-01303", [], [])
 
     if errCnt > 0:
         if os.path.exists(uploadPath + fileName):
-            os.remove(uploadPath + fileName)
-
-        shutil.rmtree(uploadPath + upload_id)
+            retry_remove(uploadPath + fileName)  # noqa: F405
+        retry_rmtree(uploadPath + upload_id)  # noqa: F405
 
         raise AppException("499-01301", [], [])
 
     # ファイル移動
-    if not os.path.exists(importPath):
-        os.makedirs(importPath)
-        os.chmod(importPath, 0o777)
+    retry_makedirs(importPath)  # noqa: F405
+    retry_chmod(importPath, 0o777)  # noqa: F405
 
-    shutil.copy(uploadPath + fileName, importPath + fileName)
-    os.makedirs(importPath + upload_id)
-    os.chmod(importPath + upload_id, 0o777)
+    retry_copy(uploadPath + fileName, importPath + fileName)  # noqa: F405
+    retry_makedirs(importPath + upload_id)  # noqa: F405
+    retry_chmod(importPath + upload_id, 0o777)  # noqa: F405
     from_path = uploadPath + upload_id
     to_path = importPath + '.'
     cmd = "cp -frp " + from_path + ' ' + to_path
@@ -958,10 +955,10 @@ def checkZipFile(upload_id, organization_id, workspace_id):
 
     if errCnt > 0:
         if os.path.exists(uploadPath + fileName):
-            os.remove(uploadPath + fileName)
+            retry_remove(uploadPath + fileName)  # noqa: F405
 
         if os.path.exists(importPath + fileName):
-            os.remove(importPath + fileName)
+            retry_remove(importPath + fileName)  # noqa: F405
 
         cmd = "rm -rf " + uploadPath + upload_id + " 2>&1"
         ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
@@ -1295,18 +1292,16 @@ def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body, 
         file_name = upload_id + '_ita_data.tar.gz'
         file_path = upload_dir_name + '/' + file_name
 
-    if not os.path.isdir(upload_dir_name):
-        os.makedirs(upload_dir_name)
-        g.applogger.debug("made import_dir")
+    retry_makedirs(upload_dir_name)  # noqa: F405
+    g.applogger.debug("made import_dir")
 
     #  パスの設定:作業用
     _tmp_upload_dir_name = upload_dir_name.replace(storage_path, "/tmp/")
     _tmp_upload_id_path = upload_id_path.replace(storage_path, "/tmp/")
     _tmp_import_id_path = import_id_path.replace(storage_path, "/tmp/")
     _tmp_file_path = file_path.replace(storage_path, "/tmp/")
-    if not os.path.isdir(_tmp_upload_dir_name):
-        os.makedirs(_tmp_upload_dir_name)
-        g.applogger.debug("made import_dir")
+    retry_makedirs(_tmp_upload_dir_name)  # noqa: F405
+    g.applogger.debug("made import_dir")
 
     clear_file_list = [
         upload_dir_name,
@@ -1337,7 +1332,7 @@ def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body, 
                 _decode_zip_file(file_path, body['base64'])
             # 作業用にコピー
             g.applogger.debug(f"shutil.copyfile({file_path}, {_tmp_upload_dir_name})")
-            shutil.copy(file_path, _tmp_upload_dir_name)
+            retry_copy(file_path, _tmp_upload_dir_name)  # noqa: F405
         except Exception as e:
             # アップロードファイルのbase64変換～zip解凍時
             trace_msg = traceback.format_exc()
@@ -1657,8 +1652,7 @@ def _menu_import_execution_from_rest(objdbca, menu, dp_info, import_path, file_n
 
     try:
         # import_menu/import/アップロードIDのディレクトリを削除する
-        if os.path.isdir(import_path):
-            shutil.rmtree(import_path)
+        retry_rmtree(import_path)  # noqa: F405
     except Exception as e:
         g.applogger.info("Failed to delete: {} ({})".format(e, import_path))
 
@@ -1818,7 +1812,7 @@ def _check_zip_file(upload_id, organization_id, workspace_id):
 
     if len(fileAry) == 0:
         if os.path.exists(uploadPath + fileName):
-            os.remove(uploadPath + fileName)
+            retry_remove(uploadPath + fileName)  # noqa: F405
 
         msgstr = g.appmsg.get_api_message("MSG-30030")
         log_msg_args = [msgstr]
@@ -1842,7 +1836,7 @@ def _check_zip_file(upload_id, organization_id, workspace_id):
 
     if errCnt > 0:
         if os.path.exists(uploadPath + fileName):
-            os.remove(uploadPath + fileName)
+            retry_remove(uploadPath + fileName)  # noqa: F405
 
         msgstr = g.appmsg.get_api_message("MSG-30030")
         log_msg_args = [msgstr]
@@ -1854,13 +1848,11 @@ def _check_zip_file(upload_id, organization_id, workspace_id):
     extract_memberAry = []
     try:
         # 展開先の親フォルダがなければ作成
-        if not os.path.exists(importPath):
-            os.makedirs(importPath)
-            os.chmod(importPath, 0o777)
+        retry_makedirs(importPath)  # noqa: F405
+        retry_chmod(importPath, 0o777)  # noqa: F405
         # 展開先のフォルダがなければ作成
-        if not os.path.exists(importPath_id):
-            os.makedirs(importPath_id)
-            os.chmod(importPath_id, 0o777)
+        retry_makedirs(importPath_id)  # noqa: F405
+        retry_chmod(importPath_id, 0o777)  # noqa: F405
         with tarfile.open(uploadPath + fileName, 'r:gz') as tar:
             for member_item in tar.getmembers():
                 member_item_name = member_item.name
@@ -1893,17 +1885,17 @@ def _check_zip_file(upload_id, organization_id, workspace_id):
     kym_version = export_version
     # 2.5.0以下の場合
     if not (version.parse("2.5.0") <= version.parse(kym_version)):
-        shutil.rmtree(importPath + upload_id)
+        retry_rmtree(importPath + upload_id)  # noqa: F405
         msgstr = g.appmsg.get_api_message("MSG-140012", [kym_version])
         log_msg_args = [msgstr]
         api_msg_args = [msgstr]
         raise AppException("499-00701", log_msg_args, api_msg_args)
     # KYM > ITAの場合
     if (version.parse(ita_version) < version.parse(kym_version)):
-        shutil.rmtree(importPath + upload_id)
+        retry_rmtree(importPath + upload_id)  # noqa: F405
         raise AppException("499-01506", [kym_version, ita_version], [kym_version, ita_version])
 
-    shutil.copy(uploadPath + fileName, importPath + fileName)
+    retry_copy(uploadPath + fileName, importPath + fileName)  # noqa: F405
     # アップロードファイル削除
     cmd = "rm " + uploadPath + fileName
     ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
@@ -2002,7 +1994,7 @@ def generate_path_data(organization_id, workspace_id, excel=False):
         import_path = base_path + menu_path + "/import/"
         file_path = upload_path + file_name
         upload_dir_name = ""
-        os.makedirs(upload_path, exist_ok=True)
+        retry_makedirs(upload_path)  # noqa: F405
     else:
         file_name = upload_id + "_ita_data.tar.gz"
         menu_path ="/tmp/driver/import_menu"
@@ -2010,7 +2002,7 @@ def generate_path_data(organization_id, workspace_id, excel=False):
         upload_path = upload_dir_name + "/" + upload_id
         import_path = base_path + menu_path + "/import" + "/" + upload_id
         file_path = upload_dir_name + "/" + file_name
-        os.makedirs(upload_dir_name, exist_ok=True)
+        retry_makedirs(upload_dir_name)  # noqa: F405
 
 
     path_data = {
@@ -2100,10 +2092,10 @@ def clear_files(clear_path_list, mode="tmp_only"):
     for _path in clear_path_list:
         try:
             if os.path.isfile(_path):
-                os.remove(_path)
+                retry_remove(_path)  # noqa: F405
                 g.applogger.debug(f"delete file: {_path}")
             elif os.path.isdir(_path):
-                shutil.rmtree(_path)
+                retry_rmtree(_path)  # noqa: F405
                 g.applogger.debug(f"delete dir: {_path}")
         except Exception as e:
             g.applogger.info(f"Failed to delete: {e} ({_path})")

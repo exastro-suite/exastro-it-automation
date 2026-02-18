@@ -22,7 +22,7 @@ import tarfile
 from common_libs.common import storage_access
 from common_libs.common.exception import AppException
 from common_libs.common.dbconnect import *  # noqa: F403
-from common_libs.common.util import ky_decrypt, get_iso_datetime, arrange_stacktrace_format, print_exception_msg
+from common_libs.common.util import ky_decrypt, get_iso_datetime, arrange_stacktrace_format, print_exception_msg, retry_makedirs, retry_chmod, retry_copy, retry_rename, retry_remove, retry_rmtree
 from common_libs.driver.functions import operation_LAST_EXECUTE_TIMESTAMP_update
 from common_libs.terraform_driver.cloud_ep.Const import Const as TFCloudEPConst
 from common_libs.terraform_driver.cloud_ep.terraform_restapi import *  # noqa: F403
@@ -78,9 +78,8 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
         file_write = storage_access.storage_write()
 
         # ログ格納用ディレクトリを作成する
-        if os.path.isdir(log_dir) is False:
-            os.makedirs(log_dir)
-        os.chmod(log_dir, 0o777)
+        retry_makedirs(log_dir)
+        retry_chmod(log_dir, 0o777)
 
         # エラーログファイルを生成
         if os.path.isfile(error_log) is False:
@@ -295,16 +294,15 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
                 module_file_list.append(module_data)
 
             # 作業用tempディレクトリを作成する
-            if os.path.isdir(temp_dir) is False:
-                os.makedirs(temp_dir)
-            os.chmod(temp_dir, 0o777)
+            retry_makedirs(temp_dir)
+            retry_chmod(temp_dir, 0o777)
 
             # 作業対象のファイルをtempディレクトリにコピーする
             module_file_dir = base_dir + TFCloudEPConst.DIR_MODULE
             for module_data in module_file_list:
                 module_file_full_path = module_file_dir + '/' + module_data.get('module_matter_id') + '/' + module_data.get('module_matter_file')
                 # ファイルのコピーを実行
-                shutil.copy(module_file_full_path, temp_dir)
+                retry_copy(module_file_full_path, temp_dir)
 
             # tempディレクトリにコピーしたファイルをtar.gzファイルにまとめる
             gztar_path = temp_dir + '.tar.gz'
@@ -371,9 +369,8 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
                     variables_list.append(variable_data)
 
             # variables.jsonを格納するためのディレクトリを作成
-            if os.path.isdir(variables_dir) is False:
-                os.makedirs(variables_dir)
-            os.chmod(variables_dir, 0o777)
+            retry_makedirs(variables_dir)
+            retry_chmod(variables_dir, 0o777)
 
             # variables.jsonファイルを書き出し
             file_write.open(variables_json_file, 'w')
@@ -402,7 +399,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
                 policy_file_dir = base_dir + TFCloudEPConst.DIR_POLICY
                 policy_file_full_path = policy_file_dir + '/' + policy_id + '/' + policy_data.get('policy_file')
                 # ファイルのコピーを実行
-                shutil.copy(policy_file_full_path, temp_dir)
+                retry_copy(policy_file_full_path, temp_dir)  # noqa: F405
 
             # 投入データ用のZIPファイルを作成する
             populated_data_path = temp_dir + '.zip'
@@ -437,7 +434,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
                 # zipファイル名を変更 [execution_no].zip > InputData_[execution_no].zip
                 populated_data_rename_dir_path = base_dir + TFCloudEPConst.DIR_TEMP
                 populated_data_rename_path = populated_data_rename_dir_path + '/InputData_' + execution_no + '.zip'
-                os.rename(populated_data_path, populated_data_rename_path)
+                retry_rename(populated_data_path, populated_data_rename_path)
                 if os.path.exists(populated_data_rename_path) is False:
                     log_msg = g.appmsg.get_log_message("MSG-82008", [])
                     g.applogger.error(log_msg)
@@ -461,11 +458,11 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
                 raise AppException(log_msg)
 
             # 一時利用ディレクトリを削除する
-            shutil.rmtree(temp_dir)
+            retry_rmtree(temp_dir)
 
             # tar.gzファイルとzipファイルを削除する
-            os.remove(gztar_path)
-            os.remove(populated_data_rename_path)
+            retry_remove(gztar_path)
+            retry_remove(populated_data_rename_path)
         # -----[END]実行種別が「作業実行」「Plan確認」の場合のみ実施-----
         # -----[START]実行種別が「リソース削除」の場合のみ実施-----
         else:
@@ -514,14 +511,13 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
 
         # ディレクトリ/ファイル削除
         if temp_dir:
-            if os.path.isdir(temp_dir) is True:
-                shutil.rmtree(temp_dir)
+            retry_rmtree(temp_dir)
         if gztar_path:
             if os.path.isfile(gztar_path) is True:
-                os.remove(gztar_path)
+                retry_remove(gztar_path)
         if populated_data_rename_path:
             if os.path.isfile(populated_data_rename_path) is True:
-                os.remove(populated_data_rename_path)
+                retry_remove(populated_data_rename_path)
 
         return False
     except Exception:
@@ -535,14 +531,13 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
 
         # ディレクトリ/ファイル削除
         if temp_dir:
-            if os.path.isdir(temp_dir) is True:
-                shutil.rmtree(temp_dir)
+            retry_rmtree(temp_dir)
         if gztar_path:
             if os.path.isfile(gztar_path) is True:
-                os.remove(gztar_path)
+                retry_remove(gztar_path)
         if populated_data_rename_path:
             if os.path.isfile(populated_data_rename_path) is True:
-                os.remove(populated_data_rename_path)
+                retry_remove(populated_data_rename_path)
 
         return False
 

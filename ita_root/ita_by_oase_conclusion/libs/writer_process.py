@@ -104,7 +104,8 @@ class WriterProcessManager():
         cls._queue.put({
             "action": "start_workspace_processing",
             "oraganization_id": oraganization_id,
-            "workspace_id": workspace_id
+            "workspace_id": workspace_id,
+            "log_level": g.applogger.getEffectiveLevel()
         })
 
     @classmethod
@@ -331,7 +332,7 @@ class WriterProcess():
                     cls._t_oase_action_log.update(data["data"])
 
                 elif data["action"] == "start_workspace_processing":
-                    cls._start_workspace_processing(data["oraganization_id"], data["workspace_id"])
+                    cls._start_workspace_processing(data["oraganization_id"], data["workspace_id"], data["log_level"])
                 
                 elif data["action"] == "flush_buffer":
                     cls._flush_buffer(complite)
@@ -349,7 +350,7 @@ class WriterProcess():
                 raise
 
     @classmethod
-    def _start_workspace_processing(cls, oraganization_id: str, workspace_id: str):
+    def _start_workspace_processing(cls, oraganization_id: str, workspace_id: str, log_level: int):
         """ワークスペースの処理開始
 
         Args:
@@ -366,6 +367,10 @@ class WriterProcess():
         if cls._workspace_gc_trigger_counter % workspace_gc_trigger_interval == 0:
             g.applogger.debug("Execute Garbage Collection")
             gc.collect()
+
+        # ログレベルをそろえる(現状はDEBUG反映のみ)
+        if log_level:
+            g.applogger.setLevel(log_level)
 
         # ワークスペースの処理開始
         cls._objdbca = DBConnectWs(workspace_id=workspace_id, organization_id=oraganization_id)

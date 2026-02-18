@@ -187,8 +187,8 @@ class Notification(ABC):
         """
         g.applogger.info(g.appmsg.get_log_message("BKY-80000"))
         g.applogger.debug(g.appmsg.get_log_message("BKY-80007", [cls.__qualname__]))
-        g.applogger.debug(g.appmsg.get_log_message("BKY-80008", [len(event_list)]))
-        g.applogger.debug(g.appmsg.get_log_message("BKY-80009", [decision_information]))
+        g.applogger.info(g.appmsg.get_log_message("BKY-80008", [len(event_list)]))
+        g.applogger.info(g.appmsg.get_log_message("BKY-80009", [decision_information]))
 
         fetch_data = cls._fetch_table(objdbca, decision_information)
         if fetch_data is None:
@@ -260,7 +260,7 @@ class Notification(ABC):
 
             g.applogger.debug(g.appmsg.get_log_message("BKY-80012", [index + 1]))
 
-        g.applogger.debug(g.appmsg.get_log_message("BKY-80013", [result]))
+        g.applogger.info(g.appmsg.get_log_message("BKY-80013", [result]))
         g.applogger.info(g.appmsg.get_log_message("BKY-80001"))
 
         return result

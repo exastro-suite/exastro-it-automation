@@ -148,6 +148,7 @@ def post_events(body: str, organization_id: str, workspace_id: str) -> tuple:  #
             # fetched_timeがあればソートしておく
             event_group_list.sort(key=lambda x: x['fetched_time'])
         for event_group in event_group_list:
+            g.applogger.info(f'{len(event_group.get("event",[]))} Event in event_group')
             # event_collection_settings_nameもしくは、event_collection_settings_idは必須
             if "event_collection_settings_name" in event_group:
                 event_collection_settings_name = event_group["event_collection_settings_name"]
@@ -272,11 +273,15 @@ def post_events(body: str, organization_id: str, workspace_id: str) -> tuple:  #
                 raise AppException("499-01802", [", ".join(not_available_event_msg_list)], [", ".join(not_available_event_msg_list)])  # noqa: F405
 
         # ラベリングしてMongoDBに保存
+        g.applogger.info(f"label_event Start. targetEventsCount:{len(events)}")
         labeled_event_list = label_event(wsDb, wsMongo, events)  # noqa: F841
+        g.applogger.info(f"label_event END. targetEventsCount:{len(events)}")
 
         try:
             # 重複排除してmongoに書き込む
+            g.applogger.info(f"duplicate_check Start. targetEventsCount:{len(labeled_event_list)}")
             duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check(wsDb, wsMongo, labeled_event_list)
+            g.applogger.info(f"duplicate_check END. targetEventsCount:{len(labeled_event_list)}")
             if duplicate_check_result is False:
                 # 重複排除を行わなかった場合は、ラベル付きデータを保存
                 labeled_event_collection = wsMongo.collection(mongoConst.LABELED_EVENT_COLLECTION)  # ラベル付与したイベントデータを保存するためのコレクション
@@ -290,7 +295,9 @@ def post_events(body: str, organization_id: str, workspace_id: str) -> tuple:  #
             raise AppException(err_code, [e], [e])  # noqa: F405
 
         # 通知キューへの追加
+        g.applogger.info(f"add_notification_queue Start. targetEventsCount:{len(recieve_notification_list)},{len(duplicate_notification_list)}")
         add_notification_queue(wsDb, recieve_notification_list, duplicate_notification_list)  # noqa: F841
+        g.applogger.info(f"add_notification_queue END. targetEventsCount:{len(recieve_notification_list)},{len(duplicate_notification_list)}")
 
         # MySQLにイベント収集設定IDとfetched_timeを保存する処理を行う
         wsDb.db_transaction_start()
@@ -343,10 +350,12 @@ def add_notification_queue(wsdb, recieve_notification_list, duplicate_notificati
         recieve_decision_information = {"notification_type": OASENotificationType.RECEIVE}
         # イベント種別ごとに分けてbulksendを呼び出す（新規（受信時））
         if recieve_notification_list:
+            g.applogger.info(f'Notification API call Start {recieve_decision_information}: {len(recieve_notification_list)}')
             recieve_ret = OASE.bulksend(wsdb, recieve_notification_list, recieve_decision_information)
+            g.applogger.info(f'Notification API call End {recieve_decision_information}: {len(recieve_notification_list)}')
             # PF通知キューへの追加失敗があればログに出しておく
             if recieve_ret.get("failure", 0) > 0:
-                g.applogger.info(f'Notification API call Failed {recieve_ret["failure"]}: {recieve_ret["failure_info"]}')
+                g.applogger.info(f'Notification API call Failed {recieve_ret["failure"]}connection ({recieve_ret["failure_notification_count"]}Messages): {recieve_ret["failure_info"]}')
             g.applogger.debug(g.appmsg.get_log_message("BKY-80018", [recieve_ret]))
     except Exception:
         # 通知処理の中で例外が発生したとしてもイベント自体はmongoに登録されているので、わざわざ例外発生はさせない
@@ -358,10 +367,12 @@ def add_notification_queue(wsdb, recieve_notification_list, duplicate_notificati
         duplicate_decision_information = {"notification_type": OASENotificationType.DUPLICATE}
         # イベント種別ごとに分けてbulksendを呼び出す（新規（統合時））
         if duplicate_notification_list:
+            g.applogger.info(f'Notification API call Start {duplicate_decision_information}: {len(duplicate_notification_list)}')
             duplicate_ret = OASE.bulksend(wsdb, duplicate_notification_list, duplicate_decision_information)
+            g.applogger.info(f'Notification API call End {duplicate_decision_information}: {len(duplicate_notification_list)}')
             # PF通知キューへの追加失敗があればログに出しておく
             if duplicate_ret.get("failure", 0) > 0:
-                g.applogger.info(f'Notification API call Failed {duplicate_ret["failure"]}: {duplicate_ret["failure_info"]}')
+                g.applogger.info(f'Notification API call Failed {duplicate_ret["failure"]} ({recieve_ret["failure_notification_count"]}Messages): {duplicate_ret["failure_info"]}')
             g.applogger.debug(g.appmsg.get_log_message("BKY-80018", [duplicate_ret]))
     except Exception:
         # 通知処理の中で例外が発生したとしてもイベント自体はmongoに登録されているので、わざわざ例外発生はさせない

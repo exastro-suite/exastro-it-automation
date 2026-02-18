@@ -133,7 +133,7 @@ def create_maintenance_parameters(connexion_request, tmp_path):
                         if _list_num not in file_paths:
                             file_paths[_list_num] = {}
                         tmp_file_path = os.path.join(tmp_path, str(_list_num), _list_key)
-                        os.makedirs(tmp_file_path)
+                        retry_makedirs(tmp_file_path)  # noqa: F405
                         file_path = os.path.join(tmp_file_path, file_name)
                         file_paths[_list_num][_list_key] = file_path
 

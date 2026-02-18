@@ -84,8 +84,7 @@ import traceback
 
 from flask import g
 
-from common_libs.common.util import arrange_stacktrace_format
-from common_libs.common.util import ky_decrypt, ky_file_decrypt
+from common_libs.common.util import ky_decrypt, ky_file_decrypt, arrange_stacktrace_format, retry_makedirs, retry_copy2, retry_unlink, retry_chmod, retry_copy, retry_copytree, retry_rmtree
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_driver.classes.menu_required_check import AuthTypeParameterRequiredCheck
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiConfig import AnsibleTowerRestApiConfig
@@ -625,14 +624,14 @@ class ExecuteDirector():
         addAnsibleCreateFilesPath(tmp_TowerInfo_File)
 
         if os.path.isfile(tmp_TowerInfo_File):
-            os.unlink(tmp_TowerInfo_File)
+            retry_unlink(tmp_TowerInfo_File)
 
         tmp_log_file = '%s/.ky_ansible_materials_transfer_logfile_%s.log' % (get_OSTmpPath(), os.getpid())
         # /tmpに作成したファイルはゴミ掃除リストに追加
         addAnsibleCreateFilesPath(tmp_log_file)
 
         if os.path.isfile(tmp_log_file):
-            os.unlink(tmp_log_file)
+            retry_unlink(tmp_log_file)
 
         result_code = True
         tgtHostList = []
@@ -697,11 +696,9 @@ class ExecuteDirector():
                 self.ExceptionErrorLog(e, errorMessage, "", "")
                 return False
 
-            if os.path.isfile(tmp_log_file):
-                os.unlink(tmp_log_file)
+            retry_unlink(tmp_log_file)
 
-            if os.path.isfile(tmp_TowerInfo_File):
-                os.unlink(tmp_TowerInfo_File)
+            retry_unlink(tmp_TowerInfo_File)
 
             if credential['node_type'] == AnscConst.DF_CONTROL_NODE:
                 # 実行エンジンを判定  Towerの場合にTowerプロジェクトディレクトリ(/var/lib/awx/projects)に資材展開
@@ -750,11 +747,12 @@ class ExecuteDirector():
                         return False
                 """
 
+                # 前処理で既に消しているのでこの時点では存在していないはず
                 if os.path.isfile(tmp_log_file):
-                    os.unlink(tmp_log_file)
+                    retry_unlink(tmp_log_file)
 
                 if os.path.isfile(tmp_TowerInfo_File):
-                    os.unlink(tmp_TowerInfo_File)
+                    retry_unlink(tmp_TowerInfo_File)
 
         return result_code
 
@@ -768,7 +766,7 @@ class ExecuteDirector():
         addAnsibleCreateFilesPath(tmp_log_file)
 
         if os.path.isfile(tmp_log_file):
-            os.unlink(tmp_log_file)
+            retry_unlink(tmp_log_file)
 
         result_code = True
         tgtHostList = []
@@ -789,7 +787,7 @@ class ExecuteDirector():
             addAnsibleCreateFilesPath(tmp_TowerInfo_File)
 
             if os.path.isfile(tmp_TowerInfo_File):
-                os.unlink(tmp_TowerInfo_File)
+                retry_unlink(tmp_TowerInfo_File)
 
             info = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n" % (
                 credential['host_name'],
@@ -835,11 +833,9 @@ class ExecuteDirector():
                     self.ExceptionErrorLog(e, errorMessage, "", "")
                     result_code = False
 
-                if os.path.isfile(tmp_log_file):
-                    os.unlink(tmp_log_file)
+                retry_unlink(tmp_log_file)
 
-                if os.path.isfile(tmp_TowerInfo_File):
-                    os.unlink(tmp_TowerInfo_File)
+                retry_unlink(tmp_TowerInfo_File)
 
         return result_code
 
@@ -852,14 +848,14 @@ class ExecuteDirector():
         addAnsibleCreateFilesPath(tmp_TowerInfo_File)
 
         if os.path.isfile(tmp_TowerInfo_File):
-            os.unlink(tmp_TowerInfo_File)
+            retry_unlink(tmp_TowerInfo_File)
 
         tmp_log_file = '%s/.ky_ansible_resultfile_transfer_delete_logfile_%s.log' % (get_OSTmpPath(), os.getpid())
         # /tmpに作成したファイルはゴミ掃除リストに追加
         addAnsibleCreateFilesPath(tmp_log_file)
 
         if os.path.isfile(tmp_log_file):
-            os.unlink(tmp_log_file)
+            retry_unlink(tmp_log_file)
 
         result_code = True
         tgtHostList = []
@@ -927,10 +923,10 @@ class ExecuteDirector():
                         return False
 
             if os.path.isfile(tmp_log_file):
-                os.unlink(tmp_log_file)
+                retry_unlink(tmp_log_file)
 
             if os.path.isfile(tmp_TowerInfo_File):
-                os.unlink(tmp_TowerInfo_File)
+                retry_unlink(tmp_TowerInfo_File)
 
             ########################################################################################################
             # ITA作業ディレクトリ配下のoutディレクトリ(__ita_out_dir__)をITAに転送
@@ -988,10 +984,10 @@ class ExecuteDirector():
                     return False
 
             if os.path.isfile(tmp_log_file):
-                os.unlink(tmp_log_file)
+                retry_unlink(tmp_log_file)
 
             if os.path.isfile(tmp_TowerInfo_File):
-                os.unlink(tmp_TowerInfo_File)
+                retry_unlink(tmp_TowerInfo_File)
 
             ########################################################################################################
             # ITA作業ディレクトリ配下の_parameters配下をITAに転送
@@ -1049,10 +1045,10 @@ class ExecuteDirector():
                     return False
 
             if os.path.isfile(tmp_log_file):
-                os.unlink(tmp_log_file)
+                retry_unlink(tmp_log_file)
 
             if os.path.isfile(tmp_TowerInfo_File):
-                os.unlink(tmp_TowerInfo_File)
+                retry_unlink(tmp_TowerInfo_File)
 
             ########################################################################################################
             # Towerプロジェクトディレクトリ配下の_parameters_file配下をITAに転送
@@ -1108,10 +1104,10 @@ class ExecuteDirector():
                     return False
 
             if os.path.isfile(tmp_log_file):
-                os.unlink(tmp_log_file)
+                retry_unlink(tmp_log_file)
 
             if os.path.isfile(tmp_TowerInfo_File):
-                os.unlink(tmp_TowerInfo_File)
+                retry_unlink(tmp_TowerInfo_File)
 
         return result_code
 
@@ -1190,7 +1186,7 @@ class ExecuteDirector():
                     src_file = self.getAnsibleTowerSshKeyFileContent(row['ANSTWR_HOST_ID'], row['ANSTWR_LOGIN_SSH_KEY_FILE'])
                     sshKeyFile = '%s/in/ssh_key_files/AnsibleTower_%s_%s' % (getAnsibleExecutDirPath(self.AnsConstObj, execution_no), row['ANSTWR_HOST_ID'], row['ANSTWR_LOGIN_SSH_KEY_FILE'])
                     try:
-                        shutil.copy(src_file, sshKeyFile)
+                        retry_copy(src_file, sshKeyFile)
 
                     except Exception as e:
                         errorMessage = g.appmsg.get_api_message("MSG-10636", [os.path.basename(src_file)])
@@ -1205,7 +1201,7 @@ class ExecuteDirector():
                         return False, TowerHostList
 
                     try:
-                        os.chmod(sshKeyFile, 0o600)
+                        retry_chmod(sshKeyFile, 0o600)
 
                     except Exception as e:
                         errorMessage = g.appmsg.get_api_message("MSG-10085", [inspect.currentframe().f_lineno])
@@ -2461,9 +2457,8 @@ class ExecuteDirector():
         # /tmp/git_repositorie_dir
         repositories_base_path = getGitRepositorieDir()
         # 作成用一時ディレクトリ作成
-        if os.path.isdir(repositories_base_path) is False:
-            os.mkdir(repositories_base_path)
-        os.chmod(repositories_base_path, 0o777)
+        retry_makedirs(repositories_base_path)
+        retry_chmod(repositories_base_path, 0o777)
         # repositories_base_pathは/tmpに作成ししているがゴミ掃除リストに追加しない
 
         # #2079 /storage配下ではないのでこのまま
@@ -2511,10 +2506,8 @@ class ExecuteDirector():
 
             g.applogger.info("[Trace] git clone done.")
 
-            shutil.copytree(SrcFilePath.replace("/*", ""),
-                            self.gitLoaclRepositoriesPath,
-                            dirs_exist_ok=True,
-                            )
+            retry_copytree(SrcFilePath.replace("/*", ""),
+                            self.gitLoaclRepositoriesPath)
             g.applogger.debug(f"[Trace] shutil.copytree. src: {SrcFilePath}, dst: {self.gitLoaclRepositoriesPath}")
 
             # __ita_tmp_dir__配下のconductor_workflowr_dirに使う資材は不要なので除外する
@@ -2522,7 +2515,7 @@ class ExecuteDirector():
                 if AnscConst.DF_GITREPO_CONDUCTOR_PATH in self.vg_TowerProjectsScpPathArray else None
             if conductor_path:
                 git_local_conductor_path = f"{self.gitLoaclRepositoriesPath}/__ita_tmp_dir__/__ita_conductor_dir__"
-                shutil.rmtree(git_local_conductor_path) if os.path.isdir(git_local_conductor_path) else None
+                retry_rmtree(git_local_conductor_path)
                 g.applogger.debug(f"[Trace] shutil.rmtree. src: {git_local_conductor_path}")
 
             os.chdir(self.gitLoaclRepositoriesPath)
@@ -2994,7 +2987,7 @@ class ExecuteDirector():
             tmp_file_path = obj.make_temp_path(path)
             if os.path.exists(path) is True:
                 #  /storageから/tmpにファイルコピー(パーミッション維持)
-                shutil.copy2(path, tmp_file_path)
+                retry_copy2(path, tmp_file_path)
         else:
             # not /storage
             tmp_file_path = path

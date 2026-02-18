@@ -26,6 +26,7 @@ from common_libs.ansible_driver.functions.util import getDataRelayStorageDir
 from common_libs.ansible_driver.functions.util import getFileupLoadColumnPath
 from common_libs.ansible_driver.functions.util import getDataRelayStorageDir
 from common_libs.ansible_driver.functions.template_render import TemplateRender
+from common_libs.common.util import retry_copy
 from common_libs.common.storage_access import storage_base, storage_read, storage_write, storage_base
 
 
@@ -215,7 +216,7 @@ def CreateAG_ITABuilderShellFiles(objDBCA, AnscObj, out_dir, execution_no, movem
                 path = getFileupLoadColumnPath(strage_menu_id, column_row['COLUMN_NAME_REST'])
                 src_upload_file = "{}/{}/{}".format(path, uploadfiledir_uuid, item_array[column_row['COLUMN_NAME_REST']])
                 dest_uoload_file = "{}/{}_{}".format(out_dir, column_row['COLUMN_NAME_REST'], item_array[column_row['COLUMN_NAME_REST']])
-                shutil.copy(src_upload_file, dest_uoload_file)
+                retry_copy(src_upload_file, dest_uoload_file)
                 j2_item_array[column_row['COLUMN_NAME_JA']] = os.path.basename(dest_uoload_file)
             else:
                 j2_item_array[column_row['COLUMN_NAME_JA']] = ""

@@ -947,7 +947,7 @@ def get_policy_file(objdbca, tf_organization_name, policy_name, parameters, base
             tmp_uuid = str(uuid.uuid4())
             tmp_file_dir = f"/tmp/{tmp_uuid}"
             return_data = f"{tmp_file_dir}/{file_name}"
-            os.makedirs(tmp_file_dir)
+            retry_makedirs(tmp_file_dir)  # noqa: F405
             with open(return_data, "w")as f:
                 f.write(responseContents)
 

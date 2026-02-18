@@ -6,6 +6,7 @@ from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_driver.classes.VarStructAnalJsonConvClass import VarStructAnalJsonConv
 from common_libs.ansible_driver.functions.util import get_OSTmpPath
 from common_libs.ansible_driver.functions.util import addAnsibleCreateFilesPath
+from common_libs.common.util import retry_remove
 
 
 def Template_variable_define_analysis(objdbca, option, pkey_id, TPF_var_name, var_struct_string, vars_list, array_vars_list, LCA_vars_use, array_vars_use, GBL_vars_info, var_val_list):
@@ -81,7 +82,7 @@ def Template_variable_define_analysis(objdbca, option, pkey_id, TPF_var_name, va
                     retBool = False
 
     # 一時ファイル削除
-    os.remove(tmp_file_name)
+    retry_remove(tmp_file_name)
     if retBool is True:
         retBool, msg = chkTemplateVarNameLength(vars_list, array_vars_list)
         if retBool is True:

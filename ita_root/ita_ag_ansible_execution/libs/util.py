@@ -29,7 +29,7 @@ import mimetypes
 import re
 
 from common_libs.common.exception import AppException
-from common_libs.common.util import arrange_stacktrace_format
+from common_libs.common.util import arrange_stacktrace_format, retry_makedirs, retry_chmod, retry_rmtree, retry_copy, retry_copytree, retry_remove
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 
 
@@ -48,7 +48,7 @@ def get_agent_id(organization_id, workspace_id, agent_name):
         with open(version_file_path, mode='r') as f:
             agent_id= f.read()
     else:
-        os.makedirs(version_dir_path) if not os.path.isdir(version_dir_path) else None
+        retry_makedirs(version_dir_path)
         agent_id = datetime.datetime.now().strftime('%Y%m%d%H%M%S%f')
         with open(version_file_path, mode='w') as f:
             f.write(agent_id)
@@ -91,7 +91,7 @@ def get_upload_file_info(organization_id, workspace_id, driver_id, execution_no)
     conductor_dir = f"{storagepath}/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}/conductor"
     _uuid = str(uuid.uuid4())
     tmp_dir_name = f"/tmp/{organization_id}/{workspace_id}/{_uuid}"
-    os.makedirs(tmp_dir_name) if not os.path.isdir(tmp_dir_name) else None
+    retry_makedirs(tmp_dir_name)
 
     try:
         # 対象ファイルを tmpへcopy
@@ -329,14 +329,14 @@ def arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, stat
         tmp_dir_path = _tmp_path
 
     # 作業ディレクトリがなければ作成しておく
-    os.makedirs(tmp_dir_path) if not os.path.exists(tmp_dir_path) else None
+    retry_makedirs(tmp_dir_path)
     # /out無ければ空で作成しておく
-    os.makedirs(out_dir_path) if not os.path.exists(out_dir_path) else None
+    retry_makedirs(out_dir_path)
     # parameters・parameters_file無ければ空で作成しておく
-    os.makedirs(in_dir_path + "/_parameters") if not os.path.exists(in_dir_path + "/_parameters") else None
-    os.makedirs(in_dir_path + "/_parameters_file") if not os.path.exists(in_dir_path + "/_parameters_file") else None
+    retry_makedirs(in_dir_path + "/_parameters")
+    retry_makedirs(in_dir_path + "/_parameters_file")
     # /conductor無ければ空で作成しておく
-    os.makedirs(conductor_dir_path) if not os.path.exists(conductor_dir_path) else None
+    retry_makedirs(conductor_dir_path)
 
     out_tar_dir_path = tmp_dir_path + "/out"
     out_gztar_path = out_tar_dir_path + ".tar.gz"
@@ -349,15 +349,15 @@ def arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, stat
 
     # 作業ディレクトリ削除してから処理実行
     if os.path.exists(out_tar_dir_path):
-        shutil.rmtree(out_tar_dir_path)
+        retry_rmtree(out_tar_dir_path)
 
     # ステータスが実行中、実行中(遅延)の場合
     if status == AnscConst.PROCESSING or status == AnscConst.PROCESS_DELAYED:
-        os.makedirs(out_tar_dir_path)
+        retry_makedirs(out_tar_dir_path)
 
         # ログファイルをtarファイルにまとめる
-        shutil.copy(out_dir_path + "/exec.log", out_tar_dir_path)
-        shutil.copy(out_dir_path + "/error.log", out_tar_dir_path)
+        retry_copy(out_dir_path + "/exec.log", out_tar_dir_path)
+        retry_copy(out_dir_path + "/error.log", out_tar_dir_path)
         with tarfile.open(out_gztar_path, "w:gz") as tar:
             tar.add(out_tar_dir_path, arcname="")
 
@@ -372,25 +372,25 @@ def arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, stat
 
         # 作業ディレクトリ削除してから処理実行
         if os.path.exists(parameters_tar_dir_path):
-            shutil.rmtree(parameters_tar_dir_path)
+            retry_rmtree(parameters_tar_dir_path)
         if os.path.exists(parameters_file_tar_dir_path):
-            shutil.rmtree(parameters_file_tar_dir_path)
+            retry_rmtree(parameters_file_tar_dir_path)
         if os.path.exists(conductor_tar_dir_path):
-            shutil.rmtree(conductor_tar_dir_path)
+            retry_rmtree(conductor_tar_dir_path)
 
-        os.makedirs(out_tar_dir_path)
-        os.makedirs(parameters_tar_dir_path)
-        os.makedirs(parameters_file_tar_dir_path)
+        retry_makedirs(out_tar_dir_path)
+        retry_makedirs(parameters_tar_dir_path)
+        retry_makedirs(parameters_file_tar_dir_path)
 
         # outディレクトリをtarファイルにまとめる
-        shutil.copytree(out_dir_path, out_tar_dir_path, dirs_exist_ok=True)
+        retry_copytree(out_dir_path, out_tar_dir_path)
         with tarfile.open(out_gztar_path, "w:gz") as tar:
             tar.add(out_tar_dir_path, arcname="")
 
 
         # parameters・parameters_fileをtarファイルにまとめる
-        shutil.copytree(in_dir_path + "/_parameters", parameters_tar_dir_path, dirs_exist_ok=True)
-        shutil.copytree(in_dir_path + "/_parameters_file", parameters_file_tar_dir_path, dirs_exist_ok=True)
+        retry_copytree(in_dir_path + "/_parameters", parameters_tar_dir_path)
+        retry_copytree(in_dir_path + "/_parameters_file", parameters_file_tar_dir_path)
         with tarfile.open(parameters_gztar_path, "w:gz") as tar:
             tar.add(parameters_tar_dir_path, arcname="")
         with tarfile.open(parameters_file_gztar_path, "w:gz") as tar:
@@ -398,9 +398,8 @@ def arcive_tar_data(organization_id, workspace_id, driver_id, execution_no, stat
 
         # conductorディレクトリをtarファイルにまとめる
         if os.path.exists(conductor_dir_path):
-            if not os.path.exists(conductor_tar_dir_path):
-                os.makedirs(conductor_tar_dir_path)
-            shutil.copytree(conductor_dir_path, conductor_tar_dir_path, dirs_exist_ok=True)
+            retry_makedirs(conductor_tar_dir_path)
+            retry_copytree(conductor_dir_path, conductor_tar_dir_path)
             with tarfile.open(conductor_gztar_path, "w:gz") as tar:
                 tar.add(conductor_tar_dir_path, arcname="")
 
@@ -414,7 +413,7 @@ def clear_execution_status_file(organization_id, workspace_id, driver_id, execut
     _x, _path = get_execution_status_file_path(organization_id, workspace_id, driver_id, execution_no)
     if os.path.isfile(_path):
         g.applogger.debug(f"delete status file. (path:{_path})")
-        os.remove(_path)
+        retry_remove(_path)
 
 
 def clear_execution_parameters_file(organization_id, workspace_id, driver_id, execution_no):
@@ -425,7 +424,7 @@ def clear_execution_parameters_file(organization_id, workspace_id, driver_id, ex
     _path += "_parameter"
     if os.path.isfile(_path):
         g.applogger.debug(f"delete execution restart file. (path:{_path})")
-        os.remove(_path)
+        retry_remove(_path)
 
 
 def clear_execution_restart_status_file(organization_id, workspace_id, driver_id, execution_no):
@@ -436,7 +435,7 @@ def clear_execution_restart_status_file(organization_id, workspace_id, driver_id
     _path += "_restart"
     if os.path.isfile(_path):
         g.applogger.debug(f"delete execution restart file. (path:{_path})")
-        os.remove(_path)
+        retry_remove(_path)
 
 
 def get_execution_status_file_path(organization_id, workspace_id, driver_id, execution_no):
@@ -453,9 +452,8 @@ def create_execution_status_file(organization_id, workspace_id, driver_id, execu
     子プロ起動状態ファイル生成
     """
     status_file_dir_path, status_file_path = get_execution_status_file_path(organization_id, workspace_id, driver_id, execution_no)
-    if not os.path.exists(status_file_dir_path):
-        os.makedirs(status_file_dir_path)
-        os.chmod(status_file_dir_path, 0o777)
+    retry_makedirs(status_file_dir_path)
+    retry_chmod(status_file_dir_path, 0o777)
     if not os.path.isfile(status_file_path):
         # ファイル名を作業番号で作成
         with open(status_file_path, 'w') as f:
@@ -472,9 +470,8 @@ def create_execution_parameters_file(organization_id, workspace_id, driver_id, e
     ary_dump = json.dumps(ary)
     status_file_dir_path, status_file_path = get_execution_status_file_path(organization_id, workspace_id, driver_id, execution_no)
     status_file_path += "_parameter"
-    if not os.path.exists(status_file_dir_path):
-        os.makedirs(status_file_dir_path)
-        os.chmod(status_file_dir_path, 0o777)
+    retry_makedirs(status_file_dir_path)
+    retry_chmod(status_file_dir_path, 0o777)
     if not os.path.isfile(status_file_path):
         # ファイル名を作業番号で作成
         with open(status_file_path, 'w') as f:
@@ -490,9 +487,8 @@ def create_execution_restart_status_file(organization_id, workspace_id, driver_i
     ary_dump = json.dumps(ary)
     status_file_dir_path, status_file_path = get_execution_status_file_path(organization_id, workspace_id, driver_id, execution_no)
     status_file_path += "_restart"
-    if not os.path.exists(status_file_dir_path):
-        os.makedirs(status_file_dir_path)
-        os.chmod(status_file_dir_path, 0o777)
+    retry_makedirs(status_file_dir_path)
+    retry_chmod(status_file_dir_path, 0o777)
     if not os.path.isfile(status_file_path):
         # ファイル名を作業番号で作成
         with open(status_file_path, 'w') as f:
@@ -584,7 +580,7 @@ def log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_l
     # 特定のキーワードで改行しrunnerの実行ログを見やすくする
     if os.path.isfile(runner_exec_log_pass):
         runner_exec_original_log_pass = runner_exec_log_pass + ".org"
-        shutil.copy(runner_exec_log_pass, runner_exec_original_log_pass)
+        retry_copy(runner_exec_log_pass, runner_exec_original_log_pass)
         with open(runner_exec_original_log_pass, "r") as f:
             log_data = f.read()
 

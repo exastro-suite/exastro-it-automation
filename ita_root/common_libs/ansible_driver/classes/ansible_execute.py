@@ -20,7 +20,7 @@ from common_libs.ansible_driver.functions.util import getAnsibleExecutDirPath, g
 from common_libs.ansible_driver.functions.util import get_OSTmpPath, addAnsibleCreateFilesPath
 
 from common_libs.ansible_driver.classes.controll_ansible_agent import DockerMode, KubernetesMode
-from common_libs.common.util import ky_file_decrypt, ky_decrypt
+from common_libs.common.util import ky_file_decrypt, ky_decrypt, retry_chmod
 from common_libs.ansible_driver.functions.util import loacl_quote
 from common_libs.common.storage_access import storage_read, storage_write
 
@@ -231,7 +231,7 @@ class AnsibleExecute():
         obj.write(strShell)
         obj.close()
 
-        os.chmod(strExecshellName, 0o777)
+        retry_chmod(strExecshellName, 0o777)
         # ansible-playbook 標準エラー出力先
         strSTDERRFileName = "{}/{}/{}".format(execute_path, self.strOutFolderName, self.STDERRLogfile)
         # ansible-playbook 標準出力出力先

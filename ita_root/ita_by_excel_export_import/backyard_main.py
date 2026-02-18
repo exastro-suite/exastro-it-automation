@@ -117,9 +117,8 @@ def backyard_main(organization_id, workspace_id):
                 taskId = task["EXECUTION_NO"]
 
                 # タスクIDでディレクトリづくり
-                if not os.path.isdir(EXPORT_PATH + "/" + taskId + "/tmp_zip"):
-                    os.makedirs(EXPORT_PATH + "/" + taskId + "/tmp_zip")
-                    os.chmod(EXPORT_PATH + "/" + taskId + "/tmp_zip", 0o777)
+                retry_makedirs(EXPORT_PATH + "/" + taskId + "/tmp_zip")  # noqa: F405
+                retry_chmod(EXPORT_PATH + "/" + taskId + "/tmp_zip", 0o777)  # noqa: F405
                 if not os.path.isdir(EXPORT_PATH + "/" + taskId):
                     frame = inspect.currentframe().f_back
                     msgstr = g.appmsg.get_api_message("MSG-30023", ["T_BULK_EXCEL_EXPORT_IMPORT", os.path.basename(__file__), str(frame.f_lineno)])
@@ -127,7 +126,7 @@ def backyard_main(organization_id, workspace_id):
                     # ステータスを完了(異常)に更新
                     result, msg = util.setStatus(task['EXECUTION_NO'], STATUS_FAILURE, objdbca)
                     # 一時ディレクトリ削除
-                    shutil.rmtree(EXPORT_PATH + "/" + taskId)
+                    retry_rmtree(EXPORT_PATH + "/" + taskId)  # noqa: F405
                     continue
 
                 fileNameList = ""
@@ -178,11 +177,10 @@ def backyard_main(organization_id, workspace_id):
                     # メニューグループごとにまとめる
                     # スペース、バックスラッシュがあるとzip解凍に失敗するので「_」に変換
                     folder_name = menuGroupId + "_" + menuGroupName.replace("/", "_")
-                    if not os.path.exists(EXPORT_PATH + "/" + taskId + "/tmp_zip/" + folder_name):
-                        os.makedirs(EXPORT_PATH + "/" + taskId + "/tmp_zip/" + folder_name)
-                        os.chmod(EXPORT_PATH + "/" + taskId + "/tmp_zip/" + folder_name, 0o777)
+                    retry_makedirs(EXPORT_PATH + "/" + taskId + "/tmp_zip/" + folder_name)  # noqa: F405
+                    retry_chmod(EXPORT_PATH + "/" + taskId + "/tmp_zip/" + folder_name, 0o777)  # noqa: F405
 
-                    shutil.move(filePath, EXPORT_PATH + "/" + taskId + "/tmp_zip/" + folder_name)
+                    retry_move(filePath, EXPORT_PATH + "/" + taskId + "/tmp_zip/" + folder_name)  # noqa: F405
 
                     # ファイルリスト
                     fileNamelist = filePath.split("/")
@@ -212,11 +210,8 @@ def backyard_main(organization_id, workspace_id):
                 file_write.close()
 
                 # パスの有無を確認
-                if not os.path.exists(DST_PATH):
-                    os.makedirs(DST_PATH)
-                    os.chmod(DST_PATH, 0o777)
-                else:
-                    os.chmod(DST_PATH, 0o777)
+                retry_makedirs(DST_PATH)  # noqa: F405
+                retry_chmod(DST_PATH, 0o777)  # noqa: F405
 
                 # ZIPを固めて、ステータスを完了にする
                 t_delta = datetime.timedelta(hours=9)
@@ -234,11 +229,11 @@ def backyard_main(organization_id, workspace_id):
                     # ステータスを完了(異常)に更新
                     result, msg = util.setStatus(task['EXECUTION_NO'], STATUS_FAILURE, objdbca)
                     # 一時ディレクトリ削除
-                    shutil.rmtree(EXPORT_PATH + "/" + taskId)
+                    retry_rmtree(EXPORT_PATH + "/" + taskId)  # noqa: F405
                     continue
 
                 # 一時ディレクトリ削除
-                shutil.rmtree(EXPORT_PATH + "/" + taskId)
+                retry_rmtree(EXPORT_PATH + "/" + taskId)  # noqa: F405
 
             # インポート
             elif task["EXECUTION_TYPE"] == "2":
@@ -381,9 +376,9 @@ def backyard_main(organization_id, workspace_id):
 
                 # 一時ディレクトリ削除
                 # アップロード後インポート実行しない場合、一時ディレクトリが残るのでimportディレクトリを削除してから、もう一度ディレクトリを作り直す
-                shutil.rmtree(IMPORT_PATH + "/import")
-                os.makedirs(IMPORT_PATH + "/import")
-                os.chmod(IMPORT_PATH + "/import", 0o777)
+                retry_rmtree(IMPORT_PATH + "/import")  # noqa: F405
+                retry_makedirs(IMPORT_PATH + "/import")  # noqa: F405
+                retry_chmod(IMPORT_PATH + "/import", 0o777)  # noqa: F405
 
     except Exception as e:
         # エラーログ出力
@@ -392,11 +387,11 @@ def backyard_main(organization_id, workspace_id):
 
         # 一時ディレクトリ削除
         if os.path.exists(EXPORT_PATH + "/" + taskId):
-            shutil.rmtree(EXPORT_PATH + "/" + taskId)
+            retry_rmtree(EXPORT_PATH + "/" + taskId)  # noqa: F405
         if os.path.exists(IMPORT_PATH + "/import/" + upload_id):
-            shutil.rmtree(IMPORT_PATH + "/import")
-            os.makedirs(IMPORT_PATH + "/import")
-            os.chmod(IMPORT_PATH + "/import", 0o777)
+            retry_rmtree(IMPORT_PATH + "/import")  # noqa: F405
+            retry_makedirs(IMPORT_PATH + "/import")  # noqa: F405
+            retry_chmod(IMPORT_PATH + "/import", 0o777)  # noqa: F405
 
         # ステータスを完了(異常)に更新
         util.setStatus(task['EXECUTION_NO'], STATUS_FAILURE, objdbca)

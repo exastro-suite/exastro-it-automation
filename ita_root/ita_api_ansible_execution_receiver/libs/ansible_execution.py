@@ -276,9 +276,9 @@ def get_execution_status(objdbca, organization_id, workspace_id, execution_no, b
             # zip作成時のゴミ掃除
             for del_path in rm_tmp_files_list:
                 if os.path.isdir(del_path):
-                    shutil.rmtree(del_path)
+                    retry_rmtree(del_path)  # noqa: F405
                 elif os.path.isfile(del_path):
-                    os.remove(del_path)
+                    retry_remove(del_path)  # noqa: F405
 
     else:
         # 最終更新日時のみ更新: 履歴なし
@@ -419,7 +419,7 @@ def get_populated_data_path(objdbca, organization_id, workspace_id, execution_no
                 if os.path.exists(_tp) and _tp == gztar_path:
                     continue
                 elif os.path.exists(_tp):
-                    shutil.rmtree(_tp)
+                    retry_rmtree(_tp)  # noqa: F405
                     g.applogger.debug(f"shutil.rmtree({_tp})")
 
         try:
@@ -548,9 +548,8 @@ def update_result(objdbca, organization_id, workspace_id, execution_no, paramete
         exception(e)
     finally:
         # clear tmp_path
-        if os.path.isdir(tmp_path):
-            shutil.rmtree(tmp_path)
-            g.applogger.debug(f"shutil.rmtree({tmp_path})")
+        retry_rmtree(tmp_path)  # noqa: F405
+        g.applogger.debug(f"shutil.rmtree({tmp_path})")
 
     return {}
 
@@ -736,8 +735,7 @@ def create_file_path(connexion_request, tmp_path, execution_no):
             for _file_key in connexion_request.files:
                 _file_data = connexion_request.files[_file_key]
                 file_name = _file_data.filename
-                if not os.path.exists(tmp_path):
-                    os.makedirs(tmp_path)
+                retry_makedirs(tmp_path)  # noqa: F405
                 file_path = os.path.join(tmp_path, file_name)
                 file_paths[_file_key] = file_path
 

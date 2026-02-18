@@ -21,7 +21,7 @@ import traceback
 
 from flask import g
 from common_libs.common.dbconnect import DBConnectWs
-from common_libs.common.util import get_timestamp, get_maintenance_mode_setting, get_iso_datetime, arrange_stacktrace_format
+from common_libs.common.util import get_timestamp, get_maintenance_mode_setting, get_iso_datetime, arrange_stacktrace_format, retry_makedirs, retry_chmod, retry_remove
 from common_libs.terraform_driver.cli.Const import Const as TFCLIConst
 from libs import functions as func
 
@@ -357,8 +357,8 @@ def run_child_process(wsDb, execute_data, organization_id, workspace_id):
     # ワークスペース毎のディレクトリを準備
     base_dir = os.environ.get('STORAGEPATH') + "{}/{}".format(g.get('ORGANIZATION_ID'), g.get('WORKSPACE_ID'))
     workspace_work_dir = base_dir + TFCLIConst.DIR_WORK + "/{}/work".format(tf_workspace_id)
-    os.makedirs(workspace_work_dir, exist_ok=True)
-    os.chmod(workspace_work_dir, 0o777)
+    retry_makedirs(workspace_work_dir)
+    retry_chmod(workspace_work_dir, 0o777)
 
     # （前回実行した）ファイルを削除しておく
     # ・緊急停止ファイル
@@ -366,7 +366,7 @@ def run_child_process(wsDb, execute_data, organization_id, workspace_id):
     rm_file_list = [emergency_stop_file_path]
     for rm_file in rm_file_list:
         if os.path.isfile(rm_file):
-            os.remove(rm_file)
+            retry_remove(rm_file)
 
     # 子プロセスにして、実行
     g.applogger.debug(g.appmsg.get_log_message("MSG-10745", [execution_no, tf_workspace_id]))

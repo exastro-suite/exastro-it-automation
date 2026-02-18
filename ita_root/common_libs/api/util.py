@@ -21,7 +21,7 @@ import re
 from urllib.parse import quote
 
 from common_libs.common.exception import AppException
-from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format
+from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format, retry_remove, retry_rmdir
 from common_libs.common.dbconnect import *
 
 api_timestamp = None
@@ -204,9 +204,9 @@ def remove_temporary_file(file_path):
 
     try:
         if file_path.startswith(tmp_path) or file_path.startswith(storage_path):
-            os.remove(file_path)
+            retry_remove(file_path)
             directory_name = os.path.dirname(file_path)
-            os.rmdir(directory_name)
+            retry_rmdir(directory_name)
     except Exception as e:
         raise e
 

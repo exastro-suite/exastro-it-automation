@@ -164,7 +164,7 @@ def deduplication_timeout_filter(deduplication_settings, event):
         # exastro_duplicate_collection_settings_idsにあるべき収集先設定IDがない、もしくは1以上の値を持っていない場合は重複排除アラートのTTL切れとして通知キューに入れる
         if target_source_id not in duplicate_ids or duplicate_ids[target_source_id] < 1:
             # 通知キューに入れるべきイベントとして認識した旨はログに出す
-            g.applogger.debug(f"EventID:{event['_id']} is an event that should be put into the deduplication timeout notification queue.")
+            g.applogger.info(f"EventID:{event['_id']} is an event that should be put into the deduplication timeout notification queue.")
             is_alert_target = True
             # 1つでも冗長グループの収集先が足りていないなら通知キューに入れるべきなのでここでループを抜ける
             break

@@ -37,10 +37,10 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
 
     # storageにdbの保存場所を作成
     db_dir = "/storage/{}/{}/sqlite".format(organization_id, workspace_id)
-    os.makedirs(db_dir, exist_ok=True)
+    retry_makedirs(db_dir)  # noqa: F405
     # tmpに設定の保存場所を作成
     tmp_dir = "/tmp/{}/{}/ag_oase_{}".format(organization_id, workspace_id, g.AGENT_NAME)
-    os.makedirs(tmp_dir, exist_ok=True)
+    retry_makedirs(tmp_dir)  # noqa: F405
     set_dir(tmp_dir)
 
     # SQLiteモジュール

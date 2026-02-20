@@ -602,7 +602,7 @@ def conductor_execute_action(objdbca, menu, mode='', conductor_instance_id='', n
             sql = "SELECT * FROM `T_COMN_CONDUCTOR_NODE_INSTANCE` WHERE `NODE_INSTANCE_ID` = %s FOR UPDATE"
             res = objdbca.sql_execute(sql, [conductor_instance_id])
             if res is False:
-                tmp_msg = f"SELECT FOR UPDATE failed. conductor_instance_id={node_instance_id}"
+                tmp_msg = f"SELECT FOR UPDATE failed. node_instance_id={node_instance_id}"
                 g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 raise Exception()
 

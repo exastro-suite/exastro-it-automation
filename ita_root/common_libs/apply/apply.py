@@ -237,9 +237,6 @@ def rest_apply_parameter(objdbca, request_data, menu_list, lock_list, parameter_
 
         locktable_list = list(set(locktable_list) | set(tmp_list))
 
-    if len(locktable_list) > 0:
-        locktable_list.sort()
-        objdbca.table_lock(locktable_list)
 
     # オペレーション確認
     now = None
@@ -294,6 +291,11 @@ def rest_apply_parameter(objdbca, request_data, menu_list, lock_list, parameter_
                     val = [val, ]
 
                 for v in val:
+                    # 更新系の操作の場合のみ、対象テーブルをロックする
+                    if len(locktable_list) > 0 and v['type'] in ['Update', 'Restore', 'Discard']:
+                        locktable_list.sort()
+                        objdbca.table_lock(locktable_list)
+
                     # オペレーションを生成した場合、生成したオペレーション名を適用する
                     if ope_gen_flag is True and menu in parameter_sheet_list:
                         if 'operation_name_select' not in v['parameter'] \

@@ -300,7 +300,6 @@ def rest_apply_parameter(objdbca, request_data, menu_list, parameter_sheet_list,
                     val = [val, ]
 
                 for v in val:
-
                     # オペレーションを生成した場合、生成したオペレーション名を適用する
                     if ope_gen_flag is True and menu in parameter_sheet_list:
                         if 'operation_name_select' not in v['parameter'] \

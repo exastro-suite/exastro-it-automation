@@ -409,12 +409,6 @@ def conductor_execute(objdbca, menu, parameter):
         # トランザクション開始
         objdbca.db_transaction_start()
 
-        # 対象メニューのテーブルと「ロック対象テーブル」を昇順でロック
-        locktable_list = [objconductor.get_table_name(), objnode.get_table_name()]
-        if locktable_list is not None:
-            tmp_result = objdbca.table_lock(locktable_list)
-        else:
-            tmp_result = objdbca.table_lock([objconductor.get_table_name(), objnode.get_table_name()])  # noqa: F841
 
         # conductor instanceテーブルへのレコード追加
         iem_result = objCexec.conductor_instance_exec_maintenance(conductor_parameter)
@@ -594,12 +588,23 @@ def conductor_execute_action(objdbca, menu, mode='', conductor_instance_id='', n
         # トランザクション開始
         objdbca.db_transaction_start()
 
-        # 対象メニューのテーブルと「ロック対象テーブル」を昇順でロック
-        locktable_list = objconductor.get_locktable()
-        if locktable_list is not None:
-            tmp_result = objdbca.table_lock([locktable_list])
-        else:
-            tmp_result = objdbca.table_lock([objconductor.get_table_name(), objnode.get_table_name()])  # noqa: F841
+        # 指示内容に応じてロックする対象を決める.
+        # 予約取り消しと緊急停止はT_COMN_CONDUCTOR_INSTANCEが操作対象のため対象行ロック
+        if mode == 'cancel' or mode == 'scram':
+            sql = "SELECT * FROM `T_COMN_CONDUCTOR_INSTANCE` WHERE `CONDUCTOR_INSTANCE_ID` = %s FOR UPDATE"
+            res = objdbca.sql_execute(sql, [conductor_instance_id])
+            if res is False:
+                tmp_msg = f"SELECT FOR UPDATE failed. conductor_instance_id={conductor_instance_id}"
+                g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                raise Exception()
+        # 一時停止解除はT_COMN_CONDUCTOR_NODE_INSTANCEが操作対象のため対象行ロック
+        elif mode == 'relese':
+            sql = "SELECT * FROM `T_COMN_CONDUCTOR_NODE_INSTANCE` WHERE `NODE_INSTANCE_ID` = %s FOR UPDATE"
+            res = objdbca.sql_execute(sql, [conductor_instance_id])
+            if res is False:
+                tmp_msg = f"SELECT FOR UPDATE failed. node_instance_id={node_instance_id}"
+                g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                raise Exception()
 
         # conductor instanceテーブルへのレコード追加
         action_result = objCexec.execute_action(mode, conductor_instance_id, node_instance_id)

@@ -124,7 +124,7 @@ def get_specify_menu(request_data):
     return menu_list
 
 
-def rest_apply_parameter(objdbca, request_data, menu_list, lock_list, parameter_sheet_list, conductor_menu_list):
+def rest_apply_parameter(objdbca, request_data, menu_list, parameter_sheet_list, conductor_menu_list):
     """
     """
 
@@ -223,19 +223,25 @@ def rest_apply_parameter(objdbca, request_data, menu_list, lock_list, parameter_
 
     # テーブルロック
     locktable_list = []
-    for menu, obj in loadtable_obj_dict.items():
-        if menu not in lock_list:
-            continue
-
-        tmp_list = loadtable_obj_dict[menu].get_locktable()
-        if tmp_list is None:
-            tmp_list = [obj.get_table_name()]
-
-        else:
-            tmp_list = json.loads(tmp_list)
-            tmp_list.append(loadtable_obj_dict[menu].get_table_name())
-
-        locktable_list = list(set(locktable_list) | set(tmp_list))
+    if isinstance(parameter_info, dict):
+        parameter_info = [parameter_info, ]
+    for params in parameter_info:
+        if isinstance(params, dict):
+            params = [params, ]
+        for param in params:
+            for menu, val in param.items():
+                if isinstance(val, dict):
+                    val = [val, ]
+                for v in val:
+                    # 更新系の操作の場合のみ、ロック対象とする
+                    if v['type'] in ['Update', 'Restore', 'Discard']:
+                        tmp_list = loadtable_obj_dict[menu].get_locktable()
+                        if tmp_list is None:
+                            tmp_list = [loadtable_obj_dict[menu].get_table_name()]
+                        else:
+                            tmp_list = json.loads(tmp_list)
+                            tmp_list.append(loadtable_obj_dict[menu].get_table_name())
+                        locktable_list = list(set(locktable_list) | set(tmp_list))
 
     if len(locktable_list) > 0:
         locktable_list.sort()

@@ -108,10 +108,6 @@ def post_apply_parameter(organization_id, workspace_id, body=None, **kwargs):  #
         ]
         loadtable_list = list(set(specify_menu_list) | set(loadtable_list))
 
-        # ロック対象の一覧を作成
-        locktable_list = ["conductor_instance_list", "conductor_node_instance_list"]
-        locktable_list = list(set(specify_menu_list) | set(locktable_list))
-
         # Conductor作業実行用のメニューのリストを作成
         conductor_menu_list = [
             "conductor_instance_list", "conductor_class_edit",
@@ -121,7 +117,7 @@ def post_apply_parameter(organization_id, workspace_id, body=None, **kwargs):  #
         # パラメーター適用、および、Conductor作業実行
         status_code, result_data = apply.rest_apply_parameter(
             objdbca, request_data,
-            loadtable_list, locktable_list, parameter_sheet_list, conductor_menu_list
+            loadtable_list, parameter_sheet_list, conductor_menu_list
         )
         if status_code == "000-00000":
             objdbca.db_transaction_end(True)

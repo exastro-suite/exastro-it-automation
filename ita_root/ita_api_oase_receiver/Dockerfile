@@ -39,8 +39,7 @@ ENV PYTHONPATH=/exastro/ \
     OASE_RECEIVER_INTERNAL_API_WSGI_PROCESSES=1 \
     OASE_RECEIVER_INTERNAL_API_WSGI_THREADS=15 \
     OASE_RECEIVER_WSGI_PROCESSES=1 \
-    OASE_RECEIVER_WSGI_THREADS=1 \
-    MOD_QOS_VERSION=11.78
+    OASE_RECEIVER_WSGI_THREADS=1
 
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
     dnf install -y \
@@ -68,17 +67,6 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
 &&  chown $USERNAME:$GROUPNAME $APACHE_PID_DIR \
 &&  mkdir -p $APACHE_SOCKET_DIR \
 &&  chown $USERNAME:$GROUPNAME $APACHE_SOCKET_DIR
-
-# Build and install mod_qos
-RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
-    dnf install -y openssl-devel pcre2-devel redhat-rpm-config \
-&&  curl -fsSLO "https://downloads.sourceforge.net/project/mod-qos/mod_qos-${MOD_QOS_VERSION}.tar.gz" \
-&&  tar zxvf "mod_qos-${MOD_QOS_VERSION}.tar.gz" \
-&&  cd "mod_qos-${MOD_QOS_VERSION}/apache2" \
-&&  apxs -i -c mod_qos.c -lcrypto -lpcre2-8 \
-&&  cd ../.. \
-&&  rm -rf "mod_qos-${MOD_QOS_VERSION}.tar.gz" "mod_qos-${MOD_QOS_VERSION}" \
-&&  dnf remove -y openssl-devel pcre2-devel redhat-rpm-config
 
 WORKDIR $APP_PATH
 
@@ -127,7 +115,6 @@ WORKDIR $APP_PATH
 
 COPY ./ita_root/ita_api_oase_receiver/config/httpd.conf/httpd.conf /etc/httpd/conf/httpd.conf
 COPY ./ita_root/ita_api_oase_receiver/config/httpd.conf/wsgi.conf /etc/httpd/conf.d/wsgi.conf
-# COPY ./ita_root/ita_api_oase_receiver/config/httpd.conf/00-mpm.conf /etc/httpd/conf.modules.d/00-mpm.conf
 
 COPY ./ita_root/ita_api_oase_receiver/ $APP_PATH/
 COPY ./ita_root/common_libs/ $APP_PATH/common_libs/
@@ -147,7 +134,6 @@ WORKDIR $APP_PATH
 
 COPY ./ita_root/ita_api_oase_receiver/config/httpd.conf/httpd.conf /etc/httpd/conf/httpd.conf
 COPY ./ita_root/ita_api_oase_receiver/config/httpd.conf/wsgi.conf /etc/httpd/conf.d/wsgi.conf
-# COPY ./ita_root/ita_api_oase_receiver/config/httpd.conf/00-mpm.conf /etc/httpd/conf.modules.d/00-mpm.conf
 
 COPY ./ita_root/ita_api_oase_receiver/ $APP_PATH/
 COPY ./ita_root/common_libs/ $APP_PATH/common_libs/

@@ -17,8 +17,8 @@ import os
 import sys
 import traceback
 import importlib
+import time
 
-# from common_libs.common.exception import AppException
 from common_libs.common.logger import AppLog
 from common_libs.common.queuing_logger import QueuingAppLogServer
 from common_libs.common.message_class import MessageTemplate
@@ -49,6 +49,9 @@ def main():
             maintenance_mode = get_maintenance_mode_setting()
             # data_update_stopの値が"1"の場合、メンテナンス中のためreturnする。
             if str(maintenance_mode['data_update_stop']) == "1":
+                # ハングアップ監視用に時刻を出力する
+                with open(os.environ.get('FILE_PATH_LIVENESS'), 'w') as f:
+                    f.write(str(int(time.time())))
                 g.applogger.debug(g.appmsg.get_log_message("BKY-00005", []))
                 return
         except Exception:

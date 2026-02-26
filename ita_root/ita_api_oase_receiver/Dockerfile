@@ -20,22 +20,26 @@ ARG USERNAME
 ARG GROUPNAME
 ARG APP_PATH
 
-ENV PYTHONPATH=/exastro/
-ENV DEFAULT_LANGUAGE=ja
-ENV STORAGEPATH=/storage/
-ENV LISTEN_PORT             8000
-ENV APACHE_PID_DIR          /var/run_$USERNAME/httpd/pid
-ENV APACHE_SOCKET_DIR       /var/run_$USERNAME/httpd/socket
-ENV APACHE_TIMEOUT          300
-ENV APACHE_USERNAME         $USERNAME
-ENV APACHE_GROUPNAME        $GROUPNAME
-ENV DB_CONNECT_TIMEOUT=10
-ENV DB_CONNECT_RETRY_SLEEP_TIME=0.5
-ENV DB_CONNECT_RETRY_LIMIT=2
-ENV SERVICE_NAME=ita-api-oase-receiver
-ENV EVENT_COLLECTION_PROGRESS_TTL   72
-ENV MAX_WORKER_THREAD_POOL_SIZE      12
-ENV NOTIFICATION_BATCH_SIZE         100
+ENV PYTHONPATH=/exastro/ \
+    DEFAULT_LANGUAGE=ja \
+    STORAGEPATH=/storage/ \
+    LISTEN_PORT=8000 \
+    APACHE_PID_DIR=/var/run_$USERNAME/httpd/pid \
+    APACHE_SOCKET_DIR=/var/run_$USERNAME/httpd/socket \
+    APACHE_TIMEOUT=300 \
+    APACHE_USERNAME=$USERNAME \
+    APACHE_GROUPNAME=$GROUPNAME \
+    DB_CONNECT_TIMEOUT=10 \
+    DB_CONNECT_RETRY_SLEEP_TIME=0.5 \
+    DB_CONNECT_RETRY_LIMIT=2 \
+    SERVICE_NAME=ita-api-oase-receiver \
+    EVENT_COLLECTION_PROGRESS_TTL=72 \
+    MAX_WORKER_THREAD_POOL_SIZE=12 \
+    NOTIFICATION_BATCH_SIZE=100 \
+    OASE_RECEIVER_INTERNAL_API_WSGI_PROCESSES=1 \
+    OASE_RECEIVER_INTERNAL_API_WSGI_THREADS=15 \
+    OASE_RECEIVER_WSGI_PROCESSES=1 \
+    OASE_RECEIVER_WSGI_THREADS=1
 
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
     dnf install -y \
@@ -111,7 +115,6 @@ WORKDIR $APP_PATH
 
 COPY ./ita_root/ita_api_oase_receiver/config/httpd.conf/httpd.conf /etc/httpd/conf/httpd.conf
 COPY ./ita_root/ita_api_oase_receiver/config/httpd.conf/wsgi.conf /etc/httpd/conf.d/wsgi.conf
-COPY ./ita_root/ita_api_oase_receiver/config/httpd.conf/00-mpm.conf /etc/httpd/conf.modules.d/00-mpm.conf
 
 COPY ./ita_root/ita_api_oase_receiver/ $APP_PATH/
 COPY ./ita_root/common_libs/ $APP_PATH/common_libs/
@@ -131,7 +134,6 @@ WORKDIR $APP_PATH
 
 COPY ./ita_root/ita_api_oase_receiver/config/httpd.conf/httpd.conf /etc/httpd/conf/httpd.conf
 COPY ./ita_root/ita_api_oase_receiver/config/httpd.conf/wsgi.conf /etc/httpd/conf.d/wsgi.conf
-COPY ./ita_root/ita_api_oase_receiver/config/httpd.conf/00-mpm.conf /etc/httpd/conf.modules.d/00-mpm.conf
 
 COPY ./ita_root/ita_api_oase_receiver/ $APP_PATH/
 COPY ./ita_root/common_libs/ $APP_PATH/common_libs/

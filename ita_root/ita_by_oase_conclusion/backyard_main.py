@@ -26,7 +26,7 @@ from common_libs.oase.const import oaseConst
 from common_libs.oase.manage_events import ManageEvents
 from common_libs.notification.sub_classes.oase import OASENotificationType
 
-from libs.common_functions import addline_msg, InsertConclusionEvent, getLabelGroup, getRuleList, getFilterIDMap, deduplication_timeout_filter
+from libs.common_functions import addline_msg, InsertConclusionEvent, getLabelGroup, getRuleList, getFilterIDMap
 from libs.judgement import Judgement
 from libs.action import Action
 from libs.action_status_monitor import ActionStatusMonitor
@@ -109,15 +109,6 @@ def backyard_main(organization_id, workspace_id):
         tmp_msg = g.appmsg.get_log_message("BKY-90002", ['Ended'])
         g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-        # 「新規(統合時) TTL切れ」通知処理
-        g.applogger.info(addline_msg("Notification process Started"))
-        dudup_eventrow_list = EventObj.get_dudup_eventrow(wsDb, judgeTime)
-        if len(dudup_eventrow_list) > 0:
-            # 通知処理（新規(統合時) TTL切れ）：通知キューに入れる
-            tmp_msg = g.appmsg.get_log_message("BKY-90008", ['New(consolidated)'])
-            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-            NotificationProcessManager.send_notification(dudup_eventrow_list, {"notification_type": OASENotificationType.DUPLICATE})
-        g.applogger.info(addline_msg("Notification process Ended"))
 
     except Exception:
         t = traceback.format_exc()

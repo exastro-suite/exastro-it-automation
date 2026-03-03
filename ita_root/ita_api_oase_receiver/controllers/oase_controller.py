@@ -336,11 +336,11 @@ def add_notification_queue(wsdb, recieve_notification_list, duplicate_notificati
         Args:
             wsdb: MariaDBのWSDBコネクション
             recieve_notification_list: 新規（受信時）通知イベント
-            duplicate_notification_list: 新規（統合時）通知イベント
+            duplicate_notification_list: 新規（統合予定）通知イベント
         Returns:
             tuple: 2つの辞書 (recieve_ret, duplicate_ret)
                 - recieve_ret (dict): 新規（受信時）通知処理の結果
-                - duplicate_ret (dict): 新規（統合時）通知処理の結果
+                - duplicate_ret (dict): 新規（統合予定）通知処理の結果
 
     """
     recieve_ret = {}
@@ -365,7 +365,7 @@ def add_notification_queue(wsdb, recieve_notification_list, duplicate_notificati
 
     try:
         duplicate_decision_information = {"notification_type": OASENotificationType.DUPLICATE}
-        # イベント種別ごとに分けてbulksendを呼び出す（新規（統合時））
+        # イベント種別ごとに分けてbulksendを呼び出す（新規（統合予定））
         if duplicate_notification_list:
             g.applogger.info(f'Notification API call Start {duplicate_decision_information}: {len(duplicate_notification_list)}')
             duplicate_ret = OASE.bulksend(wsdb, duplicate_notification_list, duplicate_decision_information)

@@ -324,14 +324,13 @@ def _process_event_group(labeled_event_collection, event_group, q_findoneupdate_
                 _exastro_event_collection_settings_id,
             )
 
-            # 更新時、重複排除通知対象か判定
+            # 「新規（統合予定）」通知対象か判定（新着イベントのみ対象）
             duplicate_notification_flag = is_duplicate_notification_needed(
                 _deduplication_setting_ids,
                 _deduplication_setting_list,
                 extract_collection_settings_counts(res),
                 extract_agents_counts(res),
-                _exastro_event_collection_settings_id,
-            ) if is_event_inserted is False else False
+            ) if is_event_inserted is True else False
 
             # 処理件数のカウント
             if is_event_inserted:
@@ -447,43 +446,31 @@ def should_notify_event(deduplication_setting_ids: list, deduplication_setting_l
     return False
 
 
-def is_duplicate_notification_needed(deduplication_setting_ids: list, deduplication_setting_list: dict, collection_settings_counts: dict, agents_counts: dict, _exastro_event_collection_settings_id: str) -> bool:
+def is_duplicate_notification_needed(deduplication_setting_ids: list, deduplication_setting_list: dict, collection_settings_counts: dict, agents_counts: dict) -> bool:
     """
-    重複排除通知が必要かどうかを判定する。
-    すべてのイベントソース冗長化グループIDで1回以上イベントが発生していれば通知対象とする。
+    「新規（統合予定）」通知が必要かどうかを判定する。
+    該当イベントのイベント収集設定を含む冗長グループを持つ重複排除設定内で最初の1回のみ通知対象とする。
     Args:
-        deduplication_setting_ids (list):重複排除設定ID
-        deduplication_setting_list (dict):  重複排除設定ID, value: 重複排除設定
+        deduplication_setting_ids (list): 重複排除設定ID
+        deduplication_setting_list (dict): 重複排除設定ID, value: 重複排除設定
         collection_settings_counts (dict): イベント収集設定ID, value: カウント
         agents_counts (dict): エージェント名, value: カウント
     Returns:
         bool: True: 通知対象, False: 通知対象外
     """
 
-    # 重複排除設定のイベントソースで1回以上イベントが発生しているか
+    # 収集設定、エージェントの件数が不正な場合は通知対象外
+    if not isinstance(collection_settings_counts, dict) or not isinstance(agents_counts, dict):
+        return False
+
+    # 該当イベントのイベント収集設定を含む冗長グループを持つ重複排除設定を確認
     for dsid in deduplication_setting_ids:
         redundancy_group = deduplication_setting_list[dsid].get('EVENT_SOURCE_REDUNDANCY_GROUP', [])
-        # 重複排除設定でイベントソース冗長化グループが1つなら通知対象外
-        if len(redundancy_group) == 1:
+        # 新着イベントしか来ないので、冗長グループに含まれるイベント収集設定の数で対象かどうか判断する
+        if len(redundancy_group) > 1:
+            # 2つ以上なら対象
+            return True
+        else:
+            # 1つor空は対象外
             return False
-        elif len(redundancy_group) > 1:
-            _csv_max = max(collection_settings_counts.values())
-            _csv_min = min(collection_settings_counts.values())
-            _csv_sum = sum(collection_settings_counts.values())
-
-            # 今回のイベントでカウントアップしたものを除外して計算
-            collection_settings_counts_noself = {}
-            for _k, _v in collection_settings_counts.items():
-                collection_settings_counts_noself[_k] = _v - 1 if _k == _exastro_event_collection_settings_id and _v > 0 else _v
-            collection_setting_count_notime = collection_settings_counts_noself[_exastro_event_collection_settings_id] if _exastro_event_collection_settings_id in collection_settings_counts_noself else None
-
-            # 冗長化グループ内でのイベント発生状況を確認
-            redundancy_check = [True for redundancy_group_id in redundancy_group if redundancy_group_id in collection_settings_counts]
-
-            # 重複排除の全収集設定の全て1回ずつイベントが発生している場合は通知対象
-            if _csv_sum == len(redundancy_group) and _csv_max == 1 and _csv_min == 1 and all(redundancy_check):
-                return True
-            # 重複排除のある収集設定Aに1以上で、収集設定Bに1の場合は通知対象(既に全収集設定の全て1回ずつイベントが発生している場合は対象外)
-            if len(collection_settings_counts_noself) >= len(redundancy_group) and collection_setting_count_notime == 0 and all(redundancy_check):
-                return True
     return False

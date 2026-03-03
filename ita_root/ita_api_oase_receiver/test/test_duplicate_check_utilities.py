@@ -319,8 +319,7 @@ def test_is_duplicate_notification_needed_returns_false_for_single_redundancy_gr
         deduplication_setting_ids,
         deduplication_setting_list,
         collection_settings_counts,
-        agents_counts,
-        "es1"
+        agents_counts
     )
     assert result is False
 
@@ -337,8 +336,7 @@ def test_is_duplicate_notification_needed_returns_false_for_empty_redundancy_gro
         deduplication_setting_ids,
         deduplication_setting_list,
         collection_settings_counts,
-        agents_counts,
-        "es1"
+        agents_counts
     )
     assert result is False
 
@@ -355,8 +353,7 @@ def test_is_duplicate_notification_needed_with_missing_redundancy_group_key():
         deduplication_setting_ids,
         deduplication_setting_list,
         collection_settings_counts,
-        agents_counts,
-        "es1"
+        agents_counts
     )
     assert result is False
 
@@ -371,113 +368,83 @@ def test_is_duplicate_notification_needed_with_empty_settings():
         deduplication_setting_ids,
         deduplication_setting_list,
         collection_settings_counts,
-        agents_counts,
-        ""
+        agents_counts
     )
     assert result is False
 
 
-def test_is_duplicate_notification_needed_with_balanced_counts():
-    """バランスの取れたカウントの場合の動作を確認"""
+def test_is_duplicate_notification_needed_with_multiple_redundancy_groups():
+    """複数の冗長化グループの場合、Trueを返すことを確認"""
     deduplication_setting_ids = ["ds1"]
     deduplication_setting_list = {
         "ds1": {"EVENT_SOURCE_REDUNDANCY_GROUP": ["es1", "es2"]}
     }
-    # 条件を満たすパターン: エージェント*設定数 = 冗長化グループ数*2
     collection_settings_counts = {"es1": 1, "es2": 1}
     agents_counts = {"agent1": 1, "agent2": 1}
     result = is_duplicate_notification_needed(
         deduplication_setting_ids,
         deduplication_setting_list,
         collection_settings_counts,
-        agents_counts,
-        "es1"
+        agents_counts
     )
-    # 実装の詳細なロジックに応じて結果が決まる
-    assert isinstance(result, bool)
+    # 2つ以上の冗長化グループがある場合はTrue
+    assert result is True
 
 
-def test_is_duplicate_notification_needed_with_unbalanced_counts():
-    """アンバランスなカウントの場合、Falseを返すことを確認"""
+def test_is_duplicate_notification_needed_with_none_collection_settings_counts():
+    """collection_settings_countsがNoneの場合、Falseを返すことを確認"""
     deduplication_setting_ids = ["ds1"]
     deduplication_setting_list = {
         "ds1": {"EVENT_SOURCE_REDUNDANCY_GROUP": ["es1", "es2"]}
     }
-    # 条件を満たさないパターン
-    collection_settings_counts = {"es1": 3, "es2": 1}
-    agents_counts = {"agent1": 2, "agent2": 2}
-    result = is_duplicate_notification_needed(
-        deduplication_setting_ids,
-        deduplication_setting_list,
-        collection_settings_counts,
-        agents_counts,
-        "es1"
-    )
-    assert result is False
-
-
-def test_is_duplicate_notification_needed_with_setting_name_none():
-    """設定IDがNoneの場合、Falseを返すことを確認"""
-    deduplication_setting_ids = ["ds1"]
-    deduplication_setting_list = {
-        "ds1": {"EVENT_SOURCE_REDUNDANCY_GROUP": ["es1", "es2"]}
-    }
-    # 条件を満たさないパターン
-    collection_settings_counts = {"es1": 3, "es2": 1}
     agents_counts = {"agent1": 3, "agent2": 1}
     result = is_duplicate_notification_needed(
         deduplication_setting_ids,
         deduplication_setting_list,
+        None,
+        agents_counts
+    )
+    assert result is False
+
+
+def test_is_duplicate_notification_needed_with_none_agents_counts():
+    """agents_countsがNoneの場合、Falseを返すことを確認"""
+    deduplication_setting_ids = ["ds1"]
+    deduplication_setting_list = {
+        "ds1": {"EVENT_SOURCE_REDUNDANCY_GROUP": ["es1", "es2"]}
+    }
+    collection_settings_counts = {"es1": 3, "es2": 1}
+    result = is_duplicate_notification_needed(
+        deduplication_setting_ids,
+        deduplication_setting_list,
         collection_settings_counts,
-        agents_counts,
         None
     )
     assert result is False
 
 
-def test_is_duplicate_notification_needed_with_setting_name_0byte():
-    """設定IDが""の場合、Falseを返すことを確認"""
+def test_is_duplicate_notification_needed_with_three_redundancy_groups():
+    """3つの冗長化グループがある場合、Trueを返すことを確認"""
     deduplication_setting_ids = ["ds1"]
     deduplication_setting_list = {
-        "ds1": {"EVENT_SOURCE_REDUNDANCY_GROUP": ["es1", "es2"]}
+        "ds1": {"EVENT_SOURCE_REDUNDANCY_GROUP": ["es1", "es2", "es3"]}
     }
-    # 条件を満たさないパターン
-    collection_settings_counts = {"es1": 3, "es2": 1}
-    agents_counts = {"agent1": 3, "agent2": 1}
+    collection_settings_counts = {"es1": 3, "es2": 1, "es3": 2}
+    agents_counts = {"agent1": 3, "agent2": 1, "agent3": 2}
     result = is_duplicate_notification_needed(
         deduplication_setting_ids,
         deduplication_setting_list,
         collection_settings_counts,
-        agents_counts,
-        ""
+        agents_counts
     )
-    assert result is False
+    assert result is True
 
 
-def test_is_duplicate_notification_needed_with_setting_name_different():
-    """設定IDが異なる場合、Falseを返すことを確認"""
-    deduplication_setting_ids = ["ds1"]
-    deduplication_setting_list = {
-        "ds1": {"EVENT_SOURCE_REDUNDANCY_GROUP": ["es1", "es2"]}
-    }
-    # 条件を満たさないパターン
-    collection_settings_counts = {"es1": 3, "es2": 1}
-    agents_counts = {"agent1": 3, "agent2": 1}
-    result = is_duplicate_notification_needed(
-        deduplication_setting_ids,
-        deduplication_setting_list,
-        collection_settings_counts,
-        agents_counts,
-        "esxxx"
-    )
-    assert result is False
-
-
-def test_is_duplicate_notification_needed_with_multiple_settings_any_single_group_true():
-    """複数設定で複数の収集設定が設定されている重複排除が優先場合、Trueを返すことを確認"""
+def test_is_duplicate_notification_needed_with_multiple_settings_returns_true():
+    """複数設定で最初に複数の冗長化グループを持つ設定がある場合、Trueを返すことを確認"""
     deduplication_setting_ids = ["ds1", "ds2"]
     deduplication_setting_list = {
-        "ds1": {"EVENT_SOURCE_REDUNDANCY_GROUP": ["es1", "es2"]},
+        "ds1": {"EVENT_SOURCE_REDUNDANCY_GROUP": ["es1", "es2"]},  # 複数グループ
         "ds2": {"EVENT_SOURCE_REDUNDANCY_GROUP": ["es3"]}  # 単一グループ
     }
     collection_settings_counts = {"es1": 1, "es2": 1, "es3": 1}
@@ -486,14 +453,13 @@ def test_is_duplicate_notification_needed_with_multiple_settings_any_single_grou
         deduplication_setting_ids,
         deduplication_setting_list,
         collection_settings_counts,
-        agents_counts,
-        "es1"
+        agents_counts
     )
     assert result is True
 
 
-def test_is_duplicate_notification_needed_with_multiple_settings_any_single_group_false():
-    """複数設定で複数の収集設定が設定されている重複排除が優先場合、Falseを返すことを確認"""
+def test_is_duplicate_notification_needed_with_multiple_settings_returns_false():
+    """複数設定で最初に単一の冗長化グループを持つ設定がある場合、Falseを返すことを確認"""
     deduplication_setting_ids = ["ds2", "ds1"]
     deduplication_setting_list = {
         "ds1": {"EVENT_SOURCE_REDUNDANCY_GROUP": ["es1", "es2"]},
@@ -505,56 +471,49 @@ def test_is_duplicate_notification_needed_with_multiple_settings_any_single_grou
         deduplication_setting_ids,
         deduplication_setting_list,
         collection_settings_counts,
-        agents_counts,
-        "es3"
+        agents_counts
     )
     assert result is False
 
 
-@pytest.mark.parametrize("event_collection_settings_id, collection_settings_counts, agents_counts, expected", [
-    # パターン1: 収集設定冗長構成
-    ("es1", {"es1": 1}, {"agent1": 1}, False),
-    ("es2", {"es1": 1, "es2": 1}, {"agent1": 1, "agent2": 1}, True),
-    # パターン2： 収集設定*エージェント冗長構成（収集設定の分散）
-    ("es1", {"es1": 1}, {"agent1": 1}, False),
-    ("es2", {"es1": 1, "es2": 1}, {"agent1": 1, "agent2": 1}, True),
-    ("es1", {"es1": 2, "es2": 1}, {"agent1": 2, "agent2": 1}, False),
-    ("es2", {"es1": 2, "es2": 2}, {"agent1": 2, "agent2": 2}, False),
-    ("es2", {"es1": 2, "es2": 3}, {"agent1": 2, "agent2": 3}, False),
-    # パターン3： 収集設定*エージェント冗長構成（収集設定の集中）
-    ("es1", {"es1": 1}, {"agent1": 1}, False),
-    ("es1", {"es1": 2}, {"agent1": 1, "agent2": 1}, False),
-    ("es2", {"es1": 2, "es2": 1}, {"agent1": 2, "agent2": 1}, True),
-    ("es2", {"es1": 2, "es2": 2}, {"agent1": 2, "agent2": 2}, False),
-    ("es2", {"es1": 3, "es2": 2}, {"agent1": 3, "agent2": 2}, False),
+@pytest.mark.parametrize("redundancy_group_size, expected", [
+    # パターン1: 単一の冗長化グループ
+    (1, False),
+    # パターン2: 複数の冗長化グループ
+    (2, True),
+    (3, True),
+    # パターン0: 空の冗長化グループ
+    (0, False),
 ])
-def test_is_duplicate_notification_needed_pattern(event_collection_settings_id, collection_settings_counts, agents_counts, expected):
-    """is_duplicate_notification_needed関数の収集設定*エージェント件数遷移テスト"""
+def test_is_duplicate_notification_needed_pattern(redundancy_group_size, expected):
+    """is_duplicate_notification_needed関数の冗長化グループサイズ別テスト"""
     deduplication_setting_ids = ["ds1"]
+    redundancy_group = [f"es{i}" for i in range(1, redundancy_group_size + 1)]
     deduplication_setting_list = {
-        "ds1": {"EVENT_SOURCE_REDUNDANCY_GROUP": ["es1", "es2"]},
+        "ds1": {"EVENT_SOURCE_REDUNDANCY_GROUP": redundancy_group},
     }
+    collection_settings_counts = {f"es{i}": 1 for i in range(1, redundancy_group_size + 1)}
+    agents_counts = {f"agent{i}": 1 for i in range(1, redundancy_group_size + 1)}
     result = is_duplicate_notification_needed(
         deduplication_setting_ids,
         deduplication_setting_list,
         collection_settings_counts,
-        agents_counts,
-        event_collection_settings_id
+        agents_counts
     )
     assert result is expected
 
 
 @pytest.mark.parametrize("event_collection_settings_id, collection_settings_counts, agents_counts, expected", [
-    # パターン1: 収集設定冗長構成
+    # パターン1: 収集設定冗長構成 - 新规イベントなので常にTrue
     ("es1", {"es1": 1}, {"agent1": 1}, True),
     ("es2", {"es1": 1, "es2": 1}, {"agent1": 1, "agent2": 1}, True),
-    # パターン2： 収集設定*エージェント冗長構成（収集設定の分散）
+    # パターン2： 収集設定*エージェント冗長構成（収集設定の分散） - 新规イベントなので常にTrue
     ("es1", {"es1": 1}, {"agent1": 1}, True),
     ("es2", {"es1": 1, "es2": 1}, {"agent1": 1, "agent2": 1}, True),
-    # パターン3： 収集設定*エージェント冗長構成（収集設定の集中）
+    # パターン3： 収集設定*エージェント冗長構成（収集設定の集中） - 新规イベントなので常にTrue
     ("es1", {"es1": 1}, {"agent1": 1}, True),
     ("es1", {"es1": 2}, {"agent1": 1, "agent2": 1}, True),
-    # パターンX： イベントとして別になるので起きないパターン
+    # パターンX： イベントとして別になるので起きないパターン - 新规イベントなので常にTrue
     ("es1", {"es1": 100}, {"agent1": 100}, True),
     ("es1", {"es1": 200}, {"agent1": 100, "agent2": 100}, True),
 ])
@@ -647,8 +606,7 @@ def test_typical_workflow_duplicate_event():
         ["ds1"],
         deduplication_setting_list,
         collection_counts,
-        agents_counts,
-        "ds1"
+        agents_counts
     )
     assert isinstance(duplicate_result, bool)
 
@@ -684,8 +642,7 @@ def test_workflow_no_redundancy_group():
         ["ds1"],
         deduplication_setting_list,
         collection_counts,
-        agents_counts,
-        "settings1"
+        agents_counts
     )
     assert duplicate_result is False
 

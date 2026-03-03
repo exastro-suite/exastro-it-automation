@@ -171,10 +171,8 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
                             if (target_value_collection in ["", [], {}, 0, False, None]) is False:
                                 labeled_event = add_label(labeled_event, setting)  # パターンE(比較方法が'≠')
                     else:
-                        # ラベル付与設定内target_valueをラベル付与設定内target_type（値の型）に合わせて変換 [パターンA,B,F用]
-                        target_value_setting = TARGET_VALUE_TYPE[setting["TYPE_ID"]](setting["SEARCH_VALUE_NAME"])
                         # 収集してきたJSONデータのvalueとラベル付与設定内search_value_nameをcomparison_method_idを使用して比較
-                        compare_result, compare_match = comparison_values(setting["COMPARISON_METHOD_ID"], target_value_collection, target_value_setting)  # noqa: E501
+                        compare_result, compare_match = comparison_values(setting, target_value_collection)  # noqa: E501
                         if compare_result is True:
                             labeled_event = add_label(labeled_event, setting, compare_match)  # パターンA,B,F
             except Exception as e:
@@ -247,15 +245,14 @@ def get_value_from_jsonpath(jsonpath, data):
     return value
 
 
-def comparison_values(comparison_method_id="1", collect_value=None, compare_value=None):
+def comparison_values(setting, collect_value=None):
     """
     収集してきたイベントの(target_keyに対応する)値と、ラベル付与設定のtarget_valueを比較
     compare value of collected event and target value of label settings
 
     Arguments:
-        comparison_method_id: 比較方法
+        setting: ラベル付与設定
         collect_value: 収集した値
-        compare_value: 比較値
     Returns: tupple
         compare_result: 比較結果(該当すればtrue)
         compare_match: 正規表現比較の場合、マッチした結果
@@ -263,12 +260,19 @@ def comparison_values(comparison_method_id="1", collect_value=None, compare_valu
     compare_result = False
     compare_match = ""
 
+    # 比較方法
+    comparison_method_id = setting["COMPARISON_METHOD_ID"]
+    # ラベル付与設定のtarget_value（比較する値）をラベル付与設定内target_type（値の型）に合わせて変換 [パターンA,B,F用]
+    compare_value = TARGET_VALUE_TYPE[setting["TYPE_ID"]](setting["SEARCH_VALUE_NAME"])
+
     try:
         # 正規表現での比較
         if comparison_method_id in ["7", "8", "9"]:
             regex_option = COMPARISON_OPERATOR[comparison_method_id]  # 正規表現オプションを取り出す
-            regex_pattern = re.compile(compare_value, regex_option)
-            regex_result = regex_pattern.search(collect_value)
+            if "COMPARE_REGEX_OBJ" not in setting:
+                # 正規表現での比較の場合、すでにコンパイルされた正規表現オブジェクトをラベル付与設定に保存して、取り出す
+                setting["COMPARE_REGEX_OBJ"] = re.compile(compare_value, regex_option)
+            regex_result = setting["COMPARE_REGEX_OBJ"].search(collect_value)
             # g.applogger.debug("comparison by regular expression")
             # g.applogger.debug("compare_value={}, regex_option={}".format(compare_value, regex_option))
             # g.applogger.debug("collect_value={}".format(collect_value))
@@ -312,9 +316,7 @@ def add_label(event, setting, compare_match=""):
             # [パターンB] label_valueが空の場合、matchした文字列をlabel_valueに代入
             label_value = compare_match
         else:
-            regex_option = COMPARISON_OPERATOR[comparison_method_id]  # 正規表現オプションを取り出す
-            regex_pattern = re.compile(setting["SEARCH_VALUE_NAME"], regex_option)
-            label_value = regex_pattern.sub(setting["LABEL_VALUE_NAME"], compare_match)
+            label_value = setting["COMPARE_REGEX_OBJ"].sub(setting["LABEL_VALUE_NAME"], compare_match)
     else:
         if setting["LABEL_VALUE_NAME"] is None or not setting["LABEL_VALUE_NAME"]:
 

@@ -64,13 +64,14 @@ TARGET_VALUE_TYPE = {
 # T_OASE_LABEL_KEY_INPUT
 LABEL_KEY_MAP = {}
 
-
 # イベントにラベルを付与する
-def label_event(wsDb, wsMongo, events):  # noqa: C901
+def label_event(wsDb, events, event_collection_settings_id_list:list):  # noqa: C901
     # ラベル付与の設定を取得
+    prepared_list = ['%s']*len(event_collection_settings_id_list)
     labeling_settings = wsDb.table_select(
         oaseConst.T_OASE_LABELING_SETTINGS,
-        "WHERE DISUSE_FLAG=0 ORDER BY LABELING_SETTINGS_NAME ASC"
+        "WHERE DISUSE_FLAG=0 AND EVENT_COLLECTION_SETTINGS_ID IN ({}) ORDER BY LABELING_SETTINGS_NAME ASC".format(",".join(prepared_list)),
+        event_collection_settings_id_list
     )
     if len(labeling_settings) == 0:
         # ラベル付与設定を取得できませんでした。

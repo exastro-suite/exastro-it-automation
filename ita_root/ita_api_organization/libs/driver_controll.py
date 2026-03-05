@@ -279,10 +279,12 @@ def reserve_cancel(objdbca, driver_id, execution_no):
     TableDict["TABLE_NAME"][AnscConst.DF_LEGACY_ROLE_DRIVER_ID] = AnsrConst.vg_exe_ins_msg_table_name
     TableName = TableDict["TABLE_NAME"][driver_id]
 
-    # 該当の作業実行のステータス取得
-    where = "WHERE EXECUTION_NO = %s"
-    objdbca.table_lock([TableName])
-    data_list = objdbca.table_select(TableName, where, [execution_no])
+    # トランザクション開始
+    objdbca.db_transaction_start()
+
+    # 該当の作業実行をロック
+    sql = "SELECT * FROM {} WHERE EXECUTION_NO = %s FOR UPDATE".format(TableName)
+    data_list = objdbca.sql_execute(sql,[execution_no])
 
     # 該当する作業実行が存在しない
     if len(data_list) is None or len(data_list) == 0:
@@ -290,27 +292,28 @@ def reserve_cancel(objdbca, driver_id, execution_no):
         api_msg_args = [execution_no]
         raise AppException("499-00903", log_msg_args, api_msg_args)
 
-    for row in data_list:
-        # ステータスが未実行(予約)でない
-        if not row['STATUS_ID'] == AnscConst.RESERVE:
-            # ステータス取得
-            where = "WHERE EXEC_STATUS_ID = " + row['STATUS_ID']
-            tmp_data_list = objdbca.table_select("T_ANSC_EXEC_STATUS", where)
-            for tmp_row in tmp_data_list:
-                if g.LANGUAGE == 'ja':
-                    status = tmp_row['EXEC_STATUS_NAME_JA']
-                else:
-                    status = tmp_row['EXEC_STATUS_NAME_EN']
+    row = data_list[0]
 
-            log_msg_args = [status]
-            api_msg_args = [status]
-            raise AppException("499-00910", log_msg_args, api_msg_args)
+    # ステータスが未実行(予約)でない
+    if not row['STATUS_ID'] == AnscConst.RESERVE:
+        # ステータス取得
+        where = "WHERE EXEC_STATUS_ID = " + row['STATUS_ID']
+        tmp_row = objdbca.table_select("T_ANSC_EXEC_STATUS", where)[0]
+        if g.LANGUAGE == 'ja':
+            status = tmp_row['EXEC_STATUS_NAME_JA']
+        else:
+            status = tmp_row['EXEC_STATUS_NAME_EN']
 
-        # ステータスを予約取消に変更
-        update_list = {'EXECUTION_NO': execution_no, 'STATUS_ID': AnscConst.RESERVE_CANCEL}
-        # ret = objdbca.table_update(TableName, update_list, 'EXECUTION_NO', True)
-        objdbca.table_update(TableName, update_list, 'EXECUTION_NO', True)
-        objdbca.db_commit()
+        log_msg_args = [status]
+        api_msg_args = [status]
+        raise AppException("499-00910", log_msg_args, api_msg_args)
+
+    # ステータスを予約取消に変更
+    update_list = {'EXECUTION_NO': execution_no, 'STATUS_ID': AnscConst.RESERVE_CANCEL}
+    # ret = objdbca.table_update(TableName, update_list, 'EXECUTION_NO', True)
+    objdbca.table_update(TableName, update_list, 'EXECUTION_NO', True)
+
+    objdbca.db_transaction_end(True)
 
     result_msg = g.appmsg.get_api_message("MSG-10904", [execution_no])
     return result_msg

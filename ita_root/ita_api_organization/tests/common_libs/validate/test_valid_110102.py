@@ -33,7 +33,7 @@ class DefaultTemplateId:
     UNDETECTED = "4"
     # 新規イベント（受信時）
     NEW_RECEIVED = "5"
-    # 新規イベント（統合時）
+    # 新規イベント（統合予定）
     NEW_CONSOLIDATED = "6"
 
 

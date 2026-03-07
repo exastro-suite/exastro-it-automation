@@ -126,8 +126,11 @@ def post_events(body: str, organization_id: str, workspace_id: str) -> tuple:  #
 
         # 保存する、整形したイベント
         events = []
+        # リクエストに含まれる、イベント収集設定IDのリスト
+        event_collection_settings_id_list = []
         # 保存する、収集単位（ベント収集設定ID x agent名 x 取得時間（fetched_time）のリストを作る）
         collection_group_list = []
+
         # 保存できないイベント情報のメッセージを格納
         not_available_event_msg_list = []
         # エラーレスポンスを返す場合
@@ -195,6 +198,8 @@ def post_events(body: str, organization_id: str, workspace_id: str) -> tuple:  #
                 g.applogger.info(msg)
                 continue
 
+            g.applogger.info(f"{event_collection_settings_id=}")
+
             # 取得時間がなければ、受信時刻を埋める
             if "fetched_time" not in event_group:
                 fetched_time = int(datetime.datetime.now().timestamp())
@@ -222,19 +227,19 @@ def post_events(body: str, organization_id: str, workspace_id: str) -> tuple:  #
 
             # イベント収集経過テーブルからイベント収集設定IDとエージェント名を基準にfetched_timeの最新1件を取得し、送信されてきたfetched_timeと比較
             collection_progress = wsDb.table_select(oaseConst.T_OASE_EVENT_COLLECTION_PROGRESS, "WHERE EVENT_COLLECTION_SETTINGS_ID = %s AND AGENT_NAME = %s ORDER BY `FETCHED_TIME` DESC LIMIT 1", [event_collection_settings_id, collection_group_data["AGENT_NAME"]])  # noqa: E501
-            if len(collection_progress) == 0:
-                collection_group_list.append(collection_group_data)
-            else:
+            if len(collection_progress) != 0:
                 last_fetched_time = int(collection_progress[0]["FETCHED_TIME"])
-                if collection_group_data["FETCHED_TIME"] > last_fetched_time:
-                    # リストに格納
-                    collection_group_list.append(collection_group_data)
-                else:
+                if collection_group_data["FETCHED_TIME"] <= last_fetched_time:
                     # fetched_timeが最新ではないため、イベントは保存されませんでした。(イベント収集設定id:{}, 最新のfetched_time:{}）
                     msg = g.appmsg.get_log_message("499-01818", [event_collection_settings_id, collection_group_data["FETCHED_TIME"], last_fetched_time])
                     not_available_event_msg_list.append(msg)
                     g.applogger.info(msg)
                     continue
+
+            # 保存用のリストに格納
+            collection_group_list.append(collection_group_data)
+            # リクエストに含まれる、イベント収集設定IDのリスト
+            event_collection_settings_id_list.append(event_collection_settings_id)
 
             # イベント収集設定名 × 取得時間（fetched_time）ごとに格納された、イベントのリストを取り出す
             event_list = event_group["event"]
@@ -272,16 +277,16 @@ def post_events(body: str, organization_id: str, workspace_id: str) -> tuple:  #
                 # 不正データ受信と判断し、エラーレスポンス
                 raise AppException("499-01802", [", ".join(not_available_event_msg_list)], [", ".join(not_available_event_msg_list)])  # noqa: F405
 
-        # ラベリングしてMongoDBに保存
+        # イベントをラベリングして返す
         g.applogger.info(f"label_event Start. targetEventsCount:{len(events)}")
-        labeled_event_list = label_event(wsDb, wsMongo, events)  # noqa: F841
-        g.applogger.info(f"label_event END. targetEventsCount:{len(events)}")
+        labeled_event_list = label_event(wsDb, events, event_collection_settings_id_list)  # noqa: F841
+        g.applogger.info("label_event END.")
 
         try:
             # 重複排除してmongoに書き込む
             g.applogger.info(f"duplicate_check Start. targetEventsCount:{len(labeled_event_list)}")
             duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check(wsDb, wsMongo, labeled_event_list)
-            g.applogger.info(f"duplicate_check END. targetEventsCount:{len(labeled_event_list)}")
+            g.applogger.info("duplicate_check END.")
             if duplicate_check_result is False:
                 # 重複排除を行わなかった場合は、ラベル付きデータを保存
                 labeled_event_collection = wsMongo.collection(mongoConst.LABELED_EVENT_COLLECTION)  # ラベル付与したイベントデータを保存するためのコレクション
@@ -336,11 +341,11 @@ def add_notification_queue(wsdb, recieve_notification_list, duplicate_notificati
         Args:
             wsdb: MariaDBのWSDBコネクション
             recieve_notification_list: 新規（受信時）通知イベント
-            duplicate_notification_list: 新規（統合時）通知イベント
+            duplicate_notification_list: 新規（統合予定）通知イベント
         Returns:
             tuple: 2つの辞書 (recieve_ret, duplicate_ret)
                 - recieve_ret (dict): 新規（受信時）通知処理の結果
-                - duplicate_ret (dict): 新規（統合時）通知処理の結果
+                - duplicate_ret (dict): 新規（統合予定）通知処理の結果
 
     """
     recieve_ret = {}
@@ -365,7 +370,7 @@ def add_notification_queue(wsdb, recieve_notification_list, duplicate_notificati
 
     try:
         duplicate_decision_information = {"notification_type": OASENotificationType.DUPLICATE}
-        # イベント種別ごとに分けてbulksendを呼び出す（新規（統合時））
+        # イベント種別ごとに分けてbulksendを呼び出す（新規（統合予定））
         if duplicate_notification_list:
             g.applogger.info(f'Notification API call Start {duplicate_decision_information}: {len(duplicate_notification_list)}')
             duplicate_ret = OASE.bulksend(wsdb, duplicate_notification_list, duplicate_decision_information)

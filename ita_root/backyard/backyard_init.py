@@ -75,7 +75,7 @@ def main():
         if g.SERVICE_NAME == "ita-by-ansible-execute":
             wrapper_job_all_org(main_logic, loop_count)
         else:
-            wrapper_job(main_logic, None, None, loop_count)
+            res = wrapper_job(main_logic, None, None, loop_count)
 
         if enable_on_exit_process():
             # 処理終了時のコンテ独自処理(backyard_main.on_exit_process)がある場合はそれを実行します
@@ -85,6 +85,10 @@ def main():
         if use_log_queue():
             # log queue serverを終了します
             log_server.stop_server()
+
+        if res is False:
+            # wrapper_jobでDB接続エラーが発生した場合、RC1で終了する
+            sys.exit(1)
 
 
 def use_log_queue() -> bool:

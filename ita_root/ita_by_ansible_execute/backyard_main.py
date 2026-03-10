@@ -212,7 +212,7 @@ def execute_control(common_db, all_execution_limit, org_execution_limit):
             table_name = rec["TABLE_NAME"]
             count += 1
             sql += "SELECT ORGANIZATION_ID FROM `" + table_schema + "`.`" + table_name + "` "
-            sql += "WHERE `STATUS_ID` in (" + ansc_const.PREPARE + ", " + ansc_const.PROCESSING + ", " + ansc_const.PROCESS_DELAYED + ") "
+            sql += "WHERE `STATUS_ID` in (" + ansc_const.PREPARE + ", " + ansc_const.PROCESSING + ", " + ansc_const.PROCESS_DELAYED + ", " + ansc_const.PREPARE_COMPLETE + ", " + ansc_const.PROCESSING_WAIT + ") "
             if len(records) > count:
                 sql += "UNION ALL "
 

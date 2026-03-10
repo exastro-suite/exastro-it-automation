@@ -279,11 +279,9 @@ def execution_scram(objdbca, driver_id, execution_no):
 
     TableName = target[driver_id]
 
-    # ステータスを確認するのでテーブルをロック
-    objdbca.table_lock(TableName)
-
     # 作業番号存在確認
-    sql = "SELECT * FROM " + TableName + " WHERE EXECUTION_NO = %s AND DISUSE_FLAG = '0'"
+    sql = "SELECT * FROM " + TableName + " WHERE EXECUTION_NO = %s AND DISUSE_FLAG = '0' FOR UPDATE"
+
     execrows = objdbca.sql_execute(sql, [execution_no])
     if len(execrows) == 0:
         # 指定された作業番号が存在しない。

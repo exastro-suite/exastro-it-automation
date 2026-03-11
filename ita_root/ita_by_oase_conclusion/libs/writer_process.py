@@ -83,6 +83,10 @@ class WriterProcessManager():
         # プロセスが終了していないケースもあるのでkillする
         cls._process.kill()
 
+        # プロセスが異常終了した場合はキューが残り続けてしまうためクリアする
+        cls._queue.cancel_join_thread()
+        cls._complite.cancel_join_thread()
+
         # cls変数をクリアする
         cls._queue = None
         cls._complite = None

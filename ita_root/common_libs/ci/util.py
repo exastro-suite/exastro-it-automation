@@ -62,8 +62,9 @@ def wrapper_job(main_logic, organization_id=None, workspace_id=None, loop_count=
             # set applogger.set_level: default:INFO / Use ITA_DB config value
             set_service_loglevel(common_db)
             common_db.db_disconnect()
-        except Exception:
-            # ITA_DBでの操作時に何かしらのエラーが発生した場合
+        except Exception as e:
+            # ITA_DBでの操作時に何かしらのエラーが発生した場合はログを出力
+            print_exception_msg(e)
             return False
 
         for organization_info in organization_info_list:

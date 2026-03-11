@@ -64,7 +64,8 @@ def wrapper_job(main_logic, organization_id=None, workspace_id=None, loop_count=
             common_db.db_disconnect()
         except Exception as e:
             # ITA_DBでの操作時に何かしらのエラーが発生した場合はログを出力
-            print_exception_msg(e)
+            g.applogger.error("ITA_DB connect Failed.")
+            g.applogger.error(e)
             return False
 
         for organization_info in organization_info_list:

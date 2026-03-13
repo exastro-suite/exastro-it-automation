@@ -1344,10 +1344,11 @@ class SubValueAutoReg():
                 # 既に登録されている
                 chk_flg = False
 
-                dup_column_id = ina_vars_ass_chk_list[chk_key]
-                msgstr = g.appmsg.get_api_message("MSG-10369", [dup_column_id, in_column_id, in_column_id, in_operation_id, in_host_id, keyValueType])
-                frame = inspect.currentframe().f_back
-                g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+                # ログ膨大化の抑止のためコメントアウト #2947
+                # dup_column_id = ina_vars_ass_chk_list[chk_key]
+                # msgstr = g.appmsg.get_api_message("MSG-10369", [dup_column_id, in_column_id, in_column_id, in_operation_id, in_host_id, keyValueType])
+                # frame = inspect.currentframe().f_back
+                # g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
 
             if chk_flg is True:
                 chk_status = True
@@ -1380,10 +1381,11 @@ class SubValueAutoReg():
                 # 既に登録されている
                 chk_flg = False
 
-                dup_column_id = ina_array_vars_ass_chk_list[chk_key]
-                msgstr = g.appmsg.get_api_message("MSG-10369", [dup_column_id, in_column_id, in_column_id, in_operation_id, in_host_id, keyValueType])
-                frame = inspect.currentframe().f_back
-                g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+                # ログ膨大化の抑止のためコメントアウト #2947
+                # dup_column_id = ina_array_vars_ass_chk_list[chk_key]
+                # msgstr = g.appmsg.get_api_message("MSG-10369", [dup_column_id, in_column_id, in_column_id, in_operation_id, in_host_id, keyValueType])
+                # frame = inspect.currentframe().f_back
+                # g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
 
             if chk_flg is True:
                 chk_status = True

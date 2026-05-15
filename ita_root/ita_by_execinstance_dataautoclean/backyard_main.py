@@ -495,6 +495,11 @@ class MainFunctions():
         # 削除対象テーブルのカーソルを取得
         MasterRows, JournalRows = self.getOperationDeleteRows(DelList)
 
+        # 削除対象レコードのブロック基準日時の設定
+        # オペレーションに紐づかないレコードは、最終更新日時からXX時間経過したレコードのみ物理削除対象とする。
+        block_hours = 24
+        block_time = datetime.datetime.now() - datetime.timedelta(hours=block_hours)
+
         # 読み飛ばし防止のため、カーソルを閉じた後に削除する
         all_master_pkeys = []
         if MasterRows:
@@ -508,7 +513,10 @@ class MainFunctions():
                         break
                     # 取得したレコードを一時リストに格納
                     for row in rows:
-                        all_master_pkeys.append(row[DelList['PKEY_NAME']])
+                        #  取得したレコードの最終更新日時がブロック日時より古い場合、物理削除対象とする
+                        if row['LAST_UPDATE_TIMESTAMP'] < block_time:
+                            all_master_pkeys.append(row[DelList['PKEY_NAME']])
+
         g.applogger.info(f"Fetched {len(all_master_pkeys)} rows for physical deletion(OperationDeleted) from {DelList['TABLE_NAME']}")
 
         # 本体テーブルの削除フェーズ：SELECTカーソルを閉じた後に実行
@@ -557,7 +565,10 @@ class MainFunctions():
                     break
                 # 物理対象の履歴レコードのPkeyを取得
                 for row in rows:
-                    all_journal_pkeys.append(row[DelList['PKEY_NAME']])
+                    #  取得したレコードの最終更新日時がブロック日時より古い場合、物理削除対象とする
+                    if row['LAST_UPDATE_TIMESTAMP'] < block_time:
+                        all_journal_pkeys.append(row[DelList['PKEY_NAME']])
+
         g.applogger.info(f"Fetched {len(all_journal_pkeys)} rows for physical deletion(OperationDeleted) from {DelList['TABLE_NAME_JNL']}")
 
         # 履歴テーブルの削除フェーズ
@@ -601,7 +612,7 @@ class MainFunctions():
         JournalRows = None
         # Terraform作業管理系テーブルについて、RUN_MODE:3(リソース削除)の場合オペレーションIDが指定されないので、削除対象として除外する。
         Terrafomesql = '''
-                    select {} from `{}` TAB_A
+                    select {}, `LAST_UPDATE_TIMESTAMP` from `{}` TAB_A
                     where NOT EXISTS
                         (select
                             *
@@ -613,7 +624,7 @@ class MainFunctions():
                     '''
 
         Otherssql = '''
-                    select {} from `{}` TAB_A
+                    select {}, `LAST_UPDATE_TIMESTAMP` from `{}` TAB_A
                     where NOT EXISTS
                         (select
                             *

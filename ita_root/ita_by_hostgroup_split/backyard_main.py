@@ -48,7 +48,7 @@ def backyard_main(organization_id, workspace_id):
 
     # 処理開始
     tmp_msg = g.appmsg.get_log_message("BKY-70000", ['Start'])
-    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     # DB接続
     tmp_msg = 'db connect'
@@ -67,12 +67,10 @@ def backyard_main(organization_id, workspace_id):
 
         # 対象ホスト-オペレーション-ホストグループ
         tmp_hosts = [[_t['HOST_ID'], _t['OPERATION'], _t['PARENT_IDS']] for _t in tree_array if _t['OPERATION'] is not None if _t['OPERATION'] != []]
-        all_ids = get_all_list(objdbca)  # noqa: F405
+        # all_ids = get_all_list(objdbca)  # noqa: F405
+        all_ids = {}
         tmp_target_host = [[x[0], [y for y in x[1]], [z for z in x[2]]] for x in tmp_hosts]
         tmp_msg = g.appmsg.get_log_message("BKY-70002", ['target_host - operation, hostgroup:', tmp_target_host])
-        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        tmp_target_host = [[all_ids.get(x[0]), [all_ids.get(y) for y in x[1]], [all_ids.get(z) for z in x[2]]] for x in tmp_hosts]
-        tmp_msg = g.appmsg.get_log_message("BKY-70002", ['target_host - operation, hostgroup id->name:', tmp_target_host])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         # 処理対象メニュー取得
@@ -182,6 +180,6 @@ def backyard_main(organization_id, workspace_id):
 
     # 処理終了
     tmp_msg = g.appmsg.get_log_message("BKY-70000", ['End'])
-    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     return retBool, result,

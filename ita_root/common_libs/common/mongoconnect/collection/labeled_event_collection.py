@@ -46,6 +46,10 @@ class LabeledEventCollection(CollectionBase):
         if rest_key_name == "labels":
             return True
 
+        # exastro_filter_groupもlabelsと同様の形式で検索できるようにする
+        if rest_key_name == "exastro_filter_group":
+            return True
+
         return False
 
     def _convert_parameter_item_name_to_collection_item_name(self, rest_key_name, value):
@@ -263,37 +267,37 @@ class LabeledEventCollection(CollectionBase):
             else:
                 return {}
 
-        if rest_key_name == "labels":
-            def make_search_json_format(val):
+        def make_search_json_format(val):
             # 検索文字列をjsonフォーマットにしてmongoで検索できるようにする
-                # 入力例： "key1":"1", "key2":"1"
-                #   -> {}で囲んでjson変換
-                f_value = "{" + val + "}"
-                try:
-                    json_value = json.loads(f_value)
-                except Exception:
-                    if val[-1] == ":":
+            # 入力例： "key1":"1", "key2":"1"
+            #   -> {}で囲んでjson変換
+            f_value = "{" + val + "}"
+            try:
+                json_value = json.loads(f_value)
+            except Exception:
+                if val[-1] == ":":
                     # 入力例： key:
-                        key_name = val[:-1]
-                        return {"labels.{}".format(key_name): {"$regex": ".*"}}
-                    elif ":" not in val:
+                    key_name = val[:-1]
+                    return {"{}.{}".format(rest_key_name, key_name): {"$regex": ".*"}}
+                elif ":" not in val:
                     # 入力例： key
-                        key_name = val
-                        return {"labels.{}".format(key_name): {"$regex": ".*"}}
-                    else:
+                    key_name = val
+                    return {"{}.{}".format(rest_key_name, key_name): {"$regex": ".*"}}
+                else:
                     # 入力例： {"key1":"1", "key2":"1"}
                     #   -> そのままjson変換
-                        try:
-                            json_value = json.loads(val)
-                        except Exception as e:
-                            print_exception_msg(e)
-                            return {"labels": val}
+                    try:
+                        json_value = json.loads(val)
+                    except Exception as e:
+                        print_exception_msg(e)
+                        return {rest_key_name: val}
 
-                ret = {}
-                for k, val in json_value.items():
-                    ret["labels.{}".format(k)] = val
-                return ret
+            ret = {}
+            for k, val in json_value.items():
+                ret["{}.{}".format(rest_key_name, k)] = val
+            return ret
 
+        if rest_key_name == "labels":
             if type == "NORMAL":
                 return make_search_json_format(value)
             elif type == "LIST":
@@ -305,6 +309,63 @@ class LabeledEventCollection(CollectionBase):
                 elif len(tmp_list) > 1:
                     result_list = []
                     for item in tmp_list:
+                        result_list.append(make_search_json_format(item))
+
+                    return {"$or": result_list}
+
+        # exastro_filter_groupもlabelsと同様の形式で検索できるようにする
+        if rest_key_name == "exastro_filter_group":
+            # group_idの値をObjectIdが付与された形式に変換する関数
+            def convert_search_value_objectid(val):
+                """ 検索条件のgroup_idの場合に値を、ObjectIdが付与された形式に変換する
+                Args:
+                    val (str): 検索条件のキーと値のペアを表す文字列。例: '"group_id": "xxxx..."'
+                Raises:
+                    AppException: group_idの値が、24文字の16進数文字列値でない場合に発生する例外。
+                Returns:
+                    str: group_idが検索条件に含まれない場合は、元の値をそのまま返す。
+                    str: group_idの値がObjectIdが付与された形式に変換された文字列。例: '"group_id": "ObjectId('xxxx...')"'
+                """
+                try:
+                    # json形式で来た場合: '{"group_id": ""xxxx...", "is_first_event": "1"}'
+                    json_dict = json.loads(val)
+                except Exception:
+                    try:
+                        # json形式ではないキーバリュー形式: '"group_id": "xxxx..." ' -> 外側に{}を付けてパース
+                        json_dict = json.loads("{" + val + "}")
+                    except Exception:
+                        # パースできない場合は元の文字列を返す（安全策）
+                        return val
+
+                # group_idの変換: value='"group_id": "xxxx..."' -> '"group_id": "ObjectId('xxxx...')"
+                if "group_id" in json_dict:
+                    # group_idの値を取得
+                    _group_id = json_dict["group_id"]
+
+                    # valueの中のgroup_idをObjectId付きの文字列形式に整形: '"group_id": "ObjectId('xxxx...')
+                    json_dict["group_id"] = f"ObjectId('{_group_id}')"
+                    dumped = json.dumps(json_dict, ensure_ascii=False)
+                    return dumped.strip("{}")
+                else:
+                    # 文字列を返すだけのパターン（group_idが検索条件に含まれない場合）は、元の値をそのまま返す
+                    return val
+
+            if type == "NORMAL":
+                # group_idの変換
+                value = convert_search_value_objectid(value)
+                return make_search_json_format(value)
+            elif type == "LIST":
+                # or検索
+                tmp_list: list = value
+                if len(tmp_list) == 1:
+                    # group_idの変換
+                    value[0] = convert_search_value_objectid(value[0])
+                    return make_search_json_format(value[0])
+                elif len(tmp_list) > 1:
+                    result_list = []
+                    for item in tmp_list:
+                        # group_idの変換
+                        item = convert_search_value_objectid(item)
                         result_list.append(make_search_json_format(item))
 
                     return {"$or": result_list}
@@ -416,12 +477,31 @@ class LabeledEventCollection(CollectionBase):
             exastro_events = list(item["exastro_events"])
 
             format_item["_exastro_events"] = []
-            for item in exastro_events:
+            for _item in exastro_events:
                 # eventsは再評価イベントを作成するきっかけとなったイベントの_idが格納されている。
                 # そのままではJSONとして扱えないため_idと同じように変換する。
-                format_item["_exastro_events"].append(str(item))
+                format_item["_exastro_events"].append(str(_item))
 
             # 画面返却時、配列やobjectは扱えないため文字列に変更する。
             format_item["_exastro_events"] = json.dumps(format_item["_exastro_events"], ensure_ascii=False)
+
+        # グルーピング発生しないケースでは、値は空文字で返す。
+        format_item["exastro_filter_group"] = ""
+        if "exastro_filter_group" in item:
+            try:
+                # exastro_filter_groupとして返却するため代入する。
+                # 画面返却時、配列やobjectは扱えないため文字列に変更する。
+                # group_idの整形: ObjectId('xxxx...') -> xxxx...
+
+                format_item["exastro_filter_group"] = json.dumps(
+                    {k: (v.replace("ObjectId('", "").replace("')", "") if k == "group_id" else v)
+                        for k, v in item["exastro_filter_group"].items()},
+                    ensure_ascii=False
+                )
+            except Exception as e:
+                print_exception_msg(e)
+                g.applogger.warning(f"Failed to parse exastro_filter_group as JSON. Returning as string. value: {item['exastro_filter_group']}")
+                # exastro_filter_groupの値がJSON形式でない場合は、そのまま文字列として返却する
+                format_item["exastro_filter_group"] = str(item["exastro_filter_group"])
 
         return format_item

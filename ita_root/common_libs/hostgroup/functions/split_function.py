@@ -517,14 +517,9 @@ def split_host_grp(hgsp_config, hgsp_data):
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         # 対象ホスト、ホストグループ-オペレーション
-        tmp_msg = "target hostgroup-operation"
-        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        tmp_msg = [[hgsp_config['alllist'][_t['HOST_ID']], _t['OPERATION_NAME']] for _t in input_data_array if _t['HOST_ID'] in hgsp_config['alllist']]
-        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        tmp_msg = "target hostgroup-operation id->name"
-        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        tmp_msg = [[hgsp_config['alllist'][_t['HOST_ID']], _t['OPERATION_NAME']] for _t in input_data_array if _t['HOST_ID'] in hgsp_config['alllist']]
-        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        for _t in input_data_array:
+            tmp_msg = 'target hostgroup-operation: {}[{}]'.format(_t.get('HOST_ID'), _t.get('OPERATION_NAME'))
+            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         # オペレーションID毎にホストデータ作成(基準日時->オペレーション名:昇順)
         for input_data in input_data_array:
@@ -586,23 +581,19 @@ def split_host_grp(hgsp_config, hgsp_data):
         tmp_msg = hold_host_id
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-        tmp_msg = 'hold_host_id id->name'
-        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        tmp_msg = id_conv(hold_host_id, hgsp_config['alllist'])
-        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         for output_data in output_data_array:
             # 分割データにある場合は廃止しない
             hold_key = create_hold_key(vertical_flg, output_data.get('HOST_ID'), output_data.get('OPERATION_ID'), output_data.get('INPUT_ORDER'))
             if hold_key in hold_host_id and output_data.get('HOST_ID') not in host_group_id_all_list:
-                tmp_msg = 'not discard in split data:({}[{}])'.format(id_conv(hold_key, hgsp_config['alllist']), hold_key)
-                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                # tmp_msg = 'not discard in split data:({}[{}])'.format(id_conv(hold_key, hgsp_config['alllist']), hold_key)
+                # g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 continue
 
             # すでに廃止の場合は廃止しない
             if output_data['DISUSE_FLAG'] == "1":
-                tmp_msg = 'already discard in split data:({}[{}])'.format(id_conv(hold_key, hgsp_config['alllist']), hold_key)
-                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                # tmp_msg = 'already discard in split data:({}[{}])'.format(id_conv(hold_key, hgsp_config['alllist']), hold_key)
+                # g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 continue
 
             #  廃止する
@@ -764,9 +755,8 @@ def make_host_data(hgsp_config, hgsp_data):
         alone_data_array = []
 
         # 処理対象オペレーション
-        target_op_name = list(set(id_conv([x['OPERATION_ID'] for x in sameid_array], hgsp_config['alllist'])))[0]
         target_opid = list(set([x['OPERATION_ID'] for x in sameid_array]))[0]
-        tmp_msg = 'operation: {}({})'.format(target_op_name, target_opid)
+        tmp_msg = 'operation: {}'.format(target_opid)
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         # ツリー配列にデータを設定する
@@ -799,22 +789,13 @@ def make_host_data(hgsp_config, hgsp_data):
         tmp_msg = 'set data tree/alone'
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         tmp_msg = tree_array
-        # ### g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-
-        tmp_msg = 'set data tree_array id->name'
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        tmp_msg = id_conv([v for v in tree_array if v['HOST_ID'] not in host_group_id_list], hgsp_config['alllist'], 'dict')
-        # ### g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         tmp_msg = 'set alone_data_array'
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         tmp_msg = alone_data_array
-        # ### g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-
-        tmp_msg = 'set alone_data_array id->name'
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        tmp_msg = id_conv([v for v in alone_data_array if v['HOST_ID'] not in host_group_id_list], hgsp_config['alllist'], 'dict')
-        # ### g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
 
         # ツリー上にいなかったデータを単独で登録する
         for alone_data in alone_data_array:
@@ -1139,12 +1120,8 @@ def make_host_data(hgsp_config, hgsp_data):
         tmp_msg = 'set parent->child copy data tree_array'
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         tmp_msg = tree_array
-        # ### g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-
-        tmp_msg = 'set parent->child copy data tree_array id->name'
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        tmp_msg = id_conv([v for v in tree_array if v['HOST_ID'] not in host_group_id_list], hgsp_config['alllist'], 'dict')
-        # ### g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
 
         kykey_array = [tmp_tree.get('HOST_ID') for tmp_tree in tree_array]
 

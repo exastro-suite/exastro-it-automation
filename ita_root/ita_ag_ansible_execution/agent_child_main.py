@@ -72,11 +72,11 @@ def agent_child_main():
             g.applogger.info(g.appmsg.get_log_message(error_code, error_arg))
     finally:
         # ステータスファイルの削除
-        delete_status_file(organization_id, workspace_id, driver_id, execution_no)
+        delete_status_file(organization_id, workspace_id, driver_id, execution_no)  # noqa: F405
         # /tmpのゴミ掃除
-        clear_execution_tmpdir(organization_id, workspace_id, driver_id, execution_no)
+        clear_execution_tmpdir(organization_id, workspace_id, driver_id, execution_no)  # noqa: F405
         # 作業ディレクトリ削除
-        clear_execution_dir(organization_id, workspace_id, driver_id, execution_no, runtime_data_del)
+        clear_execution_dir(organization_id, workspace_id, driver_id, execution_no, runtime_data_del)  # noqa: F405
     return 0
 
 def agent_child():
@@ -538,27 +538,7 @@ def decompress_tar_file(organization_id, workspace_id, driver_id, dir_path, file
             shutil.move(join_path, root_dir_path)
 
     # 作業ディレクトリ削除
-    clear_execution_tmpdir(organization_id, workspace_id, driver_id, execution_no)
-
-
-def clear_execution_tmpdir(organization_id, workspace_id, driver_id, execution_no):
-    _path = f"/tmp/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}"
-    if os.path.isdir(_path):
-        shutil.rmtree(_path)
-        g.applogger.debug(f"remove execution tmp dirs. (path:{_path})")
-
-def clear_execution_dir(organization_id, workspace_id, driver_id, execution_no, runtime_data_del):
-    # インターフェース情報の実行時削除がTrueの場合
-    if runtime_data_del == "1":
-        storagepath = os.environ.get('STORAGEPATH')
-        _path = f"{storagepath}/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{execution_no}"
-        if os.path.isdir(_path):
-            shutil.rmtree(_path)
-            g.applogger.debug(f"remove execution dirs. (path:{_path})")
-        _path = f"{storagepath}/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}"
-        if os.path.isdir(_path):
-            shutil.rmtree(_path)
-            g.applogger.debug(f"remove execution dirs. (path:{_path})")
+    clear_execution_tmpdir(organization_id, workspace_id, driver_id, execution_no)  # noqa: F405
 
 
 def post_upload_file_and_status(exastro_api, organization_id, workspace_id, execution_no, status, driver_id):

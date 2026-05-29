@@ -255,6 +255,10 @@ def child_process_exist_check(organization_id, workspace_id, execution_no, drive
                 is_running = True
 
     if is_running is False:
+        if build_type is None and runtime_data_del is None:
+            # 不正な子プロ起動パラメータファイルのため、再起動処理を行わない
+            g.applogger.info(f"invalid execution_parameters_file execution_no={execution_no}")
+            return False
         # ステータスファイルがあるか確認
         status_file_dir_path, status_file_path = get_execution_status_file_path(organization_id, workspace_id, driver_id, execution_no)  # noqa: F405
         os.listdir(os.path.dirname(status_file_dir_path.rstrip('/')))  # NFSストレージ対策：属性キャッシュ更新を試みる
@@ -449,91 +453,100 @@ def update_error_executions(organization_id, workspace_id, exastro_api, error_ps
     """
 
     status_id = AnscConst.FAILURE  # 完了(異常)
+    runtime_data_del = 2  # 実行時削除フラグは最初の処理対象の作業実行Noのものを共通利用する（0 or 1 or Noneなので、2は未取得）
     for driver_id, del_execution_list in error_ps_list.items():
         for del_execution in del_execution_list:
-            status_update = True
-            # 作業状態通知送信: 異常時
+            try:
+                status_update = True
+                # 作業状態通知送信: 異常時
 
-            # ステータスファイル有りで、作業中の実行プロセス停止時、エラーログに追記して通知
-            # enomoto /ag_parent_error.logパス確認
-            storagepath = os.environ.get('STORAGEPATH')
-            _base_dir = f"{storagepath}/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{del_execution}"
-            retry_makedirs(f"{_base_dir}/out")  # noqa: F405
-            # ログファイルのパス取得
-            exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass = get_log_file_path(organization_id, workspace_id, driver_id, del_execution)  # noqa: F405
+                # ステータスファイル有りで、作業中の実行プロセス停止時、エラーログに追記して通知
+                # enomoto /ag_parent_error.logパス確認
+                storagepath = os.environ.get('STORAGEPATH')
+                _base_dir = f"{storagepath}/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{del_execution}"
+                retry_makedirs(f"{_base_dir}/out")  # noqa: F405
+                # ログファイルのパス取得
+                exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass = get_log_file_path(organization_id, workspace_id, driver_id, del_execution)  # noqa: F405
 
-            @file_read_retry  # noqa: F405
-            def write_parent_error_log():
-                try:
-                    with open(parent_error_log_pass, 'w') as f:
-                        # Ansible実行エージェントで作業中の実行プロセスが停止した為、終了します。(Execution no:{})
-                        f.write(g.appmsg.get_log_message('MSG-10985', [del_execution]))
-                    return True
-                except Exception as e:
-                    g.applogger.info("write_parent_error_log failed. file_path={}".format(parent_error_log_pass))
-                    t = traceback.format_exc()  # noqa: F405
-                    g.applogger.info(arrange_stacktrace_format(t))  # noqa: F405
-                    raise e
-            write_parent_error_log()
+                @file_read_retry  # noqa: F405
+                def write_parent_error_log():
+                    try:
+                        with open(parent_error_log_pass, 'w') as f:
+                            # Ansible実行エージェントで作業中の実行プロセスが停止した為、終了します。(Execution no:{})
+                            f.write(g.appmsg.get_log_message('MSG-10985', [del_execution]))
+                        return True
+                    except Exception as e:
+                        g.applogger.info("write_parent_error_log failed. file_path={}".format(parent_error_log_pass))
+                        t = traceback.format_exc()  # noqa: F405
+                        g.applogger.info(arrange_stacktrace_format(t))  # noqa: F405
+                        raise e
+                write_parent_error_log()
 
-            # ansibleのログファイルとアプリのログをマージする
-            log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)  # noqa: F405
+                # ansibleのログファイルとアプリのログをマージする
+                log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)  # noqa: F405
 
-            # 各種tar＋ファイルパス取得
-            out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path\
-                = arcive_tar_data(organization_id, workspace_id, driver_id, del_execution, status_id, mode="parent")  # noqa: F405
+                # 各種tar＋ファイルパス取得
+                out_gztar_path, parameters_gztar_path, parameters_file_gztar_path, conductor_gztar_path\
+                    = arcive_tar_data(organization_id, workspace_id, driver_id, del_execution, status_id, mode="parent")  # noqa: F405
 
-            g.applogger.debug(f"{out_gztar_path=}, {parameters_gztar_path=}, {parameters_file_gztar_path=}, {conductor_gztar_path=}")
+                g.applogger.debug(f"{out_gztar_path=}, {parameters_gztar_path=}, {parameters_file_gztar_path=}, {conductor_gztar_path=}")
 
-            body = {
-                "driver_id": driver_id,
-                "status": status_id,
-            }
+                body = {
+                    "driver_id": driver_id,
+                    "status": status_id,
+                }
 
-            form_data = {
-                "json_parameters": json.dumps(body)
-            }
+                form_data = {
+                    "json_parameters": json.dumps(body)
+                }
 
-            # form_dataへのtarデータ追加
-            if os.path.isfile(out_gztar_path):
-                form_data["out_tar_data"] = (
-                    os.path.basename(out_gztar_path),
-                    open(out_gztar_path, "rb"),
-                    mimetypes.guess_type(out_gztar_path, False)[0])
-            if os.path.isfile(parameters_gztar_path):
-                form_data["parameters_tar_data"] = (
-                    os.path.basename(parameters_gztar_path),
-                    open(parameters_gztar_path, "rb"),
-                    mimetypes.guess_type(parameters_gztar_path, False)[0])
-            if os.path.isfile(parameters_file_gztar_path):
-                form_data["parameters_file_tar_data"] = (
-                    os.path.basename(parameters_file_gztar_path),
-                    open(parameters_file_gztar_path, "rb"),
-                    mimetypes.guess_type(parameters_file_gztar_path, False)[0])
-            if os.path.isfile(conductor_gztar_path):
-                form_data["conductor_tar_data"] = (
-                    os.path.basename(conductor_gztar_path),
-                    open(conductor_gztar_path, "rb"),
-                    mimetypes.guess_type(conductor_gztar_path, False)[0])
+                # form_dataへのtarデータ追加
+                if os.path.isfile(out_gztar_path):
+                    form_data["out_tar_data"] = (
+                        os.path.basename(out_gztar_path),
+                        open(out_gztar_path, "rb"),
+                        mimetypes.guess_type(out_gztar_path, False)[0])
+                if os.path.isfile(parameters_gztar_path):
+                    form_data["parameters_tar_data"] = (
+                        os.path.basename(parameters_gztar_path),
+                        open(parameters_gztar_path, "rb"),
+                        mimetypes.guess_type(parameters_gztar_path, False)[0])
+                if os.path.isfile(parameters_file_gztar_path):
+                    form_data["parameters_file_tar_data"] = (
+                        os.path.basename(parameters_file_gztar_path),
+                        open(parameters_file_gztar_path, "rb"),
+                        mimetypes.guess_type(parameters_file_gztar_path, False)[0])
+                if os.path.isfile(conductor_gztar_path):
+                    form_data["conductor_tar_data"] = (
+                        os.path.basename(conductor_gztar_path),
+                        open(conductor_gztar_path, "rb"),
+                        mimetypes.guess_type(conductor_gztar_path, False)[0])
 
-            # 結果データ更新
-            g.applogger.info(g.appmsg.get_log_message("MSG-10994", [workspace_id, del_execution]))
-            status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, del_execution, body, form_data=form_data)  # noqa: F405
-            if not status_code == 200:
-                g.applogger.info(g.appmsg.get_log_message("MSG-10995", [workspace_id, del_execution, status_code, response]))
-                status_update = False
-
-            # 作業状態通知
-            if status_update:
-                g.applogger.info(g.appmsg.get_log_message("MSG-10990", [workspace_id, del_execution, status_id]))
-                status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, del_execution, body)  # noqa: F405
+                # 結果データ更新
+                g.applogger.info(g.appmsg.get_log_message("MSG-10994", [workspace_id, del_execution]))
+                status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, del_execution, body, form_data=form_data)  # noqa: F405
                 if not status_code == 200:
-                    g.applogger.info(g.appmsg.get_log_message("MSG-10991", [workspace_id, del_execution, status_id, status_code, response]))
+                    g.applogger.info(g.appmsg.get_log_message("MSG-10995", [workspace_id, del_execution, status_code, response]))
                     status_update = False
 
-            # ステータスファイルの削除
-            delete_status_file(organization_id, workspace_id, driver_id, del_execution)  # noqa: F405
+                # 作業状態通知
+                if status_update:
+                    g.applogger.info(g.appmsg.get_log_message("MSG-10990", [workspace_id, del_execution, status_id]))
+                    status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, del_execution, body)  # noqa: F405
+                    if not status_code == 200:
+                        g.applogger.info(g.appmsg.get_log_message("MSG-10991", [workspace_id, del_execution, status_id, status_code, response]))
+                        status_update = False
 
+            finally:
+                # 実行時削除フラグを取得しておく
+                if runtime_data_del == 2:
+                    _, runtime_data_del = get_execution_parameters_file(organization_id, workspace_id, driver_id, del_execution)  # noqa: F405
+                # ステータスファイルの削除
+                delete_status_file(organization_id, workspace_id, driver_id, del_execution)  # noqa: F405
+                # /tmpのゴミ掃除
+                clear_execution_tmpdir(organization_id, workspace_id, driver_id, del_execution)  # noqa: F405
+                # 作業ディレクトリ削除(実行時データ削除フラグは削除対象の最初の作業Noのものを共通利用する)
+                clear_execution_dir(organization_id, workspace_id, driver_id, del_execution, runtime_data_del)  # noqa: F405
 
 def getenv_int(key, default):
     try:

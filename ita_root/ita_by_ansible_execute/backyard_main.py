@@ -277,7 +277,9 @@ def execute_control(common_db, all_execution_limit, org_execution_limit):
             # organizationに実行中の処理があるか確認
             if rec["ORGANIZATION_ID"] not in org_exec_count_list:
                 org_exec_count_list[rec["ORGANIZATION_ID"]] = 0
-    return execution_list, all_exec_count, org_exec_count_list, records
+        return execution_list, all_exec_count, org_exec_count_list, records
+    else:
+        return [], 0, {}, []
 
 
 def child_process_exist_check(common_db, target_shema, ansibleAg):
@@ -518,7 +520,9 @@ def get_running_process(common_db, target_shema):
             if len(target_shema) > count:
                 sql += "UNION ALL "
         records = common_db.sql_execute(sql, [])
-    return records
+        return records
+    else:
+        return []
 
 
 def get_now_datetime(format='%Y/%m/%d %H:%M:%S', type='str'):

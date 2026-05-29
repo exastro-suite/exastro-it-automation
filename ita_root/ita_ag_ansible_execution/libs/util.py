@@ -502,10 +502,14 @@ def get_execution_parameters_file(organization_id, workspace_id, driver_id, exec
     """
     status_file_dir_path, status_file_path = get_execution_status_file_path(organization_id, workspace_id, driver_id, execution_no)
     status_file_path += "_parameter"
-    with open(status_file_path, 'r') as f:
-        g.applogger.debug(f"read execution parameter file. (path:{status_file_path})")
-        ary_dump =  f.read()
-        ary = json.loads(ary_dump)
+    try:
+        with open(status_file_path, 'r') as f:
+            g.applogger.debug(f"read execution parameter file. (path:{status_file_path})")
+            ary_dump = f.read()
+            ary = json.loads(ary_dump)
+    except Exception:
+        # 起動パラメータが取得できないならNoneで埋める
+        ary = {"build_type": None, "runtime_data_del": None}
 
     return ary["build_type"], ary["runtime_data_del"]
 
@@ -633,3 +637,21 @@ def log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_l
             log_data = f.read()
         with open(exec_log_pass, "a") as f:
             f.write(log_data)
+
+
+def clear_execution_tmpdir(organization_id, workspace_id, driver_id, execution_no):
+    _path = f"/tmp/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}"
+    retry_rmtree(_path)  # noqa: F405
+    g.applogger.debug(f"remove execution tmp dirs. (path:{_path})")
+
+
+def clear_execution_dir(organization_id, workspace_id, driver_id, execution_no, runtime_data_del):
+    # インターフェース情報の実行時削除がTrueの場合
+    if runtime_data_del == "1":
+        storagepath = os.environ.get('STORAGEPATH')
+        _path = f"{storagepath}/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{execution_no}"
+        retry_rmtree(_path)  # noqa: F405
+        g.applogger.debug(f"remove execution dirs. (path:{_path})")
+        _path = f"{storagepath}/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}"
+        retry_rmtree(_path)  # noqa: F405
+        g.applogger.debug(f"remove execution dirs. (path:{_path})")

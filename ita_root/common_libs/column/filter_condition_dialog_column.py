@@ -37,6 +37,7 @@ class FilterConditionSettingColumn(IndividualDialogColumn):
         self.idx_value = 2
         self.tag_value = self.json_tag[self.idx_value]
 
+        self.id_data_list = {}   # ラベル名と演算子のデータリスト
 
     def search_id_data_list(self):
         """
@@ -47,8 +48,15 @@ class FilterConditionSettingColumn(IndividualDialogColumn):
                 データリスト
         """
         values = {}
-        values['label_name'] = self.search_label_id_data_list()
-        values['condition_type'] = self.search_comparison_id_data_list()
+        # 既にデータリストがセットされている場合は、検索せずに返す
+        if self.data_list_set_flg is True:
+            values = self.id_data_list
+        else:
+            # ラベル名と演算子のデータリストを検索してセットする
+            values['label_name'] = self.search_label_id_data_list()
+            values['condition_type'] = self.search_comparison_id_data_list()
+            self.id_data_list = values
+            self.data_list_set_flg = True
 
         return values
 

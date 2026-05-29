@@ -648,7 +648,7 @@ def split_host_grp(hgsp_config, hgsp_data):
         # ホストグループ分割対象テーブルを検索:SQL実行
         split_target_table = SplitTargetTable(objdbca)  # noqa: F405
         sql = split_target_table.create_sselect(
-            "WHERE DISUSE_FLAG = '0' AND ROW_ID = '{}'".format(hgsp_config['target_row_id'])
+            "WHERE DISUSE_FLAG = '0' AND ROW_ID = '{}' FOR UPDATE".format(hgsp_config['target_row_id'])
         )
         result = split_target_table.select_table(sql)
         if result is False:
@@ -660,14 +660,16 @@ def split_host_grp(hgsp_config, hgsp_data):
         target_timestamp = hgsp_config['target_timestamp'].strftime('%Y-%m-%d %H:%M:%S.%f')
         target_timestamp_now = split_target_array[0]['LAST_UPDATE_TIMESTAMP'].strftime('%Y-%m-%d %H:%M:%S.%f')
 
+        g.applogger.debug(f"{target_row_id} {target_timestamp == target_timestamp_now} target_timestamp: {target_timestamp}, target_timestamp_now: {target_timestamp_now}")  # noqa: F405
+
         # 分割処理の開始時、終了時の最終更新日時が一致した場合、ホストグループ分割対象の分割済みフラグをONにする
         if target_timestamp == target_timestamp_now:
             tmp_msg = 'update_split_target_flg 0 -> 1'
-            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             result = update_split_target_flg(objdbca, target_row_id, "1")
         else:
             tmp_msg = 'updated split_target: split_target_flg no update and next cycle'
-            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         # コミット
         result = objdbca.db_transaction_end(True)  # True / False

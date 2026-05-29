@@ -37,14 +37,10 @@ def backyard_main(organization_id, workspace_id):
     ws_db = DBConnectWs(workspace_id)  # noqa: F405
 
     try:
-        # トランザクション開始
-        ws_db.db_transaction_start()
 
         # 関連データベースが更新されバックヤード処理が必要か判定
         if not has_changes_related_tables(ws_db, proc_loaded_row_id):
             g.applogger.debug("No changes, skip workflow.")
-            # トランザクション終了
-            ws_db.db_transaction_end(False)
             # DB切断
             ws_db.db_disconnect()
             return
@@ -82,6 +78,9 @@ def backyard_main(organization_id, workspace_id):
 
         # 作業実行時変数チェック（具体値を確認しTPFある場合は変数を追加する）
         mov_vars_dict = util.extract_variable_for_execute(mov_vars_dict, tpl_vars_dict, ws_db)
+
+        # トランザクション開始
+        ws_db.db_transaction_start()
 
         # Movement変数 登録・廃止
         mov_vars_link_table.register_and_discard(mov_vars_dict)

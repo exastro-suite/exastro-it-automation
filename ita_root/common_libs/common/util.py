@@ -1294,6 +1294,9 @@ def put_uploadfiles_jnl(ws_db, config_file_path, src_dir, dest_dir):
 
     return True
 
+lasttime_get_maintenance_mode = None
+last_maintenance_mode_setting = None
+interval_get_maintenance_mode = int(os.environ.get('INTERVAL_GET_MAINTENANCE_MODE', 30))
 
 def get_maintenance_mode_setting():
     """
@@ -1302,6 +1305,14 @@ def get_maintenance_mode_setting():
     Returns:
         maintenance_mode
     """
+    global lasttime_get_maintenance_mode
+    global last_maintenance_mode_setting
+
+    # 前回取得時刻から指定秒数（interval_get_maintenance_mode）以内の取得であれば、キャッシュを返す
+    current_time = time.time()
+    if lasttime_get_maintenance_mode is not None and (current_time - lasttime_get_maintenance_mode) <= interval_get_maintenance_mode:
+        return last_maintenance_mode_setting
+
     host_name = os.environ.get('PLATFORM_API_HOST')
     port = os.environ.get('PLATFORM_API_PORT')
 
@@ -1322,6 +1333,9 @@ def get_maintenance_mode_setting():
     # メンテナンスモードの設定値を取得
     maintenance_mode = response_data.get('data')
 
+    # 前回取得時刻と結果を更新
+    lasttime_get_maintenance_mode = current_time
+    last_maintenance_mode_setting = maintenance_mode
     return maintenance_mode
 
 

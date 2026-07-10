@@ -47,11 +47,6 @@ def post_event_collection_settings(body, organization_id, workspace_id):  # noqa
 
     :rtype: InlineResponse200
     """
-    # メンテナンスモードのチェック
-    if g.maintenance_mode.get('data_update_stop') == '1':
-        status_code = "498-00004"
-        raise AppException(status_code, [], [])  # noqa: F405
-
     # DB接続
     wsDb = DBConnectWs(workspace_id)
 

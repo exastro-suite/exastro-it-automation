@@ -186,16 +186,6 @@ def backyard_main(organization_id, workspace_id):
             proxySetting
         )
 
-        response_array = restApiCaller.authorize()
-        if not response_array['success']:
-            raise Exception("Faild to authorize to Ansible Automation Controller. %s" % (response_array['responseContents']['errorMessage']))
-
-        # AAP2.5対応
-        # AAPのバージョン確認
-        response_flg = restApiCaller.check_api_info()
-        if not response_flg:
-            raise Exception("Faild to check api to Controller / Platform Gateway .")
-
         ############################################################
         # 接続トークンに対応したユーザー情報取得
         ############################################################

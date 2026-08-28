@@ -329,7 +329,7 @@ def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, 
         'menu_info': menu_info_data,
         'column_info': column_info_data,
         'column_group_info': column_group_info_data,
-        'custom_menu': {},
+        'custom_menu': {}
     }
 
     return info_data
@@ -421,7 +421,7 @@ def collect_custom_menu_info(objdbca, menu, menu_record, privilege, custom_file_
     if 'item' in custom_file_list:
         if custom_file_list['item'] is None:
             custom_file_list = {}
-
+    
     info_data = {
         'menu_info': menu_info_data,
         'column_info': {},

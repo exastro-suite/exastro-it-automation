@@ -16,11 +16,13 @@ EXASTRO_UNAME=$(id -u -n)
 EXASTRO_UID=$(id -u)
 EXASTRO_GID=1000
 #### インストーラー自身のバージョン（インストールできる資材のバージョンを制御するため）
-AGENT_INSTALLER_VERSION=2.8.0
+AGENT_INSTALLER_VERSION=2.9.0
 #### AGENT_INSTALLER_VERSIONと揃っていること
-AGENT_INSTALLER_VNC=20800
+AGENT_INSTALLER_VNC=20900
 
 POETRY_VERSION=1.6.0
+AAP_ANSIBLE_BUILDER_PKG_RHEL9="ansible-builder-3.1.1-1.2.el9ap"
+AAP_ANSIBLE_RUNNER_PKG_RHEL9="ansible-runner-2.4.2-3.el9ap"
 
 SETUP_VERSION=""
 EXECUTE_PATH=""
@@ -28,7 +30,12 @@ WORK_DIR=""
 ENV_TMP_PATH=""
 SERVICE_ID=`date +%Y%m%d%H%M%S%3N`
 INSTALL_TYPE=1
+UNINSTALL_TYPE=1
 ANSIBLE_SUPPORT=1
+NON_INTERACTIVE=0
+SOURCE_UPDATE_CONFIRM="y"
+SERVICE_START_CONFIRM="y"
+SUDO_PASSWORD=""
 
 SOURCE_REPOSITORY="https://github.com/exastro-suite/exastro-it-automation.git"
 SOURCE_REPOSITORY_NAME="exastro-it-automation"
@@ -54,7 +61,7 @@ rhel9_repos["aap"]="ansible-automation-platform-2.5-for-rhel-9-x86_64-rpms"
 
 rhel10_repos["base"]="rhel-10-for-x86_64-baseos-rpms"
 rhel10_repos["appstream"]="rhel-10-for-x86_64-appstream-rpms"
-rhel10_repos["aap"]="ansible-automation-platform-2.5-for-rhel-10-x86_64-rpms"
+rhel10_repos["aap"]="ansible-automation-platform-2.6-for-rhel-10-x86_64-rpms"
 
 # dnf install list: common
 dnf_install_list_common=(
@@ -306,6 +313,30 @@ error() {
     exit 1
 }
 
+run_sudo() {
+    if [ "${NON_INTERACTIVE}" = "1" ] && [ -n "${SUDO_PASSWORD}" ]; then
+        printf '%s\n' "${SUDO_PASSWORD}" | command sudo -S -p "" "$@"
+    else
+        command sudo "$@"
+    fi
+}
+
+init_non_interactive_sudo() {
+    if [ "${NON_INTERACTIVE}" != "1" ]; then
+        return 0
+    fi
+
+    if [ -n "${SUDO_PASSWORD}" ]; then
+        if ! printf '%s\n' "${SUDO_PASSWORD}" | command sudo -S -p "" -v >/dev/null 2>&1; then
+            error "non-interactive sudo authentication failed. Check --sudo-password."
+        fi
+    else
+        if ! command sudo -n true >/dev/null 2>&1; then
+            error "non-interactive mode requires passwordless sudo or --sudo-password."
+        fi
+    fi
+}
+
 ### Convert to lowercase
 to_lowercase() {
     echo "$1" | sed "y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/"
@@ -461,7 +492,7 @@ check_system() {
 ### Check system requirements
 check_security() {
     printf "$(date) [INFO]: Checking running security services.............\n" | tee -a "${LOG_FILE}"
-    SELINUX_STATUS=$(sudo getenforce 2>/dev/null || :)
+    SELINUX_STATUS=$(run_sudo getenforce 2>/dev/null || :)
     if [ "${SELINUX_STATUS}" = "Permissive" ]; then
         info "SELinux is now Permissive mode."
         if [ "${DEP_PATTERN}" != "RHEL8" ] && [ "${DEP_PATTERN}" != "RHEL9" ] && [ "${DEP_PATTERN}" != "RHEL10" ]; then
@@ -477,7 +508,7 @@ check_security() {
         fi
     fi
 
-    FIREWALLD_STATUS=$(sudo firewall-cmd --state 2>/dev/null || :)
+    FIREWALLD_STATUS=$(run_sudo firewall-cmd --state 2>/dev/null || :)
     if echo "${FIREWALLD_STATUS}" | grep -qi "running"; then
         printf "\r\033[2F\033[K$(date) [INFO]: Checking running security services.............check\n" | tee -a "${LOG_FILE}"
         printf "\r\033[2E\033[K" | tee -a "${LOG_FILE}"
@@ -488,7 +519,7 @@ check_security() {
         FIREWALLD_STATUS="inactive"
     fi
 
-    UFW_STATUS=$(sudo ufw status 2>/dev/null || :)
+    UFW_STATUS=$(run_sudo ufw status 2>/dev/null || :)
     if echo "${UFW_STATUS}" | grep -qi "status: active"; then
         printf "\r\033[3F\033[K$(date) [INFO]: Checking running security services.............check\n" | tee -a "${LOG_FILE}"
         printf "\r\033[3E\033[K" | tee -a "${LOG_FILE}"
@@ -597,24 +628,24 @@ installation_container_engine() {
 ### Installation Podman on RHEL8
 installation_podman_on_rhel8() {
     # info "Enable the extras repository"
-    # sudo subscription-manager repos --enable=rhel-8-for-x86_64-appstream-rpms --enable=rhel-8-for-x86_64-baseos-rpms
+    # run_sudo subscription-manager repos --enable=rhel-8-for-x86_64-appstream-rpms --enable=rhel-8-for-x86_64-baseos-rpms
 
     if [ "${DEP_PATTERN}" = "RHEL8" ]; then
         info "Enable container-tools module"
-        sudo dnf module enable -y container-tools:rhel8
+        run_sudo dnf module enable -y container-tools:rhel8
 
         info "Install container-tools module"
-        sudo dnf module install -y container-tools:rhel8
+        run_sudo dnf module install -y container-tools:rhel8
     fi
 
     # info "Update packages"
-    # sudo dnf update -y
+    # run_sudo dnf update -y
 
     info "Install fuse-overlayfs"
-    sudo dnf install -y fuse-overlayfs
+    run_sudo dnf install -y fuse-overlayfs
 
     info "Install Podman"
-    sudo dnf install -y podman podman-docker git
+    run_sudo dnf install -y podman podman-docker git
 
     info "Check if Podman is installed"
     if ! command -v podman >/dev/null 2>&1; then
@@ -624,11 +655,11 @@ installation_podman_on_rhel8() {
     info "Install docker-compose command"
     if [ ! -f "/usr/local/bin/docker-compose" ]; then
         if [ -z "${PROXY}" ]; then
-            sudo curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VER}/docker-compose-${OS_TYPE}-${ARCH}" -o /usr/local/bin/docker-compose
+            run_sudo curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VER}/docker-compose-${OS_TYPE}-${ARCH}" -o /usr/local/bin/docker-compose
         else
-            sudo curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VER}/docker-compose-${OS_TYPE}-${ARCH}" -o /usr/local/bin/docker-compose -x ${https_proxy}
+            run_sudo curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VER}/docker-compose-${OS_TYPE}-${ARCH}" -o /usr/local/bin/docker-compose -x ${https_proxy}
         fi
-        sudo chmod a+x /usr/local/bin/docker-compose
+        run_sudo chmod a+x /usr/local/bin/docker-compose
     fi
 
     info "Show Podman version"
@@ -669,7 +700,7 @@ installation_podman_on_rhel8() {
     # use rootless mode
     echo "export BUILDAH_ISOLATION=chroot" >> ${HOME}/.bashrc
 
-    sudo systemctl start user@${EXASTRO_UID}
+    run_sudo systemctl start user@${EXASTRO_UID}
 
     info "Start and enable Podman socket service"
     systemctl --user enable --now podman.socket
@@ -688,39 +719,38 @@ installation_podman_on_rhel8() {
 ### Installation Docker on AlmaLinux
 installation_docker_on_alamalinux8() {
     # info "Update packages"
-    # sudo dnf update -y
+    # run_sudo dnf update -y
 
     #
     CONTAINERS_CONF=${HOME}/.config/containers/containers.conf
     info "Change container containers.conf"
     mkdir -p ${HOME}/.config/containers/
-    sudo cp /usr/share/containers/containers.conf ${HOME}/.config/containers/
+    run_sudo cp /usr/share/containers/containers.conf ${HOME}/.config/containers/
     # sed -i.$(date +%Y%m%d-%H%M%S) -e 's|^network_backend = "cni"|network_backend = "netavark"|' ${CONTAINERS_CONF}
     if [ ! -z "${PROXY}" ]; then
         if ! (grep -q "^ *http_proxy *=" ${CONTAINERS_CONF}); then
-            sudo sed -i -e '/^#http_proxy = \[\]/a http_proxy = true' ${CONTAINERS_CONF}
+            run_sudo sed -i -e '/^#http_proxy = \[\]/a http_proxy = true' ${CONTAINERS_CONF}
         fi
         if ! (grep -q "^ *http_proxy *=" ${CONTAINERS_CONF}); then
-            sudo sed -i -e '/^#http_proxy *=.*/a http_proxy = true' ${CONTAINERS_CONF}
+            run_sudo sed -i -e '/^#http_proxy *=.*/a http_proxy = true' ${CONTAINERS_CONF}
         fi
         if grep -q "^ *env *=" ${CONTAINERS_CONF}; then
             if grep "^ *env *=" ${CONTAINERS_CONF} | grep -q -v "http_proxy"; then
-                sudo sed -i -e 's/\(^ *env *=.*\)\]/\1,"http_proxy='${http_proxy//\//\\/}'"]/' ${CONTAINERS_CONF}
+                run_sudo sed -i -e 's/\(^ *env *=.*\)\]/\1,"http_proxy='${http_proxy//\//\\/}'"]/' ${CONTAINERS_CONF}
             fi
             if grep "^ *env *=" ${CONTAINERS_CONF} | grep -q -v "https_proxy"; then
-                sudo sed -i -e 's/\(^ *env *=.*\)\]/\1,"https_proxy='${https_proxy//\//\\/}'"]/' ${CONTAINERS_CONF}
+                run_sudo sed -i -e 's/\(^ *env *=.*\)\]/\1,"https_proxy='${https_proxy//\//\\/}'"]/' ${CONTAINERS_CONF}
             fi
         else
-            sudo sed -i -e '/^#env = \[\]/a env = ["http_proxy='${http_proxy}'","https_proxy='${https_proxy}'"]' ${CONTAINERS_CONF}
+            run_sudo sed -i -e '/^#env = \[\]/a env = ["http_proxy='${http_proxy}'","https_proxy='${https_proxy}'"]' ${CONTAINERS_CONF}
         fi
     fi
 
 }
 
 ### Check args
-check_args() {
-    if [ "$1" = 0 ]; then
-        cat <<'_EOF_'
+print_usage() {
+    cat <<'_EOF_'
 
 Usage:
   sh <(curl -Ssf https://ita.exastro.org/setup) COMMAND [options]
@@ -731,13 +761,236 @@ Commands:
   install     Install Ansible Execution Agent
         1: Create .env & Install & Service Register, Start
         2: Create .env & Service Register, Start
-        3: Create .env & Service Register, Start
+        3: Register service
+        4: Create .env
   uninstall   Uninstall Ansible Execution Agent
         1: Uninstall Service & Delete Data
         2: Uninstall Service
         3: Delete Data
+
+Common options:
+  --non-interactive, -y
+  --sudo-password <password>
+  --source-update <y|n>
+  --start-service <y|n>
+
+Install options:
+  --install-type <1|2|3|4>
+  --agent-version <main|X.Y.Z|branch>
+  --agent-service-id-yn <y|n>
+  --agent-service-id <value>
+  --install-path <path>
+  --data-path <path>
+  --ansible-support <1|2>
+  --exastro-url <url>
+  --organization-id <id>
+  --workspace-id <id>
+  --refresh-token <token>
+  --reference-env-path <path>
+
+Uninstall options:
+  --uninstall-type <1|2|3>
+  --service-name <name>
+  --storage-path <path>
 _EOF_
+}
+
+check_args() {
+    if [ "$1" = 0 ]; then
+        echo "Error: missing command"
+        echo "Usage: setup.sh <install|uninstall> [options]"
+        echo "Try 'setup.sh --help' for more information."
         exit 2
+    fi
+}
+
+set_option_value() {
+    option_name="$1"
+    option_value="$2"
+    if [ "${option_value}" = "" ]; then
+        error "Option ${option_name} requires a value."
+    fi
+}
+
+parse_command_options() {
+    sub_command="$1"
+    shift
+
+    while [ "$#" -gt 0 ]; do
+        case "$1" in
+            --help|-h)
+                print_usage
+                exit 0
+                ;;
+            --non-interactive|-y)
+                NON_INTERACTIVE=1
+                ;;
+            --sudo-password)
+                set_option_value "$1" "$2"
+                SUDO_PASSWORD="$2"
+                shift
+                ;;
+            --sudo-password=*)
+                SUDO_PASSWORD="${1#*=}"
+                ;;
+            --source-update)
+                set_option_value "$1" "$2"
+                SOURCE_UPDATE_CONFIRM="$2"
+                shift
+                ;;
+            --source-update=*)
+                SOURCE_UPDATE_CONFIRM="${1#*=}"
+                ;;
+            --start-service)
+                set_option_value "$1" "$2"
+                SERVICE_START_CONFIRM="$2"
+                shift
+                ;;
+            --start-service=*)
+                SERVICE_START_CONFIRM="${1#*=}"
+                ;;
+            --install-type)
+                set_option_value "$1" "$2"
+                INSTALL_TYPE="$2"
+                shift
+                ;;
+            --install-type=*)
+                INSTALL_TYPE="${1#*=}"
+                ;;
+            --uninstall-type)
+                set_option_value "$1" "$2"
+                UNINSTALL_TYPE="$2"
+                shift
+                ;;
+            --uninstall-type=*)
+                UNINSTALL_TYPE="${1#*=}"
+                ;;
+            --agent-version)
+                set_option_value "$1" "$2"
+                default_env_values["AGENT_VERSION"]="$2"
+                shift
+                ;;
+            --agent-version=*)
+                default_env_values["AGENT_VERSION"]="${1#*=}"
+                ;;
+            --agent-service-id-yn)
+                set_option_value "$1" "$2"
+                default_env_values["AGENT_SERVICE_ID_YN"]="$2"
+                shift
+                ;;
+            --agent-service-id-yn=*)
+                default_env_values["AGENT_SERVICE_ID_YN"]="${1#*=}"
+                ;;
+            --agent-service-id)
+                set_option_value "$1" "$2"
+                default_env_values["AGENT_SERVICE_ID"]="$2"
+                shift
+                ;;
+            --agent-service-id=*)
+                default_env_values["AGENT_SERVICE_ID"]="${1#*=}"
+                ;;
+            --install-path)
+                set_option_value "$1" "$2"
+                default_env_values["INSTALLPATH"]="$2"
+                shift
+                ;;
+            --install-path=*)
+                default_env_values["INSTALLPATH"]="${1#*=}"
+                ;;
+            --data-path)
+                set_option_value "$1" "$2"
+                default_env_values["DATAPATH"]="$2"
+                shift
+                ;;
+            --data-path=*)
+                default_env_values["DATAPATH"]="${1#*=}"
+                ;;
+            --ansible-support)
+                set_option_value "$1" "$2"
+                default_env_values["ANSIBLE_SUPPORT"]="$2"
+                shift
+                ;;
+            --ansible-support=*)
+                default_env_values["ANSIBLE_SUPPORT"]="${1#*=}"
+                ;;
+            --exastro-url)
+                set_option_value "$1" "$2"
+                default_env_values["EXASTRO_URL"]="$2"
+                shift
+                ;;
+            --exastro-url=*)
+                default_env_values["EXASTRO_URL"]="${1#*=}"
+                ;;
+            --organization-id)
+                set_option_value "$1" "$2"
+                default_env_values["EXASTRO_ORGANIZATION_ID"]="$2"
+                shift
+                ;;
+            --organization-id=*)
+                default_env_values["EXASTRO_ORGANIZATION_ID"]="${1#*=}"
+                ;;
+            --workspace-id)
+                set_option_value "$1" "$2"
+                default_env_values["EXASTRO_WORKSPACE_ID"]="$2"
+                shift
+                ;;
+            --workspace-id=*)
+                default_env_values["EXASTRO_WORKSPACE_ID"]="${1#*=}"
+                ;;
+            --refresh-token)
+                set_option_value "$1" "$2"
+                default_env_values["EXASTRO_REFRESH_TOKEN"]="$2"
+                shift
+                ;;
+            --refresh-token=*)
+                default_env_values["EXASTRO_REFRESH_TOKEN"]="${1#*=}"
+                ;;
+            --reference-env-path)
+                set_option_value "$1" "$2"
+                default_env_values["REFERENCE_ENVPATH"]="$2"
+                shift
+                ;;
+            --reference-env-path=*)
+                default_env_values["REFERENCE_ENVPATH"]="${1#*=}"
+                ;;
+            --service-name)
+                set_option_value "$1" "$2"
+                default_env_values["SERVICE_NAME"]="$2"
+                shift
+                ;;
+            --service-name=*)
+                default_env_values["SERVICE_NAME"]="${1#*=}"
+                ;;
+            --storage-path)
+                set_option_value "$1" "$2"
+                default_env_values["STORAGE_PATH"]="$2"
+                shift
+                ;;
+            --storage-path=*)
+                default_env_values["STORAGE_PATH"]="${1#*=}"
+                ;;
+            *)
+                error "Unknown option: $1"
+                ;;
+        esac
+        shift
+    done
+
+    if [ "${sub_command}" = "install" ]; then
+        if ! echo "${INSTALL_TYPE}" | grep -q -e "^[1234]$"; then
+            error "Invalid install type: ${INSTALL_TYPE}. Use 1,2,3,4."
+        fi
+    elif [ "${sub_command}" = "uninstall" ]; then
+        if ! echo "${UNINSTALL_TYPE}" | grep -q -e "^[123]$"; then
+            error "Invalid uninstall type: ${UNINSTALL_TYPE}. Use 1,2,3."
+        fi
+    fi
+
+    if ! echo "${SOURCE_UPDATE_CONFIRM}" | grep -qi -e "^[yn]$"; then
+        error "Invalid --source-update value: ${SOURCE_UPDATE_CONFIRM}. Use y or n."
+    fi
+    if ! echo "${SERVICE_START_CONFIRM}" | grep -qi -e "^[yn]$"; then
+        error "Invalid --start-service value: ${SERVICE_START_CONFIRM}. Use y or n."
     fi
 }
 
@@ -748,19 +1001,19 @@ dnf_install(){
     # set +e
     # ANSIBLE_SUPPORT=${default_env_values["ANSIBLE_SUPPORT"]}
     # if [ "${ANSIBLE_SUPPORT}" = "2" ] && [ "${DEP_PATTERN}" = "RHEL8" ];then
-    #     info "sudo subscription-manager repos --enable=${rhel8_repos['base']}"
-    #     sudo subscription-manager repos --enable=${rhel8_repos['base']}
-    #     info "sudo subscription-manager repos --enable=${rhel8_repos['appstream']}"
-    #     sudo subscription-manager repos --enable=${rhel8_repos['appstream']}
-    #     info "sudo subscription-manager repos --enable=${rhel8_repos['aap']}"
-    #     sudo subscription-manager repos --enable=${rhel8_repos['aap']}
+    #     info "run_sudo subscription-manager repos --enable=${rhel8_repos['base']}"
+    #     run_sudo subscription-manager repos --enable=${rhel8_repos['base']}
+    #     info "run_sudo subscription-manager repos --enable=${rhel8_repos['appstream']}"
+    #     run_sudo subscription-manager repos --enable=${rhel8_repos['appstream']}
+    #     info "run_sudo subscription-manager repos --enable=${rhel8_repos['aap']}"
+    #     run_sudo subscription-manager repos --enable=${rhel8_repos['aap']}
     # elif [ "${ANSIBLE_SUPPORT}" = "2" ] && [ "${DEP_PATTERN}" = "RHEL9" ];then
-    #     info "sudo subscription-manager repos --enable=${rhel9_repos['base']}"
-    #     sudo subscription-manager repos --enable=${rhel9_repos['base']}
-    #     info "sudo subscription-manager repos --enable=${rhel9_repos['appstream']}"
-    #     sudo subscription-manager repos --enable=${rhel9_repos['appstream']}
-    #     info "sudo subscription-manager repos --enable=${rhel9_repos['aap']}"
-    #     sudo subscription-manager repos --enable=${rhel9_repos['aap']}
+    #     info "run_sudo subscription-manager repos --enable=${rhel9_repos['base']}"
+    #     run_sudo subscription-manager repos --enable=${rhel9_repos['base']}
+    #     info "run_sudo subscription-manager repos --enable=${rhel9_repos['appstream']}"
+    #     run_sudo subscription-manager repos --enable=${rhel9_repos['appstream']}
+    #     info "run_sudo subscription-manager repos --enable=${rhel9_repos['aap']}"
+    #     run_sudo subscription-manager repos --enable=${rhel9_repos['aap']}
     # fi
 
     # if [ $? -eq 0 ]; then
@@ -800,8 +1053,8 @@ dnf_install(){
 
     for install_pkg in "${install_list[@]}" ; do
         info "${install_pkg} install start"
-        info "sudo dnf install -y ${install_pkg}"
-        sudo dnf install -y "${install_pkg}"
+        info "run_sudo dnf install -y ${install_pkg}"
+        run_sudo dnf install -y "${install_pkg}"
         info "${install_pkg} install end"
     done
 }
@@ -814,7 +1067,7 @@ update_pip_rhel10(){
     # Ensure pip3 exists (order fix: install list processed before this)
     if ! command -v pip3 >/dev/null 2>&1; then
         info "pip3 not found. Installing python3-pip."
-        sudo dnf install -y python3-pip || warn "python3-pip install failed. Trying ensurepip."
+        run_sudo dnf install -y python3-pip || warn "python3-pip install failed. Trying ensurepip."
     fi
     if ! command -v pip3 >/dev/null 2>&1; then
         if python3 -m ensurepip --upgrade >/dev/null 2>&1; then
@@ -859,12 +1112,12 @@ git_clone(){
     echo ""
     cd "${WORK_DIR}"
     # check git global
-    git_global_user_name=`sudo git config --global user.name | wc -c`
-    git_global_user_email=`sudo git config --global user.email | wc -c`
+    git_global_user_name=`run_sudo git config --global user.name | wc -c`
+    git_global_user_email=`run_sudo git config --global user.email | wc -c`
     if [ ${git_global_user_name} -le 1 ]; then
         echo "set git config --global user.name user.email"
-        sudo git config --global user.name dummyuser
-        sudo git config --global user.email dummy@dummy.com
+        run_sudo git config --global user.name dummyuser
+        run_sudo git config --global user.email dummy@dummy.com
     fi
 
     # check workdir
@@ -919,10 +1172,76 @@ clean_workdir(){
     info "clean_workdir ${WORK_DIR} end"
 }
 
-inquiry_env(){
-    echo ""
-    info "inquiry_env :${DEP_PATTERN} start"
+validate_env_value(){
+    env_key="$1"
+    tmp_value="$2"
 
+    if [ "${env_key}" = "ANSIBLE_SUPPORT" ]; then
+        if ! echo "$tmp_value" | grep -q -e "^[12]$"; then
+            echo "${interactive_llist['INVALID_VALUE_AS']}"
+            return 1
+        fi
+    elif [ "${env_key}" = "EXASTRO_URL" ]; then
+        if ! echo "${tmp_value}" | grep -q -e "^http://" -e "^https://" ; then
+            echo "${interactive_llist['INVALID_VALUE_URL']}"
+            return 1
+        fi
+    elif [ "${env_key}" = "AGENT_SERVICE_ID" ]; then
+        if ! echo "$tmp_value" | grep -q -e "^[0-9a-zA-Z_-]*$"; then
+            echo "${interactive_llist['INVALID_VALUE_E1']}"
+            return 1
+        fi
+    elif [ "${env_key}" = "AGENT_SERVICE_ID_YN" ]; then
+        if ! echo "$tmp_value" | grep -q -e "^[yYnN]$"; then
+            echo "${interactive_llist['INVALID_VALUE_YN']}"
+            return 1
+        fi
+    elif [ "${env_key}" = "REFERENCE_ENVPATH" ]; then
+        if [ ! -f "$tmp_value" ]; then
+            echo "${interactive_llist['INVALID_VALUE_F_ENV']}"
+            return 1
+        fi
+    elif [ "${env_key}" = "AGENT_VERSION" ]; then
+        if [ "$tmp_value" != "main" ] && echo "${tmp_value}" | grep -q -E "^[0-9]+\.[0-9]+\.[0-9]+$"; then
+            INPUT_VERSION=$(echo ${tmp_value} | awk -F. '{printf "%2d%02d%02d", $1,$2,$3}')
+            if [ "$INPUT_VERSION" -gt $((AGENT_INSTALLER_VNC)) ]; then
+                echo "${interactive_llist['INVALID_SETUP_VERSION']} main or <= ${AGENT_INSTALLER_VERSION}"
+                return 1
+            fi
+        fi
+    elif [ "${env_key}" = "INSTALLPATH" ]; then
+        if [ "${INSTALL_TYPE}" = "2" ] && [ ! -d "$tmp_value" ]; then
+            echo "${interactive_llist['INVALID_VALUE_IS_DIR']} ${tmp_value}"
+            return 1
+        fi
+    fi
+
+    return 0
+}
+
+collect_env_non_interactive(){
+    for env_key in "${additional_env_keys[@]}"; do
+        if [ "${env_key}" = "AGENT_SERVICE_ID" ] && [ "${default_env_values['AGENT_SERVICE_ID_YN']}" = "y" ]; then
+            continue
+        fi
+
+        tmp_value="${default_env_values[${env_key}]}"
+        if [ "${tmp_value}" = "" ]; then
+            if [ "${env_key}" = "EXASTRO_REFRESH_TOKEN" ]; then
+                echo ""
+                echo "${interactive_llist_adv[EXASTRO_REFRESH_TOKEN_1]}"
+                continue
+            fi
+            error "Missing required option value for ${env_key}."
+        fi
+
+        if ! validate_env_value "${env_key}" "${tmp_value}"; then
+            error "Invalid option value for ${env_key}."
+        fi
+    done
+}
+
+collect_env_interactive(){
     echo "${interactive_llist['_TOP_MSG']}"
     read -r -p "->  Enter" tmp_value
     echo ""
@@ -947,78 +1266,34 @@ inquiry_env(){
             fi
 
             if [ "$tmp_value" = "" ]; then
-                if [ -n "${default_env_values[${env_key}]}" ]; then
-                    if [ "${default_env_values[${env_key}]}" != "" ]; then
-                        break
-                    fi
-                else
-                    if [ "${env_key}" = "EXASTRO_REFRESH_TOKEN" ]; then
-                        echo ""
-                        echo "${interactive_llist_adv[EXASTRO_REFRESH_TOKEN_1]}"
-                        break
-                    fi
+                if [ -n "${default_env_values[${env_key}]}" ] && [ "${default_env_values[${env_key}]}" != "" ]; then
+                    break
                 fi
-            else
-                # tmp_value valid
-                if [ "${env_key}" = "ANSIBLE_SUPPORT" ]; then
-                    if echo $tmp_value | grep -q -e "[12]"; then
-                        default_env_values[$env_key]=$tmp_value
-                        break
-                    else
-                        echo "${interactive_llist['INVALID_VALUE_AS']}"
-                        continue
-                    fi
-                elif [ ${env_key} = "EXASTRO_URL" ]; then
-                    if ! $(echo "${tmp_value}" | grep -q "http://.*") && ! $(echo "${tmp_value}" | grep -q "https://.*") ; then
-                        echo "${interactive_llist['INVALID_VALUE_URL']}"
-                        continue
-                    fi
-                elif [ ${env_key} = "AGENT_SERVICE_ID" ]; then
-                    if echo $tmp_value | grep -q -e "^[0-9a-zA-Z_-]*$"; then
-                        default_env_values[$env_key]=$tmp_value
-                        break
-                    else
-                        echo "${interactive_llist['INVALID_VALUE_E1']}"
-                        continue
-                    fi
-                elif [ ${env_key} = "AGENT_SERVICE_ID_YN" ]; then
-                    if echo $tmp_value | grep -q -e "[yYnN]"; then
-                        default_env_values[$env_key]=$tmp_value
-                        break
-                    else
-                        echo "${interactive_llist['INVALID_VALUE_YN']}"
-                        continue
-                    fi
-                elif [ ${env_key} = "REFERENCE_ENVPATH" ]; then
-                    if [ -f $tmp_value ]; then
-                        default_env_values[$env_key]=$tmp_value
-                        break
-                    else
-                        echo "${interactive_llist['INVALID_VALUE_F_ENV']}"
-                        continue
-                    fi
-                elif [ ${env_key} = "AGENT_VERSION" ]; then
-                    INPUT_VERSION=$(echo ${tmp_value} | awk -F. '{printf "%2d%02d%02d", $1,$2,$3}')
-                    if [ "$INPUT_VERSION" -gt $((AGENT_INSTALLER_VNC)) ]; then
-                        info "${interactive_llist['INVALID_SETUP_VERSION']} main or <= ${AGENT_INSTALLER_VERSION}"
-                        continue
-                    fi
-                elif [ ${env_key} = "INSTALLPATH" ]; then
-                    if [ "${INSTALL_TYPE}" = "2" ]; then
-                        if [ -d $tmp_value ]; then
-                            default_env_values[$env_key]=$tmp_value
-                            break
-                        else
-                            echo "${interactive_llist['INVALID_VALUE_IS_DIR']} ${tmp_value}"
-                            continue
-                        fi
-                    fi
+                if [ "${env_key}" = "EXASTRO_REFRESH_TOKEN" ]; then
+                    echo ""
+                    echo "${interactive_llist_adv[EXASTRO_REFRESH_TOKEN_1]}"
+                    break
                 fi
+                continue
+            fi
+
+            if validate_env_value "${env_key}" "${tmp_value}"; then
                 default_env_values[$env_key]=$tmp_value
                 break
             fi
         done
     done
+}
+
+inquiry_env(){
+    echo ""
+    info "inquiry_env :${DEP_PATTERN} start"
+
+    if [ "${NON_INTERACTIVE}" = "1" ]; then
+        collect_env_non_interactive
+    else
+        collect_env_interactive
+    fi
 
     if [ "${default_env_values['AGENT_SERVICE_ID']}" = "" ];then
         default_env_values['AGENT_SERVICE_ID']="${SERVICE_ID}"
@@ -1088,7 +1363,7 @@ create_env(){
 poetry_install(){
     echo ""
 
-    sudo chmod 755 "${default_env_values['PYTHONPATH']}"
+    run_sudo chmod 755 "${default_env_values['PYTHONPATH']}"
     cd "${default_env_values['PYTHONPATH']}"
     # poetry
     pip3 install poetry==$POETRY_VERSION
@@ -1102,11 +1377,23 @@ poetry_install(){
 
 ansible_additional_install(){
     if [ ${default_env_values["ANSIBLE_SUPPORT"]} = "2" ]; then
-        if [ "${DEP_PATTERN}" = "RHEL8" ] || [ "${DEP_PATTERN}" = "RHEL9" ] || [ "${DEP_PATTERN}" = "RHEL10" ]; then
+        if [ "${DEP_PATTERN}" = "RHEL9" ]; then
             info "uninstall ansible-builder ansible-runner"
             poetry run pip3 uninstall -y ansible-builder ansible-runner
-            info "sudo dnf install -y ansible-builder ansible-runner"
-            sudo dnf install -y ansible-builder ansible-runner
+            if run_sudo dnf repolist enabled 2>/dev/null | grep -q "${rhel9_repos['aap']}"; then
+                info "AAP 2.5 repo detected. Install with version pinning."
+                info "run_sudo dnf install -y ${AAP_ANSIBLE_BUILDER_PKG_RHEL9} ${AAP_ANSIBLE_RUNNER_PKG_RHEL9}"
+                run_sudo dnf install -y "${AAP_ANSIBLE_BUILDER_PKG_RHEL9}" "${AAP_ANSIBLE_RUNNER_PKG_RHEL9}"
+            else
+                info "AAP 2.5 repo not detected. Install without version pinning."
+                info "run_sudo dnf install -y ansible-builder ansible-runner"
+                run_sudo dnf install -y ansible-builder ansible-runner
+            fi
+        elif [ "${DEP_PATTERN}" = "RHEL8" ] || [ "${DEP_PATTERN}" = "RHEL10" ]; then
+            info "uninstall ansible-builder ansible-runner"
+            poetry run pip3 uninstall -y ansible-builder ansible-runner
+            info "run_sudo dnf install -y ansible-builder ansible-runner"
+            run_sudo dnf install -y ansible-builder ansible-runner
         else
             info "Skip install ansible-builder ansible-runner. Is not RHEL."
         fi
@@ -1125,11 +1412,16 @@ install_agent_source(){
     echo $source_path
     install_flg=1
     if [ -e $source_path ]; then
+        if [ "${NON_INTERACTIVE}" = "1" ]; then
+            confirm=${SOURCE_UPDATE_CONFIRM}
+        fi
         while true; do
-            echo "${interactive_llist['SOURCE_UPDATE']}"
-            read -r -p  "${interactive_llist['SOURCE_UPDATE_E1']}" confirm
+            if [ "${NON_INTERACTIVE}" != "1" ]; then
+                echo "${interactive_llist['SOURCE_UPDATE']}"
+                read -r -p  "${interactive_llist['SOURCE_UPDATE_E1']}" confirm
+            fi
             if echo $confirm | grep -q -e "[yY]" -e "[yY][eE][sS]"; then
-                sudo rm -rfd $source_path
+                run_sudo rm -rfd $source_path
                 break
             elif echo $confirm | grep -q -e "[nN]" -e "[nN][oO]"; then
                 install_flg=2
@@ -1156,13 +1448,13 @@ install_agent_source(){
 
 
     for xadd_key in "${!xadd_source_paths[@]}"; do
-        info "sudo chmod 755 ${source_path}/${xadd_source_paths[${xadd_key}]}"
-        sudo chmod 755 ${source_path}/${xadd_source_paths[${xadd_key}]}
+        info "run_sudo chmod 755 ${source_path}/${xadd_source_paths[${xadd_key}]}"
+        run_sudo chmod 755 ${source_path}/${xadd_source_paths[${xadd_key}]}
     done
 
     if [ "${DEP_PATTERN}" = "AlmaLinux8" ] || [ "${DEP_PATTERN}" = "AlmaLinux9" ]; then
         echo "${source_path}/agent/entrypoint.sh"
-        sudo chcon -R -h -t bin_t "${source_path}/agent/entrypoint.sh"
+        run_sudo chcon -R -h -t bin_t "${source_path}/agent/entrypoint.sh"
     fi
 
     info "install_agent_source end"
@@ -1282,15 +1574,19 @@ _EOF_
 
     info "cp -p ${SERVICE_PATH}  ${HOME}/.config/systemd/user/"
     cat "${SERVICE_PATH}"
-    sudo cp -p ${SERVICE_PATH}  ${HOME}/.config/systemd/user/
+    run_sudo cp -p ${SERVICE_PATH}  ${HOME}/.config/systemd/user/
     info "systemctl --user daemon-reload"
     systemctl --user daemon-reload
     info "systemctl --user enable ${default_env_values['AGENT_NAME']}"
     systemctl --user enable "${default_env_values['AGENT_NAME']}"
-    info "sudo loginctl enable-linger ${EXASTRO_UNAME}"
-    sudo loginctl enable-linger ${EXASTRO_UNAME}
+    info "run_sudo loginctl enable-linger ${EXASTRO_UNAME}"
+    run_sudo loginctl enable-linger ${EXASTRO_UNAME}
 
-    read -r -p  "${interactive_llist['SERVICE_MSG_START']}" confirm
+    if [ "${NON_INTERACTIVE}" = "1" ]; then
+        confirm=${SERVICE_START_CONFIRM}
+    else
+        read -r -p  "${interactive_llist['SERVICE_MSG_START']}" confirm
+    fi
     echo ""
     if ! (echo $confirm | grep -q -e "[yY]" -e "[yY][eE][sS]"); then
         info "systemctl daemon-reload & enable ${default_env_values['AGENT_NAME']}"
@@ -1346,20 +1642,24 @@ _EOF_
 
     info "cp -p ${SERVICE_PATH} /usr/lib/systemd/system/"
     cat "${SERVICE_PATH}"
-    sudo cp -p ${SERVICE_PATH} /usr/lib/systemd/system/
-    info "sudo systemctl daemon-reload"
-    sudo systemctl daemon-reload
-    info "sudo systemctl enable ${default_env_values['AGENT_NAME']}"
-    sudo systemctl enable "${default_env_values['AGENT_NAME']}"
+    run_sudo cp -p ${SERVICE_PATH} /usr/lib/systemd/system/
+    info "run_sudo systemctl daemon-reload"
+    run_sudo systemctl daemon-reload
+    info "run_sudo systemctl enable ${default_env_values['AGENT_NAME']}"
+    run_sudo systemctl enable "${default_env_values['AGENT_NAME']}"
 
-    read -r -p  "${interactive_llist['SERVICE_MSG_START']}" confirm
+    if [ "${NON_INTERACTIVE}" = "1" ]; then
+        confirm=${SERVICE_START_CONFIRM}
+    else
+        read -r -p  "${interactive_llist['SERVICE_MSG_START']}" confirm
+    fi
     echo ""
     if ! (echo $confirm | grep -q -e "[yY]" -e "[yY][eE][sS]"); then
         info "systemctl daemon-reload & enable ${default_env_values['AGENT_NAME']}"
         info "Run manually!!! : systemctl start ${default_env_values['AGENT_NAME']}"
     else
-        info "sudo systemctl start ${default_env_values['AGENT_NAME']}"
-        sudo systemctl start "${default_env_values['AGENT_NAME']}"
+        info "run_sudo systemctl start ${default_env_values['AGENT_NAME']}"
+        run_sudo systemctl start "${default_env_values['AGENT_NAME']}"
     fi
 
 }
@@ -1385,6 +1685,13 @@ set_vars_for_env(){
 }
 
 install_type(){
+    if [ "${NON_INTERACTIVE}" = "1" ]; then
+        if ! echo "${INSTALL_TYPE}" | grep -q -e "^[1234]$"; then
+            error "Invalid install type: ${INSTALL_TYPE}"
+        fi
+        return
+    fi
+
     while true; do
         echo "${interactive_llist['INSTALL_TYPE_MSG0']}"
         echo "${interactive_llist['INSTALL_TYPE_MSG1']}"
@@ -1574,24 +1881,28 @@ create_envfile(){
 }
 
 uninstall_type(){
-    while true; do
-        echo "${interactive_llist['UNINSTALL_TYPE_MSG0']}"
-        echo "${interactive_llist['UNINSTALL_TYPE_MSG1']}"
-        echo "${interactive_llist['UNINSTALL_TYPE_MSG2']}"
-        echo "${interactive_llist['UNINSTALL_TYPE_MSG3']}"
-        echo "${interactive_llist['UNINSTALL_TYPE_MSGq']}"
-        read -r -p  "${interactive_llist['UNINSTALL_TYPE_MSGr']}" confirm
+    if [ "${NON_INTERACTIVE}" = "1" ]; then
+        confirm=${UNINSTALL_TYPE}
+    else
+        while true; do
+            echo "${interactive_llist['UNINSTALL_TYPE_MSG0']}"
+            echo "${interactive_llist['UNINSTALL_TYPE_MSG1']}"
+            echo "${interactive_llist['UNINSTALL_TYPE_MSG2']}"
+            echo "${interactive_llist['UNINSTALL_TYPE_MSG3']}"
+            echo "${interactive_llist['UNINSTALL_TYPE_MSGq']}"
+            read -r -p  "${interactive_llist['UNINSTALL_TYPE_MSGr']}" confirm
 
-        if echo $confirm | grep -q -e "[123]"; then
-            INSTALL_TYPE=$confirm
-            break
-        elif echo $confirm | grep -q -e "[q]"; then
-            exit 0
-        else
-            echo "${interactive_llist['INVALID_VALUE_IT']}"
-            continue
-        fi
-    done
+            if echo $confirm | grep -q -e "[123]"; then
+                INSTALL_TYPE=$confirm
+                break
+            elif echo $confirm | grep -q -e "[q]"; then
+                exit 0
+            else
+                echo "${interactive_llist['INVALID_VALUE_IT']}"
+                continue
+            fi
+        done
+    fi
 
     UNINSTALL_TYPE=$confirm
     SERVICE_ID=""
@@ -1620,14 +1931,25 @@ uninstall_type(){
 
     for env_key in "${additional_uninstall_keys[@]}"; do
         while true; do
-            read -r -p "${interactive_llist[${env_key}]}: " tmp_value
-            echo ""
+            if [ "${NON_INTERACTIVE}" = "1" ]; then
+                tmp_value="${default_env_values[${env_key}]}"
+            else
+                read -r -p "${interactive_llist[${env_key}]}: " tmp_value
+                echo ""
+            fi
+
             if [ "$tmp_value" = "" ]; then
+                if [ "${NON_INTERACTIVE}" = "1" ]; then
+                    error "Missing required option value for ${env_key}."
+                fi
                 echo "Invalid value!!"
                 continue
             else
                 if [ ${env_key} = "STORAGE_PATH" ]; then
-                    if [ ! -d $tmp_value ]; then
+                    if [ ! -d "$tmp_value" ]; then
+                        if [ "${NON_INTERACTIVE}" = "1" ]; then
+                            error "not found storage path: ${tmp_value}"
+                        fi
                         echo "not found storage path: ${tmp_value}"
                         continue
                     fi
@@ -1638,6 +1960,9 @@ uninstall_type(){
                         chk_service=`ls /usr/lib/systemd/system/ | grep "ita-ag-ansible-execution-" | grep ${tmp_value} | wc -l`
                     fi
                     if [ ${chk_service} -eq 0 ]; then
+                        if [ "${NON_INTERACTIVE}" = "1" ]; then
+                            error "not found service id: ${tmp_value}"
+                        fi
                         echo "not found service id: ${tmp_value}"
                         continue
                     fi
@@ -1684,14 +2009,14 @@ uninstall_service(){
         info "systemctl --user daemon-reload"
         systemctl --user daemon-reload
     else
-        info "sudo systemctl stop ${SERVICE_NAME}"
-        sudo systemctl stop ${SERVICE_NAME}
-        info "sudo systemctl disable ${SERVICE_NAME}"
-        sudo systemctl disable ${SERVICE_NAME}
-        info "sudo rm /usr/lib/systemd/system/${SERVICE_NAME}.service"
-        sudo rm /usr/lib/systemd/system/${SERVICE_NAME}.service
-        info "sudo systemctl daemon-reload"
-        sudo systemctl daemon-reload
+        info "run_sudo systemctl stop ${SERVICE_NAME}"
+        run_sudo systemctl stop ${SERVICE_NAME}
+        info "run_sudo systemctl disable ${SERVICE_NAME}"
+        run_sudo systemctl disable ${SERVICE_NAME}
+        info "run_sudo rm /usr/lib/systemd/system/${SERVICE_NAME}.service"
+        run_sudo rm /usr/lib/systemd/system/${SERVICE_NAME}.service
+        info "run_sudo systemctl daemon-reload"
+        run_sudo systemctl daemon-reload
     fi
 }
 
@@ -1712,7 +2037,7 @@ uninstall_data(){
         rm -rfd  ${STORAGE_PATH}
     else
         info "rm -rd ${STORAGE_PATH}"
-        sudo rm -rfd  ${STORAGE_PATH}
+        run_sudo rm -rfd  ${STORAGE_PATH}
     fi
 }
 #########################################
@@ -1723,47 +2048,38 @@ main() {
     check_args "$#"
 
     SUB_COMMAND=$1
+    shift
+
+    if [ "${SUB_COMMAND}" = "--help" ] || [ "${SUB_COMMAND}" = "-h" ]; then
+        print_usage
+        exit 0
+    fi
+
+    parse_command_options "${SUB_COMMAND}" "$@"
+    init_non_interactive_sudo
+
     EXECUTE_PATH=${HOME}
     WORK_DIR="${EXECUTE_PATH}/_ag_install_work"
     ENV_TMP_PATH="${WORK_DIR}/.env"
-    if [ "$#" -ge 2 ]; then
-        SETUP_VERSION=$2
-    fi
 
     get_system_info
     # check install/uninstall
     case "$SUB_COMMAND" in
         install)
-            shift
             check_requirement
             install_type
-            install "$@"
+            install
             break
             ;;
         uninstall)
-            shift
             uninstall_type
-            uninstall "$@"
+            uninstall
             break
             ;;
         *)
-            cat <<'_EOF_'
-
-Usage:
-  sh <(curl -Ssf https://ita.exastro.org/setup) COMMAND [options]
-     or
-  setup.sh COMMAND [options]
-
-Commands:
-  install     Install Ansible Execution Agent
-        1: Create .env & Install & Service Register, Start
-        2: Create .env & Service Register, Start
-        3: Create .env & Service Register, Start
-  uninstall   Uninstall Ansible Execution Agent
-        1: Uninstall Service & Delete Data
-        2: Uninstall Service
-        3: Delete Data
-_EOF_
+            echo "Error: unknown command '${SUB_COMMAND}'"
+            echo "Usage: setup.sh <install|uninstall> [options]"
+            echo "Try 'setup.sh --help' for more information."
             exit 2
             ;;
     esac

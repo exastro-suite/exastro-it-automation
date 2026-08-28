@@ -29,7 +29,7 @@ const fn = ( function() {
     'use strict';
 
     // バージョン
-    const version = '2.8.0';
+    const version = '2.9.0';
 
     // AbortController
     const controller = new AbortController();
@@ -1108,7 +1108,6 @@ download: async function( type, data, fileName = 'noname') {
 fileSelect: function( type = 'base64', limitFileSize, accept ){
     return new Promise( function( resolve, reject ) {
         const file = document.createElement('input');
-        let cancelFlag = true;
 
         file.type = 'file';
         if ( accept !== undefined ) file.accept = accept;
@@ -1117,7 +1116,11 @@ fileSelect: function( type = 'base64', limitFileSize, accept ){
             const file = this.files[0],
                   reader = new FileReader();
 
-            cancelFlag = false;
+            // ファイルが選択されていない場合はキャンセル扱い
+            if ( !file ) {
+                reject('cancel');
+                return false;
+            }
 
             if ( limitFileSize && file.size > limitFileSize ) {
                 reject( getMessage.FTE10060( file.size, limitFileSize ) );
@@ -1170,15 +1173,12 @@ fileSelect: function( type = 'base64', limitFileSize, accept ){
             }
         });
 
-        file.click();
 
-        // bodyフォーカスでダイアログを閉じたか判定
-        document.body.onfocus = function(){
-            setTimeout( function(){
-                if ( cancelFlag ) reject('cancel');
-                document.body.onfocus = null;
-            }, 1000 );
-        };
+        file.addEventListener('cancel', function(){
+            reject('cancel');
+        });
+
+        file.click();
     });
 },
 /*
@@ -2056,12 +2056,17 @@ html: {
                     + `<div class="inputTextWidthAdjustmentText">${value}</div>`
                 + `</div>`;
             }
-        } else {
+        } else if ( option.textarea === true ) {
             input += `<div class="textareaAdjustmentWrap inputPasswordTextareaAdjustmentWrap">`
                 + `<textarea spellcheck="false" wrap="soft" ${attr.join(' ')}>${value}</textarea>`
                 + `<div class="mask textareaAdjustmentText textareaWidthAdjustmentText">${value}</div>`
                 + `<div class="mask textareaAdjustmentText textareaHeightAdjustmentText">${value}</div>`
             + `</div>`
+        } else {
+            input = ``
+                + `<div class="inputTextareaSizingWrap">`
+                    + `<textarea spellcheck="false" wrap="soft" ${attr.join(' ')}>${value}</textarea>`
+                + `</div>`;
         }
 
 
@@ -2170,22 +2175,27 @@ html: {
             + `<div class="inputButtonButtonWrap">${cmn.html.iconButton( button.icon, button.element, button.className, button.attr, button.toggle )}</div>`
         + `</div>`;
     },
-    textarea: function( className, value, name, attrs = {}, widthAdjustmentFlag ) {
+    textarea: function( className, value, name, attrs = {}, adjustmentFlag ) {
         const attr = inputCommon( null, name, attrs );
 
         className = classNameCheck( className, 'textarea input');
-        if ( widthAdjustmentFlag ) className.push('textareaAdjustment')
+        if ( adjustmentFlag && adjustmentFlag !== 'sizing') className.push('textareaAdjustment')
         attr.push(`class="${className.join(' ')}"` );
 
-        if ( widthAdjustmentFlag ) {
+        if ( adjustmentFlag === 'sizing') {
+            return ``
+            + `<div class="inputTextareaSizingWrap">`
+                + `<textarea spellcheck="false" wrap="soft" ${attr.join(' ')}>${value}</textarea>`
+            + `</div>`;
+        } else if ( adjustmentFlag ) {
             return ``
             + `<div class="textareaAdjustmentWrap">`
-                + `<textarea wrap="soft" ${attr.join(' ')}>${value}</textarea>`
+                + `<textarea spellcheck="false" wrap="soft" ${attr.join(' ')}>${value}</textarea>`
                 + `<div class="textareaAdjustmentText textareaWidthAdjustmentText">${value}</div>`
                 + `<div class="textareaAdjustmentText textareaHeightAdjustmentText">${value}</div>`
             + `</div>`
         } else {
-            return `<textarea wrap="off" ${attr.join(' ')}>${value}</textarea>`;
+            return `<textarea spellcheck="false" wrap="off" ${attr.join(' ')}>${value}</textarea>`;
         }
     },
     check: function( className, value, name, id, attrs = {}) {
@@ -3018,6 +3028,9 @@ setCommonEvents: function() {
                 $input.attr('type', 'password');
             }
         }
+        if ( this.classList.contains('inputPasswordTextarea') ) {
+            $input.input();
+        }
     });
 
     // パスワードテキストエリアの入力をinputに反映
@@ -3039,13 +3052,23 @@ setCommonEvents: function() {
     });
 
     // パスワード候補を初回クリックで出さないようにする
-    $body.on('pointerdown', '.inputPassword', function( e ){
+    $body.on('pointerdown.inputPassword', '.inputPassword', function( e ){
+        // inputPasswordTextarea、すでにアクティブ、typeをパスワードからテキスト変更時はスルー
+        if (
+            this.classList.contains('inputPasswordTextarea') ||
+            document.activeElement === this ||
+            this.type === 'text'
+        ) return;
         e.preventDefault();
-        const $input = $( this );
-
-        setTimeout( function(){
-            $input.focus();
+        setTimeout( () => {
+            this.focus();
         }, 1 );
+    });
+    // フォーカスが外れたら選択状態を解除
+    $body.on('blur.inputPassword', '.inputPassword', function(){
+        if ( this.setSelectionRange ) {
+            this.setSelectionRange(0, 0);
+        }
     });
 
     // 切替ボタン
@@ -3198,6 +3221,9 @@ textareaAdjustment: function() {
           $parent = $text.parent('.textareaAdjustmentWrap'),
           $width = $parent.find('.textareaWidthAdjustmentText'),
           $height = $parent.find('.textareaHeightAdjustmentText');
+
+    // textareaAdjustmentWrapが無ければ停止
+    if ( $parent.length === 0 ) return;
 
     // 空の場合、高さを求めるためダミー文字を入れる
     let value = fn.escape( $text.val() ).replace(/\n/g, '<br>').replace(/<br>$/g, '<br>!');
@@ -3483,6 +3509,16 @@ executeModalOpen: function( modalId, menu, executeConfig ) {
 
             // オペレーション選択
             modalInstance[ modalId ].$.dbody.find('.executeOperetionSelectButton').on('click', function(){
+                const operationId = modalInstance[ modalId ].$.dbody.find('.executeOperetionId').text();
+                const operationName = modalInstance[ modalId ].$.dbody.find('.executeOperetionName').text();
+                if ( operationId && operationName ) {
+                    executeConfig.operation.select = [{
+                        id: operationId,
+                        name: operationName
+                    }];
+                } else {
+                    executeConfig.operation.select = null;
+                }
                 cmn.selectModalOpen( 'operation', getMessage.FTE10050, menu, executeConfig.operation ).then(function( selectResult ){
                     if ( selectResult && selectResult[0] ) {
                         modalInstance[ modalId ].$.dbody.find('.executeOperetionId').text( selectResult[0].id );
@@ -4430,16 +4466,59 @@ base64ToFile: function( base64, fileName ) {
    ファイルタイプ拡張子
 ##################################################
 */
+fileTypeCheckExtensions: {
+    // 画像
+    image: new Set(
+        ['gif','jpe','jpg','jpeg','png','svg','webp','bmp','ico','avif']
+    ),
+    // テキスト
+    text: new Set(
+        ['txt','yaml','yml','json','hc','hcl','tf','sentinel','py','j2','css','html','htm','js']
+    ),
+    // 未対応
+    unsupported: new Set([
+        // --- 画像 / グラフィック（ブラウザ表示できないもののみ） ---
+        'tif', 'tiff', 'heic', 'heif', 'psd', 'psb', 'dds', 'tga',
+        'jp2', 'j2k', 'exr', 'hdr', 'icns',
+        // カメラRAW
+        'raw', 'cr2', 'cr3', 'nef', 'arw', 'orf', 'rw2', 'dng', 'raf', 'sr2',
+
+        // --- ベクター / DTP ---
+        'ai', 'pdf', 'eps', 'ps', 'indd', 'idml', 'cdr', 'sketch', 'fig', 'xd', 'afdesign', 'afphoto',
+
+        // --- Office / ドキュメント ---
+        'xls', 'xlsx', 'xlsm', 'xlsb', 'doc', 'docx', 'docm',
+        'ppt', 'pptx', 'pptm', 'vsd', 'vsdx', 'one', 'pub',
+        'odt', 'ods', 'odp', 'odg', 'rtf',
+
+        // --- 圧縮 / アーカイブ ---
+        'zip', 'rar', '7z', 'gz', 'tgz', 'bz2', 'xz', 'lz', 'lzma', 'zst',
+        'cab', 'ar', 'iso', 'dmg', 'jar', 'war', 'apk', 'aab', 'nupkg',
+
+        // --- 実行 / バイナリ / ライブラリ ---
+        'exe', 'dll', 'so', 'dylib', 'bin', 'o', 'a', 'lib', 'obj',
+        'class', 'wasm', 'msi', 'app', 'deb', 'rpm', 'pyc', 'pyo',
+
+        // --- 音声 ---
+        'mp3', 'wav', 'flac', 'aac', 'ogg', 'oga', 'm4a', 'wma', 'aiff', 'opus', 'mid', 'midi',
+
+        // --- 動画 ---
+        'mp4', 'm4v', 'mov', 'avi', 'mkv', 'webm', 'wmv', 'flv', 'mpeg', 'mpg', '3gp', 'ts',
+
+        // --- フォント ---
+        'ttf', 'otf', 'woff', 'woff2', 'eot',
+
+        // --- DB / データ ---
+        'sqlite', 'sqlite3', 'db', 'mdb', 'accdb', 'dat', 'pak', 'bak',
+
+        // --- その他バイナリ ---
+        'pdb', 'swf', 'blend', 'fbx', 'glb', 'stl', 'unity3d', 'crx',
+    ])
+},
 fileTypeCheck: function( fileName ) {
     const extension = cmn.cv( fileName.split('.').pop(), '');
-
-    const fileTypes = {
-        image: ['gif','jpe','jpg','jpeg','png','svg','webp','bmp','ico'],
-        text: ['txt','yaml','yml','json','hc','hcl','tf','sentinel','py','j2','css','html','htm']
-    }
-
-    for ( const fileType in fileTypes ) {
-        if ( fileTypes[fileType].indexOf( extension ) !== -1 ) {
+    for ( const fileType in cmn.fileTypeCheckExtensions ) {
+        if ( cmn.fileTypeCheckExtensions[fileType].has( extension ) ) {
             return fileType;
         }
     }
@@ -4513,6 +4592,97 @@ fileModeCheck: function( fileName ) {
         }
     }
     return 'text';
+},
+/*
+##################################################
+   テキストファイル判定
+##################################################
+*/
+isProbablyText: function(buffer, sampleSize = 8192) {
+    const length = Math.min(buffer.byteLength, sampleSize);
+    const bytes = new Uint8Array(buffer, 0, length);
+
+    // 空ファイルはテキストとして扱う
+    if ( bytes.length === 0) return true;
+
+    // BOM
+    if (
+        bytes.length >= 3 &&
+        bytes[0] === 0xef &&
+        bytes[1] === 0xbb &&
+        bytes[2] === 0xbf
+    ) {
+        return true;
+    }
+
+    if (
+        bytes.length >= 2 &&
+        (
+            (bytes[0] === 0xff && bytes[1] === 0xfe) ||
+            (bytes[0] === 0xfe && bytes[1] === 0xff)
+        )
+    ) {
+        return true;
+    }
+
+    // NULバイトがあればバイナリ
+    if ( bytes.includes(0x00) ) return false;
+
+    // UTF-8として検証
+    try {
+        const decoder = new TextDecoder('utf-8', { fatal: true });
+
+        // サンプル途中でUTF-8文字が切れることによる誤判定を防ぐ
+        // （呼び出し元が file.slice() でサンプルを切り出すため、末尾は常に途中で切れている可能性がある）
+        const text = decoder.decode(bytes, { stream: true });
+
+        let controlCount = 0;
+        let characterCount = 0;
+
+        for (const character of text) {
+            characterCount++;
+
+            const codePoint = character.codePointAt(0);
+
+            // タブ、LF、CRは許可
+            if (
+                codePoint !== 0x09 &&
+                codePoint !== 0x0a &&
+                codePoint !== 0x0d &&
+                (
+                    codePoint < 0x20 ||
+                    (codePoint >= 0x7f && codePoint <= 0x9f)
+                )
+            ) {
+                controlCount++;
+            }
+        }
+
+        // UTF-8として有効でも制御文字だらけならバイナリ
+        return controlCount / Math.max(characterCount, 1) < 0.01;
+    } catch {
+        // UTF-8ではない
+    }
+
+    // UTF-8でない場合はASCIIテキストらしさを確認
+    let printableCount = 0;
+
+    for ( const byte of bytes ) {
+        if (
+            byte === 0x09 || // TAB
+            byte === 0x0a || // LF
+            byte === 0x0d || // CR
+            (byte >= 0x20 && byte <= 0x7e)
+        ) {
+            printableCount++;
+        }
+    }
+
+    // 95%以上がASCII表示可能文字ならテキスト
+    return printableCount / bytes.length >= 0.95;
+},
+sampleFromFile: async function(file, sampleSize = 8192) {
+  return file.slice(0, sampleSize).arrayBuffer()
 },
 /*
 ##################################################
@@ -4595,12 +4765,18 @@ fileOrBase64ToBase64: function( data ) {
 ##################################################
 */
 fileEditor: function( fileData, fileName, mode = 'edit', option = {} ) {
-    return new Promise( function( resolve ){
-        const fileType = cmn.fileTypeCheck( fileName );
+    return new Promise( async function( resolve ){
+        // ファイルタイプ判定
+        let fileType = cmn.fileTypeCheck( fileName );
+        // 拡張子で判定できなかった場合、テキストとして読み込めるかチェックする
+        if ( fileData && fileType === false && fn.isProbablyText(await fn.sampleFromFile(fileData)) ) {
+            fileType = 'text';
+        }
+        // どのモードでエディターを開くか
         let fileMode = cmn.fileModeCheck( fileName );
 
         // モーダル設定
-        const height = ( mode === 'edit' && fileType === false )? 'auto': '100%';
+        const height = ( fileType === false || fileType === 'unsupported' )? 'auto': '100%';
         const config = {
             position: 'center',
             width: '960px',
@@ -4680,6 +4856,14 @@ fileEditor: function( fileData, fileName, mode = 'edit', option = {} ) {
                 html += `<div id="aceEditor" class="editorBody"></div>`;
             } else if ( fileType === 'image') {
                 html += `<div class="editorImageBody editorBody"><img class="editorImage"></div>`;
+            } else {
+                let unsupportedMessege = '';
+                if ( mode === 'edit') {
+                    unsupportedMessege = getMessage.FTE00193;
+                } else {
+                    unsupportedMessege = getMessage.FTE00194;
+                }
+                html += `<div class="dialogBody"><div class="commonSection"><div class="commonParagraph">${unsupportedMessege}</div></div></div>`;
             }
             return `<div class="fileEditor">${html}</div>`;
         };
@@ -4802,6 +4986,15 @@ fileEditor: function( fileData, fileName, mode = 'edit', option = {} ) {
                         file: cmn.textToFile( value, fileName )
                     });
                 };
+
+                // 開発サポート
+                const aiEnabled = option.aiAssistantEnabled;
+                if ( typeof DevelopmentSupport === 'function' && mode === 'edit' && aiEnabled) {
+                    const support = new DevelopmentSupport();
+                    support.setup( modal, aceEditor );
+                } else {
+                    console.warn('DevelopmentSupport is not defined.');
+                }
             });
         } else if ( fileType === 'image') {
             if ( fileData === null ) fileData = '';

@@ -14,10 +14,8 @@
 
 import pytest
 from unittest.mock import MagicMock, patch
-from ..controllers.oase_controller import add_notification_queue
+from controllers.oase_controller import add_notification_queue
 from common_libs.notification.sub_classes.oase import OASENotificationType
-
-# Import the function to test using relative import
 
 
 class TestAddNotificationQueue:
@@ -29,8 +27,9 @@ class TestAddNotificationQueue:
         self.mock_oase_bulksend = mocker.patch('common_libs.notification.sub_classes.oase.OASE.bulksend')
 
         # Mock g object and its methods
-        self.mock_g = mocker.patch('controllers.oase_controller.g')
+        self.mock_g = MagicMock()
         self.mock_g.appmsg.get_log_message.return_value = "Mock log message"
+        mocker.patch('controllers.oase_controller.g', new=self.mock_g)
 
         # Mock stacktrace function
         self.mock_stacktrace = mocker.patch('controllers.oase_controller.stacktrace')
@@ -88,8 +87,8 @@ class TestAddNotificationQueue:
         assert args2[1] == self.duplicate_list
         assert args2[2]["notification_type"] == OASENotificationType.DUPLICATE
 
-        # Verify logs were called
-        assert self.mock_g.applogger.info.call_count == 2
+        # Verify logs were called (Start/End for each list)
+        assert self.mock_g.applogger.info.call_count == 4
 
     def test_only_receive_list(self, setup):
         """Test when only receive list has data"""
@@ -113,8 +112,8 @@ class TestAddNotificationQueue:
         assert args[1] == self.receive_list
         assert args[2]["notification_type"] == OASENotificationType.RECEIVE
 
-        # Verify log was called once
-        assert self.mock_g.applogger.info.call_count == 1
+        # Verify logs were called (Start/End)
+        assert self.mock_g.applogger.info.call_count == 2
 
     def test_only_duplicate_list(self, setup):
         """Test when only duplicate list has data"""
@@ -138,8 +137,8 @@ class TestAddNotificationQueue:
         assert args[1] == self.duplicate_list
         assert args[2]["notification_type"] == OASENotificationType.DUPLICATE
 
-        # Verify log was called once
-        assert self.mock_g.applogger.info.call_count == 1
+        # Verify logs were called (Start/End)
+        assert self.mock_g.applogger.info.call_count == 2
 
     def test_empty_lists(self, setup):
         """Test when both lists are empty"""
@@ -170,13 +169,13 @@ class TestAddNotificationQueue:
             self.mock_wsdb, self.receive_list, self.duplicate_list
         )
 
-        # Assert
-        assert self.mock_oase_bulksend.call_count == 1
+        # Assert (each list is processed in its own try block, so both raise)
+        assert self.mock_oase_bulksend.call_count == 2
         assert receive_ret == {}
         assert duplicate_ret == {}
 
-        # Verify error logs were called
-        assert self.mock_g.applogger.error.call_count == 2
+        # Verify error logs were called (stacktrace + message, for each list)
+        assert self.mock_g.applogger.error.call_count == 4
         assert self.mock_stacktrace.called
 
         # Verify the second error log has the correct arguments

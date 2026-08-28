@@ -762,6 +762,58 @@ def create_file_path(connexion_request, tmp_path, execution_no):
     return True, parameters, file_paths
 
 
+def create_file_path_aap(connexion_request, tmp_path, execution_no, driver_id, para_id):
+    """
+        base64をtarファイルに変換する
+        ARGS:
+            connexion_request: connexion.request
+            tmp_path: ファイル格納先
+            execution_no: 作業番号
+            driver_id: DriverID(legacy,pioneer,legacy_role)
+            para_id: secrets.token_hex(4)→1接続で共通利用
+        RETRUN:
+            bool, parameters, file_paths
+    """
+
+    parameters = []
+    file_paths = {}
+
+    # 並列で実行される可能性があるため、/tmp配下の使用は重複しないようにsecrets.token_hex(4)使用
+    tmp_path = f"{tmp_path}/driver/ansible/{driver_id}/{execution_no}_{para_id}"  # noqa: F405
+
+    if connexion_request.files:
+        # ファイルが保存できる容量があるか確認
+        file_size = connexion_request.headers.get("Content-Length")
+        file_size_str = f"{int(file_size):,} byte(s)"
+        storage = storage_base()  # noqa: F405
+        can_save, free_space = storage.validate_disk_space(file_size)
+        if can_save is False:
+            status_code = "499-00222"
+            log_msg_args = [file_size_str]
+            api_msg_args = [file_size_str]
+            raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
+
+        for _file_key in connexion_request.files:
+            _file_data = connexion_request.files[_file_key]
+            file_name = _file_data.filename
+            retry_makedirs(tmp_path)  # noqa: F405
+            file_path = os.path.join(tmp_path, file_name)
+            file_paths[_file_key] = file_path
+
+            f = open(file_path, 'wb')
+            while True:
+                # fileの読み込み
+                buf = _file_data.stream.read(1000000)
+                if len(buf) == 0:
+                    break
+                # yield buf
+                # fileの書き込み
+                f.write(buf)
+            f.close()
+
+    return True, parameters, file_paths
+
+
 @file_read_retry  # noqa: F405
 def tmp_copy_subprocess_run(cmd):
     try:
@@ -825,6 +877,36 @@ def check_driver(driver_id):
     return driver_mode_id, t_exec_sts_inst
 
 
+def check_driver_from_executionno(objdbca, execution_no):
+    
+    result = False
+    t_exec_sts_inst = None
+    driver_name = None
+
+    condition = "WHERE EXECUTION_NO = %s "
+    records = objdbca.table_select('V_ANSC_EXEC_STS_INST', condition, [execution_no])
+
+    if len(records) == 1:
+        driver_id = records[0].get("DRIVER_ID")
+        if driver_id == "L":
+            result = True
+            t_exec_sts_inst = AnscConst.DF_ANSL_EXEC_STS_INST
+            driver_name = "legacy"
+        elif driver_id == "P":
+            result = True
+            t_exec_sts_inst = AnscConst.DF_ANSP_EXEC_STS_INST
+            driver_name = "pioneer"
+        elif driver_id == "R":
+            result = True
+            t_exec_sts_inst = AnscConst.DF_ANSR_EXEC_STS_INST
+            driver_name = "legacy_role"
+        return result, t_exec_sts_inst, driver_name
+
+    # 作業実行Noが無い、又は複数あるなら不正とみなす
+    else:
+        return result, t_exec_sts_inst, driver_name
+
+
 def get_execution_limit(organization_id, execution_limit):
     # システム全体/organization毎の同時実行数取得
     all_execution_limit = get_all_execution_limit("ita.system.ansible.execution_limit")  # noqa: F405
@@ -835,3 +917,149 @@ def get_execution_limit(organization_id, execution_limit):
     # 未実行作業の取得数とリソースプランの同時実行数を比較
     _execution_limit = org_execution_limit if org_execution_limit and org_execution_limit < all_execution_limit else all_execution_limit
     return min(execution_limit if execution_limit else _execution_limit, _execution_limit)
+
+
+def get_populated_data_path_aap(objdbca, organization_id, workspace_id, execution_no, t_exec_sts_inst, driver_id):
+    """
+        投入データ取得(AAPonCloud用)
+        ARGS:
+            organization_id: OrganizationID
+            workspace_id: WorkspaceID
+            execution_no: ExecutionNo
+            t_exec_sts_inst: 各Driverの作業一覧テーブル
+            driver_id: DriverID(legacy,pioneer,legacy_role)
+        RETRUN:
+            statusCode, {}, msg
+    """
+
+    conductor_instance_no = None
+
+    # 作業インスタンス取得
+    where = 'WHERE DISUSE_FLAG = %s AND EXECUTION_NO = %s'
+    parameter = ['0', execution_no]
+    ret = objdbca.table_select(t_exec_sts_inst, where, parameter)
+    if ret and len(ret) == 1:
+        conductor_instance_no = ret[0].get("CONDUCTOR_INSTANCE_NO", None)
+
+    # パス定義
+    # 並列で実行される可能性があるため、/tmp配下の使用は重複しないようにsecrets.token_hex(4)使用
+    tmp_base_path = f"/tmp/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}_{secrets.token_hex(4)}/"  # noqa: F405
+    conductor_dir_path = os.path.join(os.environ.get("STORAGEPATH"), organization_id, workspace_id, "driver", "conductor", conductor_instance_no) if conductor_instance_no else None
+    tmp_conductor_dir_path = f"{tmp_base_path}/conductor/"
+    gztar_path = f"{tmp_base_path}/{execution_no}.tar.gz"
+
+    try:
+        # tmp_pathの初期化
+        retry_rmtree(tmp_base_path)  # noqa: F405
+        
+        # __conductor_workflowdir__の準備
+        if conductor_instance_no:
+            # Conductorからの実行でも初回はディレクトリが無いので空作成
+            retry_makedirs(conductor_dir_path)  # noqa: F405
+            retry_chmod(conductor_dir_path, 0o777)  # noqa: F405
+            retry_copytree(conductor_dir_path, tmp_conductor_dir_path)  # noqa: F405
+        else:
+            # Conductor経由の実行でなければ処理自体が不要
+            status_code = "499-00920"
+            log_msg_args = [execution_no]
+            api_msg_args = [execution_no]
+            raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
+
+        # tar.gzで固める
+        @file_read_retry  # noqa: F405
+        def tarfile_gztar_path():
+            try:
+                os.listdir(os.path.dirname(gztar_path.rstrip('/')))  # NFSストレージ対策：属性キャッシュ更新を試みる
+                with tarfile.open(gztar_path, "w:gz") as tar:
+                    tar.add(tmp_conductor_dir_path, arcname=".")
+                g.applogger.debug(f"tarfile.open({gztar_path}, 'w:gz'):  tar.add({tmp_conductor_dir_path})")
+                return True
+            except Exception as e:
+                g.applogger.info("tarfile_gztar_path failed. file_path={}".format(gztar_path))
+                t = traceback.format_exc()
+                g.applogger.info(arrange_stacktrace_format(t))  # noqa: F405
+                raise e
+        tarfile_gztar_path()
+    except Exception:
+        raise
+    finally:
+        # tmp_conductor_dir_path の初期化
+        # tmp_pathは @api_filter_download_temporary_file で削除する
+        retry_rmtree(tmp_conductor_dir_path)  # noqa: F405
+
+        # tar.gz 作成エラー確認用（実行エージェントのものを引継ぎ）
+        try:
+            with tarfile.open(gztar_path, 'r:gz') as tar:
+                g.applogger.debug(f"{tar.getmembers()=}")
+        except Exception as e:
+            print_exception_msg(e)  # noqa: F405
+        tmp_copy_subprocess_run("id")
+
+    return gztar_path
+
+
+def update_result_aap(objdbca, organization_id, workspace_id, execution_no, file_path, t_exec_sts_inst, driver_id, para_id):
+    """
+        通知されたファイルの更新(AAPonCloud用)
+        ARGS:
+            organization_id:OrganizationID
+            workspace_id: WorkspaceID
+            execution_no: ExecutionNo
+            file_path: file_key, record_file_paths(/tmp/{org}/{ws}/driver/ansible/{driver_id}/{execution_no}/XX.tar.fz)
+            t_exec_sts_inst: 各Driverの作業一覧テーブル
+            driver_id: DriverID(legacy,pioneer,legacy_role)
+            para_id: secrets.token_hex(4)→1接続で共通利用
+        RETRUN:
+            statusCode, {}, msg
+    """
+
+    conductor_instance_no = None
+
+    # 作業インスタンス取得
+    where = 'WHERE DISUSE_FLAG = %s AND EXECUTION_NO = %s'
+    parameter = ['0', execution_no]
+    ret = objdbca.table_select(t_exec_sts_inst, where, parameter)
+    if ret and len(ret) == 1:
+        conductor_instance_no = ret[0].get("CONDUCTOR_INSTANCE_NO", None)
+
+    # パス定義
+    # 並列で実行される可能性があるため、/tmp配下の使用は重複しないようにsecrets.token_hex(4)使用
+    out_directory_path = os.path.join(os.environ.get("STORAGEPATH"), organization_id, workspace_id, "driver", "ansible", driver_id, execution_no, "out")
+    in_directory_path = os.path.join(os.environ.get("STORAGEPATH"), organization_id, workspace_id, "driver", "ansible", driver_id, execution_no, "in")
+    tmp_path = f"/tmp/{organization_id}/{workspace_id}/driver/ansible/{driver_id}/{execution_no}_{para_id}/"  # noqa: F405
+
+    if conductor_instance_no:
+        conductor_directory_path = os.path.join(os.environ.get("STORAGEPATH"), organization_id, workspace_id, "driver", "conductor", conductor_instance_no)
+
+    try:
+        g.applogger.info(f"{tmp_path=}")
+        # file_pathの例
+        # {'conductor_tar_data': '/tmp/org1/ws2/driver/ansible/legacy/2ed69707-d211-4bb4-9c65-ec0165efddac/conductor.tar.gz',
+        #  'out_tar_data': '/tmp/org1/ws2/driver/ansible/legacy/2ed69707-d211-4bb4-9c65-ec0165efddac/out.tar.gz',
+        #  'parameters_file_tar_data': '/tmp/org1/ws2/driver/ansible/legacy/2ed69707-d211-4bb4-9c65-ec0165efddac/parameters_file.tar.gz',
+        #  'parameters_tar_data': '/tmp/org1/ws2/driver/ansible/legacy/2ed69707-d211-4bb4-9c65-ec0165efddac/parameter.tar.gz'}
+        for file_key, record_file_paths in file_path.items():
+
+            retry_makedirs(tmp_path + file_key)  # noqa: F405
+            retry_extract(record_file_paths, tmp_path + file_key)  # noqa: F405
+
+            # outディレクトリ更新
+            if file_key == "out_tar_data":
+                retry_copytree(tmp_path + file_key, out_directory_path)  # noqa: F405
+            # in/_parametersディレクトリ更新
+            if file_key == "parameters_tar_data":
+                retry_copytree(tmp_path + file_key, in_directory_path + "/_parameters")  # noqa: F405
+            # in/_parameters_fileディレクトリ更新
+            if file_key == "parameters_file_tar_data":
+                retry_copytree(tmp_path + file_key, in_directory_path + "/_parameters_file")  # noqa: F405
+            # __conductor_workflowdir__ディレクトリ更新(Conductor経由の実行時のみ更新可能)
+            if file_key == "conductor_tar_data" and conductor_instance_no:
+                retry_copytree(tmp_path + file_key, conductor_directory_path)  # noqa: F405
+
+    except Exception as e:
+        print_exception_msg(e)  # noqa: F405
+        exception(e)
+    finally:
+        retry_rmtree(tmp_path)  # noqa: F405
+
+    return {}

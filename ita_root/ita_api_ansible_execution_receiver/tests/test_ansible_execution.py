@@ -275,6 +275,18 @@ def test_unexecuted_instance_no_body(app, mocker, mock_dbca):
     """
     bodyが空の場合の正常動作をテスト
     """
+    # mock_dbca の sql_execute をモック
+    mock_dbca.sql_execute.side_effect = [
+        # legacy
+        [
+            {'I_AG_EXECUTION_ENVIRONMENT_NAME': '~[Exastro standard] default', 'EXECUTION_NO': '00000000-0000-0000-0000-0000000000l1'},
+            {'I_AG_EXECUTION_ENVIRONMENT_NAME': '~[Exastro standard] default', 'EXECUTION_NO': '00000000-0000-0000-0000-0000000000l2'}
+        ],
+        # pioneer
+        [],
+        # legacy_role
+        []
+    ]
 
     # gオブジェクトの属性をモック
     mock_g = MagicMock()
@@ -290,7 +302,7 @@ def test_unexecuted_instance_no_body(app, mocker, mock_dbca):
 
     body = {}
     with app.test_request_context('/ansible/api/v1/agent/agent/'):
-        result = unexecuted_instance(mock_dbca, body)
+        result = unexecuted_instance(mock_dbca, "org1", body)
 
     # 期待される戻り値の検証
     assert len(result) == 2
@@ -309,8 +321,8 @@ def test_unexecuted_instance_no_body(app, mocker, mock_dbca):
 
     # メソッド呼び出しの検証
     mock_dbca.db_transaction_start.assert_called_once()
-    assert mock_dbca.table_select.call_count == 5
-    assert mock_dbca.sql_execute.call_count == 1
+    assert mock_dbca.table_select.call_count == 2
+    assert mock_dbca.sql_execute.call_count == 3
     assert mock_dbca.table_update.call_count == 2
     mock_dbca.db_transaction_end.assert_called_once_with(True)
 
@@ -319,6 +331,18 @@ def test_unexecuted_instance_with_env_names(app, mocker, mock_dbca):
     """
     特定のexecution_environment_namesが指定された場合の正常動作をテスト
     """
+    # mock_dbca の sql_execute をモック
+    mock_dbca.sql_execute.side_effect = [
+        # legacy
+        [
+            {'I_AG_EXECUTION_ENVIRONMENT_NAME': '~[Exastro standard] default', 'EXECUTION_NO': '00000000-0000-0000-0000-0000000000l1'},
+            {'I_AG_EXECUTION_ENVIRONMENT_NAME': '~[Exastro standard] default', 'EXECUTION_NO': '00000000-0000-0000-0000-0000000000l2'}
+        ],
+        # pioneer
+        [],
+        # legacy_role
+        []
+    ]
 
     # gオブジェクトの属性をモック
     mock_g = MagicMock()
@@ -352,14 +376,6 @@ def test_unexecuted_instance_with_env_names(app, mocker, mock_dbca):
     assert result[_execution_no]['anstwr_del_runtime_data'] == '1'
     assert result[_execution_no]['build_type'] == '2'
 
-    # table_selectの引数が正しいか検証
-    where_expected = 'WHERE DISUSE_FLAG=%s AND STATUS_ID = %s AND I_AG_EXECUTION_ENVIRONMENT_NAME IN (%s) ORDER BY TIME_REGISTER ASC  LIMIT %s'
-    parameter_expected = ['0', '11', execution_environment_name, 1]
-
-    # mock_dbca.table_select.assert_any_call("T_ANSL_EXEC_STS_INST", where_expected, parameter_expected)
-    # mock_dbca.table_select.assert_any_call("T_ANSP_EXEC_STS_INST", where_expected, parameter_expected)
-    mock_dbca.table_select.assert_any_call("T_ANSR_EXEC_STS_INST", where_expected, parameter_expected)
-
 
 @pytest.mark.parametrize(
     "execution_limit",
@@ -372,6 +388,7 @@ def test_unexecuted_instance_with_execution_limit(app, mocker, mock_dbca, execut
     """
     execution_limitが指定された場合の正常動作をテスト
     """
+    # mock_dbca を再設定
     mock_dbca.table_select.side_effect = [
         # T_ANSC_IF_INFO の戻り値
         [
@@ -413,48 +430,17 @@ def test_unexecuted_instance_with_execution_limit(app, mocker, mock_dbca, execut
                 'DISUSE_FLAG': '0',
                 'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 8, 21, 11, 20, 14, 50376), 'LAST_UPDATE_USER': '1'}
         ],
-        # 最初のtable_select (legacy)
+    ]
+
+    mock_dbca.sql_execute.side_effect = [
+        # legacy
         [
-            {
-                'EXECUTION_NO': '00000000-0000-0000-0000-0000000000l1',
-                'RUN_MODE': '1',
-                'STATUS_ID': '11',
-                'EXEC_MODE': '3',
-                'ABORT_EXECUTE_FLAG': '0',
-                'CONDUCTOR_NAME': None,
-                'EXECUTION_USER': 'y y',
-                'TIME_REGISTER': datetime.datetime(2025, 8, 27, 14, 7, 11), 'MOVEMENT_ID': '00000000-0000-0000-0000-0000000000mv1',
-                'I_MOVEMENT_NAME': 'MV1',
-                'I_TIME_LIMIT': None,
-                'I_ANS_HOST_DESIGNATE_TYPE_ID': '1',
-                'I_ANS_PARALLEL_EXE': None,
-                'I_ANS_WINRM_ID': None,
-                'I_ANS_PLAYBOOK_HED_DEF': '- hosts: all\n  remote_user: "{{ __loginuser__ }}"\n  gather_facts: no',
-                'I_AG_EXECUTION_ENVIRONMENT_NAME': '~[Exastro standard] default',
-                'I_AG_BUILDER_OPTIONS': None,
-                'I_EXECUTION_ENVIRONMENT_NAME': None,
-                'I_ANSIBLE_CONFIG_FILE': None,
-                'OPERATION_ID': '00000000-0000-0000-0000-0000000000op1',
-                'I_OPERATION_NAME': 'OP_HOST',
-                'FILE_INPUT': 'InputData_00000000-0000-0000-0000-0000000000l1.zip',
-                'FILE_RESULT': None,
-                'TIME_BOOK': None,
-                'TIME_START': datetime.datetime(2025, 8, 27, 14, 7, 15), 'TIME_END': None,
-                'COLLECT_STATUS': None,
-                'COLLECT_LOG': None,
-                'CONDUCTOR_INSTANCE_NO': None,
-                'I_ANS_EXEC_OPTIONS': None,
-                'LOGFILELIST_JSON': None,
-                'MULTIPLELOG_MODE': None,
-                'EXECUTE_HOST_NAME': 'dd6e223f2be3',
-                'NOTE': None,
-                'DISUSE_FLAG': '0',
-                'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 8, 27, 14, 7, 15, 61810), 'LAST_UPDATE_USER': '20101'},
+            {'I_AG_EXECUTION_ENVIRONMENT_NAME': '~[Exastro standard] default', 'EXECUTION_NO': '00000000-0000-0000-0000-0000000000l1'}
         ],
-        # 2番目のtable_select (pioneer)
+        # pioneer
         [],
-        # 3番目のtable_select (legacy_role)
-        [],
+        # legacy_role
+        []
     ]
 
     # gオブジェクトの属性をモック
@@ -475,11 +461,6 @@ def test_unexecuted_instance_with_execution_limit(app, mocker, mock_dbca, execut
 
     # 期待される戻り値の検証
     assert len(result) == 1
-
-    # table_selectの引数が正しいか検証
-    where_expected = 'WHERE DISUSE_FLAG=%s AND STATUS_ID = %s ORDER BY TIME_REGISTER ASC  LIMIT %s'
-    parameter_expected = ['0', '11', execution_limit]
-    mock_dbca.table_select.assert_any_call("T_ANSL_EXEC_STS_INST", where_expected, parameter_expected)
 
 
 @pytest.mark.parametrize(
@@ -537,48 +518,17 @@ def test_unexecuted_instance_with_execution_limit_other(app, mocker, mock_dbca, 
                 'DISUSE_FLAG': '0',
                 'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 8, 21, 11, 20, 14, 50376), 'LAST_UPDATE_USER': '1'}
         ],
-        # 最初のtable_select (legacy)
+    ]
+
+    mock_dbca.sql_execute.side_effect = [
+        # legacy
         [
-            {
-                'EXECUTION_NO': '00000000-0000-0000-0000-0000000000l1',
-                'RUN_MODE': '1',
-                'STATUS_ID': '11',
-                'EXEC_MODE': '3',
-                'ABORT_EXECUTE_FLAG': '0',
-                'CONDUCTOR_NAME': None,
-                'EXECUTION_USER': 'y y',
-                'TIME_REGISTER': datetime.datetime(2025, 8, 27, 14, 7, 11), 'MOVEMENT_ID': '00000000-0000-0000-0000-0000000000mv1',
-                'I_MOVEMENT_NAME': 'MV1',
-                'I_TIME_LIMIT': None,
-                'I_ANS_HOST_DESIGNATE_TYPE_ID': '1',
-                'I_ANS_PARALLEL_EXE': None,
-                'I_ANS_WINRM_ID': None,
-                'I_ANS_PLAYBOOK_HED_DEF': '- hosts: all\n  remote_user: "{{ __loginuser__ }}"\n  gather_facts: no',
-                'I_AG_EXECUTION_ENVIRONMENT_NAME': '~[Exastro standard] default',
-                'I_AG_BUILDER_OPTIONS': None,
-                'I_EXECUTION_ENVIRONMENT_NAME': None,
-                'I_ANSIBLE_CONFIG_FILE': None,
-                'OPERATION_ID': '00000000-0000-0000-0000-0000000000op1',
-                'I_OPERATION_NAME': 'OP_HOST',
-                'FILE_INPUT': 'InputData_00000000-0000-0000-0000-0000000000l1.zip',
-                'FILE_RESULT': None,
-                'TIME_BOOK': None,
-                'TIME_START': datetime.datetime(2025, 8, 27, 14, 7, 15), 'TIME_END': None,
-                'COLLECT_STATUS': None,
-                'COLLECT_LOG': None,
-                'CONDUCTOR_INSTANCE_NO': None,
-                'I_ANS_EXEC_OPTIONS': None,
-                'LOGFILELIST_JSON': None,
-                'MULTIPLELOG_MODE': None,
-                'EXECUTE_HOST_NAME': 'dd6e223f2be3',
-                'NOTE': None,
-                'DISUSE_FLAG': '0',
-                'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 8, 27, 14, 7, 15, 61810), 'LAST_UPDATE_USER': '20101'},
+            {'I_AG_EXECUTION_ENVIRONMENT_NAME': '~[Exastro standard] default', 'EXECUTION_NO': '00000000-0000-0000-0000-0000000000l1'}
         ],
-        # 2番目のtable_select (pioneer)
+        # pioneer
         [],
-        # 3番目のtable_select (legacy_role)
-        [],
+        # legacy_role
+        []
     ]
 
     # gオブジェクトの属性をモック
@@ -599,11 +549,6 @@ def test_unexecuted_instance_with_execution_limit_other(app, mocker, mock_dbca, 
 
     # 期待される戻り値の検証
     assert len(result) == 1
-
-    # table_selectの引数が正しいか検証
-    where_expected = 'WHERE DISUSE_FLAG=%s AND STATUS_ID = %s ORDER BY TIME_REGISTER ASC  LIMIT %s'
-    parameter_expected = ['0', '11', 25]
-    mock_dbca.table_select.assert_any_call("T_ANSL_EXEC_STS_INST", where_expected, parameter_expected)
 
 
 def test_unexecuted_instance_with_env_names_and_execution_limit(app, mocker, mock_dbca):
@@ -651,48 +596,17 @@ def test_unexecuted_instance_with_env_names_and_execution_limit(app, mocker, moc
                 'DISUSE_FLAG': '0',
                 'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 8, 21, 11, 20, 14, 50376), 'LAST_UPDATE_USER': '1'}
         ],
-        # 最初のtable_select (legacy)
+    ]
+
+    mock_dbca.sql_execute.side_effect = [
+        # legacy
         [
-            {
-                'EXECUTION_NO': '00000000-0000-0000-0000-0000000000l1',
-                'RUN_MODE': '1',
-                'STATUS_ID': '11',
-                'EXEC_MODE': '3',
-                'ABORT_EXECUTE_FLAG': '0',
-                'CONDUCTOR_NAME': None,
-                'EXECUTION_USER': 'y y',
-                'TIME_REGISTER': datetime.datetime(2025, 8, 27, 14, 7, 11), 'MOVEMENT_ID': '00000000-0000-0000-0000-0000000000mv1',
-                'I_MOVEMENT_NAME': 'MV1',
-                'I_TIME_LIMIT': None,
-                'I_ANS_HOST_DESIGNATE_TYPE_ID': '1',
-                'I_ANS_PARALLEL_EXE': None,
-                'I_ANS_WINRM_ID': None,
-                'I_ANS_PLAYBOOK_HED_DEF': '- hosts: all\n  remote_user: "{{ __loginuser__ }}"\n  gather_facts: no',
-                'I_AG_EXECUTION_ENVIRONMENT_NAME': '~[Exastro standard] default',
-                'I_AG_BUILDER_OPTIONS': None,
-                'I_EXECUTION_ENVIRONMENT_NAME': None,
-                'I_ANSIBLE_CONFIG_FILE': None,
-                'OPERATION_ID': '00000000-0000-0000-0000-0000000000op1',
-                'I_OPERATION_NAME': 'OP_HOST',
-                'FILE_INPUT': 'InputData_00000000-0000-0000-0000-0000000000l1.zip',
-                'FILE_RESULT': None,
-                'TIME_BOOK': None,
-                'TIME_START': datetime.datetime(2025, 8, 27, 14, 7, 15), 'TIME_END': None,
-                'COLLECT_STATUS': None,
-                'COLLECT_LOG': None,
-                'CONDUCTOR_INSTANCE_NO': None,
-                'I_ANS_EXEC_OPTIONS': None,
-                'LOGFILELIST_JSON': None,
-                'MULTIPLELOG_MODE': None,
-                'EXECUTE_HOST_NAME': 'dd6e223f2be3',
-                'NOTE': None,
-                'DISUSE_FLAG': '0',
-                'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 8, 27, 14, 7, 15, 61810), 'LAST_UPDATE_USER': '20101'},
+            {'I_AG_EXECUTION_ENVIRONMENT_NAME': '~[Exastro standard] default', 'EXECUTION_NO': '00000000-0000-0000-0000-0000000000l1'}
         ],
-        # 2番目のtable_select (pioneer)
+        # pioneer
         [],
-        # 3番目のtable_select (legacy_role)
-        [],
+        # legacy_role
+        []
     ]
 
     # gオブジェクトの属性をモック
@@ -720,12 +634,6 @@ def test_unexecuted_instance_with_env_names_and_execution_limit(app, mocker, moc
     assert result[_execution_no]['driver_id'] == 'legacy'
     assert result[_execution_no]['anstwr_del_runtime_data'] == '1'
     assert result[_execution_no]['build_type'] == '2'
-
-    # table_selectの引数が正しいか検証
-    where_expected = 'WHERE DISUSE_FLAG=%s AND STATUS_ID = %s AND I_AG_EXECUTION_ENVIRONMENT_NAME IN (%s) ORDER BY TIME_REGISTER ASC  LIMIT %s'
-    parameter_expected = ['0', '11', execution_environment_name, 1]
-
-    mock_dbca.table_select.assert_any_call("T_ANSL_EXEC_STS_INST", where_expected, parameter_expected)
 
 
 def test_unexecuted_instance_with_env_names_and_execution_limit_all_driver(app, mocker, mock_dbca):
@@ -774,120 +682,21 @@ def test_unexecuted_instance_with_env_names_and_execution_limit_all_driver(app, 
                 'DISUSE_FLAG': '0',
                 'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 8, 21, 11, 20, 14, 50376), 'LAST_UPDATE_USER': '1'}
         ],
-        # 最初のtable_select (legacy)
+    ]
+
+    mock_dbca.sql_execute.side_effect = [
+        # legacy
         [
-            {
-                'EXECUTION_NO': '00000000-0000-0000-0000-0000000000l1',
-                'RUN_MODE': '1',
-                'STATUS_ID': '11',
-                'EXEC_MODE': '3',
-                'ABORT_EXECUTE_FLAG': '0',
-                'CONDUCTOR_NAME': None,
-                'EXECUTION_USER': 'y y',
-                'TIME_REGISTER': datetime.datetime(2025, 8, 27, 14, 7, 11), 'MOVEMENT_ID': '00000000-0000-0000-0000-0000000000mv1',
-                'I_MOVEMENT_NAME': 'MV1',
-                'I_TIME_LIMIT': None,
-                'I_ANS_HOST_DESIGNATE_TYPE_ID': '1',
-                'I_ANS_PARALLEL_EXE': None,
-                'I_ANS_WINRM_ID': None,
-                'I_ANS_PLAYBOOK_HED_DEF': '- hosts: all\n  remote_user: "{{ __loginuser__ }}"\n  gather_facts: no',
-                'I_AG_EXECUTION_ENVIRONMENT_NAME': '~[Exastro standard] default',
-                'I_AG_BUILDER_OPTIONS': None,
-                'I_EXECUTION_ENVIRONMENT_NAME': None,
-                'I_ANSIBLE_CONFIG_FILE': None,
-                'OPERATION_ID': '00000000-0000-0000-0000-0000000000op1',
-                'I_OPERATION_NAME': 'OP_HOST',
-                'FILE_INPUT': 'InputData_00000000-0000-0000-0000-0000000000l1.zip',
-                'FILE_RESULT': None,
-                'TIME_BOOK': None,
-                'TIME_START': datetime.datetime(2025, 8, 27, 14, 7, 15), 'TIME_END': None,
-                'COLLECT_STATUS': None,
-                'COLLECT_LOG': None,
-                'CONDUCTOR_INSTANCE_NO': None,
-                'I_ANS_EXEC_OPTIONS': None,
-                'LOGFILELIST_JSON': None,
-                'MULTIPLELOG_MODE': None,
-                'EXECUTE_HOST_NAME': 'dd6e223f2be3',
-                'NOTE': None,
-                'DISUSE_FLAG': '0',
-                'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 8, 27, 14, 7, 15, 61810), 'LAST_UPDATE_USER': '20101'},
+            {'I_AG_EXECUTION_ENVIRONMENT_NAME': '~[Exastro standard] default', 'EXECUTION_NO': '00000000-0000-0000-0000-0000000000l1'}
         ],
-        # 2番目のtable_select (pioneer)
+        # pioneer
         [
-            {
-                'EXECUTION_NO': '00000000-0000-0000-0000-0000000000p1',
-                'RUN_MODE': '1',
-                'STATUS_ID': '11',
-                'EXEC_MODE': '3',
-                'ABORT_EXECUTE_FLAG': '0',
-                'CONDUCTOR_NAME': None,
-                'EXECUTION_USER': 'y y',
-                'TIME_REGISTER': datetime.datetime(2025, 8, 27, 14, 7, 11), 'MOVEMENT_ID': '00000000-0000-0000-0000-0000000000mv2',
-                'I_MOVEMENT_NAME': 'MV2',
-                'I_TIME_LIMIT': None,
-                'I_ANS_HOST_DESIGNATE_TYPE_ID': '1',
-                'I_ANS_PARALLEL_EXE': None,
-                'I_ANS_WINRM_ID': None,
-                'I_ANS_PLAYBOOK_HED_DEF': '- hosts: all\n  remote_user: "{{ __loginuser__ }}"\n  gather_facts: no',
-                'I_AG_EXECUTION_ENVIRONMENT_NAME': '~[Exastro standard] default',
-                'I_AG_BUILDER_OPTIONS': None,
-                'I_EXECUTION_ENVIRONMENT_NAME': None,
-                'I_ANSIBLE_CONFIG_FILE': None,
-                'OPERATION_ID': '00000000-0000-0000-0000-0000000000op1',
-                'I_OPERATION_NAME': 'OP_HOST',
-                'FILE_INPUT': 'InputData_00000000-0000-0000-0000-0000000000p1.zip',
-                'FILE_RESULT': None,
-                'TIME_BOOK': None,
-                'TIME_START': datetime.datetime(2025, 8, 27, 14, 7, 15), 'TIME_END': None,
-                'COLLECT_STATUS': None,
-                'COLLECT_LOG': None,
-                'CONDUCTOR_INSTANCE_NO': None,
-                'I_ANS_EXEC_OPTIONS': None,
-                'LOGFILELIST_JSON': None,
-                'MULTIPLELOG_MODE': None,
-                'EXECUTE_HOST_NAME': 'dd6e223f2be3',
-                'NOTE': None,
-                'DISUSE_FLAG': '0',
-                'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 8, 27, 14, 7, 15, 61810), 'LAST_UPDATE_USER': '20101'},
+            {'I_AG_EXECUTION_ENVIRONMENT_NAME': '~[Exastro standard] default', 'EXECUTION_NO': '00000000-0000-0000-0000-0000000000p1'}
         ],
-        # 3番目のtable_select (legacy_role)
+        # legacy_role
         [
-            {
-                'EXECUTION_NO': '00000000-0000-0000-0000-0000000000r1',
-                'RUN_MODE': '1',
-                'STATUS_ID': '11',
-                'EXEC_MODE': '3',
-                'ABORT_EXECUTE_FLAG': '0',
-                'CONDUCTOR_NAME': None,
-                'EXECUTION_USER': 'y y',
-                'TIME_REGISTER': datetime.datetime(2025, 8, 27, 14, 7, 11), 'MOVEMENT_ID': '00000000-0000-0000-0000-0000000000mv3',
-                'I_MOVEMENT_NAME': 'MV3',
-                'I_TIME_LIMIT': None,
-                'I_ANS_HOST_DESIGNATE_TYPE_ID': '1',
-                'I_ANS_PARALLEL_EXE': None,
-                'I_ANS_WINRM_ID': None,
-                'I_ANS_PLAYBOOK_HED_DEF': '- hosts: all\n  remote_user: "{{ __loginuser__ }}"\n  gather_facts: no',
-                'I_AG_EXECUTION_ENVIRONMENT_NAME': '~[Exastro standard] default',
-                'I_AG_BUILDER_OPTIONS': None,
-                'I_EXECUTION_ENVIRONMENT_NAME': None,
-                'I_ANSIBLE_CONFIG_FILE': None,
-                'OPERATION_ID': '00000000-0000-0000-0000-0000000000op1',
-                'I_OPERATION_NAME': 'OP_HOST',
-                'FILE_INPUT': 'InputData_00000000-0000-0000-0000-0000000000r1.zip',
-                'FILE_RESULT': None,
-                'TIME_BOOK': None,
-                'TIME_START': datetime.datetime(2025, 8, 27, 14, 7, 15), 'TIME_END': None,
-                'COLLECT_STATUS': None,
-                'COLLECT_LOG': None,
-                'CONDUCTOR_INSTANCE_NO': None,
-                'I_ANS_EXEC_OPTIONS': None,
-                'LOGFILELIST_JSON': None,
-                'MULTIPLELOG_MODE': None,
-                'EXECUTE_HOST_NAME': 'dd6e223f2be3',
-                'NOTE': None,
-                'DISUSE_FLAG': '0',
-                'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 8, 27, 14, 7, 15, 61810), 'LAST_UPDATE_USER': '20101'},
-        ],
+            {'I_AG_EXECUTION_ENVIRONMENT_NAME': '~[Exastro standard] default', 'EXECUTION_NO': '00000000-0000-0000-0000-0000000000r1'}
+        ]
     ]
 
     # gオブジェクトの属性をモック
@@ -915,14 +724,6 @@ def test_unexecuted_instance_with_env_names_and_execution_limit_all_driver(app, 
     assert result[_execution_no]['driver_id'] == 'legacy'
     assert result[_execution_no]['anstwr_del_runtime_data'] == '1'
     assert result[_execution_no]['build_type'] == '2'
-
-    # table_selectの引数が正しいか検証
-    where_expected = 'WHERE DISUSE_FLAG=%s AND STATUS_ID = %s AND I_AG_EXECUTION_ENVIRONMENT_NAME IN (%s) ORDER BY TIME_REGISTER ASC  LIMIT %s'
-    parameter_expected = ['0', '11', execution_environment_name, 1]
-
-    mock_dbca.table_select.assert_any_call("T_ANSL_EXEC_STS_INST", where_expected, parameter_expected)
-    mock_dbca.table_select.assert_any_call("T_ANSP_EXEC_STS_INST", where_expected, parameter_expected)
-    mock_dbca.table_select.assert_any_call("T_ANSR_EXEC_STS_INST", where_expected, parameter_expected)
 
 
 @pytest.mark.parametrize(
@@ -991,16 +792,18 @@ def test_get_populated_data_path(app, mocker, mock_dbca, organization_id, worksp
     # gにアクセスするすべてのモジュールをパッチする
     mocker.patch('libs.ansible_execution.g', new=mock_g)
     mocker.patch('common_libs.common.util.g', new=mock_g)
-    mocker.patch('libs.ansible_execution.tarfile.open', return_value=MagicMock())
-    # mocker.patch('libs.ansible_execution.tar.add', new=MagicMock())
+
+    # ファイルシステムアクセスをモック
+    mocker.patch('libs.ansible_execution.os.listdir', return_value=[])
+    mocker.patch('libs.ansible_execution.os.makedirs')
+    mocker.patch('libs.ansible_execution.os.chmod')
+    mocker.patch('libs.ansible_execution.shutil.copytree')
+    mocker.patch('libs.ansible_execution.shutil.rmtree')
+    mocker.patch('libs.ansible_execution.shutil.move', return_value=_path)
 
     mock_tar = mocker.MagicMock()
     mock_open = mocker.patch('libs.ansible_execution.tarfile.open')
     mock_open.return_value.__enter__.return_value = mock_tar
-
-    mock_shutil = mocker.MagicMock()
-    mock_shutil_open = mocker.patch('libs.ansible_execution.shutil.move')
-    mock_shutil_open.return_value.__enter__.return_value = mock_shutil
 
     with app.test_request_context('/ansible/api/v1/agent/agent/'):
         result = get_populated_data_path(mock_dbca, organization_id, workspace_id, execution_no, driver_id)

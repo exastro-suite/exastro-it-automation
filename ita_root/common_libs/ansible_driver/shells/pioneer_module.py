@@ -240,6 +240,9 @@ def main():
   try:
     # #2079 ファイル名が被るので対象外
     if yaml_var >= str(5):
+      def vault_constructor(loader, node):
+        return loader.construct_scalar(node)
+      yaml.FullLoader.add_constructor('!vault', vault_constructor)
       with_def = yaml.load(open(module.params['host_vars_file']).read(), Loader=yaml.FullLoader)
     else:
       with_def = yaml.load(open(module.params['host_vars_file']).read())

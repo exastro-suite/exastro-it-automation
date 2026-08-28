@@ -285,6 +285,79 @@ class AnsibleTowerRestApiCredentials(AnsibleTowerRestApiBase):
         return response_array
 
     @classmethod
+    def git_post_basic(cls, RestApiCaller, param):
+
+        OrchestratorSubId_dir = RestApiCaller.getOrchestratorSubId_dir()
+
+        # content生成
+        content = {}
+        response_array = {}
+
+        if 'execution_no' in param and param['execution_no']:
+            content['name'] = cls.GIT_IDENTIFIED_NAME_PREFIX % (OrchestratorSubId_dir, FuncCommonLib.addPadding(param['execution_no']))
+
+        else:
+            # 必須のためNG返す
+            response_array['success'] = False
+            response_array['responseContents'] = {
+                'errorMessage': "Need 'execution_no'."
+            }
+            return response_array
+
+        if 'organization' in param and param['organization']:
+            content['organization'] = param['organization']
+
+        else:
+            # 必須のためNG返す
+            response_array['success'] = False
+            response_array['responseContents'] = {
+                'errorMessage': "Need 'organization'."
+            }
+            return response_array
+
+        content['inputs'] = {}
+        if 'username' in param and param['username']:
+            content['inputs']['username'] = param['username']
+
+        else:
+            # 必須のためNG返す
+            response_array['success'] = False
+            response_array['responseContents'] = {
+                'errorMessage': "Need 'username'."
+            }
+            return response_array
+
+        if 'token' in param and param['token']:
+            content['inputs']['password'] = param['token']
+
+        else:
+            # 必須のためNG返す
+            response_array['success'] = False
+            response_array['responseContents'] = {
+                'errorMessage': "Need 'token'."
+            }
+            return response_array
+
+        content['credential_type'] = cls.SRC_CONTROL  # ソースコントロール
+
+        # REST APIアクセス
+        method = "POST"
+        response_array = RestApiCaller.restCall(method, cls.API_PATH, content)
+
+        # REST失敗
+        if response_array['statusCode'] != 201:
+            response_array['success'] = False
+            if "errorMessage" not in response_array['responseContents']:
+                response_array['responseContents']['errorMessage'] = "status_code not 201. =>%s" % (response_array['statusCode'])
+
+            return response_array
+
+        # REST成功
+        response_array['success'] = True
+
+        return response_array
+
+    @classmethod
     def vault_post(cls, RestApiCaller, param):
 
         OrchestratorSubId_dir = RestApiCaller.getOrchestratorSubId_dir()
@@ -376,6 +449,26 @@ class AnsibleTowerRestApiCredentials(AnsibleTowerRestApiBase):
 
         # vault credentialが作成されていることを確認
         obj_id = "VaultCredentialId"
+        if obj_id not in AACCreateObjectID:
+            return result_response_array
+
+        for credentialData in AACCreateObjectID[obj_id]:
+            response_array = cls.delete(RestApiCaller, credentialData)
+            if not response_array['success']:
+                g.applogger.info("AnsibleTowerRestApiCredentials:deleteRelatedCurrnetExecution: Faild to delete vault credential.")
+                g.applogger.info(response_array)
+                return response_array
+
+        return result_response_array  # データ不足しているが、後続の処理はsuccessしか確認しないためこのまま
+
+    @classmethod
+    def deleteSCM(cls, RestApiCaller, AACCreateObjectID):
+
+        result_response_array = {}
+        result_response_array['success'] = True
+
+        # vault credentialが作成されていることを確認
+        obj_id = "SCMCredentialId"
         if obj_id not in AACCreateObjectID:
             return result_response_array
 

@@ -51,7 +51,8 @@ def organization_create(body, organization_id):
         'terraform_cloud_ep',
         'terraform_cli',
         'ci_cd',
-        'oase'
+        'oase',
+        'ai_assistant'
     ]
 
     # driversから適用するドライバを選定する。key(driver名)がない場合はTrueとする。
@@ -59,7 +60,8 @@ def organization_create(body, organization_id):
         "terraform_cloud_ep": True,
         "terraform_cli": True,
         "ci_cd": True,
-        "oase": True
+        "oase": True,
+        "ai_assistant": True
     }
     if body is not None and len(body) > 0:
         drivers = body.get('drivers')
@@ -414,6 +416,7 @@ def organization_info(organization_id):  # noqa: E501
             "terraform_cli": True,
             "ci_cd": True,
             "oase": True,
+            "ai_assistant": True
         }
         no_install_driver_json = connect_info.get('NO_INSTALL_DRIVER')
         if no_install_driver_json is not None:
@@ -479,7 +482,8 @@ def organization_update(organization_id, body=None):  # noqa: E501
         'terraform_cloud_ep',
         'terraform_cli',
         'ci_cd',
-        'oase'
+        'oase',
+        'ai_assistant'
     ]
 
     try:
@@ -528,6 +532,7 @@ def organization_update(organization_id, body=None):  # noqa: E501
             "terraform_cli": [['terraform_cli.sql', 'terraform_cli_master.sql']],
             "ci_cd": [['cicd.sql', 'cicd_master.sql']],
             "oase": [['oase.sql', 'oase_master.sql']],
+            "ai_assistant": []
         }
 
         # アンインストール時に利用するSQLファイル名の一覧
@@ -536,6 +541,7 @@ def organization_update(organization_id, body=None):  # noqa: E501
             "terraform_cli": [['terraform_cli.drop.sql', 'terraform_cli_master.delete.sql']],
             "ci_cd": [['cicd.drop.sql', 'cicd_master.delete.sql']],
             "oase": [['oase.drop.sql', 'oase_master.delete.sql']],
+            "ai_assistant": []
         }
 
         # アンインストール時に利用する削除対象ディレクトリのパスの一覧
@@ -544,6 +550,7 @@ def organization_update(organization_id, body=None):  # noqa: E501
             "terraform_cli": [['/driver/terraform_cli/', '/uploadfiles/90104'], ['', '/uploadfiles/90109']],
             "ci_cd": [['/driver/cicd/repositories/', '']],
             "oase": [['', '/uploadfiles/110109'], ['', '/uploadfiles/110102']],
+            "ai_assistant": []
         }
 
         # terraform_commonの追加について

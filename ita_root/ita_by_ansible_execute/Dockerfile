@@ -29,6 +29,7 @@ ENV DEFAULT_LOCAL_TMP=/tmp
 ENV DB_CONNECT_TIMEOUT=10
 ENV DB_CONNECT_RETRY_SLEEP_TIME=0.5
 ENV DB_CONNECT_RETRY_LIMIT=2
+ENV INTERVAL_GET_MAINTENANCE_MODE=5
 ENV SERVICE_NAME=ita-by-ansible-execute
 ENV CHILD_PROCESS_RETRY_LIMIT=10
 ENV ANSIBLE_AGENT_NON_COMMUNICATION_DETECTION_TIME=600
@@ -54,7 +55,7 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
 &&  alternatives --set python3 /usr/bin/python3.11 \
 &&  pip3.11 install poetry==1.8.4 \
 &&  poetry config virtualenvs.create false \
-&&  curl -L https://dl.k8s.io/release/v1.33.1/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
+&&  curl -L https://dl.k8s.io/release/v1.36.2/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
 &&  chmod +x /usr/local/bin/kubectl \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
@@ -89,8 +90,7 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
     diffutils \
     bind-utils \
     iputils \
-&&  curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-18.06.3-ce.tgz | tar -xzC /usr/local/bin --strip=1 docker/docker \
-&&  curl -L https://github.com/docker/compose/releases/download/v2.37.1/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose \
+&&  curl -L https://github.com/docker/compose/releases/download/v5.2.0/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose \
 &&  chmod +x /usr/local/bin/docker-compose \
 &&  usermod -G wheel $USERNAME \
 &&  echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers \

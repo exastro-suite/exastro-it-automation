@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Exastro IT Automation API
   description: Exastro IT Automation API
-  version: 2.7.0
+  version: 2.9.0
   license:
     name: Apache 2.0
     url: 'https://www.apache.org/licenses/LICENSE-2.0'
@@ -110,6 +110,8 @@ paths:
                             $ref: '#/components/schemas/COLUMN_INFO'
                           menu_info:
                             $ref: '#/components/schemas/MENU_INFO'
+                          ai_assistant:
+                            $ref: '#/components/schemas/AI_ASSISTANT_INFO'
         '401':
           description: Unauthorized
           content:
@@ -6390,6 +6392,12 @@ components:
           description: メニュー表示用のカラムおよびカラムグループの並び順
           type: array
           items: {}
+    AI_ASSISTANT_INFO:
+      type: object
+      properties:
+        enabled:
+          description: Exastro AI Assistant 有効
+          type: boolean
     ERROR_TEMPLATE:
       type: object
       properties:

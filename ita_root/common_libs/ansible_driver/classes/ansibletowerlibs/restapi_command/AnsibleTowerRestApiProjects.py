@@ -131,6 +131,9 @@ class AnsibleTowerRestApiProjects(AnsibleTowerRestApiBase):
         if 'custom_virtualenv' in param and param['custom_virtualenv'] is not None:
             content['custom_virtualenv'] = param['custom_virtualenv']
 
+        if 'credential' in param and param['credential'] is not None:
+            content['credential'] = param['credential']
+
         # REST APIアクセス
         method = "POST"
         response_array = RestApiCaller.restCall(method, cls.API_PATH, content)

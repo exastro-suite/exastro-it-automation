@@ -56,6 +56,8 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
 
 COPY ./ita_root/ita_by_ansible_execute/ita_ansible_agent/config/ansible.cfg /etc/ansible/ansible.cfg
 
+RUN rm -f /usr/local/lib/python3.11/site-packages/ansible_collections/grafana/grafana/package.json
+
 USER $USERNAME
 
 ENTRYPOINT ["sh"]

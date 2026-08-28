@@ -289,6 +289,8 @@ def datetime_to_str(p_datetime):
     return utc_datetime.isoformat(timespec='milliseconds').replace('+00:00', 'Z')
 
 
+file_read_retry_limit = int(os.environ.get('FILE_READ_RETRY_LIMIT', 3))  # ファイルストレージへの読み書きのリトライ回数の上限
+file_read_retry_delay_time = float(os.environ.get('FILE_READ_RETRY_DELAY_TIME', 0.1))  # ファイルストレージへの読み書きのリトライのインターバル
 def file_read_retry(func):
     """
     file_read_retry
@@ -303,10 +305,8 @@ def file_read_retry(func):
     """
     #
     def wrapper(*args, **kwargs):
-        retry_delay_time = 0.1  # リトライのインターバル
         retBool = False
         i = 1
-        max = 3  # リトライ回数
         while True:
             try:
                 retBool = func(*args, **kwargs)
@@ -314,20 +314,20 @@ def file_read_retry(func):
                     break
             except Exception as e:
                 # raiseしたくない場合は、funcの中でログを出力し、（エラーを抑止して）Falseを返却してください
-                if i == max:
+                if i == file_read_retry_limit:
                     # 最後のログ出力のみ、stacktraceを出力
                     # Output stacktrace only the last log output
                     t = traceback.format_exc()
-                    g.applogger.debug(str(t))
+                    g.applogger.info(str(t))
                     raise e
                 else:
                     # retry分は、メッセージのみを出力
                     # For retry minutes, only the message is output
-                    g.applogger.info(print_exception_msg(e))
+                    print_exception_msg(e)
 
-            if i == max:
+            if i == file_read_retry_limit:
                 break
-            time.sleep(retry_delay_time)
+            time.sleep(file_read_retry_delay_time)
             i = i + 1
 
     return wrapper
@@ -342,12 +342,12 @@ def retry_makedirs(dir_path, raise_error=True):
             dir_path: 作成するディレクトリパス
             raise_error: リトライを実施してもエラーが発生した際に例外スローするか (True: 例外スロー&ログ出力/ False: ログ出力のみ)
     """
-    g.applogger.debug(f"retry_makedirs({dir_path})")
+    g.applogger.debug(f"sa retry_makedirs({dir_path})")
     try:
         os.makedirs(dir_path, exist_ok=True)
         return True
     except Exception as e:
-        g.applogger.info("retry_makedirs failed. dir_path={}".format(dir_path))
+        g.applogger.info("sa retry_makedirs failed. dir_path={}".format(dir_path))
         t = traceback.format_exc()
         g.applogger.debug(str(t))
         if raise_error is True:
@@ -366,14 +366,14 @@ def retry_copy2(src_path, dest_path, raise_error=True):
             dest_path: コピー先のファイルパス
             raise_error: リトライを実施してもエラーが発生した際に例外スローするか (True: 例外スロー&ログ出力/ False: ログ出力のみ)
     """
-    g.applogger.debug(f"retry_copy2({src_path, dest_path})")
+    g.applogger.debug(f"sa retry_copy2({src_path, dest_path})")
     try:
         os.listdir(os.path.dirname(src_path.rstrip('/')))  # NFSストレージ対策：属性キャッシュ更新を試みる
         os.listdir(os.path.dirname(dest_path.rstrip('/')))  # NFSストレージ対策：属性キャッシュ更新を試みる
         shutil.copy2(src_path, dest_path)
         return True
     except Exception as e:
-        g.applogger.info("retry_copy2 failed. src_path={}, dest_path={}".format(src_path, dest_path))
+        g.applogger.info("sa retry_copy2 failed. src_path={}, dest_path={}".format(src_path, dest_path))
         t = traceback.format_exc()
         g.applogger.debug(str(t))
         if raise_error is True:
@@ -391,13 +391,13 @@ def retry_rmdir(dir_path, raise_error=True):
             dir_path: 削除するディレクトリパス
             raise_error: リトライを実施してもエラーが発生した際に例外スローするか (True: 例外スロー&ログ出力/ False: ログ出力のみ)
     """
-    g.applogger.debug(f"retry_rmdir({dir_path})")
+    g.applogger.debug(f"sa retry_rmdir({dir_path})")
     try:
         os.listdir(os.path.dirname(dir_path.rstrip('/')))  # NFSストレージ対策：属性キャッシュ更新を試みる
         os.rmdir(dir_path)
         return True
     except Exception as e:
-        g.applogger.info("retry_rmdir failed. dir_path={}".format(dir_path))
+        g.applogger.info("sa retry_rmdir failed. dir_path={}".format(dir_path))
         t = traceback.format_exc()
         g.applogger.debug(str(t))
         if raise_error is True:
@@ -415,13 +415,13 @@ def retry_remove(file_path, raise_error=True):
             file_path: 削除するファイルパス
             raise_error: リトライを実施してもエラーが発生した際に例外スローするか (True: 例外スロー&ログ出力/ False: ログ出力のみ)
     """
-    g.applogger.debug(f"retry_remove({file_path})")
+    g.applogger.debug(f"sa retry_remove({file_path})")
     try:
         os.listdir(os.path.dirname(file_path.rstrip('/')))  # NFSストレージ対策：属性キャッシュ更新を試みる
         os.remove(file_path)
         return True
     except Exception as e:
-        g.applogger.info("retry_remove failed. file_path={}".format(file_path))
+        g.applogger.info("sa retry_remove failed. file_path={}".format(file_path))
         t = traceback.format_exc()
         g.applogger.debug(str(t))
         if raise_error is True:

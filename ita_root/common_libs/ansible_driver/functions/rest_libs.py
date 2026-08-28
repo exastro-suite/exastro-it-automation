@@ -163,7 +163,7 @@ def insert_execution_list(objdbca, run_mode, driver_id, operation_row, movement_
     # Movement/Ansible利用情報/ヘッダーセクション
     ExecStsInstTableConfig[RestNameConfig["I_ANS_PLAYBOOK_HED_DEF"]] = movement_row["ANS_PLAYBOOK_HED_DEF"]
 
-    if ExecMode == objAnsc.DF_EXEC_MODE_AAC:
+    if ExecMode == objAnsc.DF_EXEC_MODE_AAC or ExecMode == objAnsc.DF_EXEC_MODE_AAP_CLOUD:
         # Movement/AnsibleAutomationController利用情報/実行環境
         # ゴミになるので実行エンジンがAnsibleAutomationControllerの場合のみ設定
         ExecStsInstTableConfig[RestNameConfig["I_EXECUTION_ENVIRONMENT_NAME"]] = movement_row["ANS_EXECUTION_ENVIRONMENT_NAME"]
@@ -304,7 +304,7 @@ def execution_scram(objdbca, driver_id, execution_no):
             objAnsCore = AnsibleExecute()
             # Ansible-Core 緊急停止
             objAnsCore.execute_abort(driver_id, execution_no)
-        elif execrow["EXEC_MODE"] == AnsrConst.DF_EXEC_MODE_AAC:
+        elif execrow["EXEC_MODE"] == AnsrConst.DF_EXEC_MODE_AAC or execrow["EXEC_MODE"] == AnsrConst.DF_EXEC_MODE_AAP_CLOUD:
             # ansibleインターフェース情報取得
             sql = "SELECT * FROM T_ANSC_IF_INFO WHERE DISUSE_FLAG='0'"
             inforow = objdbca.sql_execute(sql, [])
@@ -334,7 +334,7 @@ def execution_scram(objdbca, driver_id, execution_no):
                                      inforow["ANSTWR_AUTH_TOKEN"],
                                      proxySetting,
                                      driver_id)
-            objTower.authorize()
+
             response_array = AnsibleTowerRestApiWorkflowJobs().cancelRelatedCurrnetExecution(objTower, execution_no)
             if response_array['success'] is False:
                 # エラー詳細が付加されているか判定

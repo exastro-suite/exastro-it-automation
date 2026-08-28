@@ -116,7 +116,7 @@ services:
       - exastro
 
   platform-db:
-    image: mariadb:10.4.8
+    image: mariadb:10.11.4
     healthcheck:
       test: (mysqladmin ping --silent -u root -p$${MYSQL_ROOT_PASSWORD} && mysql -u root -p$${MYSQL_ROOT_PASSWORD} -e 'select 1;') || exit 1
       interval: 3s

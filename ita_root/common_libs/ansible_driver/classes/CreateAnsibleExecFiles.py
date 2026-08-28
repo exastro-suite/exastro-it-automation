@@ -208,6 +208,11 @@ from dictknife import deepmerge
 from flask import g
 import codecs
 import base64
+from datetime import datetime, timezone, timedelta
+from requests.adapters import HTTPAdapter
+from urllib3.util import Retry
+import requests
+from urllib.parse import urlparse
 
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_driver.classes.ansible_common_libs import AnsibleCommonLibs
@@ -232,7 +237,7 @@ from common_libs.ansible_driver.functions.util import getAnsibleConst
 from common_libs.ansible_driver.functions.util import getPioneerDialogUploadDirPath
 from common_libs.ansible_driver.functions.util import getLegacyPlaybookUploadDirPath
 from common_libs.ansible_driver.functions.util import get_AnsibleDriverShellPath
-from common_libs.common.util import ky_encrypt, ky_decrypt, ky_file_encrypt, ky_file_decrypt, retry_makedirs, retry_chmod, retry_copy, retry_copyfile, retry_copytree, retry_remove, retry_rmtree
+from common_libs.common.util import ky_encrypt, ky_decrypt, ky_file_encrypt, ky_file_decrypt, retry_makedirs, retry_chmod, retry_copy, retry_copyfile, retry_copytree, retry_remove, retry_rmtree, file_read_retry
 from common_libs.common.storage_access import storage_base, storage_read, storage_write, storage_base
 from common_libs.ansible_driver.functions.ag_util import CreateAG_ITABuilderShellFiles, CreateAG_ITARunnerShellFiles, Replace_HostVrasFilepath
 
@@ -396,6 +401,11 @@ class CreateAnsibleExecFiles():
 
         # Tower(/var/lib/awx/projects)ディレクトリへのファイル転送パス配列
         self.vg_TowerProjectsScpPathArray = {}
+
+        # AAP-Cloud用資材連携Playbook
+        self.AAP_CLOUD_Transfer = "transfer_playbooks"
+        self.AAP_CLOUD_Transfer_receiver = "ky_ansible_receiver.yaml"
+        self.AAP_CLOUD_Transfer_sender = "ky_ansible_sender.yaml"
 
         # 実行エンジンを退避
         self.lv_exec_mode = in_ans_if_info['ANSIBLE_EXEC_MODE']
@@ -753,6 +763,14 @@ class CreateAnsibleExecFiles():
             retry_makedirs(c_dirwk)
             retry_chmod(c_dirwk, 0o777)
             self.setAnsible_in_runner_files_Dir(c_dirwk)
+
+        # AAP-Cloud用のディレクトリを作成
+        if self.lv_exec_mode == AnscConst.DF_EXEC_MODE_AAP_CLOUD:
+            # AAP-Cloudの場合、transfer_playbookディレクトリ作成
+            c_dirwk = c_indir + "/" + self.AAP_CLOUD_Transfer
+            retry_makedirs(c_dirwk)
+            retry_chmod(c_dirwk, 0o777)
+            self.setAnsible_in_inventory_Dir(c_dirwk)
 
         # グローバル変数管理からグローバル変数の情報を取得
         self.lva_global_vars_list = {}
@@ -1350,6 +1368,13 @@ class CreateAnsibleExecFiles():
         if self.lv_ansible_cnf_file:
             if self.CopyAnsibleConfigFile() is False:
                 return False
+
+        # AAP-Cloud用資材連携Playbook作成
+        if self.CreateTransferPlaybookfiles(in_exec_mode) is False:
+            return False
+        # AAP-Cloud用.gitkeep作成
+        if self.Creategitkeep(self.lv_exec_mode) is False:
+            return False
 
         return True
 
@@ -1980,12 +2005,10 @@ class CreateAnsibleExecFiles():
                 value = in_exec_playbook_hed_def
                 value += "\n"
             value += "\n"
-            value += "  tasks:\n"
         elif self.getAnsibleDriverID() == self.AnscObj.DF_PIONEER_DRIVER_ID:
             value = "- hosts: all\n"
             value = value + "  gather_facts: False\n"
             value = value + "\n"
-            value = value + "  tasks:\n"
             pass
         elif self.getAnsibleDriverID() == self.AnscObj.DF_LEGACY_ROLE_DRIVER_ID:
             if not in_exec_playbook_hed_def:
@@ -2000,8 +2023,18 @@ class CreateAnsibleExecFiles():
                 value = in_exec_playbook_hed_def
                 value += "\n"
 
+        # AAP-Cloud用資材連携Playbook実施
+        if in_exec_mode == AnscConst.DF_EXEC_MODE_AAP_CLOUD:
+            value = value + "\n"
+            value = value + "  pre_tasks:\n"
+            value = value + "    - include_tasks: {}/{} \n".format(self.AAP_CLOUD_Transfer, self.AAP_CLOUD_Transfer_receiver)
+
+        if self.getAnsibleDriverID() == self.AnscObj.DF_LEGACY_ROLE_DRIVER_ID:
             value = value + "\n"
             value = value + "  roles:\n"
+        else:
+            value = value + "\n"
+            value = value + "  tasks:\n"
 
         obj.write(value)
         value = ""
@@ -2038,6 +2071,12 @@ class CreateAnsibleExecFiles():
                     value += "      delegate_to: 127.0.0.1\n"
                 elif self.getAnsibleDriverID() == self.AnscObj.DF_LEGACY_ROLE_DRIVER_ID:
                     value += "    - role: " + file + "\n"
+
+        # AAP-Cloud用資材連携Playbook実施
+        if in_exec_mode == AnscConst.DF_EXEC_MODE_AAP_CLOUD:
+            value = value + "\n"
+            value = value + "  post_tasks:\n"
+            value = value + "    - include_tasks: {}/{} \n".format(self.AAP_CLOUD_Transfer, self.AAP_CLOUD_Transfer_sender)
 
         obj.write(value)
         obj.close()
@@ -3215,6 +3254,22 @@ class CreateAnsibleExecFiles():
             mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_ORGANIZATION_ID] = g.ORGANIZATION_ID
             mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_WORKSPACE_ID] = g.WORKSPACE_ID
             mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_EXTERNAL_URL] = os.environ.get("EXTERNAL_URL", "__undefinesymbol__")
+            # AAP-Cloudの場合はServiceAccountのRefreshTokenを代入する
+            if self.lv_exec_mode == self.AnscObj.DF_EXEC_MODE_AAP_CLOUD:
+                res, data = self.getSAToken()
+                if res is False:
+                    g.applogger.error(f"{data}")
+                    self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename), str(inspect.currentframe().f_lineno), data)
+                    return False
+                make_vaultvalue = self.makeAnsibleVault(data, "", "", "__sa_refreshtoken__")
+                if make_vaultvalue is False:
+                    msg = "makeAnsibleVault Failed."
+                    g.applogger.error(f"{msg} +  {data=}")
+                    self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename), str(inspect.currentframe().f_lineno), msg)
+                    return False
+                mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_SA_TOKEN] = make_vaultvalue
+            else:
+                mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_SA_TOKEN] = self.LC_ANS_UNDEFINE_NAME
 
         return mt_host_vars
 
@@ -5515,8 +5570,12 @@ class CreateAnsibleExecFiles():
 
         # /var/lib/awx/projects/{{ driver_name }}-{{ 作業番号 }}
         self.lv_TowerInstanceDirPath["TowerPath"] = "{}/{}_{}".format(gobj.DF_TowerProjectPath, driver_name, self.lv_exec_no)
-        # /var/lib/exastro/{{ driver_name }}-{{ 作業番号 }}
-        self.lv_TowerInstanceDirPath["ExastroPath"] = "{}/{}_{}".format(gobj.DF_TowerExastroProjectPath, driver_name, self.lv_exec_no)
+        if self.lv_exec_mode == AnscConst.DF_EXEC_MODE_AAP_CLOUD:
+            # /runner/project
+            self.lv_TowerInstanceDirPath["ExastroPath"] = gobj.DF_AAPCloudExastroProjectPath
+        else:
+            # /var/lib/exastro/{{ driver_name }}-{{ 作業番号 }}
+            self.lv_TowerInstanceDirPath["ExastroPath"] = "{}/{}_{}".format(gobj.DF_TowerExastroProjectPath, driver_name, self.lv_exec_no)
 
         return True
 
@@ -5597,6 +5656,83 @@ class CreateAnsibleExecFiles():
                                str(inspect.currentframe().f_lineno), msgstr)
             return False
         retry_copyfile(src_file, dest_file)
+        return True
+
+    def CreateTransferPlaybookfiles(self, in_exec_mode):
+        """
+        AAP-Cloud用の資材連携Playbookを所定の場所にコピーする。
+        Arguments:
+            in_exec_mode: 実行エンジン
+        Returns:
+            True/False
+        """
+        if in_exec_mode == AnscConst.DF_EXEC_MODE_AAP_CLOUD:
+            try:
+                # Ansible共通>AAP(Cloud)連携用資材 から対象のファイルを取得
+                # 取得用(__ita_fetch_common__)
+                search_key = "__ita_fetch_common__"
+                rows = self.lv_objDBCA.table_select(
+                    "T_ANSC_AAP_CLOUD_LINK_ASSETS",
+                    "WHERE DISUSE_FLAG='0' AND ASSET_NAME=%s",
+                    [search_key])
+                # 1件固定：0件or2件以上は不正とみなす
+                if len(rows) != 1:
+                    msgstr = f"There are either no matching records or multiple matching records. (Filter: ASSET_NAME={search_key})"
+                    self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename), str(inspect.currentframe().f_lineno), msgstr)
+                    return False
+                src_file = getDataRelayStorageDir() + "/uploadfiles/20114/asset_file/" + rows[0]["ROW_ID"] + "/" + rows[0]["ASSET_FILE"]
+                dest_file = "{}/{}/{}".format(self.getAnsible_in_Dir(), self.AAP_CLOUD_Transfer, self.AAP_CLOUD_Transfer_receiver)
+                retry_copyfile(src_file, dest_file)
+                # 転送用(__ita_put_results__)
+                search_key = "__ita_put_results__"
+                rows = self.lv_objDBCA.table_select(
+                    "T_ANSC_AAP_CLOUD_LINK_ASSETS",
+                    "WHERE DISUSE_FLAG='0' AND ASSET_NAME=%s",
+                    [search_key])
+                # 1件固定：0件or2件以上は不正とみなす
+                if len(rows) != 1:
+                    msgstr = f"There are either no matching records or multiple matching records. (Filter: ASSET_NAME={search_key})"
+                    self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename), str(inspect.currentframe().f_lineno), msgstr)
+                    return False
+                src_file = getDataRelayStorageDir() + "/uploadfiles/20114/asset_file/" + rows[0]["ROW_ID"] + "/" + rows[0]["ASSET_FILE"]
+                dest_file = "{}/{}/{}".format(self.getAnsible_in_Dir(), self.AAP_CLOUD_Transfer, self.AAP_CLOUD_Transfer_sender)
+                retry_copyfile(src_file, dest_file)
+            except Exception:
+                msgstr = g.appmsg.get_api_message("MSG-10093", [search_key])
+                self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename), str(inspect.currentframe().f_lineno), msgstr)
+                return False
+        return True
+
+    def Creategitkeep(self, in_exec_mode):
+        """
+        AAP-Cloud用の空ディレクトリをGitlab経由でコピーできるように.gitkeepを作成する
+        Arguments:
+            in_exec_mode: 実行エンジン
+        Returns:
+            True/False
+        """
+        if in_exec_mode == AnscConst.DF_EXEC_MODE_AAP_CLOUD:
+            @file_read_retry
+            def make_gitkeep(path):
+                with open(path + "/.gitkeep", "w"):
+                    pass
+            c_indir = self.getAnsible_in_Dir()
+            c_outdir = self.getAnsible_out_Dir()
+            try:
+                # __ita_out_dir__/user_files
+                make_gitkeep("{}/{}".format(c_outdir, self.LC_ANS_OUTDIR_DIR))
+                # in/_parameters
+                make_gitkeep("{}/{}".format(c_indir, "_parameters"))
+                # in/_parameters_file
+                make_gitkeep("{}/{}".format(c_indir, "_parameters_file"))
+                # __ita_out_dir__/_parameters
+                make_gitkeep("{}/{}".format(c_outdir, "_parameters"))
+                # __ita_out_dir__/_parameters_file
+                make_gitkeep("{}/{}".format(c_outdir, "_parameters_file"))
+            except Exception:
+                msgstr = "Failed to Create .gitkeep."
+                self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename), str(inspect.currentframe().f_lineno), msgstr)
+                return False
         return True
 
     def CopysshAgentExpectfile(self):
@@ -10452,3 +10588,363 @@ class CreateAnsibleExecFiles():
                 vault_host_vars_file_list[_hv][_gsk] = self.ky_pioneer_encrypt(ky_decrypt(_gsv))
         return True, vault_vars, vault_host_vars_file_list
 
+    def makeAnsibleVault(self, in_pass, in_vaultpass, in_indento, in_item_name):
+        """Encrypt a string using Ansible Vault and add indentation.
+
+        Encrypts the specified string using Ansible Vault with the configured vault password.
+        If the string is already encrypted (provided via in_vaultpass), it uses that value.
+        Otherwise, it performs encryption and caches the result for reuse. The encrypted
+        string is formatted with the specified indentation for YAML compatibility.
+
+        Args:
+            in_pass (str): The plaintext string to encrypt.
+            in_vaultpass (str): Pre-encrypted string if already available, or empty string to encrypt.
+            in_indento (int): Number of spaces to indent the encrypted output.
+            in_item_name (str): Identifier for error messages (e.g., variable name).
+
+        Returns:
+            str or False: One of the following:
+                - str: Encrypted and indented Ansible Vault string on success.
+                - False: On encryption failure.
+        """
+        out_vaultpass = ""
+
+        obj = AnsibleVault()
+
+        if not in_vaultpass:
+
+            # パスワードが暗号化されているか判定
+            if in_pass in self.lv_vault_pass_list:
+                out_vaultpass = self.lv_vault_pass_list[in_pass]
+            else:
+                VaultPasswordFilePath = obj.CreateVaultPasswordFilePath()
+                # in_passはrot13+base64で複合化されている
+                if not self.lv_ans_if_info['ANSIBLE_VAULT_PASSWORD']:
+                    self.lv_ans_if_info['ANSIBLE_VAULT_PASSWORD'] = ky_encrypt(AnscConst.DF_ANSIBLE_VAULT_PASSWORD)
+                obj.CreateVaultPasswordFile(VaultPasswordFilePath, self.lv_ans_if_info['ANSIBLE_VAULT_PASSWORD'])
+                # AnsibleのPATHは指定無し
+                retAry = obj.Vault("", self.getAnsibleExecuteUser(), VaultPasswordFilePath, in_pass, "", self.lv_engine_virtualenv_name, True)
+                ret = retAry[0]
+                out_vaultpass = retAry[1]
+                if ret is False:
+                    # ansible-vault失敗
+                    msgstr = g.appmsg.get_api_message("MSG-10646", [in_item_name])
+                    self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename), str(inspect.currentframe().f_lineno), msgstr)
+                    # 標準エラー出力を出力
+                    self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename), str(inspect.currentframe().f_lineno), out_vaultpass)
+                    return False
+                self.lv_vault_pass_list[in_pass] = out_vaultpass
+            out_vaultpass = " !vault |" + out_vaultpass
+        else:
+            out_vaultpass = in_vaultpass
+
+        # ansible-vaultで暗号化された文字列のインデントを調整
+        out_vaultpass = obj.setValutPasswdIndento(out_vaultpass, in_indento)
+
+        return out_vaultpass
+
+    def getSAToken(self):
+        """Return RefreshToken for ServiceAccount(AAP).
+
+        Retrieves or creates a refresh token for the AAP service account. If a valid token
+        exists in the database and is verified via internal API, it returns the existing token.
+        Otherwise, it creates a new token and updates the database.
+
+        Returns:
+            tuple: One of the following combinations:
+                - (True, token): On success. token is the refresh token string.
+                - (False, msg): On failure. msg is an error message string.
+        """
+        try:
+            SERVICE_ACCOUNT_USER = f"aap_service_account_user_{g.ORGANIZATION_ID}_{g.WORKSPACE_ID}"
+            sa_data = json.loads(self.lv_ans_if_info["SERVICE_ACCOUNT_INFO"]) if self.lv_ans_if_info["SERVICE_ACCOUNT_INFO"] else {}
+            sa_refresh_id = sa_data["id"]
+            expiresdate_str = sa_data["expiresdate"]
+            sa_refresh_expiresdate = datetime.fromisoformat(expiresdate_str.replace('Z', '+00:00'))
+            sa_refresh_token = self.lv_ans_if_info["SERVICE_ACCOUNT_TOKEN"]
+            if sa_refresh_expiresdate and (sa_refresh_expiresdate - datetime.now(timezone.utc)) >= timedelta(days=10) and sa_refresh_token:
+                # 有効期限が10日以上先ならinternal-apiに存在確認
+                result, _ = self.refresh_tokens_check(SERVICE_ACCOUNT_USER, sa_refresh_id)
+                if result is True:
+                    # DBの値はky_encryptしているので、復号化して渡す
+                    g.applogger.debug("token check success , then use db var")
+                    return True, ky_decrypt(sa_refresh_token)
+                # internal-apiで存在確認できなければ「新規作成→上書き」
+                g.applogger.debug("token check failed(notfound) , then execute sa_refresh_tokens_new")
+                result, token_data = self.sa_refresh_tokens_new(SERVICE_ACCOUNT_USER)
+                if result is False:
+                    return False, token_data
+            else:
+                # 有効期限が10日以上ないor有効期限切れなら「新規作成->上書き」
+                g.applogger.debug("token expired , then execute sa_refresh_tokens_new")
+                result, token_data = self.sa_refresh_tokens_new(SERVICE_ACCOUNT_USER)
+                if result is False:
+                    return False, token_data
+        except Exception as e:
+            # DBが初期値or不正値なら「新規作成->上書き」
+            g.applogger.debug(f"{e=} , then execute sa_refresh_tokens_new")
+            result, token_data = self.sa_refresh_tokens_new(SERVICE_ACCOUNT_USER)
+            if result is False:
+                return False, token_data
+        # DB上書き
+        new_sa_refresh_id = token_data["id"]
+        new_sa_refresh_expiresdate = token_data["refresh_token_expire"]
+        new_sa_refresh_token = token_data["refresh_token"]
+        sa_info = {"id": new_sa_refresh_id, "expiresdate": new_sa_refresh_expiresdate}
+        sa_refresh_token = ky_encrypt(new_sa_refresh_token)
+        self.lv_ans_if_info["SERVICE_ACCOUNT_INFO"] = json.dumps(sa_info)
+        self.lv_ans_if_info["SERVICE_ACCOUNT_TOKEN"] = sa_refresh_token
+
+        g.applogger.debug(f"UPDATE T_ANSC_IF_INFO {sa_info=}")
+        update_data = {
+            "DISUSE_FLAG": "0",
+            "SERVICE_ACCOUNT_INFO": json.dumps(sa_info),
+            "SERVICE_ACCOUNT_TOKEN": sa_refresh_token,
+            "LAST_UPDATE_USER": g.USER_ID
+        }
+        self.lv_objDBCA.table_update("T_ANSC_IF_INFO", update_data, "DISUSE_FLAG", is_register_history=False, last_timestamp=True)
+        return True, new_sa_refresh_token
+    
+    def internalpost(self, uri, request_data):
+        """Common function for executing Internal API POST requests.
+
+        Arguments:
+            uri (str): URL of the Internal API endpoint.
+            request_data (dict): Request body data to be sent as JSON.
+
+        Returns:
+            tuple: One of the following combinations:
+                - (True, response): On success. response is a requests.Response object.
+                - (False, msg): On failure. msg is an error message string.
+        """
+        try:
+            header_para = {
+                "Content-Type": "application/json",
+                "User-Id": "dummy",
+                "X-Forwarded-Host": urlparse(os.environ.get("EXTERNAL_URL")).netloc,
+                "X-Forwarded-Proto": urlparse(os.environ.get("EXTERNAL_URL")).scheme
+            }
+            json_data = json.dumps(request_data)
+
+            session = requests.Session()
+            retries = Retry(total=5, backoff_factor=1, status_forcelist=[500, 502, 503, 504])
+            session.mount('http://', HTTPAdapter(max_retries=retries))
+            session.mount('https://', HTTPAdapter(max_retries=retries))
+            g.applogger.debug(f"POST: {uri}, header: {header_para}, body: {request_data}")
+            response = session.request(
+                method='POST',
+                url=uri,
+                timeout=(12, 600),
+                headers=header_para,
+                data=json_data
+            )
+            return True, response
+        except Exception as e:
+            msg = f"Internal API request failed: {uri}, error: {e}"
+            g.applogger.debug(f"{msg}")
+            return False, msg
+
+    def internalget(self, uri):
+        """Common function for executing Internal API GET requests.
+
+        Arguments:
+            uri (str): URL of the Internal API endpoint.
+
+        Returns:
+            tuple: One of the following combinations:
+                - (True, response): On success. response is a requests.Response object.
+                - (False, msg): On failure. msg is an error message string.
+        """
+        try:
+            header_para = {
+                "Content-Type": "application/json",
+                "User-Id": "dummy"
+            }
+
+            session = requests.Session()
+            retries = Retry(total=5, backoff_factor=1, status_forcelist=[500, 502, 503, 504])
+            session.mount('http://', HTTPAdapter(max_retries=retries))
+            session.mount('https://', HTTPAdapter(max_retries=retries))
+            g.applogger.debug(f"GET: {uri}, header: {header_para}")
+            response = session.request(
+                method='GET',
+                url=uri,
+                timeout=(12, 600),
+                headers=header_para
+            )
+            return True, response
+        except Exception as e:
+            msg = f"Internal API request failed: {uri}, error: {e}"
+            g.applogger.debug(f"{msg}")
+            return False, msg
+
+    def sa_exists_check(self, un):
+        """Check if a Service Account exists.
+
+        Arguments:
+            un (str): Service Account username.
+
+        Returns:
+            tuple: One of the following combinations:
+                - (True, uid): On success. uid is the Service Account user ID.
+                - (False, msg): On failure. msg is an error message string.
+        """
+        api_url = f"http://{os.environ.get('PLATFORM_API_HOST')}:{os.environ.get('PLATFORM_API_PORT')}/internal-api/{g.ORGANIZATION_ID}/platform/workspaces/{g.WORKSPACE_ID}/service-account-users"
+        result, data = self.internalget(api_url)
+        if result is False:
+            return False, data
+        elif data.status_code != 200:
+            msg = f"Internal API returned non-200 status: {data.status_code}, URL: {api_url}"
+            return False, msg
+        
+        for sa_info in data.json().get("data", []):
+            if un == sa_info.get("username"):
+                return True, sa_info["id"]
+        return False, f"{un} is not in ServiceAccountList"
+
+    def sa_create(self, un):
+        """Create a new Service Account for AAP.
+
+        Arguments:
+            un (str): Service Account username.
+
+        Returns:
+            tuple: One of the following combinations:
+                - (True, uid): On success. uid is the Service Account user ID.
+                - (False, msg): On failure. msg is an error message string.
+        """
+        api_url = f"http://{os.environ.get('PLATFORM_API_HOST')}:{os.environ.get('PLATFORM_API_PORT')}/internal-api/{g.ORGANIZATION_ID}/platform/workspaces/{g.WORKSPACE_ID}/service-account-users"
+        request_data = {
+            "username": un,
+            "service_account_user_type": "ansible-execution-agent",
+            "description": "Execution engine used in Ansible Automation Platform (Cloud)."
+        }
+        result, data = self.internalpost(api_url, request_data)
+        if result is False:
+            return False, data
+        elif data.status_code != 200:
+            msg = f"Internal API returned non-200 status: {data.status_code}, URL: {api_url}"
+            return False, msg
+        # ServiceAccount作成APIではUIDが返ってこないため、一覧APIから探す
+        result, uid_data = self.sa_exists_check(un)
+        if result is True:
+            return True, uid_data
+        return result, uid_data
+
+    def refresh_tokens_check(self, un, id):
+        """Check if a refresh token ID exists for a Service Account.
+
+        Arguments:
+            un (str): Service Account username.
+            id (str): Refresh token ID.
+
+        Returns:
+            tuple: One of the following combinations:
+                - (True, msg): On success. msg is "exists".
+                - (False, msg): On failure. msg is an error message string.
+        """
+        result, uid_data = self.sa_exists_check(un)
+        if result is False:
+            return result, uid_data
+
+        api_url = f"http://{os.environ.get('PLATFORM_API_HOST')}:{os.environ.get('PLATFORM_API_PORT')}/internal-api/{g.ORGANIZATION_ID}/platform/workspaces/{g.WORKSPACE_ID}/service-account-users/{uid_data}/refresh_tokens"
+        result, tokenlist_data = self.internalget(api_url)
+        if result is False:
+            return False, tokenlist_data
+        elif tokenlist_data.status_code != 200:
+            msg = f"Internal API returned non-200 status: {tokenlist_data.status_code}, URL: {api_url}"
+            return False, msg
+        
+        for token_info in tokenlist_data.json().get("data", []):
+            if id == token_info.get("id"):
+                return True, "exists"
+        return False, f"{id} is not in ServiceAccount {un}'s Refreshtoken List"
+
+    def refresh_tokens_check_fromdate(self, uid, date_str):
+        """Retrieve refresh token ID by expiration date for a Service Account.
+
+        This reverse lookup is necessary because the token ID is not returned during issuance.
+
+        Arguments:
+            uid (str): Service Account user ID
+            date_str (str): Refresh token expiration date (from Keycloak, in local timezone with 'Z' suffix).
+
+        Returns:
+            tuple: One of the following combinations:
+                - (True, tokenid): On success. tokenid is the refresh token ID.
+                - (False, msg): On failure. msg is an error message string.
+        """
+        api_url = f"http://{os.environ.get('PLATFORM_API_HOST')}:{os.environ.get('PLATFORM_API_PORT')}/internal-api/{g.ORGANIZATION_ID}/platform/workspaces/{g.WORKSPACE_ID}/service-account-users/{uid}/refresh_tokens"
+        result, tokenlist_data = self.internalget(api_url)
+        if result is False:
+            return False, tokenlist_data
+        elif tokenlist_data.status_code != 200:
+            msg = f"Internal API returned non-200 status: {tokenlist_data.status_code}, URL: {api_url}"
+            return False, msg
+
+        dt_target = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+        for token_info in tokenlist_data.json().get("data", []):
+            dt_token = datetime.fromisoformat(token_info.get("expire_timestamp").replace('Z', '+00:00'))
+            if dt_token == dt_target:
+                return True, token_info["id"]
+        return False, f"expires_date {date_str} is not in ServiceAccount {uid}'s Refreshtoken List"
+
+    def refresh_tokens_new(self, uid):
+        """Issue a new refresh token for a Service Account.
+
+        Arguments:
+            uid (str): Service Account user ID
+
+        Returns:
+            tuple: One of the following combinations:
+                - (True, data): On success. data is a dict containing token information.
+                - (False, msg): On failure. msg is an error message string.
+        """
+        api_url = f"http://{os.environ.get('PLATFORM_API_HOST')}:{os.environ.get('PLATFORM_API_PORT')}/internal-api/{g.ORGANIZATION_ID}/platform/workspaces/{g.WORKSPACE_ID}/service-account-users/{uid}/refresh_tokens"
+        request_data = {}
+        result, token_data = self.internalpost(api_url, request_data)
+        if result is False:
+            return False, token_data
+        elif token_data.status_code != 200:
+            msg = f"Internal API returned non-200 status: {token_data.status_code}, URL: {api_url}"
+            return False, msg
+        return True, token_data.json().get("data", {})
+
+    def sa_refresh_tokens_new(self, un):
+        """Create a Service Account and issue a refresh token.
+
+        Executes the complete flow from Service Account creation to refresh token issuance.
+
+        Arguments:
+            un (str): Service Account username.
+
+        Returns:
+            tuple: One of the following combinations:
+                - (True, return_dict): On success. return_dict contains id, refresh_token_expire, and refresh_token.
+                - (False, msg): On failure. msg is an error message string.
+        """
+        result, uid_data = self.sa_exists_check(un)
+        # SAが存在しないなら作ってからRefreshToken発行
+        if result is False and uid_data == f"{un} is not in ServiceAccountList":
+            result, sa_data = self.sa_create(un)
+            if result is False:
+                return result, sa_data
+            # この時点でuid_dataは「f"{un} is not in ServiceAccountList"」である上、sa_dataにはSAのuidしか入らないので上書き
+            uid_data = sa_data
+            result, token_data = self.refresh_tokens_new(uid_data)
+            if result is False:
+                return result, token_data
+        # SAが存在するならRefreshToken発行
+        elif result is True:
+            result, token_data = self.refresh_tokens_new(uid_data)
+            g.applogger.info(f"{token_data=}")
+            if result is False:
+                return result, token_data
+        # internal-apiエラーならそのまま終了
+        else:
+            return result, uid_data
+        result, data_id = self.refresh_tokens_check_fromdate(uid_data, token_data["refresh_token_expire"])
+        if result is False:
+            return result, data_id
+        return_dict = {"id": data_id, "refresh_token_expire": token_data["refresh_token_expire"], "refresh_token": token_data["refresh_token"]}
+        return True, return_dict

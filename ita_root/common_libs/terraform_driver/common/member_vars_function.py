@@ -919,13 +919,16 @@ def create_member_data_for_regist(objdbca, TFConst, temp_member_data_list):  # n
                         type_nest_data_json = json.dumps(type_nest_data)
                         if parent_member_data_json == type_nest_data_json:
                             target_key = parent_index
-                        if target_key:
                             break
 
                     if target_key is None:
                         member_data['parent_member_vars_id'] = None
                     else:
-                        member_data['parent_member_vars_id'] = temp_member_data_list[target_key]['child_member_vars_id']
+                        if temp_member_data_list[target_key].get('module_regist_flag'):
+                            # module_regist_flag=True のレコードはメンバー変数管理テーブルに登録しないデータなので親にはならない
+                            member_data['parent_member_vars_id'] = None
+                        else:
+                            member_data['parent_member_vars_id'] = temp_member_data_list[target_key]['child_member_vars_id']
 
                 else:
                     # ネストが1であれば親がいないので探さない
@@ -1052,13 +1055,16 @@ def part_member_data_for_regist(objdbca, TFConst, member_data_list):  # noqa: C9
                         type_nest_data_json = json.dumps(type_nest_data)
                         if parent_member_data_json == type_nest_data_json:
                             target_key = parent_index
-                        if target_key:
                             break
 
                     if target_key is None:
                         member_data['parent_member_vars_id'] = None
                     else:
-                        member_data['parent_member_vars_id'] = temp_member_data_list[target_key]['child_member_vars_id']
+                        if temp_member_data_list[target_key].get('module_regist_flag'):
+                            # module_regist_flag=True のレコードはメンバー変数管理テーブルに登録しないデータなので親にはならない
+                            member_data['parent_member_vars_id'] = None
+                        else:
+                            member_data['parent_member_vars_id'] = temp_member_data_list[target_key]['child_member_vars_id']
 
                 else:
                     # ネストが1であれば親がいないので探さない

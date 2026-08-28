@@ -13,20 +13,23 @@
 #   limitations under the License.
 
 import pytest
-import sys
 from unittest.mock import patch, MagicMock
 
-# Flask の g オブジェクトをモックして sys.modules に追加
-flask_mock = MagicMock()
-g_mock = MagicMock()
-flask_mock.g = g_mock
-sys.modules['flask'] = flask_mock
+from common_libs.common.util import get_tmp_file_path
 
-from common_libs.common.util import get_tmp_file_path  # noqa: E402
+# common_libs.common.util が参照する flask.g の代わりに使うモック
+g_mock = MagicMock()
 
 
 class TestGetTmpFilePath:
     """get_tmp_file_path関数のテストクラス"""
+
+    @pytest.fixture(autouse=True)
+    def mock_flask_g(self):
+        """common_libs.common.util の flask.g をモックする"""
+        g_mock.reset_mock(return_value=True, side_effect=True)
+        with patch('common_libs.common.util.g', new=g_mock):
+            yield g_mock
 
     @patch('common_libs.common.util.uuid_lib.uuid4')
     def test_get_tmp_file_path_success(self, mock_uuid):

@@ -1967,23 +1967,15 @@ class loadTable():
             if import_mode is True:
                 # 登録・更新処理
                 if cmd_type == CMD_REGISTER:
-                    result = self.objdbca.table_insert(self.get_table_name(), colname_parameter, primary_key, False)
-                elif cmd_type == CMD_UPDATE:
-                    result = self.objdbca.table_update(self.get_table_name(), colname_parameter, primary_key, False)
-                elif cmd_type == CMD_DISCARD:
-                    result = self.objdbca.table_update(self.get_table_name(), colname_parameter, primary_key, False)
-                elif cmd_type == CMD_RESTORE:
-                    result = self.objdbca.table_update(self.get_table_name(), colname_parameter, primary_key, False)
+                    result, _uuids = self.objdbca.table_insert_with_ids(self.get_table_name(), colname_parameter, primary_key, False)
+                elif cmd_type in [CMD_UPDATE, CMD_DISCARD, CMD_RESTORE]:
+                    result, _uuids = self.objdbca.table_update_with_ids(self.get_table_name(), colname_parameter, primary_key, False)
             else:
                 # 登録・更新処理
                 if cmd_type == CMD_REGISTER:
-                    result = self.objdbca.table_insert(self.get_table_name(), colname_parameter, primary_key, history_flg)
-                elif cmd_type == CMD_UPDATE:
-                    result = self.objdbca.table_update(self.get_table_name(), colname_parameter, primary_key, history_flg)
-                elif cmd_type == CMD_DISCARD:
-                    result = self.objdbca.table_update(self.get_table_name(), colname_parameter, primary_key, history_flg)
-                elif cmd_type == CMD_RESTORE:
-                    result = self.objdbca.table_update(self.get_table_name(), colname_parameter, primary_key, history_flg)
+                    result, _uuids = self.objdbca.table_insert_with_ids(self.get_table_name(), colname_parameter, primary_key, history_flg)
+                elif cmd_type in [CMD_UPDATE, CMD_DISCARD, CMD_RESTORE]:
+                    result, _uuids = self.objdbca.table_update_with_ids(self.get_table_name(), colname_parameter, primary_key, history_flg)
                 elif cmd_type == CMD_DELETE:
                     result = self.objdbca.table_delete(self.get_table_name(), colname_parameter, primary_key, history_flg)
 
@@ -2006,20 +1998,25 @@ class loadTable():
                 tmp_result = self.convert_colname_restkey(temp_rows)
                 result = tmp_result[0]
             else:
-                result_uuid = result[0].get(primary_key)
-                if history_flg is True:
+                # INSERT/UPDATEの場合は、発番したUUIDを取得する
+                result_uuid, result_uuid_jnl = _uuids[0] if _uuids else ('', '')
+
+                # 履歴有無に応じて、ジャーナルのUUIDを取得する
+                if history_flg is True and not result_uuid_jnl:
                     _jnl_uuid = self.get_maintenance_uuid(result_uuid)
                     if _jnl_uuid:
                         result_uuid_jnl = _jnl_uuid[0].get(COLNAME_JNL_SEQ_NO)
                     else:
                         result_uuid_jnl = result_uuid
-                else:
+                elif history_flg is False:
                     result_uuid_jnl = result_uuid
 
                 # 主キーのカラム名をitem_name_restに変更
                 temp_rows = {primary_key: result[0].get(primary_key)}
                 tmp_result = self.convert_colname_restkey(temp_rows)
                 result = tmp_result[0]
+
+            g.applogger.debug(f"{cmd_type=} {result_uuid=}, {result_uuid_jnl=}")
 
             # レコード操作後エラー確認
             if self.get_message_count(MSG_LEVEL_ERROR) > 0:

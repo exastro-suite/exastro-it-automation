@@ -70,6 +70,9 @@ class RestApiCaller():
             self.AnsConstObj = getAnsibleConst(driver_id)
         self.gateway = None
 
+        self.authorize()
+        self.check_api_info()
+
     def getOrchestratorSubId_dir(self):
         return self.AnsConstObj.vg_OrchestratorSubId_dir
 

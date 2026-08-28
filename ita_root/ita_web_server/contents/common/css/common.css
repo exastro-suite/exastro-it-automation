@@ -254,6 +254,10 @@ visibility: hidden;
 .textareaOverWrap > .textareaHeightAdjustmentText {
 white-space: normal!important;
 }
+.inputTextareaSizingWrap > .textarea {
+field-sizing: content;
+resize: none;
+}
 .inputColor {
 width: 80px;
 margin: 0; padding: 2px;
@@ -5180,6 +5184,7 @@ line-height: 1.5;
 word-break: break-all;
 }
 .commonInputGroup {
+overflow: auto;
 padding: 8px 16px;
 background-color: rgba( 255,255,255,.2 );
 border: 1px solid rgba( 0,0,0,.15 );
@@ -5969,7 +5974,7 @@ box-shadow: 0 0 4px rgba( 0,0,0,.5 ) inset,
 .icon-dashboard:before{content:"\e929"}.icon-note:before{content:"\e949"}.icon-workspace:before{content:"\e94a"}.icon-sort:before{content:"\e950"}
 .icon-sort_asc:before{content:"\e952"}.icon-sort_desc:before{content:"\e953"}.icon-mouse:before{content:"\e954"}.icon-mouse_left:before{content:"\e955"}
 .icon-mouse_right:before{content:"\e959"}.icon-mouse_wheel:before{content:"\e95a"}.icon-compare:before{content:"\e95d"}.icon-export:before{content: "\e95e"}
-.icon-import:before{content: "\e95f"}.icon-rule:before{content: "\e960"}.icon-rhombus:before{content: "\e961"}
+.icon-import:before{content: "\e95f"}.icon-rule:before{content: "\e960"}.icon-rhombus:before{content: "\e961"}.icon-send:before{content: "\e962"}.icon-stick:before{content: "\e963"}
 
 .caution_head {
   color: red;

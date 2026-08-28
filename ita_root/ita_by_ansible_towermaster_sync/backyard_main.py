@@ -160,7 +160,7 @@ def backyard_main(organization_id, workspace_id):
             raise Exception("More than one record in if_info.")
 
         # Ansible Tower以外は処理中止
-        if ifInfoRows[0]['ANSIBLE_EXEC_MODE'] != AnscConst.DF_EXEC_MODE_AAC:
+        if ifInfoRows[0]['ANSIBLE_EXEC_MODE'] != AnscConst.DF_EXEC_MODE_AAC and ifInfoRows[0]['ANSIBLE_EXEC_MODE'] != AnscConst.DF_EXEC_MODE_AAP_CLOUD:
             return 0
 
         if ('ANSTWR_AUTH_TOKEN' not in ifInfoRows[0] or ifInfoRows[0]['ANSTWR_AUTH_TOKEN'] is None or len(ifInfoRows[0]['ANSTWR_AUTH_TOKEN'].strip()) <= 0) \
@@ -185,16 +185,6 @@ def backyard_main(organization_id, workspace_id):
             ansibleTowerIfInfo['ANSTWR_AUTH_TOKEN'],
             proxySetting
         )
-
-        response_array = restApiCaller.authorize()
-        if not response_array['success']:
-            raise Exception("Faild to authorize to Ansible Automation Controller. %s" % (response_array['responseContents']['errorMessage']))
-
-        # AAP2.5対応
-        # AAPのバージョン確認
-        response_flg = restApiCaller.check_api_info()
-        if not response_flg:
-            raise Exception("Faild to check api to Controller / Platform Gateway .")
 
         ############################################################
         # 接続トークンに対応したユーザー情報取得

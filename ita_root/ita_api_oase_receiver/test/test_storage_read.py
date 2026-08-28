@@ -15,13 +15,19 @@
 import pytest
 import os
 import tempfile
-from unittest.mock import patch, mock_open
+from unittest.mock import patch, mock_open, MagicMock
 
 from common_libs.common.storage_access import storage_read
 
 
 class TestStorageRead:
     """storage_readクラスのテストクラス"""
+
+    @pytest.fixture(autouse=True)
+    def mock_flask_g(self):
+        """storage_access 内のログ出力が参照する flask.g をモックする"""
+        with patch('common_libs.common.storage_access.g', new=MagicMock()) as mock_g:
+            yield mock_g
 
     def setup_method(self):
         """各テストメソッドの前に実行される初期化処理"""
@@ -74,7 +80,7 @@ class TestStorageRead:
         self.storage_read.close()
 
     @patch.dict(os.environ, {'STORAGEPATH': '/storage'})
-    @patch('shutil.copy2')
+    @patch('common_libs.common.storage_access.retry_copy2')
     @patch('builtins.open', mock_open(read_data="test content"))
     def test_open_storage_file(self, mock_copy):
         """/storageパスのファイルを開くテスト"""
@@ -92,7 +98,7 @@ class TestStorageRead:
         mock_copy.assert_called_once()
 
     @patch.dict(os.environ, {'STORAGEPATH': '/storage'})
-    @patch('shutil.copy2')
+    @patch('common_libs.common.storage_access.retry_copy2')
     @patch('builtins.open', mock_open(read_data="test content"))
     def test_open_with_tmp_path(self, mock_copy):
         """tmp_pathを指定してファイルを開くテスト"""
@@ -156,7 +162,7 @@ class TestStorageRead:
         assert self.storage_read.fd.closed
 
     @patch.dict(os.environ, {'STORAGEPATH': '/storage'})
-    @patch('shutil.copy2')
+    @patch('common_libs.common.storage_access.retry_copy2')
     @patch('builtins.open', mock_open(read_data="test content"))
     def test_close_storage_file(self, mock_copy):
         """/storageファイルのクローズテスト（ファイル削除あり）"""
@@ -172,7 +178,7 @@ class TestStorageRead:
             mock_remove.assert_called_once()
 
     @patch.dict(os.environ, {'STORAGEPATH': '/storage'})
-    @patch('shutil.copy2')
+    @patch('common_libs.common.storage_access.retry_copy2')
     @patch('builtins.open', mock_open(read_data="test content"))
     def test_close_storage_file_no_delete(self, mock_copy):
         """/storageファイルのクローズテスト（ファイル削除なし）"""
@@ -188,7 +194,7 @@ class TestStorageRead:
             mock_remove.assert_not_called()
 
     @patch.dict(os.environ, {'STORAGEPATH': '/storage'})
-    @patch('shutil.copy2')
+    @patch('common_libs.common.storage_access.retry_copy2')
     @patch('builtins.open', mock_open(read_data="test content"))
     def test_close_with_force_file_del(self, mock_copy):
         """強制ファイル削除フラグありのクローズテスト"""
@@ -303,7 +309,7 @@ class TestStorageRead:
         self.storage_read.close()
 
     @patch.dict(os.environ, {'STORAGEPATH': '/storage'})
-    @patch('shutil.copy2', side_effect=Exception("Copy failed"))
+    @patch('common_libs.common.storage_access.retry_copy2', side_effect=Exception("Copy failed"))
     def test_copy_failure(self, mock_copy):
         """ファイルコピーに失敗した場合のテスト"""
         storage_file_path = "/storage/test/file.txt"

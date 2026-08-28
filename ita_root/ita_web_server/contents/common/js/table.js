@@ -1619,7 +1619,12 @@ setTableEvents() {
                     option.endPoint += `journal/${journalId}/`;
                 }
                 try {
-                    file = await fn.getFile( option.endPoint, 'GET', null );
+                    const fileType = fn.fileTypeCheck( fileName );
+                    if ( fileType !== 'unsupported') {
+                        file = await fn.getFile( option.endPoint, 'GET', null );
+                    } else {
+                        file = '';
+                    }
                 } catch ( e ) {
                     if ( e !== 'break') {
                         console.error( e );
@@ -1893,11 +1898,12 @@ setTableEvents() {
 
             const fileType = fn.fileTypeCheck( fileName );
             const option = {
-                endPoint: `/menu/${tb.params.menuNameRest}/${id}/${rest}/file/`
+                endPoint: `/menu/${tb.params.menuNameRest}/${id}/${rest}/file/`,
+                aiAssistantEnabled: tb.info.ai_assistant.enabled
             };
 
             // ファイルが空、かつ編集可能の場合はファイルを取得する
-            if ( tb.option.fileFlag === false && fileName !== '' && file === undefined && ( fileType === 'text' || fileType === 'image') ) {
+            if ( tb.option.fileFlag === false && fileName !== '' && file === undefined && fileType !== 'unsupported' ) {
                 try {
                     file = await fn.getFile( option.endPoint, 'GET', null );
                 } catch ( e ) {
@@ -3915,12 +3921,16 @@ discardMark( value ) {
    Discard check
 ##################################################
 */
-discardCheck( id ) {
+discardCheck( id, editFlag = false ) {
     const tb = this;
 
     // 編集データがある場合
+    // ※編集モードの場合は編集前後で廃止を優先する
     if ( tb.edit.input[ id ] && tb.edit.input[ id ].after.parameter.discard ) {
-        return tb.edit.input[ id ].after.parameter.discard;
+        const discard = tb.edit.input[ id ].after.parameter.discard;
+        if ( !editFlag || discard === '1') {
+            return discard;
+        }        
     }
 
     if ( tb.data.body ) {
@@ -4043,7 +4053,8 @@ viewCellHtml( item, columnKey, journal ) {
                     const restType = ( tb.mode !== 'history')? 'default': 'history';
                     attrs.push(`data-restType="${restType}"`);
                     const fileHtml = [`<a href="${value}" class="tableViewDownload" ${attrs.join(' ')}>${value}</a>`];
-                    if ( ['text', 'image'].indexOf( fn.fileTypeCheck( value ) ) !== -1 ) {
+                    const fileType = fn.fileTypeCheck( value );
+                    if ( fileType !== 'unsupported') {
                         fileHtml.push(`<button class="button filePreview popup" title="${getMessage.FTE00176}">${fn.html.icon('search')}</button>`);
                     }
                     return checkJournal( fileHtml.join('') );
@@ -4299,7 +4310,12 @@ editCellHtml( item, columnKey ) {
             case 'IDColumn': case 'LinkIDColumn': case 'RoleIDColumn': case 'UserIDColumn':
             case 'EnvironmentIDColumn': case 'JsonIDColumn': case 'NotificationIDColumn':
             case 'ExecutionEnvironmentDefinitionIDColumn': case 'MultiSelectIDColumn':
-                return fn.cv( v, '');
+                if ( inputItem === '3') {
+                    // 非表示カラムなら値をvalueに入れるためエスケープする
+                    return fn.cv( v, '', true );
+                } else {
+                    return fn.cv( v, '');
+                }
             case 'FilterConditionSettingColumn': case 'ConclusionEventSettingColumn':
                 if ( !tb.partsFlag ) {
                     return fn.cv( v, '', true );
@@ -4319,7 +4335,7 @@ editCellHtml( item, columnKey ) {
     };
 
     // 廃止チェック
-    if ( tb.discardCheck( rowId ) === '1') {
+    if ( tb.discardCheck( rowId, true ) === '1') {
         attr.disabled = 'disabled';
     }
 
@@ -4344,6 +4360,15 @@ editCellHtml( item, columnKey ) {
                     }
                 }
             }
+        }
+    }
+
+    // 備考欄の場合、編集前と後で廃止フラグに変更があった場合は編集可能にする
+    if ( inputData !== undefined && columnName === 'remarks' && attr.disabled === 'disabled') {
+        const beforeDiscard = parameter?.discard ?? '';
+        const afterDiscard = inputData?.after?.parameter?.discard;
+        if ( afterDiscard && beforeDiscard !== afterDiscard ) {
+            delete attr.disabled;
         }
     }
 
@@ -4596,7 +4621,10 @@ editConfirmCellHtml( item, columnKey ) {
                 const id = parameter[ tb.idNameRest ];
                 if ( val !== '') {
                     const fileHtml = [`<a href="${val}" class="tableViewDownload" data-type="${data}" data-id="${id}" data-rest="${columnName}">${val}</a>`];
-                    if ( ['text', 'image'].indexOf( fn.fileTypeCheck( val ) ) !== -1 ) fileHtml.push(`<button class="button filePreview popup" title="${getMessage.FTE00176}">${fn.html.icon('search')}</button>`);
+                    const fileType = fn.fileTypeCheck( val );
+                    if ( fileType !== 'unsupported') {
+                        fileHtml.push(`<button class="button filePreview popup" title="${getMessage.FTE00176}">${fn.html.icon('search')}</button>`);
+                    }
                     return fileHtml.join('');
                 } else {
                     return '';

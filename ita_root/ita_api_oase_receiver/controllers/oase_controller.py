@@ -47,11 +47,6 @@ def post_event_collection_settings(body, organization_id, workspace_id):  # noqa
 
     :rtype: InlineResponse200
     """
-    # メンテナンスモードのチェック
-    if g.maintenance_mode.get('data_update_stop') == '1':
-        status_code = "498-00004"
-        raise AppException(status_code, [], [])  # noqa: F405
-
     # DB接続
     wsDb = DBConnectWs(workspace_id)
 
@@ -294,6 +289,11 @@ def post_events(body: str, organization_id: str, workspace_id: str) -> tuple:  #
                 # InsertOneなのでイベント受信対象に追加
                 recieve_notification_list = labeled_event_list
 
+        except AppException as e:  # noqa: F405
+            # DB起因等のAppExceptionは
+            # 499-01803(MongoDB保存失敗)でレスポンスしないようにする
+            g.applogger.error(stacktrace())  # noqa: F405
+            raise e
         except Exception as e:
             g.applogger.error(stacktrace())  # noqa: F405
             err_code = "499-01803"

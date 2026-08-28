@@ -85,8 +85,9 @@ def external_valid_menu_before(objdbca, objtable, option):
         ary.append({"VALUE": str_twr_port, "MSG_CODE": "MSG-10883", "EXIST": exist_str_twr_port})
         # 組織名は必須項目から外す。
         ary.append({"VALUE": str_token, "MSG_CODE": "MSG-10885", "EXIST": True})
-        # 実行エンジンがTowerの場合の、Ansible Towerインターフェースの必須入力チェック
-        if str_exec_mode == AnscConst.DF_EXEC_MODE_AAC:
+
+        # 実行エンジンがAAP, AAP(Cloud)の場合、Ansible Automation Platformインターフェースの必須入力チェック
+        if  str_exec_mode in [AnscConst.DF_EXEC_MODE_AAC, AnscConst.DF_EXEC_MODE_AAP_CLOUD]:
             for i in ary:
                 # nullまたはNoneの場合空文字と同じ扱いにする
                 if i["VALUE"] is None:
@@ -98,7 +99,49 @@ def external_valid_menu_before(objdbca, objtable, option):
                     ret_str_body += g.appmsg.get_api_message("MSG-10880", [msg1])
         if len(ret_str_body) != 0:
             retBool = False
+
+        # 実行エンジンがAAPの場合に、AAPホスト一覧の、パスワード認証方式・ユーザーのチェック処理
+        # AAP on cloud 対応で、AAPホスト一覧のパスワード認証方式,ユーザの必須を廃止したので、こちらでホスト一覧の簡易チェックを行う。
+        if str_exec_mode == AnscConst.DF_EXEC_MODE_AAC:
+            _ret, _msg = _check_aap_host_list_nodes(objdbca)
+            if not _ret:
+                retBool = False
+                if len(ret_str_body) != 0:
+                    ret_str_body += "\n"
+                ret_str_body += _msg
+
     if retBool is False:
         msg = ret_str_body
 
     return retBool, msg, option,
+
+
+def _check_aap_host_list_nodes(objdbca):
+    """AAPホスト一覧のパスワード認証方式,ユーザの確認。
+
+    Args:
+        objdbca (_type_): DB接クラス  DBConnectWs()
+
+    Returns:
+        bool: True: 正常、False: 異常
+        str: メッセージ
+    """
+    _msg = ""
+    chk_node = []
+    g.applogger.debug("Check AAP host list nodes.")
+    rows = objdbca.table_select("t_ansc_tower_host", "WHERE DISUSE_FLAG = %s", ["0"])
+    for row in rows:
+        host_id = row.get("ANSTWR_HOST_ID")
+        host_name = row.get("ANSTWR_HOSTNAME")
+        auth_type = row.get("ANSTWR_LOGIN_AUTH_TYPE")
+        user = row.get("ANSTWR_LOGIN_USER")
+        if not (user and auth_type):
+            chk_node.append(f"{host_name}({host_id})")
+
+    if chk_node:
+        # Ansible Automation Platform ホスト一覧のノードに、認証方式またはユーザが未設定のホストがあります。ホスト一覧のノードを確認してください。
+        _msg = g.appmsg.get_api_message("MSG-11016", [", ".join(chk_node)])
+
+        return False, _msg
+
+    return True, ""

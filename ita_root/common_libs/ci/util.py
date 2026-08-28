@@ -22,7 +22,7 @@ import json
 
 from common_libs.common.dbconnect import *
 from common_libs.common.exception import AppException, ValidationException
-from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format, print_exception_msg
+from common_libs.common.util import get_maintenance_mode_setting, get_iso_datetime, arrange_stacktrace_format, print_exception_msg
 from common_libs.common.storage_access import storage_write
 
 
@@ -47,6 +47,7 @@ def wrapper_job(main_logic, organization_id=None, workspace_id=None, loop_count=
         g.applogger.set_env_message()
         g.applogger.info("Backyard job has started")
 
+        is_connect_db = True
         try:
             common_db = DBConnectCommon()  # noqa: F405
             g.applogger.debug("ITA_DB is connected")
@@ -61,86 +62,84 @@ def wrapper_job(main_logic, organization_id=None, workspace_id=None, loop_count=
 
             # set applogger.set_level: default:INFO / Use ITA_DB config value
             set_service_loglevel(common_db)
-            common_db.db_disconnect()
         except Exception as e:
             # ITA_DBでの操作時に何かしらのエラーが発生した場合はログを出力
             g.applogger.error("ITA_DB connect Failed.")
             g.applogger.error(e)
-            return False
 
-        # ハングアップ監視用に時刻を出力する
-        with open(os.environ.get('FILE_PATH_LIVENESS'), 'w') as f:
-            f.write(str(int(time.time())))
+            is_connect_db = False
+        finally:
+            common_db.db_disconnect()
 
-        for organization_info in organization_info_list:
-            # set applogger.set_level: default:INFO / Use ITA_DB config value
-            # set_service_loglevel(common_db)
+        if is_connect_db is True:
 
-            organization_id = organization_info['ORGANIZATION_ID']
+            for organization_info in organization_info_list:
+                organization_id = organization_info['ORGANIZATION_ID']
 
-            g.ORGANIZATION_ID = organization_id
-            # set log environ format
-            g.applogger.set_env_message()
+                g.ORGANIZATION_ID = organization_id
+                g.WORKSPACE_ID = None
+                # set log environ format
+                g.applogger.set_env_message()
 
-            # check no install driver
-            service_list = {'terraform_cloud_ep': ['ita-by-terraform-cloud-ep-vars-listup', 'ita-by-terraform-cloud-ep-execute'],
-                            'terraform_cli': ['ita-by-terraform-cli-vars-listup', 'ita-by-terraform-cli-execute'],
-                            'ci_cd': ['ita-by-cicd-for-iac'],
-                            'oase': ['ita-by-oase-conclusion'],
-                            }
+                # check no install driver
+                service_list = {'terraform_cloud_ep': ['ita-by-terraform-cloud-ep-vars-listup', 'ita-by-terraform-cloud-ep-execute'],
+                                'terraform_cli': ['ita-by-terraform-cli-vars-listup', 'ita-by-terraform-cli-execute'],
+                                'ci_cd': ['ita-by-cicd-for-iac'],
+                                'oase': ['ita-by-oase-conclusion'],
+                                }
 
-            no_install_driver_tmp = organization_info.get('NO_INSTALL_DRIVER')
-            if no_install_driver_tmp is not None and no_install_driver_tmp:
-                no_install_driver = json.loads(no_install_driver_tmp)
-                skip_flg = False
-                for value in no_install_driver:
-                    if value in service_list.keys() and service_name in service_list[value]:
-                        skip_flg = True
-                        break
+                no_install_driver_tmp = organization_info.get('NO_INSTALL_DRIVER')
+                if no_install_driver_tmp is not None and no_install_driver_tmp:
+                    no_install_driver = json.loads(no_install_driver_tmp)
+                    skip_flg = False
+                    for value in no_install_driver:
+                        if value in service_list.keys() and service_name in service_list[value]:
+                            skip_flg = True
+                            break
 
-                if skip_flg is True:
-                    g.applogger.debug(f"Skip organization[{organization_id}] because [{value}] is not installed].")
-                    continue
+                    if skip_flg is True:
+                        g.applogger.debug(f"Skip organization[{organization_id}] because [{value}] is not installed].")
+                        continue
 
-            # database connect info
-            g.db_connect_info = {}
-            g.db_connect_info['ORGDB_HOST'] = organization_info.get('DB_HOST')
-            g.db_connect_info['ORGDB_PORT'] = str(organization_info.get('DB_PORT'))
-            g.db_connect_info['ORGDB_USER'] = organization_info.get('DB_USER')
-            g.db_connect_info['ORGDB_PASSWORD'] = organization_info.get('DB_PASSWORD')
-            g.db_connect_info['ORGDB_ADMIN_USER'] = organization_info.get('DB_ADMIN_USER')
-            g.db_connect_info['ORGDB_ADMIN_PASSWORD'] = organization_info.get('DB_ADMIN_PASSWORD')
-            g.db_connect_info['ORGDB_DATABASE'] = organization_info.get('DB_DATABASE')
-            g.db_connect_info["ORG_MONGO_OWNER"] = organization_info.get('MONGO_OWNER')
-            g.db_connect_info["ORG_MONGO_CONNECTION_STRING"] = organization_info.get('MONGO_CONNECTION_STRING')
-            g.db_connect_info["ORG_MONGO_ADMIN_USER"] = organization_info.get('MONGO_ADMIN_USER')
-            g.db_connect_info["ORG_MONGO_ADMIN_PASSWORD"] = organization_info.get('MONGO_ADMIN_PASSWORD')
-            g.db_connect_info['INITIAL_DATA_ANSIBLE_IF'] = organization_info.get('INITIAL_DATA_ANSIBLE_IF')
-            g.db_connect_info['NO_INSTALL_DRIVER'] = organization_info.get('NO_INSTALL_DRIVER')
-            # gitlab connect info
-            g.gitlab_connect_info = {}
-            g.gitlab_connect_info['GITLAB_USER'] = organization_info['GITLAB_USER']
-            g.gitlab_connect_info['GITLAB_TOKEN'] = organization_info['GITLAB_TOKEN']
+                # database connect info
+                g.db_connect_info = {}
+                g.db_connect_info['ORGDB_HOST'] = organization_info.get('DB_HOST')
+                g.db_connect_info['ORGDB_PORT'] = str(organization_info.get('DB_PORT'))
+                g.db_connect_info['ORGDB_USER'] = organization_info.get('DB_USER')
+                g.db_connect_info['ORGDB_PASSWORD'] = organization_info.get('DB_PASSWORD')
+                g.db_connect_info['ORGDB_ADMIN_USER'] = organization_info.get('DB_ADMIN_USER')
+                g.db_connect_info['ORGDB_ADMIN_PASSWORD'] = organization_info.get('DB_ADMIN_PASSWORD')
+                g.db_connect_info['ORGDB_DATABASE'] = organization_info.get('DB_DATABASE')
+                g.db_connect_info["ORG_MONGO_OWNER"] = organization_info.get('MONGO_OWNER')
+                g.db_connect_info["ORG_MONGO_CONNECTION_STRING"] = organization_info.get('MONGO_CONNECTION_STRING')
+                g.db_connect_info["ORG_MONGO_ADMIN_USER"] = organization_info.get('MONGO_ADMIN_USER')
+                g.db_connect_info["ORG_MONGO_ADMIN_PASSWORD"] = organization_info.get('MONGO_ADMIN_PASSWORD')
+                g.db_connect_info['INITIAL_DATA_ANSIBLE_IF'] = organization_info.get('INITIAL_DATA_ANSIBLE_IF')
+                g.db_connect_info['NO_INSTALL_DRIVER'] = organization_info.get('NO_INSTALL_DRIVER')
+                # gitlab connect info
+                g.gitlab_connect_info = {}
+                g.gitlab_connect_info['GITLAB_USER'] = organization_info['GITLAB_USER']
+                g.gitlab_connect_info['GITLAB_TOKEN'] = organization_info['GITLAB_TOKEN']
 
-            # job for organization
-            try:
-                organization_job(main_logic, organization_id, workspace_id)
-            except AppException as e:
-                # catch - raise AppException("xxx-xxxxx", log_format)
-                print_exception_msg(e)
-                app_exception(e)
-            except Exception as e:
-                # catch - other all error
-                print_exception_msg(e)
-                exception(e)
-
+                # job for organization
+                try:
+                    organization_job(main_logic, organization_id, workspace_id)
+                except AppException as e:
+                    # catch - raise AppException("xxx-xxxxx", log_format)
+                    app_exception(e)
+                except Exception as e:
+                    # catch - other all error
+                    exception(e)
 
         if count >= max:
-            common_db.db_disconnect()
             break
         else:
             count = count + 1
             time.sleep(interval)
+
+            # ハングアップ監視用に時刻を出力する
+            with open(os.environ.get('FILE_PATH_LIVENESS'), 'w') as f:
+                f.write(str(int(time.time())))
 
 
 def organization_job(main_logic, organization_id=None, workspace_id=None):
@@ -194,22 +193,36 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
 
         # job for workspace
         try:
-            if allow_proc(organization_id, workspace_id) is True:
-                # ハングアップ監視用に時刻を出力する
-                with open(os.environ.get('FILE_PATH_LIVENESS'), 'w') as f:
-                    f.write(str(int(time.time())))
+            is_not_maintenance_mode = True # メンテナンスモードでない場合はTrue
+            if g.SERVICE_NAME not in ["ita-by-ansible-execute", "ita-by-terraform-cloud-ep-execute", "ita-by-terraform-cli-execute", "ita-by-menu-create", "ita-by-menu-export-import", "ita-by-excel-export-import"]:
+                try:
+                    maintenance_mode = get_maintenance_mode_setting()
+                    # data_update_stopの値が"1"の場合、読み取り専用モード
+                    if str(maintenance_mode['data_update_stop']) == "1":
+                        g.applogger.debug(g.appmsg.get_log_message("BKY-00005", []))
 
+                        is_not_maintenance_mode = False
+                except Exception:
+                    is_not_maintenance_mode = False
+                    # エラーログ出力
+                    t = traceback.format_exc()
+                    g.applogger.error(arrange_stacktrace_format(t))
+                    g.applogger.error(g.appmsg.get_log_message("BKY-00007", []))
+
+            if is_not_maintenance_mode is True and allow_proc(organization_id, workspace_id) is True:
                 main_logic_exec = main_logic
                 main_logic_exec(organization_id, workspace_id)
 
                 del main_logic_exec
+
+                # ハングアップ監視用に時刻を出力する
+                with open(os.environ.get('FILE_PATH_LIVENESS'), 'w') as f:
+                    f.write(str(int(time.time())))
         except AppException as e:
             # catch - raise AppException("xxx-xxxxx", log_format)
-            print_exception_msg(e)
             app_exception(e)
         except Exception as e:
             # catch - other all error
-            print_exception_msg(e)
             exception(e)
 
         # delete environment of workspace
@@ -222,7 +235,6 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
         g.db_connect_info.pop("WS_MONGO_DATABASE")
         g.db_connect_info.pop("WS_MONGO_USER")
         g.db_connect_info.pop("WS_MONGO_PASSWORD")
-
 
 def wrapper_job_all_org(main_logic, loop_count=500):
     '''
@@ -253,21 +265,19 @@ def wrapper_job_all_org(main_logic, loop_count=500):
             # set applogger.set_level: default:INFO / Use ITA_DB config value
             set_service_loglevel(common_db)
 
-            # ハングアップ監視用に時刻を出力する
-            with open(os.environ.get('FILE_PATH_LIVENESS'), 'w') as f:
-                f.write(str(int(time.time())))
-
             main_logic_exec = main_logic
             main_logic_exec(common_db)
 
             common_db.db_disconnect()
+
+            # ハングアップ監視用に時刻を出力する
+            with open(os.environ.get('FILE_PATH_LIVENESS'), 'w') as f:
+                f.write(str(int(time.time())))
         except AppException as e:
             # catch - raise AppException("xxx-xxxxx", log_format)
-            print_exception_msg(e)
             app_exception(e)
         except Exception as e:
             # catch - other all error
-            print_exception_msg(e)
             exception(e)
 
         del main_logic_exec

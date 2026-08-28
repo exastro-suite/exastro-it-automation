@@ -182,8 +182,14 @@ class Status {
         const op = this;
 
         // 完了、完了(異常)、想定外エラー、緊急停止、予約取消の場合は更新しない
-        const stopId = [ '5', '6', '7', '8', '10'];
-        if ( stopId.indexOf( op.info.status_id ) !== -1 ) return false;
+        const stopId = ['5', '6', '7', '8', '10'];
+        if ( stopId.indexOf( op.info.status_id ) !== -1 ) {
+            // ansibleの場合は、collection_statusがnull以外になるまで更新を続ける
+            // （collection_statusがnullの間は停止しない）
+            if ( !( op.driver === 'ansible' && op.info.execution_list?.parameter?.collection_status == null ) ) {
+                return false;
+            }
+        }
 
         const cycle = fn.cv( op.info.status_monitoring_cycle, 3000 );
         if (op.ignoreErrorCount == undefined) {
@@ -465,6 +471,30 @@ class Status {
         html += `<div class="commonSubTitle">${getMessage.FTE05017}</div>`
         + op.operationStatusTable( subStatus );
 
+        if ( op.driver === 'ansible') {
+            // 収集状況
+            const collectionStatus = [
+                {
+                    title: getMessage.FTE05041,
+                    type: 'collection_status'
+                },
+                {
+                    title: getMessage.FTE05042,
+                    type: 'collection_log'
+                }
+            ];
+            html += `<div class="commonSubTitle">${getMessage.FTE05043}</div>`
+            + op.operationStatusTable( collectionStatus );
+        }
+
+        // 作業詳細ボタン
+        const collectionButton = [];
+        collectionButton.push({
+            title: getMessage.FTE05044,
+            type: 'work_detail_check'
+        });
+        html += op.operationStatusButtonList( collectionButton );
+
         // オペレーション
         const operation = [
             {
@@ -653,6 +683,11 @@ class Status {
                     target.menu = Status.string[ op.menu ].substValueMenu;
                     target.filter = { execution_no: { NORMAL: op.id } };
                 break;
+                case 'work_detail_check':
+                    target.title = getMessage.FTE05045;
+                    target.menu = Status.string[ op.menu ].executionListMenu;
+                    target.filter = { execution_no: { NORMAL: op.id } };
+                break;
             }
             fn.modalIframe( target.menu, target.title, { filter: target.filter, iframeMode: target.iframeMode });
         });
@@ -711,7 +746,7 @@ class Status {
                       currentValue = $data.eq(0).text();
 
                 // ダウンロードリンク
-                const fileRestName = ['populated_data', 'result_data'];
+                const fileRestName = ['populated_data', 'result_data', 'collection_log'];
 
                 // 変更がある場合のみ内容を更新する
                 if ( $data.length && currentValue !== value ) {

@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Exastro ITA Ansible Execution Receiver API
   description: Exastro ITA Ansible Execution Receiver API
-  version: "2.8.0"
+  version: "2.9.0"
 
 servers:
   - url: "https://{host}"
@@ -30,6 +30,8 @@ servers:
 
 tags:
   - name: Ansible Execution
+    description: Ansibleの情報を取得
+  - name: Ansible Execution for AAP on Cloud
     description: Ansibleの情報を取得
   - name: InternalHealthCheckService
     description: ヘルスチェックに関する操作(内部用)
@@ -426,6 +428,129 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /api/{organization_id}/workspaces/{workspace_id}/aap/{execution_no}/populated_data:
+    get:
+      tags:
+        - Ansible Execution for AAP on Cloud
+      description: 投入データ取得
+      operationId: getPopulatedDataAAP
+      x-openapi-router-controller: controllers.ansible_execution_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+        - name: execution_no
+          in: path
+          description: 作業番号
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: string
+                    description: 各種ファイルを1つにまとめてそのパスを返す
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /api/{organization_id}/workspaces/{workspace_id}/aap/{execution_no}/result_data:
+    post:
+      tags:
+        - Ansible Execution for AAP on Cloud
+      description: 結果データ受け取り・更新
+      operationId: updateResultDataAAP
+      x-openapi-router-controller: controllers.ansible_execution_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+        - name: execution_no
+          in: path
+          description: 作業番号
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              description: 各種tarファイルを指定
+              type: object
+              properties:
+                file:
+                  type: object
+                  properties:
+                    file_name:
+                      type: string
+                      example: base64 encode file
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: boolean
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
 
   /internal-api/health-check/liveness:
     get:

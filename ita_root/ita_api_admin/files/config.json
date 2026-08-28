@@ -137,6 +137,11 @@
     [
         {"execution-environment.j2":["/template_file/1/old/1/","/template_file/1/"]}
     ],
+    "20114":
+    [
+        {"ita_fetch_common.yml":["/asset_file/1/old/1/","/asset_file/1/"]},
+        {"ita_put_results.yml": ["/asset_file/2/old/2/","/asset_file/2/"]}
+    ],
     "8df96afe-552a-4a2a-b370-cb3888b27dee":
     [
         {"builder_git.txt":["/bindep_file/0c884e3e-e945-45a7-aa87-1cc671a2f8c3/old/b3d3ed5b-378b-459e-803b-a797f89982b8/","/bindep_file/0c884e3e-e945-45a7-aa87-1cc671a2f8c3/"]},

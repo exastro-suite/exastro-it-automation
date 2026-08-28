@@ -84,7 +84,7 @@ import traceback
 
 from flask import g
 
-from common_libs.common.util import ky_decrypt, ky_file_decrypt, arrange_stacktrace_format, retry_makedirs, retry_copy2, retry_unlink, retry_chmod, retry_copy, retry_copytree, retry_rmtree
+from common_libs.common.util import ky_decrypt, ky_file_decrypt, arrange_stacktrace_format, retry_makedirs, retry_copy2, retry_unlink, retry_chmod, retry_copy, retry_copytree, retry_rmtree, file_read_retry
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_driver.classes.menu_required_check import AuthTypeParameterRequiredCheck
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiConfig import AnsibleTowerRestApiConfig
@@ -252,18 +252,22 @@ class ExecuteDirector():
         # AnsibleTowerHost情報取得
         self.dataRelayStoragePath = ifInfoRow['ANSIBLE_STORAGE_PATH_LNX']
         TowerHostList = []
-        ret, TowerHostList = self.getTowerHostInfo(execution_no, ifInfoRow['ANSTWR_HOST_ID'], ifInfoRow['ANSIBLE_STORAGE_PATH_LNX'], TowerHostList)
-        if not ret:
-            # AnsibleTowerホスト一覧の取得に失敗しました
-            errorMessage = g.appmsg.get_api_message("MSG-10680")
-            self.errorLogOut(errorMessage)
-            return -1, TowerHostList
+        # 「AAP-Cloud」の際は実行する必要が無い処理(制御対象ノード管理)
+        if self.AnsibleExecMode == AnscConst.DF_EXEC_MODE_AAC:
+            ret, TowerHostList = self.getTowerHostInfo(execution_no, ifInfoRow['ANSTWR_HOST_ID'], ifInfoRow['ANSIBLE_STORAGE_PATH_LNX'], TowerHostList)
+            if not ret:
+                # AnsibleTowerホスト一覧の取得に失敗しました
+                errorMessage = g.appmsg.get_api_message("MSG-10680")
+                self.errorLogOut(errorMessage)
+                return -1, TowerHostList
 
-        if len(TowerHostList) <= 0:
-            # AnsibleTowerホスト一覧に有効なホスト情報が登録されていません。
-            errorMessage = g.appmsg.get_api_message("MSG-10681")
-            self.errorLogOut(errorMessage)
-            return -1, TowerHostList
+            if len(TowerHostList) <= 0:
+                # AnsibleTowerホスト一覧に有効なホスト情報が登録されていません。
+                errorMessage = g.appmsg.get_api_message("MSG-10681")
+                self.errorLogOut(errorMessage)
+                return -1, TowerHostList
+        else:
+            g.applogger.info("ENGINE: AAP-Cloud -> PASS: Get AnsibleTower Hosts")
 
         # Gitリポジトリに展開する資材を作業ディレクトリに作成
         # tmp_path_ary["DIR_NAME"]: /tmp/temporary_dir/legacy_role_作業番号
@@ -273,25 +277,31 @@ class ExecuteDirector():
             return -1, TowerHostList
 
         # 実行エンジンを判定  AACの場合にAnsible Automation Controllerと連携するGitリポジトリを作成
-        if self.AnsibleExecMode == AnscConst.DF_EXEC_MODE_AAC:
+        # if self.AnsibleExecMode == AnscConst.DF_EXEC_MODE_AAC:
+        # この関数は「AAC」「AAP-Cloud」の際にのみ呼び出されるため実行エンジン判定は不要
 
-            srcFiles = '/%s/*' % (tmp_path_ary["DIR_NAME"])
-            ret = self.createGitRepo(GitObj, srcFiles, execution_no)
-            if ret is False:
-                return -1, TowerHostList
+        srcFiles = '/%s/*' % (tmp_path_ary["DIR_NAME"])
+        ret = self.createGitRepo(GitObj, srcFiles, execution_no)
+        if ret is False:
+            return -1, TowerHostList
 
         tmp_path_ary = getAnsibleTmpDir(execution_no, OrchestratorSubId_dir)
         # /tmpに作成したファイルはゴミ掃除リストに追加
         addAnsibleCreateFilesPath(tmp_path_ary['DIR_NAME'])
-        ret = self.MaterialsTransferToTower(execution_no, ifInfoRow, TowerHostList, tmp_path_ary['DIR_NAME'])
-        if not ret:
-            errorMessage = g.appmsg.get_api_message("MSG-10683")
-            self.errorLogOut(errorMessage)
-            return -1, TowerHostList
+
+        # 「AAP-Cloud」の際は実行する必要が無い処理(scpによるファイル転送)
+        if self.AnsibleExecMode == AnscConst.DF_EXEC_MODE_AAC:
+            ret = self.MaterialsTransferToTower(execution_no, ifInfoRow, TowerHostList, tmp_path_ary['DIR_NAME'])
+            if not ret:
+                errorMessage = g.appmsg.get_api_message("MSG-10683")
+                self.errorLogOut(errorMessage)
+                return -1, TowerHostList
 
         # project生成
         # Git連携用 認証情報生成
-        if self.AnsibleExecMode == AnscConst.DF_EXEC_MODE_AAC:
+        # if self.AnsibleExecMode == AnscConst.DF_EXEC_MODE_AAC:
+        # この関数は「AAC」「AAP-Cloud」の際にのみ呼び出されるため実行エンジン判定は不要
+
             # 不要だから消した
             # # Git連携用 認証情報生成
             # # 間違っている
@@ -307,16 +317,25 @@ class ExecuteDirector():
             #     self.errorLogOut(errorMessage)
             #     return -1, TowerHostList
 
-            # project生成  scmタイプ:git
-            addParam = {}
-            addParam["scm_type"] = AnsibleTowerRestApiProjects.SCMTYPE_GIT
-            addParam["scm_url"] = GitObj.get_http_repo_url(proj_name)
-            addParam['organization'] = OrganizationId
-            addParam['execution_no'] = execution_no
+        # SCM用認証情報生成
+        scm_credentialid = self.create_scm_credential(execution_no, GitObj, OrganizationId)
+        if scm_credentialid == -1:
+            return -1, TowerHostList
 
-            projectId = self.create_project(addParam)
-            if projectId == -1:
-                return -1, TowerHostList
+        key_id = "SCMCredentialId"
+        self.addAACCreateObjectID(key_id, scm_credentialid)
+
+        # project生成  scmタイプ:git
+        addParam = {}
+        addParam["scm_type"] = AnsibleTowerRestApiProjects.SCMTYPE_GIT
+        addParam["scm_url"] = GitObj.get_http_repo_url_scm(proj_name)
+        addParam['organization'] = OrganizationId
+        addParam['execution_no'] = execution_no
+        addParam['credential'] = scm_credentialid
+
+        projectId = self.create_project(addParam)
+        if projectId == -1:
+            return -1, TowerHostList
 
         # ansible vault認証情報生成
         if not ifInfoRow['ANSIBLE_VAULT_PASSWORD']:
@@ -385,17 +404,17 @@ class ExecuteDirector():
         return workflowTplId, TowerHostList
 
     def transfer(self, execution_no, TowerHostList):
-        OrchestratorSubId_dir = self.AnsConstObj.vg_OrchestratorSubId_dir
         allResult = True
 
-        ret = self.ResultFileTransfer(execution_no, TowerHostList)
-        if not ret:
-            allResult = False
+        # 「AAP-Cloud」の際は実行する必要が無い処理(scpによるファイル転送)
+        if self.AnsibleExecMode == AnscConst.DF_EXEC_MODE_AAC:
+            ret = self.ResultFileTransfer(execution_no, TowerHostList)
+            if not ret:
+                allResult = False
 
         return allResult
 
     def delete(self, GitObj, execution_no, TowerHostList):
-        OrchestratorSubId_dir = self.AnsConstObj.vg_OrchestratorSubId_dir
         allResult = True
         self.setAACCreateObjectIdFilePath(execution_no)
 
@@ -418,18 +437,22 @@ class ExecuteDirector():
             allResult = False
 
         # Ansible Automation Controller側の/var/lib/exastro配下の該当ディレクトリ削除
-        ret = self.MaterialsDelete("ExastroPath", execution_no, TowerHostList)
-        if not ret:
-            allResult = False
+        # 「AAP-Cloud」の際は実行する必要が無い処理
+        if self.AnsibleExecMode == AnscConst.DF_EXEC_MODE_AAC:
+            ret = self.MaterialsDelete("ExastroPath", execution_no, TowerHostList)
+            if not ret:
+                allResult = False
 
         # Gitリポジトリに展開する資材を作業ディレクトリを削除
         ret = self.deleteMaterialsTransferTempDir(execution_no)
 
         # Ansible Automation Controllerと連携するGitリポジトリを削除
-        if self.AnsibleExecMode == AnscConst.DF_EXEC_MODE_AAC:
-            ret = self.GitRepoDirDelete(self.gitLoaclRepositoriesPath)
-            if not ret:
-                allResult = False
+        # if self.AnsibleExecMode == AnscConst.DF_EXEC_MODE_AAC:
+        # この関数は「AAC」「AAP-Cloud」の際にのみ呼び出されるため実行エンジン判定は不要
+
+        ret = self.GitRepoDirDelete(self.gitLoaclRepositoriesPath)
+        if not ret:
+            allResult = False
 
         # 生成したジョブテンプレートIDでジョブテンプレートの情報取得
         # ジョブテンプレートに紐づいているジョブを削除
@@ -474,6 +497,11 @@ class ExecuteDirector():
 
         # /api/v2/credentials/(vault credential id)/
         ret = self.cleanUpVaultCredential()
+        if not ret:
+            allResult = False
+
+        # /api/v2/credentials/(scm credential id)/
+        ret = self.cleanUpSCMCredential()
         if not ret:
             allResult = False
 
@@ -933,7 +961,7 @@ class ExecuteDirector():
             # src   path: /var/lib/exastro/ita_legacy_role_executions_作業番号/__ita_out_dir__
             # dest  path: /storage/org1/workspace-1/driver/ansible/legacy_role/作業番号/out
             ########################################################################################################
-            src_path = self.vg_TowerProjectsScpPathArray[AnscConst.DF_SCP_OUT_TOWER_PATH] + "/*";
+            src_path = self.vg_TowerProjectsScpPathArray[AnscConst.DF_SCP_OUT_TOWER_PATH] + "/*"
             dest_path = self.vg_TowerProjectsScpPathArray[AnscConst.DF_SCP_OUT_ITA_PATH]
             info = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n" % (
                 credential['host_name'],
@@ -1480,6 +1508,44 @@ class ExecuteDirector():
 
         return credentialId
 
+    def create_scm_credential(self, execution_no, gitlabobj, organizationid):
+        """Create SCM (Source Control Management) credential for GitLab integration.
+
+        Args:
+            execution_no (str): Execution number for the Ansible job.
+            gitlabobj: GitLab agent object containing authentication information.
+            organizationid (int): Organization ID in Ansible Automation Controller.
+
+        Returns:
+            int: SCM credential ID if successful, -1 if failed.
+        """
+        param = {}
+        param['organization'] = organizationid
+        param['execution_no'] = execution_no
+        param['username'] = gitlabobj._GitLabAgent__user
+        param['token'] = gitlabobj._GitLabAgent__token
+
+        response_array = AnsibleTowerRestApiCredentials.git_post_basic(self.restApiCaller, param)
+        if not response_array['success']:
+            self.errorLogOut("Faild to post scm credential.")
+            errormessage = g.appmsg.get_api_message("MSG-10678")
+            self.errorLogOut(errormessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
+            return -1
+
+        if "id" not in response_array['responseContents']:
+            self.errorLogOut("No scm credential id.")
+            errormessage = g.appmsg.get_api_message("MSG-10678")
+            self.errorLogOut(errormessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
+            return -1
+
+        vault_credentialid = response_array['responseContents']['id']
+
+        return vault_credentialid
+
     def createVaultCredential(self, execution_no, vault_password, OrganizationId):
 
         param = {}
@@ -1773,6 +1839,22 @@ class ExecuteDirector():
 
         AACCreateObjectID = self.getAACCreateObjectID()
         response_array = AnsibleTowerRestApiCredentials.deleteVault(self.restApiCaller, AACCreateObjectID)
+        if not response_array['success']:
+            return False
+
+        return True
+
+    def cleanUpSCMCredential(self):
+        """Clean up SCM credential created for the current execution.
+
+        Deletes the SCM credential from Ansible Automation Controller
+        that was created for GitLab integration during the execution.
+
+        Returns:
+            bool: True if deletion successful, False otherwise.
+        """
+        AACCreateObjectID = self.getAACCreateObjectID()
+        response_array = AnsibleTowerRestApiCredentials.deleteSCM(self.restApiCaller, AACCreateObjectID)
         if not response_array['success']:
             return False
 
@@ -2297,6 +2379,51 @@ class ExecuteDirector():
 
                 self.jobFileList[JobData['name']].append(jobFileFullPath)
                 self.jobLogFileList.append(os.path.basename(jobFileFullPath))
+                
+                # AAP-Cloud用
+                result = self.split_exec_log(result_stdout)
+                if result['receiver'] or result['sender']:
+                    jobFileFullPath = '%s/exec_%s_%s_systemjob.log' % (outDirectoryPath, jobNo, job_slice_number_str)
+                    try:
+                        # #2079 /storage配下のアクセスは/tmp経由にする。
+                        obj = storage_write_text()
+                        obj.write_text(jobFileFullPath, "---------[Exastro] Material Receiverlog---------\n" + result['receiver'] + "---------[Exastro] Material Senderlog---------\n" + result['sender'])
+
+                    except Exception as e:
+                        errorMessage = "CreateLogs Faild to write file. %s" % (jobFileFullPath)
+                        self.ExceptionErrorLog(e, errorMessage, "", "")
+                        return False
+
+                    # 加工ログファイル
+                    # if JobData['name'] not in self.jobFileList:
+                    #     self.jobFileList[JobData['name']] = None
+
+                    # if not isinstance(self.jobFileList[JobData['name']], list):
+                    #     self.jobFileList[JobData['name']] = []
+
+                    # self.jobFileList[JobData['name']].append(jobFileFullPath)
+                    # self.jobLogFileList.append(os.path.basename(jobFileFullPath))
+                if result['other']:
+                    jobFileFullPath = '%s/exec_%s_%s_job.log' % (outDirectoryPath, jobNo, job_slice_number_str)
+                    try:
+                        # #2079 /storage配下のアクセスは/tmp経由にする。
+                        obj = storage_write_text()
+                        obj.write_text(jobFileFullPath, result['other'])
+
+                    except Exception as e:
+                        errorMessage = "CreateLogs Faild to write file. %s" % (jobFileFullPath)
+                        self.ExceptionErrorLog(e, errorMessage, "", "")
+                        return False
+
+                    # 加工ログファイル
+                    # if JobData['name'] not in self.jobFileList:
+                    #     self.jobFileList[JobData['name']] = None
+
+                    # if not isinstance(self.jobFileList[JobData['name']], list):
+                    #     self.jobFileList[JobData['name']] = []
+
+                    # self.jobFileList[JobData['name']].append(jobFileFullPath)
+                    # self.jobLogFileList.append(os.path.basename(jobFileFullPath))
 
         # ジョブスライなどでファイルが複数に分かれた場合にファイルのリスト
         if len(self.jobLogFileList) > 0:
@@ -2310,8 +2437,8 @@ class ExecuteDirector():
         # 結合 & exec.log差し替え
         ################################################################
         # ファイル入出力排他処理
-        ## DEL loop = asyncio.get_event_loop()
-        ## DEL ret = loop.run_until_complete(self.CreateLogsWithSemaphore(execlogFullPath))
+        # DEL loop = asyncio.get_event_loop()
+        # DEL ret = loop.run_until_complete(self.CreateLogsWithSemaphore(execlogFullPath))
         ret = self.AllCreateLogs(execlogFullPath)
 
         return ret
@@ -2506,8 +2633,7 @@ class ExecuteDirector():
 
             g.applogger.info("[Trace] git clone done.")
 
-            retry_copytree(SrcFilePath.replace("/*", ""),
-                            self.gitLoaclRepositoriesPath)
+            retry_copytree(SrcFilePath.replace("/*", ""), self.gitLoaclRepositoriesPath)
             g.applogger.debug(f"[Trace] shutil.copytree. src: {SrcFilePath}, dst: {self.gitLoaclRepositoriesPath}")
 
             # __ita_tmp_dir__配下のconductor_workflowr_dirに使う資材は不要なので除外する
@@ -3037,3 +3163,118 @@ class ExecuteDirector():
         else:
             ReturnMsg = ErrorMsg["others"] % (exit_code)
         return ReturnMsg
+
+    def split_exec_log(self, log_content):
+        """Split log content into three categories.
+
+        Identifies and classifies the range of each section in the execution log.
+
+        Args:
+            log_content (str): Content of the exec.log file.
+
+        Returns:
+            dict: Dictionary containing three categories:
+                - 'receiver': String from receiver's include_tasks to just before
+                             the next include_tasks.
+                - 'sender': String from sender's include_tasks to the end of log.
+                - 'other': String containing everything else, including
+                          child_playbooks, etc.
+        """
+        lines = log_content.split('\n')
+
+        # 各セクションの開始・終了行を特定
+        sections = []
+        current_section = None
+
+        for i, line in enumerate(lines):
+            # PLAY RECAPが出現したら、receiver/senderセクションを終了
+            if 'PLAY RECAP' in line:
+                if current_section and current_section['type'] in ['receiver', 'sender']:
+                    current_section['end'] = i - 1
+                    sections.append(current_section)
+                    current_section = None
+            # receiverセクション中に、以下が出現したら終了:
+            # - TASK [include] (include_tasks以外)
+            # - TASK [pioneer_module exec]
+            # - TASK [role名 : タスク名] (コロン付きはRole実行を意味する)
+            elif current_section and current_section['type'] == 'receiver' and line.startswith('TASK ['):
+                is_include = 'TASK [include]' in line and 'TASK [include_tasks]' not in line
+                is_pioneer = 'TASK [pioneer_module exec]' in line
+                # TASK [...] 内にコロンがあるかチェック（Role実行の判定）
+                # 例: TASK [wait11 : debug], TASK [check_mode : ansible_check_mode]
+                try:
+                    task_content = line.split('TASK [', 1)[1].split(']', 1)[0]
+                    is_role_task = ':' in task_content
+                except (IndexError, ValueError):
+                    is_role_task = False
+
+                if is_include or is_pioneer or is_role_task:
+                    current_section['end'] = i - 1
+                    sections.append(current_section)
+                    current_section = None
+
+            if 'TASK [include_tasks]' in line:
+                # 次の行を確認
+                if i + 1 < len(lines):
+                    next_line = lines[i + 1]
+
+                    if 'ky_ansible_receiver.yaml' in next_line:
+                        if current_section:
+                            current_section['end'] = i - 1
+                            sections.append(current_section)
+                        current_section = {
+                            'type': 'receiver',
+                            'start': i,
+                            'end': None
+                        }
+                    elif 'ky_ansible_sender.yaml' in next_line:
+                        if current_section:
+                            current_section['end'] = i - 1
+                            sections.append(current_section)
+                        current_section = {
+                            'type': 'sender',
+                            'start': i,
+                            'end': None
+                        }
+                    else:
+                        # 他のinclude_tasks（例: child_playbooks）が始まった
+                        # 現在のセクションがあれば終了
+                        if current_section and current_section['type'] in ['receiver', 'sender']:
+                            current_section['end'] = i - 1
+                            sections.append(current_section)
+                            current_section = None
+
+        # 最後のセクションを閉じる
+        if current_section:
+            current_section['end'] = len(lines) - 1
+            sections.append(current_section)
+
+        # セクションごとに行を振り分け
+        result = {
+            'receiver': [],
+            'sender': [],
+            'other': []
+        }
+
+        assigned = [False] * len(lines)
+
+        for section in sections:
+            section_type = section['type']
+            start = section['start']
+            end = section['end'] if section['end'] else len(lines) - 1
+
+            for i in range(start, end + 1):
+                result[section_type].append(lines[i])
+                assigned[i] = True
+
+        # 未割り当ての行は「その他」へ
+        for i, line in enumerate(lines):
+            if not assigned[i]:
+                result['other'].append(line)
+
+        # リストを文字列に変換
+        return {
+            'receiver': '\n'.join(result['receiver']),
+            'sender': '\n'.join(result['sender']),
+            'other': '\n'.join(result['other'])
+        }

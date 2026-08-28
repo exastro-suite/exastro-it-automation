@@ -1,0 +1,48 @@
+# __conductor_workflowdir__作成
+- file:
+    path: "{{ __conductor_workflowdir__ }}"
+    state: directory
+    mode: "0777"
+  delegate_to: localhost
+  when: __conductor_id__ != "__undefinesymbol__"
+
+# AccessToken取得
+- uri:
+    url: "{{ __external_url__ }}/auth/realms/{{ __organization_id__ }}/protocol/openid-connect/token"
+    method: POST
+    headers:
+      Content-Type: "application/x-www-form-urlencoded"
+    body_format: form-urlencoded
+    body:
+      client_id: "_{{ __organization_id__ }}-api"
+      grant_type: "refresh_token"
+      refresh_token: "{{ __sa_refreshtoken__ }}"
+    return_content: yes
+  delegate_to: localhost
+  register: __sa_accesstoken__
+  when: __conductor_id__ != "__undefinesymbol__"
+  until: "__sa_accesstoken__.status == 200"
+  retries: 3
+  delay: 1
+
+# 連携資材取得
+- uri:
+    url: "{{ __external_url__ }}/api/{{ __organization_id__ }}/workspaces/{{ __workspace_id__ }}/aap/{{ __execution_no__ }}/populated_data"
+    headers:
+      Authorization: "Bearer {{ (__sa_accesstoken__.json | default({'access_token': ''})).access_token }}"
+    method: GET
+    dest: "{{ __conductor_workflowdir__ | dirname }}/__tmp_material.tar.gz"
+  delegate_to: localhost
+  register: __populated_data__
+  when: __conductor_id__ != "__undefinesymbol__"
+  until: "__populated_data__.status == 200"
+  retries: 3
+  delay: 1
+
+# 連携資材解凍
+- unarchive:
+    src: "{{ __conductor_workflowdir__ | dirname }}/__tmp_material.tar.gz"
+    dest: "{{ __conductor_workflowdir__ }}"
+    remote_src: yes
+  delegate_to: localhost
+  when: __conductor_id__ != "__undefinesymbol__"

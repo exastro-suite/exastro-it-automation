@@ -275,7 +275,11 @@ def test_should_notify_event_new_event_overrides_redundancy_check():
 
 
 def test_should_notify_event_with_none_counts():
-    """collection_settings_countsやagents_countsがNoneの場合の動作を確認"""
+    """collection_settings_countsやagents_countsが空の場合の動作を確認
+
+    extract_collection_settings_counts/extract_agents_countsはresが空でも{}を返すため、
+    Noneが渡ることはない（空dictが最小ケース）。
+    """
     deduplication_setting_ids = ["ds1"]
     deduplication_setting_list = {
         "ds1": {"EVENT_SOURCE_REDUNDANCY_GROUP": ["es1", "es2"]}
@@ -285,19 +289,19 @@ def test_should_notify_event_with_none_counts():
         deduplication_setting_ids,
         deduplication_setting_list,
         True,
-        None,
-        None,
+        {},
+        {},
         None
     )
     assert result is True
 
-    # 重複イベントで単一エージェントの場合
+    # 重複イベントでカウント情報が空の場合
     result = should_notify_event(
         deduplication_setting_ids,
         deduplication_setting_list,
         False,
-        None,
-        None,
+        {},
+        {},
         None
     )
     assert result is False

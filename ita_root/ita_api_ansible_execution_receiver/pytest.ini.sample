@@ -1,0 +1,16 @@
+; 当ファイルをpytest.iniにコピーして利用してください
+[pytest]
+pythonpath=/workspace/exastro-it-automation-dev/ita_root
+
+env =
+    DB_HOST=unittest-ita-db
+    DB_DATABASE=ITA_DB
+    DB_USER=ITA_USER
+    DB_PASSWORD=password
+    DB_ADMIN_USER=root
+    DB_ADMIN_PASSWORD=password
+    PLATFORM_API_HOST=dummy
+    PLATFORM_API_PORT=7999
+    EXTERNAL_URL=https://example.com
+    STORAGEPATH=/workspace/exastro-it-automation-dev/ita_root/ita_api_ansible_execution_receiver/tests/storage/
+    DOCKER_COMPOSE_UP_UNITTEST_NODE=MANUAL

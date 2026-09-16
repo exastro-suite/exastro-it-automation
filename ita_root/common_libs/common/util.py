@@ -341,6 +341,8 @@ def file_encode(file_path):
     return read_value
 
 
+file_read_retry_limit = int(os.environ.get('FILE_READ_RETRY_LIMIT', 3))  # ファイルストレージへの読み書きのリトライ回数の上限
+file_read_retry_delay_time = float(os.environ.get('FILE_READ_RETRY_DELAY_TIME', 0.1))  # ファイルストレージへの読み書きのリトライのインターバル
 def file_read_retry(func):
     """
     file_read_retry
@@ -355,10 +357,8 @@ def file_read_retry(func):
     """
     #
     def wrapper(*args, **kwargs):
-        retry_delay_time = 0.1  # リトライのインターバル
         retBool = False
         i = 1
-        max = 3 # リトライ回数
         # logger_class: コンテキスト外等でg.apploggerが使用できない時の対処
         logger = kwargs.get("logger_class") or g.applogger
         while True:
@@ -368,7 +368,7 @@ def file_read_retry(func):
                     break
             except Exception as e:
                 # raiseしたくない場合は、funcの中でログを出力し、（エラーを抑止して）Falseを返却してください
-                if i == max:
+                if i == file_read_retry_limit:
                     # 最後のログ出力のみ、stacktraceを出力
                     # Output stacktrace only the last log output
                     t = traceback.format_exc()
@@ -379,9 +379,9 @@ def file_read_retry(func):
                     # For retry minutes, only the message is output
                     logger.info(print_exception_msg(e, logger_class=logger))
 
-            if i == max:
+            if i == file_read_retry_limit:
                 break
-            time.sleep(retry_delay_time)
+            time.sleep(file_read_retry_delay_time)
             i = i + 1
 
     return wrapper
@@ -1294,6 +1294,9 @@ def put_uploadfiles_jnl(ws_db, config_file_path, src_dir, dest_dir):
 
     return True
 
+lasttime_get_maintenance_mode = None
+last_maintenance_mode_setting = None
+interval_get_maintenance_mode = int(os.environ.get('INTERVAL_GET_MAINTENANCE_MODE', 5))
 
 def get_maintenance_mode_setting():
     """
@@ -1302,6 +1305,14 @@ def get_maintenance_mode_setting():
     Returns:
         maintenance_mode
     """
+    global lasttime_get_maintenance_mode
+    global last_maintenance_mode_setting
+
+    # 前回取得時刻から指定秒数（interval_get_maintenance_mode）以内の取得であれば、キャッシュを返す
+    current_time = time.time()
+    if lasttime_get_maintenance_mode is not None and (current_time - lasttime_get_maintenance_mode) <= interval_get_maintenance_mode:
+        return last_maintenance_mode_setting
+
     host_name = os.environ.get('PLATFORM_API_HOST')
     port = os.environ.get('PLATFORM_API_PORT')
 
@@ -1322,6 +1333,9 @@ def get_maintenance_mode_setting():
     # メンテナンスモードの設定値を取得
     maintenance_mode = response_data.get('data')
 
+    # 前回取得時刻と結果を更新
+    lasttime_get_maintenance_mode = current_time
+    last_maintenance_mode_setting = maintenance_mode
     return maintenance_mode
 
 

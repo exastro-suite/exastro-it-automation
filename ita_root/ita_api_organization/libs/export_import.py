@@ -61,51 +61,45 @@ def get_menu_export_list(objdbca, organization_id, workspace_id):
         if hide_menu_id in menu_id_list:
             menu_id_list.remove(hide_menu_id)
 
-    # ロール-メニュー紐付管理を見て、書き込み権限のあるメニューのみに絞り込む
-    # メニュー一括エクスポートはインポートとペアで使用されるため、書き込み権限（PRIVILEGE='0', '1'）が必要
-    role_id_list = g.get('ROLES')
-
-    # 1. 通常メニュー：DISUSE_FLAG='0'の紐付のみ（廃止済み紐付は除外）
-    ret_active_menu_link = objdbca.table_select(
-        t_comn_role_menu_link,
-        'WHERE MENU_ID IN %s AND ROLE_ID IN %s AND PRIVILEGE IN %s AND DISUSE_FLAG = %s ORDER BY MENU_ID',
-        [menu_id_list, role_id_list, ['0', '1'], 0]
-    )
-
-    # 2. FLAG=0の内部メニュー：廃止済み紐付も含める（ワークスペース作成時のデフォルト動作を保持）
-    # FLAG=NULLは'1'と同様に扱う（権限チェック必須）
+    # T_COMN_MENU から EXPORT_PERMISSION_CHECK_FLG を取得
+    # FLAG=NULL は '1' と同様に扱う（権限チェック必須）
     t_comn_menu = 'T_COMN_MENU'
-    ret_flag0_menus = objdbca.table_select(
-        t_comn_menu,
-        'WHERE MENU_ID IN %s AND EXPORT_PERMISSION_CHECK_FLG = %s',
-        [menu_id_list, '0']
+    ret_menu = objdbca.table_select(t_comn_menu, 'WHERE MENU_ID IN %s', [menu_id_list])
+    menu_flag_map = {record['MENU_ID']: record.get('EXPORT_PERMISSION_CHECK_FLG') for record in ret_menu}
+
+    # ロール-メニュー紐付を全件取得（メニュー一括エクスポートはインポートとペアで使用されるため、書き込み権限が必要）
+    role_id_list = g.get('ROLES')
+    ret_role_menu_link = objdbca.table_select(
+        t_comn_role_menu_link,
+        'WHERE MENU_ID IN %s AND ROLE_ID IN %s',
+        [menu_id_list, role_id_list]
     )
-    flag0_menu_ids = [record.get('MENU_ID') for record in ret_flag0_menus]
 
-    ret_flag0_menu_link = []
-    if flag0_menu_ids:
-        # 内部メニュー（FLAG='0'）も書き込み権限のみ表示
-        # ただし、内部メニューは権限チェックがスキップされるため、PRIVILEGE='2'でもエクスポート実行は可能
-        # しかし、一貫性のため書き込み権限があるもののみ表示する
-        ret_flag0_menu_link = objdbca.table_select(
-            t_comn_role_menu_link,
-            'WHERE MENU_ID IN %s AND ROLE_ID IN %s AND PRIVILEGE IN %s ORDER BY MENU_ID',
-            [flag0_menu_ids, role_id_list, ['0', '1']]
-        )
+    # メニューIDごとに紐付をグループ化
+    menu_links = {}
+    for record in ret_role_menu_link:
+        menu_id = record.get('MENU_ID')
+        if menu_id not in menu_links:
+            menu_links[menu_id] = []
+        menu_links[menu_id].append(record)
 
-    # 3. マージして重複排除（元の順序を維持）
+    # メニューごとに権限チェック（元の順序を維持）
     permitted_menu_ids = []
-    seen = set()
-    for record in ret_active_menu_link:
-        menu_id = record.get('MENU_ID')
-        if menu_id not in seen:
-            permitted_menu_ids.append(menu_id)
-            seen.add(menu_id)
-    for record in ret_flag0_menu_link:
-        menu_id = record.get('MENU_ID')
-        if menu_id not in seen:
-            permitted_menu_ids.append(menu_id)
-            seen.add(menu_id)
+    for menu_id in menu_id_list:
+        flag = menu_flag_map.get(menu_id)
+        links = menu_links.get(menu_id, [])
+
+        if flag == '0':
+            # 内部メニュー：紐付があれば、権限・廃止に関わらず表示
+            # ワークスペース作成時、ワークスペース管理者ロールの紐付は閲覧のみ・廃止済みで作成されるため
+            if links:
+                permitted_menu_ids.append(menu_id)
+        else:
+            # 通常メニュー（FLAG='1' or NULL）：書き込み権限（PRIVILEGE='0', '1'）＋有効な紐付（DISUSE_FLAG='0'）が必要
+            for link in links:
+                if link.get('PRIVILEGE') in ['0', '1'] and link.get('DISUSE_FLAG') in [0, '0']:
+                    permitted_menu_ids.append(menu_id)
+                    break
 
     # メニューとメニューグループのデータを処理
     return _create_export_menu_data(objdbca, permitted_menu_ids)

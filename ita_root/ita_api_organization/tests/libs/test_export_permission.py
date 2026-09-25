@@ -115,21 +115,32 @@ from libs.menu_filter import _check_export_download_permission, _mask_export_fil
 from common_libs.common.exception import AppException
 
 
-@pytest.fixture
-def mock_objdbca():
-    """モックDBコネクションを返すフィクスチャ"""
-    objdbca = MagicMock()
-    return objdbca
+class TestDataBuilder:
+    """テストデータを簡潔に構築するビルダー（test_export_permission.py 専用）"""
+
+    @staticmethod
+    def menu(menu_id, flag='1'):
+        """T_COMN_MENU のレコードを生成"""
+        return {'MENU_ID': menu_id, 'EXPORT_PERMISSION_CHECK_FLG': flag}
+
+    @staticmethod
+    def link(menu_id, privilege='1', disuse_flag=0):
+        """T_COMN_ROLE_MENU_LINK のレコードを生成"""
+        return {'MENU_ID': menu_id, 'PRIVILEGE': privilege, 'DISUSE_FLAG': disuse_flag}
+
+    @staticmethod
+    def export_record(execution_no, execution_type='1', json_storage_item='{"menu": ["menu1"]}'):
+        """T_MENU_EXPORT_IMPORT のレコードを生成"""
+        return {
+            'EXECUTION_NO': execution_no,
+            'EXECUTION_TYPE': execution_type,
+            'JSON_STORAGE_ITEM': json_storage_item,
+            'DISUSE_FLAG': '0'
+        }
 
 
-@pytest.fixture
-def mock_g_with_roles(app_context_with_mock_g):
-    """g.ROLES と g.LANGUAGE を設定するフィクスチャ"""
-    g.ROLES = ['role1']
-    g.LANGUAGE = 'ja'
-    g.appmsg.get_api_message.return_value = "権限エラーメッセージ"
-    g.applogger = MagicMock()
-    yield
+# グローバルなビルダーインスタンス
+builder = TestDataBuilder()
 
 
 class TestGetWritePermissionMenuIdList:
@@ -825,34 +836,34 @@ class TestGetMenuExportList:
     @patch('libs.export_import._create_export_menu_data')
     def test_only_write_permission_menus(self, mock_create_data, mock_get_target, mock_objdbca, mock_g_with_roles):
         """書き込み権限（PRIVILEGE='0', '1'）のメニューのみが返される"""
-        # メニューIDリスト
         mock_get_target.return_value = ['menu1', 'menu2', 'menu3', 'menu4']
 
         mock_objdbca.table_select.side_effect = [
-            # 1回目: T_DP_HIDE_MENU_LIST（非表示メニュー）
+            # 1回目: T_DP_HIDE_MENU_LIST
             [],
-            # 2回目: T_COMN_ROLE_MENU_LINK（通常メニュー、DISUSE_FLAG=0）
-            # PRIVILEGE='0', '1' のみ返す（'2'は除外）
+            # 2回目: T_COMN_MENU（全メニューのFLAG）
             [
-                {'MENU_ID': 'menu1', 'PRIVILEGE': '0'},
-                {'MENU_ID': 'menu2', 'PRIVILEGE': '1'},
+                {'MENU_ID': 'menu1', 'EXPORT_PERMISSION_CHECK_FLG': '1'},
+                {'MENU_ID': 'menu2', 'EXPORT_PERMISSION_CHECK_FLG': '1'},
+                {'MENU_ID': 'menu3', 'EXPORT_PERMISSION_CHECK_FLG': '1'},
+                {'MENU_ID': 'menu4', 'EXPORT_PERMISSION_CHECK_FLG': '1'},
             ],
-            # 3回目: T_COMN_MENU（FLAG='0'のメニュー確認）
-            [],
+            # 3回目: T_COMN_ROLE_MENU_LINK（全紐付）
+            [
+                {'MENU_ID': 'menu1', 'PRIVILEGE': '0', 'DISUSE_FLAG': 0},
+                {'MENU_ID': 'menu2', 'PRIVILEGE': '1', 'DISUSE_FLAG': 0},
+            ],
         ]
 
         mock_create_data.return_value = {'menu_groups': []}
 
         get_menu_export_list(mock_objdbca, 'org1', 'ws1')
 
-        # _create_export_menu_data が呼ばれたときの引数を確認
         call_args = mock_create_data.call_args[0]
         permitted_menu_ids = call_args[1]
 
         # PRIVILEGE='0', '1' のメニューのみが含まれる
-        assert 'menu1' in permitted_menu_ids
-        assert 'menu2' in permitted_menu_ids
-        # PRIVILEGE='2' のメニューは含まれない（今回のモックには入っていない）
+        assert permitted_menu_ids == ['menu1', 'menu2']
 
     @patch('libs.export_import._get_target_menu_id_list')
     @patch('libs.export_import._create_export_menu_data')
@@ -863,12 +874,17 @@ class TestGetMenuExportList:
         mock_objdbca.table_select.side_effect = [
             # 1回目: T_DP_HIDE_MENU_LIST
             [],
-            # 2回目: T_COMN_ROLE_MENU_LINK（PRIVILEGE IN ['0', '1'] のみ）
+            # 2回目: T_COMN_MENU（全メニューのFLAG）
             [
-                {'MENU_ID': 'menu1', 'PRIVILEGE': '1'},
+                {'MENU_ID': 'menu1', 'EXPORT_PERMISSION_CHECK_FLG': '1'},
+                {'MENU_ID': 'menu2', 'EXPORT_PERMISSION_CHECK_FLG': '1'},
+                {'MENU_ID': 'menu3', 'EXPORT_PERMISSION_CHECK_FLG': '1'},
             ],
-            # 3回目: T_COMN_MENU（FLAG='0'確認）
-            [],
+            # 3回目: T_COMN_ROLE_MENU_LINK（全紐付）
+            [
+                {'MENU_ID': 'menu1', 'PRIVILEGE': '1', 'DISUSE_FLAG': 0},
+                {'MENU_ID': 'menu2', 'PRIVILEGE': '2', 'DISUSE_FLAG': 0},  # 閲覧のみ
+            ],
         ]
 
         mock_create_data.return_value = {'menu_groups': []}
@@ -880,35 +896,67 @@ class TestGetMenuExportList:
 
         # PRIVILEGE='1' のメニューのみが含まれる
         assert 'menu1' in permitted_menu_ids
-        # PRIVILEGE='2' のメニューは除外されている（menu2, menu3は含まれない）
+        # PRIVILEGE='2' のメニューは除外されている（menu2は含まれない）
         assert 'menu2' not in permitted_menu_ids
+        # 紐付のないmenu3も含まれない
         assert 'menu3' not in permitted_menu_ids
 
     @patch('libs.export_import._get_target_menu_id_list')
     @patch('libs.export_import._create_export_menu_data')
-    def test_flag_null_not_treated_as_internal_menu(self, mock_create_data, mock_get_target, mock_objdbca, mock_g_with_roles):
-        """FLAG=NULL のメニューは内部メニュー（FLAG='0'）として扱わない"""
-        mock_get_target.return_value = ['menu1']
+    def test_flag0_menus_include_readonly_and_disused_link(self, mock_create_data, mock_get_target, mock_objdbca, mock_g_with_roles):
+        """内部メニュー（FLAG='0'）は、閲覧のみ・廃止済みの紐付でも表示され、紐付がなければ表示されない"""
+        mock_get_target.return_value = ['menu1', 'flag0_readonly', 'flag0_no_link']
 
         mock_objdbca.table_select.side_effect = [
             # 1回目: T_DP_HIDE_MENU_LIST
             [],
-            # 2回目: T_COMN_ROLE_MENU_LINK
-            [],
-            # 3回目: T_COMN_MENU（FLAG='0'確認）
-            [],
+            # 2回目: T_COMN_MENU（全メニューのFLAG）
+            [
+                {'MENU_ID': 'menu1', 'EXPORT_PERMISSION_CHECK_FLG': '1'},
+                {'MENU_ID': 'flag0_readonly', 'EXPORT_PERMISSION_CHECK_FLG': '0'},
+                {'MENU_ID': 'flag0_no_link', 'EXPORT_PERMISSION_CHECK_FLG': '0'},
+            ],
+            # 3回目: T_COMN_ROLE_MENU_LINK（全紐付）
+            [
+                {'MENU_ID': 'menu1', 'PRIVILEGE': '1', 'DISUSE_FLAG': 0},
+                {'MENU_ID': 'flag0_readonly', 'PRIVILEGE': '2', 'DISUSE_FLAG': '1'},
+            ],
         ]
 
         mock_create_data.return_value = {'menu_groups': []}
 
         get_menu_export_list(mock_objdbca, 'org1', 'ws1')
 
-        # 3回目の T_COMN_MENU の検索条件に NULL が含まれない
-        table_name, where, bind = mock_objdbca.table_select.call_args_list[2][0]
-        assert table_name == 'T_COMN_MENU'
-        assert 'EXPORT_PERMISSION_CHECK_FLG = %s' in where
-        assert 'IS NULL' not in where
-        assert bind[1] == '0'
+        permitted_menu_ids = mock_create_data.call_args[0][1]
+        assert permitted_menu_ids == ['menu1', 'flag0_readonly']
+
+    @patch('libs.export_import._get_target_menu_id_list')
+    @patch('libs.export_import._create_export_menu_data')
+    def test_flag_null_not_treated_as_internal_menu(self, mock_create_data, mock_get_target, mock_objdbca, mock_g_with_roles):
+        """FLAG=NULL のメニューは内部メニュー（FLAG='0'）として扱わない"""
+        mock_get_target.return_value = ['menu1', 'menu_null']
+
+        mock_objdbca.table_select.side_effect = [
+            # 1回目: T_DP_HIDE_MENU_LIST
+            [],
+            # 2回目: T_COMN_MENU（全メニューのFLAG取得）
+            [
+                {'MENU_ID': 'menu1', 'EXPORT_PERMISSION_CHECK_FLG': '1'},
+                {'MENU_ID': 'menu_null', 'EXPORT_PERMISSION_CHECK_FLG': None},
+            ],
+            # 3回目: T_COMN_ROLE_MENU_LINK（全紐付取得）
+            [
+                {'MENU_ID': 'menu1', 'PRIVILEGE': '1', 'DISUSE_FLAG': 0},
+            ],
+        ]
+
+        mock_create_data.return_value = {'menu_groups': []}
+
+        get_menu_export_list(mock_objdbca, 'org1', 'ws1')
+
+        permitted_menu_ids = mock_create_data.call_args[0][1]
+        # menu_null は FLAG=NULL（通常メニュー扱い）で権限がないので含まれない
+        assert permitted_menu_ids == ['menu1']
 
 
 class TestGetExcelBulkExportList:

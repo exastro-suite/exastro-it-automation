@@ -41,6 +41,7 @@ attachment_file.py's create_attachment_file().
 """
 import io
 import posixpath
+import time
 import zipfile
 
 from flask import g
@@ -49,6 +50,7 @@ from libs import tool
 from .attachment_file import create_attachment_file, fetch_attachment_file
 
 DEFAULT_ZIP_FILENAME = "archive.zip"
+DEFAULT_FILE_PERMISSIONS = "644"
 
 
 @tool(
@@ -81,19 +83,36 @@ DEFAULT_ZIP_FILENAME = "archive.zip"
                                 "Directory path inside the ZIP archive to store the file under "
                                 "(e.g. 'docs/sub'). Optional; defaults to the archive root."
                             )
+                        },
+                        "permissions": {
+                            "type": "string",
+                            "description": (
+                                "Unix permission bits (octal, e.g. '644' or '755') to set on this "
+                                "specific file inside the ZIP archive. Optional; defaults to the "
+                                "top-level file_permissions."
+                            )
                         }
                     },
                     "required": ["file_id"]
                 },
                 "description": (
-                    "List of {file_id, path} entries specifying which attachment files to include "
-                    "in the ZIP archive and which directory inside the archive to place each one under."
+                    "List of {file_id, path, permissions} entries specifying which attachment files "
+                    "to include in the ZIP archive, which directory inside the archive to place each "
+                    "one under, and (optionally) a per-file unix permission overriding file_permissions."
                 ),
                 "minItems": 1
             },
             "zip_filename": {
                 "type": "string",
                 "description": "File name for the resulting ZIP file (e.g. 'archive.zip'). Optional; defaults to 'archive.zip'."
+            },
+            "file_permissions": {
+                "type": "string",
+                "description": (
+                    "Default unix permission bits (octal, e.g. '644' or '755') to set on each file "
+                    "stored inside the ZIP archive, used for files that don't specify their own "
+                    "'permissions' in the files list. Optional; defaults to '644'."
+                )
             }
         },
         "required": ["files"]
@@ -113,9 +132,19 @@ def tool_create_attachment_zip_file(arguments: dict, payload: dict) -> dict:
                 - path (str, optional): zip内の格納ディレクトリ
                     (デフォルト: zipのルート) / directory inside the ZIP
                     to store the file under (default: the archive root)
+                - permissions (str, optional): このファイル個別のUnix
+                    パーミッション(8進数の文字列、例: '644')。未指定の場合は
+                    file_permissionsを使う / unix permission bits (octal
+                    string) for this specific file. Falls back to
+                    file_permissions when not specified.
             - zip_filename (str, optional): 出力するzipファイル名
                 (デフォルト: 'archive.zip') / output zip file name
                 (default: 'archive.zip')
+            - file_permissions (str, optional): permissionsを指定しない
+                ファイルに使うデフォルトのUnixパーミッション(8進数の文字列、
+                例: '644')(デフォルト: '644') / default unix permission bits
+                (octal string, e.g. '644') used for files that don't specify
+                their own permissions (default: '644')
         payload (dict): 呼び出しコンテキスト情報
             - organization_id (str): オーガナイゼーションID / organization id
             - workspace_id (str): ワークスペースID / workspace id
@@ -134,17 +163,23 @@ def tool_create_attachment_zip_file(arguments: dict, payload: dict) -> dict:
 
     Raises:
         Exception: filesが指定されていない、各要素にfile_idが無い、
-            または対象ファイルが存在しない場合 / if files is missing, an
-            entry is missing file_id, or a referenced file cannot be found
+            file_permissions/permissionsが8進数のパーミッション文字列として
+            解釈できない、または対象ファイルが存在しない場合 / if files is
+            missing, an entry is missing file_id, file_permissions/
+            permissions cannot be parsed as an octal permission string, or a
+            referenced file cannot be found
     """
     organization_id = payload.get("organization_id")
     workspace_id = payload.get("workspace_id")
     user_id = payload.get("user_id")
     files = arguments.get("files") or []
     zip_filename = arguments.get("zip_filename") or DEFAULT_ZIP_FILENAME
+    file_permissions = arguments.get("file_permissions") or DEFAULT_FILE_PERMISSIONS
 
     if not isinstance(files, list) or len(files) == 0:
         raise Exception("files is required and must be a non-empty list")
+
+    default_file_mode = _parse_permission_mode(file_permissions, "file_permissions")
 
     if not zip_filename.lower().endswith(".zip"):
         zip_filename = "{}.zip".format(zip_filename)
@@ -160,6 +195,12 @@ def tool_create_attachment_zip_file(arguments: dict, payload: dict) -> dict:
 
             file_id = entry["file_id"]
             path = entry.get("path") or ""
+            entry_permissions = entry.get("permissions")
+            entry_mode = (
+                _parse_permission_mode(entry_permissions, "permissions for file_id '{}'".format(file_id))
+                if entry_permissions
+                else default_file_mode
+            )
 
             file_data = fetch_attachment_file(organization_id, workspace_id, user_id, file_id)
             if file_data is None:
@@ -167,7 +208,10 @@ def tool_create_attachment_zip_file(arguments: dict, payload: dict) -> dict:
                 raise Exception("File not found: {}".format(file_id))
 
             arcname = _unique_arcname(path, file_data.get("filename") or file_id, used_names)
-            zf.writestr(arcname, file_data["content"])
+            zinfo = zipfile.ZipInfo(arcname, date_time=time.localtime(time.time())[:6])
+            zinfo.compress_type = zipfile.ZIP_DEFLATED
+            zinfo.external_attr = entry_mode << 16
+            zf.writestr(zinfo, file_data["content"])
 
             included_files.append({
                 "file_id": file_id,
@@ -190,6 +234,32 @@ def tool_create_attachment_zip_file(arguments: dict, payload: dict) -> dict:
         "included_files": included_files,
         "message": "ZIP file created successfully with {} file(s).".format(len(included_files))
     }
+
+
+def _parse_permission_mode(value, param_name):
+    """
+    8進数のパーミッション文字列をintのmodeに変換する
+
+    Parse an octal permission string into an int mode.
+
+    Args:
+        value (str): パーミッションを表す8進数文字列(例: '644')
+            / octal permission string (e.g. '644')
+        param_name (str): 解析に失敗した際のエラーメッセージに使う
+            パラメータ名 / parameter name used in the error message on
+            parse failure
+
+    Returns:
+        int: パーミッションのmode(例: 0o644) / permission mode (e.g. 0o644)
+
+    Raises:
+        Exception: valueが8進数のパーミッション文字列として解釈できない場合
+            / if value cannot be parsed as an octal permission string
+    """
+    try:
+        return int(str(value), 8)
+    except ValueError:
+        raise Exception("{} must be an octal permission string, e.g. '644'".format(param_name))
 
 
 def _sanitize_zip_path(path):

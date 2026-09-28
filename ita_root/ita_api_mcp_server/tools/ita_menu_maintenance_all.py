@@ -67,7 +67,7 @@ _VALID_RECORD_TYPES = ["Register", "Update", "Discard", "Restore", "Delete"]
     name="maintenance-all",
     description=(
         "Bulk register/update/discard/restore/physically delete records in an ITA menu."
-        "Before use, refer to `documents-tools/maintenance-all.md` using the `get-document` tool."
+        "Before use, refer to `tool-reference/maintenance-all.md` using the `get-document` tool."
     ),
     input_schema={
         "type": "object",

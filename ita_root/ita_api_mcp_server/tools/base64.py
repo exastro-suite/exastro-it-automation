@@ -136,12 +136,14 @@ def tool_base64_decode(arguments: dict, payload: dict) -> dict:
     # Decode the Base64 string and interpret the result as UTF-8 text
     try:
         decoded = base64.b64decode(text, validate=True).decode("utf-8")
+    except UnicodeDecodeError as e:
+        # UnicodeDecodeError は ValueError のサブクラスのため、下の except より先に置く
+        # (先に置かないと、常に下のexceptで捕捉されてしまい、このブロックに到達しない)
+        g.applogger.info("base64-decode failed: decoded content is not valid UTF-8: {}".format(e))
+        raise Exception("Decoded content is not valid UTF-8 text: {}".format(str(e)))
     except (binascii.Error, ValueError) as e:
         g.applogger.info("base64-decode failed: invalid Base64 string: {}".format(e))
         raise Exception("Failed to decode Base64 string: {}".format(str(e)))
-    except UnicodeDecodeError as e:
-        g.applogger.info("base64-decode failed: decoded content is not valid UTF-8: {}".format(e))
-        raise Exception("Decoded content is not valid UTF-8 text: {}".format(str(e)))
 
     return {
         "result": decoded,

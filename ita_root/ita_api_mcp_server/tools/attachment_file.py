@@ -444,7 +444,9 @@ def fetch_attachment_file(organization_id, workspace_id, user_id, file_id):
     finally:
         ws_db.db_disconnect()
 
-    if not rows:
+    # SEQ_NO=1(先頭チャンク)が無い場合はデータなしとして扱う
+    # Treat as "no data" if the first chunk (SEQ_NO=1) is missing
+    if not rows or rows[0]["SEQ_NO"] != 1:
         return None
 
     content = b"".join(row["FILE_DATA"] for row in rows)
@@ -540,9 +542,11 @@ def _fetch_attachment_meta(organization_id, workspace_id, user_id, file_id):
             対象が見つからない場合はNone
             / None if no matching rows are found
     """
+    # SEQ_NO=1(先頭チャンク)が無い場合はデータなしとして扱うため、SEQ_NO=1を直接条件にする
+    # Condition directly on SEQ_NO=1 so a missing first chunk is treated as "no data"
     sql = (
         "SELECT `FILE_NAME`, `MIME_TYPE`, `FILE_SIZE` FROM `{}` "
-        "WHERE `FILE_ID` = %s AND `LAST_UPDATE_USER` = %s ORDER BY `SEQ_NO` ASC LIMIT 1"
+        "WHERE `FILE_ID` = %s AND `LAST_UPDATE_USER` = %s AND `SEQ_NO` = 1"
     ).format(_TABLE_NAME)
 
     ws_db = DBConnectWs(workspace_id=workspace_id, organization_id=organization_id)

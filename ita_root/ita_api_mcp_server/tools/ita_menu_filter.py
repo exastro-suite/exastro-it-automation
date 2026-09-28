@@ -96,7 +96,7 @@ _DEFAULT_FILE_MIME_TYPE = "application/octet-stream"
     description=(
         "Get records from an ITA menu by specifying search conditions. Discarded records "
         "(discard=1) are excluded by default unless a 'discard' condition is explicitly given."
-        "When specifying filter_conditions, refer to `documents-tools/menu-filter.md` using the `get-document` tool."
+        "When specifying filter_conditions, refer to `tool-reference/menu-filter.md` using the `get-document` tool."
     ),
     input_schema={
         "type": "object",

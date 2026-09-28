@@ -217,40 +217,6 @@ def backyard_main(organization_id, workspace_id):
         tmp_msg = g.appmsg.get_log_message("BKY-60013", [all_del_cnt])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-        #
-        # T_AI_ATTACHMENT_FILEのレコード削除
-        #
-        tmp_msg = g.appmsg.get_log_message("BKY-60014", ['T_AI_ATTACHMENT_FILE'])
-        g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-
-        try:
-            expire_days = int(os.getenv("EXPIRE_DAYS_T_AI_ATTACHMENT_FILE"))
-        except Exception:
-            expire_days = 1
-
-        # 削除対象の基準時刻
-        expire_time = now_time - datetime.timedelta(days=expire_days)
-
-        del_cnt = 0
-
-        while True:
-            try:
-                objdbca.db_transaction_start()
-                cursor = objdbca.sql_execute_cursor(
-                    "DELETE FROM T_AI_ATTACHMENT_FILE WHERE LAST_UPDATE_TIMESTAMP <= %s LIMIT %s", [expire_time, 100])
-                objdbca.db_transaction_end(True)
-            except Exception as e:
-                objdbca.db_transaction_end(False)
-                raise e
-
-            if cursor.rowcount == 0:
-                break
-            
-            del_cnt += cursor.rowcount
-
-        tmp_msg = g.appmsg.get_log_message("BKY-60015", ['T_AI_ATTACHMENT_FILE', del_cnt])
-        g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-
     except Exception as e:
         # 処理終了 Exception
         tmp_msg = e

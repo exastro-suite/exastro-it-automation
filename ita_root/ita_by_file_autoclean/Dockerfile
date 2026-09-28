@@ -31,9 +31,6 @@ ENV SERVICE_NAME=ita-by-file-autoclean
 # ハングアップ監視用ファイル
 ENV FILE_PATH_LIVENESS=/tmp/liveness
 
-# T_AI_ATTACHMENT_FILEの有効日数
-ENV EXPIRE_DAYS_T_AI_ATTACHMENT_FILE=1
-
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
     dnf install -y \
     gcc \

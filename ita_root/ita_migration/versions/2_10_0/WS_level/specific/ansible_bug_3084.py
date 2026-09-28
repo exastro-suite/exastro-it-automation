@@ -28,7 +28,6 @@ from flask import g
 # 変数刈取が「同じメンバー変数か」を判定する同一性キー
 COMPARE_KEYS = [
     "MVMT_VAR_LINK_ID",
-    "PARENT_VARS_KEY_ID",
     "VARS_NAME",
     "ARRAY_NEST_LEVEL",
     "ASSIGN_SEQ_NEED",
@@ -263,9 +262,6 @@ def _remove_duplicate_members(ws_db):
 def _build_duplicate_member_sql():
     """
     同一性キーが重複している多段変数メンバー行だけを取得する SQL を組み立てる
-    派生テーブル d: 同一性キー 10 カラムで GROUP BY し、2 行以上あるキーだけを HAVING で残す
-    本体 m: d と 10 カラムを <=>（NULL 同士も一致とみなす比較）で JOIN し、該当行を全カラム返す
-    値のバインドは無い（テーブル名・カラム名は定数から組み立てる）
     """
     key_columns = []
     join_conditions = []

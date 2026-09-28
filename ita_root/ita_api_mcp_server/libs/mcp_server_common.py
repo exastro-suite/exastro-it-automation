@@ -57,6 +57,7 @@ from common_libs.common.exception import AppException
 from common_libs.common.logger import AppLog
 from common_libs.common.message_class import MessageTemplate
 from common_libs.api import set_api_timestamp, get_api_timestamp, app_exception_response, exception_response, check_request_body
+from common_libs.ci.util import set_service_loglevel
 
 # ヘルスチェック用URLかどうかを判定する正規表現
 # (organization_common.py / admin_common.py と同じパターン)
@@ -142,6 +143,18 @@ def before_request_handler():
         # Create the log-output class instance and the message-template class instance
         g.applogger = AppLog()
         g.appmsg = MessageTemplate(g.LANGUAGE)
+
+        # T_COMN_LOGLEVEL(SERVICE_NAME単位のログレベル設定)があれば、その値で
+        # ログレベルを上書きする(organization/admin と同じ仕組み)。テーブルが
+        # 無い、またはこのサービス(SERVICE_NAME)の設定が無い場合は、環境変数
+        # LOG_LEVEL(未設定時はINFO)にフォールバックする。
+        #
+        # Override the log level with the value from T_COMN_LOGLEVEL (the
+        # per-SERVICE_NAME log level setting), if present (same mechanism as
+        # organization/admin). Falls back to the LOG_LEVEL environment
+        # variable (default "INFO") if the table or a row for this service
+        # (SERVICE_NAME) does not exist.
+        set_service_loglevel()
 
         # リクエストボディがContent-Typeに応じた正しい形式かどうかをチェックする
         # Check that the request body matches the format implied by its Content-Type
@@ -233,24 +246,23 @@ def before_request_handler():
         # NOTE:
         # organization_common.py / admin_common.py ではここで
         # 組織DB・ワークスペースDBへの接続確認(DBConnectOrg/DBConnectWs)や
-        # メンテナンスモード確認(get_maintenance_mode_setting)、
-        # サービス単位のログレベル設定(set_service_loglevel)を行っています。
+        # メンテナンスモード確認(get_maintenance_mode_setting)も行っています。
         # ita_api_mcp_serverでは、上記の_is_ai_assistant_driver_enabled呼び出しで
         # DBConnectOrgによる組織DBへの接続(ドライバ有効チェック)のみ行っており、
-        # ワークスペースDBへの接続確認・メンテナンスモード確認・
-        # サービス単位のログレベル設定は現状組み込んでいません。
+        # ワークスペースDBへの接続確認・メンテナンスモード確認は現状組み込んでいません
+        # (サービス単位のログレベル設定は上記のset_service_loglevel()で対応済み)。
         # 今後これらが必要になった場合は、common_libs.common.dbconnect の
         # DBConnectWs等を用いて organization/admin と同様の処理を追加してください。
         #
         # organization_common.py / admin_common.py additionally connect to the
-        # organization/workspace database (DBConnectOrg/DBConnectWs), check the
-        # maintenance mode (get_maintenance_mode_setting), and configure the
-        # per-service log level (set_service_loglevel) here.
+        # organization/workspace database (DBConnectOrg/DBConnectWs) and check
+        # the maintenance mode (get_maintenance_mode_setting) here.
         # ita_api_mcp_server only connects to the organization DB via
         # DBConnectOrg (the driver-enabled check) through the
         # _is_ai_assistant_driver_enabled call above; the workspace DB
-        # connectivity check, maintenance mode check, and per-service log
-        # level configuration are not implemented yet.
+        # connectivity check and maintenance mode check are not implemented
+        # yet (the per-service log level setting is already handled above via
+        # set_service_loglevel()).
         # Add the same processing as organization/admin (using
         # common_libs.common.dbconnect's DBConnectWs etc.) when they become
         # necessary.
@@ -270,16 +282,63 @@ def log_api_end(status_code, is_success=True):
 
     before_request_handler で出力する [api-start] と対になるログ。
     ita_api_mcp_server は make_response (common_libs.api.util) を経由せず
-    独自にレスポンスを組み立てているため、jsonrpc_handler 側の各応答生成箇所
-    (api.py の create_error_response / 正常応答)から明示的に呼び出す。
+    独自にレスポンスを組み立てているため、通常はafter_request_handlerが
+    レスポンスのHTTPステータスコードから自動的にこの関数を呼び出す。
+
+    ただしjsonrpc_handler の "tools/call" 成功パスは、ツール実行が失敗しても
+    HTTPステータスは常に200を返し、成否は結果内のisErrorで表現する
+    (JSON-RPCの仕様上、トランスポートレベルでは成功のため)。この場合は
+    HTTPステータスコードだけでは意味的な成否・ステータスコードを判別できないため、
+    api.py側(jsonrpc_handler / create_error_response)から明示的にこの関数を
+    呼び出し、after_request_handlerによる重複ログを防ぐ。
 
     Log that an API request has finished ([api-end]).
 
     This pairs with the [api-start] log emitted by before_request_handler.
     Because ita_api_mcp_server builds its responses directly instead of going
-    through common_libs.api.util.make_response, this must be called explicitly
-    from each place api.py builds a response (create_error_response / the
-    success response in jsonrpc_handler).
+    through common_libs.api.util.make_response, this is normally called
+    automatically by after_request_handler, based on the response's HTTP
+    status code.
+
+    However, the "tools/call" success path in jsonrpc_handler always returns
+    HTTP 200 even when the tool itself failed (success/failure is instead
+    expressed via isError in the result), because JSON-RPC treats this as a
+    transport-level success. In that case the HTTP status code alone cannot
+    tell us the semantic success/status code, so api.py (jsonrpc_handler /
+    create_error_response) calls this function explicitly, which also
+    prevents after_request_handler from logging it a second time.
     """
     log_status = "SUCCESS" if is_success else "FAILURE"
     g.applogger.info("[ts={}][api-end][{}][status_code={}]".format(get_api_timestamp(), log_status, status_code))
+    g.API_END_LOGGED = True
+
+
+def after_request_handler(response):
+    """
+    called after each request is handled (Flask `after_request` hook)
+
+    [api-start]と対になる[api-end]ログを、レスポンスのHTTPステータスコードから
+    自動的に出力する。log_api_end()が既に明示的に呼ばれている場合
+    (jsonrpc_handler の "tools/call" 成功パスなど、HTTPステータスコードとは
+    別の意味的なステータスをログに残す必要がある場合)は、ここでは重複して
+    出力しない。ヘルスチェック用URLは、before_request_handlerが[api-start]を
+    出力していないため、対になる[api-end]もここで出力しない。
+
+    Automatically emit the [api-end] log (paired with [api-start]) based on
+    the response's HTTP status code. If log_api_end() has already been
+    called explicitly (e.g. the "tools/call" success path in jsonrpc_handler,
+    which needs to log a semantic status code that differs from the HTTP
+    status code), this does not log it again. Health-check URLs are skipped
+    here too, since before_request_handler does not emit [api-start] for them.
+
+    Args:
+        response (flask.Response): このリクエストに対するレスポンス
+            / the response for this request
+
+    Returns:
+        flask.Response: 引数のresponseをそのまま返す / the response, unchanged
+    """
+    if re.search(HEALTH_CHECK_URL_PATTERN, request.url) is None and not g.get("API_END_LOGGED"):
+        log_api_end(response.status_code, response.status_code < 400)
+
+    return response

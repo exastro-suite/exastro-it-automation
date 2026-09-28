@@ -299,6 +299,8 @@ def _register_menu(arguments: dict, payload: dict, new: bool) -> dict:
     menu_definition["group"] = {}
     menu_definition["menu"] = default_menu_definition_menu_fields | menu_definition.get("menu", {})
 
+    g.applogger.info(f'Parameter menu_name={menu_definition["menu"].get("menu_name")} menu_name_rest={menu_definition["menu"].get("menu_name_rest")}')
+
     # role_listの解決。update-menuでは必須項目とし、未指定ならエラーとする。
     # create-menuでは未指定の場合に自動設定する。
     # Resolve role_list. It is required for update-menu (raise if missing).
@@ -634,6 +636,8 @@ def tool_get_menu_definition(arguments: dict, payload: dict) -> dict:
 
     if not menu_rest_name:
         raise Exception("menu_rest_name is required")
+
+    g.applogger.info(f'Parameter menu_rest_name={menu_rest_name}')
 
     # このツールが呼び出すのは "/ita/create/define/{menu_create}/" というITA自身のAPI
     # (ita_api_organization)側のエンドポイントであるため、環境変数

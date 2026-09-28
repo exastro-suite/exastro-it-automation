@@ -181,6 +181,8 @@ def tool_create_user(arguments: dict, payload: dict) -> dict:
         "description": "",
     }
 
+    g.applogger.info(f'Parameter username={user_data["username"]}')
+
     # このツールが呼び出すのは "/platform/users" というExastro Platform API側の
     # エンドポイントであるため、環境変数 PLATFORM_API_HOST / PLATFORM_API_PORT を使用する
     #

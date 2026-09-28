@@ -208,6 +208,7 @@ def tool_execute_driver(arguments: dict, payload: dict) -> dict:
         raise Exception("menu is required")
 
     execute_data = _build_execute_data(arguments)
+    g.applogger.info(f"Parameter {execute_data}")
 
     # このツールが呼び出すのは "/ita/menu/{menu}/driver/execute/" というITA自身のAPI
     # (ita_api_organization)側のエンドポイントであるため、環境変数

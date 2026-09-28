@@ -247,5 +247,5 @@ def check_tool_permission(tool_name: str, payload: dict) -> bool:
 
     # ここまで到達すれば、実行を許可する
     # If we reach this point, allow execution
-    g.applogger.info("Tool authorized: tool={}".format(tool_name))
+    g.applogger.debug("Tool authorized: tool={}".format(tool_name))
     return True

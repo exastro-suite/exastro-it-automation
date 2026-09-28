@@ -170,6 +170,8 @@ def tool_menu_filter(arguments: dict, payload: dict) -> dict:
     if not menu:
         raise Exception("menu is required")
 
+    g.applogger.info(f'Parameter menu={menu}')
+
     # discard条件が未指定の場合は、論理削除(discard=1)されたレコードを
     # 除外するデフォルト条件を追加する
     # If a 'discard' condition is not given, add a default condition that
@@ -318,6 +320,8 @@ def tool_menu_filter_count(arguments: dict, payload: dict) -> dict:
 
     if not menu:
         raise Exception("menu is required")
+
+    g.applogger.info(f'Parameter menu={menu}')
 
     # menu-filterと同じITA自身のAPI(ita_api_organization)を呼び出すため、
     # 同じ環境変数 ITA_API_ORAGANIZATION_HOST / ITA_API_ORAGANIZATION_PORT を使用する

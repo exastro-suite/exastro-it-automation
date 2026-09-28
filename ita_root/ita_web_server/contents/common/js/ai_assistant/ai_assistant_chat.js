@@ -1716,8 +1716,8 @@ createCodeToolbar( extraClass ) {
     toolbar.innerHTML =
         copyButton
         + fn.html.button( fn.html.icon('note'), 'itaButton aiAssistantChatCodeButton popup', { type: 'codeToInput', action: 'default', title: getMessage.FTE14269 });
-    // LLMエディタのみコード反映ボタンを表示する
-    if( this.promptProfile == 'LLMEditor' ) {
+    // LLMエディタかつextraClassの値がない(aiAssistantChatCodeToolbarInlineではない)場合、コード反映ボタンを表示する
+    if( this.promptProfile == 'LLMEditor' && !extraClass) {
         toolbar.innerHTML += fn.html.button( fn.html.icon('circle_check'), 'itaButton aiAssistantChatCodeButton popup', {type: 'codeToEditor', action: 'default', title: getMessage.FTE14390 });
     }
 

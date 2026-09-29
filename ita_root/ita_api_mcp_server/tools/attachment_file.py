@@ -239,7 +239,8 @@ def download_attachment_file(organization_id, workspace_id, file_id):
             }
         },
         "required": ["filename", "text"]
-    }
+    },
+    profile=["AgenticAI"]
 )
 def tool_create_attachment_text_file(arguments: dict, payload: dict) -> dict:
     """
@@ -314,7 +315,8 @@ def tool_create_attachment_text_file(arguments: dict, payload: dict) -> dict:
             }
         },
         "required": ["file_id"]
-    }
+    },
+    profile=["AgenticAI", "LLMEditor"]
 )
 def tool_get_attachment_text_file(arguments: dict, payload: dict) -> dict:
     """

@@ -36,6 +36,32 @@ content-type: application/json
 }
 
 ###
+# 利用可能なツールの一覧を取得する(tools/list) - LLMEditor
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/mcp?profile=LLMEditor
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "method": "tools/list",
+  "params": {},
+  "id": 2
+}
+
+###
+# 利用可能なツールの一覧を取得する(tools/list) - AgenticAI
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/mcp?profile=AgenticAI
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "method": "tools/list",
+  "params": {},
+  "id": 2
+}
+
+###
 # ツール "list-users" を呼び出し、組織内のユーザー一覧を取得する(tools/call)
 POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/mcp
 Authorization: Basic {{org-user-id}} {{org-user-pw}}

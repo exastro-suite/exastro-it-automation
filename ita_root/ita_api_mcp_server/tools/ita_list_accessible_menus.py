@@ -60,7 +60,8 @@ from libs import tool, HTTPException, build_forward_headers
         "type": "object",
         "properties": {},
         "required": []
-    }
+    },
+    profile=["AgenticAI", "LLMEditor"]
 )
 def tool_list_accessible_menus(arguments: dict, payload: dict) -> dict:
     """

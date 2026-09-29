@@ -150,7 +150,8 @@ _REQUIRED_MENU = "menu_definition_and_creation"
         },
         "required": ["menu_definition"]
     },
-    required_menu=_REQUIRED_MENU
+    required_menu=_REQUIRED_MENU,
+    profile=["AgenticAI"]
 )
 def tool_create_menu(arguments: dict, payload: dict) -> dict:
     """
@@ -218,7 +219,8 @@ def tool_create_menu(arguments: dict, payload: dict) -> dict:
         },
         "required": ["menu_definition"]
     },
-    required_menu=_REQUIRED_MENU
+    required_menu=_REQUIRED_MENU,
+    profile=["AgenticAI"]
 )
 def tool_update_menu(arguments: dict, payload: dict) -> dict:
     """
@@ -602,7 +604,8 @@ def _column_dict_key_sort(item):
         },
         "required": ["menu_rest_name"]
     },
-    required_menu=_REQUIRED_MENU
+    required_menu=_REQUIRED_MENU,
+    profile=["AgenticAI"]
 )
 def tool_get_menu_definition(arguments: dict, payload: dict) -> dict:
     """

@@ -560,40 +560,56 @@ class TestToolCreateAttachmentZipFile:
 
 class TestSanitizeZipPath:
     def test_empty_path_returns_empty_string(self):
+        # 境界値: 空文字/Noneの場合は空文字を返すこと
         assert attachment_zip_file._sanitize_zip_path("") == ""
         assert attachment_zip_file._sanitize_zip_path(None) == ""
 
     def test_backslashes_are_normalized_to_slashes(self):
+        # 正常系: バックスラッシュ区切りのパスがスラッシュ区切りに正規化されること
         assert attachment_zip_file._sanitize_zip_path("a\\b\\c") == "a/b/c"
 
     def test_leading_slash_and_dot_segments_are_stripped(self):
+        # 正常系: 先頭のスラッシュ("/")や"."セグメント、".."による親ディレクトリ
+        # 参照が解決・除去されること
         assert attachment_zip_file._sanitize_zip_path("/a/./b/../c") == "a/b/c"
 
     def test_only_dot_segments_returns_empty_string(self):
+        # 境界値: パスが".."だけで構成される場合、アーカイブルートを指すものとして
+        # 空文字になること
         assert attachment_zip_file._sanitize_zip_path("../..") == ""
 
     def test_mixed_double_slashes_are_collapsed(self):
+        # 正常系: 連続したスラッシュが1つに正規化されること
         assert attachment_zip_file._sanitize_zip_path("a//b///c") == "a/b/c"
 
 
 class TestUniqueArcname:
     def test_first_use_returns_plain_name(self):
+        # 正常系: まだ使われていないファイル名はそのままの名前が使われ、
+        # usedセットに登録されること
         used = set()
         assert attachment_zip_file._unique_arcname("", "a.txt", used) == "a.txt"
         assert used == {"a.txt"}
 
     def test_directory_is_joined_with_filename(self):
+        # 正常系: ディレクトリパスを指定した場合、"ディレクトリ/ファイル名"の
+        # 形式で結合されること
         used = set()
         assert attachment_zip_file._unique_arcname("docs/sub", "a.txt", used) == "docs/sub/a.txt"
 
     def test_collision_appends_counter_with_extension_preserved(self):
+        # 正常系: 同名ファイルが既に使われている場合、拡張子を保ったまま
+        # "_1"サフィックスが付与されること
         used = {"a.txt"}
         assert attachment_zip_file._unique_arcname("", "a.txt", used) == "a_1.txt"
 
     def test_multiple_collisions_increment_counter(self):
+        # 境界値: 連番のサフィックスも既に使われている場合、次の連番まで
+        # カウンターがインクリメントされること
         used = {"a.txt", "a_1.txt", "a_2.txt"}
         assert attachment_zip_file._unique_arcname("", "a.txt", used) == "a_3.txt"
 
     def test_falls_back_to_file_when_filename_is_empty(self):
+        # 境界値: ファイル名が空文字の場合、"file"という既定名にフォールバックすること
         used = set()
         assert attachment_zip_file._unique_arcname("", "", used) == "file"

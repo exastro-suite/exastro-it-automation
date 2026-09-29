@@ -76,7 +76,8 @@ from libs import tool, HTTPException, build_forward_headers
             }
         },
         "required": ["menu"]
-    }
+    },
+    profile=["AgenticAI", "LLMEditor"]
 )
 def tool_list_menu_info(arguments: dict, payload: dict) -> dict:
     """
@@ -168,7 +169,8 @@ def tool_list_menu_info(arguments: dict, payload: dict) -> dict:
             }
         },
         "required": ["menu"]
-    }
+    },
+    profile=["AgenticAI", "LLMEditor"]
 )
 def tool_list_menu_info_pulldown(arguments: dict, payload: dict) -> dict:
     """

@@ -55,7 +55,8 @@ from libs import tool, HTTPException, build_forward_headers
         "properties": {},
         "required": []
     },
-    required_roles=["_.*-admin", "_og-usr-mt", "_og-ws-role-usr"]
+    required_roles=["_.*-admin", "_og-usr-mt", "_og-ws-role-usr"],
+    profile=["AgenticAI"]
 )
 def tool_list_users(arguments: dict, payload: dict) -> dict:
     """
@@ -138,7 +139,8 @@ def tool_list_users(arguments: dict, payload: dict) -> dict:
         },
         "required": ["username", "password", "email"]
     },
-    required_roles="_og-usr-mt"
+    required_roles="_og-usr-mt",
+    profile=["AgenticAI"]
 )
 def tool_create_user(arguments: dict, payload: dict) -> dict:
     """

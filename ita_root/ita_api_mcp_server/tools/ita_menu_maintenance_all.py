@@ -115,7 +115,8 @@ _VALID_RECORD_TYPES = ["Register", "Update", "Discard", "Restore", "Delete"]
             }
         },
         "required": ["menu", "records"]
-    }
+    },
+    profile=["AgenticAI"]
 )
 def tool_maintenance_all(arguments: dict, payload: dict) -> dict:
     """

@@ -14,12 +14,10 @@
 """
 SubValueAutoReg の結合テスト(**読み取り専用**)
 
-ケース表: SubValueAutoReg_integration_testcases.md
-
 位置づけ:
   単体テスト(test_SubValueAutoReg_getCMDBdata / _createQuerySelectCMDB / _rest_filter)は
   WS_DB をモックしているため、生成した SELECT文が**実DBで実行できるか**は検証できていない
-  (各ケース表の「未カバー」に「SQL の文法的な正しさ … 実行可能性は結合テスト側の担保」と記載)。
+  (SQL の文法的な正しさ・実行可能性は結合テスト側で担保する)。
   本ファイルはその穴を、稼働中の devcontainer スタックの MariaDB に接続して埋める。
 
 読み取り専用であること:
@@ -577,7 +575,7 @@ def test_records_cover_horizontal_and_vertical(records, target, driver_attr):
     ドライバ L/P/R それぞれで両方を通しておく必要がある。
 
     これは実装ではなく**投入データ**の問題なので、
-    検知したら tests/integration_seed_data.md の段階7 に戻る。
+    検知したら tests/README.md の段階7 に戻る。
     """
     _, _, ws_db = target
 
@@ -711,7 +709,7 @@ def test_records_cover_value_and_key_registration(val_assign, records, driver_at
     Key型 の分岐が壊れていても全部緑のままになる。
 
     これは実装ではなく**投入データ**の問題なので、
-    検知したら tests/integration_seed_data.md の段階7 に戻る。
+    検知したら tests/README.md の段階7 に戻る。
     """
     from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 

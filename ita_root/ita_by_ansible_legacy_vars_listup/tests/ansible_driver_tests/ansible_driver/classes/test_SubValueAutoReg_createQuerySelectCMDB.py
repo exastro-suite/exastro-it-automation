@@ -14,8 +14,6 @@
 """
 SubValueAutoReg.createQuerySelectCMDB の単体テスト + getCMDBdata との連結テスト
 
-ケース表: SubValueAutoReg_createQuerySelectCMDB_testcases.md
-
 位置づけ:
   test_SubValueAutoReg_getCMDBdata.py は build_inputs で SELECT文を**自前に組み立てて**
   getCMDBdata に渡すため、createQuerySelectCMDB は一度も呼ばれない。

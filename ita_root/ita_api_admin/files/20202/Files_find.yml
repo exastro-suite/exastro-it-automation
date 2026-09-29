@@ -1,17 +1,24 @@
+- name: Ensure ITA variable is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Target_Path: "{{ ITA_DFLT_Target_Path }}"
+  when: ITA_DFLT_Target_Path is defined
+
 - name: Return a list of files based on specific criteria
-  find:
+  ansible.builtin.find:
     age: "{{ ITA_DFLT_Age | default('0s') }}"
     file_type: "{{ ITA_DFLT_File_Type | default('any') }}"
     paths: "{{ item }}"
     patterns:
       - "{{ ITA_DFLT_Name_Pattern | default('.*') }}"
-    recurse: "{{ ITA_DFLT_Recurse | default('yes') }}"
-    use_regex: yes
-  with_items:
-    - "{{ ITA_DFLT_Target_Path }}"
+    recurse: "{{ ITA_DFLT_Recurse | default(true) }}"
+    use_regex: true
+  loop: >-
+    {{
+      ITA_DFLT_Target_Path if ITA_DFLT_Target_Path is sequence and ITA_DFLT_Target_Path is not string else [ITA_DFLT_Target_Path]
+    }}
   register: ITA_RGST_File_Lists
 
 - name: Print a list of files
-  debug:
+  ansible.builtin.debug:
     var: ITA_RGST_File_Lists
     verbosity: 0

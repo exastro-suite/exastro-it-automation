@@ -1,4 +1,4 @@
 - name: A wrapper to the unix getent utility (protocols)
-  getent:
+  ansible.builtin.getent:
     database: protocols
   register: ITA_DFLT_getent_protocols

@@ -1,4 +1,4 @@
 - name: A wrapper to the unix getent utility (services)
-  getent:
+  ansible.builtin.getent:
     database: services
   register: ITA_DFLT_getent_services

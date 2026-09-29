@@ -1,8 +1,23 @@
+- name: Ensure ITA_DFLT_Src_Files is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Src_Files: "{{ ITA_DFLT_Src_Files }}"
+  when: ITA_DFLT_Src_Files is defined
+
+- name: Ensure ITA_DFLT_Dest_Files is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Dest_Files: "{{ ITA_DFLT_Dest_Files }}"
+  when: ITA_DFLT_Dest_Files is defined
+
 - name: Copy data from local to remote
-  copy:
-    src: "{{ item.0 }}"
-    dest: "{{ item.1 }}"
-    remote_src: no
-  with_together:
-    - "{{ ITA_DFLT_Src_Files }}"
-    - "{{ ITA_DFLT_Dest_Files }}"
+  ansible.builtin.copy:
+    src: "{{ item[0] }}"
+    dest: "{{ item[1] }}"
+    remote_src: false
+  loop: >-
+    {{
+      (ITA_DFLT_Src_Files if ITA_DFLT_Src_Files is sequence and ITA_DFLT_Src_Files is not string else [ITA_DFLT_Src_Files])
+      | ansible.builtin.zip_longest(
+          ITA_DFLT_Dest_Files if ITA_DFLT_Dest_Files is sequence and ITA_DFLT_Dest_Files is not string else [ITA_DFLT_Dest_Files]
+        )
+      | list
+    }}

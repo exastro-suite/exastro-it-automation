@@ -1,7 +1,15 @@
+- name: Ensure ITA variable is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Parameter_Names: "{{ ITA_DFLT_Parameter_Names }}"
+  when: ITA_DFLT_Parameter_Names is defined
+
 - name: Remove parameter
-  sysctl:
+  ansible.posix.sysctl:
     name: "{{ item }}"
     state: absent
-    reload: yes
-  with_items:
-    - "{{ ITA_DFLT_Parameter_Names }}"
+    reload: true
+  loop: >-
+    {{
+      ITA_DFLT_Parameter_Names if ITA_DFLT_Parameter_Names is sequence and ITA_DFLT_Parameter_Names is not string else [ITA_DFLT_Parameter_Names]
+    }}
+

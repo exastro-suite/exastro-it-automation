@@ -67,22 +67,28 @@ def _make_model(vector=None):
 
 class TestExtractKeywords:
     def test_extracts_alnum_words_lowercased_deduplicated(self):
+        # 正常系: 英数字の単語を小文字化・重複除去して抽出すること
+        # (記号やハイフンは区切り文字として扱われる)
         result = search_documents._extract_keywords("Hello World hello, WORLD! foo-bar 1a")
         assert set(result) == {"hello", "world", "foo", "bar", "1a"}
 
     def test_ignores_single_char_words(self):
+        # 境界値: 1文字だけの単語はキーワードとして採用されないこと
         result = search_documents._extract_keywords("a b cd e")
         assert result == ["cd"]
 
     def test_empty_string_returns_empty_list(self):
+        # 境界値: 空文字を渡した場合は空リストを返すこと
         assert search_documents._extract_keywords("") == []
 
     def test_no_alnum_words_returns_empty_list(self):
+        # 境界値: 英数字を含む単語が無い(記号のみ)場合は空リストを返すこと
         assert search_documents._extract_keywords("!!! --- ...") == []
 
 
 class TestCalculateKeywordScore:
     def test_no_keywords_returns_zero(self):
+        # 境界値: キーワードが空リストの場合はスコア0.0を返すこと
         assert search_documents._calculate_keyword_score([], "some text", "some title") == 0.0
 
     def test_all_keywords_match_title_only(self):
@@ -94,6 +100,8 @@ class TestCalculateKeywordScore:
         assert score == pytest.approx(expected)
 
     def test_all_keywords_match_text_and_title_returns_one(self):
+        # 正常系: 全キーワードがテキスト・タイトル両方にマッチする場合、
+        # スコアは最大値の1.0になること
         score = search_documents._calculate_keyword_score(["foo", "bar"], "foo bar text", "foo bar title")
         assert score == 1.0
 
@@ -105,26 +113,35 @@ class TestCalculateKeywordScore:
         assert score == pytest.approx(expected)
 
     def test_no_match_returns_zero(self):
+        # 異常系: どのキーワードもテキスト・タイトルにマッチしない場合はスコア0.0
         score = search_documents._calculate_keyword_score(["zzz"], "some text", "some title")
         assert score == 0.0
 
     def test_case_insensitive_match(self):
+        # 正常系: キーワードの大文字/小文字を区別せずマッチすること
         score = search_documents._calculate_keyword_score(["Foo"], "this has FOO in it", "title")
         assert score > 0.0
 
     def test_partial_match(self):
+        # 境界値: 一部のキーワードのみマッチする場合、スコアは0と1の間の値になること
         score = search_documents._calculate_keyword_score(["foo", "zzz"], "foo text", "title")
         assert 0.0 < score < 1.0
 
 
 class TestHybridScore:
     def test_alpha_one_uses_only_vector_score(self):
+        # 境界値: alpha=1.0の場合、ベクトルスコアのみが結果になること
+        # (キーワードスコアは無視される)
         assert search_documents._hybrid_score(0.8, 0.2, alpha=1.0) == pytest.approx(0.8)
 
     def test_alpha_zero_uses_only_keyword_score(self):
+        # 境界値: alpha=0.0の場合、キーワードスコアのみが結果になること
+        # (ベクトルスコアは無視される)
         assert search_documents._hybrid_score(0.8, 0.2, alpha=0.0) == pytest.approx(0.2)
 
     def test_alpha_midpoint_averages(self):
+        # 正常系: alpha=0.5の場合、ベクトルスコアとキーワードスコアの
+        # 単純平均になること
         assert search_documents._hybrid_score(1.0, 0.0, alpha=0.5) == pytest.approx(0.5)
 
 
@@ -135,27 +152,33 @@ class TestExtractTitle:
         assert title == "My Title"
 
     def test_plain_first_line_used_as_title(self):
+        # 正常系: Markdownの見出し記号が無い場合、1行目がそのままタイトルとして使われること
         text = "Plain Title\nbody"
         title = search_documents._extract_title(text, Path("/tmp/doc.md"))
         assert title == "Plain Title"
 
     def test_empty_first_line_falls_back_to_filename(self):
+        # 境界値: 1行目が空行の場合、拡張子を除いたファイル名にフォールバックすること
         text = "\nbody text here"
         title = search_documents._extract_title(text, Path("/tmp/fallback_name.md"))
         assert title == "fallback_name"
 
     def test_heading_only_symbols_falls_back_to_filename(self):
+        # 境界値: 見出し記号("#")のみで本文が無い場合も、
+        # 拡張子を除いたファイル名にフォールバックすること
         text = "###\nbody text"
         title = search_documents._extract_title(text, Path("/tmp/heading_only.md"))
         assert title == "heading_only"
 
     def test_empty_text_falls_back_to_filename(self):
+        # 境界値: テキストが空文字の場合、拡張子を除いたファイル名にフォールバックすること
         title = search_documents._extract_title("", Path("/tmp/empty.md"))
         assert title == "empty"
 
 
 class TestResolveDocumentSource:
     def test_resolves_file_within_document_path(self, tmp_path, monkeypatch):
+        # 正常系: DOCUMENT_PATH直下のファイルを指定した場合、その絶対パスが解決されること
         monkeypatch.setattr(search_documents, "DOCUMENT_PATH", str(tmp_path))
         target_file = tmp_path / "doc.md"
         target_file.write_text("hello")
@@ -164,6 +187,7 @@ class TestResolveDocumentSource:
         assert resolved == target_file.resolve()
 
     def test_resolves_nested_file(self, tmp_path, monkeypatch):
+        # 正常系: サブディレクトリ内のファイルを指定した場合も正しく解決されること
         monkeypatch.setattr(search_documents, "DOCUMENT_PATH", str(tmp_path))
         nested_dir = tmp_path / "sub"
         nested_dir.mkdir()
@@ -174,16 +198,21 @@ class TestResolveDocumentSource:
         assert resolved == nested_file.resolve()
 
     def test_path_traversal_raises_value_error(self, tmp_path, monkeypatch):
+        # 異常系: "../"などでDOCUMENT_PATH外を指すパスを指定した場合、
+        # ValueErrorが発生すること(パストラバーサル対策)
         monkeypatch.setattr(search_documents, "DOCUMENT_PATH", str(tmp_path))
         with pytest.raises(ValueError, match="Invalid source path"):
             search_documents._resolve_document_source("../../etc/passwd")
 
     def test_missing_file_raises_file_not_found(self, tmp_path, monkeypatch):
+        # 異常系: 指定したファイルが存在しない場合、FileNotFoundErrorが発生すること
         monkeypatch.setattr(search_documents, "DOCUMENT_PATH", str(tmp_path))
         with pytest.raises(FileNotFoundError, match="Document not found"):
             search_documents._resolve_document_source("does_not_exist.md")
 
     def test_directory_is_not_a_valid_file(self, tmp_path, monkeypatch):
+        # 異常系: 指定したパスがファイルではなくディレクトリの場合、
+        # FileNotFoundErrorが発生すること
         monkeypatch.setattr(search_documents, "DOCUMENT_PATH", str(tmp_path))
         (tmp_path / "subdir").mkdir()
         with pytest.raises(FileNotFoundError, match="Document not found"):
@@ -192,6 +221,8 @@ class TestResolveDocumentSource:
 
 class TestToolSearchDocuments:
     def test_model_none_raises(self, mock_flask_g, monkeypatch):
+        # 異常系: モジュール初期化時にmodelのロードに失敗し model=None のままの場合、
+        # 未初期化を示す例外が発生すること
         monkeypatch.setattr(search_documents, "model", None)
         monkeypatch.setattr(search_documents, "client", mock.Mock())
         monkeypatch.setattr(search_documents, "init_error", "boom init failure")
@@ -200,6 +231,8 @@ class TestToolSearchDocuments:
             search_documents.tool_search_documents({"query": "test"}, {"user_id": "u1"})
 
     def test_client_none_raises(self, mock_flask_g, monkeypatch):
+        # 異常系: Qdrantクライアントの初期化に失敗し client=None のままの場合、
+        # init_errorの内容を含む例外が発生すること
         monkeypatch.setattr(search_documents, "model", mock.Mock())
         monkeypatch.setattr(search_documents, "client", None)
         monkeypatch.setattr(search_documents, "init_error", "qdrant unreachable")
@@ -208,6 +241,8 @@ class TestToolSearchDocuments:
             search_documents.tool_search_documents({"query": "test"}, {"user_id": "u1"})
 
     def test_success_returns_filtered_sorted_results(self, mock_flask_g, monkeypatch):
+        # 正常系: 検索結果がスコア降順に並び、各結果に期待するキーのみが
+        # 含まれること
         hits = [
             _make_hit(text="apple banana", title="Fruit Guide", source="a.md", score=0.95),
             _make_hit(text="something else", title="Other", source="b.md", score=0.7),
@@ -231,6 +266,9 @@ class TestToolSearchDocuments:
             assert set(r.keys()) == {"text", "source", "filename", "title", "directory", "chunk", "score"}
 
     def test_default_limit_and_threshold(self, mock_flask_g, monkeypatch):
+        # 正常系: limit/score_thresholdを省略した場合、既定値(limit=5,
+        # score_threshold=0.6)をもとに計算されたsearch_limit/緩和済み閾値が
+        # query_pointsに渡されること
         hits = [_make_hit(text="foo", title="Foo Title", score=0.9)]
         monkeypatch.setattr(search_documents, "model", _make_model())
         fake_client = mock.Mock()
@@ -249,6 +287,8 @@ class TestToolSearchDocuments:
         assert kwargs["score_threshold"] == max(0.6 - 0.1, 0.4)
 
     def test_limit_is_clamped_to_max_20(self, mock_flask_g, monkeypatch):
+        # 境界値: limitに大きな値(1000)を指定しても20件にクランプされ、
+        # query_pointsへ渡すsearch_limitも60(limit*3の上限)を超えないこと
         hits = [_make_hit(text="foo", title="Foo", score=0.9)]
         monkeypatch.setattr(search_documents, "model", _make_model())
         fake_client = mock.Mock()
@@ -263,6 +303,8 @@ class TestToolSearchDocuments:
         assert result["count"] <= 20
 
     def test_no_results_above_threshold_returns_empty(self, mock_flask_g, monkeypatch):
+        # 異常系: スコアがscore_thresholdを下回るヒットしか無い場合、
+        # resultsは空リスト・countは0になること
         hits = [_make_hit(text="foo", title="Foo", score=0.2)]
         monkeypatch.setattr(search_documents, "model", _make_model())
         fake_client = mock.Mock()
@@ -352,6 +394,8 @@ class TestToolSearchDocuments:
         assert result["results"][0]["source"] == "a.md"
 
     def test_query_embed_failure_raises_wrapped_exception(self, mock_flask_g, monkeypatch):
+        # 異常系: model.query_embedが例外を発生させた場合、元の例外メッセージを
+        # 含むラップされた例外が発生すること
         broken_model = mock.Mock()
         broken_model.query_embed = mock.Mock(side_effect=RuntimeError("embed exploded"))
         monkeypatch.setattr(search_documents, "model", broken_model)
@@ -361,6 +405,8 @@ class TestToolSearchDocuments:
             search_documents.tool_search_documents({"query": "foo"}, {})
 
     def test_query_points_failure_raises_wrapped_exception(self, mock_flask_g, monkeypatch):
+        # 異常系: client.query_pointsが例外を発生させた場合、元の例外メッセージを
+        # 含むラップされた例外が発生すること
         monkeypatch.setattr(search_documents, "model", _make_model())
         fake_client = mock.Mock()
         fake_client.query_points = mock.Mock(side_effect=RuntimeError("qdrant down"))
@@ -370,6 +416,8 @@ class TestToolSearchDocuments:
             search_documents.tool_search_documents({"query": "foo"}, {})
 
     def test_missing_query_defaults_to_empty_string(self, mock_flask_g, monkeypatch):
+        # 境界値: queryが未指定の場合は空文字として扱われ、
+        # 例外にはならず空文字のqueryで検索が実行されること
         monkeypatch.setattr(search_documents, "model", _make_model())
         fake_client = mock.Mock()
         fake_client.query_points = mock.Mock(return_value=_make_search_result([]))
@@ -383,24 +431,31 @@ class TestToolSearchDocuments:
 
 class TestToolGetDocument:
     def test_missing_source_raises(self, mock_flask_g):
+        # 異常系: sourceが指定されていない場合は例外が発生すること
         with pytest.raises(Exception, match="Parameter 'source' is required."):
             search_documents.tool_get_document({}, {"user_id": "u1"})
 
     def test_empty_source_raises(self, mock_flask_g):
+        # 異常系: sourceが空文字の場合も例外が発生すること
         with pytest.raises(Exception, match="Parameter 'source' is required."):
             search_documents.tool_get_document({"source": ""}, {"user_id": "u1"})
 
     def test_path_traversal_raises(self, mock_flask_g, tmp_path, monkeypatch):
+        # 異常系: "../"などでDOCUMENT_PATH外を指すsourceを指定した場合、
+        # 例外が発生すること(パストラバーサル対策)
         monkeypatch.setattr(search_documents, "DOCUMENT_PATH", str(tmp_path))
         with pytest.raises(Exception, match="Invalid source path"):
             search_documents.tool_get_document({"source": "../outside.md"}, {"user_id": "u1"})
 
     def test_missing_file_raises(self, mock_flask_g, tmp_path, monkeypatch):
+        # 異常系: 指定したsourceのファイルが存在しない場合は例外が発生すること
         monkeypatch.setattr(search_documents, "DOCUMENT_PATH", str(tmp_path))
         with pytest.raises(Exception, match="Document not found"):
             search_documents.tool_get_document({"source": "nope.md"}, {"user_id": "u1"})
 
     def test_success_returns_full_document(self, mock_flask_g, tmp_path, monkeypatch):
+        # 正常系: サブディレクトリ内のドキュメントの全文・タイトル・
+        # ディレクトリ名などが期待通りに返ること
         monkeypatch.setattr(search_documents, "DOCUMENT_PATH", str(tmp_path))
         sub_dir = tmp_path / "guides"
         sub_dir.mkdir()
@@ -417,6 +472,8 @@ class TestToolGetDocument:
         assert result["message"] == "Document retrieved successfully."
 
     def test_success_root_level_document_directory_is_empty(self, mock_flask_g, tmp_path, monkeypatch):
+        # 境界値: DOCUMENT_PATHの直下(ルートレベル)にあるドキュメントの場合、
+        # directoryが"."になること
         monkeypatch.setattr(search_documents, "DOCUMENT_PATH", str(tmp_path))
         doc_file = tmp_path / "root.md"
         doc_file.write_text("Root Doc\ncontent")
@@ -427,6 +484,8 @@ class TestToolGetDocument:
         assert result["title"] == "Root Doc"
 
     def test_read_failure_raises_wrapped_exception(self, mock_flask_g, tmp_path, monkeypatch):
+        # 異常系: ファイルの内容が有効なUTF-8として読めない場合、
+        # 元のUnicodeDecodeErrorをラップした例外が発生すること
         monkeypatch.setattr(search_documents, "DOCUMENT_PATH", str(tmp_path))
         doc_file = tmp_path / "bad_encoding.md"
         # 有効なUTF-8として読めないバイト列を書き込み、read_text(encoding="utf-8")で
@@ -437,6 +496,8 @@ class TestToolGetDocument:
             search_documents.tool_get_document({"source": "bad_encoding.md"}, {"user_id": "u1"})
 
     def test_missing_user_id_defaults_to_unknown(self, mock_flask_g, tmp_path, monkeypatch):
+        # 境界値: payloadにuser_idが無い場合でも例外にならず、
+        # ドキュメント取得は正常に完了すること
         monkeypatch.setattr(search_documents, "DOCUMENT_PATH", str(tmp_path))
         doc_file = tmp_path / "doc.md"
         doc_file.write_text("Doc Title\nbody")

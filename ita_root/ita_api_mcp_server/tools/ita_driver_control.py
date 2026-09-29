@@ -169,7 +169,8 @@ _EXECUTE_INPUT_SCHEMA = {
     name="execute-driver",
     description="Start executing ITA driver operation with specified movement and operation.",
     input_schema=_EXECUTE_INPUT_SCHEMA,
-    required_menu=_REQUIRED_MENU_EXECUTE
+    required_menu=_REQUIRED_MENU_EXECUTE,
+    profile=["AgenticAI"]
 )
 def tool_execute_driver(arguments: dict, payload: dict) -> dict:
     """
@@ -253,7 +254,8 @@ def tool_execute_driver(arguments: dict, payload: dict) -> dict:
     name="dry-run-driver",
     description="Start executing ITA driver operation in dry-run mode (Ansible: DryRun).",
     input_schema=_EXECUTE_INPUT_SCHEMA,
-    required_menu=_REQUIRED_MENU_EXECUTE
+    required_menu=_REQUIRED_MENU_EXECUTE,
+    profile=["AgenticAI"]
 )
 def tool_dry_run_driver(arguments: dict, payload: dict) -> dict:
     """
@@ -351,7 +353,8 @@ def tool_dry_run_driver(arguments: dict, payload: dict) -> dict:
         },
         "required": ["menu", "execution_no"]
     },
-    required_menu=_REQUIRED_MENU_STATUS
+    required_menu=_REQUIRED_MENU_STATUS,
+    profile=["AgenticAI", "LLMEditor"]
 )
 def tool_get_driver_status(arguments: dict, payload: dict) -> dict:
     """

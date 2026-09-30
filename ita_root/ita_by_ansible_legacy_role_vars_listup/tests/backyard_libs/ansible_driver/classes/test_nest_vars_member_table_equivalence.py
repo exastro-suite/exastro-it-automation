@@ -16,12 +16,14 @@
 
 総当たり比較（O(N^2)）を辞書引きに置き換える改修は「速くなること」ではなく
 **改修前と改修後で出力が完全に一致すること**が本質なので、
-改修前の実装をこのモジュール内に写して置き、それを比較の基準として現行実装と突き合わせる。
+改修前の実装が出した結果を比較の基準として現行実装と突き合わせる。
 
-- `_legacy_*` は **改修前コードの意図的な写し**。プロダクト側を直しても追随してはいけない
-  （追随させると比較の基準としての意味が無くなる）。プロダクト側の仕様を変える時に初めて更新する
+- 改修前の実装の結果は、移行時に 1 回だけ書き出した期待値ファイル（expected_nest_vars_member_table.py）に
+  入力と一緒に記録してある。**製品側を直しても期待値を追随させてはいけない**（追随させると比較の基準としての意味が無くなる）。
+  プロダクト側の仕様を変える時に初めて更新する
+- 期待値のキーは「テスト関数名から test_ を除いたもの（パラメータ付き）:呼んだ処理」。テスト関数名を変えたら期待値のキーも直す
 - #3096 で製品側の同一性キーは `PARENT_VARS_KEY_ID` を外した 9 項目になり、一致行には `PARENT_VARS_KEY_ID` も
-  取り込むようになった。ここの `_legacy_*` は **改修前（10 項目・親メンバーの取り込み無し）の基準として据え置く**。
+  取り込むようになった。期待値は **改修前（10 項目・親メンバーの取り込み無し）の結果のまま据え置く**。
   このモジュールのシナリオは親メンバーが両側で同じ値なので、据え置いたままでも一致する。
   親メンバーが違うシナリオの「意図した差分」は test_nest_vars_member_matching_equivalence.py 側で固定している
 - 出力リストの順序は消費先に影響しないが（受け手が dict のキーに畳む / pkey 単位で独立）、
@@ -33,11 +35,10 @@ import copy
 
 import pytest
 
-from backyard_libs.ansible_driver.classes.ExpandableElementClass import ExpandableElement
-from backyard_libs.ansible_driver.classes.NonExpandableElementClass import NonExpandableElement
 from backyard_libs.ansible_driver.classes.NestVarsMemberTableClass import NestVarsMemberTable
 from backyard_libs.ansible_driver.functions import util
 
+from tests.backyard_libs.ansible_driver.classes.expected_nest_vars_member_table import get_expected
 from tests.common import (
     create_chain_array_item,
     create_member_row,
@@ -45,144 +46,6 @@ from tests.common import (
 
 LINK_ID = "link-0001"
 OTHER_LINK_ID = "link-0002"
-
-
-# - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +
-# 改修前の実装（比較の基準）
-# - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +
-
-def _legacy_same_record(record_a, record_b, ignore_vars_key_id=True):
-    """改修前の NestVarsMemberTable._same_record の写し
-
-    PARENT_VARS_KEY_ID を含む改修前の同一性キー 10 項目の写し。#3096 で本体は 9 項目になったが、ここは比較基準として据え置き。
-    """
-
-    keys_to_compare = [
-        'MVMT_VAR_LINK_ID',
-        'PARENT_VARS_KEY_ID',
-        'VARS_NAME',
-        'ARRAY_NEST_LEVEL',
-        'ASSIGN_SEQ_NEED',
-        'COL_SEQ_NEED',
-        'MEMBER_DISP',
-        'VRAS_NAME_PATH',
-        'VRAS_NAME_ALIAS',
-        'MAX_COL_SEQ'
-    ]
-
-    if not ignore_vars_key_id:
-        keys_to_compare.append('VARS_KEY_ID')
-
-    for field in keys_to_compare:
-        if str(record_a.get(field)) != str(record_b.get(field)):
-            return False
-
-    return True
-
-
-def _legacy_a_minus_b(list_a, list_b, ignore_vars_key_id=True):
-    """改修前の NestVarsMemberTable._a_minus_b の写し（総当たり）"""
-
-    result_list = []
-
-    for record_a in list_a:
-        for record_b in list_b:
-            if _legacy_same_record(record_a, record_b, ignore_vars_key_id):
-                break
-        else:
-            result_list.append(record_a)
-
-    return result_list
-
-
-def _legacy_a_and_b(list_a, list_b, ignore_vars_key_id=True, marge_vars_key_id=False):
-    """改修前の NestVarsMemberTable._a_and_b の写し（総当たり・最初にマッチした record_b を採用）
-
-    取り込むのは VARS_KEY_ID だけ。#3096 で本体は PARENT_VARS_KEY_ID も取り込むようになったが、ここは比較基準として据え置き。
-    """
-
-    result_list = []
-
-    for record_a in list_a:
-        for record_b in list_b:
-            if _legacy_same_record(record_a, record_b, ignore_vars_key_id):
-                if marge_vars_key_id:
-                    record_a["VARS_KEY_ID"] = record_b["VARS_KEY_ID"]
-                result_list.append(record_a)
-                break
-
-    return result_list
-
-
-def _legacy_has_key_recursive(element, parent_key):
-    """改修前の MemberColCombElement.has_key_recursive の写し
-
-    現行実装では不要になりプロダクト側から削除したので、改修前の実装として使うためにここに残す。
-    """
-
-    if element.own_key == parent_key:
-        return True
-
-    for lower_element in element.lower_level_elements:
-        if _legacy_has_key_recursive(lower_element, parent_key):
-            return True
-
-    return False
-
-
-def _legacy_set_recursive_lower_element(element, parent_key, new_element):
-    """改修前の MemberColCombElement.set_recursive_lower_element の写し
-
-    現行実装では不要になりプロダクト側から削除したので、改修前の実装として使うためにここに残す。
-    """
-
-    if element.own_key == parent_key:
-        element.set_lower_element(new_element)
-        return True
-    else:
-        for lower_element in element.lower_level_elements:
-            if _legacy_set_recursive_lower_element(lower_element, parent_key, new_element):
-                return True
-
-    return False
-
-
-def _legacy_expand_vars_member(nest_vars_mem_records, mem_max_col_records):
-    """改修前の util.expand_vars_member の写し（親を木の全走査で探す）"""
-
-    max_col_dict = {}
-    for max_col in mem_max_col_records.values():
-        key = (max_col['MVMT_VAR_LINK_ID'], max_col['ARRAY_MEMBER_ID'])
-        max_col_dict[key] = max_col['MAX_COL_SEQ']
-
-    sorted_vars_mem_records = sorted(nest_vars_mem_records.values(), key=lambda x: x['ARRAY_NEST_LEVEL'])
-
-    top_element_list = []
-    for vars_mem in sorted_vars_mem_records:
-
-        if vars_mem['VARS_NAME'] == '0':
-            taple_key = (vars_mem['MVMT_VAR_LINK_ID'], vars_mem['ARRAY_MEMBER_ID'])
-            if taple_key in max_col_dict:
-                element = ExpandableElement(vars_mem, max_col_dict[taple_key])
-            else:
-                element = ExpandableElement(vars_mem, 0)
-        else:
-            element = NonExpandableElement(vars_mem)
-
-        parent_key = f"{vars_mem['MVMT_VAR_LINK_ID']}-{vars_mem['PARENT_VARS_KEY_ID']}"
-        for top_ele in top_element_list:
-            if _legacy_has_key_recursive(top_ele, parent_key):
-                _legacy_set_recursive_lower_element(top_ele, parent_key, element)
-                break
-        else:
-            top_element_list.append(element)
-
-    nominate_mem_col_comb = []
-    for ele_item in top_element_list:
-        for record in ele_item.build():
-            nominate_mem_col_comb.append(record)
-
-    return nominate_mem_col_comb
 
 
 # - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +
@@ -221,102 +84,110 @@ def to_records_dict(rows):
     return records
 
 
-def run_both(method_name, list_a, list_b, ignore_vars_key_id=True, **kwargs):
-    """改修前の実装と現行実装を同じ入力（それぞれ独立したコピー）に対して走らせる
+def _expected_case(request, method_name, given):
+    """期待値ファイルからこのテストのケースを読み、今作った入力が記録した入力と同じかを確かめてから改修前の結果を返す"""
+    case = request.node.name[len('test_'):]
+    expected = get_expected(f"{case}:{method_name}")
+    assert given == expected['input'], f"input differs from the expected file: {case}:{method_name}"
+    return expected['result']
 
-    改修前の実装には行リストをそのまま渡す。現行実装は同一性キーを事前に1回だけ計算する設計なので、
+
+def run_both(request, method_name, list_a, list_b, ignore_vars_key_id=True, **kwargs):
+    """改修前の実装の結果（期待値ファイル）と、現行実装を同じ入力で走らせた結果を返す
+
+    現行実装は同一性キーを事前に1回だけ計算する設計なので、
     list_a からキー付きリスト、list_b から索引を作ってから渡す（register_and_discard と同じ手順）。
-    `ignore_vars_key_id` は改修前の実装では比較関数の引数、現行実装ではキー付けの引数になる。
+    `ignore_vars_key_id` は改修前の実装では比較関数の引数、現行実装ではキー付けの引数だった。
 
-    `marge_vars_key_id=True` は record_a を破壊的に書き換えるので、入力を共有してはいけない。
+    `marge_vars_key_id=True` は record_a を破壊的に書き換えるので、現行実装にはコピーを渡す。
     """
-    legacy_func = {'_a_minus_b': _legacy_a_minus_b, '_a_and_b': _legacy_a_and_b}[method_name]
+    options = {'ignore_vars_key_id': ignore_vars_key_id}
+    for option_name, option_value in kwargs.items():
+        options[option_name] = option_value
+    expected_result = _expected_case(request, method_name, {'list_a': list_a, 'list_b': list_b, 'options': options})
+
     table = NestVarsMemberTable.__new__(NestVarsMemberTable)
-
-    legacy_a, legacy_b = copy.deepcopy(list_a), copy.deepcopy(list_b)
     new_a, new_b = copy.deepcopy(list_a), copy.deepcopy(list_b)
-
-    legacy_result = legacy_func(legacy_a, legacy_b, ignore_vars_key_id=ignore_vars_key_id, **kwargs)
 
     keyed_a = table._keyed_records(new_a, ignore_vars_key_id)
     index_b = table._index_by_record_key(table._keyed_records(new_b, ignore_vars_key_id))
     new_result = getattr(table, method_name)(keyed_a, index_b, **kwargs)
 
-    return legacy_result, new_result
+    return expected_result, new_result
 
 
-def assert_same_output(legacy_result, new_result):
+def assert_same_output(expected_result, new_result):
     """選ばれたレコードが順序込み・値込みで一致すること"""
-    assert len(new_result) == len(legacy_result)
-    assert pick_column(new_result, 'ARRAY_MEMBER_ID') == pick_column(legacy_result, 'ARRAY_MEMBER_ID')
-    assert to_plain_dicts(new_result) == to_plain_dicts(legacy_result)
+    assert len(new_result) == len(expected_result)
+    assert pick_column(new_result, 'ARRAY_MEMBER_ID') == pick_column(expected_result, 'ARRAY_MEMBER_ID')
+    assert to_plain_dicts(new_result) == to_plain_dicts(expected_result)
 
 
 # - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +
 # A. _a_minus_b / _a_and_b が 改修前の実装と一致する
 # - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +
 
-def test_a_minus_b_matches_legacy_when_a_has_extra_records():
+def test_a_minus_b_matches_legacy_when_a_has_extra_records(request):
     """登録パス相当：list_a にだけある行が選ばれる"""
     common = [create_row('m1', vars_key_id='1', vars_name='member1'),
               create_row('m2', vars_key_id='2', vars_name='member2')]
     only_a = [create_row('m3', vars_key_id='3', vars_name='member3'),
               create_row('m4', vars_key_id='4', vars_name='member4')]
 
-    legacy_result, new_result = run_both('_a_minus_b', common + only_a, common)
+    expected_result, new_result = run_both(request, '_a_minus_b', common + only_a, common)
 
-    assert_same_output(legacy_result, new_result)
+    assert_same_output(expected_result, new_result)
     assert pick_column(new_result, 'VARS_NAME') == ['member3', 'member4']
 
 
-def test_a_minus_b_matches_legacy_when_b_has_extra_records():
+def test_a_minus_b_matches_legacy_when_b_has_extra_records(request):
     """廃止パス相当：list_b にしかない行は結果に出ない"""
     common = [create_row('m1', vars_key_id='1', vars_name='member1')]
     only_b = [create_row('m9', vars_key_id='9', vars_name='member9')]
 
-    legacy_result, new_result = run_both('_a_minus_b', common, common + only_b)
+    expected_result, new_result = run_both(request, '_a_minus_b', common, common + only_b)
 
-    assert_same_output(legacy_result, new_result)
+    assert_same_output(expected_result, new_result)
     assert new_result == []
 
 
-def test_a_minus_b_matches_legacy_when_nothing_matches():
+def test_a_minus_b_matches_legacy_when_nothing_matches(request):
     """全件が差分になるケース（全件登録／全件廃止の事故を検出する）"""
     list_a = [create_row('m1', vars_key_id='1', vars_name='member1'),
               create_row('m2', vars_key_id='2', vars_name='member2')]
     list_b = [create_row('m8', vars_key_id='8', vars_name='other8')]
 
-    legacy_result, new_result = run_both('_a_minus_b', list_a, list_b)
+    expected_result, new_result = run_both(request, '_a_minus_b', list_a, list_b)
 
-    assert_same_output(legacy_result, new_result)
+    assert_same_output(expected_result, new_result)
     assert len(new_result) == 2
 
 
-def test_a_minus_b_keeps_duplicated_records_like_legacy():
+def test_a_minus_b_keeps_duplicated_records_like_legacy(request):
     """list_a 側に重複がある場合、重複したまま出力される（現行と同じ）"""
     row = create_row('m1', vars_key_id='1', vars_name='member1')
     duplicated = create_row('m2', vars_key_id='1', vars_name='member1')
 
-    legacy_result, new_result = run_both('_a_minus_b', [row, duplicated], [])
+    expected_result, new_result = run_both(request, '_a_minus_b', [row, duplicated], [])
 
-    assert_same_output(legacy_result, new_result)
+    assert_same_output(expected_result, new_result)
     assert len(new_result) == 2
 
 
-def test_a_and_b_matches_legacy_for_intersection():
+def test_a_and_b_matches_legacy_for_intersection(request):
     """復活パス相当：両方にある行だけが選ばれる"""
     common = [create_row('m1', vars_key_id='1', vars_name='member1'),
               create_row('m2', vars_key_id='2', vars_name='member2')]
     only_a = [create_row('m3', vars_key_id='3', vars_name='member3')]
     only_b = [create_row('m9', vars_key_id='9', vars_name='member9')]
 
-    legacy_result, new_result = run_both('_a_and_b', common + only_a, common + only_b)
+    expected_result, new_result = run_both(request, '_a_and_b', common + only_a, common + only_b)
 
-    assert_same_output(legacy_result, new_result)
+    assert_same_output(expected_result, new_result)
     assert pick_column(new_result, 'VARS_NAME') == ['member1', 'member2']
 
 
-def test_a_and_b_merges_same_vars_key_id_value_as_legacy():
+def test_a_and_b_merges_same_vars_key_id_value_as_legacy(request):
     """marge_vars_key_id で **書き込まれる値**が 改修前の実装と一致する
 
     行の集合（id()）の比較では、書き込まれる値の違いは見えない。
@@ -325,13 +196,13 @@ def test_a_and_b_merges_same_vars_key_id_value_as_legacy():
     # VARS_KEY_ID は比較キーに入っていない（ignore_vars_key_id=True）ので、値が違っても同一行と判定される
     extracted = [create_row('x1', vars_key_id='7', vars_name='member1')]
 
-    legacy_result, new_result = run_both('_a_and_b', stored, extracted, marge_vars_key_id=True)
+    expected_result, new_result = run_both(request, '_a_and_b', stored, extracted, marge_vars_key_id=True)
 
-    assert_same_output(legacy_result, new_result)
+    assert_same_output(expected_result, new_result)
     assert new_result[0]['VARS_KEY_ID'] == '7'
 
 
-def test_a_and_b_merge_takes_first_match_like_legacy():
+def test_a_and_b_merge_takes_first_match_like_legacy(request):
     """list_b に同一キーの行が複数ある場合、**先に現れた** record_b の VARS_KEY_ID を採用する
 
     dict への素の代入（後勝ち）にすると壊れる。setdefault（先勝ち）の回帰防止。
@@ -340,32 +211,32 @@ def test_a_and_b_merge_takes_first_match_like_legacy():
     extracted = [create_row('x1', vars_key_id='5', vars_name='member1'),
                  create_row('x2', vars_key_id='6', vars_name='member1')]
 
-    legacy_result, new_result = run_both('_a_and_b', stored, extracted, marge_vars_key_id=True)
+    expected_result, new_result = run_both(request, '_a_and_b', stored, extracted, marge_vars_key_id=True)
 
-    assert_same_output(legacy_result, new_result)
+    assert_same_output(expected_result, new_result)
     assert new_result[0]['VARS_KEY_ID'] == '5'
 
 
-def test_a_and_b_without_merge_does_not_touch_vars_key_id():
+def test_a_and_b_without_merge_does_not_touch_vars_key_id(request):
     """marge_vars_key_id=False なら VARS_KEY_ID は書き換わらない"""
     stored = [create_row('m1', vars_key_id='1', vars_name='member1')]
     extracted = [create_row('x1', vars_key_id='7', vars_name='member1')]
 
-    legacy_result, new_result = run_both('_a_and_b', stored, extracted)
+    expected_result, new_result = run_both(request, '_a_and_b', stored, extracted)
 
-    assert_same_output(legacy_result, new_result)
+    assert_same_output(expected_result, new_result)
     assert new_result[0]['VARS_KEY_ID'] == '1'
 
 
 @pytest.mark.parametrize('method_name', ['_a_minus_b', '_a_and_b'])
-def test_matches_legacy_with_ignore_vars_key_id_false(method_name):
+def test_matches_legacy_with_ignore_vars_key_id_false(method_name, request):
     """ignore_vars_key_id=False の経路（現状どこからも呼ばれていない）も一致する"""
     list_a = [create_row('m1', vars_key_id='1', vars_name='member1')]
     list_b = [create_row('x1', vars_key_id='7', vars_name='member1')]
 
-    legacy_result, new_result = run_both(method_name, list_a, list_b, ignore_vars_key_id=False)
+    expected_result, new_result = run_both(request, method_name, list_a, list_b, ignore_vars_key_id=False)
 
-    assert_same_output(legacy_result, new_result)
+    assert_same_output(expected_result, new_result)
     # VARS_KEY_ID が比較対象に入るので別レコード扱いになる
     assert len(new_result) == (1 if method_name == '_a_minus_b' else 0)
 
@@ -375,7 +246,7 @@ def test_matches_legacy_with_ignore_vars_key_id_false(method_name):
     ('1', 1),
     (10, 10),
 ], ids=['db_int_vs_str', 'str_vs_db_int', 'both_int'])
-def test_type_difference_is_absorbed_like_legacy(stored_value, extracted_value):
+def test_type_difference_is_absorbed_like_legacy(stored_value, extracted_value, request):
     """型ゆれ（DB由来の int と解析結果由来の str）を str() で吸収する
 
     タプルキーから str() を落とすと型違いで全件不一致 = 全件廃止＋全件登録の事故になる。
@@ -383,25 +254,25 @@ def test_type_difference_is_absorbed_like_legacy(stored_value, extracted_value):
     stored = [create_row('m1', vars_key_id='1', vars_name='member1', max_col_seq=stored_value)]
     extracted = [create_row('x1', vars_key_id='1', vars_name='member1', max_col_seq=extracted_value)]
 
-    legacy_minus, new_minus = run_both('_a_minus_b', stored, extracted)
-    legacy_and, new_and = run_both('_a_and_b', stored, extracted)
+    expected_minus, new_minus = run_both(request, '_a_minus_b', stored, extracted)
+    expected_and, new_and = run_both(request, '_a_and_b', stored, extracted)
 
-    assert_same_output(legacy_minus, new_minus)
-    assert_same_output(legacy_and, new_and)
+    assert_same_output(expected_minus, new_minus)
+    assert_same_output(expected_and, new_and)
     # 同じレコードと見なされるので、差分なし・共通ありになる
     assert new_minus == []
     assert len(new_and) == 1
 
 
-def test_missing_column_is_treated_as_none_like_legacy():
+def test_missing_column_is_treated_as_none_like_legacy(request):
     """比較キーが欠けている行も .get() で None 扱いになり 改修前の実装と一致する"""
     full = create_row('m1', vars_key_id='1', vars_name='member1')
     lacking = create_row('x1', vars_key_id='1', vars_name='member1')
     del lacking['VRAS_NAME_ALIAS']
 
-    legacy_result, new_result = run_both('_a_minus_b', [full], [lacking])
+    expected_result, new_result = run_both(request, '_a_minus_b', [full], [lacking])
 
-    assert_same_output(legacy_result, new_result)
+    assert_same_output(expected_result, new_result)
     assert len(new_result) == 1
 
 
@@ -448,38 +319,38 @@ def canonical(records):
     return sorted(comparable_keys)
 
 
-def run_both_expand(nest_vars_mem_records, mem_max_col_records):
-    """改修前の実装と現行実装を同じ入力（それぞれ独立したコピー）に対して走らせる"""
-    legacy_result = _legacy_expand_vars_member(
-        copy.deepcopy(nest_vars_mem_records), copy.deepcopy(mem_max_col_records))
+def run_both_expand(request, nest_vars_mem_records, mem_max_col_records):
+    """改修前の実装の結果（期待値ファイル）と、現行実装を同じ入力（独立したコピー）で走らせた結果を返す"""
+    given = {'nest_vars_mem_records': nest_vars_mem_records, 'mem_max_col_records': mem_max_col_records}
+    expected_result = _expected_case(request, 'expand_vars_member', given)
     new_result = util.expand_vars_member(
         copy.deepcopy(nest_vars_mem_records), copy.deepcopy(mem_max_col_records))
 
-    return legacy_result, new_result
+    return expected_result, new_result
 
 
-def test_expand_vars_member_matches_legacy_for_two_levels(mock_g):
+def test_expand_vars_member_matches_legacy_for_two_levels(mock_g, request):
     """基本形（配列階層 + メンバ変数）で生成結果が一致する"""
     records, max_cols = create_nest_tree_records()
 
-    legacy_result, new_result = run_both_expand(records, max_cols)
+    expected_result, new_result = run_both_expand(request, records, max_cols)
 
-    assert canonical(new_result) == canonical(legacy_result)
+    assert canonical(new_result) == canonical(expected_result)
     # メンバ2種 × 繰返2回
     assert len(new_result) == 4
 
 
-def test_expand_vars_member_matches_legacy_for_multiple_links(mock_g):
+def test_expand_vars_member_matches_legacy_for_multiple_links(mock_g, request):
     """複数の変数リンク（＝複数の木）があっても一致する"""
     records, max_cols = create_nest_tree_records(link_ids=(LINK_ID, OTHER_LINK_ID))
 
-    legacy_result, new_result = run_both_expand(records, max_cols)
+    expected_result, new_result = run_both_expand(request, records, max_cols)
 
-    assert canonical(new_result) == canonical(legacy_result)
+    assert canonical(new_result) == canonical(expected_result)
     assert len(new_result) == 8
 
 
-def test_expand_vars_member_matches_legacy_for_three_levels(mock_g):
+def test_expand_vars_member_matches_legacy_for_three_levels(mock_g, request):
     """3段ネスト（level3 が level2 を親に持つ）でも木の形が一致する
 
     NEST_LEVEL は解析結果から入るので 3 段以上にもなり得る。
@@ -497,14 +368,14 @@ def test_expand_vars_member_matches_legacy_for_three_levels(mock_g):
         'array-1': {'MVMT_VAR_LINK_ID': LINK_ID, 'ARRAY_MEMBER_ID': 'array-1', 'MAX_COL_SEQ': 2},
     }
 
-    legacy_result, new_result = run_both_expand(records, max_cols)
+    expected_result, new_result = run_both_expand(request, records, max_cols)
 
-    assert canonical(new_result) == canonical(legacy_result)
+    assert canonical(new_result) == canonical(expected_result)
     # 2 × 2 の組合せ
     assert len(new_result) == 4
 
 
-def test_expand_vars_member_picks_first_element_on_own_key_collision(mock_g):
+def test_expand_vars_member_picks_first_element_on_own_key_collision(mock_g, request):
     """own_key（MVMT_VAR_LINK_ID + VARS_KEY_ID）が衝突しても、親は **先に生成された** 要素になる
 
     衝突する行が最下層にしか無いと後勝ちでも結果が一致してしまうので、上の階層で衝突させて先勝ちを確かめる。
@@ -524,8 +395,8 @@ def test_expand_vars_member_picks_first_element_on_own_key_collision(mock_g):
         'array-second': {'MVMT_VAR_LINK_ID': LINK_ID, 'ARRAY_MEMBER_ID': 'array-second', 'MAX_COL_SEQ': 3},
     }
 
-    legacy_result, new_result = run_both_expand(records, max_cols)
+    expected_result, new_result = run_both_expand(request, records, max_cols)
 
-    assert canonical(new_result) == canonical(legacy_result)
+    assert canonical(new_result) == canonical(expected_result)
     # 先に処理された array-first（繰返1回）に紐づくので 1 件。後勝ちだと 3 件になる
     assert len(new_result) == 1

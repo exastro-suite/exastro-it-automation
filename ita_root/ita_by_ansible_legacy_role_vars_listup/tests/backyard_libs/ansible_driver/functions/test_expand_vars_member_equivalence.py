@@ -16,7 +16,8 @@
 
 展開処理は、多段変数メンバー管理の行を親子の木に組み、変数ネスト管理の繰返数で多段変数配列組合せ管理の代入欄の候補を作る処理（メニューではない）。
 #3072 は親探しを「根から木を掘る総当たり」から「生成済み要素を名札で引く」方式に変えた「結果を変えない」修正。
-同じ多段変数メンバー管理・変数ネスト管理の行を改修前の実装の写し（tests/legacy_impl）と改修後の製品コードに渡し、候補行の一覧を順序込みで一致比較する。
+改修前の実装の結果は、移行時に 1 回だけ書き出した期待値ファイル（expected_expand_vars_member.py）に入力と一緒に記録してある。
+同じ多段変数メンバー管理・変数ネスト管理の行を改修後の製品コードに渡し、候補行の一覧を順序込みで期待値と一致比較する。
 名札が別階層・別親・別の木で衝突する形は製品経路で作れず改修前後で異なるため含めない（展開処理単体の振る舞いは test_expand_vars_member.py で固定）。
 
 経緯: Issue #3072
@@ -26,7 +27,7 @@ import copy
 import pytest
 
 from backyard_libs.ansible_driver.functions import util
-from tests.legacy_impl import expand_vars_member as legacy
+from tests.backyard_libs.ansible_driver.functions.expected_expand_vars_member import get_expected
 from tests.common import (
     create_chain_array_item, create_member_row, create_max_col_row, create_chain_array_from_yaml, create_member_rows_from_chain_array,
 )
@@ -152,9 +153,13 @@ def test_expansion_equals_previous_implementation(mock_g, scenario):
     経緯: Issue #3072
     """
     records, max_cols = SCENARIOS[scenario]()
+    expected = get_expected(scenario)
+    # 今作った入力が期待値ファイルに記録した入力と同じか（入力を作るヘルパーが変わったら、期待値が古いと分かる）
+    given = {'nest_vars_mem_records': records, 'mem_max_col_records': max_cols}
+    assert given == expected['input'], f"input differs from the expected file: {scenario}"
 
     current = util.expand_vars_member(copy.deepcopy(records), copy.deepcopy(max_cols))
-    previous = legacy.expand_vars_member(copy.deepcopy(records), copy.deepcopy(max_cols))
+    previous = expected['result']
 
     assert current == previous
     if scenario not in ('discarded_parent', 'no_max_col_row'):

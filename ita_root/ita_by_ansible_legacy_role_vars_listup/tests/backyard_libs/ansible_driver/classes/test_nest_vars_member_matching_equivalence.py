@@ -14,13 +14,14 @@
 
 """多段変数メンバー管理の突き合わせ（登録・復活・廃止の 3 リスト）が、改修前の実装と同じ結果になることを確認する（等価性）
 
-#3072 は総当たり比較を辞書引きに変えた「結果を変えない」修正。同じ入力を改修前の実装の写し（tests/legacy_impl）と
-改修後の製品コードに渡し、3 リストを順序・重複・定義順の取り込みまで含めて一致比較する。
+#3072 は総当たり比較を辞書引きに変えた「結果を変えない」修正。改修前の実装の結果は、移行時に 1 回だけ書き出した
+期待値ファイル（expected_nest_vars_member_matching.py）に入力と一緒に記録してある。同じ入力を改修後の製品コードに渡し、
+3 リストを順序・重複・定義順の取り込みまで含めて期待値と一致比較する。
 同一性キーの境界（表4 E）と、メンバー差分の業務シナリオ（表3 K）の両方を入力にする。
 
 例外は「親メンバー（親の定義順）」だけが違うシナリオ。#3096 で親メンバーを同一性キーから外したため、
 改修前の実装（廃止＋登録）と改修後（同じ行のまま親メンバーを更新）で結果が意図的に変わる。
-その 6 シナリオは PARENT_ORDER_SCENARIOS に分け、差分の形を専用テストで固定する。
+その 6 シナリオは PARENT_ORDER_SCENARIOS に分け（期待値ファイルでも EXPECTED_PARENT_ORDER に分けてある）、差分の形を専用テストで固定する。
 
 経緯: Issue #3072
 """
@@ -29,7 +30,7 @@ import copy
 import pytest
 
 from backyard_libs.ansible_driver.classes.NestVarsMemberTableClass import NestVarsMemberTable
-from tests.legacy_impl.nest_vars_member_compare import LegacyNestVarsMemberCompare
+from tests.backyard_libs.ansible_driver.classes.expected_nest_vars_member_matching import get_expected
 from tests.common import (
     create_chain_array_item, create_member_row, create_chain_array_from_yaml, create_member_rows_from_chain_array,
 )
@@ -239,13 +240,18 @@ def _current_lists(dummy_db, stored, extracted, ignore_vars_key_id=True):
     return register, restore, discard
 
 
-def _legacy_lists(stored, extracted, ignore_vars_key_id=True):
-    """改修前の実装（写し）で同じ 3 リストを作る"""
-    legacy = LegacyNestVarsMemberCompare()
-    register = legacy._a_minus_b(list_a=extracted, list_b=stored, ignore_vars_key_id=ignore_vars_key_id)
-    restore = legacy._a_and_b(stored, extracted, ignore_vars_key_id=ignore_vars_key_id, marge_vars_key_id=True)
-    discard = legacy._a_minus_b(list_a=stored, list_b=extracted, ignore_vars_key_id=ignore_vars_key_id)
-    return register, restore, discard
+def _previous_lists(scenario, stored, extracted, ignore_vars_key_id=True):
+    """改修前の実装が同じ入力で作った 3 リストを、期待値ファイルから読む
+
+    先に、今作った入力が期待値ファイルに記録した入力と同じかを確かめる（入力を作るヘルパーが変わったら、期待値が古いと分かる）。
+    """
+    expected = get_expected(scenario)
+    assert {'stored': stored, 'extracted': extracted} == expected['input'], f"input differs from the expected file: {scenario}"
+    if ignore_vars_key_id:
+        result = expected['result']
+    else:
+        result = expected['result_order_aware']
+    return result['register'], result['restore'], result['discard']
 
 
 @pytest.mark.parametrize('scenario', sorted(SCENARIOS.keys()))
@@ -258,9 +264,9 @@ def test_matching_equals_previous_implementation(mock_g, dummy_db, scenario):
     stored, extracted = SCENARIOS[scenario]()
 
     current = _current_lists(dummy_db, copy.deepcopy(stored), copy.deepcopy(extracted))
-    legacy = _legacy_lists(copy.deepcopy(stored), copy.deepcopy(extracted))
+    previous = _previous_lists(scenario, stored, extracted)
 
-    assert current == legacy
+    assert current == previous
 
 
 @pytest.mark.parametrize('scenario', sorted(PARENT_ORDER_SCENARIOS.keys()))
@@ -278,7 +284,7 @@ def test_parent_order_scenarios_update_instead_of_reregistering(mock_g, dummy_db
     stored, extracted = PARENT_ORDER_SCENARIOS[scenario]()
 
     current_register, current_restore, current_discard = _current_lists(dummy_db, copy.deepcopy(stored), copy.deepcopy(extracted))
-    legacy_register, legacy_restore, legacy_discard = _legacy_lists(copy.deepcopy(stored), copy.deepcopy(extracted))
+    previous_register, previous_restore, previous_discard = _previous_lists(scenario, stored, extracted)
 
     new_paths = sorted(set(_paths(extracted)) - set(_paths(stored)))      # Playbook に増えたメンバー
     gone_paths = sorted(set(_paths(stored)) - set(_paths(extracted)))     # Playbook から消えたメンバー
@@ -295,25 +301,25 @@ def test_parent_order_scenarios_update_instead_of_reregistering(mock_g, dummy_db
         assert record['PARENT_VARS_KEY_ID'] == _record_by_path(extracted, record['VRAS_NAME_PATH'])['PARENT_VARS_KEY_ID']
 
     # 改修前: 消えたメンバーの廃止は同じ。親メンバーが違う行はさらに同じ階層パスで廃止＋登録になり、復活側に残らない
-    legacy_reregistered_paths = []
-    for path in _paths(legacy_discard):
+    previous_reregistered_paths = []
+    for path in _paths(previous_discard):
         if path not in gone_paths:
-            legacy_reregistered_paths.append(path)
-    assert _paths(legacy_register) == sorted(new_paths + legacy_reregistered_paths)
-    assert len(legacy_restore) + len(legacy_discard) == len(stored)
-    legacy_restore_ids = _member_ids(legacy_restore)
+            previous_reregistered_paths.append(path)
+    assert _paths(previous_register) == sorted(new_paths + previous_reregistered_paths)
+    assert len(previous_restore) + len(previous_discard) == len(stored)
+    previous_restore_ids = _member_ids(previous_restore)
     for record in current_restore:
-        if record['ARRAY_MEMBER_ID'] in legacy_restore_ids:
-            legacy_record = _record_by_path(legacy_restore, record['VRAS_NAME_PATH'])
-            assert _parent_as_str(record) == _parent_as_str(legacy_record)
+        if record['ARRAY_MEMBER_ID'] in previous_restore_ids:
+            previous_record = _record_by_path(previous_restore, record['VRAS_NAME_PATH'])
+            assert _parent_as_str(record) == _parent_as_str(previous_record)
         else:
-            assert str(record['VRAS_NAME_PATH']) in legacy_reregistered_paths
+            assert str(record['VRAS_NAME_PATH']) in previous_reregistered_paths
     if scenario == 'int_str_parent':
-        assert legacy_reregistered_paths == []
+        assert previous_reregistered_paths == []
     else:
-        assert len(legacy_reregistered_paths) > 0
+        assert len(previous_reregistered_paths) > 0
     # このシナリオ群は「改修前と結果が変わる」ものだけ。変わらないものが混ざれば SCENARIOS 側へ移す
-    assert (current_register, current_restore, current_discard) != (legacy_register, legacy_restore, legacy_discard)
+    assert (current_register, current_restore, current_discard) != (previous_register, previous_restore, previous_discard)
 
 
 @pytest.mark.parametrize('scenario', ['order_change', 'insert_upper_member', 'extracted_dup_first_wins', 'unchanged'])
@@ -325,6 +331,6 @@ def test_order_aware_matching_equals_previous_implementation(mock_g, dummy_db, s
     stored, extracted = _scenario(scenario)
 
     current = _current_lists(dummy_db, copy.deepcopy(stored), copy.deepcopy(extracted), ignore_vars_key_id=False)
-    legacy = _legacy_lists(copy.deepcopy(stored), copy.deepcopy(extracted), ignore_vars_key_id=False)
+    previous = _previous_lists(scenario, stored, extracted, ignore_vars_key_id=False)
 
-    assert current == legacy
+    assert current == previous

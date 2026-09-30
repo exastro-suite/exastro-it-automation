@@ -5,5 +5,5 @@
   register: disk_image_out
 
 - name: disk path
-  debug:
+  ansible.builtin.debug:
     msg: "{{ disk_image_out.mount_paths[0] }}"

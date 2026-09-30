@@ -1,5 +1,5 @@
 - name: Insert or replace text lines.
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: "{{ ITA_DFLT_file_path }}"
     regexp: "{{ ITA_DFLT_regexp }}"
     line: "{{ ITA_DFLT_line_string }}"

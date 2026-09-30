@@ -1,8 +1,23 @@
+- name: Ensure ITA_DFLT_User_Names is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_User_Names: "{{ ITA_DFLT_User_Names }}"
+  when: ITA_DFLT_User_Names is defined
+
+- name: Ensure ITA_DFLT_User_Group_Names is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_User_Group_Names: "{{ ITA_DFLT_User_Group_Names }}"
+  when: ITA_DFLT_User_Group_Names is defined
+
 - name: Add user
-  user:
-    name: "{{ item.0 }}"
-    group: "{{ item.1 }}"
-    state: present 
-  with_together:
-    - "{{ ITA_DFLT_User_Names }}"
-    - "{{ ITA_DFLT_User_Group_Names }}"
+  ansible.builtin.user:
+    name: "{{ item[0] }}"
+    group: "{{ item[1] }}"
+    state: present
+  loop: >-
+    {{
+      (ITA_DFLT_User_Names if ITA_DFLT_User_Names is sequence and ITA_DFLT_User_Names is not string else [ITA_DFLT_User_Names])
+      | ansible.builtin.zip_longest(
+          ITA_DFLT_User_Group_Names if ITA_DFLT_User_Group_Names is sequence and ITA_DFLT_User_Group_Names is not string else [ITA_DFLT_User_Group_Names]
+        )
+      | list
+    }}

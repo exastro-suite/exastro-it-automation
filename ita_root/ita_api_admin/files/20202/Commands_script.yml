@@ -7,11 +7,11 @@
 # However, these functions are only enabled when running scripts on a nodes that has access to __workflowdir__ and __conductor_workflowdir__ (e.g. localhost).
 # The task results are displayed at debug level 3 (-vvv).
 - name: Run a script with arguments
-  script: "{{ ITA_DFLT_Script_Name }} {{ __workflowdir__ }} {{ __conductor_workflowdir__ }}"
+  ansible.builtin.script: "{{ ITA_DFLT_Script_Name }} {{ __workflowdir__ }} {{ __conductor_workflowdir__ }}"
   register: ITA_RGST_Script_Result
 
 - name: Debug the result
-  debug:
+  ansible.builtin.debug:
     var: ITA_RGST_Script_Result
     verbosity: 3
 

@@ -1,6 +1,13 @@
+- name: Ensure ITA variable is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Create_Directory: "{{ ITA_DFLT_Create_Directory }}"
+  when: ITA_DFLT_Create_Directory is defined
+
 - name: Create folders
-  win_file:
+  ansible.windows.win_file:
     path: "{{ item }}"
     state: directory
-  with_items:
-    - "{{ ITA_DFLT_Create_Directory }}"
+  loop: >-
+    {{
+      ITA_DFLT_Create_Directory if ITA_DFLT_Create_Directory is sequence and ITA_DFLT_Create_Directory is not string else [ITA_DFLT_Create_Directory]
+    }}

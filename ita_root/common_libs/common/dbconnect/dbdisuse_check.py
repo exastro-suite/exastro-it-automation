@@ -33,7 +33,7 @@ def is_db_disuse():
     workspace_id = g.get('WORKSPACE_ID')
 
     # ita-by-ansible-executeのメインプロセス（子プロセスは違う）は、workspace毎には処理していないので、対象外として扱う
-    if g.SERVICE_NAME == "ita-by-ansible-execute" and organization_id is None:
+    if g.get("SERVICE_NAME") == "ita-by-ansible-execute" and organization_id is None:
         return False
 
     try:

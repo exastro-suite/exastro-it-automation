@@ -745,6 +745,7 @@ CREATE TABLE IF NOT EXISTS T_OASE_ACTION_LOG
     STATUS_ID                       VARCHAR(2),                                 -- ステータスID
     ACTION_ID                       VARCHAR(40),                                -- アクションID
     ACTION_NAME                     VARCHAR(255),                               -- アクション名称
+    ACTION_RESULT                   LONGTEXT,                                   -- アクション結果
     CONDUCTOR_INSTANCE_ID           VARCHAR(40),                                -- ConductorインスタンスID
     CONDUCTOR_INSTANCE_NAME         VARCHAR(255),                               -- Conductor名称
     OPERATION_ID                    VARCHAR(40),                                -- オペレーションID
@@ -779,6 +780,7 @@ CREATE TABLE IF NOT EXISTS T_OASE_ACTION_LOG_JNL
     STATUS_ID                       VARCHAR(2),                                 -- ステータスID
     ACTION_ID                       VARCHAR(40),                                -- アクションID
     ACTION_NAME                     VARCHAR(255),                               -- アクション名称
+    ACTION_RESULT                   LONGTEXT,                                   -- アクション結果
     CONDUCTOR_INSTANCE_ID           VARCHAR(40),                                -- ConductorインスタンスID
     CONDUCTOR_INSTANCE_NAME         VARCHAR(255),                               -- Conductor名称
     OPERATION_ID                    VARCHAR(40),                                -- オペレーションID

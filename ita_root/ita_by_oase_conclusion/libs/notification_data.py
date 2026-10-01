@@ -40,7 +40,8 @@ class Notification_data():
         oaseConst.OSTS_Completed_Abend : [ '完了（異常）', 'Completed (abnormal)' ],
         oaseConst.OSTS_Wait_For_Comp_Conf : [ '完了確認待ち', 'Waiting for completion confirmation' ],
         oaseConst.OSTS_Completion_Conf : [ '完了確認済み', 'Completion confirmed' ],
-        oaseConst.OSTS_Completion_Conf_Reject : [ '完了確認却下済み', 'Completion confirmation rejected' ]
+        oaseConst.OSTS_Completion_Conf_Reject : [ '完了確認却下済み', 'Completion confirmation rejected' ],
+        oaseConst.OSTS_Launch_Failed : [ '起動失敗', 'Launch failed' ]
     }
 
     # ルールのフィルター演算子のメッセージマップ

@@ -1,6 +1,13 @@
+- name: Ensure ITA variable is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Gpg_Key_Ids: "{{ ITA_DFLT_Gpg_Key_Ids }}"
+  when: ITA_DFLT_Gpg_Key_Ids is defined
+
 - name: Remove gpg key
-  rpm_key:
+  ansible.builtin.rpm_key:
     key: "{{ item }}"
     state: absent
-  with_items:
-    - "{{ ITA_DFLT_Gpg_Key_Ids }}"
+  loop: >-
+    {{
+      ITA_DFLT_Gpg_Key_Ids if ITA_DFLT_Gpg_Key_Ids is sequence and ITA_DFLT_Gpg_Key_Ids is not string else [ITA_DFLT_Gpg_Key_Ids]
+    }}

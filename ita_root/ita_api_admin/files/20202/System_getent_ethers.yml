@@ -1,4 +1,4 @@
 - name: A wrapper to the unix getent utility (ethers)
-  getent:
+  ansible.builtin.getent:
     database: ethers
   register: ITA_DFLT_getent_ethers

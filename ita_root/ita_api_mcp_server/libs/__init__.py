@@ -36,7 +36,7 @@ from .tools_decorator import (
 )
 from .exceptions import HTTPException
 from .forward_headers import build_forward_headers
-from .permissions import is_tool_visible
+from .permissions import is_tool_visible, is_tool_in_profile
 
 # `from libs import *` した際に公開される名前一覧
 # Names exposed when someone does `from libs import *`
@@ -48,5 +48,6 @@ __all__ = [
     "check_tool_permission",
     "HTTPException",
     "build_forward_headers",
-    "is_tool_visible"
+    "is_tool_visible",
+    "is_tool_in_profile"
 ]

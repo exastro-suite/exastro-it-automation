@@ -1,4 +1,4 @@
 - name: A wrapper to the unix getent utility (group)
-  getent:
+  ansible.builtin.getent:
     database: group
   register: ITA_DFLT_getent_group

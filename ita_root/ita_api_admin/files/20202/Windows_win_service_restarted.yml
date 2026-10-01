@@ -1,8 +1,15 @@
 # This Playbook file reboots services specified by "ITA_DFLT_Service_Name".
 # "ITA_DFLT_Service_Name" can specify multiple service names (list type).
+- name: Ensure ITA variable is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Service_Name: "{{ ITA_DFLT_Service_Name }}"
+  when: ITA_DFLT_Service_Name is defined
+
 - name: restart Windows services
   ansible.windows.win_service:
     name: "{{ item }}"
     state: restarted
-  with_items:
-    - "{{ ITA_DFLT_Service_Name }}"
+  loop: >-
+    {{
+      ITA_DFLT_Service_Name if ITA_DFLT_Service_Name is sequence and ITA_DFLT_Service_Name is not string else [ITA_DFLT_Service_Name]
+    }}

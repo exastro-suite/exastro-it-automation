@@ -1,7 +1,7 @@
 - name: Interacts with webservices using password
-  uri:
+  ansible.builtin.uri:
     url: "http://platform-auth:8000/api/{{ ITA_DFLT_Organization_ID }}/platform/workspaces"
-    force_basic_auth: yes
+    force_basic_auth: true
     user: "{{ ITA_DFLT_Basic_Username }}"
     password: "{{ ITA_DFLT_Basic_Password }}"
     status_code: 200

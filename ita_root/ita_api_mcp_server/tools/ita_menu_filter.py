@@ -96,7 +96,7 @@ _DEFAULT_FILE_MIME_TYPE = "application/octet-stream"
     description=(
         "Get records from an ITA menu by specifying search conditions. Discarded records "
         "(discard=1) are excluded by default unless a 'discard' condition is explicitly given."
-        "When specifying filter_conditions, refer to `documents-tools/menu-filter.md` using the `get-document` tool."
+        "When specifying filter_conditions, refer to `tool-reference/menu-filter.md` using the `get-document` tool."
     ),
     input_schema={
         "type": "object",
@@ -125,7 +125,8 @@ _DEFAULT_FILE_MIME_TYPE = "application/octet-stream"
             }
         },
         "required": ["menu"]
-    }
+    },
+    profile=["AgenticAI", "LLMEditor"]
 )
 def tool_menu_filter(arguments: dict, payload: dict) -> dict:
     """
@@ -169,6 +170,8 @@ def tool_menu_filter(arguments: dict, payload: dict) -> dict:
 
     if not menu:
         raise Exception("menu is required")
+
+    g.applogger.info(f'Parameter menu={menu}')
 
     # discard条件が未指定の場合は、論理削除(discard=1)されたレコードを
     # 除外するデフォルト条件を追加する
@@ -282,7 +285,8 @@ def tool_menu_filter(arguments: dict, payload: dict) -> dict:
             }
         },
         "required": ["menu"]
-    }
+    },
+    profile=["AgenticAI", "LLMEditor"]
 )
 def tool_menu_filter_count(arguments: dict, payload: dict) -> dict:
     """
@@ -318,6 +322,8 @@ def tool_menu_filter_count(arguments: dict, payload: dict) -> dict:
 
     if not menu:
         raise Exception("menu is required")
+
+    g.applogger.info(f'Parameter menu={menu}')
 
     # menu-filterと同じITA自身のAPI(ita_api_organization)を呼び出すため、
     # 同じ環境変数 ITA_API_ORAGANIZATION_HOST / ITA_API_ORAGANIZATION_PORT を使用する

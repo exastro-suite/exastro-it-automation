@@ -1,6 +1,13 @@
+- name: Ensure ITA variable is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Target_Path: "{{ ITA_DFLT_Target_Path }}"
+  when: ITA_DFLT_Target_Path is defined
+
 - name: Retrieve file or file system status
-  stat:
+  ansible.builtin.stat:
     path: "{{ item }}"
-  with_items:
-    - "{{ ITA_DFLT_Target_Path }}"
+  loop: >-
+    {{
+      ITA_DFLT_Target_Path if ITA_DFLT_Target_Path is sequence and ITA_DFLT_Target_Path is not string else [ITA_DFLT_Target_Path]
+    }}
   register: ITA_DFLT_Files_stat

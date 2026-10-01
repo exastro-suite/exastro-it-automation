@@ -19,7 +19,7 @@ pythonpath=.
 ;                subvalue_autoreg_integration_support.py が自前で解決する
 ;                (INTEGRATION_ENV_FILE / ITA_ORGANIZATION_ID / ITA_WORKSPACE_ID)。
 ;                対象ワークスペースの環境変数名は
-;                データ投入スクリプト(tests/integration_seed_data.md)と揃えてある。
+;                データ投入スクリプト(tests/ansible_driver_tests/ansible_driver/sample_data/)と揃えてある。
 ;                結合テストだけを流す場合は `-m integration` で絞れる。
 ;   exhaustive : SubValueAutoReg.getCMDBdata の実現可能な全組合せ(431,424件)を
 ;                1本のテストの中でループして現実装のゴールデンと突き合わせる。

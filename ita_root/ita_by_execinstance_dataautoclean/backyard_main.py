@@ -20,9 +20,12 @@
 #   getTgtDelOpeList(self, TgtDelDate):
 #   LogicalDeleteDB(self, DelList, TgtOpeList):
 #   PhysicalDeleteDB(self, DelList, TgtOpeList):
+#   PhysicalDeleteDBbyOperationDelete(self, DelList):
+#   getOperationDeleteRows(self, DelList):
 #   getDataRelayStorageDir(self):
 #   is_int(self, int_value):
 #   DateCalc(self, AddDay):
+#   PhysicalDeleteDBbyExpireDate(self):
 # backyard_main(organization_id, workspace_id):
 import os
 import datetime
@@ -693,6 +696,60 @@ class MainFunctions():
         AddDate = datetime.timedelta(days=AddDay)
         return NowDate - AddDate
 
+    def PhysicalDeleteDBbyExpireDate(self):
+        """
+          オペレーションとは関係なく、日付項目が有効期限を過ぎたレコードを物理削除
+          Arguments:
+            なし
+          Returns:
+            なし
+        """
+        # 削除対象のリスト
+        DelList = [
+            {
+                "TABLE_NAME": "T_AI_ATTACHMENT_FILE",
+                "TIMESTAMP_COLUMN": "LAST_UPDATE_TIMESTAMP",
+                "EXPIRE_DAYS": int(os.getenv("EXPIRE_DAYS_T_AI_ATTACHMENT_FILE", 1))
+            }
+        ]
+        # 一度に消す件数
+        delete_batch_size = int(os.getenv("DELETE_BATCH_SIZE", 1000))
+
+        for TgtDel in DelList:
+            table_name = TgtDel["TABLE_NAME"]
+            date_column = TgtDel["TIMESTAMP_COLUMN"]
+
+            # 削除対象レコードの基準日時(この日時以前のレコードを削除対象とする)
+            expire_date = self.DateCalc(TgtDel["EXPIRE_DAYS"])
+            g.applogger.info(f"Start PhysicalDeleteDBbyExpireDate ({table_name}) expire_date={expire_date}")
+
+            del_cnt = 0
+
+            try:
+                while True:
+                    try:
+                        self.ws_db.db_transaction_start()
+                        cursor = self.ws_db.sql_execute_cursor(
+                            f"DELETE FROM `{table_name}` WHERE `{date_column}` <= %s LIMIT %s",
+                            [expire_date, delete_batch_size]
+                        )
+                        self.ws_db.db_transaction_end(True)
+                    except Exception as e:
+                        self.ws_db.db_transaction_end(False)
+                        g.applogger.error(e)
+                        g.applogger.error(f"Error occurred while deleting expired records from {table_name}")
+                        return False
+
+                    del_cnt += cursor.rowcount
+                    g.applogger.debug(f"Progress PhysicalDeleteDBbyExpireDate ({table_name}) deleted={del_cnt}")
+
+                    if cursor.rowcount < delete_batch_size:
+                        break
+            finally:
+                g.applogger.info(f"End PhysicalDeleteDBbyExpireDate ({table_name}) deleted={del_cnt}")
+
+        return True
+
 
 def backyard_main(organization_id, workspace_id):
     """
@@ -711,6 +768,13 @@ def backyard_main(organization_id, workspace_id):
 
     try:
         ret = False
+        # オペレーションに紐づいたデータ削除
         ret = obj.MainFunction()
+
+        # オペレーションに紐づかないデータの削除
+        ret_sub = obj.PhysicalDeleteDBbyExpireDate()
+
+        ret = ret_sub if ret is True else ret
+
     finally:
         obj.EndFunction(ret)

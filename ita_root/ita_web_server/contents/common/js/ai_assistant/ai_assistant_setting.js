@@ -1001,9 +1001,17 @@ async openCredentialDialog( mode, aiServiceId = null ) {
         dialog.open( this.createCredentialBodyHtml( mode, aiServiceId ) );
         dialog.buttonPositiveDisabled( false );
 
+        // Credential名の初期値（AIサービス変更時、未編集なら初期値を差し替える）
+        let defaultName = String( dialog.$.dbody.find('[name="credential_name"]').val() ?? '');
+
         // AIサービスを変更したら認証情報の入力欄を切り替える（更新時はAIサービスを変更できない）
         dialog.$.dbody.on('change', '.aiSettingServiceSelect', ( e ) => {
             const selected = e.currentTarget.value;
+            const $name = dialog.$.dbody.find('[name="credential_name"]');
+            if ( $name.val() === defaultName ) {
+                defaultName = this.defaultCredentialName( selected );
+                $name.val( defaultName );
+            }
             dialog.$.dbody.find('.aiSettingServiceDescription').text( this.getService( selected )?.description ?? '');
             dialog.$.dbody.find('.aiSettingCredentialFields').html( this.createCredentialFieldsHtml( selected, mode ) );
         });
@@ -1074,10 +1082,13 @@ createCredentialBodyHtml( mode, aiServiceId = null ) {
             + `<div class="aiSettingServiceDescription">${fn.escape( this.getService( selected )?.description ?? '')}</div>`;
     }
 
+    // 登録時は「AIサービス名_日時」を初期値にする
+    const credentialName = ( mode === 'update')? credential?.credential_name ?? '': this.defaultCredentialName( selected );
+
     const rows = [
         this.createInputRowHtml('ai_service_id', getMessage.FTE14187, serviceBody, mode !== 'update'),
         this.createInputRowHtml('credential_name', getMessage.FTE14188,
-            fn.html.inputText('', credential?.credential_name ?? '', 'credential_name', { placeholder: 'My Bedrock Credential'}), true )
+            fn.html.inputText('', credentialName, 'credential_name', { placeholder: 'My Bedrock Credential'}), true )
     ];
 
     return `
@@ -1099,6 +1110,12 @@ createCredentialBodyHtml( mode, aiServiceId = null ) {
             </div>
         </div>
     </div>`;
+}
+// Credential名の初期値（AIサービス名_日時）
+defaultCredentialName( aiServiceId ) {
+    if ( !aiServiceId ) return '';
+    const name = this.getService( aiServiceId )?.ai_service_name ?? aiServiceId;
+    return `${name}_${fn.date( new Date(), 'yyyyMMdd_HHmmss')}`;
 }
 // 認証情報の入力欄
 createCredentialFieldsHtml( aiServiceId, mode = 'register') {

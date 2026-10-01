@@ -67,7 +67,7 @@ _VALID_RECORD_TYPES = ["Register", "Update", "Discard", "Restore", "Delete"]
     name="maintenance-all",
     description=(
         "Bulk register/update/discard/restore/physically delete records in an ITA menu."
-        "Before use, refer to `documents-tools/maintenance-all.md` using the `get-document` tool."
+        "Before use, refer to `tool-reference/maintenance-all.md` using the `get-document` tool."
     ),
     input_schema={
         "type": "object",
@@ -115,7 +115,8 @@ _VALID_RECORD_TYPES = ["Register", "Update", "Discard", "Restore", "Delete"]
             }
         },
         "required": ["menu", "records"]
-    }
+    },
+    profile=["AgenticAI"]
 )
 def tool_maintenance_all(arguments: dict, payload: dict) -> dict:
     """
@@ -171,6 +172,8 @@ def tool_maintenance_all(arguments: dict, payload: dict) -> dict:
 
     if not records or not isinstance(records, list):
         raise Exception("records is required and must be a non-empty array")
+
+    g.applogger.info(f'Parameter menu={menu} records={len(records)}')
 
     # 各レコードの内容を検証し、fileid(file_id参照)が指定されている場合は
     # 実ファイルを取得してBase64化した上でfile項目に変換する
@@ -236,10 +239,6 @@ def tool_maintenance_all(arguments: dict, payload: dict) -> dict:
     # 転送用ヘッダーを組み立てる(POSTでボディを送るため"Content-Type"も付与する)
     # Build the headers to forward (also adds "Content-Type" since this is a POST with a body)
     headers = build_forward_headers(method="POST")
-
-    g.applogger.info(
-        "Maintenance all: menu={}, record_count={}".format(menu, len(records))
-    )
 
     # ITAのAPIへ一括メンテナンスのPOSTリクエストを送信する
     # Send a POST request to ITA's API to perform the bulk maintenance operation

@@ -29,7 +29,10 @@ static get apiUrl() {
     const { organizationId, workspaceId } = fn.getCommonParams();
     return {
         // MCPサーバー（JSON-RPC）
-        mcp: () => `/api/${organizationId}/workspaces/${workspaceId}/mcp`,
+        // profile … プロンプトプロファイル（AgenticAI / LLMEditor）。指定するとtools/listが
+        //           そのプロファイルで使えるツールに絞り込まれる（省略時は絞り込まない）。
+        mcp: ( profile ) => `/api/${organizationId}/workspaces/${workspaceId}/mcp`
+            + ( profile? `?profile=${encodeURIComponent( profile )}`: ''),
         // 添付ファイルの登録（multipart/form-dataでアップロードし、file_idを採番する）
         attachmentFile: () => `/api/${organizationId}/workspaces/${workspaceId}/mcp/attachment_file`
     };
@@ -342,7 +345,7 @@ printDisplayHtmlAsPdf( button ) {
 */
 async mcpRequest( method, params = {} ) {
     const token = this.getToken();
-    const response = await fetch( AiAssistantChat.apiUrl.mcp(), {
+    const response = await fetch( AiAssistantChat.apiUrl.mcp( this.promptProfile ), {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -394,7 +397,7 @@ async mcpToolCall( name, args = {} ) {
 async executeTool( toolUse, runningEl = null, signal = null ) {
     toolUse.name = toolUse.name ?? toolUse.params?.name;
     try {
-        const toolResponse = await AiAssistantChat.fetchWithRetry( AiAssistantChat.apiUrl.mcp(), {
+        const toolResponse = await AiAssistantChat.fetchWithRetry( AiAssistantChat.apiUrl.mcp( this.promptProfile ), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1716,8 +1719,8 @@ createCodeToolbar( extraClass ) {
     toolbar.innerHTML =
         copyButton
         + fn.html.button( fn.html.icon('note'), 'itaButton aiAssistantChatCodeButton popup', { type: 'codeToInput', action: 'default', title: getMessage.FTE14269 });
-    // LLMエディタのみコード反映ボタンを表示する
-    if( this.promptProfile == 'LLMEditor' ) {
+    // LLMエディタかつextraClassの値がない(aiAssistantChatCodeToolbarInlineではない)場合、コード反映ボタンを表示する
+    if( this.promptProfile == 'LLMEditor' && !extraClass) {
         toolbar.innerHTML += fn.html.button( fn.html.icon('circle_check'), 'itaButton aiAssistantChatCodeButton popup', {type: 'codeToEditor', action: 'default', title: getMessage.FTE14390 });
     }
 
@@ -2683,7 +2686,7 @@ pollDriverStatus( menu, executionNo, runningEl ) {
 
             let statusResult;
             try {
-                const response = await AiAssistantChat.fetchWithRetry( AiAssistantChat.apiUrl.mcp(), {
+                const response = await AiAssistantChat.fetchWithRetry( AiAssistantChat.apiUrl.mcp( this.promptProfile ), {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",

@@ -5,18 +5,19 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard] Get entry(hosts)
 - **playbook_file**: System_getent_hosts.yml
 ## Overview
-Queries the system hosts database using the Ansible getent module and stores the retrieved hostname-to-IP mappings in a registered variable for later use.
+Queries the target's `hosts` database with the `getent` module, registering the host-name-to-IP-address entries in `ITA_DFLT_getent_hosts` for use by later tasks.
 ## Description
-This playbook takes no input variables. It runs the Ansible `getent` module against the `hosts` database, which contains hostname-to-IP-address mappings normally found in `/etc/hosts`, and saves the output into the registered variable `ITA_DFLT_getent_hosts` so that later tasks can reference the host resolution information.
+This Playbook file has no parameters. It always queries the fixed "hosts" database of the Target host (/etc/hosts plus any other NSS source), i.e. the mapping between host names, aliases and IP addresses.
+The retrieved entries are stored in the registered variable "ITA_DFLT_getent_hosts", so they are available to later tasks in the same Movement.
 ## Keyword
-- hostname to IP mapping
-- /etc/hosts lookup
-- name resolution inventory
-- DNS static entries
+- /etc/hosts
+- name resolution check
+- static DNS mapping inventory
+- hostname alias listing
 ## Playbook
 ```yaml
 - name: A wrapper to the unix getent utility (hosts)
-  getent:
+  ansible.builtin.getent:
     database: hosts
   register: ITA_DFLT_getent_hosts
 ```

@@ -5,20 +5,28 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard] Remove RPM key
 - **playbook_file**: Packaging_Os_rpm_key_remove.yml
 ## Overview
-Removes one or more GPG keys from the RPM database on the target host using Ansible's rpm_key module.
+Deletes trusted GPG keys from the RPM keyring with the `rpm_key` module and `state: absent`, looping over each value of `ITA_DFLT_Gpg_Key_Ids`.
 ## Description
-This Playbook file deletes GPG keys specified by "ITA_DFLT_Gpg_Key_Ids" from the RPM database.
-"ITA_DFLT_Gpg_Key_Ids" can specify multiple GPG keys (list type).
+This Playbok file deletes GPG keys specified by "ITA_DFLT_Gpg_Keys" from the RPM database.
+"ITA_DFLT_Gpg_Keys" can specify multiple GPG keys (list type).
 ## Keyword
-- GPG key removal
-- RPM database
-- package signing key management
+- untrust repository signing key
+- remove public key from yum
+- revoke RPM signing key
+- keyring cleanup
 ## Playbook
 ```yaml
+- name: Ensure ITA variable is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Gpg_Key_Ids: "{{ ITA_DFLT_Gpg_Key_Ids }}"
+  when: ITA_DFLT_Gpg_Key_Ids is defined
+
 - name: Remove gpg key
-  rpm_key:
+  ansible.builtin.rpm_key:
     key: "{{ item }}"
     state: absent
-  with_items:
-    - "{{ ITA_DFLT_Gpg_Key_Ids }}"
+  loop: >-
+    {{
+      ITA_DFLT_Gpg_Key_Ids if ITA_DFLT_Gpg_Key_Ids is sequence and ITA_DFLT_Gpg_Key_Ids is not string else [ITA_DFLT_Gpg_Key_Ids]
+    }}
 ```

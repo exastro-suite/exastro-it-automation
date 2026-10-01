@@ -5,19 +5,19 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard] Get entry(aliases)
 - **playbook_file**: System_getent_aliases.yml
 ## Overview
-Uses the Ansible `getent` module to query the "aliases" database on the target node via the getent utility and registers the returned entries.
+Uses the `getent` module on the `aliases` database to enumerate the mail alias entries defined on the host, registering the output as `ITA_DFLT_getent_aliases`.
 ## Description
-This Playbook file is a wrapper around the Unix `getent` utility that queries the "aliases" database, which returns mail alias entries configured on the target node.
-This playbook takes no input parameters; the query target database ("aliases") is fixed.
-The retrieved entries are stored in the "ITA_DFLT_getent_aliases" registered variable for use in subsequent tasks.
+This Playbook file takes no parameters. The database name `aliases` is fixed in the task and no key is specified, so every mail alias entry the host publishes (normally the contents of /etc/aliases) is enumerated, each alias with its expansion targets.
+The lookup result is stored with `register` under the name "ITA_DFLT_getent_aliases", so later tasks in the same run can reference it; the module also sets the collected entries as the fact `getent_aliases`.
 ## Keyword
-- mail alias lookup
-- getent database query
-- sendmail/postfix aliases retrieval
+- mail alias list
+- etc aliases inventory
+- sendmail or postfix alias audit
+- mail forwarding destinations
 ## Playbook
 ```yaml
 - name: A wrapper to the unix getent utility (aliases)
-  getent:
+  ansible.builtin.getent:
     database: aliases
   register: ITA_DFLT_getent_aliases
 ```

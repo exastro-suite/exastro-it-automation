@@ -5,15 +5,17 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard] Enable SELinux (permissive)
 - **playbook_file**: System_selinux_permissive.yml
 ## Overview
-Uses the `ansible.posix.selinux` module to set the SELinux state to "permissive" for a given policy on the target host.
+Switches SELinux into permissive mode with `ansible.posix.selinux` (`state: permissive`), using the policy named in `ITA_DFLT_Policy_Name`, so denials are logged but not enforced.
 ## Description
 This Playbook file changes the SELinux settings to "Permissive".
 Make sure to specify a policy name in "ITA_DFLT_Policy_Name".
 (E.g. targeted)
 ## Keyword
-- security policy
-- audit-only mode
-- SELinux mode
+- SELinux enforcement mode
+- setenforce 0
+- log denials without blocking
+- targeted policy
+- relax mandatory access control
 ## Playbook
 ```yaml
 # This Playbook file changes the SELinux settings to "Permissive".

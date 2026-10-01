@@ -5,21 +5,28 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard] Start service
 - **playbook_file**: System_service_started.yml
 ## Overview
-Starts one or more OS services on target hosts using Ansible's service module, iterating over a list of service names.
+Calls `ansible.builtin.service` with `state: started` for each name in `ITA_DFLT_Services`, bringing up any that are not already running (idempotent).
 ## Description
 This Playbook file starts services specified by "ITA_DFLT_Services".
 "ITA_DFLT_Services" can specify multiple services (list type).
 ## Keyword
-- service start
-- launch daemon
-- init system
+- bring up a daemon
+- ensure process is running
+- SysV init start
+- service module rather than systemd module
 ## Playbook
 ```yaml
+- name: Ensure ITA variable is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Services: "{{ ITA_DFLT_Services }}"
+  when: ITA_DFLT_Services is defined
+
 - name: Start service
-  service:
+  ansible.builtin.service:
     name: "{{ item }}"
     state: started
-  with_items:
-    - "{{ ITA_DFLT_Services }}"
-
+  loop: >-
+    {{
+      ITA_DFLT_Services if ITA_DFLT_Services is sequence and ITA_DFLT_Services is not string else [ITA_DFLT_Services]
+    }}
 ```

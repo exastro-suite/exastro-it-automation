@@ -5,20 +5,29 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard] Disable service startup
 - **playbook_file**: System_service_disabled.yml
 ## Overview
-Uses the legacy `service` module to disable one or more services so that they no longer start automatically at boot.
+Calls `ansible.builtin.service` with `enabled: false` for each name in `ITA_DFLT_Services`, removing boot-time autostart without changing the current running state.
 ## Description
-This Playbook file removes the configuration that makes services specified by "ITA_DFLT_Services" run on server startup.
-"ITA_DFLT_Services" can specify multiple services (list type).
+This Playbook file removes the configuration that makes services specified by "ITA_DFLT_Services" to run on server startup.
+ITA_DFLT_Services" can specify multiple services (list type).
 ## Keyword
-- boot startup
-- autostart
-- service management
+- chkconfig off
+- prevent autostart at boot
+- SysV init script
+- runlevel configuration
+- service module rather than systemd module
 ## Playbook
 ```yaml
+- name: Ensure ITA variable is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Services: "{{ ITA_DFLT_Services }}"
+  when: ITA_DFLT_Services is defined
+
 - name: Disable service
-  service:
+  ansible.builtin.service:
     name: "{{ item }}"
     enabled: false
-  with_items:
-    - "{{ ITA_DFLT_Services }}"
+  loop: >-
+    {{
+      ITA_DFLT_Services if ITA_DFLT_Services is sequence and ITA_DFLT_Services is not string else [ITA_DFLT_Services]
+    }}
 ```

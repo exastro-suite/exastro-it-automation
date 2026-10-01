@@ -5,18 +5,19 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard] Get entry(rpc)
 - **playbook_file**: System_getent_rpc.yml
 ## Overview
-Queries the system rpc database using the Ansible getent module and stores the retrieved RPC program name-to-number mappings in a registered variable for later use.
+Queries the target's `rpc` database with the `getent` module, registering the RPC program name and program number entries in `ITA_DFLT_getent_rpc`.
 ## Description
-This playbook takes no input variables. It runs the Ansible `getent` module against the `rpc` database, which maps Remote Procedure Call (RPC) program names to their program numbers as normally found in `/etc/rpc`, and saves the output into the registered variable `ITA_DFLT_getent_rpc` so that later tasks can reference the RPC program information.
+This Playbook file has no parameters. It always queries the fixed "rpc" database of the Target host (/etc/rpc), i.e. the Remote Procedure Call program names with their program numbers and aliases, as used by services such as NFS and the portmapper.
+The retrieved entries are stored in the registered variable "ITA_DFLT_getent_rpc", so they are available to later tasks in the same Movement.
 ## Keyword
-- RPC program number mapping
-- /etc/rpc lookup
-- remote procedure call registry
-- NFS/RPC service inventory
+- /etc/rpc
+- NFS portmapper program numbers
+- rpcbind service inventory
+- Remote Procedure Call reference data
 ## Playbook
 ```yaml
 - name: A wrapper to the unix getent utility (rpc)
-  getent:
+  ansible.builtin.getent:
     database: rpc
   register: ITA_DFLT_getent_rpc
 ```

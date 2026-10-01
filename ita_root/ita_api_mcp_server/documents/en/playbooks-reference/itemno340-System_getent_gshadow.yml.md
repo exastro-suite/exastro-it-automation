@@ -5,18 +5,21 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard] Get entry(gshadow)
 - **playbook_file**: System_getent_gshadow.yml
 ## Overview
-Queries the system gshadow database using the Ansible getent module and stores the retrieved group shadow entries in a registered variable for later use.
+Queries the target's `gshadow` database with the `getent` module, registering the shadowed group password entries in `ITA_DFLT_getent_gshadow`; `no_log: true` hides the sensitive output.
 ## Description
-This playbook takes no input variables. It runs the Ansible `getent` module against the `gshadow` database, which holds the encrypted group password entries normally found in `/etc/gshadow`, and saves the output into the registered variable `ITA_DFLT_getent_gshadow` so that later tasks can reference the group password information.
+This Playbook file has no parameters. It always queries the fixed "gshadow" database of the Target host (/etc/gshadow), i.e. the shadowed group password file holding group encrypted passwords, administrators and members.
+The retrieved entries are stored in the registered variable "ITA_DFLT_getent_gshadow", so they are available to later tasks in the same Movement.
+Because the data is confidential, the task sets "no_log: true" and the retrieved values are therefore not written to the execution log (change it to false when debugging).
 ## Keyword
-- NSS group database
-- encrypted group passwords
-- Linux group administrator list
-- account/group inventory lookup
+- /etc/gshadow
+- NSS name service switch lookup
+- group account security audit
+- credential inventory collection
 ## Playbook
 ```yaml
 - name: A wrapper to the unix getent utility (gshadow)
-  getent:
+  ansible.builtin.getent:
     database: gshadow
   register: ITA_DFLT_getent_gshadow
+  no_log: true # 機密情報を含むため、ログを抑止（デバッグしたいときはfalseに変更してください）
 ```

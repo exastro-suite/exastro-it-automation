@@ -115,7 +115,7 @@ _REQUIRED_MENU = "menu_definition_and_creation"
 
 @tool(
     name="create-menu",
-    description="Create a new parameter sheet (menu) with the specified definition. For details, please search for `create-menu tool reference` using `search_docs`.",
+    description="Create a new parameter sheet (menu) with the specified definition. For details, Please refer to `tool-reference/create-menu.md` using `get-document`.",
     input_schema={
         "type": "object",
         "properties": {
@@ -183,7 +183,7 @@ def tool_create_menu(arguments: dict, payload: dict) -> dict:
 
 @tool(
     name="update-menu",
-    description="Update the existing parameter sheet (menu) using the specified definition. Please retrieve the definition prior to the update using `get-menu-definition`. For details, use `search_docs` to look up the `update-menu tool reference`.",
+    description="Update the existing parameter sheet (menu) using the specified definition. Please retrieve the definition prior to the update using `get-menu-definition`. , Please refer to `tool-reference/update-menu.md` using `get-document`.",
     input_schema={
         "type": "object",
         "properties": {

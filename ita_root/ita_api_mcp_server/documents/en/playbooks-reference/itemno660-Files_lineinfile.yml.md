@@ -5,21 +5,22 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard] Text line operation
 - **playbook_file**: Files_lineinfile.yml
 ## Overview
-Inserts, replaces, or removes a single line of text in a file on target hosts using Ansible's lineinfile module, matching against a regular expression.
+Uses `lineinfile` to make the line matching `ITA_DFLT_regexp` in `ITA_DFLT_file_path` equal to `ITA_DFLT_line_string`, or to delete it when state is absent; state defaults to present.
 ## Description
-This Playbook file uses the following variables to insert, update, or remove a line of text in a file:
-- "ITA_DFLT_file_path": the path of the file to be edited.
-- "ITA_DFLT_regexp": the regular expression used to find the line to replace or remove.
-- "ITA_DFLT_line_string": the line content to insert or use as the replacement.
-- "ITA_DFLT_line_state": whether the line should be present or absent in the file; defaults to "present" if not specified.
+"ITA_DFLT_file_path": Path of the file on the target node to be edited.
+"ITA_DFLT_regexp": Regular expression used to locate the line to act on. With state "present" the last matching line is rewritten, and when nothing matches the line is appended to the file.
+"ITA_DFLT_line_string": The exact line to insert or to replace the matched line with.
+"ITA_DFLT_line_state": Either "present" to ensure the line exists or "absent" to remove matching lines. Optional - defaults to "present".
+The first three variables are referenced without a default, so all of them must be supplied; only one file and one line are handled per run because the task has no loop.
 ## Keyword
-- edit configuration file
-- text line insertion
-- regular expression match
+- change a setting in a config file
+- replace a line matching a regex
+- append a line if missing
+- sed-style file edit
 ## Playbook
 ```yaml
 - name: Insert or replace text lines.
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: "{{ ITA_DFLT_file_path }}"
     regexp: "{{ ITA_DFLT_regexp }}"
     line: "{{ ITA_DFLT_line_string }}"

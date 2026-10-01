@@ -5,21 +5,30 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard] Remove user
 - **playbook_file**: System_user_remove.yml
 ## Overview
-Deletes one or more OS user accounts on the target host and removes their home directories using Ansible's user module.
+Deletes accounts with `ansible.builtin.user` using `state: absent` and `remove: true` for each name in `ITA_DFLT_User_Names`, so each user's home directory and mail spool are deleted too.
 ## Description
-This Playbook deletes users specified by "ITA_DFLT_User_Names", and also removes their home directories and mail spool.
+This Playbook deletes users specified by "ITA_DFLY_User_Names".
 "ITA_DFLT_User_Names" can specify multiple users (list type).
 ## Keyword
-- user deletion
-- delete home directory
-- account cleanup
+- userdel -r
+- delete a Linux account
+- remove home directory
+- account deprovisioning
+- purge user data
 ## Playbook
 ```yaml
+- name: Ensure ITA variable is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_User_Names: "{{ ITA_DFLT_User_Names }}"
+  when: ITA_DFLT_User_Names is defined
+
 - name: Remove user
-  user:
+  ansible.builtin.user:
     name: "{{ item }}"
     state: absent
-    remove : yes
-  with_items:
-    - "{{ ITA_DFLT_User_Names }}"
+    remove: true
+  loop: >-
+    {{
+      ITA_DFLT_User_Names if ITA_DFLT_User_Names is sequence and ITA_DFLT_User_Names is not string else [ITA_DFLT_User_Names]
+    }}
 ```

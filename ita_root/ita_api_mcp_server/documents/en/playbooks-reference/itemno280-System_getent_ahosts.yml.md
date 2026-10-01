@@ -5,20 +5,19 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard] Get entry(ahosts)
 - **playbook_file**: System_getent_ahosts.yml
 ## Overview
-Uses the Ansible `getent` module to query the "ahosts" database on the target node via the getent utility and registers the returned entries.
+Uses the `getent` module on the `ahosts` database to enumerate host name and address entries for all address families (IPv4 and IPv6), registering the output as `ITA_DFLT_getent_ahosts`.
 ## Description
-This Playbook file is a wrapper around the Unix `getent` utility that queries the "ahosts" database, which returns all address entries (IPv4 and IPv6) for hosts on the target node.
-This playbook takes no input parameters; the query target database ("ahosts") is fixed.
-The retrieved entries are stored in the "ITA_DFLT_getent_ahosts" registered variable for use in subsequent tasks.
+This Playbook file takes no parameters. The database name `ahosts` is fixed in the task and no key is specified, so the whole host database reachable through the name service switch is enumerated, returning addresses of every address family.
+The lookup result is stored with `register` under the name "ITA_DFLT_getent_ahosts", so later tasks in the same run can reference it; the module also sets the collected entries as the fact `getent_ahosts`.
 ## Keyword
-- name resolution
-- host address lookup
-- getent database query
-- DNS/hosts entry retrieval
+- host name resolution check
+- list hosts file entries
+- name service switch lookup
+- collect address inventory
 ## Playbook
 ```yaml
 - name: A wrapper to the unix getent utility (ahosts)
-  getent:
+  ansible.builtin.getent:
     database: ahosts
   register: ITA_DFLT_getent_ahosts
 ```

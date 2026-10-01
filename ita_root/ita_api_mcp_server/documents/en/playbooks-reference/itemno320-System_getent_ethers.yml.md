@@ -5,19 +5,19 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard] Get entry(ethers)
 - **playbook_file**: System_getent_ethers.yml
 ## Overview
-Uses the Ansible `getent` module to query the "ethers" database on the target node via the getent utility and registers the returned entries.
+Uses the `getent` module on the `ethers` database to enumerate the MAC address to host name mappings defined on the host, registering the output as `ITA_DFLT_getent_ethers`.
 ## Description
-This Playbook file is a wrapper around the Unix `getent` utility that queries the "ethers" database, which returns Ethernet (MAC) address to hostname mapping entries configured on the target node.
-This playbook takes no input parameters; the query target database ("ethers") is fixed.
-The retrieved entries are stored in the "ITA_DFLT_getent_ethers" registered variable for use in subsequent tasks.
+This Playbook file takes no parameters. The database name `ethers` is fixed in the task and no key is specified, so every Ethernet address entry the host publishes (normally the contents of /etc/ethers) is enumerated, pairing each hardware address with a host name.
+The lookup result is stored with `register` under the name "ITA_DFLT_getent_ethers", so later tasks in the same run can reference it; the module also sets the collected entries as the fact `getent_ethers`.
 ## Keyword
-- MAC address lookup
-- getent database query
-- Ethernet address mapping retrieval
+- MAC address to host mapping
+- etc ethers inventory
+- hardware address lookup
+- RARP and bootp host registration
 ## Playbook
 ```yaml
 - name: A wrapper to the unix getent utility (ethers)
-  getent:
+  ansible.builtin.getent:
     database: ethers
   register: ITA_DFLT_getent_ethers
 ```

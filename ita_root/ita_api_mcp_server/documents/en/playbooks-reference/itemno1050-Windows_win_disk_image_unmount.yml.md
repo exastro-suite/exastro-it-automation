@@ -5,14 +5,15 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard][Win] Unmount
 - **playbook_file**: Windows_win_disk_image_unmount.yml
 ## Overview
-Uses the `community.windows.win_disk_image` module with `state: absent` to unmount a previously mounted disk image, such as an ISO file, on a Windows host.
+Unmounts (detaches) the specified ISO disk image from the Windows target host by calling `win_disk_image` with `state: absent`.
 ## Description
-"ITA_DFLT_mount_image_path": the path to the disk image (e.g., an ISO file) that is currently mounted and should be unmounted.
+"ITA_DFLT_mount_image_path": Path of the ISO (disk image) file that is currently mounted on the Windows target host and is to be unmounted.
+This is the only parameter and a single value is used directly, so there is no loop or list pairing. The image path must match the one used when the image was mounted.
 ## Keyword
-- ISO unmount
-- disk image detach
-- eject virtual drive
-- mounted image cleanup
+- Windows ISO unmount
+- Detach virtual drive
+- Eject disk image
+- Release mounted media
 ## Playbook
 ```yaml
 - name: Unmount ISO

@@ -5,21 +5,29 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard] Stop service
 - **playbook_file**: System_service_stopped.yml
 ## Overview
-Stops one or more OS services on target hosts using Ansible's service module, iterating over a list of service names.
+Calls `ansible.builtin.service` with `state: stopped` for each name in `ITA_DFLT_Services`; it only halts the running processes and does not uninstall or delete anything.
 ## Description
-This Playbook file stops services specified by "ITA_DFLT_Services".
+This Playbook file deletes services specified by "ITA_DFLT_Services".
 "ITA_DFLT_Services" can specify multiple services (list type).
 ## Keyword
-- service stop
-- halt daemon
-- init system
+- shut down a daemon
+- halt running process
+- SysV init stop
+- maintenance outage window
+- service module rather than systemd module
 ## Playbook
 ```yaml
+- name: Ensure ITA variable is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Services: "{{ ITA_DFLT_Services }}"
+  when: ITA_DFLT_Services is defined
+
 - name: Stop service
-  service:
+  ansible.builtin.service:
     name: "{{ item }}"
     state: stopped
-  with_items:
-    - "{{ ITA_DFLT_Services }}"
-
+  loop: >-
+    {{
+      ITA_DFLT_Services if ITA_DFLT_Services is sequence and ITA_DFLT_Services is not string else [ITA_DFLT_Services]
+    }}
 ```

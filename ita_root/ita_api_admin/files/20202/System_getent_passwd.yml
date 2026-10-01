@@ -1,4 +1,5 @@
 - name: A wrapper to the unix getent utility (passwd)
-  getent:
+  ansible.builtin.getent:
     database: passwd
   register: ITA_DFLT_getent_passwd
+  no_log: true # 機密情報を含むため、ログを抑止（デバッグしたいときはfalseに変更してください）

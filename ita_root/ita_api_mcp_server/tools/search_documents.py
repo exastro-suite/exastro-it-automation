@@ -284,7 +284,8 @@ def _resolve_document_source(source: str) -> Path:
             }
         },
         "required": ["query"]
-    }
+    },
+    profile=["AgenticAI", "LLMEditor"]
 )
 def tool_search_documents(arguments: dict, payload: dict) -> dict:
     """
@@ -330,8 +331,8 @@ def tool_search_documents(arguments: dict, payload: dict) -> dict:
 
     user_id = payload.get("user_id", "unknown")
 
-    g.applogger.info("Searching documents: query='{}', limit={}, threshold={}, user={}".format(
-        query, limit, score_threshold, user_id
+    g.applogger.info("Parameter query='{}', limit={}, threshold={}".format(
+        query, limit, score_threshold
     ))
 
     try:
@@ -421,7 +422,8 @@ def tool_search_documents(arguments: dict, payload: dict) -> dict:
             }
         },
         "required": ["source"]
-    }
+    },
+    profile=["AgenticAI", "LLMEditor"]
 )
 def tool_get_document(arguments: dict, payload: dict) -> dict:
     """
@@ -453,7 +455,7 @@ def tool_get_document(arguments: dict, payload: dict) -> dict:
     source = arguments.get("source", "")
     user_id = payload.get("user_id", "unknown")
 
-    g.applogger.info("Getting document: source='{}', user={}".format(source, user_id))
+    g.applogger.info("Parameter source={}".format(source))
 
     if not source:
         raise Exception("Parameter 'source' is required.")

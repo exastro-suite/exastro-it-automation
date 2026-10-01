@@ -29,7 +29,12 @@ static get apiUrl() {
     const { organizationId, workspaceId } = fn.getCommonParams();
     return {
         // MCPサーバー（JSON-RPC）
-        mcp: () => `/api/${organizationId}/workspaces/${workspaceId}/mcp`
+        // profile … プロンプトプロファイル（AgenticAI / LLMEditor）。指定するとtools/listが
+        //           そのプロファイルで使えるツールに絞り込まれる（省略時は絞り込まない）。
+        mcp: ( profile ) => `/api/${organizationId}/workspaces/${workspaceId}/mcp`
+            + ( profile? `?profile=${encodeURIComponent( profile )}`: ''),
+        // 添付ファイルの登録（multipart/form-dataでアップロードし、file_idを採番する）
+        attachmentFile: () => `/api/${organizationId}/workspaces/${workspaceId}/mcp/attachment_file`
     };
 }
 /*
@@ -84,9 +89,12 @@ async init() {
     // 画面が成立しない処理（失敗時はthrowする）
     this.initVariable();
     this.initMarkdownit();
-    // 設定ダイアログを閉じたら、設定と認証状態を読み直して画面へ反映する
+    // 設定ダイアログを閉じたら、設定と認証状態を読み直して画面へ反映する。
+    // 会話は作成時のAIサービスに紐づいているため、会話中はAIサービスを変更させない
+    // （認証切れで設定を開けるようにしているのは、認証情報を更新してもらうためだけ）。
     this.setting = new AiAssistantSetting( this.params, {
-        onClose: () => this.reloadSetting()
+        onClose: () => this.reloadSetting(),
+        isServiceChangeLocked: () => this.newChat !== true
     });
 
     // 先に画面の枠を作る（このあとの取得が失敗しても、フッターと通知は表示できる）
@@ -102,9 +110,7 @@ async init() {
     ]);
     if ( mcp.status === 'rejected') {
         console.error( mcp.reason );
-        this.mcpError = 'ITAの操作に使用するツールの一覧を取得できませんでした。<br>'
-            + 'このままでもAIとの会話はできますが、AIアシスタントからITAを操作することはできません。<br>'
-            + fn.escape( this.formatErrorMessage( mcp.reason ) );
+        this.mcpError = getMessage.FTE14230( fn.escape( this.formatErrorMessage( mcp.reason ) ) );
     }
 
     // 画面専用ツールを登録する（MCPサーバー側のツール一覧が取れなくても使えるため、
@@ -113,10 +119,23 @@ async init() {
 
     this.updateFooter();
 
+    // 前回「作業中」のまま離脱された会話があれば復元し、確認のうえ継続する（自動再開）。
+    // 復元できない・対象が無い場合は通常どおり新規チャットを開始する。
+    // 自動再開そのものの失敗で画面を出せなくしないよう、ここで握りつぶして新規チャットへ倒す。
+    let resumed = false;
+    try {
+        resumed = await this._tryAutoResume();
+    } catch ( error ) {
+        console.warn('自動再開に失敗しました。新規チャットを開始します。', error );
+        resumed = false;
+    }
+
     // チャットスタート
     // （awaitして、画面を組み立てられなかった場合のエラーを呼び出し元まで伝える。
     //   会話を開始できなかった場合はnewChatStartの中で本文に表示する）
-    await this.newChatStart();
+    if ( !resumed ) {
+        await this.newChatStart();
+    }
 }
 // 要素参照
 refElements() {
@@ -136,13 +155,18 @@ refElements() {
 initVariable() {
     // LLM（新規チャットの開始時に作成する。AIサービス未設定・認証エラー時はnull）
     this.llm = null;
+    // 新規チャット画面か（会話が始まるとfalseになる。会話中は設定を開けない・AIサービスを
+    // 変更できないという判定に使うため、画面ができる前は新規チャット扱いにしておく）
+    this.newChat = true;
     // チャットで使用中のモデル（フッターで切り替える。既定はAI利用設定の既定のモデル）
     this.modelId = '';
     // AIサービスの認証確認の結果
     //   checked … 確認を実行したか（AIサービス未設定の場合は確認しない）
     //   valid   … 認証が通ったか
     //   message … 認証が通らなかった理由（画面に表示する）
-    this.auth = { checked: false, valid: false, message: ''};
+    //   error   … 確認そのものに失敗したか（通信エラーなど。認証情報が無効と判断できた
+    //             わけではないため、会話中の認証切れの判定には使わない）
+    this.auth = { checked: false, valid: false, message: '', error: false };
     // 初期化のうち、失敗しても画面は表示できる処理のエラー内容（新規チャット画面に表示する）
     //   mcpError     … MCPツール一覧の取得に失敗（ITAの操作ができない）
     //   settingError … AI利用設定の読み込みに失敗（チャットを開始できない）
@@ -177,12 +201,15 @@ initVariable() {
     this._turnUpdatedMenus = new Map();
     // メニューの主キー列 REST 名（pk_column_name_rest）のキャッシュ（絞り込みフィルター用）。
     this._menuPkRestCache = new Map();
+    // 作成する会話のプロンプトプロファイル（呼び出し元が指定する。省略時はAIアシスタントメニューのもの）。
+    // ファイル編集画面から開いたチャットは、編集を助けるプロファイル（LLMEditor）で会話を作る。
+    this.promptProfile = this.option?.promptProfile ?? AiAssistantLlm.promptProfile;
     // イベント停止用
     this.ac = new AbortController();
     // ユーザID
     this.id = this.params?.user?.user_id ?? null; 
     if ( this.id === null ) {
-        throw new Error('ユーザIDの取得に失敗しました。');
+        throw new Error( getMessage.FTE14231 );
     }
 }
 // Markdown-it
@@ -192,10 +219,18 @@ initMarkdownit() {
             breaks: true, // 単一の改行(\n)を<br>に変換する
             linkify: true, // http(s):// で始まる文字列を自動的にリンク化する
             highlight: function (str, lang) {
-                if (lang && hljs.getLanguage(lang)) {
+                // 読み込んでいるhighlight.jsが持つ言語（css・javascript・python・yaml）で
+                // 代わりに色付けできるものは、そちらへ寄せる（jsonをjavascriptで色付けするなど）。
+                // 持っていない言語（bash・iniなど）は色を付けず、そのまま表示する。
+                const alias = {
+                    json: 'javascript', json5: 'javascript', jsonc: 'javascript',
+                    ansible: 'yaml', playbook: 'yaml'
+                };
+                const language = ( lang && alias[ lang.toLowerCase() ] )? alias[ lang.toLowerCase() ]: lang;
+                if (language && hljs.getLanguage(language)) {
                     try {
                         return '<pre><code class="hljs">' +
-                            hljs.highlight(str, { language: lang, ignoreIllegals: true }).value +
+                            hljs.highlight(str, { language: language, ignoreIllegals: true }).value +
                         '</code></pre>';
                     } catch (__) {}
                 }
@@ -215,7 +250,7 @@ initMarkdownit() {
             return defaultLinkOpen( tokens, idx, options, env, self );
         };
     } else {
-        throw new Error('スクリプトの読み込みに失敗しました。（markdownit）');
+        throw new Error( getMessage.FTE14232 );
     }
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -310,7 +345,7 @@ printDisplayHtmlAsPdf( button ) {
 */
 async mcpRequest( method, params = {} ) {
     const token = this.getToken();
-    const response = await fetch( AiAssistantChat.apiUrl.mcp(), {
+    const response = await fetch( AiAssistantChat.apiUrl.mcp( this.promptProfile ), {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -362,7 +397,7 @@ async mcpToolCall( name, args = {} ) {
 async executeTool( toolUse, runningEl = null, signal = null ) {
     toolUse.name = toolUse.name ?? toolUse.params?.name;
     try {
-        const toolResponse = await AiAssistantChat.fetchWithRetry( AiAssistantChat.apiUrl.mcp(), {
+        const toolResponse = await AiAssistantChat.fetchWithRetry( AiAssistantChat.apiUrl.mcp( this.promptProfile ), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -401,7 +436,7 @@ async executeTool( toolUse, runningEl = null, signal = null ) {
                         final_status: progressOutcome.status ?? '',
                         status_detail: progressOutcome.result ?? null,
                         // LLMへの明示指示（再実行・再確認ループを防ぐ）
-                        instruction: `この実行はサーバ側で完了まで監視され、最終ステータス「${progressOutcome.status ?? ''}」で終了済みです。execute-driver / dryrun-driver / get-driver-status を再度呼び出さず、この最終ステータスをユーザーに報告して会話を終えてください。`
+                        instruction: getMessage.FTE14233( progressOutcome.status ?? '')
                     }
                 };
             } else {
@@ -413,7 +448,7 @@ async executeTool( toolUse, runningEl = null, signal = null ) {
                         reason: progressOutcome.type,
                         message: progressOutcome.message ?? '',
                         // 未完了でも自動リトライ（再実行）はさせない
-                        instruction: `サーバ側の進捗監視が最終ステータスに到達する前に終了しました（理由: ${progressOutcome.type}）。実行自体は開始済みのため、execute-driver / dryrun-driver を再実行してはいけません。状況をユーザーに報告し、必要なら手動での状況確認を促してください。`
+                        instruction: getMessage.FTE14234( progressOutcome.type )
                     }
                 };
             }
@@ -609,7 +644,7 @@ renderUpdatedMenuLinks( scroll = true ) {
                 const filter = { [ pkRest ]: { LIST: idList }, discard: { NORMAL: ''}};
                 a.href = this.buildMenuUrl( menuNameRest, filter );
                 a.classList.add('aiAssistantUpdatedMenusLinkFiltered');
-                a.title = `更新した ${idList.length} 件に絞り込んで開きます`;
+                a.title = getMessage.FTE14235( idList.length );
             });
         }
     }
@@ -648,8 +683,12 @@ checkAiAssistantSetting( assistantCheck = false) {
 */
 // 設定されていても、認証情報の期限切れや失効でチャットを開始できないことがある。
 // 設定を読み込んだ直後に確認して、通らなかった場合は再設定を促すため結果を保持する。
+//
+// 会話中でも、確認するのは設定で選択中のAIサービスの認証情報でよい（会話は作成時の
+// AIサービスに固定されるが、会話中はAIサービスを変更できないようにしているため、
+// 選択中のAIサービスと会話のAIサービスは一致する）。
 async checkAiAssistantAuth() {
-    this.auth = { checked: false, valid: false, message: ''};
+    this.auth = { checked: false, valid: false, message: '', error: false };
 
     // AIサービスが未設定の場合は確認する認証情報がない
     if ( !this.checkAiAssistantSetting( true ) ) return this.auth;
@@ -659,12 +698,19 @@ async checkAiAssistantAuth() {
         this.auth = {
             checked: true,
             valid: result?.valid === true,
-            message: ( result?.valid === true )? '': result?.message ?? ''
+            message: ( result?.valid === true )? '': result?.message ?? '',
+            error: false
         };
     } catch ( error ) {
         // 確認そのものに失敗した場合も、チャットは開始できないため認証エラーとして扱う
+        // （認証情報が無効と判断できたわけではないためerrorを立てておく）
         console.error( error );
-        this.auth = { checked: true, valid: false, message: error?.message ?? ''};
+        this.auth = {
+            checked: true,
+            valid: false,
+            message: this.formatErrorMessage( error ),
+            error: true
+        };
     }
     return this.auth;
 }
@@ -683,8 +729,7 @@ async loadSetting() {
         await this.setting.loadPreference();
     } catch ( error ) {
         console.error( error );
-        this.settingError = 'AI利用設定を読み込めませんでした。<br>'
-            + fn.escape( this.formatErrorMessage( error ) );
+        this.settingError = getMessage.FTE14236( fn.escape( this.formatErrorMessage( error ) ) );
     }
     await this.checkAiAssistantAuth();
     return;
@@ -702,6 +747,96 @@ isChatReady() {
 isAuthError() {
     return this.checkAiAssistantSetting( true ) && this.auth.checked && !this.auth.valid;
 }
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//   認証切れ
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
+##################################################
+    認証切れの案内文
+##################################################
+*/
+// アラートとシステムメッセージで共用するため、プレーンテキスト（改行区切り）で作る。
+// 認証の確認そのものに失敗した場合（auth.error）も、有効期限切れと区別できないため
+// 同じ文言を使い、確認できた理由（auth.message）を添えて判断できるようにする。
+authExpiredMessage() {
+    // AIサービス名は、設定が読み込めなかった場合や未設定になった場合は空になる
+    const serviceName = this.setting.currentServiceName;
+    const service = ( serviceName )? getMessage.FTE14237( serviceName ): getMessage.FTE14238;
+    const detail = ( this.auth.message )? `\n（${this.auth.message}）`: '';
+    return getMessage.FTE14239( service ) + detail;
+}
+/*
+##################################################
+    認証切れを画面へ反映する
+##################################################
+*/
+// 会話中     … 設定ボタンを開けるようにして、システムメッセージで更新を促す
+// 新規チャット … 画面を作り直して通知（認証エラー）を表示する
+// alertFlag … 気付かないまま操作を続けないよう、アラートも表示するか
+//   （送信エラーの内容を既にアラートで表示している場合はfalseにする）
+async applyAuthExpired( alertFlag = true ) {
+    const message = this.authExpiredMessage();
+
+    if ( this.newChat === true ) {
+        await this.newChatStart();
+    } else {
+        this.updateSettingButtonState();
+        this.updateChat({ role: 'systemNotice', text: message });
+    }
+
+    if ( alertFlag ) alert( message );
+    return;
+}
+/*
+##################################################
+    エラー後の認証チェック（会話中）
+##################################################
+*/
+// AIサービスの認証情報には有効期限があり、会話の途中で切れることがある。その場合は
+// 認証情報を更新しないと会話を続けられないため、応答がエラーで終わったときに認証を
+// 確認し、切れていた場合は会話中でも設定を開けるようにして更新を促す。
+// 戻り値：認証が切れていた場合true
+async checkAuthAfterError() {
+    // AIサービスが未設定の場合は確認する認証情報がない（別の原因のエラー）
+    if ( !this.checkAiAssistantSetting( true ) ) return false;
+
+    const before = this.auth;
+    await this.checkAiAssistantAuth();
+
+    // 認証は通っている（別の原因のエラー）
+    if ( this.auth.valid ) return false;
+
+    // 確認そのものに失敗した場合は、認証切れとは判断できない（通信エラーなど）。
+    // 誤って認証エラーの状態にしないよう、確認前の状態へ戻して何も案内しない。
+    // （エラーの内容は送信エラーとして表示済み）
+    if ( this.auth.error === true ) {
+        this.auth = before;
+        return false;
+    }
+
+    await this.applyAuthExpired( false );
+    return true;
+}
+/*
+##################################################
+    会話を再開する前の認証チェック
+##################################################
+*/
+// 認証情報の有効期限は、会話から離れている間にも切れる。切れたまま復元しても続きを
+// 送信した時点で失敗するため、再開の前に確認して、切れていた場合はアラートで更新を促す。
+// 戻り値：再開できる場合true
+async checkAuthBeforeResume() {
+    // 未設定の場合は認証以前に再開できない（再開処理側でエラーになる）
+    if ( !this.checkAiAssistantSetting( true ) ) return true;
+
+    await this.checkAiAssistantAuth();
+    if ( !this.isAuthError() ) return true;
+
+    await this.applyAuthExpired();
+    return false;
+}
 /*
 ##################################################
     設定ダイアログを閉じたあとの再読み込み
@@ -710,6 +845,10 @@ isAuthError() {
 // 認証情報やモデルを再設定した結果を反映する
 // （初期化時にAI利用設定を読み込めていない場合は、ここで読み込み直す）
 async reloadSetting() {
+    // 会話中に設定を開けるのは認証が切れているときだけなので、認証情報を更新できたか
+    // 判定するために、開く前の状態を控えておく
+    const wasAuthError = this.isAuthError();
+
     if ( this.settingError ) {
         await this.loadSetting();
     } else {
@@ -721,6 +860,17 @@ async reloadSetting() {
         await this.newChatStart();
     } else {
         this.updateFooter();
+        // 認証が切れている間だけ設定を開けるようにしているため、状態を作り直す
+        this.updateSettingButtonState();
+        // 認証切れから会話へ戻れるようになったか（戻れない場合は更新を促し続ける）
+        if ( wasAuthError ) {
+            this.updateChat({
+                role: 'systemNotice',
+                text: ( this.auth.valid )
+                    ? getMessage.FTE14240
+                    : this.authExpiredMessage()
+            });
+        }
     }
     return;
 }
@@ -759,14 +909,27 @@ build() {
 createHeaderMenuHtml() {
     const menuList = {
         Main: [
-            { button: { className: 'aiAssistantNewChatButton', icon: 'edit', text: '新しいチャット', type: 'newChat', action: 'positive', minWidth: '160px', disabled: false }},
-            { button: { className: 'aiAssistantCloseChatButton', icon: 'check', text: 'チャット終了', type: 'closeChat', action: 'positive', minWidth: '160px', disabled: true }}
+            { button: { className: 'aiAssistantNewChatButton', icon: 'edit', text: getMessage.FTE14241, type: 'newChat', action: 'positive', minWidth: '160px', disabled: false }},
+            { button: { className: 'aiAssistantCloseChatButton', icon: 'check', text: getMessage.FTE14242, type: 'closeChat', action: 'positive', minWidth: '160px', disabled: true }}
         ],
         Sub: [
-            { button: { className: 'aiAssistantSettingButton', icon: 'gear', text: 'AIアシスタント設定', type: 'aiAssistantSetting', action: 'default', minWidth: '160px'}}
+            { button: { className: 'aiAssistantSettingButton', icon: 'gear', text: getMessage.FTE14243, type: 'aiAssistantSetting', action: 'default', minWidth: '160px'}}
         ]
     };
     return fn.html.operationMenu( menuList );
+}
+/*
+##################################################
+    AIサービス設定ボタンの活性状態
+##################################################
+*/
+// 会話中はAI利用設定を変更できないようにしている（使用するAIサービスが入れ替わると
+// 進行中の会話と噛み合わなくなるため）。ただし認証が切れている場合は、認証情報を
+// 更新しないと会話を続けられないため、会話中でも設定を開けるようにする。
+updateSettingButtonState() {
+    const button = this.elements?.settingButton;
+    if ( !button ) return;
+    button.disabled = ( this.newChat !== true && !this.isAuthError() );
 }
 /*
 ##################################################
@@ -803,14 +966,14 @@ createFooterAiNameElement() {
 // モデルリストHTML
 createFooterModelListElement() {
     const el = this.createFooterCommonElement();
-    this.setFooterCommonText( el.querySelector('.aiAssistantFooterTitle'), 'モデル');
+    this.setFooterCommonText( el.querySelector('.aiAssistantFooterTitle'), getMessage.FTE14244 );
     this.elements.modelList = el.querySelector('.aiAssistantFooterItem');
     return el;
 }
 // AI名更新
 updateFooterAiName() {
     const aiName = ( this.checkAiAssistantSetting( true ) )
-        ? fn.escape( this.setting.currentServiceName ): '<span class="notSelected">未選択</span>';
+        ? fn.escape( this.setting.currentServiceName ): `<span class="notSelected">${getMessage.FTE14245}</span>`;
     this.setFooterCommonText( this.elements.aiName, aiName );
 }
 // Footer 更新
@@ -824,7 +987,7 @@ updateFooterModelList() {
     const selectedList = ( this.checkAiAssistantSetting() )? this.setting.currentPickupModels: [];
     if ( !selectedList.length ) {
         this.modelId = '';
-        this.setFooterCommonText( this.elements.modelList, '<span class="notSelected">未選択</span>');
+        this.setFooterCommonText( this.elements.modelList, `<span class="notSelected">${getMessage.FTE14245}</span>`);
         return;
     }
 
@@ -911,7 +1074,7 @@ async newChatStart() {
         console.error( error );
         this.elements.chatBody?.append(
             this.createNoticeMessageElement(
-                '会話を開始できませんでした。<br>' + fn.escape( this.formatErrorMessage( error ) )
+                getMessage.FTE14246( fn.escape( this.formatErrorMessage( error ) ) )
             )
         );
     }
@@ -930,7 +1093,7 @@ async ensureLlm() {
 
     // システムプロンプトとツールの実行結果の解釈はAIサービス側（プラットフォームAPI）が
     // 持つため、ここではAIサービス・モデルとツール一覧のみを渡す。
-    const llm = new AiAssistantLlm();
+    const llm = new AiAssistantLlm( this.promptProfile );
     await llm.setup({
         aiServiceId: this.setting.currentAiServiceId,
         modelId: this.modelId
@@ -968,8 +1131,8 @@ setNewChat() {
         this.elements.chatBody.append( this.createNoticeMessageElement( this.mcpError ) );
     }
 
-    // 設定ボタンは新規チャット画面のみ
-    this.elements.settingButton.disabled = false;
+    // 設定ボタンは新規チャット画面（と、会話中の認証切れ）のみ
+    this.updateSettingButtonState();
 
     // チャット閉じるボタン非活性
     this.elements.closeChatButton.disabled = true;
@@ -1001,12 +1164,12 @@ createChatContainerElement() {
                 </ul>
             </div>
             <div class="aiAssistantInputMessage">
-                <textarea name="aiAssistantInputTextarea" class="aiAssistantInputTextarea" placeholder="ご用件を入力してください。"></textarea>
+                <textarea name="aiAssistantInputTextarea" class="aiAssistantInputTextarea textarea input" spellcheck="false" placeholder="${getMessage.FTE14247}"></textarea>
             </div>
             <div class="aiAssistantInputActions">
-                ${fn.html.button( fn.html.icon('plus'), 'aiAssistantInputActionsFileButton itaButton button popup', { type: 'file', action: 'default  ', title: 'ファイル添付'})}
-                ${fn.html.button( fn.html.icon('send'), 'aiAssistantInputActionsSendButton itaButton button popup', { type: 'send', action: 'positive', title: '送信'})}
-                ${fn.html.button( fn.html.icon('stop'), 'aiAssistantInputActionsStopButton itaButton button popup', { type: 'stop', action: 'danger', title: '停止'})}
+                ${fn.html.button( fn.html.icon('plus'), 'aiAssistantInputActionsFileButton itaButton button popup', { type: 'file', action: 'default  ', title: getMessage.FTE14248 })}
+                ${fn.html.button( fn.html.icon('send'), 'aiAssistantInputActionsSendButton itaButton button popup', { type: 'send', action: 'positive', title: getMessage.FTE14249 })}
+                ${fn.html.button( fn.html.icon('stop'), 'aiAssistantInputActionsStopButton itaButton button popup', { type: 'stop', action: 'danger', title: getMessage.FTE14250 })}
             </div>
         </div>
         ${this.createDisclaimerMessageHtml()}`;
@@ -1026,18 +1189,18 @@ createGreetingMessageElement() {
     const hour = new Date().getHours();
     let message = '';
     if (hour >= 5 && hour < 11) {
-        message += 'おはようございます。';
+        message += getMessage.FTE14251;
     } else if (hour >= 11 && hour < 17) {
-        message += 'こんにちは。';
+        message += getMessage.FTE14252;
     } else if (hour >= 17 && hour < 22) {
-        message += 'こんばんは。';
+        message += getMessage.FTE14253;
     } else {
-        message += '遅い時間までお疲れさまです。';
+        message += getMessage.FTE14254;
     }
-    message += 'Exastro AIアシスタントです。';
+    message += getMessage.FTE14255;
 
     if ( this.isChatReady() ) {
-        message += '<br>どのようなお手伝いをしましょうか？';
+        message += getMessage.FTE14256;
     }
 
     el.innerHTML = message;
@@ -1059,19 +1222,18 @@ createNoticeMessageElement( html ) {
         const serviceName = this.setting.currentServiceName;
         const detail = ( this.auth.message )
             ? `<div class="aiAssistantNoticeDetail">${fn.escape( this.auth.message )}</div>`: '';
-        el.innerHTML = fn.html.icon('circle_exclamation')
-            + ` AIサービス（${fn.escape( serviceName )}）の認証に失敗しました。`
-            + '<br>認証情報の有効期限が切れている可能性があります。<br>「AIアシスタント設定」から認証情報を再設定してください。'
+        el.innerHTML = fn.html.icon('circle_exclamation') + ' '
+            + getMessage.FTE14257( fn.escape( serviceName ) )
             + detail;
         return el;
     }
 
-    el.innerHTML = fn.html.icon('circle_exclamation') + ' ご利用の準備が完了していません。<br>「AIアシスタント設定」から設定を完了してください。';
+    el.innerHTML = fn.html.icon('circle_exclamation') + ' ' + getMessage.FTE14258;
     return el;
 }
 // 免責事項
 createDisclaimerMessageHtml() {
-    return '<div class="aiAssistantDisclaimerMessage">AIの回答や操作結果は、正確性および完全性を保証するものではありません。AIアシスタントを通じた操作については、実行前に内容と影響範囲を確認し、実行後も結果が意図した状態になっていることをご確認ください。</div>';
+    return `<div class="aiAssistantDisclaimerMessage">${getMessage.FTE14259}</div>`;
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -1243,21 +1405,21 @@ renderFileList() {
         const fileType = fn.fileTypeCheck( file.name );
         let openButton = '';
         if ( fileType === 'text') {
-            openButton = fn.html.button( fn.html.icon('search'), 'itaButton aiAssistantInputSelectFilesOpen', { type: 'fileEdit', index: index, action: 'normal', title: '編集'});
+            openButton = fn.html.button( fn.html.icon('search'), 'itaButton aiAssistantInputSelectFilesOpen', { type: 'fileEdit', index: index, action: 'normal', title: getMessage.FTE14260 });
         } else if ( fileType === 'image') {
-            openButton = fn.html.button( fn.html.icon('search'), 'itaButton aiAssistantInputSelectFilesOpen', { type: 'filePreview', index: index, action: 'normal', title: 'プレビュー'});
+            openButton = fn.html.button( fn.html.icon('search'), 'itaButton aiAssistantInputSelectFilesOpen', { type: 'filePreview', index: index, action: 'normal', title: getMessage.FTE14261 });
         }
 
         li.innerHTML = `
             <span class="aiAssistantInputSelectFilesName">${fn.escape( file.name )}</span>
             <span class="aiAssistantInputSelectFilesSize">${this.formatFileSize( file.size )}</span>
-            <label class="aiAssistantInputSelectFilesLlm" title="ONにするとファイルの中身をAIが読み取って解析します">
+            <label class="aiAssistantInputSelectFilesLlm" title="${getMessage.FTE14262}">
                 <input type="checkbox" class="aiAssistantInputSelectFilesLlmCheck" data-type="fileToggle" data-index="${index}"${ item.useLlm ? ' checked': ''}>
                 <span class="aiAssistantInputSelectFilesLlmSwitch" aria-hidden="true"></span>
-                <span class="aiAssistantInputSelectFilesLlmText">AIで解析</span>
+                <span class="aiAssistantInputSelectFilesLlmText">${getMessage.FTE14263}</span>
             </label>
             ${openButton}
-            ${fn.html.button( fn.html.icon('cross'), 'itaButton aiAssistantInputSelectFilesRemove', { type: 'fileRemove', index: index, action: 'danger', title: '削除'})}`;
+            ${fn.html.button( fn.html.icon('cross'), 'itaButton aiAssistantInputSelectFilesRemove', { type: 'fileRemove', index: index, action: 'danger', title: getMessage.FTE14264 })}`;
         return li;
     });
     list.replaceChildren( ...items );
@@ -1277,20 +1439,43 @@ formatFileSize( size ) {
 }
 /*
 ##################################################
-    ファイルの登録（LLMへ渡すメタ情報の作成）
+    ファイルの登録（MCPサーバーへのアップロード）
 ##################################################
 */
-// 添付ファイルをLLMへ渡せる形（メタ情報）に整える。
-// ※ ITAのMCPサーバーにはファイルアップロード用のエンドポイントが無いため、ファイルの実体は
-//    サーバーへ保存せず、画面側で file_id を採番してメタ情報だけを作る。ファイルの中身は
-//    「AIで解析」がオンかつ対応形式の場合に、LLM層（AiAssistantLlm）が image / document の
-//    contentブロックとして直接渡す。
+// 添付ファイルをITAのMCPサーバーへアップロードし、LLMへ渡すメタ情報（file_id等）を受け取る。
+// ※ ファイルの実体はワークスペースDB（T_AI_ATTACHMENT_FILE）に保存され、ここで採番された
+//    file_id をそのままMCPツールの引数に指定できる（添付ファイルの読み取り・zip化・ITAの
+//    メニューへのファイル登録など）。
+// ※ ファイルの中身をAIに解析させる場合は、これとは別に「AIで解析」がオンかつ対応形式のときだけ、
+//    LLM層（AiAssistantLlm）が image / document のcontentブロックとして直接渡す。
 async fileUploader( file ) {
+    const formData = new FormData();
+    // ファイル名は File が持つ名前をそのまま使う（名前が無い場合のみ既定名を付ける）
+    formData.append('file', file, file?.name || 'attachment');
+
+    // Content-Type は multipart の boundary を含める必要があるため、ヘッダーには指定せず
+    // ブラウザに任せる。
+    // また、リトライ（fetchWithRetry）は使わない。登録は冪等ではなく、サーバー側で登録が
+    // 済んでいるのに応答を受け取れなかった場合、再送すると同じファイルが二重に登録される。
+    const response = await fetch( AiAssistantChat.apiUrl.attachmentFile(), {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${this.getToken()}`
+        },
+        body: formData
+    });
+
+    // エラー時は本文にerror/messageが入る（サーバー内部エラーではJSONで返らない場合もある）
+    const json = await response.json().catch( () => null );
+    if ( !response.ok || !json?.file_id ) {
+        throw new Error( json?.message ?? getMessage.FTE14265( response.status ) );
+    }
+
     return {
-        file_id: `local-${Date.now()}-${Math.random().toString( 36 ).slice( 2, 10 )}`,
-        filename: file?.name ?? '',
-        size: file?.size ?? '',
-        mime_type: file?.type ?? ''
+        file_id: json.file_id,
+        filename: json.filename ?? file?.name ?? '',
+        size: json.size ?? file?.size ?? '',
+        mime_type: json.mime_type ?? file?.type ?? ''
     };
 }
 // ファイルの実体をbase64（data URIなしの純粋なbase64）に変換する
@@ -1361,7 +1546,7 @@ formatErrorMessage( error ) {
     const raw = error?.message ?? String( error ?? '');
     // fetch のネットワーク／接続エラー（"Failed to fetch" 等）はわかりやすい文言に置き換える
     if ( /failed to fetch|networkerror|network error|load failed/i.test( raw ) ) {
-        return 'サーバーに接続できませんでした。ネットワーク接続を確認し、しばらくしてからもう一度お試しください。';
+        return getMessage.FTE14266;
     }
     return raw;
 }
@@ -1395,7 +1580,7 @@ createUserMessageElement( text, attachments, rewindable = false ) {
             // プレビューURLがあれば（ライブ表示中の画像）サムネイルを先頭に表示する。
             // クリックで添付時と同じプレビュー（fn.fileEditor）を開く。
             const previewHtml = file.previewUrl
-                ? `<span class="aiAssistantChatUserMessageFilePreview" data-type="attachmentPreview" data-preview-url="${fn.escape( file.previewUrl )}" data-filename="${fn.escape( file.filename ?? '' )}" title="プレビュー">`
+                ? `<span class="aiAssistantChatUserMessageFilePreview" data-type="attachmentPreview" data-preview-url="${fn.escape( file.previewUrl )}" data-filename="${fn.escape( file.filename ?? '' )}" title="${getMessage.FTE14261}">`
                     + `<img src="${fn.escape( file.previewUrl )}" alt="${fn.escape( file.filename ?? '' )}"></span>`
                 : '';
             li.innerHTML = `
@@ -1417,7 +1602,7 @@ createMessageMenuElement() {
     menu.classList.add('aiAssistantChatUserMessageMenu');
     // 操作ボタンの定義（今後ここに項目を追加する）。title はホバー時のツールチップ。
     const actions = [
-        { type: 'rewindToHere', icon: 'return', title: 'この時点まで巻き戻す' },
+        { type: 'rewindToHere', icon: 'return', title: getMessage.FTE14267 },
     ];
     menu.innerHTML = actions.map(( action ) =>
         fn.html.button( fn.html.icon( action.icon ), 'itaButton aiAssistantChatUserMessageMenuButton popup', { type: action.type, action: 'default', title: action.title })
@@ -1426,11 +1611,29 @@ createMessageMenuElement() {
 }
 // システムメッセージ（操作通知）
 // ユーザの入力ではなく、システム操作（会話終了など）を区別して表示する。
+// 「〜しました」で伝わる短い通知（会話の区切り）に使う。読ませたい内容がある通知は
+// システム通知ブロック（createSystemNoticeMessageElement）を使う。
 createSystemMessageElement( text ) {
     const el = document.createElement('li');
     el.classList.add('aiAssistantChatItem', 'aiAssistantChatSystemMessage');
     el.innerHTML = `<div class="aiAssistantChatItemInner aiAssistantChatSystemMessageInner"></div>`;
 
+    const p = document.createElement('p');
+    p.innerText = text;
+    el.querySelector('.aiAssistantChatItemInner').append( p );
+    return el;
+}
+// システム通知ブロック
+// 学習事項の登録結果や認証切れの案内など、複数行にわたり内容を読ませたい通知に使う。
+// 会話の区切りを示す帯（システムメッセージ）とは別のブロックとして、
+// アシスタントメッセージと同じ形の吹き出しをシステム色で表示する。
+createSystemNoticeMessageElement( text ) {
+    const el = document.createElement('li');
+    el.classList.add('aiAssistantChatItem', 'aiAssistantChatSystemNoticeMessage');
+    el.innerHTML = `<div class="aiAssistantChatSystemNoticeMessageIcon">${fn.html.icon('circle_info')}</div>`
+        + `<div class="aiAssistantChatItemInner aiAssistantChatSystemNoticeMessageInner"></div>`;
+
+    // 改行を含む案内文をそのまま渡されるため、innerTextで改行を活かして表示する。
     const p = document.createElement('p');
     p.innerText = text;
     el.querySelector('.aiAssistantChatItemInner').append( p );
@@ -1485,12 +1688,6 @@ createAssistantMessageElement( text, loading = false ) {
             table.replaceWith( wrapper );
             wrapper.appendChild( table );
         });
-        //
-        inner.querySelectorAll('pre > code').forEach(( code ) => {
-            if ( !code.classList.contains('hljs') ) {
-                code.classList.add('codeBlock');
-            }
-        });
         // コードブロック（pre）の右上に「コピー」「入力欄にセット」ボタンを付与する
         inner.querySelectorAll('pre').forEach(( pre ) => {
             const wrapper = document.createElement('div');
@@ -1517,11 +1714,16 @@ createCodeToolbar( extraClass ) {
     if ( extraClass ) toolbar.classList.add( extraClass );
     // クリップボードAPIはセキュアコンテキスト（HTTPS等）でのみ利用できるため、その場合だけコピーボタンを表示する
     const copyButton = ( window.isSecureContext && navigator.clipboard )
-        ? fn.html.button( fn.html.icon('copy'), 'itaButton aiAssistantChatCodeButton popup', { type: 'codeCopy', action: 'default', title: 'クリップボードにコピー'})
+        ? fn.html.button( fn.html.icon('copy'), 'itaButton aiAssistantChatCodeButton popup', { type: 'codeCopy', action: 'default', title: getMessage.FTE14268 })
         : '';
     toolbar.innerHTML =
         copyButton
-        + fn.html.button( fn.html.icon('note'), 'itaButton aiAssistantChatCodeButton popup', { type: 'codeToInput', action: 'default', title: '入力欄にセット'});
+        + fn.html.button( fn.html.icon('note'), 'itaButton aiAssistantChatCodeButton popup', { type: 'codeToInput', action: 'default', title: getMessage.FTE14269 });
+    // LLMエディタかつextraClassの値がない(aiAssistantChatCodeToolbarInlineではない)場合、コード反映ボタンを表示する
+    if( this.promptProfile == 'LLMEditor' && !extraClass) {
+        toolbar.innerHTML += fn.html.button( fn.html.icon('circle_check'), 'itaButton aiAssistantChatCodeButton popup', {type: 'codeToEditor', action: 'default', title: getMessage.FTE14390 });
+    }
+
     return toolbar;
 }
 // コード（ブロック／インライン）のテキストを取得する（ツールバーのボタンから呼び出す）
@@ -1584,7 +1786,7 @@ createUserChoiceElement( options ) {
 
     const note = document.createElement('p');
     note.classList.add('aiAssistantChatUserChoiceNote');
-    note.innerText = '回答をボタンで選択するか、下の入力欄に直接ご記入ください。';
+    note.innerText = getMessage.FTE14270;
 
     el.querySelector('.aiAssistantChatUserChoiceInner').append( list, note );
     return el;
@@ -1606,7 +1808,8 @@ initChatArea() {
     this.elements.body.classList.remove('aiAssistantNewChat');
     this.elements.body.classList.add('aiAssistantChatNow');
     this.elements.body.querySelector('.aiAssistantDisclaimerMessage').style.display ='none';
-    this.elements.settingButton.disabled = true;
+    // 会話中はAI利用設定を変更できない（認証切れの場合のみ開けるようにする）
+    this.updateSettingButtonState();
     this.elements.closeChatButton.disabled = false;
 }
 /*
@@ -1643,13 +1846,17 @@ updateChat( message, scroll = true ) {
         case 'system':
             el_messege = this.createSystemMessageElement( messageText );
             break;
+        // システム通知（学習事項の登録結果・認証切れの案内など、内容を読ませる通知）
+        case 'systemNotice':
+            el_messege = this.createSystemNoticeMessageElement( messageText );
+            break;
         // アシスタント待機中（再送などで文言を差し替える場合は message.text を渡す）
         case 'assistantWait':
-            el_messege = this.createAssistantMessageElement( messageText || '思考中', true );
+            el_messege = this.createAssistantMessageElement( messageText || getMessage.FTE14271, true );
             break;
         // ツール実行中
         case 'toolRunning':
-            el_messege = this.createAssistantMessageElement('ツール実行中', true );
+            el_messege = this.createAssistantMessageElement( getMessage.FTE14272, true );
             break;
         // アシスタントメッセージ
         case 'assistant':
@@ -1860,7 +2067,7 @@ async sendMessage( message, options = {} ) {
                 ...validExtraIds.map(( id ) => ({
                     type: 'tool_result',
                     tool_use_id: id,
-                    content: '（この選択肢はまとめて処理されました）',
+                    content: getMessage.FTE14273,
                 })),
             ];
         } else {
@@ -1877,13 +2084,16 @@ async sendMessage( message, options = {} ) {
     let uploadedFiles = [];
     if ( Array.isArray( this.files ) && this.files.length ) {
         // ファイル処理中ダイアログ
-        let process = fn.processingModal('添付ファイル処理中');
+        let process = fn.processingModal( getMessage.FTE14274 );
 
         // ファイルはすべてアップロードする
         const items = this.files.slice();
         try {
             const results = await Promise.all(
-                items.map(( item ) => this.fileUploader( item.file ) )
+                items.map(( item ) => this.fileUploader( item.file ).catch(( error ) => {
+                    // どのファイルで失敗したのかが分かるようにファイル名を添える
+                    throw new Error(`${item.file?.name ?? ''}：${this.formatErrorMessage( error )}`);
+                }) )
             );
             // アップロード結果にLLM送信フラグを付与
             // useLlm : true ならファイルの実体（base64）も渡す
@@ -1906,7 +2116,11 @@ async sendMessage( message, options = {} ) {
             }));
         } catch ( error ) {
             console.error( error );
-            alert('ファイルのアップロードに失敗しました。');
+            // 失敗しても処理中ダイアログは必ず閉じる（開いたままだと操作できなくなる）
+            process.close();
+            // 複数添付の一部だけ登録済みになる場合があるが、登録されたファイルはfile_idを
+            // 使わなければ参照されないため、そのままにして送信のみ中止する。
+            alert( getMessage.FTE14275( this.formatErrorMessage( error ) ) );
             this.isRunning = false;
             return;
         }
@@ -1940,6 +2154,12 @@ async sendMessage( message, options = {} ) {
     応答ループ
 ##################################################
 */
+// ツール実行が「長い」と見なすまでの待ち時間（ミリ秒）。
+// tool_use を含む応答の中断耐性保存（_runResponseLoop）を、この時間だけ遅らせて投げる。
+// すぐに返るツール（参照系など）では、続く継続送信が同じ内容を保存するため保存が無駄になる。
+static get toolUseSaveDelay() {
+    return 1500;
+}
 // LLMへの送信 → 応答（テキスト／ツール呼び出し）処理 → ツール実行 → 結果を返して再送、を
 // 繰り返す中核ループ。通常のメッセージ送信（sendMessage）と、ページ離脱で中断された会話の
 // 自動継続（_continueInterrupted）で共用する。
@@ -1951,6 +2171,42 @@ async sendMessage( message, options = {} ) {
 //   firstSendOptions    : 最初の送信に渡す表示情報（displayText / systemAction / timestamp）
 //   savedPending        : 停止・エラー時に復元する保留状態（pendingChoiceToolId 等）
 //   continuation        : true の場合、最初の送信は「継続」（新規 user を積まず alreadyPushed で送る）
+// 応答テキストに混ざった「ツール呼び出しの生タグ」を見つけるためのパターン。
+// モデルのフォーマット崩れは <invoke name="..."> の形だけではなく、
+//   ・先頭の "<" が落ちて antml:invoke name="..." だけが残る
+//   ・<invoke> が無く <parameter name="...">...</parameter> の羅列だけになる
+//   ・<function_calls> の囲みだけが漏れる
+// といった形にもなるため、断片のどれかを見つけたら崩れと見なす。
+static get rawToolCallMarkupPatterns() {
+    return [
+        // <invoke …> / </invoke> / <function_calls> といったタグ形式の断片
+        /<\s*\/?\s*(?:antml:)?(?:invoke|function_calls)\b/i,
+        // <parameter name="…"> / </parameter>（name 属性か閉じタグの形に限り、通常の文章と紛れないようにする）
+        /<\s*\/?\s*(?:antml:)?parameter(?:\s+name\s*=|\s*\/?>)/i,
+        // "<" が落ちて antml: 付きの名前だけが残った形
+        /\bantml:(?:invoke|function_calls|parameter)\b/i
+    ];
+}
+// 応答のテキストブロックがツール呼び出しの生タグを含んでいるか（＝フォーマット崩れか）を判定する。
+_hasRawToolCallMarkup( text ) {
+    const value = String( text ?? '');
+    if ( !value ) return false;
+    if ( AiAssistantChat.rawToolCallMarkupPatterns.some(( pattern ) => pattern.test( value )) ) return true;
+    // タグの "<" がすべて落ちた形（invoke name="…" と parameter name="…" が並ぶ）も崩れと見なす。
+    // どちらか片方だけでは通常の文章と紛れるため、両方が揃っているときだけ検知する。
+    return /\binvoke\s+name\s*=\s*["']/i.test( value ) && /\bparameter\s+name\s*=\s*["']/i.test( value );
+}
+// 使えない応答（フォーマット崩れ・出力上限で途中で切れた等）をLLM履歴から取り除く。
+// setChatHistory がサーバー側との「ずれ」をマークするため、次の送信で全置換され、
+// 取り除いたターンはサーバー側の履歴からも消える。
+_popLastAssistantTurn( llm ) {
+    if ( !llm || typeof llm.getChatHistory !== 'function') return;
+    const messages = llm.getChatHistory();
+    if ( !Array.isArray( messages ) || !messages.length ) return;
+    if ( messages[ messages.length - 1 ].role !== 'assistant') return;
+    messages.pop();
+    if ( typeof llm.setChatHistory === 'function') llm.setChatHistory( messages );
+}
 async _runResponseLoop( ctx ) {
     let sendPayload = ctx.sendPayload;
     const { uploadedFiles, turnStartEl, isRewindableUserTurn, firstSendOptions, savedPending } = ctx;
@@ -1964,7 +2220,7 @@ async _runResponseLoop( ctx ) {
     let llm = null;
     try {
         llm = await this.ensureLlm();
-        if ( !llm ) throw new Error('ご利用の準備が完了していません。「AIアシスタント設定」から設定を完了してください。');
+        if ( !llm ) throw new Error( getMessage.FTE14276 );
     } catch ( error ) {
         console.error( error );
         const errorMessage = this.formatErrorMessage( error );
@@ -1990,6 +2246,10 @@ async _runResponseLoop( ctx ) {
     // 出力してしまうこと（フォーマット崩れ）への再送カウンタ。無限ループ防止のため上限を設ける。
     let invalidToolFormatRetries = 0;
     const maxInvalidToolFormatRetries = 5;
+    // 1回の応答の出力上限（プラットフォーム側の max_tokens）に達して応答が途中で切れたときの
+    // 再送カウンタ。分割して出力し直すよう促して再送する（無限ループ防止のため上限を設ける）。
+    let maxTokensRetries = 0;
+    const maxMaxTokensRetries = 2;
     // 再送時の待機表示に出す文言。処理が止まったように見せないため、
     // 次のループ先頭の待機スピナーへ「再試行中」である旨を伝える。null のときは通常の「思考中」。
     let waitMessage = null;
@@ -2053,9 +2313,29 @@ async _runResponseLoop( ctx ) {
         // これで、ツールを使わない応答の途中でページを閉じても、この会話IDから自動再開できる。
         this._writeActiveChat( true );
 
+        // 1回の応答が出力上限（プラットフォーム側の max_tokens）に達して途中で切れた。
+        // グラフィカルなレポート（display_html に長いHTMLを渡す）などで起こりやすい。
+        // 途中で切れた応答は使えない（tool_use なら引数のJSONが不完全、テキストなら文章が途切れる）ため、
+        // その assistant ターンを履歴から取り除き、分割して出力し直すよう促して再送する。
         if ( response.stop_reason === 'max_tokens') {
-            console.warn('LLMからの応答が最大トークン数に達しました。ループを終了します。');
-            alert('LLMからの応答が最大トークン数に達しました。');
+            const truncatedToolUse = ( response.content ?? [] ).some(( block ) => block.type === 'tool_use');
+            // 不完全なターンを履歴に残すと、次の送信で「引数が壊れた tool_use」や
+            // 「tool_result の無い tool_use」としてエラーになるため必ず取り除く。
+            this._popLastAssistantTurn( llm );
+            if ( maxTokensRetries < maxMaxTokensRetries ) {
+                maxTokensRetries++;
+                console.warn(`応答が出力上限に達して切れました。分割出力を促して再送します（${maxTokensRetries}/${maxMaxTokensRetries}）。`);
+                waitMessage = getMessage.FTE14277( maxTokensRetries, maxMaxTokensRetries );
+                sendPayload = ( truncatedToolUse )
+                    ? getMessage.FTE14278
+                    : getMessage.FTE14279;
+                continue;
+            }
+            // 再送上限に達した：ユーザに状況と対処を伝えてループを終了する。
+            console.error('応答の出力上限（max_tokens）が規定回を超えて解消しませんでした。');
+            const overMessage = getMessage.FTE14280;
+            alert( overMessage );
+            this.updateChat({ role: 'assistant', text: overMessage });
             maxAttemptsFlag = false;
             errorFlag = true;
             break;
@@ -2063,36 +2343,31 @@ async _runResponseLoop( ctx ) {
 
         // 長文脈になるとモデルが本来 tool_use（構造化ツール呼び出し）で出すべきものを、
         // text ブロック内に生の <invoke name="..."> として書いてしまうことがある（フォーマット崩れ）。
-        // このまま表示するとユーザに <invoke> タグが露出し、ツールも実行されない。
+        // このまま表示するとユーザにタグが露出し、ツールも実行されない（選択肢も出ない）。
+        // 崩れ方は <invoke> の形に限らず、"<" が落ちた antml:invoke や <parameter name="..."> の
+        // 羅列だけのこともあるため、_hasRawToolCallMarkup でいずれの断片も検知する。
         // 検知したら、その応答は表示・実行せずに履歴からこのターンの assistant を巻き戻し、
         // 是正指示を添えて同じ入力で再送する（＝再処理）。
         const hasRawInvokeInText = ( response.content ?? [] ).some(
-            ( block ) => block.type === 'text' && /<(?:antml:)?invoke\b/i.test( block.text ?? '' )
+            ( block ) => block.type === 'text' && this._hasRawToolCallMarkup( block.text )
         );
         if ( hasRawInvokeInText ) {
             // モデルが吐いた壊れた assistant ターンを履歴から除去（次回送信の整合性維持）。
-            if ( llm && typeof llm.getChatHistory === 'function' ) {
-                const messages = llm.getChatHistory();
-                if ( Array.isArray( messages ) && messages.length && messages[ messages.length - 1 ].role === 'assistant') {
-                    messages.pop();
-                    if ( typeof llm.setChatHistory === 'function' ) llm.setChatHistory( messages );
-                }
-            }
+            this._popLastAssistantTurn( llm );
             if ( invalidToolFormatRetries < maxInvalidToolFormatRetries ) {
                 invalidToolFormatRetries++;
-                console.warn(`ツール呼び出しがテキスト内の <invoke> として出力されました。tool_use での再出力を促して再送します（${invalidToolFormatRetries}/${maxInvalidToolFormatRetries}）。`);
+                console.warn(`ツール呼び出しがテキスト内の生タグ（<invoke> / <parameter> 等）として出力されました。tool_use での再出力を促して再送します（${invalidToolFormatRetries}/${maxInvalidToolFormatRetries}）。`);
                 // 処理が止まったように見えないよう、次の待機表示で再試行中である旨を画面に出す。
-                waitMessage = `応答を調整しています…（再試行 ${invalidToolFormatRetries}/${maxInvalidToolFormatRetries}）`;
+                waitMessage = getMessage.FTE14281( invalidToolFormatRetries, maxInvalidToolFormatRetries );
                 // 是正指示を user メッセージとして返し、tool_use 機能での呼び出し直しを促す。
-                sendPayload = '直前の応答でツール呼び出しを <invoke> というテキストとして出力しましたが、これは誤りです。'
-                    + 'テキストとして <invoke> を書かず、必ず tool_use 機能を使ってツールを呼び出し直してください。';
+                sendPayload = getMessage.FTE14282;
                 continue;
             }
             // 再送上限に達した：ユーザに状況を伝えてループを終了する（壊れたタグは表示しない）。
             console.error('ツール呼び出しのテキスト出力が規定回を超えて解消しませんでした。');
             this.updateChat({
                 role: 'assistant',
-                text: '申し訳ありません。処理が正しく行えませんでした。お手数ですが、直前の指示をもう一度お送りください。'
+                text: getMessage.FTE14283
             });
             errorFlag = true;
             maxAttemptsFlag = false;
@@ -2110,35 +2385,37 @@ async _runResponseLoop( ctx ) {
         if ( choiceToolBlocks.length && this.isChoiceResponseMalformed( choiceToolBlocks ) ) {
             if ( invalidToolFormatRetries < maxInvalidToolFormatRetries ) {
                 // モデルが吐いた壊れた assistant ターンを履歴から除去（次回送信の整合性維持）。
-                if ( llm && typeof llm.getChatHistory === 'function' ) {
-                    const messages = llm.getChatHistory();
-                    if ( Array.isArray( messages ) && messages.length && messages[ messages.length - 1 ].role === 'assistant') {
-                        messages.pop();
-                        if ( typeof llm.setChatHistory === 'function' ) llm.setChatHistory( messages );
-                    }
-                }
+                this._popLastAssistantTurn( llm );
                 invalidToolFormatRetries++;
                 console.warn(`ask_user_choice のパラメータ形式が崩れていました。正しい形式での再出力を促して再送します（${invalidToolFormatRetries}/${maxInvalidToolFormatRetries}）。`);
                 // 処理が止まったように見えないよう、次の待機表示で再試行中である旨を画面に出す。
-                waitMessage = `応答を調整しています…（再試行 ${invalidToolFormatRetries}/${maxInvalidToolFormatRetries}）`;
+                waitMessage = getMessage.FTE14281( invalidToolFormatRetries, maxInvalidToolFormatRetries );
                 // 是正指示を user メッセージとして返し、正しい形式での呼び出し直しを促す。
-                sendPayload = '直前の ask_user_choice の呼び出しはパラメータ形式が誤っていました。'
-                    + '選択肢はすべて options という1つの配列にまとめ、各要素を {"label": "表示文言", "action": "positive|negative|other"} という形式のオブジェクトにしてください。'
-                    + 'label や action を options の外側に置いたり、options を文字列にしたり、選択肢ごとに ask_user_choice を分けて呼んだりしてはいけません。'
-                    + 'ask_user_choice を1回だけ、正しい形式で呼び出し直してください。';
+                sendPayload = getMessage.FTE14284;
                 continue;
             }
             // 再送上限に達した：可能な範囲で救済（mergeChoiceBlocks）して表示し、行き止まりを避ける。
             console.warn('ask_user_choice のフォーマット崩れが規定回を超えて解消しませんでした。可能な範囲で救済して表示します。');
         }
 
-        // 中断耐性：この応答が tool_use を含む場合、ツール実行に入る前にサーバへ保存する。
-        // 実行に時間のかかるツール（ドライバー実行など）の最中にページを閉じても「呼び出したこと」が
-        // 履歴に残るため、再開時に同じ操作を再実行せず状況を確認できる（未応答 tool_use は再開時に
-        // プレースホルダで整合を取る）。テキストのみの応答はツール結果保存／完了時保存でカバーされるため省く。
+        // 中断耐性：この応答が tool_use を含む場合、ツール実行の最中にページを閉じても「呼び出したこと」が
+        // 履歴に残るようサーバへ保存する。これで再開時に同じ操作を再実行せず状況を確認できる
+        // （未応答 tool_use は再開時にプレースホルダで整合を取る）。テキストのみの応答は
+        // ツール結果保存／完了時保存でカバーされるため省く。
+        //
+        // ただし、すぐに返るツール（参照系など）ではこの保存は無駄になる。ツール結果を返す継続送信が
+        // 同じ内容を含む履歴を全置換で保存するため、数百msの窓を守るために会話全体をもう1往復
+        // 送っていることになる。そこで即時ではなくタイマーで投げ、実行が長引いたツール
+        // （ドライバー実行など）のときだけ保存する。
         // 保存はキュー化・版管理された非同期処理のため、ここでは待たずに投げる（会話速度に影響しない）。
         const responseHasToolUse = ( response.content ?? [] ).some(( block ) => block.type === 'tool_use' );
-        if ( responseHasToolUse ) this._enqueueHistorySafe();
+        let toolUseSaveTimer = null;
+        if ( responseHasToolUse ) {
+            toolUseSaveTimer = setTimeout( () => {
+                toolUseSaveTimer = null;
+                this._enqueueHistorySafe();
+            }, AiAssistantChat.toolUseSaveDelay );
+        }
 
         const toolsResult = [];
         // 選択肢（ask_user_choice）の tool_use は、まとめて後段で処理する。
@@ -2198,6 +2475,14 @@ async _runResponseLoop( ctx ) {
             if ( stoppedFlag || errorFlag ) break;
         }
 
+        // ツール実行フェーズを抜けたので、中断耐性の遅延保存は取り消す。
+        // まだ発火していなければ（＝ツールが早く返った）保存しない。この応答は続く継続送信の
+        // 全置換、または完了時保存でサーバー側へ渡るため、ここで保存しなくても失われない。
+        if ( toolUseSaveTimer !== null ) {
+            clearTimeout( toolUseSaveTimer );
+            toolUseSaveTimer = null;
+        }
+
         // 停止・エラー時はループを抜けて後段の巻き戻し処理へ
         if ( stoppedFlag || errorFlag ) break;
 
@@ -2224,7 +2509,7 @@ async _runResponseLoop( ctx ) {
 
         // ツール結果があればLLMに返す
         if ( toolsResult.length ) {
-            // 中断耐性（案1）：ツール結果を送信を待たずに履歴へ確定させる。
+            // ツール結果を送信を待たずに履歴へ確定させる。
             // これにより、この後のLLM呼び出し中にページを閉じても「実行済みの操作とその結果」が失われず、
             // 再開時は整合した履歴（tool_use と tool_result が対）から続きを継続できる。
             // （tool_result は message で送れないため、続く継続送信が履歴を全置換して保存する）
@@ -2279,13 +2564,19 @@ async _runResponseLoop( ctx ) {
         // （ITA側の更新自体は取り消せないが、中断ターンの吹き出しとして出すのは紛らわしいため）
         this._turnUpdatedMenus = new Map();
     } else if ( maxAttemptsFlag ) {
-        alert('LLMからの応答が規定回を超えました。ループを終了します。');
+        alert( getMessage.FTE14285 );
         console.log('LLMからの応答が規定回を超えました。ループを終了します。');
     } else {
         // 応答が正常に完了した。更新された ITA ページへのリンクをまとめて表示する。
         this.renderUpdatedMenuLinks();
         // 履歴登録（非同期）。保存失敗が未処理の Promise 拒否にならないよう安全ラッパーで投げる。
-        if ( !errorFlag ) {
+        //
+        // サーバー側の履歴が画面側と一致している（llm.serverSynced＝messageを指定した問い合わせで、
+        // ユーザーターンとAI応答がプラットフォーム側に保存された）場合は保存しない。
+        // テキストだけのやりとりでは、これで履歴の全置換が1回も起きなくなる。
+        // ただし completions は問い合わせのたびにスナップショットを1レコード追加するため、溜めたままだと
+        // 保存済みレコードが増えて復元時の取得が重くなる。一定数を超えたら全置換して1レコードへ圧縮する。
+        if ( !errorFlag && ( !llm.serverSynced || llm.needsCompaction() ) ) {
             this._enqueueHistorySafe();
         }
     }
@@ -2296,6 +2587,11 @@ async _runResponseLoop( ctx ) {
     // 実行が終わったので離脱再開マーカーを「実行中でない」に更新する。
     // （正常完了・停止・エラーいずれもここを通るため、次回読込で誤って自動再開しない）
     this._writeActiveChat( false );
+
+    // エラーで終わった場合は、原因が認証切れでないかを確認する（認証情報の有効期限は
+    // 会話の途中でも切れる）。切れていた場合は会話中でも設定を開けるようにして更新を促す。
+    // 実行中フラグを解除したあとに行い、確認の通信で操作が止まらないようにする。
+    if ( errorFlag ) await this.checkAuthAfterError();
     return;
 }
 // 停止メソッド
@@ -2312,12 +2608,13 @@ stopMessage() {
     ドライバー実行進捗
 ##################################################
 */
+// 専用の実行画面（Movementノード）を持つドライバー実行ツールの一覧
+static DRIVER_TOOLS = ['execute-driver', 'dry-run-driver'];
 // execute-driver / dryrun-driver の結果から execution_no を取り出し、
 // 進捗を購読して実行状況をバブルに反映する。完了状態まで待ってから、
 // 確定した最終結果（{type, status, result} など）を返す。対象外や取得失敗時は null。
 async watchDriverProgress( toolUse, toolResult, runningEl ) {
-    const DRIVER_TOOLS = ['execute-driver', 'dryrun-driver'];
-    if ( !DRIVER_TOOLS.includes( toolUse.name ) ) return null;
+    if ( !AiAssistantChat.DRIVER_TOOLS.includes( toolUse.name ) ) return null;
 
     // ローディングclassをremove
     runningEl.classList.remove('aiAssistantChatItemLoading');
@@ -2343,8 +2640,8 @@ async watchDriverProgress( toolUse, toolResult, runningEl ) {
         console.warn('watchDriverProgress: ステータス確認メニューを導出できませんでした', execMenu );
         return null;
     }
-    const movementName = toolUse.arguments?.movement_name ?? '';
-    const operationName = toolUse.arguments?.operation_name ?? '';
+    const movementName = toolUse.arguments?.movement_name ?? toolUse.input?.movement_name ?? '';
+    const operationName = toolUse.arguments?.operation_name ?? toolUse.input?.operation_name ?? '';
     const execListMenu = this.drivers?.[ statusMenu ]?.executionListMenu ?? '';
 
     // Movement HTML
@@ -2383,13 +2680,13 @@ pollDriverStatus( menu, executionNo, runningEl ) {
 
         while ( elapsed <= maxDuration ) {
             if ( signal?.aborted ) {
-                resolve({ type: 'error', message: '進捗監視を中断しました' });
+                resolve({ type: 'error', message: getMessage.FTE14286 });
                 return;
             }
 
             let statusResult;
             try {
-                const response = await AiAssistantChat.fetchWithRetry( AiAssistantChat.apiUrl.mcp(), {
+                const response = await AiAssistantChat.fetchWithRetry( AiAssistantChat.apiUrl.mcp( this.promptProfile ), {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
@@ -2410,7 +2707,7 @@ pollDriverStatus( menu, executionNo, runningEl ) {
                 statusResult = await response.json();
             } catch ( error ) {
                 if ( error?.name === 'AbortError') {
-                    resolve({ type: 'error', message: '進捗監視を中断しました' });
+                    resolve({ type: 'error', message: getMessage.FTE14286 });
                     return;
                 }
                 console.warn('pollDriverStatus: ステータス取得でエラー', error );
@@ -2451,7 +2748,7 @@ pollDriverStatus( menu, executionNo, runningEl ) {
         }
 
         // 上限に達した場合
-        this.updateToolProgress( runningEl, '進捗確認がタイムアウトしました', true );
+        this.updateToolProgress( runningEl, getMessage.FTE14287, true );
         resolve({ type: 'timeout', message: 'Progress polling exceeded max duration' });
     });
 }
@@ -2521,7 +2818,7 @@ _extractToolErrorText( statusResult ) {
         if ( text ) return text;
     }
     const structured = statusResult?.result?.structuredContent ?? {};
-    return structured.error ?? statusResult?.error?.message ?? '進捗確認に失敗しました';
+    return structured.error ?? statusResult?.error?.message ?? getMessage.FTE14288;
 }
 // 進捗バブルの表示を更新する
 updateToolProgress( runningEl, statusText, done, resultDataName ) {
@@ -2584,7 +2881,7 @@ movementElement( statusMenu, execListMenu, movementName, operationName, executio
                     // 作業状態確認
                     html: fn.html.iconButton(
                         'note',
-                        '作業状態確認',
+                        getMessage.FTE14289,
                         'itaButton operationMenuButton movementStatusCheckButton',
                         {
                             type: 'movementStatusCheck',
@@ -2600,7 +2897,7 @@ movementElement( statusMenu, execListMenu, movementName, operationName, executio
                     // 結果データ
                     html: fn.html.iconButton(
                         'download',
-                        '結果データ',
+                        getMessage.FTE14290,
                         'itaButton operationMenuButton movementResultDownloadButton',
                         {
                             type: 'movementResultDownload',
@@ -2651,7 +2948,7 @@ movementElement( statusMenu, execListMenu, movementName, operationName, executio
                                 <span class="node-gem-inner">${this.drivers[statusMenu]?.movementGem}</span>
                             </span>
                             <span class="node-running"></span>
-                            <span class="node-result node-jump popup darkPopup" title="作業状態確認"></span>
+                            <span class="node-result node-jump popup darkPopup" title="${getMessage.FTE14289}"></span>
                         </div>
                         <div class="node-type">
                             <span>${this.drivers[statusMenu]?.movementType}</span>
@@ -2676,7 +2973,7 @@ movementElement( statusMenu, execListMenu, movementName, operationName, executio
                 </div>
             </div>
         </div>
-        <div class="movementWaiting">${this.loadingHtml('待機中')}</div>
+        <div class="movementWaiting">${this.loadingHtml( getMessage.FTE14291 )}</div>
     </div>`;
     const driverEl = movement.querySelector('.node-result');
     driverEl.setAttribute('data-execution-no', executionNo );
@@ -2689,7 +2986,7 @@ async movementStop( button ) {
     const driver = button.dataset.statusMenu;
     const executionNo = button.dataset.executionNo;
     if ( !driver || !executionNo ) {
-        alert('Driverまたは実行No.が不明です。');
+        alert( getMessage.FTE14292 );
         return;
     }
     button.disabled = true;
@@ -2699,7 +2996,7 @@ async movementStop( button ) {
             const result = await fn.fetch( url, null, 'PATCH', {});
             alert( result );
         } catch ( error ) {
-            alert( error.message ?? '緊急停止に失敗しました。');
+            alert( error.message ?? getMessage.FTE14293 );
             button.disabled = false;
         }
     } else {
@@ -2902,9 +3199,14 @@ _renderChatHistory( history ) {
         const block = history[ blockIndex ];
         const content = block.content ?? [];
         if ( fn.typeof( content ) === 'array' && block.role ) {
-            for ( const item of content ) {
+            for ( const [ itemIndex, item ] of content.entries() ) {
                 const type = item.type;
-                if ( type === 'text') {
+                if ( type === 'text' && AiAssistantLlm.isInjectedBlock( item, block, itemIndex ) !== null ) {
+                    // 添付ファイルのメタ情報や過去セッションの学習事項（前提知識）は、
+                    // LLMへ渡すために保存されたテキストであり、ユーザの発言ではないため
+                    // 吹き出しにしない（添付ファイルは吹き出しのファイル欄に表示される）。
+                    continue;
+                } else if ( type === 'text') {
                     // ユーザメッセージはひとつ前の応答の区切り。ここまでに更新された
                     // ページのリンクを、ライブ時と同じ位置（応答の末尾）に復元表示する。
                     if ( block.role === 'user') this.renderUpdatedMenuLinks( false );
@@ -2972,17 +3274,26 @@ _renderChatHistory( history ) {
 }
 // 履歴から再開
 // conversationId … 復元元の会話ID（プラットフォーム側の会話）。この会話へ続きを保存する。
-async resumeChat( history, conversationId ) {
-    if ( fn.typeof( history ) !== 'array' ) {
-        throw new Error('履歴の形式が不正です。');
+async resumeChat( savedHistory, conversationId ) {
+    if ( fn.typeof( savedHistory ) !== 'array' ) {
+        throw new Error( getMessage.FTE14294 );
     }
     if ( fn.typeof( conversationId ) !== 'string') {
-        throw new Error('会話IDの形式が不正です。');
+        throw new Error( getMessage.FTE14295 );
     }
+    // 保存時に差し込まれたテキストブロック（添付ファイルのメタ情報・学習事項の前提知識）を取り除く。
+    // これらは送信のたびに toApiHistory が差し込み直すため、履歴から外してもLLMへは渡り続ける。
+    // 取り除いた履歴を引き継ぐことで、画面に表示されず、再開のたびに同じテキストが
+    // 積み上がることもなくなる（積み上がっていた分も次の保存で解消される）。
+    const history = AiAssistantLlm.stripInjectedBlocks( savedHistory );
     // 復元した履歴を引き継ぐLLM層を用意する
+    // （認証切れの場合もここでnullになる。再開の前に checkAuthBeforeResume で確認しておくと、
+    //   認証情報の更新を促すメッセージを表示できる）
     const llm = await this.ensureLlm();
     if ( !llm ) {
-        throw new Error('ご利用の準備が完了していないため、会話を再開できません。');
+        throw new Error( ( this.isAuthError() )
+            ? this.authExpiredMessage()
+            : getMessage.FTE14296 );
     }
     const toolResultMap = this._renderChatHistory( history );
 
@@ -3047,7 +3358,9 @@ async rewindConversation( historyIndex ) {
     const removedBlock = history[ historyIndex ];
     let removedText = '';
     if ( removedBlock && Array.isArray( removedBlock.content ) ) {
-        const textItem = removedBlock.content.find(( item ) => item.type === 'text' );
+        // 保存時に差し込まれたテキスト（添付ファイルのメタ情報など）は発言ではないため除く
+        const textItem = removedBlock.content.find(( item, index ) => item.type === 'text'
+            && AiAssistantLlm.isInjectedBlock( item, removedBlock, index ) === null );
         if ( textItem && typeof textItem.text === 'string' ) {
             removedText = textItem.text;
         } else {
@@ -3057,12 +3370,7 @@ async rewindConversation( historyIndex ) {
     }
 
     // 実行済みのITA作業が元に戻らない旨を明示して確認する。
-    const ok = window.confirm(
-        'この時点まで会話を巻き戻します。これより後のやりとりは会話から削除されます。\n\n'
-        + '【ご注意】ここまでにITA（Exastro）で実際に行われた作業（メニューの作成・更新、'
-        + 'ドライバー実行など）は元に戻りません。巻き戻るのは会話の表示とAIの記憶（会話履歴）のみです。\n\n'
-        + '巻き戻してよろしいですか？'
-    );
+    const ok = window.confirm( getMessage.FTE14297 );
     if ( !ok ) return;
 
     // LLM履歴を起点の直前まで切り詰める
@@ -3091,7 +3399,7 @@ async rewindConversation( historyIndex ) {
             placeholders.push({
                 type: 'tool_result',
                 tool_use_id: id,
-                content: '（会話の巻き戻しにより、この操作の結果は破棄されました）'
+                content: getMessage.FTE14298
             });
         }
         this.pendingToolResults = placeholders;
@@ -3224,8 +3532,7 @@ restorePendingChoice( history, toolResultMap ) {
 // toolUse: 履歴内の tool_use ブロック（name, arguments を持つ）
 // toolResult: 対応する tool_result ブロック（無い場合あり）
 resumeDriverExecution( toolUse, toolResult ) {
-    const DRIVER_TOOLS = ['execute-driver', 'dryrun-driver'];
-    if ( !DRIVER_TOOLS.includes( toolUse.name )) return;
+    if ( !AiAssistantChat.DRIVER_TOOLS.includes( toolUse.name )) return;
 
     // 実行メニュー（execution_*）→ ステータス確認メニュー（check_operation_status_*）へ変換
     const execMenu = toolUse.arguments?.menu ?? toolUse.input?.menu ?? '';
@@ -3283,12 +3590,11 @@ markDriverExecutionInterrupted( runningEl, opts = {} ) {
 
     let messageHtml;
     if ( !canCheckStatus ) {
-        messageHtml = 'ページ離脱により停止しました。<br>実行No.が記録されていないため、この画面からは作業状態を確認できません。'
-            + 'サーバ側で実行が継続・完了している場合があるため、実行履歴の一覧などから状況をご確認ください。';
+        messageHtml = getMessage.FTE14299;
     } else if ( !opts.hasToolResult ) {
-        messageHtml = 'ページ離脱により停止しました。<br>サーバ側で実行が継続・完了している場合があります。「作業状態確認」で最新の状況をご確認ください。';
+        messageHtml = getMessage.FTE14300;
     } else {
-        messageHtml = '実行状況を確定できないまま終了しました。<br>「作業状態確認」で最新の状況をご確認ください。';
+        messageHtml = getMessage.FTE14301;
     }
 
     if ( waitingEl ) {
@@ -3355,8 +3661,14 @@ extractDataFromResult( toolResult ) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // 「作業中の会話」をブラウザ（localStorage）に記録するためのキー。ユーザーごとに分ける。
 // ページを閉じても残るため、開き直したときに中断された会話を特定して再開できる。
+// 呼び出し元（プロンプトプロファイル）ごとにも分ける。ファイル編集画面のチャットで中断した会話を
+// AIアシスタントメニューが自動再開してしまうと、会話が想定外の画面へ移ってしまうため。
+// 既定のプロファイル（AIアシスタントメニュー）は、記録済みのマーカーをそのまま使えるよう
+// これまでと同じキーにしておく。
 _activeChatKey() {
-    return `aiAssistantActiveChat:${this.id ?? 'unknown'}`;
+    const profile = this.promptProfile ?? AiAssistantLlm.promptProfile;
+    const suffix = ( profile === AiAssistantLlm.promptProfile )? '': `:${profile}`;
+    return `aiAssistantActiveChat:${this.id ?? 'unknown'}${suffix}`;
 }
 // 現在の会話を「実行中かどうか」とともに localStorage へ記録する。
 // conversationId（プラットフォーム側の会話ID）は最初の送信・保存で確定する。
@@ -3400,8 +3712,7 @@ _makeInterruptedToolResult( toolUseId ) {
     return {
         type: 'tool_result',
         tool_use_id: toolUseId,
-        content: '（この操作はページ離脱により中断されました。サーバ側では既に実行された可能性があります。'
-            + '同じ操作を安易に再実行せず、必要なら現在の状況を確認したうえでユーザーに報告してください。）'
+        content: getMessage.FTE14302
     };
 }
 // 履歴末尾の assistant ターンに含まれる、未応答（tool_result が無い）かつ選択肢以外の
@@ -3451,6 +3762,14 @@ async _tryAutoResume() {
         marker = null;
     }
     if ( !marker || marker.running !== true || !marker.conversationId ) return false;
+
+    // 認証が切れている場合は、復元しても続きを送信できないため再開しない。
+    // 読み込み時（loadSetting）に確認した結果で判定し、更新を促すアラートを表示する。
+    // マーカーは残すため、認証情報を更新して読み込み直せば再開できる。
+    if ( this.isAuthError() ) {
+        alert( getMessage.FTE14303( this.authExpiredMessage() ) );
+        return false;
+    }
 
     // AIサービス側（会話）に保存されている履歴を取得する（会話履歴タブの再開と同じ経路）。
     let history;
@@ -3503,7 +3822,7 @@ async _offerResumeContinuation() {
 
     // 選択肢の回答待ちで復元された場合は、ユーザーの回答を待つ（自動継続しない）。
     if ( this.pendingChoiceToolId ) {
-        this.updateChat({ role: 'system', text: '前回の会話を復元しました。上の選択肢に回答すると、続きから再開できます。' });
+        this.updateChat({ role: 'system', text: getMessage.FTE14304 });
         // 回答待ち＝実行中ではないので、マーカーを実行中でないに更新する。
         this._writeActiveChat( false );
         return;
@@ -3513,7 +3832,7 @@ async _offerResumeContinuation() {
 
     // 継続の必要がない（応答完了済み）場合は、復元した旨だけ伝える。
     if ( info.type === 'none' ) {
-        this.updateChat({ role: 'system', text: '前回の会話を復元しました。' });
+        this.updateChat({ role: 'system', text: getMessage.FTE14305 });
         this._writeActiveChat( false );
         return;
     }
@@ -3523,12 +3842,8 @@ async _offerResumeContinuation() {
     this._enqueueHistorySafe();
 
     // 中断された作業がある旨を表示し、継続するか確認する。
-    this.updateChat({ role: 'system', text: '前回、作業の途中でページが閉じられました。' });
-    const ok = window.confirm(
-        '前回、中断された作業があります。続きから再開しますか？\n\n'
-        + '「はい」を選ぶとAIが処理を再開します（ITA（Exastro）への操作やトークン消費が発生する場合があります）。\n'
-        + '「いいえ」を選ぶと会話は復元された状態のままになり、手動で続けられます。'
-    );
+    this.updateChat({ role: 'system', text: getMessage.FTE14306 });
+    const ok = window.confirm( getMessage.FTE14307 );
 
     if ( !ok ) {
         // 復元のみ。次回読込で再び自動再開しないよう、マーカーを実行中でないに更新する。
@@ -3566,7 +3881,7 @@ markLastUserMessageStopped() {
     if ( !lastUser || lastUser.querySelector('.aiAssistantChatUserMessageStopped') ) return;
     const label = document.createElement('p');
     label.classList.add('aiAssistantChatUserMessageStopped');
-    label.innerText = '送信を停止しました';
+    label.innerText = getMessage.FTE14308;
     lastUser.querySelector('.aiAssistantChatItemInner')?.append( label );
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3608,6 +3923,38 @@ bindEvents() {
     this.bindHeaderEvents();
     this.bindBodyEvents();
     this.bindFooterEvents();
+    this.bindWindowEvents();
+}
+/*
+##################################################
+    Windowイベント
+##################################################
+*/
+// 応答処理・ツール実行中（isRunning）のページ離脱に備える。
+//   ・離脱前に確認ダイアログを出して、作業中であることを知らせる。
+//   ・それでも離脱された場合は、その時点の履歴を保存しようと試みる（次回読込での自動再開用）。
+bindWindowEvents() {
+    // 稼働中（応答処理・ツール実行中）のページ離脱時に確認ダイアログを表示する
+    window.addEventListener('beforeunload', ( e ) => {
+        if ( !this.isRunning ) return;
+        // 標準の離脱確認ダイアログを表示する（メッセージ文言はブラウザ既定）
+        e.preventDefault();
+        e.returnValue = '';
+    }, { signal: this.ac.signal });
+
+    // 離脱時のベストエフォート保存。
+    // 実行中に閉じられたら、その時点の履歴をAIサービス側の会話へ保存しようと試みる。
+    // ・ただし離脱中の非同期通信は完了保証がない（ブラウザに打ち切られ得る）。
+    //   本当の耐障害性は、応答ループ中に「応答受信直後」「ツール実行直後」へ細かく保存する
+    //   インクリメンタル保存で担保しており、これはあくまで最後の数秒分の保険。
+    // ・pagehide はタブ破棄／bfcache 遷移でも発火するため beforeunload より取りこぼしにくい。
+    const flushOnLeave = () => {
+        if ( !this.isRunning ) return;
+        // 離脱中のため失敗は握りつぶす（次回はインクリメンタル保存済みの状態から再開する）。
+        this._enqueueHistorySafe();
+    };
+    window.addEventListener('pagehide', flushOnLeave, { signal: this.ac.signal });
+    window.addEventListener('beforeunload', flushOnLeave, { signal: this.ac.signal });
 }
 /*
 ##################################################
@@ -3633,7 +3980,7 @@ bindHeaderEvents() {
 async newChatEvent() {
     // 応答中に会話を差し替えると、進行中のツール実行の結果が新しいチャットへ混ざるため中止する。
     if ( this.isRunning ) {
-        alert('AIが応答中のため、新しいチャットを開始できません。\n応答が終わるか、停止ボタンで中止してからお試しください。');
+        alert( getMessage.FTE14309 );
         return;
     }
     if ( this.newChat !== true ) {
@@ -3648,52 +3995,675 @@ async newChatEvent() {
     await this.newChatStart();
 }
 // チャット終了
-// ここまでのやりとりのまとめをAIに出力させて会話を締める。
+// 終了時に行う処理（会話の要約・作業レポート・学習事項の登録）をダイアログで選ばせ、
+// 選択されたものをまとめて実行して会話を締める。
 // 終了後もメッセージを送信すれば会話は続けられる（送信時に終了ボタンが再活性化される）。
 async closeChatEvent() {
     // 応答中はまとめを送れない（送信が二重になる）ため、終わるまで待ってもらう。
     if ( this.isRunning ) {
-        alert('AIが応答中のため、チャットを終了できません。\n応答が終わるか、停止ボタンで中止してからお試しください。');
+        alert( getMessage.FTE14310 );
         return;
     }
     // まだ何も送信していない（新規チャット画面）場合は終了するものが無い
     if ( this.newChat === true || !this.llm?.getChatHistory()?.length ) return;
 
-    const ok = window.confirm(
-        'このチャットを終了します。\n\n'
-        + 'ここまでの作業内容のまとめをAIが出力します。\n'
-        + '（終了後もメッセージを送信すれば、この会話を続けられます）\n\n'
-        + '終了してよろしいですか？'
-    );
-    if ( !ok ) return;
+    // 終了時に行う処理を選ばせる（誤操作の防止も兼ねる）。キャンセルなら何もしない。
+    // 何も選択せずに終了した場合（空配列）は、終了時の処理は行わないが
+    // 「チャットを終了する」操作自体は成立させ、終了したことをシステム通知で伝える。
+    const actions = await this.openCloseChatDialog();
+    if ( !Array.isArray( actions ) ) return;
 
     // 終了操作中は再度押せないようにする（通常のメッセージ送信で再活性化される）
     if ( this.elements.closeChatButton ) this.elements.closeChatButton.disabled = true;
 
-    // まとめの指示文はLLMへ送り、吹き出しには短い文言をシステム通知として表示する。
-    const historyLength = this.llm?.getChatHistory()?.length ?? 0;
-    await this.sendMessage(
-        'このチャットを終了します。ここまでのやりとりを踏まえて、次の内容を簡潔にまとめてください。\n'
-        + '1. 実施した作業（ITA（Exastro）で作成・更新したメニューやデータ、実行した作業）\n'
-        + '2. その結果（成功・失敗、確認できたこと）\n'
-        + '3. 未完了の作業や引き継ぎが必要な事項、注意点\n'
-        + 'これ以降の作業はありません。新たな提案や質問はせず、まとめのみを出力してください。',
-        {
-            displayText: 'チャットを終了します。ここまでの内容をまとめます。',
+    // LLMに出力させる処理（要約・レポート）は1通の指示にまとめて送る。
+    // 指示文はLLMへ送り、吹き出しには短い文言をシステム通知として表示する。
+    const instruction = this.buildCloseChatInstruction( actions );
+    let closed = true;
+    if ( instruction ) {
+        const historyLength = this.llm?.getChatHistory()?.length ?? 0;
+        await this.sendMessage( instruction, {
+            displayText: getMessage.FTE14311,
             systemAction: true
-        }
-    );
+        });
+        // まとめのターンが履歴に残っていれば終了できた。停止・エラーでターンが巻き戻された
+        // 場合は終了できていないため、終了ボタンを戻して再度終了できるようにする。
+        closed = ( this.llm?.getChatHistory()?.length ?? 0 ) > historyLength;
+    }
 
-    // まとめのターンが履歴に残っていれば終了できた。停止・エラーでターンが巻き戻された
-    // 場合は終了できていないため、終了ボタンを戻して再度終了できるようにする。
-    const closed = ( this.llm?.getChatHistory()?.length ?? 0 ) > historyLength;
+    // 学習事項の登録は、この会話とは別の会話（prompt_profile = Lessons）で抽出するため、
+    // 上の要約・レポートとは独立して実行する。失敗しても会話の終了自体は成立させる。
+    if ( actions.includes('lessons') ) await this.confirmAndRecordLessons();
+
+    // タイトルの付け直しも別の会話（prompt_profile = GenerateTitle）で生成するため独立して実行する。
+    // 要約・レポートを含む最新の履歴からタイトルを付けたいので、最後に行う。
+    if ( actions.includes('title') ) await this.generateAndSaveTitle();
+
     if ( closed ) {
-        this.updateChat({ role: 'system', text: 'このチャットは終了しました。会話を続ける場合は、メッセージを送信してください。'});
+        // 何も選択されていない場合は要約・レポートの吹き出しが出ないため、
+        // 終了時の処理を行っていないことも併せて伝える。
+        this.updateChat({ role: 'system', text: ( actions.length )
+            ? getMessage.FTE14312
+            : getMessage.FTE14313 });
     } else if ( this.elements.closeChatButton ) {
         this.elements.closeChatButton.disabled = false;
     }
 }
-// AIアシスタント設定
+/*
+##################################################
+    チャット終了時の処理を選ぶダイアログ
+##################################################
+*/
+// チャット終了時に実行する処理をユーザーに選ばせるダイアログを表示する。
+// 戻り値: 選択されたactionの配列（例: ['summary','reportMd','lessons','title']）。
+// 　　　　何も選択されなかった場合は空配列（＝処理なしで終了）、キャンセル時はnull。
+openCloseChatDialog() {
+    return new Promise(( resolve ) => {
+        const config = {
+            position: 'center',
+            width: '520px',
+            header: { title: getMessage.FTE14314 },
+            footer: {
+                button: {
+                    // 何も選択せずに押した場合は「処理なしで終了する」意味になるため、
+                    // 「実行」ではなく「終了する」とする。
+                    execute: { text: getMessage.FTE14315, action: 'positive', className: 'dialogPositive'},
+                    cancel: { text: getMessage.FTE14316, action: 'normal'}
+                }
+            }
+        };
+        let dialog = new Dialog( config );
+        let settled = false;
+        const finish = ( result ) => {
+            if ( settled ) return;
+            settled = true;
+            dialog.close();
+            dialog = null;
+            resolve( result );
+        };
+        dialog.btnFn = {
+            execute: () => {
+                const selected = [];
+                // 要約・学習事項（複数選択できるチェックボックス）
+                dialog.$.dialog.find('.aiCloseChatOption:checked').each(( i, el ) => {
+                    if ( el && el.value ) selected.push( el.value );
+                });
+                // レポート種別（Markdown / HTML の排他選択。ラジオ）。
+                // 値が空（＝作成しない）の場合は追加しない。
+                const report = dialog.$.dialog.find('.aiCloseChatReport:checked').val();
+                if ( report ) selected.push( report );
+                finish( selected );
+            },
+            cancel: () => finish( null )
+        };
+
+        // 要約・学習事項は複数選択できるチェックボックス
+        const checkItem = ( o, i ) => {
+            const id = `aiCloseChatCheck_${i}`;
+            return `
+                <li class="aiCloseChatOptionItem">
+                    <label class="aiCloseChatOptionLabel" for="${id}">
+                        <input type="checkbox" id="${id}" class="aiCloseChatOption" value="${o.value}"${( o.checked )? ' checked': ''}>
+                        <span class="aiCloseChatOptionText">${o.label}</span>
+                    </label>
+                </li>`;
+        };
+        // レポートは Markdown / HTML を排他選択（ラジオ）。「作成しない」を既定にする。
+        const radioItem = ( o, i ) => {
+            const id = `aiCloseChatReport_${i}`;
+            return `
+                <li class="aiCloseChatOptionItem">
+                    <label class="aiCloseChatOptionLabel" for="${id}">
+                        <input type="radio" id="${id}" name="aiCloseChatReport" class="aiCloseChatReport" value="${o.value}"${( o.checked )? ' checked': ''}>
+                        <span class="aiCloseChatOptionText">${o.label}</span>
+                    </label>
+                </li>`;
+        };
+
+        const reportRadios = [
+            { value: '', label: getMessage.FTE14317, checked: false },
+            { value: 'reportMd', label: getMessage.FTE14318, checked: true },
+            { value: 'reportHtml', label: getMessage.FTE14319, checked: false }
+        ].map( radioItem ).join('');
+
+        const html = `
+        <div class="dialogBody">
+            <div class="commonSection">
+                <div class="aiCloseChatDescription">${getMessage.FTE14320}</div>
+                <div class="aiCloseChatGroup commonInputGroup">
+                    <ul class="aiCloseChatOptionList">
+                        ${checkItem({ value: 'summary', label: getMessage.FTE14321, checked: true }, 0 )}
+                    </ul>
+                </div>
+                <div class="aiCloseChatGroup commonInputGroup">
+                    <ul class="aiCloseChatOptionList">${reportRadios}</ul>
+                </div>
+                <div class="aiCloseChatGroup commonInputGroup">
+                    <ul class="aiCloseChatOptionList">
+                        ${checkItem({ value: 'lessons', label: getMessage.FTE14322, checked: false }, 1 )}
+                    </ul>
+                </div>
+                <div class="aiCloseChatGroup commonInputGroup">
+                    <ul class="aiCloseChatOptionList">
+                        ${checkItem({ value: 'title', label: getMessage.FTE14323, checked: false }, 2 )}
+                    </ul>
+                </div>
+            </div>
+        </div>`;
+
+        dialog.open( html );
+        // positiveボタン（実行）は既定で非活性のため、明示的に有効化する
+        dialog.buttonPositiveDisabled( false );
+    });
+}
+// 選択されたactionから、LLMに出力させる指示メッセージを組み立てる。
+// 要約・作業レポート・グラフィカルなレポートのうち選ばれたものだけを1通にまとめる。
+// いずれも選ばれていなければ空文字を返す（送信不要）。
+buildCloseChatInstruction( actions ) {
+    const wants = ( action ) => Array.isArray( actions ) && actions.includes( action );
+    const parts = [];
+
+    if ( wants('summary') ) {
+        parts.push( ...getMessage.FTE14324, '');
+    }
+    if ( wants('reportMd') ) {
+        parts.push( ...getMessage.FTE14325, '');
+    }
+    if ( wants('reportHtml') ) {
+        parts.push(
+            ...getMessage.FTE14326,
+            getMessage.FTE14327,
+            // 1回の応答には出力量の上限（プラットフォーム側の max_tokens）があり、レポート全体を
+            // 1回のツール呼び出しで渡そうとすると引数が途中で切れる。最初から分割させて回避する。
+            getMessage.FTE14328,
+            ''
+        );
+    }
+
+    if ( !parts.length ) return '';
+
+    // 冒頭の共通指示（実績の水増し・数値の断定を防ぐ）と、選択項目を連結する。
+    return getMessage.FTE14329.concat( '', parts ).join('\n')
+        // 思考時間の実測値（応答ごとに保存した_thinkingMsの集計）を根拠データとして添える。
+        // データが無ければ空文字なので、その場合は思考時間の節は出ない。
+        + this.buildThinkingTimeReportSection();
+}
+/*
+##################################################
+    思考時間（LLMの応答往復時間）の集計
+##################################################
+*/
+// 会話履歴に残したAI応答ごとの往復時間（_thinkingMs）を集計する。
+// レポートで「実測値」として使うためのデータで、計測値が1件も無ければnullを返す。
+// なお、ここでの思考時間はLLMの応答往復時間であり、ツールの実行時間は含まない。
+collectThinkingTimeStats() {
+    const history = this.llm?.getChatHistory();
+    if ( !Array.isArray( history ) ) return null;
+
+    const items = [];  // { order, ms, label, model }
+    let order = 0;
+    for ( const turn of history ) {
+        if ( !turn || turn.role !== 'assistant') continue;
+        // 何番目の応答かは、計測値の有無に関わらず数える（会話の流れと番号を合わせる）
+        order++;
+        if ( typeof turn._thinkingMs !== 'number' || !isFinite( turn._thinkingMs ) || turn._thinkingMs < 0 ) continue;
+        items.push({
+            order: order,
+            ms: turn._thinkingMs,
+            label: this.describeAssistantTurn( turn ),
+            model: ( typeof turn._model === 'string' && turn._model )? turn._model: getMessage.FTE14330
+        });
+    }
+    if ( !items.length ) return null;
+
+    const durations = items.map(( item ) => item.ms );
+    const total = durations.reduce(( a, b ) => a + b, 0 );
+    // 時間がかかった応答の上位3件（同着は会話順）
+    const slowest = [ ...items ].sort(( a, b ) => ( b.ms - a.ms ) || ( a.order - b.order ) ).slice( 0, 3 );
+
+    // 会話の途中でモデルを切り替えられるため、モデル別にもまとめる
+    const byModel = new Map();
+    for ( const item of items ) {
+        let group = byModel.get( item.model );
+        if ( !group ) {
+            group = { model: item.model, count: 0, total: 0, max: -Infinity, min: Infinity };
+            byModel.set( item.model, group );
+        }
+        group.count++;
+        group.total += item.ms;
+        group.max = Math.max( group.max, item.ms );
+        group.min = Math.min( group.min, item.ms );
+    }
+    const models = [ ...byModel.values() ]
+        .map(( group ) => ({ ...group, avg: group.total / group.count }))
+        .sort(( a, b ) => b.avg - a.avg );
+
+    return {
+        count: items.length,
+        total: total,
+        avg: total / items.length,
+        max: Math.max( ...durations ),
+        min: Math.min( ...durations ),
+        slowest: slowest,
+        models: models
+    };
+}
+// AI応答のターンを、どの応答かが分かる短い文言にする（レポートの明細用）
+describeAssistantTurn( turn ) {
+    const content = ( Array.isArray( turn?.content ) )? turn.content: [];
+    const textBlock = content.find(( block ) =>
+        block && block.type === 'text' && typeof block.text === 'string' && block.text.trim() );
+    if ( textBlock ) {
+        const text = textBlock.text.trim().replace( /\s+/g, ' ');
+        return ( text.length > 40 )? text.slice( 0, 40 ) + '…': text;
+    }
+    // テキストが無い応答（ツール呼び出しのみ）は、呼び出したツール名で示す
+    const toolNames = content.filter(( block ) => block && block.type === 'tool_use' && block.name )
+        .map(( block ) => block.name );
+    if ( toolNames.length ) return getMessage.FTE14331( toolNames.join(', ') );
+    return getMessage.FTE14332;
+}
+// 思考時間の集計を、レポートの根拠データとして指示文へ添える節にする。
+// 計測値が無ければ空文字（節を付けない）。
+buildThinkingTimeReportSection() {
+    const stats = this.collectThinkingTimeStats();
+    if ( !stats ) return '';
+
+    const sec = ( ms ) => ( ms / 1000 ).toFixed( 1 );
+    const lines = [
+        getMessage.FTE14333,
+        getMessage.FTE14334( stats.count ),
+        getMessage.FTE14335( sec( stats.total ) ),
+        getMessage.FTE14336( sec( stats.avg ) ),
+        getMessage.FTE14337( sec( stats.min ), sec( stats.max ) ),
+        getMessage.FTE14338
+    ];
+    for ( const item of stats.slowest ) {
+        lines.push( getMessage.FTE14339( item.order, sec( item.ms ), item.model, item.label ) );
+    }
+    if ( stats.models.length >= 2 ) {
+        lines.push( getMessage.FTE14340 );
+        for ( const model of stats.models ) {
+            lines.push( getMessage.FTE14341( model.model, model.count, sec( model.avg ), sec( model.min ), sec( model.max ) ) );
+        }
+    }
+    lines.push( getMessage.FTE14342(
+        ( stats.models.length >= 2 )? getMessage.FTE14343: ''
+    ) );
+    return '\n\n' + lines.join('\n');
+}
+/*
+##################################################
+    学習事項（次回セッションへの申し送り）
+##################################################
+*/
+// 学習事項は「今回の会話から抽出 → ユーザーが確認・修正 → 登録」の3段階で登録する。
+//
+// ・保存先はプラットフォーム側の専用API（/lessons）。登録した学習事項のうち有効なものは、
+//   次回以降の問い合わせでプラットフォーム側がシステムプロンプトへ自動的に反映するため、
+//   画面側から前提知識として渡す処理（読み出し・差し込み）は行わない。
+// ・重要度（priority）は 1（最低）〜 10（最高）の10段階。確認ダイアログで修正できる。
+// ・抽出だけは会話を使う（prompt_profile が Lessons の会話。AiAssistantLlmの学習事項の節を参照）。
+//   抽出用の会話は使い捨てのため、抽出が済んだらレコードごと削除する。
+
+// 今回の会話から学習事項を抽出し、確認ダイアログを経て登録する。
+// ・各段階の結果はシステム通知ブロックで表示する。
+// ・ダイアログでキャンセル、または1件も選択されなかった場合は登録しない。
+// ・失敗しても会話の終了自体は成立させたいので、例外はここで止める。
+async confirmAndRecordLessons() {
+    // 学習元として学習事項に残す会話ID（この会話がまだ未作成の場合はnull）
+    const sourceConversationId = this.llm?.conversationId ?? null;
+    const transcript = this.buildTranscript( this.llm?.getChatHistory() );
+    if ( !transcript ) {
+        this.updateChat({ role: 'systemNotice', text: getMessage.FTE14344 });
+        return;
+    }
+
+    // 抽出は数秒かかる単発の問い合わせのため、処理中表示を出す
+    let extracted = { conversationId: null, lessons: []};
+    const processing = fn.processingModal( getMessage.FTE14345 );
+    try {
+        extracted = await AiAssistantLlm.extractLessons( transcript, {
+            aiServiceId: this.setting.currentAiServiceId,
+            modelId: this.modelId
+        });
+    } catch ( error ) {
+        processing.close();
+        console.warn('学習事項の抽出に失敗しました。', error );
+        // 失敗しても、抽出用の会話には問い合わせ内容が残っていることがあるため消しておく
+        await this.discardConversation( error?.conversationId, '学習事項の抽出');
+        this.updateChat({ role: 'systemNotice',
+            text: getMessage.FTE14346( this.formatErrorMessage( error ) ) });
+        return;
+    }
+    processing.close();
+
+    // 抽出用の会話は役目を終えた（学習事項の保存先ではないため、会話一覧に残さない）
+    await this.discardConversation( extracted.conversationId, '学習事項の抽出');
+
+    const lessons = this.normalizeLessons( extracted.lessons );
+    if ( !lessons.length ) {
+        this.updateChat({ role: 'systemNotice', text: getMessage.FTE14344 });
+        return;
+    }
+
+    // 抽出結果をユーザーに確認させる（チェックで選択、本文・分類・重要度は編集できる）
+    const selected = await this.openLessonsConfirmDialog( lessons );
+    if ( selected === null || !selected.length ) {
+        this.updateChat({ role: 'systemNotice', text: ( selected === null )
+            ? getMessage.FTE14347
+            : getMessage.FTE14348 });
+        return;
+    }
+
+    const result = await this.registerLessons( selected, sourceConversationId );
+    const failed = ( result.errors.length )
+        ? getMessage.FTE14349( result.errors.length, result.errors.join('\n') )
+        : '';
+    // 上限を超えた場合は、学習事項タブでの整理を促す（登録そのものは成功している）
+    const max = AiAssistantLlm.lessonsMaxCount;
+    const over = ( result.totalCount !== null && result.totalCount > max )
+        ? '\n' + getMessage.FTE14053( max, result.totalCount ): '';
+    this.updateChat({ role: 'systemNotice', text: ( result.count > 0 )
+        ? getMessage.FTE14350( result.count )
+            + getMessage.FTE14065( AiAssistantLlm.lessonsPromptMaxCount ) + failed + over
+        : getMessage.FTE14351 + failed });
+}
+// 使い捨ての会話（学習事項の抽出・タイトルの生成）を削除する。
+// レコードごと削除するため、会話履歴の一覧にも残らない。
+// purpose … 何に使った会話か（削除に失敗した場合のログに使う）
+// （削除できなかった場合は会話一覧に残るが、抽出・生成の結果には影響しない）
+async discardConversation( conversationId, purpose ) {
+    if ( !conversationId ) return;
+    try {
+        await AiAssistantLlm.deleteConversation( conversationId );
+    } catch ( error ) {
+        console.warn(`${purpose}に使った会話の削除に失敗しました。`, error );
+    }
+}
+// 会話履歴を、LLMへ渡す読みやすいテキスト（発言者＋本文）へ変換する。
+// 学習事項の抽出・タイトルの生成のように、今回の会話の内容そのものを渡す処理で使う。
+// maxLength … リクエストが大きくなりすぎないための上限文字数（超える分は中略する）
+buildTranscript( history, maxLength = 8000 ) {
+    if ( !Array.isArray( history ) ) return '';
+
+    const lines = [];
+    for ( const turn of history ) {
+        // システム操作（会話終了など）の指示文は学習事項のノイズになるため除外する
+        if ( turn?._displaySystem === true ) continue;
+        if ( !Array.isArray( turn?.content ) ) continue;
+        const roleLabel = ( turn.role === 'assistant')? getMessage.FTE14352: getMessage.FTE14353;
+        for ( const [ blockIndex, block ] of turn.content.entries() ) {
+            if ( block?.type !== 'text' || typeof block.text !== 'string') continue;
+            // 保存時に差し込まれたテキスト（添付ファイルのメタ情報）は発言ではなく
+            // ノイズになるため除外する
+            // （復元した会話では、この文面もテキストブロックとして履歴に入っている）
+            if ( AiAssistantLlm.isInjectedBlock( block, turn, blockIndex ) !== null ) continue;
+            const text = block.text.trim();
+            if ( text ) lines.push(`${roleLabel}: ${text}`);
+        }
+    }
+
+    let transcript = lines.join('\n');
+    // リクエストが大きくなりすぎないよう、長すぎる場合は先頭と末尾を残して中略する
+    if ( transcript.length > maxLength ) {
+        transcript = `${transcript.slice( 0, maxLength / 2 )}\n${getMessage.FTE14354}\n${transcript.slice( -maxLength / 2 )}`;
+    }
+    return transcript;
+}
+// 抽出結果を、確認ダイアログと登録APIで扱える形へ整える。本文が空のものは捨てる。
+// 文字数の上限はプラットフォーム側のバリデーションに合わせて切り詰める
+// （上限を超えるとエラーになるため、登録できずに捨てるより切り詰めて残す）。
+normalizeLessons( lessons ) {
+    if ( !Array.isArray( lessons ) ) return [];
+    return lessons
+        .filter(( item ) => item && typeof item.lesson === 'string' && item.lesson.trim() )
+        .map(( item ) => ({
+            lesson: String( item.lesson ).trim().slice( 0, AiAssistantLlm.lessonLength ),
+            category: ( typeof item.category === 'string')
+                ? item.category.trim().slice( 0, AiAssistantLlm.lessonCategoryLength ): '',
+            // 抽出結果の重要度は、範囲外の数値や数値以外で返ることもあるため1〜10へ整える
+            priority: AiAssistantLlm.lessonPriority( item.priority )
+        }));
+}
+// 抽出した学習事項の確認ダイアログを表示する。
+// ・各項目はチェックボックスで登録対象を選択でき、本文・分類・重要度はその場で修正できる。
+// ・戻り値: 登録する学習事項の配列（1件も選ばなければ空配列）。キャンセル時はnull。
+openLessonsConfirmDialog( lessons ) {
+    return new Promise(( resolve ) => {
+        const config = {
+            position: 'center',
+            width: '760px',
+            header: { title: getMessage.FTE14355 },
+            footer: {
+                button: {
+                    execute: { text: getMessage.FTE14356, action: 'positive', className: 'dialogPositive'},
+                    cancel: { text: getMessage.FTE14316, action: 'normal'}
+                }
+            }
+        };
+        let dialog = new Dialog( config );
+        let settled = false;
+        const finish = ( result ) => {
+            if ( settled ) return;
+            settled = true;
+            dialog.close();
+            dialog = null;
+            resolve( result );
+        };
+        dialog.btnFn = {
+            execute: () => {
+                // チェックされた項目だけを、画面上の編集内容（本文・分類・重要度）で拾い直す
+                const selected = [];
+                dialog.$.dialog.find('.aiLessonsItem').each(( i, el ) => {
+                    const $item = $( el );
+                    if ( !$item.find('.aiLessonsCheck').prop('checked') ) return;
+                    const lesson = ( $item.find('.aiLessonsText').val() ?? '').trim();
+                    if ( !lesson ) return;
+                    selected.push({
+                        lesson: lesson,
+                        category: ( $item.find('.aiLessonsCategory').val() ?? '').trim(),
+                        priority: $item.find('.aiLessonsPriority').val() ?? ''
+                    });
+                });
+                finish( selected );
+            },
+            cancel: () => finish( null )
+        };
+
+        const prioritySelect = ( selected, index ) => `<select class="aiLessonsPriority input select" id="aiLessonsPriority_${index}">`
+            + `${AiAssistantLlm.lessonPriorityOptions( selected )}</select>`;
+
+        const items = lessons.map(( item, i ) => `
+            <li class="aiLessonsItem">
+                <div class="aiLessonsItemHead">
+                    <label class="aiLessonsItemCheckLabel" for="aiLessonsCheck_${i}">
+                        <input type="checkbox" id="aiLessonsCheck_${i}" class="aiLessonsCheck" checked>
+                        <span class="aiLessonsItemCheckText">${getMessage.FTE14357}</span>
+                    </label>
+                    <div class="aiLessonsItemField">
+                        <label class="aiLessonsItemFieldLabel" for="aiLessonsCategory_${i}">${getMessage.FTE14358}</label>
+                        <input type="text" id="aiLessonsCategory_${i}" class="aiLessonsCategory input inputText" spellcheck="false" maxlength="${AiAssistantLlm.lessonCategoryLength}" value="${fn.escape( item.category ?? '')}">
+                    </div>
+                    <div class="aiLessonsItemField">
+                        <label class="aiLessonsItemFieldLabel" for="aiLessonsPriority_${i}">${getMessage.FTE14359}</label>
+                        ${prioritySelect( item.priority, i )}
+                    </div>
+                </div>
+                <textarea class="aiLessonsText textarea input" spellcheck="false" rows="4" maxlength="${AiAssistantLlm.lessonLength}" aria-label="${getMessage.FTE14360}">${fn.escape( item.lesson ?? '')}</textarea>
+            </li>`).join('');
+
+        const html = `
+        <div class="dialogBody">
+            <div class="commonSection">
+                <div class="aiLessonsDescription">${getMessage.FTE14361( AiAssistantLlm.lessonsPromptMaxCount )}</div>
+                <div class="aiLessonsToolbar">
+                    <label class="aiLessonsItemCheckLabel" for="aiLessonsAllCheck">
+                        <input type="checkbox" id="aiLessonsAllCheck" class="aiLessonsAllCheck" checked>
+                        <span class="aiLessonsItemCheckText">${getMessage.FTE14362}</span>
+                    </label>
+                    <div class="aiLessonsCount"><span class="aiLessonsSelectedCount">${lessons.length}</span> / ${getMessage.FTE14363( lessons.length )}</div>
+                </div>
+                <ul class="aiLessonsList">${items}</ul>
+            </div>
+        </div>`;
+
+        dialog.open( html );
+
+        const $dialog = dialog.$.dialog;
+        // 選択件数の表示、全選択チェックの状態、登録ボタンの活性を選択状況に合わせて更新する
+        const updateState = () => {
+            const $checks = $dialog.find('.aiLessonsCheck');
+            const checked = $checks.filter(':checked').length;
+            $dialog.find('.aiLessonsSelectedCount').text( checked );
+            $dialog.find('.aiLessonsAllCheck').prop('checked', checked === $checks.length );
+            dialog.buttonPositiveDisabled( checked === 0 );
+        };
+        $dialog.on('change', '.aiLessonsAllCheck', function(){
+            $dialog.find('.aiLessonsCheck').prop('checked', $( this ).prop('checked') );
+            updateState();
+        });
+        $dialog.on('change', '.aiLessonsCheck', updateState );
+        updateState();
+    });
+}
+// 確認ダイアログで選択・修正された学習事項を、専用API（/lessons）へ1件ずつ登録する。
+// sourceConversationId … 学習元の会話ID（学習事項に残す。未作成の場合はnull）
+// 戻り値 { count, errors, totalCount } … count は登録できた件数、errors は登録できなかった項目の
+// メッセージ、totalCount は登録後の学習事項の総件数（既存分を取得できなかった場合はnull）。
+//
+// 同じ内容の学習事項が積み上がらないよう、本文が一致する既存の学習事項があれば、
+// 新規登録ではなく更新（PATCH）にする。既存分の取得に失敗した場合は、登録そのものは
+// 妨げず新規登録として続ける（重複が残ることはあっても、登録できない方が困る）。
+async registerLessons( lessons, sourceConversationId ) {
+    const records = this.normalizeLessons( lessons );
+    if ( !records.length ) return { count: 0, errors: [], totalCount: null };
+
+    const processing = fn.processingModal( getMessage.FTE14364 );
+
+    // 本文 → 既存の学習事項ID
+    const registered = new Map();
+    let totalCount = null;
+    try {
+        // 照合するのは、この会話と同じプロンプトプロファイルの学習事項だけ
+        const existing = await AiAssistantLlm.fetchLessons({ promptProfile: this.promptProfile });
+        totalCount = existing.totalCount;
+        for ( const item of existing.lessons ) {
+            if ( item?.lesson_id && typeof item.lesson === 'string') {
+                registered.set( item.lesson.trim(), item.lesson_id );
+            }
+        }
+    } catch ( error ) {
+        console.warn('登録済みの学習事項の取得に失敗しました。すべて新規として登録します。', error );
+    }
+
+    let count = 0;
+    const errors = [];
+    for ( const record of records ) {
+        try {
+            const lessonId = registered.get( record.lesson );
+            if ( lessonId ) {
+                // 内容が同じものは、分類・重要度を今回の内容へ更新し、有効に戻す
+                await AiAssistantLlm.updateLesson( lessonId, {
+                    category: record.category,
+                    priority: record.priority,
+                    enabled: true
+                });
+            } else {
+                await AiAssistantLlm.createLesson({ ...record, conversationId: sourceConversationId,
+                    promptProfile: this.promptProfile });
+                // 総件数は新規登録した分だけ増える（更新した分は増えない）
+                if ( totalCount !== null ) totalCount++;
+            }
+            count++;
+        } catch ( error ) {
+            console.warn('学習事項の登録に失敗しました。', record, error );
+            // どの項目が記録できなかったか分かるよう、本文の先頭だけを添える
+            const head = record.lesson.split('\n')[0];
+            errors.push( getMessage.FTE14365(
+                ( head.length > 40 )? head.slice( 0, 40 ) + '…': head,
+                this.formatErrorMessage( error )
+            ) );
+        }
+    }
+
+    processing.close();
+    return { count: count, errors: errors, totalCount: totalCount };
+}
+/*
+##################################################
+    会話のタイトルの生成（AIに付けてもらう）
+##################################################
+*/
+// 今回の会話の内容から、AIにタイトルを考えてもらってこの会話へ保存する。
+//
+// ・会話のタイトルは最初の発言から機械的に作られる（AiAssistantLlm.buildTitle）ため、
+//   会話の内容を表していないことがある。チャットの終了時に、その会話が何だったのかが
+//   ひと目で分かるタイトルへ付け替えるのがこの処理。
+// ・タイトルは会話履歴の一覧での目印にのみ使われるため、付け替えても保存されている履歴・
+//   AIの記憶は変わらない（気に入らない場合は会話履歴タブから編集できる）。
+// ・生成はこの会話とは別の使い捨ての会話（prompt_profile = GenerateTitle）で行い、
+//   済んだらその会話はレコードごと削除する。
+// ・各段階の結果はシステム通知ブロックで表示する。
+// ・失敗しても会話の終了自体は成立させたいので、例外はここで止める。
+async generateAndSaveTitle() {
+    // 保存先の会話（この会話。1回でも送信していれば作成済み）
+    const conversationId = this.llm?.conversationId ?? null;
+    if ( !conversationId ) {
+        this.updateChat({ role: 'systemNotice',
+            text: getMessage.FTE14366 });
+        return;
+    }
+
+    // タイトルは会話の主題が分かれば付けられるため、学習事項の抽出より短い範囲を渡す
+    const transcript = this.buildTranscript( this.llm?.getChatHistory(), 4000 );
+    if ( !transcript ) {
+        this.updateChat({ role: 'systemNotice',
+            text: getMessage.FTE14367 });
+        return;
+    }
+
+    // 生成は数秒かかる単発の問い合わせのため、処理中表示を出す
+    let generated = { conversationId: null, title: ''};
+    const processing = fn.processingModal( getMessage.FTE14368 );
+    try {
+        generated = await AiAssistantLlm.generateTitle( transcript, {
+            aiServiceId: this.setting.currentAiServiceId,
+            modelId: this.modelId
+        });
+    } catch ( error ) {
+        processing.close();
+        console.warn('会話のタイトルの生成に失敗しました。', error );
+        // 失敗しても、生成用の会話には問い合わせ内容が残っていることがあるため消しておく
+        await this.discardConversation( error?.conversationId, 'タイトルの生成');
+        this.updateChat({ role: 'systemNotice',
+            text: getMessage.FTE14369( this.formatErrorMessage( error ) ) });
+        return;
+    }
+    processing.close();
+
+    // 生成用の会話は役目を終えた（タイトルの保存先ではないため、会話一覧に残さない）
+    await this.discardConversation( generated.conversationId, 'タイトルの生成');
+
+    if ( !generated.title ) {
+        this.updateChat({ role: 'systemNotice', text: getMessage.FTE14370 });
+        return;
+    }
+
+    // 生成できたタイトルをこの会話へ保存する（会話履歴の一覧に反映される）
+    try {
+        await AiAssistantLlm.updateConversationTitle( conversationId, generated.title );
+    } catch ( error ) {
+        console.warn('会話のタイトルの保存に失敗しました。', error );
+        this.updateChat({ role: 'systemNotice',
+            text: getMessage.FTE14371( this.formatErrorMessage( error ) ) });
+        return;
+    }
+
+    this.updateChat({ role: 'systemNotice',
+        text: getMessage.FTE14372( generated.title ) });
+}
+// AIサービス設定
 async aiAssistantSettingEvent() {
     await this.setting.open();
 }
@@ -3730,6 +4700,7 @@ bodyEventActions = {
     // コードブロック・表示専用HTML
     codeCopy:       { whileRunning: true, run:( button ) => this.copyCodeBlock( button ) },
     codeToInput:    { whileRunning: true, run:( button ) => this.setCodeBlockToInput( button ) },
+    codeToEditor:   { whileRunning: true, run:( button ) => this.setCodeBlockToEditor( button ) },
     displayHtmlPdf: { whileRunning: true, run:( button ) => this.printDisplayHtmlAsPdf( button ) }
 }
 bindBodyEvents() {
@@ -3879,6 +4850,14 @@ setCodeBlockToInput( button ) {
     this.elements.message.value = this.getCodeBlockText( button );
     this.elements.message.focus();
 }
+
+// エディターへコードブロックを反映（オーバーライド用）
+// ai_assistant_editor.js でオーバーライドされる。
+// デフォルト実装は提供しない。
+setCodeBlockToEditor( button ) {
+    // オーバーライドされていない場合は何もしない
+}
+
 /*
 ##################################################
     Footerイベント

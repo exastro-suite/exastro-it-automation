@@ -29,7 +29,6 @@ class NestVarsMemberTable(TableBase):
     # レコードの同一性判定に使うカラム（_record_key で使用）
     COMPARE_KEYS = (
         'MVMT_VAR_LINK_ID',
-        'PARENT_VARS_KEY_ID',
         'VARS_NAME',
         'ARRAY_NEST_LEVEL',
         'ASSIGN_SEQ_NEED',
@@ -230,6 +229,7 @@ class NestVarsMemberTable(TableBase):
 
             if marge_vars_key_id:
                 record_a["VARS_KEY_ID"] = record_b["VARS_KEY_ID"]
+                record_a["PARENT_VARS_KEY_ID"] = record_b["PARENT_VARS_KEY_ID"]
             result_list.append(record_a)
 
         return result_list

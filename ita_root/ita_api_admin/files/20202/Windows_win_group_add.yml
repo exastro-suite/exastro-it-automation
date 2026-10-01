@@ -1,8 +1,23 @@
+- name: Ensure ITA_DFLT_Create_group_names is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Create_group_names: "{{ ITA_DFLT_Create_group_names }}"
+  when: ITA_DFLT_Create_group_names is defined
+
+- name: Ensure ITA_DFLT_Create_group_discriptions is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Create_group_discriptions: "{{ ITA_DFLT_Create_group_discriptions }}"
+  when: ITA_DFLT_Create_group_discriptions is defined
+
 - name: Create new groups
   ansible.windows.win_group:
-    name: "{{ item.0 }}"
-    description: "{{ item.1 }}"
+    name: "{{ item[0] }}"
+    description: "{{ item[1] }}"
     state: present
-  with_together:
-    - "{{ ITA_DFLT_Create_group_names }}"
-    - "{{ ITA_DFLT_Create_group_discriptions }}"
+  loop: >-
+    {{
+      (ITA_DFLT_Create_group_names if ITA_DFLT_Create_group_names is sequence and ITA_DFLT_Create_group_names is not string else [ITA_DFLT_Create_group_names])
+      | ansible.builtin.zip_longest(
+          ITA_DFLT_Create_group_discriptions if ITA_DFLT_Create_group_discriptions is sequence and ITA_DFLT_Create_group_discriptions is not string else [ITA_DFLT_Create_group_discriptions]
+        )
+      | list
+    }}

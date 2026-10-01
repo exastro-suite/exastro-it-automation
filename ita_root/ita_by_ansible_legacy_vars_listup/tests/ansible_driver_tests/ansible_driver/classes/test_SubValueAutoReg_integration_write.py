@@ -14,7 +14,7 @@
 """
 SubValueAutoReg の結合テスト(**登録経路** = `get_data_from_parameter_sheet`)
 
-ケース表: SubValueAutoReg_integration_testcases.md (INT-6〜INT-9、INT-12、INT-15〜INT-17)
+対象ケース: INT-6〜INT-9、INT-12、INT-15〜INT-17
 
 位置づけ:
   読み取り経路(vars-listup)は test_SubValueAutoReg_integration.py で担保している。
@@ -735,7 +735,7 @@ def test_registered_values_satisfy_column_class_invariants(registered, driver_at
     ここではカラムクラスの仕様から決まる形だけを書き下し、
     **実DBに登録された値**に対して検査する(`_column_class_violations`)。
 
-    カラムクラスの網羅そのものは投入データ側の責務(tests/integration_seed_data.md の
+    カラムクラスの網羅そのものは投入データ側の責務(tests/README.md の
     段階4・段階7でスクリプトが17項目・11クラスを作る)なので、
     ここでは「観測できたクラスの下限」は縛らず、内訳を出力するだけにしている。
     """
@@ -854,7 +854,7 @@ def test_registered_rows_cover_horizontal_and_vertical(registered, disposable, d
     「横だけの Movement が選ばれる」と縦を通らない
     (代入値自動登録設定を横と縦で別 Movement に分けていると起きる)。
     これは実装ではなく**投入データ**の問題なので、
-    ここで検知して tests/integration_seed_data.md の段階7 に戻れるようにする。
+    ここで検知して tests/README.md の段階7 に戻れるようにする。
 
     判定は実テーブルの `INPUT_ORDER` 列の有無(INT-3 と同じ `sheet_kinds`)で行う。
     """

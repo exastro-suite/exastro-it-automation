@@ -47,6 +47,7 @@ def get_menu_export_list(objdbca, organization_id, workspace_id):
     """
     # テーブル名
     t_dp_hide_menu_list = 'T_DP_HIDE_MENU_LIST'
+    t_comn_role_menu_link = 'T_COMN_ROLE_MENU_LINK'
 
     # 『メニュー-テーブル紐付管理』テーブルから対象のデータを取得
     menu_id_list = _get_target_menu_id_list(objdbca)
@@ -60,8 +61,48 @@ def get_menu_export_list(objdbca, organization_id, workspace_id):
         if hide_menu_id in menu_id_list:
             menu_id_list.remove(hide_menu_id)
 
+    # T_COMN_MENU から EXPORT_PERMISSION_CHECK_FLG を取得
+    # FLAG=NULL は '1' と同様に扱う（権限チェック必須）
+    t_comn_menu = 'T_COMN_MENU'
+    ret_menu = objdbca.table_select(t_comn_menu, 'WHERE MENU_ID IN %s', [menu_id_list])
+    menu_flag_map = {record['MENU_ID']: record.get('EXPORT_PERMISSION_CHECK_FLG') for record in ret_menu}
+
+    # ロール-メニュー紐付を全件取得（メニュー一括エクスポートはインポートとペアで使用されるため、書き込み権限が必要）
+    role_id_list = g.get('ROLES')
+    ret_role_menu_link = objdbca.table_select(
+        t_comn_role_menu_link,
+        'WHERE MENU_ID IN %s AND ROLE_ID IN %s',
+        [menu_id_list, role_id_list]
+    )
+
+    # メニューIDごとに紐付をグループ化
+    menu_links = {}
+    for record in ret_role_menu_link:
+        menu_id = record.get('MENU_ID')
+        if menu_id not in menu_links:
+            menu_links[menu_id] = []
+        menu_links[menu_id].append(record)
+
+    # メニューごとに権限チェック（元の順序を維持）
+    permitted_menu_ids = []
+    for menu_id in menu_id_list:
+        flag = menu_flag_map.get(menu_id)
+        links = menu_links.get(menu_id, [])
+
+        if flag == '0':
+            # 内部メニュー：紐付があれば、権限・廃止に関わらず表示
+            # ワークスペース作成時、ワークスペース管理者ロールの紐付は閲覧のみ・廃止済みで作成されるため
+            if links:
+                permitted_menu_ids.append(menu_id)
+        else:
+            # 通常メニュー（FLAG='1' or NULL）：書き込み権限（PRIVILEGE='0', '1'）＋有効な紐付（DISUSE_FLAG='0'）が必要
+            for link in links:
+                if link.get('PRIVILEGE') in ['0', '1'] and link.get('DISUSE_FLAG') in [0, '0']:
+                    permitted_menu_ids.append(menu_id)
+                    break
+
     # メニューとメニューグループのデータを処理
-    return _create_export_menu_data(objdbca, menu_id_list)
+    return _create_export_menu_data(objdbca, permitted_menu_ids)
 
 
 def get_excel_bulk_export_list(objdbca, organization_id, workspace_id):
@@ -191,6 +232,215 @@ def _create_export_menu_data(objdbca, menu_id_list):
     return menus_data
 
 
+def _get_write_permission_menu_id_list(objdbca, menu_id_list):
+    """
+        EXPORT_PERMISSION_CHECK_FLG を考慮して書き込み権限のあるメニューIDリストを取得
+
+        - FLAG='0': 権限チェックをスキップ（内部定義メニュー用）
+        - FLAG='1' or NULL: 書き込み権限（PRIVILEGE='0' or '1'）が必要
+
+        ARGS:
+            objdbca: DB接クラス DBConnectWs()
+            menu_id_list: チェック対象のメニューIDリスト
+        RETURN:
+            書き込み権限のあるメニューIDリスト（入力順序を維持）
+    """
+    if not menu_id_list:
+        return []
+
+    # T_COMN_MENU から EXPORT_PERMISSION_CHECK_FLG を取得
+    t_comn_menu = 'T_COMN_MENU'
+    ret_menu = objdbca.table_select(t_comn_menu, 'WHERE MENU_ID IN %s', [menu_id_list])
+
+    # メニューIDごとにFLAGを保持
+    menu_flag_map = {record['MENU_ID']: record.get('EXPORT_PERMISSION_CHECK_FLG') for record in ret_menu}
+
+    # FLAG='0' のメニュー（権限チェックスキップ）と FLAG='1' のメニューに分ける
+    skip_check_menu_ids = []
+    need_check_menu_ids = []
+    for menu_id in menu_id_list:
+        flag = menu_flag_map.get(menu_id)
+        if flag == '0':
+            skip_check_menu_ids.append(menu_id)
+        else:
+            # FLAG='1' or NULL の場合は権限チェックが必要
+            need_check_menu_ids.append(menu_id)
+
+    # FLAG='1' のメニューについて、書き込み権限をチェック
+    permitted_menu_ids = set()
+    if need_check_menu_ids:
+        t_comn_role_menu_link = 'T_COMN_ROLE_MENU_LINK'
+        role_id_list = g.get('ROLES')
+
+        # エクスポート/インポートはペアで使用されるため、書き込み権限（PRIVILEGE='0', '1'）を要求
+        # エクスポート時に書き込み権限がない場合、後のインポート時にエラーとなるのを防ぐ
+        # 廃止済みの紐付は権限なしとする（get_menu_export_list の通常メニューと同じ条件）
+        # ワークスペース作成時に廃止済みで作成される紐付は FLAG='0' のメニューのため、ここでは対象外
+        ret_role_menu_link = objdbca.table_select(
+            t_comn_role_menu_link,
+            'WHERE MENU_ID IN %s AND ROLE_ID IN %s AND PRIVILEGE IN %s AND DISUSE_FLAG = %s ORDER BY MENU_ID',
+            [need_check_menu_ids, role_id_list, ['0', '1'], 0]
+        )
+
+        for record in ret_role_menu_link:
+            permitted_menu_ids.add(record.get('MENU_ID'))
+
+    # 入力順序を維持しながら、権限のあるメニューのみ返す
+    result = []
+    for menu_id in menu_id_list:
+        if menu_id in skip_check_menu_ids or menu_id in permitted_menu_ids:
+            result.append(menu_id)
+
+    return result
+
+
+def get_denied_menu_rest_set(objdbca, menu_rest_list):
+    """
+        書き込み権限のないメニューRESTIDを一括で取得する
+
+        check_export_menu_permission / check_import_menu_permission と同じ判定条件
+        （T_COMN_MENUに存在しないメニュー、EXPORT_PERMISSION_CHECK_FLG='0' のメニューは対象外）
+
+        ARGS:
+            objdbca: DB接クラス DBConnectWs()
+            menu_rest_list: メニューRESTIDリスト
+        RETURN:
+            書き込み権限のないメニューRESTIDのset
+    """
+    if not menu_rest_list:
+        return set()
+
+    ret_menu = objdbca.table_select('T_COMN_MENU', 'WHERE MENU_NAME_REST IN %s', [menu_rest_list])
+    menu_id_to_rest = {record.get('MENU_ID'): record.get('MENU_NAME_REST') for record in ret_menu}
+
+    permitted_menu_ids = _get_write_permission_menu_id_list(objdbca, list(menu_id_to_rest.keys()))
+
+    return {menu_rest for menu_id, menu_rest in menu_id_to_rest.items() if menu_id not in permitted_menu_ids}
+
+
+def check_export_menu_permission(objdbca, menu_rest_list):
+    """
+        メニュー一括エクスポート実行時の権限チェック
+
+        エクスポート/インポートはセットで使用されるため、エクスポート時に
+        書き込み権限を要求し、後のインポート実行を保証する
+
+        Excel一括エクスポートは対象外（閲覧権限でOK、インポート時にunimport_listでチェック）
+
+        EXPORT_PERMISSION_CHECK_FLG='0' のメニューはチェックスキップ（内部定義メニュー）
+        それ以外は書き込み権限（PRIVILEGE='0' or '1'）が必要
+
+        ARGS:
+            objdbca: DB接クラス DBConnectWs()
+            menu_rest_list: メニューRESTIDリスト
+        RETURN:
+            なし（権限がない場合は例外を発生）
+        RAISES:
+            AppException: 権限がないメニューがある場合
+    """
+    if not menu_rest_list:
+        return
+
+    lang = g.get('LANGUAGE')
+    t_comn_menu = 'T_COMN_MENU'
+
+    # メニュー情報を取得（メニュー名とMENU_IDを取得）
+    ret_menu = objdbca.table_select(t_comn_menu, 'WHERE MENU_NAME_REST IN %s', [menu_rest_list])
+
+    # MENU_NAME_REST → MENU_ID, メニュー名 のマッピング
+    menu_rest_to_id = {}
+    menu_id_to_name = {}
+    for record in ret_menu:
+        menu_rest = record.get('MENU_NAME_REST')
+        menu_id = record.get('MENU_ID')
+        menu_rest_to_id[menu_rest] = menu_id
+        menu_name = record.get(f'MENU_NAME_{lang.upper()}')
+        menu_id_to_name[menu_id] = menu_name
+
+    # 入力されたメニューRESTIDの順序でMENU_IDリストを作成
+    menu_id_list = [menu_rest_to_id[menu_rest] for menu_rest in menu_rest_list if menu_rest in menu_rest_to_id]
+
+    # 書き込み権限のあるメニューIDを取得
+    permitted_menu_ids = _get_write_permission_menu_id_list(objdbca, menu_id_list)
+
+    # 権限のないメニューを抽出
+    denied_menu_ids = [menu_id for menu_id in menu_id_list if menu_id not in permitted_menu_ids]
+
+    if denied_menu_ids:
+        # 権限のないメニュー名をカンマ区切りで結合
+        denied_menu_names = [menu_id_to_name.get(menu_id, menu_id) for menu_id in denied_menu_ids]
+        denied_menu_names_str = ', '.join(denied_menu_names)
+
+        g.applogger.debug(f"[Export Permission Check] Access denied to menus: {denied_menu_names_str}")
+
+        # エラーメッセージを生成（401-00001が既にメッセージテンプレートを持つ）
+        raise AppException("401-00001", [denied_menu_names_str], [denied_menu_names_str])
+
+
+def check_import_menu_permission(objdbca, menu_rest_list):
+    """
+        メニュー一括インポート実行時の権限チェック
+
+        Excel一括インポートは対象外（既存のunimport_list機能を使用）
+
+        新規メニュー（T_COMN_MENUに存在しない）はチェックスキップ
+        既存メニューのうち、EXPORT_PERMISSION_CHECK_FLG='0' はチェックスキップ（内部定義メニュー）
+        それ以外は書き込み権限（PRIVILEGE='0' or '1'）が必要
+
+        ARGS:
+            objdbca: DB接クラス DBConnectWs()
+            menu_rest_list: メニューRESTIDリスト
+        RETURN:
+            なし（権限がない場合は例外を発生）
+        RAISES:
+            AppException: 権限がないメニューがある場合
+    """
+    if not menu_rest_list:
+        return
+
+    lang = g.get('LANGUAGE')
+    t_comn_menu = 'T_COMN_MENU'
+
+    # メニュー情報を取得（既存メニューのみ）
+    ret_menu = objdbca.table_select(t_comn_menu, 'WHERE MENU_NAME_REST IN %s', [menu_rest_list])
+
+    # 既存メニューのみをチェック対象とする
+    existing_menu_info = {}  # menu_id -> (menu_rest, menu_name, flag)
+    for record in ret_menu:
+        menu_id = record.get('MENU_ID')
+        menu_rest = record.get('MENU_NAME_REST')
+        menu_name = record.get(f'MENU_NAME_{lang.upper()}')
+        flag = record.get('EXPORT_PERMISSION_CHECK_FLG')
+        existing_menu_info[menu_id] = (menu_rest, menu_name, flag)
+
+    # 既存メニューがなければチェック不要
+    if not existing_menu_info:
+        return
+
+    # FLAG='1' のメニューのみチェック対象
+    check_target_menu_ids = [menu_id for menu_id, (_, _, flag) in existing_menu_info.items() if flag != '0']
+
+    if not check_target_menu_ids:
+        # すべて FLAG='0' ならチェック不要
+        return
+
+    # 書き込み権限のあるメニューIDを取得
+    permitted_menu_ids = _get_write_permission_menu_id_list(objdbca, check_target_menu_ids)
+
+    # 権限のないメニューを抽出
+    denied_menu_ids = [menu_id for menu_id in check_target_menu_ids if menu_id not in permitted_menu_ids]
+
+    if denied_menu_ids:
+        # 権限のないメニュー名をカンマ区切りで結合
+        denied_menu_names = [existing_menu_info[menu_id][1] for menu_id in denied_menu_ids]
+        denied_menu_names_str = ', '.join(denied_menu_names)
+
+        g.applogger.debug(f"[Import Permission Check] Access denied to menus: {denied_menu_names_str}")
+
+        # エラーメッセージを生成（401-00001が既にメッセージテンプレートを持つ）
+        raise AppException("401-00001", [denied_menu_names_str], [denied_menu_names_str])
+
+
 def execute_menu_bulk_export(objdbca, menu, body):
     """
         メニュー一括エクスポート実行
@@ -296,6 +546,10 @@ def execute_menu_bulk_export(objdbca, menu, body):
 
         # 親子メニューグループの際にメニューが重複することがあり、重複排除を行う事にする
         body["menu"] = list(dict.fromkeys(body["menu"]))
+
+        # メニュー一括エクスポートは書き込み権限必須（後のインポート実行を保証）
+        # Excel一括エクスポートは閲覧権限でOK（別処理）
+        check_export_menu_permission(objdbca, body["menu"])
 
         # 登録用パラメータを作成
         parameters = {
@@ -405,6 +659,9 @@ def execute_excel_bulk_export(objdbca, menu, body):
 
         # 親子メニューグループの際にメニューが重複することがあり、重複排除を行う事にする
         body["menu"] = list(dict.fromkeys(body["menu"]))
+
+        # Excel一括エクスポートは閲覧権限でOK（インポート時にunimport_listで権限チェック）
+        # 権限チェックは行わない
 
         # 登録用パラメータを作成
         parameters = {
@@ -1474,6 +1731,9 @@ def execute_menu_import(objdbca, organization_id, workspace_id, menu, body):
     import_list = ",".join(menu_name_rest_list)
 
     try:
+        # メニュー一括インポートは書き込み権限必須（Excel一括インポートは別処理でunimport_listを使用）
+        check_import_menu_permission(objdbca, menu_name_rest_list)
+
         if os.path.isfile(_tmp_import_path + '/DP_INFO') is False:
             # 対象ファイルなし
             raise AppException("499-00905", [], [])

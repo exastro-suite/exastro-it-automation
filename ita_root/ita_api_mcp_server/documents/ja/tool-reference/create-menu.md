@@ -87,6 +87,22 @@
 - `PasswordColumn`: Sensitive field such as passwords
 - `FileUploadColumn`: Field for storing file
 
+### item_name_rest の予約語
+次の値はitem_name_restに使用できません、項目作成時は別の名前を使用すること
+- uuid
+- host_name
+- operation_name_select
+- operation_name_disp
+- base_datetime
+- operation_date
+- last_execute_timestamp
+- input_order
+- no_item
+- remarks
+- discard
+- last_update_date_time
+- last_updated_user
+
 ### column_class=SingleTextColumn definition
 ```json
 {

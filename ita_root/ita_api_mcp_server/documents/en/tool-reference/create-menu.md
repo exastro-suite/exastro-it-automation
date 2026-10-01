@@ -87,6 +87,22 @@ Define using keys in the format `c` + sequential number
 - `PasswordColumn`: Sensitive field such as passwords
 - `FileUploadColumn`: Field for storing file
 
+### Reserved words for item_name_rest
+The following values cannot be used for `item_name_rest`; use a different name when creating an item
+- uuid
+- host_name
+- operation_name_select
+- operation_name_disp
+- base_datetime
+- operation_date
+- last_execute_timestamp
+- input_order
+- no_item
+- remarks
+- discard
+- last_update_date_time
+- last_updated_user
+
 ### column_class=SingleTextColumn definition
 ```json
 {

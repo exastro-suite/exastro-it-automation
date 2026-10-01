@@ -15,7 +15,7 @@
 SubValueAutoReg.getCMDBdata のテスト
 
 本ファイルはテスト基盤(conftest.py / subvalue_autoreg_support.py)の
-動作確認と、testtable.md のパターン表を埋めていくための雛形を兼ねる。
+動作確認と、パターン表を埋めていくための雛形を兼ねる。
 
 getCMDBdata の呼び出し規約:
     ina_vars_ass_list, ina_array_vars_ass_list = instance.getCMDBdata(
@@ -208,7 +208,7 @@ class TestGetCMDBdataFoundation:
 
 
 class TestGetCMDBdataPatternTable:
-    """testtable.md のパターン表に対応するケース。"""
+    """パターン表に対応するケース。"""
 
     def test_bundle_no_hg_no_rec10_samehost_multiope_valid_value_present_value_noseq_nullfalse_driverL(
             self, make_subvalue_autoreg, mock_ws_db, mock_g):
@@ -311,8 +311,7 @@ class TestGetCMDBdataPatternTable:
 
 
 # ======================================================================
-# 以降、testtable.md の各軸ごとのケース。
-# 期待値の一覧は SubValueAutoReg_getCMDBdata_testcases.md を参照。
+# 以降、パターン表の各軸ごとのケース。
 #
 # 共通の土台:
 #   - table       = 'T_PARAM_SHEET'（単一テーブル = バンドル/HG は上流条件のため既定形で表現）
@@ -339,7 +338,6 @@ MENU_ID = 'menu-001'
 #            ※こちらも2箇所に重複実装
 #
 # 片方のリテラルにだけキーを追加/改名する変更を検知するのが目的。
-# 詳細は SubValueAutoReg_getCMDBdata_testcases.md の §9 を参照。
 # ----------------------------------------------------------------------
 EXPECTED_RECORD_KEYS = {
     'TABLE_NAME', 'COL_NAME', 'COL_ROW_ID', 'COL_CLASS', 'COL_FILEUPLOAD_PATH',

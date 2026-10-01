@@ -21,6 +21,16 @@
 .nowLoading .contentInner {
     display: none;
 }
+/* common.cssのinput系クラス（.input / .select）が持つmin-widthは
+   AIアシスタントのレイアウトでは幅が広がりすぎてしまうため無効にする */
+.aiAssistantInputTextarea,
+.aiSettingModelFilterText,
+.aiConversationTitleInput,
+.aiLessonsCategory,
+.aiLessonsPriority,
+.aiLessonsText {
+    min-width: 0;
+}
 .aiAssistantContainer {
     width: 100%; height: 100%;
 }
@@ -851,6 +861,53 @@ flex: 1 1 auto;
     font-size: 12px;
 }
 /* ============================== *\
+   システム通知ブロック
+   学習事項の登録結果や認証切れの案内など、内容を読ませたい通知を、
+   会話の区切りを示すシステムメッセージ（帯）とは別のブロックとして表示する。
+   形はアシスタントメッセージと揃え、色をシステム色（メインカラー）にする。
+\* ============================== */
+.aiAssistantChatSystemNoticeMessage {
+    display: flex;
+    gap: 8px;
+    padding-right: 0;
+}
+.aiAssistantChatSystemNoticeMessageIcon {
+    flex: 0 0 auto;
+    top: 6px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px; height: 32px;
+    background-color: var(--mainColor60);
+    background-image: linear-gradient(-45deg, rgba(255, 255, 255, .3), transparent, rgba(0, 0, 0, .05));
+    box-shadow: 4px 4px 16px var(--black30);
+    border: 4px solid var(--mainColor60);
+    border-radius: 8px;
+    color: #FFF;
+    font-size: 16px;
+}
+.aiAssistantChatSystemNoticeMessageInner {
+    min-width: 0;
+    padding: 12px 24px 12px 16px;
+    background: var(--mainColor10);
+    border-left: 4px solid var(--mainColor60);
+    border-radius: 4px 4px 16px 4px;
+    box-shadow: 4px 4px 16px var(--black30), 0 -16px 16px rgba(0,0,0,.05) inset;
+    color: var(--black80);
+}
+.aiAssistantChatSystemNoticeMessageInner::before {
+    content: '';
+    width: 1px; height: 100%;
+    position: absolute;
+    right: 8px; top: 0;
+    background-color: var(--mainColor30);
+}
+.aiAssistantChatSystemNoticeMessageInner p {
+    margin: 0;
+    font-size: 13px;
+}
+/* ============================== *\
    アシスタントメッセージ
 \* ============================== */
 .aiAssistantChatAssistantMessage {
@@ -948,10 +1005,11 @@ flex: 1 1 auto;
 .aiAssistantChatAssistantMessage ul.aiAssistantUpdatedMenusList {
     display: flex;
     flex-direction: row;
-    gap: 6px;
+    gap: 0 8px;
     margin: 0;
     padding: 0;
     list-style: none;
+    flex-wrap: wrap;
 }
 .aiAssistantUpdatedMenusItem {
     margin: 0;
@@ -990,19 +1048,21 @@ flex: 1 1 auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px; height: 32px;
+    width: 32px;
+    height: 32px;
     background-color: var(--accentColor100);
-    background-image: linear-gradient(-45deg, rgba(255, 255, 255, .3), transparent, rgba(0, 0, 0, .05));
-    box-shadow: 4px 4px 16px var(--black30);
-    border: 4px solid var(--accentColor100);
+    background-image: linear-gradient(0deg, rgba(255, 255, 255, .3), transparent, rgba(0, 0, 0, .05));
+    box-shadow: 4px 4px 16px var(--black30), 0 1px 2px rgba(255, 255, 255, .4) inset;
+    border: 2px solid var(--accentColor100);
     text-shadow: 0 0 4px var(--accentColor100);
     border-radius: 8px;
+    font-size: 24px;
 }
 .aiAssistantChatAssistantMessageIcon::after {
-    content: 'AI';
-    font-size: 12px;
+    content: '\e965';
+    font-size: 16px;
     font-weight: bold;
-    font-family: "Osaka-mono", "MS Gothic", "monospace", sans-serif;
+    font-family: 'exastro-ui-icons' !important;
     color: #FFF;
 }
 .aiAssistantChatAssistantMessageChain .aiAssistantChatAssistantMessageIcon {
@@ -1238,8 +1298,12 @@ flex: 1 1 auto;
 .aiAssistantChatAssistantMessage .aiAssistantChatCodeButtonCopied > .inner {
     opacity: .55;
 }
+/* コードブロックの土台。
+   プレイブックなどの長いコードを読むところなので、背景・文字色はテーマの色
+   （--mainColor系）ではなく固定色にしている。テーマは15種類あり、色付けした
+   コード（.hljs-*）との組み合わせで読めない配色になることを避けるため。
+   枠線だけはテーマの色を使い、画面から浮かないようにしている。 */
 .aiAssistantChatAssistantMessage pre {
-    position: relative;
     min-width: 0;
     max-width: 100%;
     margin: 1.3em 0;
@@ -1248,26 +1312,145 @@ flex: 1 1 auto;
     overflow: auto;
     overscroll-behavior-x: contain;
     tab-size: 4;
+    background-color: #F6F8FA;
+    color: #1F2328;
 }
-.aiAssistantChatAssistantMessage pre::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 0;
-    width: 100%;
-    height: 100%;
-    background: var(--mainColor10);
-    opacity: .5;
+.darkmode .aiAssistantChatAssistantMessage pre {
+    background-color: #1B1F24;
+    color: #E6EDF3;
 }
-.aiAssistantChatAssistantMessage pre code {
-    position: relative;
-}
-.aiAssistantChatAssistantMessage .codeBlock {
+/* コードの文字（等幅・行間広め）。
+   色を付けられた場合はcode.hljs、付けられなかった場合はclassなしのcodeに
+   なるため、どちらにも当たるようpre直下のcodeに指定する。 */
+.aiAssistantChatAssistantMessage pre > code {
     display: block;
     overflow-x: auto;
     padding: 1em;
+    background: none;
+    color: inherit;
+    font-family:
+        "Cascadia Code",
+        "SFMono-Regular",
+        Consolas,
+        "Liberation Mono",
+        monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    letter-spacing: 0;
 }
-.aiAssistantChatAssistantMessage code.hljs {
-    background-color: transparent !important;
+/* ============================== *\
+   コードの色付け（highlight.js）
+
+   highlight.jsのテーマ（lib/highlight/styles配下のCSS）は読み込まず、ここで指定している。
+   ・配布テーマは背景色も一緒に持っているため、上のコードブロックの土台と
+     二重になる（暗いテーマを明るい土台に載せると文字が読めなくなる）。
+   ・ITAはダークモード（body.darkmode）があるため、明暗の2組が必要になる。
+   種別ごとの色は、土台の背景に対して十分な明暗差があるものを選んでいる。
+\* ============================== */
+/* 通常（明るいコードブロック） */
+.aiAssistantChatAssistantMessage .hljs-comment,
+.aiAssistantChatAssistantMessage .hljs-quote {
+    color: #57606A;
+    font-style: italic;
+}
+.aiAssistantChatAssistantMessage .hljs-keyword,
+.aiAssistantChatAssistantMessage .hljs-selector-tag,
+.aiAssistantChatAssistantMessage .hljs-name,
+.aiAssistantChatAssistantMessage .hljs-tag,
+.aiAssistantChatAssistantMessage .hljs-doctag {
+    color: #CF222E;
+}
+/* YAMLのキー（playbookのname・tasksなど）、CSSのプロパティ名 */
+.aiAssistantChatAssistantMessage .hljs-attr,
+.aiAssistantChatAssistantMessage .hljs-attribute,
+.aiAssistantChatAssistantMessage .hljs-selector-attr,
+.aiAssistantChatAssistantMessage .hljs-selector-class,
+.aiAssistantChatAssistantMessage .hljs-selector-id,
+.aiAssistantChatAssistantMessage .hljs-selector-pseudo {
+    color: #0550AE;
+}
+/* 文字列（引用符付き。YAMLの引用符なしの値は通常の文字色になる） */
+.aiAssistantChatAssistantMessage .hljs-string,
+.aiAssistantChatAssistantMessage .hljs-regexp,
+.aiAssistantChatAssistantMessage .hljs-addition {
+    color: #0A3069;
+}
+.aiAssistantChatAssistantMessage .hljs-number,
+.aiAssistantChatAssistantMessage .hljs-literal,
+.aiAssistantChatAssistantMessage .hljs-type,
+.aiAssistantChatAssistantMessage .hljs-built_in,
+.aiAssistantChatAssistantMessage .hljs-symbol {
+    color: #953800;
+}
+.aiAssistantChatAssistantMessage .hljs-title,
+.aiAssistantChatAssistantMessage .hljs-section,
+.aiAssistantChatAssistantMessage .hljs-variable,
+.aiAssistantChatAssistantMessage .hljs-template-variable,
+.aiAssistantChatAssistantMessage .hljs-params {
+    color: #6F42C1;
+}
+/* YAMLの「---」やCSSの@ルールなど、中身ではない目印 */
+.aiAssistantChatAssistantMessage .hljs-meta,
+.aiAssistantChatAssistantMessage .hljs-bullet,
+.aiAssistantChatAssistantMessage .hljs-punctuation {
+    color: #6E4A00;
+}
+.aiAssistantChatAssistantMessage .hljs-deletion {
+    color: #82071E;
+}
+/* ダークモード（暗いコードブロック） */
+.darkmode .aiAssistantChatAssistantMessage .hljs-comment,
+.darkmode .aiAssistantChatAssistantMessage .hljs-quote {
+    color: #9198A1;
+}
+.darkmode .aiAssistantChatAssistantMessage .hljs-keyword,
+.darkmode .aiAssistantChatAssistantMessage .hljs-selector-tag,
+.darkmode .aiAssistantChatAssistantMessage .hljs-name,
+.darkmode .aiAssistantChatAssistantMessage .hljs-tag,
+.darkmode .aiAssistantChatAssistantMessage .hljs-doctag {
+    color: #FF7B72;
+}
+.darkmode .aiAssistantChatAssistantMessage .hljs-attr,
+.darkmode .aiAssistantChatAssistantMessage .hljs-attribute,
+.darkmode .aiAssistantChatAssistantMessage .hljs-selector-attr,
+.darkmode .aiAssistantChatAssistantMessage .hljs-selector-class,
+.darkmode .aiAssistantChatAssistantMessage .hljs-selector-id,
+.darkmode .aiAssistantChatAssistantMessage .hljs-selector-pseudo {
+    color: #79C0FF;
+}
+.darkmode .aiAssistantChatAssistantMessage .hljs-string,
+.darkmode .aiAssistantChatAssistantMessage .hljs-regexp,
+.darkmode .aiAssistantChatAssistantMessage .hljs-addition {
+    color: #A5D6FF;
+}
+.darkmode .aiAssistantChatAssistantMessage .hljs-number,
+.darkmode .aiAssistantChatAssistantMessage .hljs-literal,
+.darkmode .aiAssistantChatAssistantMessage .hljs-type,
+.darkmode .aiAssistantChatAssistantMessage .hljs-built_in,
+.darkmode .aiAssistantChatAssistantMessage .hljs-symbol {
+    color: #FFA657;
+}
+.darkmode .aiAssistantChatAssistantMessage .hljs-title,
+.darkmode .aiAssistantChatAssistantMessage .hljs-section,
+.darkmode .aiAssistantChatAssistantMessage .hljs-variable,
+.darkmode .aiAssistantChatAssistantMessage .hljs-template-variable,
+.darkmode .aiAssistantChatAssistantMessage .hljs-params {
+    color: #D2A8FF;
+}
+.darkmode .aiAssistantChatAssistantMessage .hljs-meta,
+.darkmode .aiAssistantChatAssistantMessage .hljs-bullet,
+.darkmode .aiAssistantChatAssistantMessage .hljs-punctuation {
+    color: #F2CC60;
+}
+.darkmode .aiAssistantChatAssistantMessage .hljs-deletion {
+    color: #FFC1BA;
+}
+/* 強調（markdownと同じ見た目にする） */
+.aiAssistantChatAssistantMessage .hljs-strong {
+    font-weight: 600;
+}
+.aiAssistantChatAssistantMessage .hljs-emphasis {
+    font-style: italic;
 }
 /* ============================== *\
    表
@@ -1580,6 +1763,7 @@ will-change: auto!important;
 /* チャット終了ダイアログ（終了時に行う処理の選択） */
 .aiCloseChatDescription {
     margin-bottom: 12px;
+    line-height: 1.5;
 }
 .aiCloseChatOptionList {
     display: flex;
@@ -1600,6 +1784,8 @@ will-change: auto!important;
 }
 .aiCloseChatGroup{
     width: 100%;
+    padding: 8px;
+    line-height: 1.5;
 }
 /* 学習事項の登録確認ダイアログ（抽出結果の選択・修正） */
 .aiLessonsDescription {
@@ -1631,6 +1817,7 @@ will-change: auto!important;
     overflow-y: auto;
 }
 .aiLessonsItem {
+    width: 100%;
     border: 1px solid var(--mainColor30);
     border-radius: 8px;
     padding: 10px 12px;
@@ -1665,8 +1852,10 @@ will-change: auto!important;
 .aiLessonsItemField .aiLessonsCategory {
     width: 200px;
 }
-.aiLessonsItemField .aiLessonsCategory,
-.aiLessonsItemField .aiLessonsSeverity,
+/* common.cssの.input:focus（詳細度0,2,0）に勝ってしまわないよう、
+   子孫セレクタを使わずクラス単体（0,1,0）で指定する */
+.aiLessonsCategory,
+.aiLessonsPriority,
 .aiLessonsText {
     border: 1px solid var(--mainColor30);
     border-radius: 4px;
@@ -1689,7 +1878,63 @@ will-change: auto!important;
     opacity: .5;
 }
 
-/* AIアシスタント設定ダイアログ（AIサービスの登録状況） */
+/* 会話のタイトルの編集ダイアログ（会話履歴タブ） */
+.aiConversationTitleDescription {
+    margin-bottom: 12px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+.aiConversationTitleInput {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid var(--mainColor30);
+    border-radius: 4px;
+    padding: 4px 6px;
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--black80);
+    background-color: var(--white100);
+}
+
+/* 学習事項の一覧（学習事項タブ） */
+/* 状態（有効・無効）のバッジ。有効なものだけがAIへの前提知識として反映される */
+.aiLessonStatus {
+    display: inline-block;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 12px;
+    white-space: nowrap;
+    color: var(--white100);
+    background-color: var(--black30);
+}
+.aiLessonStatus[data-enabled="true"] {
+    background-color: #0078DC;
+}
+.ci[data-key="enabled"] {
+    padding: 2px 4px;
+    text-align: center;
+}
+.ci[data-key="rowMenu_edit"] .itaButton,
+.ci[data-key="rowMenu_resume"] .itaButton,
+.ci[data-key="rowMenu_check"] .itaButton,
+.ci[data-key="rowMenu_titleEdit"] .itaButton {
+    margin: 0 auto;
+}
+/* 内容は複数行になるため、行の高さが揃うように数行までの表示に抑える */
+.pfTable .tbody .ci[data-key="lesson"] {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+}
+/* 登録できる件数を超えている場合の案内（フッターに表示するため、暗い背景で目立つ色にする） */
+.pfTableNoticeAlert .pfTableNoticeIcon,
+.pfTableNoticeAlert .pfTableNoticeText {
+    color: #FFAA99;
+}
+
+/* AIサービス設定ダイアログ（AIサービスの登録状況） */
 .aiSettingEmpty {
     display: flex;
     flex-direction: column;
@@ -2105,4 +2350,20 @@ will-change: auto!important;
 }
 .aiSettingFileSelectButton .icon {
     margin: 0;
+}
+
+/* ==================================================
+   ファイル編集画面（fn.fileEditor）の右側のAIアシスタント
+   ================================================== */
+/* サブダイアログの中身はタブ（.aiAssistantEditorTab）で高さいっぱいに広げるため、
+   ダイアログ本体側ではスクロールさせない（スクロールはタブの中身が行う） */
+.aiAssistantEditor .subDialogBody {
+    overflow: hidden;
+}
+/* 開いているタブの中身（チャット・一覧）を高さいっぱいに広げる。
+   common.cssの.commonTabSection.openはdisplay:blockのため、ここで上書きする */
+.aiAssistantEditor .aiAssistantEditorTab > .commonTabBody > .commonTabSection.open {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }

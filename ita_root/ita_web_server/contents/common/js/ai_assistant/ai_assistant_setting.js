@@ -66,7 +66,7 @@ static get fieldUiHints() {
             json: true,
             requiredKeys: [ 'accessToken', 'refreshToken', 'idToken'],
             fileSelect: 'application/json,.json',
-            note: 'AWS CLIのログインキャッシュ（~/.aws/login/cache/*.json）の内容をすべて貼り付けてください。'
+            note: getMessage.FTE14140
         }
     };
 }
@@ -77,9 +77,9 @@ static get fileSelectLimitSize() {
 // Credentialのステータス表示名
 static get statusText() {
     return {
-        'active': '有効',
-        'expired': '期限切れ',
-        'disabled': '無効'
+        'active': getMessage.FTE14141,
+        'expired': getMessage.FTE14142,
+        'disabled': getMessage.FTE14143
     };
 }
 /*
@@ -91,6 +91,10 @@ static get statusText() {
 //   onSave: ( preference ) => {}   保存完了を呼び出し側へ通知する
 //   onClose: ( preference ) => {}  設定ダイアログを閉じたことを呼び出し側へ通知する
 //                                 （認証情報の再設定結果を反映させるために使う）
+//   isServiceChangeLocked: () => Boolean
+//                                 使用するAIサービスを変更できない状態か（会話中など）を返す。
+//                                 trueの間は一覧での選択と適用ができなくなる（認証情報の
+//                                 登録・更新・削除・確認とモデルの選択は行える）
 // }
 constructor( params, option = {} ) {
     this.params = params;
@@ -280,7 +284,7 @@ async getRegisteredAiServiceList() {
         } else {
             console.error( result.reason );
             this.credentials[ item.ai_service_id ] = null;
-            this.credentialErrors[ item.ai_service_id ] = result.reason?.message ?? 'Credentialの取得に失敗しました。';
+            this.credentialErrors[ item.ai_service_id ] = result.reason?.message ?? getMessage.FTE14144;
         }
     });
     return this.credentials;
@@ -391,6 +395,14 @@ getSelectedModel( aiServiceId ) {
 isCurrentService( aiServiceId ) {
     return Boolean( aiServiceId ) && this.preference?.ai_service_id === aiServiceId;
 }
+// 使用するAIサービスを変更できない状態か
+//   会話は作成時のAIサービスに紐づいていて、途中から別のAIサービスへ切り替えることはできない。
+//   会話中に変更を許すと、表示しているAIサービス名と実際に応答しているAIサービスが食い違うため、
+//   呼び出し側（チャット）が会話中かどうかを判断して変更を禁止する。
+get serviceChangeLocked() {
+    if ( !this.option.isServiceChangeLocked ) return false;
+    return this.option.isServiceChangeLocked() === true;
+}
 /*
 ##################################################
     チャットで使用するAIサービス・モデル
@@ -489,12 +501,12 @@ get dialogConfig() {
         position: 'center',
         width: '800px',
         header: {
-            title: 'AIアシスタント設定'
+            title: getMessage.FTE14145
         },
         footer: {
             button: {
                 // 適用は選択が現在使用中のAIサービスから変わったときだけ押せるため、dialogPositiveにして個別に切り替える
-                apply: { text: '適用', action: 'positive', className: 'dialogPositive', width: '120px'},
+                apply: { text: getMessage.FTE14146, action: 'positive', className: 'dialogPositive', width: '120px'},
                 close: { text: getMessage.FTE10043, action: 'normal'}
             }
         }
@@ -566,10 +578,10 @@ createBodyHtml() {
 }
 // 読み込み失敗
 createLoadErrorHtml( error ) {
-    const message = error?.message ?? 'AIサービスの情報を取得できませんでした。';
+    const message = error?.message ?? getMessage.FTE14147;
     return `
     <div class="aiSettingEmpty">
-        <div class="aiSettingEmptyMessage">${fn.html.icon('circle_exclamation')} AIサービスの情報を取得できませんでした。</div>
+        <div class="aiSettingEmptyMessage">${fn.html.icon('circle_exclamation')} ${getMessage.FTE14147}</div>
         <div class="aiSettingEmptyNote">${fn.escape( message )}</div>
     </div>`;
 }
@@ -586,14 +598,14 @@ createServiceBlockHtml() {
 createAddServiceButtonHtml() {
     const attrs = { action: 'default'};
     if ( !this.unregisteredServiceList.length ) attrs.disabled = 'disabled';
-    return fn.html.iconButton('plus', 'AIサービスを追加', 'itaButton aiSettingAddServiceButton', attrs );
+    return fn.html.iconButton('plus', getMessage.FTE14148, 'itaButton aiSettingAddServiceButton', attrs );
 }
 // 未登録
 createNoServiceHtml() {
     return `
     <div class="aiSettingEmpty">
-        <div class="aiSettingEmptyMessage">${fn.html.icon('circle_exclamation')} AIサービスが登録されていません。</div>
-        <div class="aiSettingEmptyNote">ご利用になるAIサービスの認証情報を登録してください。</div>
+        <div class="aiSettingEmptyMessage">${fn.html.icon('circle_exclamation')} ${getMessage.FTE14149}</div>
+        <div class="aiSettingEmptyNote">${getMessage.FTE14150}</div>
         <div class="aiSettingEmptyMenu">${this.createAddServiceButtonHtml()}</div>
     </div>`;
 }
@@ -604,11 +616,15 @@ createServiceListHtml() {
         const credential = this.getCredential( service.ai_service_id );
         if ( credential ) html.push( this.createServiceItemHtml( service, credential ) );
     }
+    // 会話中はAIサービスを変更できないため、選択のかわりに理由を案内する
+    const note = ( this.serviceChangeLocked )
+        ? getMessage.FTE14151
+        : getMessage.FTE14152;
     return `
     <div class="commonSection">
         <div class="aiSettingListHeader">
-            <div class="aiSettingListTitle">登録済みAIサービス<span class="aiSettingListCount">${this.registeredCount}件</span><br>
-            使用するAIサービスを選択して適用してください。</div>
+            <div class="aiSettingListTitle">${getMessage.FTE14153}<span class="aiSettingListCount">${getMessage.FTE14154( this.registeredCount )}</span><br>
+            ${note}</div>
             <div class="aiSettingListMenu">${this.createAddServiceButtonHtml()}</div>
         </div>
         <ul class="aiSettingList">${html.join('')}</ul>
@@ -619,17 +635,19 @@ createServiceItemHtml( service, credential ) {
     const status = credential.status ?? '';
     const info = [];
     if ( credential.expires_at ) {
-        info.push(`<div class="aiSettingItemInfo">有効期限：${fn.date( credential.expires_at, 'yyyy/MM/dd HH:mm')}</div>`);
+        info.push(`<div class="aiSettingItemInfo">${getMessage.FTE14155( fn.date( credential.expires_at, 'yyyy/MM/dd HH:mm') )}</div>`);
     }
     if ( credential.last_used_at ) {
-        info.push(`<div class="aiSettingItemInfo">最終使用：${fn.date( credential.last_used_at, 'yyyy/MM/dd HH:mm')}</div>`);
+        info.push(`<div class="aiSettingItemInfo">${getMessage.FTE14156( fn.date( credential.last_used_at, 'yyyy/MM/dd HH:mm') )}</div>`);
     }
 
     const aiServiceId = service.ai_service_id;
     const isCurrent = this.isCurrentService( aiServiceId );
     // 使用するAIサービスは1つのみ選択できる（選択中のAIサービスはai-preferenceに1件だけ保存される）
     const checkAttrs = ( isCurrent )? { checked: 'checked'}: {};
-    const currentHtml = ( isCurrent )? '<div class="aiSettingItemCurrent">使用中</div>': '';
+    // 会話中は選択を変えられないようにする（使用中がどれかは表示したままにする）
+    if ( this.serviceChangeLocked ) checkAttrs.disabled = 'disabled';
+    const currentHtml = ( isCurrent )? `<div class="aiSettingItemCurrent">${getMessage.FTE14157}</div>`: '';
 
     return `
     <li class="aiSettingItem" data-ai-service="${fn.escape( aiServiceId )}">
@@ -647,10 +665,10 @@ createServiceItemHtml( service, credential ) {
                 ${info.join('')}
             </div>
             <div class="aiSettingItemMenu">
-                ${fn.html.iconButton('menuList', 'モデル', 'itaButton aiSettingModelSelectButton', { action: 'default'})}
-                ${fn.html.iconButton('edit', '', 'itaButton aiSettingUpdateButton popup', { action: 'default', title: '更新'})}
-                ${fn.html.iconButton('circle_check', '', 'itaButton aiSettingVerifyButton popup', { action: 'positive', title: '認証確認'})}
-                ${fn.html.iconButton('trash', '', 'itaButton aiSettingDeleteButton popup', { action: 'danger', title: '削除'})}
+                ${fn.html.iconButton('menuList', getMessage.FTE14158, 'itaButton aiSettingModelSelectButton', { action: 'default'})}
+                ${fn.html.iconButton('edit', getMessage.FTE14159, 'itaButton aiSettingUpdateButton', { action: 'default'})}
+                ${fn.html.iconButton('circle_check', '', 'itaButton aiSettingVerifyButton popup', { action: 'positive', title: getMessage.FTE14160 })}
+                ${fn.html.iconButton('trash', '', 'itaButton aiSettingDeleteButton popup', { action: 'danger', title: getMessage.FTE14161 })}
             </div>
         </div>
         ${this.createItemModelHtml( service )}
@@ -664,7 +682,7 @@ createItemModelHtml( service ) {
     if ( !selected ) {
         return `
         <div class="aiSettingItemModel">
-            <div class="aiSettingModelEmpty">${fn.html.icon('circle_exclamation')} モデルが選択されていません。モデルから選択してください。</div>
+            <div class="aiSettingModelEmpty">${fn.html.icon('circle_exclamation')} ${getMessage.FTE14162}</div>
         </div>`;
     }
 
@@ -676,7 +694,7 @@ createItemModelHtml( service ) {
 
     const pickupRow = ( pickupHtml.length )
         ? `<div class="aiSettingModelRow">
-            <div class="aiSettingModelLabel">ピックアップモデル</div>
+            <div class="aiSettingModelLabel">${getMessage.FTE14163}</div>
             <ul class="aiSettingModelList">${pickupHtml.join('')}</ul>
         </div>`
         : '';
@@ -684,7 +702,7 @@ createItemModelHtml( service ) {
     return `
     <div class="aiSettingItemModel">
         <div class="aiSettingModelRow">
-            <div class="aiSettingModelLabel">既定のモデル</div>
+            <div class="aiSettingModelLabel">${getMessage.FTE14164}</div>
             <div class="aiSettingModelDefault">${fn.escape( this.getModelName( aiServiceId, selected.modelId ) )}</div>
         </div>
         ${pickupRow}
@@ -701,7 +719,7 @@ createServiceErrorHtml() {
     if ( !html.length ) return '';
     return `
     <div class="aiSettingNotice">
-        <div class="aiSettingNoticeTitle">${fn.html.icon('attention')} 一部のAIサービスの登録状況を取得できませんでした。</div>
+        <div class="aiSettingNoticeTitle">${fn.html.icon('attention')} ${getMessage.FTE14165}</div>
         <ul class="aiSettingNoticeList">${html.join('')}</ul>
     </div>`;
 }
@@ -756,11 +774,12 @@ getCheckedAiServiceId() {
     if ( !this.dialog ) return '';
     return this.dialog.$.dbody.find('.aiSettingUseRadio:checked').val() ?? '';
 }
-// 使用中のAIサービスから選択が変わっていない場合は適用できない
+// 使用中のAIサービスから選択が変わっていない場合（会話中の場合も）は適用できない
 setApplyButtonState() {
     if ( !this.dialog ) return;
     const checkedId = this.getCheckedAiServiceId();
-    this.dialog.buttonPositiveDisabled( !checkedId || this.isCurrentService( checkedId ) );
+    this.dialog.buttonPositiveDisabled(
+        this.serviceChangeLocked || !checkedId || this.isCurrentService( checkedId ) );
 }
 /*
 ##################################################
@@ -793,23 +812,28 @@ async reloadServiceBlock() {
 // 一覧で選択したAIサービスを、現在選択中のAIサービスとして保存する
 // 適用できた場合は設定ダイアログを閉じる
 async applyUseService() {
-    const title = 'AIサービスの適用';
+    const title = getMessage.FTE14166;
+    // ボタンは押せないようにしてあるが、状態の取り違えで適用されないように念のため確認する
+    if ( this.serviceChangeLocked ) {
+        await fn.alert( title, getMessage.FTE14167 );
+        return;
+    }
     const aiServiceId = this.getCheckedAiServiceId();
     const credential = this.getCredential( aiServiceId );
     if ( !aiServiceId || !credential ) {
-        await fn.alert( title, '使用するAIサービスを選択してください。');
+        await fn.alert( title, getMessage.FTE14168 );
         return;
     }
 
     // モデルが未設定のAIサービスを適用してもチャットを開始できないため、先にモデルを選択してもらう
     if ( !this.getSelectedModel( aiServiceId ) ) {
-        await fn.alert( title, 'モデルが選択されていません。<br>「モデル」から使用するモデルを選択してください。');
+        await fn.alert( title, getMessage.FTE14169 );
         return;
     }
 
     // 適用するとダイアログを閉じるため、実行前に確認する
     const check = await fn.iconConfirm('circle_check', title,
-        `${credential.credential_name}を使用するAIサービスとして適用します。\n\n適用してよろしいですか？`);
+        getMessage.FTE14170( credential.credential_name ) );
     if ( !check ) return;
 
     // 適用中は操作できないようにする
@@ -826,7 +850,7 @@ async applyUseService() {
 
     processing.close();
     if ( error ) {
-        await fn.alert( title, `AIサービスの適用に失敗しました。<br>${fn.escape( error.message ?? '')}`);
+        await fn.alert( title, getMessage.FTE14171( fn.escape( error.message ?? '') ) );
         // 適用できなかった場合はダイアログを開いたままにして、やり直せるようにする
         if ( this.dialog ) {
             this.dialog.buttonEnabled();
@@ -846,7 +870,7 @@ async applyUseService() {
 */
 // 接続確認はサーバー側で何も保存しないため、一覧の再描画は行わない
 async verifyServiceItem( aiServiceId, button ) {
-    const title = '接続確認';
+    const title = getMessage.FTE14172;
     const $button = $( button );
     $button.prop('disabled', true );
     const processing = fn.processingModal( title );
@@ -855,14 +879,14 @@ async verifyServiceItem( aiServiceId, button ) {
     try {
         const result = await this.verifyCredential( aiServiceId );
         if ( result?.valid ) {
-            const detail = ( result.account_id )? `<br>アカウントID：${fn.escape( result.account_id )}`: '';
-            message = `認証情報は有効です。${detail}`;
+            const detail = ( result.account_id )? `<br>${getMessage.FTE14174( fn.escape( result.account_id ) )}`: '';
+            message = `${getMessage.FTE14173}${detail}`;
         } else {
-            message = `認証情報が無効です。<br>${fn.escape( result?.message ?? '')}`;
+            message = getMessage.FTE14175( fn.escape( result?.message ?? '') );
         }
     } catch ( error ) {
         console.error( error );
-        message = `接続確認に失敗しました。<br>${fn.escape( error.message ?? '')}`;
+        message = getMessage.FTE14176( fn.escape( error.message ?? '') );
     }
 
     processing.close();
@@ -879,19 +903,19 @@ async verifyServiceItem( aiServiceId, button ) {
 // Credentialを削除すると、そのAIサービスのモデルの設定もサーバー側で削除される。
 // 使用中のAIサービスの場合は使用するAIサービスの設定もリセットされ、未選択の状態に戻る。
 async deleteServiceItem( aiServiceId, credentialName ) {
-    const title = 'AIサービスの削除';
+    const title = getMessage.FTE14177;
     const isCurrent = this.isCurrentService( aiServiceId );
     const notice = ( isCurrent )
-        ? '\n\n使用中のAIサービスです。削除すると、適用されているAIサービスの設定もリセットされます。': '';
+        ? '\n\n' + getMessage.FTE14178: '';
 
-    const check = await fn.iconConfirm('circle_exclamation', title, `${credentialName}を削除しますか？${notice}`);
+    const check = await fn.iconConfirm('circle_exclamation', title, getMessage.FTE14179( credentialName ) + notice );
     if ( !check ) return;
 
     try {
         await this.deleteCredential( aiServiceId );
     } catch ( error ) {
         console.error( error );
-        await fn.alert( title, `削除に失敗しました。<br>${fn.escape( error.message ?? '')}`);
+        await fn.alert( title, getMessage.FTE14180( fn.escape( error.message ?? '') ) );
     }
     await this.reloadServiceBlock();
 
@@ -909,7 +933,7 @@ async deleteServiceItem( aiServiceId, credentialName ) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // ダイアログの表示名（mode: 'register' | 'update'）
 static dialogTitle( mode ) {
-    return ( mode === 'update')? 'AIサービスの更新': 'AIサービスの追加';
+    return ( mode === 'update')? getMessage.FTE14181: getMessage.FTE14182;
 }
 // 登録・更新モーダルコンフィグ
 credentialDialogConfig( mode ) {
@@ -921,7 +945,7 @@ credentialDialogConfig( mode ) {
         },
         footer: {
             button: {
-                save: { text: ( mode === 'update')? '更新': '登録', action: 'positive', className: 'dialogPositive', width: '120px'},
+                save: { text: ( mode === 'update')? getMessage.FTE14183: getMessage.FTE14184, action: 'positive', className: 'dialogPositive', width: '120px'},
                 cancel: { text: getMessage.FTE10026, action: 'normal'}
             }
         }
@@ -942,7 +966,7 @@ async openCredentialDialog( mode, aiServiceId = null ) {
         if ( !this.getCredential( aiServiceId ) ) return false;
     } else if ( !this.unregisteredServiceList.length ) {
         // 1つのAIサービスにつき1件しか登録できない
-        await fn.alert(AiAssistantSetting.dialogTitle( mode ), '追加できるAIサービスがありません。<br>登録済みのAIサービスは更新してください。');
+        await fn.alert(AiAssistantSetting.dialogTitle( mode ), getMessage.FTE14185 );
         return false;
     }
 
@@ -977,9 +1001,17 @@ async openCredentialDialog( mode, aiServiceId = null ) {
         dialog.open( this.createCredentialBodyHtml( mode, aiServiceId ) );
         dialog.buttonPositiveDisabled( false );
 
+        // Credential名の初期値（AIサービス変更時、未編集なら初期値を差し替える）
+        let defaultName = String( dialog.$.dbody.find('[name="credential_name"]').val() ?? '');
+
         // AIサービスを変更したら認証情報の入力欄を切り替える（更新時はAIサービスを変更できない）
         dialog.$.dbody.on('change', '.aiSettingServiceSelect', ( e ) => {
             const selected = e.currentTarget.value;
+            const $name = dialog.$.dbody.find('[name="credential_name"]');
+            if ( $name.val() === defaultName ) {
+                defaultName = this.defaultCredentialName( selected );
+                $name.val( defaultName );
+            }
             dialog.$.dbody.find('.aiSettingServiceDescription').text( this.getService( selected )?.description ?? '');
             dialog.$.dbody.find('.aiSettingCredentialFields').html( this.createCredentialFieldsHtml( selected, mode ) );
         });
@@ -1005,7 +1037,7 @@ async readFileToInput( $button, title ) {
     } catch ( error ) {
         // 選択をキャンセルした場合は何もしない
         if ( error === 'cancel') return;
-        await fn.alert( title, `ファイルを読み込めませんでした。<br>${fn.escape( String( error?.message ?? error ) )}`);
+        await fn.alert( title, getMessage.FTE14186( fn.escape( String( error?.message ?? error ) ) ) );
         return;
     }
 
@@ -1014,7 +1046,7 @@ async readFileToInput( $button, title ) {
         $input.val( await this.fileToText( file ) ).trigger('change');
     } catch ( error ) {
         console.error( error );
-        await fn.alert( title, `ファイルを読み込めませんでした。<br>${fn.escape( error.message ?? '')}`);
+        await fn.alert( title, getMessage.FTE14186( fn.escape( error.message ?? '') ) );
     }
 }
 // ファイルの実体を生テキストに変換する（fn.fileToTextは読み込み失敗時に解決しないため個別に用意する）
@@ -1050,16 +1082,19 @@ createCredentialBodyHtml( mode, aiServiceId = null ) {
             + `<div class="aiSettingServiceDescription">${fn.escape( this.getService( selected )?.description ?? '')}</div>`;
     }
 
+    // 登録時は「AIサービス名_日時」を初期値にする
+    const credentialName = ( mode === 'update')? credential?.credential_name ?? '': this.defaultCredentialName( selected );
+
     const rows = [
-        this.createInputRowHtml('ai_service_id', 'AIサービス', serviceBody, mode !== 'update'),
-        this.createInputRowHtml('credential_name', 'Credential名',
-            fn.html.inputText('', credential?.credential_name ?? '', 'credential_name', { placeholder: 'My Bedrock Credential'}), true )
+        this.createInputRowHtml('ai_service_id', getMessage.FTE14187, serviceBody, mode !== 'update'),
+        this.createInputRowHtml('credential_name', getMessage.FTE14188,
+            fn.html.inputText('', credentialName, 'credential_name', { placeholder: 'My Bedrock Credential'}), true )
     ];
 
     return `
-    <div class="aiSettingCredentialForm">
+    <div class="aiSettingCredentialForm" spellcheck="false">
         <div class="commonSection">
-            <div class="commonTitle">AIサービス</div>
+            <div class="commonTitle">${getMessage.FTE14187}</div>
             <div class="commonBody">
                 <div class="commonInputGroup">
                     <table class="commonInputTable">
@@ -1069,18 +1104,24 @@ createCredentialBodyHtml( mode, aiServiceId = null ) {
             </div>
         </div>
         <div class="commonSection">
-            <div class="commonTitle">認証情報</div>
+            <div class="commonTitle">${getMessage.FTE14189}</div>
             <div class="commonBody">
                 <div class="commonInputGroup aiSettingCredentialFields">${this.createCredentialFieldsHtml( selected, mode )}</div>
             </div>
         </div>
     </div>`;
 }
+// Credential名の初期値（AIサービス名_日時）
+defaultCredentialName( aiServiceId ) {
+    if ( !aiServiceId ) return '';
+    const name = this.getService( aiServiceId )?.ai_service_name ?? aiServiceId;
+    return `${name}_${fn.date( new Date(), 'yyyyMMdd_HHmmss')}`;
+}
 // 認証情報の入力欄
 createCredentialFieldsHtml( aiServiceId, mode = 'register') {
     const fields = this.getCredentialFields( aiServiceId );
     if ( !fields.length ) {
-        return `<div class="aiSettingFieldsNote">${fn.html.icon('circle_info')} このAIサービスには入力する認証情報がありません。</div>`;
+        return `<div class="aiSettingFieldsNote">${fn.html.icon('circle_info')} ${getMessage.FTE14190}</div>`;
     }
 
     // 更新時、マスク対象外（passwordタイプ以外）の項目は登録済みの値が返るため入力欄に反映する
@@ -1092,7 +1133,7 @@ createCredentialFieldsHtml( aiServiceId, mode = 'register') {
 
     // 更新は全体置換だが、マスクされている項目は取得できないため引き継げない
     const modeNote = ( mode === 'update')
-        ? `<div class="aiSettingFieldsNote">${fn.html.icon('circle_info')} 登録済みのトークンやキーは表示されません。更新する場合は、あらためて入力してください。</div>`
+        ? `<div class="aiSettingFieldsNote">${fn.html.icon('circle_info')} ${getMessage.FTE14191}</div>`
         : '';
 
     return modeNote + `
@@ -1113,7 +1154,7 @@ createFieldInputHtml( field, credentialData = {}) {
         if ( field.fileSelect ) {
             option.subButton = fn.html.button( fn.html.icon('upload'), 'itaButton aiSettingFileSelectButton popup', {
                 action: 'default',
-                title: 'ファイルを選択して読み込む',
+                title: getMessage.FTE14192,
                 accept: field.fileSelect
             });
         }
@@ -1146,13 +1187,13 @@ async saveFromDialog( dialog, mode, aiServiceId = null ) {
     // 更新時はAIサービスを変更できないため、対象のIDをそのまま使用する
     const serviceId = ( mode === 'update')? aiServiceId: $body.find('.aiSettingServiceSelect').val();
     if ( !this.getService( serviceId ) ) {
-        await fn.alert( title, 'AIサービスを選択してください。');
+        await fn.alert( title, getMessage.FTE14193 );
         return false;
     }
 
     const credentialName = String( $body.find('[name="credential_name"]').val() ?? '').trim();
     if ( credentialName === '') {
-        await fn.alert( title, 'Credential名を入力してください。');
+        await fn.alert( title, getMessage.FTE14194 );
         return false;
     }
 
@@ -1169,20 +1210,20 @@ async saveFromDialog( dialog, mode, aiServiceId = null ) {
         }
     } catch ( error ) {
         console.error( error );
-        await fn.alert( title, `AIサービスの${( mode === 'update')? '更新': '登録'}に失敗しました。<br>${fn.escape( error.message ?? '')}`);
+        await fn.alert( title, getMessage.FTE14195( ( mode === 'update')? getMessage.FTE14183: getMessage.FTE14184, fn.escape( error.message ?? '') ) );
         return false;
     }
 
     // 保存できたら続けて検証する。検証に失敗しても保存自体は残す。
-    const savedText = ( mode === 'update')? '更新しました': '登録しました';
+    const savedText = ( mode === 'update')? getMessage.FTE14196: getMessage.FTE14197;
     try {
         const verify = await this.verifyCredential( serviceId );
         if ( !verify?.valid ) {
-            await fn.alert( title, `${savedText}が、認証情報の検証に失敗しました。<br>${fn.escape( verify?.message ?? '')}`);
+            await fn.alert( title, getMessage.FTE14198( savedText, fn.escape( verify?.message ?? '') ) );
         }
     } catch ( error ) {
         console.error( error );
-        await fn.alert( title, `${savedText}が、認証情報の検証に失敗しました。<br>${fn.escape( error.message ?? '')}`);
+        await fn.alert( title, getMessage.FTE14198( savedText, fn.escape( error.message ?? '') ) );
     }
     return true;
 }
@@ -1194,7 +1235,7 @@ async saveFromDialog( dialog, mode, aiServiceId = null ) {
 // 入力に問題がある場合はメッセージを表示してnullを返す
 async createCredentialDataFromDialog( $body, fields, title ) {
     if ( !fields.length ) {
-        await fn.alert( title, 'このAIサービスには認証情報を登録できません。');
+        await fn.alert( title, getMessage.FTE14199 );
         return null;
     }
 
@@ -1203,7 +1244,7 @@ async createCredentialDataFromDialog( $body, fields, title ) {
         const value = String( $body.find(`[name="${field.key}"]`).val() ?? '').trim();
         if ( value === '') {
             if ( field.required ) {
-                await fn.alert( title, `${fn.escape( field.title )}を入力してください。`);
+                await fn.alert( title, getMessage.FTE14200( fn.escape( field.title ) ) );
                 return null;
             }
             continue;
@@ -1220,7 +1261,7 @@ async createCredentialDataFromDialog( $body, fields, title ) {
 
     // 入力欄をすべて省略した場合、credential_dataが必須のため保存できない
     if ( !Object.keys( credentialData ).length ) {
-        await fn.alert( title, '認証情報を入力してください。');
+        await fn.alert( title, getMessage.FTE14201 );
         return null;
     }
     return credentialData;
@@ -1236,17 +1277,17 @@ async checkJsonField( field, value, title ) {
     try {
         json = JSON.parse( value );
     } catch ( error ) {
-        await fn.alert( title, `${fn.escape( field.title )}がJSON形式ではありません。<br>${fn.escape( error.message )}`);
+        await fn.alert( title, getMessage.FTE14202( fn.escape( field.title ), fn.escape( error.message ) ) );
         return false;
     }
     if ( fn.typeof( json ) !== 'object') {
-        await fn.alert( title, `${fn.escape( field.title )}は{ }で囲まれたJSONを貼り付けてください。`);
+        await fn.alert( title, getMessage.FTE14203( fn.escape( field.title ) ) );
         return false;
     }
 
     const lackKeys = ( field.requiredKeys ?? [] ).filter(( key ) => !( key in json ) );
     if ( lackKeys.length ) {
-        await fn.alert( title, `${fn.escape( field.title )}に次の項目が含まれていません。<br>${fn.escape( lackKeys.join(', ') )}`);
+        await fn.alert( title, getMessage.FTE14204( fn.escape( field.title ), fn.escape( lackKeys.join(', ') ) ) );
         return false;
     }
     return true;
@@ -1262,11 +1303,11 @@ get modelDialogConfig() {
         position: 'center',
         width: '960px',
         header: {
-            title: 'モデルの選択'
+            title: getMessage.FTE14205
         },
         footer: {
             button: {
-                save: { text: '設定', action: 'positive', className: 'dialogPositive'},
+                save: { text: getMessage.FTE14206, action: 'positive', className: 'dialogPositive', width: '120px'},
                 cancel: { text: getMessage.FTE10026, action: 'normal'}
             }
         }
@@ -1345,10 +1386,10 @@ async loadModelDialog( dialog, aiServiceId ) {
 }
 // 読み込み失敗
 createModelLoadErrorHtml( error ) {
-    const message = error?.message ?? 'モデル一覧を取得できませんでした。';
+    const message = error?.message ?? getMessage.FTE14207;
     return `
     <div class="aiSettingEmpty">
-        <div class="aiSettingEmptyMessage">${fn.html.icon('circle_exclamation')} モデル一覧を取得できませんでした。</div>
+        <div class="aiSettingEmptyMessage">${fn.html.icon('circle_exclamation')} ${getMessage.FTE14207}</div>
         <div class="aiSettingEmptyNote">${fn.escape( message )}</div>
     </div>`;
 }
@@ -1361,8 +1402,8 @@ createModelBodyHtml( aiServiceId, modelList ) {
     if ( !modelList.length ) {
         return `
         <div class="aiSettingEmpty">
-            <div class="aiSettingEmptyMessage">${fn.html.icon('circle_exclamation')} 利用できるモデルがありません。</div>
-            <div class="aiSettingEmptyNote">認証情報に紐づくAWSアカウントで、利用可能な推論プロファイルをご確認ください。</div>
+            <div class="aiSettingEmptyMessage">${fn.html.icon('circle_exclamation')} ${getMessage.FTE14208}</div>
+            <div class="aiSettingEmptyNote">${getMessage.FTE14209}</div>
         </div>`;
     }
 
@@ -1405,22 +1446,22 @@ createModelBodyHtml( aiServiceId, modelList ) {
     return `
     <div class="aiSettingModelSelect" data-ai-service="${fn.escape( aiServiceId )}">
         <div class="commonSection aiSettingModelSelectSection">
-            <div class="commonTitle">ピックアップモデル</div>
+            <div class="commonTitle">${getMessage.FTE14163}</div>
             <div class="commonBody">
-                <div class="aiSettingModelSelectNote">チャットで切り替えられるモデルを選択してください。</div>
+                <div class="aiSettingModelSelectNote">${getMessage.FTE14210}</div>
                 <div class="aiSettingModelFilter">
                     ${fn.html.icon('search')}
-                    <input class="aiSettingModelFilterText input" name="model_filter" placeholder="モデル名・モデルIDで絞り込み" autocomplete="off">
+                    <input type="text" class="aiSettingModelFilterText input inputText" spellcheck="false" name="model_filter" placeholder="${getMessage.FTE14211}" autocomplete="off">
                     <button class="aiSettingModelFilterClear" type="button">${fn.html.icon('cross')}</button>
                 </div>
                 <ul class="aiSettingModelSelectList">${groupHtml.join('')}</ul>
-                <div class="aiSettingModelSelectEmpty aiSettingModelFilterEmpty">${fn.html.icon('circle_info')} 該当するモデルがありません。</div>
+                <div class="aiSettingModelSelectEmpty aiSettingModelFilterEmpty">${fn.html.icon('circle_info')} ${getMessage.FTE14212}</div>
             </div>
         </div>
         <div class="commonSection aiSettingModelSelectSection">
-            <div class="commonTitle">既定のモデル</div>
+            <div class="commonTitle">${getMessage.FTE14164}</div>
             <div class="commonBody">
-                <div class="aiSettingModelSelectNote">ピックアップモデルの中から、最初に選択されるモデルを選んでください。</div>
+                <div class="aiSettingModelSelectNote">${getMessage.FTE14213}</div>
                 <ul class="aiSettingModelSelectList aiSettingDefaultModelList">${this.createDefaultModelListHtml( aiServiceId, pickupModelIds, selected?.modelId )}</ul>
             </div>
         </div>
@@ -1429,7 +1470,7 @@ createModelBodyHtml( aiServiceId, modelList ) {
 // 既定のモデル（ピックアップモデルの選択に合わせて作り直す）
 createDefaultModelListHtml( aiServiceId, pickupModelIds, modelId ) {
     if ( !pickupModelIds.length ) {
-        return `<li class="aiSettingModelSelectEmpty">${fn.html.icon('circle_info')} ピックアップモデルを選択してください。</li>`;
+        return `<li class="aiSettingModelSelectEmpty">${fn.html.icon('circle_info')} ${getMessage.FTE14214}</li>`;
     }
 
     // 選択中の既定のモデルがピックアップから外れた場合は、先頭のピックアップモデルを既定にする
@@ -1472,7 +1513,7 @@ groupModelList( modelList ) {
         const words = ( multiProvider )? [ group.provider, ...group.family ]: group.family;
         group.name = ( group.family.length )
             ? words.filter(( word ) => word ).map(( word ) => word.charAt(0).toUpperCase() + word.slice(1) ).join(' ')
-            : 'その他';
+            : getMessage.FTE14215;
     }
 
     // 表示名にリージョンとバージョンが含まれるため、名称順に並べるとリージョン・バージョンごとに並ぶ
@@ -1603,16 +1644,16 @@ getDefaultModelIdFromDialog( dialog ) {
 ##################################################
 */
 async saveModelFromDialog( dialog, aiServiceId ) {
-    const title = 'モデルの選択';
+    const title = getMessage.FTE14205;
     const pickupModelIds = this.getPickupModelIdsFromDialog( dialog );
     if ( !pickupModelIds.length ) {
-        await fn.alert( title, 'ピックアップモデルを選択してください。');
+        await fn.alert( title, getMessage.FTE14214 );
         return false;
     }
 
     const modelId = this.getDefaultModelIdFromDialog( dialog );
     if ( !pickupModelIds.includes( modelId ) ) {
-        await fn.alert( title, '既定のモデルを選択してください。');
+        await fn.alert( title, getMessage.FTE14216 );
         return false;
     }
 
@@ -1626,7 +1667,7 @@ async saveModelFromDialog( dialog, aiServiceId ) {
         await this.setServicePreference( aiServiceId, modelId, this.getModelName( aiServiceId, modelId ), pickupModels );
     } catch ( error ) {
         console.error( error );
-        await fn.alert( title, `モデルの設定に失敗しました。<br>${fn.escape( error.message ?? '')}`);
+        await fn.alert( title, getMessage.FTE14217( fn.escape( error.message ?? '') ) );
         return false;
     }
 
@@ -1636,8 +1677,7 @@ async saveModelFromDialog( dialog, aiServiceId ) {
             await this.setPreference( aiServiceId );
         } catch ( error ) {
             console.error( error );
-            await fn.alert( title, `モデルは設定しましたが、AIサービスの適用に失敗しました。<br>${fn.escape( error.message ?? '')}`
-                + '<br>一覧で使用するAIサービスを選択して適用してください。');
+            await fn.alert( title, getMessage.FTE14218( fn.escape( error.message ?? '') ) );
         }
     }
     return true;

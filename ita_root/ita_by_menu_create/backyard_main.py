@@ -702,6 +702,7 @@ def _insert_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_co
             "WEB_PRINT_LIMIT": 10000,
             "WEB_PRINT_CONFIRM": 1000,
             "SORT_KEY": sort_key,
+            "EXPORT_PERMISSION_CHECK_FLG": "1",
             "DISUSE_FLAG": "0",
             "LAST_UPDATE_USER": g.get('USER_ID')
         }

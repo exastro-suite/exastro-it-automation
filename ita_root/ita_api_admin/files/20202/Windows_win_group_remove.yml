@@ -1,6 +1,13 @@
+- name: Ensure ITA variable is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Remove_groups: "{{ ITA_DFLT_Remove_groups }}"
+  when: ITA_DFLT_Remove_groups is defined
+
 - name: Remove groups
   ansible.windows.win_group:
     name: "{{ item }}"
     state: absent
-  with_items:
-    - "{{ ITA_DFLT_Remove_groups }}"
+  loop: >-
+    {{
+      ITA_DFLT_Remove_groups if ITA_DFLT_Remove_groups is sequence and ITA_DFLT_Remove_groups is not string else [ITA_DFLT_Remove_groups]
+    }}

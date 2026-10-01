@@ -76,7 +76,8 @@ from libs import tool, HTTPException, build_forward_headers
             }
         },
         "required": ["menu"]
-    }
+    },
+    profile=["AgenticAI", "LLMEditor"]
 )
 def tool_list_menu_info(arguments: dict, payload: dict) -> dict:
     """
@@ -109,6 +110,8 @@ def tool_list_menu_info(arguments: dict, payload: dict) -> dict:
 
     if not menu:
         raise Exception("menu is required")
+
+    g.applogger.info(f'Parameter menu={menu}')
 
     # このツールが呼び出すのは "/ita/menu/{menu}/info/" というITA自身のAPI
     # (ita_api_organization)側のエンドポイントであるため、環境変数
@@ -166,7 +169,8 @@ def tool_list_menu_info(arguments: dict, payload: dict) -> dict:
             }
         },
         "required": ["menu"]
-    }
+    },
+    profile=["AgenticAI", "LLMEditor"]
 )
 def tool_list_menu_info_pulldown(arguments: dict, payload: dict) -> dict:
     """
@@ -208,6 +212,8 @@ def tool_list_menu_info_pulldown(arguments: dict, payload: dict) -> dict:
 
     if not menu:
         raise Exception("menu is required")
+
+    g.applogger.info(f'Parameter menu={menu}')
 
     # list-menu-info と同じITA自身のAPI(ita_api_organization)を呼び出すため、
     # 同じ環境変数 ITA_API_ORAGANIZATION_HOST / ITA_API_ORAGANIZATION_PORT を使用する

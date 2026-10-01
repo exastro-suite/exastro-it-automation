@@ -67,7 +67,7 @@ _VALID_RECORD_TYPES = ["Register", "Update", "Discard", "Restore", "Delete"]
     name="maintenance-all",
     description=(
         "Bulk register/update/discard/restore/physically delete records in an ITA menu."
-        "Before use, refer to `documents-tools/maintenance-all.md` using the `get-document` tool."
+        "Before use, refer to `tool-reference/maintenance-all.md` using the `get-document` tool."
     ),
     input_schema={
         "type": "object",
@@ -115,7 +115,8 @@ _VALID_RECORD_TYPES = ["Register", "Update", "Discard", "Restore", "Delete"]
             }
         },
         "required": ["menu", "records"]
-    }
+    },
+    profile=["AgenticAI"]
 )
 def tool_maintenance_all(arguments: dict, payload: dict) -> dict:
     """
@@ -171,6 +172,8 @@ def tool_maintenance_all(arguments: dict, payload: dict) -> dict:
 
     if not records or not isinstance(records, list):
         raise Exception("records is required and must be a non-empty array")
+
+    g.applogger.info(f'Parameter menu={menu} records={len(records)}')
 
     # 各レコードの内容を検証し、fileid(file_id参照)が指定されている場合は
     # 実ファイルを取得してBase64化した上でfile項目に変換する
@@ -237,10 +240,6 @@ def tool_maintenance_all(arguments: dict, payload: dict) -> dict:
     # Build the headers to forward (also adds "Content-Type" since this is a POST with a body)
     headers = build_forward_headers(method="POST")
 
-    g.applogger.info(
-        "Maintenance all: menu={}, record_count={}".format(menu, len(records))
-    )
-
     # ITAのAPIへ一括メンテナンスのPOSTリクエストを送信する
     # Send a POST request to ITA's API to perform the bulk maintenance operation
     req = requests.post(url, json=records, headers=headers)
@@ -250,6 +249,9 @@ def tool_maintenance_all(arguments: dict, payload: dict) -> dict:
     if req.status_code != 200:
         g.applogger.info("Failed to perform maintenance all: {} - {}".format(req.status_code, req.text))
         raise HTTPException("maintenance-all", req)
+
+    if menu == "operation_list":
+        _update_operation_list_language(organization_id, workspace_id, req.json())
 
     # 正常時はAPIのレスポンスをそのまま結果として返す
     # On success, return the API response as the result
@@ -261,3 +263,115 @@ def tool_maintenance_all(arguments: dict, payload: dict) -> dict:
         "menu": menu,
         "record_count": len(records)
     }
+
+
+def _update_operation_list_language(organization_id: str, workspace_id: str, response_json: dict):
+    """
+    operation_listメニューのレコードのlanguage項目を、ita-api-mcp-serverが
+    受け取ったLanguageヘッダーの値で更新し直す
+
+    Re-update the "language" field of operation_list menu records to match
+    the Language header value received by ita-api-mcp-server.
+
+    operation_listのlanguage項目は、ita_api_organization側のメニュー個別処理
+    (common_libs/validate/valid_10201.py の external_valid_menu_before)によって、
+    Delete以外の全操作(Register/Update/Discard/Restore)でg.LANGUAGE(そのAPI呼び出し
+    時のLanguageヘッダーの値)に強制的に上書きされる。一方、build_forward_headers()は
+    ダウンストリームAPI呼び出し時のLanguageヘッダーを常に"en"固定にしているため、
+    ita-api-mcp-serverが受け取ったLanguageヘッダーが"en"以外の場合、maintenance-all
+    呼び出し直後のレコードのlanguage項目は意図せず"en"になってしまう。
+    そのため、"en"以外の場合のみ、対象レコードをfilter APIで取得し直し、language項目を
+    実際のLanguageヘッダーの値に更新するUpdateリクエストを送る。
+
+    The "language" field of operation_list records is forcibly overwritten by
+    ita_api_organization's per-menu hook (external_valid_menu_before in
+    common_libs/validate/valid_10201.py) with g.LANGUAGE (the Language header
+    value used for that API call) on every operation type except Delete
+    (Register/Update/Discard/Restore). Meanwhile, build_forward_headers()
+    always fixes the Language header to "en" for downstream API calls, so
+    whenever ita-api-mcp-server actually received a non-"en" Language header,
+    the "language" field ends up unintentionally set to "en" right after a
+    maintenance-all call. So, only in that case, this function re-fetches the
+    affected records via the filter API and sends an Update request that
+    sets "language" to the actual Language header value.
+
+    Parameters:
+        organization_id (str): オーガナイゼーションID / organization id
+        workspace_id (str): ワークスペースID / workspace id
+        response_json (dict): maintenance-all呼び出しのレスポンスJSON
+            (data.IdListに登録/更新したレコードのoperation_idが入る)
+            / the response JSON of the maintenance-all call (its data.IdList
+            holds the operation_id of the registered/updated records)
+
+    Raises:
+        HTTPException: レコードの再取得またはlanguage項目の更新に失敗した場合
+            / if re-fetching the records or updating the "language" field fails
+    """
+    # ita-api-mcp-serverが受け取ったLanguageヘッダーの値("en"の場合は更新不要)
+    # The Language header value received by ita-api-mcp-server (no update needed when "en")
+    language = g.LANGUAGE
+    if not language or language.lower() == "en":
+        return
+
+    id_list = ((response_json or {}).get("data") or {}).get("IdList") or []
+    if not id_list:
+        return
+
+    ita_api_host = os.getenv("ITA_API_ORAGANIZATION_HOST")
+    ita_api_port = os.getenv("ITA_API_ORAGANIZATION_PORT")
+
+    # filter APIで、登録/更新したレコードをoperation_id(登録時のレスポンスに
+    # 含まれるIdList)を検索条件に再取得する
+    # Re-fetch the registered/updated records via the filter API, using
+    # operation_id (the IdList contained in the registration response) as the search condition
+    filter_url = "http://{}:{}/api/{}/workspaces/{}/ita/menu/operation_list/filter/".format(
+        ita_api_host, ita_api_port, organization_id, workspace_id
+    )
+    filter_conditions = {"operation_id": {"LIST": id_list}}
+    # build_forward_headers()は常に"en"固定のため、実際のLanguageヘッダーの値で上書きする
+    # build_forward_headers() always fixes it to "en", so override with the actual Language header value
+    filter_headers = build_forward_headers(method="POST")
+    filter_headers["Language"] = language
+    req = requests.post(filter_url, json=filter_conditions, headers=filter_headers, params={"file": "no"})
+    if req.status_code != 200:
+        g.applogger.info(
+            "Failed to get operation_list records for language update: {} - {}".format(req.status_code, req.text)
+        )
+        raise HTTPException("maintenance-all", req)
+
+    records = req.json().get("data", [])
+    if not records:
+        return
+
+    # 取得したレコードのparameterをそのまま使い、language項目のみを
+    # Languageヘッダーの値に書き換えて更新する(楽観的ロックのため、
+    # last_update_date_timeを含む取得済みの値をそのまま使う)
+    # Reuse the fetched records' parameter as-is, only overwriting the
+    # "language" field with the Language header value (keep the fetched
+    # values, including last_update_date_time, as-is for optimistic locking)
+    update_records = []
+    for record in records:
+        parameter = dict(record.get("parameter") or {})
+        # 廃止済みレコードは更新対象外とする
+        # Exclude already-discarded records from the update target
+        if parameter.get("discard") == "1":
+            continue
+        update_records.append({"parameter": parameter, "type": "Update"})
+
+    if not update_records:
+        return
+
+    maintenance_url = "http://{}:{}/api/{}/workspaces/{}/ita/menu/operation_list/maintenance/all/".format(
+        ita_api_host, ita_api_port, organization_id, workspace_id
+    )
+    # このUpdateリクエストでは、language項目に実際のLanguageヘッダーの値を
+    # 設定させるため、常に"en"固定のbuild_forward_headers()の値を上書きする
+    # For this Update request, override build_forward_headers()'s
+    # fixed "en" Language header so the "language" field actually gets set to
+    # the intended value
+    update_headers = build_forward_headers(method="POST")
+    update_headers["Language"] = language
+    req = requests.post(maintenance_url, json=update_records, headers=update_headers)
+    if req.status_code != 200:
+        g.applogger.info("Failed to update operation_list language: {} - {}".format(req.status_code, req.text))
+        raise HTTPException("maintenance-all", req)

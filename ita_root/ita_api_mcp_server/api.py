@@ -52,11 +52,14 @@ from common_libs.api import api_filter_admin
 
 # このサービス独自の共通処理(before_request_handler)をimportする
 # Import this service's own common processing (before_request_handler)
-from libs.mcp_server_common import before_request_handler, log_api_end
+from libs.mcp_server_common import before_request_handler, after_request_handler, log_api_end
 
 # ツール呼び出しに必要な関数・例外クラスをimportする
 # Import the functions/exception classes needed to invoke tools
-from libs import load_dynamic_tools, get_tool_functions, check_tool_permission, HTTPException, is_tool_visible
+from libs import (
+    load_dynamic_tools, get_tool_functions, check_tool_permission, HTTPException,
+    is_tool_visible, is_tool_in_profile
+)
 
 # tools パッケージをimportすることで、配下の @tool デコレーター付き関数が
 # レジストリ(libs.tools_decorator.TOOL_REGISTRY)に登録される。
@@ -89,6 +92,16 @@ app = Flask(__name__)
 # Register the common pre-processing (log init / header validation, etc.)
 # to run before every request
 app.before_request(before_request_handler)
+
+# 各リクエストの処理後に[api-end]ログを自動出力するよう登録する
+# (jsonrpc_handler の "tools/call" 成功パスのように、明示的にlog_api_endを
+#  呼んでいる場合は、after_request_handler側で重複ログを防ぐ)
+#
+# Register automatic [api-end] logging to run after every request.
+# (When log_api_end has already been called explicitly — e.g. the
+#  "tools/call" success path in jsonrpc_handler — after_request_handler
+#  avoids logging it a second time)
+app.after_request(after_request_handler)
 
 # tools パッケージが提供するBlueprintを登録する
 # Register the Blueprints provided by the tools package
@@ -232,8 +245,18 @@ def handle_tools_list(params: dict, payload: dict) -> dict:
     """
     MCPの "tools/list" メソッドを処理する
 
+    クエリー文字列 `profile` が指定されている場合、tool デコレーターの
+    profile 引数と一致するツールのみに絞り込む(未指定の場合は絞り込みを
+    行わず全ツールを対象とする)。
+
     Handle the MCP "tools/list" method.
+
+    If the `profile` query string is given, results are narrowed down to
+    tools whose @tool decorator `profile` argument matches it (if not given,
+    no narrowing is applied and every tool is a candidate).
     """
+    profile = payload.get("profile")
+
     # 登録済みの全ツール設定を取得する
     # Get the configuration of every registered tool
     all_tools = load_dynamic_tools()
@@ -262,7 +285,9 @@ def handle_tools_list(params: dict, payload: dict) -> dict:
             "inputSchema": t.get("inputSchema", {"type": "object", "properties": {}})
         }
         for t in all_tools
-        if t.get("enabled", True) and is_tool_visible(t, payload, menu_cache)
+        if t.get("enabled", True)
+        and is_tool_in_profile(t, profile)
+        and is_tool_visible(t, payload, menu_cache)
     ]
 
     g.applogger.info("List tools: count={}".format(len(available_tools)))
@@ -307,9 +332,8 @@ def handle_tools_call(params: dict, payload: dict) -> dict:
     if not tool_name:
         raise Exception("Tool name is required")
 
-    g.applogger.info(
-        "Tool call: tool={}, args={}".format(tool_name, _mask_sensitive_args(arguments))
-    )
+    g.applogger.info("Tool call: tool={}".format(tool_name))
+    g.applogger.debug("Tool call args={}".format(_mask_sensitive_args(arguments)))
 
     # ツールが存在し、実行可能かどうかを確認する
     # Verify that the tool exists and may be executed
@@ -332,7 +356,7 @@ def handle_tools_call(params: dict, payload: dict) -> dict:
         # Invoke the tool's implementation
         result = tool_func(arguments, payload)
 
-        g.applogger.info(
+        g.applogger.debug(
             "Tool call completed: tool={}".format(tool_name)
         )
 
@@ -496,6 +520,7 @@ def jsonrpc_handler(organization_id, workspace_id):
             "workspace_id": g.get("WORKSPACE_ID"),
             "user_id": g.get("USER_ID"),
             "roles": g.get("ROLES"),
+            "profile": request.args.get("profile"),
         }
 
         # メソッド名がサポート対象外の場合はエラーとする

@@ -916,7 +916,7 @@ getFile: function( endPoint, method = 'GET', data, option = {} ) {
             } else {
                 // 失敗
                 response.json().then(function( json ){
-                    cmn.responseError( response.status, json ).then(function( result ){
+                    cmn.responseError( response.status, json, null, option ).then(function( result ){
                         progressModal.close();
                         progressModal = null;
                         reject( result );
@@ -5080,7 +5080,9 @@ fileEditor: function( fileData, fileName, mode = 'edit', option = {} ) {
 
                 const langTools = ace.require('ace/ext/language_tools');
 
-                const aceEditor = ace.edit('aceEditor', {
+                // IDではなく要素で指定する（エディターの上に別のエディターを重ねて開くと
+                // id="aceEditor"が重複し、下のエディターが対象になってしまうため）
+                const aceEditor = ace.edit( modal.$.dbody.find('.editorBody').get(0), {
                     theme: `ace/theme/${aceTheme}`,
                     mode: `ace/mode/${fileMode}`,
                     displayIndentGuides: true,
@@ -5180,13 +5182,12 @@ fileEditor: function( fileData, fileName, mode = 'edit', option = {} ) {
                     });
                 };
 
-                // 開発サポート
-                const aiEnabled = option.aiAssistantEnabled;
-                if ( typeof DevelopmentSupport === 'function' && mode === 'edit' && aiEnabled) {
-                    const support = new DevelopmentSupport();
-                    support.setup( modal, aceEditor );
-                } else {
-                    console.warn('DevelopmentSupport is not defined.');
+                // AIアシスタント（編集モードで、メニューでAIアシスタントが有効な場合のみ）。
+                // フッターのボタンからダイアログの右側に開き、編集中のファイルの作成・修正を
+                // 手伝ってもらう（AIアシスタント一式の読み込みは、開くときまで行わない）。
+                if ( typeof AiAssistantEditor === 'function' && mode === 'edit' && option.aiAssistantEnabled ) {
+                    const aiAssistantEditor = new AiAssistantEditor();
+                    aiAssistantEditor.setup( modal, aceEditor );
                 }
             });
         } else if ( fileType === 'image') {

@@ -1565,13 +1565,18 @@ setTableEvents() {
                     endPoint += `journal/${journalId}/`;
                 }
                 $a.addClass('nowDownload');
-                fn.getFile( endPoint, 'GET', null, { title: getMessage.FTE00185 }).then(function( file ){
+                fn.getFile( endPoint, 'GET', null, { title: getMessage.FTE00185, authorityErrMove: false }).then(function( file ){
                     fn.download('file', file, fileName );
                     $a.removeClass('nowDownload');
                 }).catch(function( e ){
                     if ( e !== 'break') {
                         console.error( e );
-                        alert( getMessage.FTE00179 );
+                        // バックエンドからの詳細なエラーメッセージを優先して表示
+                        if ( e && e.message ) {
+                            alert( e.message );
+                        } else {
+                            alert( getMessage.FTE00179 );
+                        }
                     }
                     $a.removeClass('nowDownload');
                 });
@@ -1621,14 +1626,19 @@ setTableEvents() {
                 try {
                     const fileType = fn.fileTypeCheck( fileName );
                     if ( fileType !== 'unsupported') {
-                        file = await fn.getFile( option.endPoint, 'GET', null );
+                        file = await fn.getFile( option.endPoint, 'GET', null, { authorityErrMove: false });
                     } else {
                         file = '';
                     }
                 } catch ( e ) {
                     if ( e !== 'break') {
                         console.error( e );
-                        alert( getMessage.FTE00179 );
+                        // バックエンドからの詳細なエラーメッセージを優先して表示
+                        if ( e && e.message ) {
+                            alert( e.message );
+                        } else {
+                            alert( getMessage.FTE00179 );
+                        }
                     }
                     $button.prop('disabled', false );
                     tb.modalFlag = false;
@@ -1905,11 +1915,16 @@ setTableEvents() {
             // ファイルが空、かつ編集可能の場合はファイルを取得する
             if ( tb.option.fileFlag === false && fileName !== '' && file === undefined && fileType !== 'unsupported' ) {
                 try {
-                    file = await fn.getFile( option.endPoint, 'GET', null );
+                    file = await fn.getFile( option.endPoint, 'GET', null, { authorityErrMove: false });
                 } catch ( e ) {
                     if ( e !== 'break') {
                         console.error( e );
-                        alert( getMessage.FTE00179 );
+                        // バックエンドからの詳細なエラーメッセージを優先して表示
+                        if ( e && e.message ) {
+                            alert( e.message );
+                        } else {
+                            alert( getMessage.FTE00179 );
+                        }
                     }
                     $button.prop('disabled', false );
                     tb.modalFlag = false;

@@ -61,6 +61,10 @@ static get definition() {
             + '注意: これは「表示」専用であり、表示したHTMLの内容やユーザーの操作結果はLLMには返らない（成功可否のみ返る）。'
             + 'ユーザーへの選択・同意確認には使わず、その場合は ask_user_choice を使うこと。'
             + '<script> は実行されず外部リソースの読み込みにも依存できないため、スタイルはインラインの <style> / style属性で完結させた静的なHTMLを渡すこと。'
+            + '\n【分量のルール】'
+            + '\n・1回の応答で出力できる量には上限があり、長いHTMLを1回で渡すと引数が途中で切れて表示に失敗する。'
+            + '\n・レポートなど内容が多いものは1回で渡さず、セクション単位（例：概要・指標／明細／分析・補足）に分けてこのツールを複数回呼び出すこと。1回に渡すHTMLは3000文字程度までを目安とする。'
+            + '\n・分割した各回のHTMLは、それぞれ単体で完結した内容にすること（ルートの <div class="exa-report"> とデザイントークンの <style> は毎回含める）。'
             + '\n【デザイン統一のルール】'
             + '\n・毎回バラバラな見た目にせず、次の共通デザイン指針に従って統一感のある見た目にすること。'
             + '\n・必須: 全体を1つのルート <div class="exa-report"> で囲み、その先頭の <style> に次のデザイントークン（CSS変数）の定義をそのまま貼り付けてから内容を書き始めること。'
@@ -120,7 +124,7 @@ execute( toolUse ) {
     return {
         type: 'tool_result',
         tool_use_id: toolUse.id ?? '',
-        content: 'HTMLをユーザーの画面（チャット欄）に表示しました。この表示内容はユーザーのみが閲覧でき、LLMには返りません。'
+        content: getMessage.FTE14105
     };
 }
 /*
@@ -172,7 +176,7 @@ createElement( html, title ) {
     header.insertAdjacentHTML('beforeend', fn.html.button(
         fn.html.icon('download'),
         'itaButton aiAssistantChatDisplayHtmlPdfButton',
-        { type: 'displayHtmlPdf', action: 'default', title: 'PDFダウンロード'}
+        { type: 'displayHtmlPdf', action: 'default', title: getMessage.FTE14106 }
     ));
     inner.appendChild( header );
 
@@ -242,7 +246,7 @@ printAsPdf( button ) {
     const title = host._displayTitle ?? '';
 
     // PDFのタイトル（＝Chrome等での既定ファイル名）に使う文字列。
-    const docTitle = ( title && title.trim() ) ? title.trim() : 'AIアシスタント表示内容';
+    const docTitle = ( title && title.trim() ) ? title.trim() : getMessage.FTE14107;
     const printDoc = `<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8">`
         + `<title>${fn.escape( docTitle )}</title>`
         + `<style>`

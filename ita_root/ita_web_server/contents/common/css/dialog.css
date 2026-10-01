@@ -355,10 +355,3 @@ gap: 24px;
 .subDialogMode .dialogMain {
 flex: 1 1 100%;
 }
-
-.developmentSupport .subDialogMain {
-display: none;
-}
-.developmentSupport.developmentSupportOpen .subDialogMain {
-display: flex;
-}

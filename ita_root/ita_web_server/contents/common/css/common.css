@@ -2213,6 +2213,31 @@ display: none;
 .filterStandBy .tableLoading {
 display: flex;
 }
+/* pfTableの更新中（ページの切り替え・再読込）は、表示中の行を残したまま読み込み中を重ねる */
+.pfTable.updateStandBy .tableLoading {
+display: flex;
+}
+.pfTable.updateStandBy .tableErrorMessage {
+display: none!important;
+}
+/* pfTableは表示領域の幅いっぱいに広げ、余った幅は最小幅を指定した列（.pfTableFlexColumn）が受け持つ。
+   他の列は幅1pxを指定して内容物の幅まで縮めることで、表示領域の幅が変わっても列幅を変えない
+   （内容物の幅そのものは、セルの中身（.ci）の最大幅・最小幅で決まる） */
+.pfTable .mainTable {
+min-width: 100%;
+}
+.pfTable .mainTable .th,
+.pfTable .mainTable .td {
+width: 1px;
+}
+.pfTable .mainTable .pfTableFlexColumn {
+width: 100%;
+}
+/* 値が不明なセル（数値が記録されていない場合など）は、数値と見間違えないよう控えめに表示する */
+.pfTable .pfTableUnknownValue {
+opacity: .5;
+cursor: help;
+}
 .historyStandBy .tableWrap,
 .historyStandBy .tableFooter,
 .tableStandBy .tableErrorMessage,
@@ -3230,6 +3255,38 @@ border-left: 1px solid rgba( 255,255,255,.1);
 }
 .tableFooterBlock:last-child {
 border-right: none;
+}
+/* 件数の右側に案内を表示する場合（DataTablePFのnotice）。
+   件数などの幅はそのままにして、案内が残りの幅を使う（入り切らない場合は末尾を省略する） */
+.tableFooterNotice .tableFooterInner {
+display: flex;
+width: 100%;
+}
+.tableFooterNotice .tableFooterBlock {
+flex: 0 0 auto;
+}
+.tableFooterNotice .pfTableNotice {
+flex: 1 1 0%;
+min-width: 0;
+}
+/* 案内は件数が0件でも伝える必要があるため、行が無い場合もフッターを表示したままにする */
+.noData .tableFooterNotice {
+display: block!important;
+}
+.pfTableNoticeInner {
+justify-content: flex-start!important;
+padding: 0 16px;
+}
+.pfTableNoticeIcon {
+flex: 0 0 auto;
+margin-right: 8px;
+line-height: 1;
+font-size: 20px;
+}
+.pfTableNoticeText {
+flex: 1 1 auto;
+letter-spacing: .25px;
+font-size: 14px;
 }
 .tableFooterList {
 flex: 1 1 auto;
@@ -5086,6 +5143,9 @@ min-height: 0;
 .commonTabMenu {
 flex: 0 0 48px;
 }
+.subDialogMain .commonTabMenu {
+flex: 0 0 40px;
+}
 .commonTabList {
 display: flex;
 width: 100%; height: 100%;
@@ -5976,7 +6036,7 @@ box-shadow: 0 0 4px rgba( 0,0,0,.5 ) inset,
 .icon-sort_asc:before{content:"\e952"}.icon-sort_desc:before{content:"\e953"}.icon-mouse:before{content:"\e954"}.icon-mouse_left:before{content:"\e955"}
 .icon-mouse_right:before{content:"\e959"}.icon-mouse_wheel:before{content:"\e95a"}.icon-compare:before{content:"\e95d"}.icon-export:before{content: "\e95e"}
 .icon-import:before{content: "\e95f"}.icon-rule:before{content: "\e960"}.icon-rhombus:before{content: "\e961"}.icon-send:before{content: "\e962"}.icon-stick:before{content: "\e963"}
-.icon-ai_assistant:before{content: "\e964"}
+.icon-ai_assistant:before{content: "\e964"}.icon-sparkle:before{content: "\e965"}
 
 .caution_head {
   color: red;

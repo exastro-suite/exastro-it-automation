@@ -5,18 +5,20 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard] Load file
 - **playbook_file**: Net_Tools_Basics_slurp.yml
 ## Overview
-Reads a file from the target host using Ansible's slurp module and stores its base64-encoded content in a registered variable.
+Reads the single file named by `ITA_DFLT_Target_File` from the target node with the `slurp` module and stores its Base64-encoded content in the registered variable `ITA_DFLT_Files_text`.
 ## Description
-This Playbook file reads the file specified by "ITA_DFLT_Target_File" from the Target host using the slurp module, and stores the base64-encoded content in the registered variable "ITA_DFLT_Files_text".
+"ITA_DFLT_Target_File": Path of the file on the target node to be read. Only one file can be given, because the task has no loop.
+The slurp module returns the file content Base64-encoded, and it is kept in the registered variable "ITA_DFLT_Files_text", which later tasks can reference; apply the b64decode filter to the "content" field of that variable when the plain text is needed.
+The file is only read and never modified, so this Playbook file is typically combined with other Playbook files that act on the retrieved content.
 ## Keyword
-- remote file read
-- file content retrieval
-- base64 encode
-- file transfer
+- read file contents into a variable
+- inspect configuration file content
+- base64 decode file content
+- capture file text for a later task
 ## Playbook
 ```yaml
 - name: Slurps a file from remote nodes
-  slurp:
+  ansible.builtin.slurp:
     src: "{{ ITA_DFLT_Target_File }}"
   register: ITA_DFLT_Files_text
 ```

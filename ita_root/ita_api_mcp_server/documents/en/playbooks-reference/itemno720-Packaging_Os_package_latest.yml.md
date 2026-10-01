@@ -5,20 +5,28 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard] Update package
 - **playbook_file**: Packaging_Os_package_latest.yml
 ## Overview
-Uses the Ansible generic `package` module to update one or more specified packages to their latest version via the OS's native package manager, iterating over a list of package names.
+Updates software to its latest version with the generic `package` module (`state: latest`), which dispatches to the host's own package manager, looping over `ITA_DFLT_Update_Target_packages`.
 ## Description
-"ITA_DFLT_Update_Target_packages" specifies one or more package names (list type) to be updated to their latest available version using the target host's OS-native package manager (dnf, yum, apt, etc., auto-detected by the `package` module).
+"ITA_DFLT_Update_Target_packages": Name of the package to be updated to the latest available version on the target host.
+This variable can hold multiple values at the same time (list type) and each value is updated in turn; when a single string is given it is wrapped into a one-element list first, so either form is accepted. Because the generic `package` module is used instead of a distribution-specific one, the update is performed by whichever package manager Ansible detects on the target host (dnf, yum, apt, zypper, and so on), and the same Playbook can therefore be reused across different operating systems.
 ## Keyword
-- generic package update
-- os-native package manager
-- apt upgrade
-- yum update
+- cross-distribution package upgrade
+- apply patches on any Linux
+- automatic package manager detection
+- software version refresh
 ## Playbook
 ```yaml
+- name: Ensure ITA variable is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Update_Target_packages: "{{ ITA_DFLT_Update_Target_packages }}"
+  when: ITA_DFLT_Update_Target_packages is defined
+
 - name: Update packages with the generic OS package manager
-  package:
+  ansible.builtin.package:
     name: "{{ item }}"
     state: latest
-  with_items:
-    - "{{ ITA_DFLT_Update_Target_packages }}"
+  loop: >-
+    {{
+      ITA_DFLT_Update_Target_packages if ITA_DFLT_Update_Target_packages is sequence and ITA_DFLT_Update_Target_packages is not string else [ITA_DFLT_Update_Target_packages]
+    }}
 ```

@@ -5,14 +5,17 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard] Unmount
 - **playbook_file**: System_unmount.yml
 ## Overview
-Uses the `ansible.posix.mount` module to unmount the filesystem at a specified path and remove its entry from `/etc/fstab` on the target host.
+Unmounts the filesystem at `ITA_DFLT_mount_path` using `ansible.posix.mount` with `state: absent`, which also deletes the matching entry from /etc/fstab.
 ## Description
-"ITA_DFLT_mount_path" specifies the path of the mount point to unmount and to remove from the fstab configuration on the target host.
+"ITA_DFLT_mount_path": Mount point (directory path) of the filesystem to be unmounted.
+Because the module is called with state "absent", the filesystem is unmounted and the corresponding line is also removed from /etc/fstab, so the mount will not be restored at the next boot.
+Only a single mount point is handled per run; the playbook has no loop, so one value should be specified.
 ## Keyword
-- unmount filesystem
-- fstab entry removal
-- disk unmount
-- storage management
+- umount command
+- remove fstab entry
+- detach a volume
+- storage maintenance
+- permanently remove a mount
 ## Playbook
 ```yaml
 - name: Unmount device.

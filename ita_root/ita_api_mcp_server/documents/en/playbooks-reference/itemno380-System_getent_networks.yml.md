@@ -5,18 +5,19 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard] Get entry(networks)
 - **playbook_file**: System_getent_networks.yml
 ## Overview
-Queries the system networks database using the Ansible getent module and stores the retrieved network name-to-address mappings in a registered variable for later use.
+Queries the target's `networks` database with the `getent` module, registering the network-name-to-network-number entries in `ITA_DFLT_getent_networks`.
 ## Description
-This playbook takes no input variables. It runs the Ansible `getent` module against the `networks` database, which maps symbolic network names to network addresses as normally found in `/etc/networks`, and saves the output into the registered variable `ITA_DFLT_getent_networks` so that later tasks can reference the network naming information.
+This Playbook file has no parameters. It always queries the fixed "networks" database of the Target host (/etc/networks), i.e. the mapping between symbolic network names and their network numbers.
+The retrieved entries are stored in the registered variable "ITA_DFLT_getent_networks", so they are available to later tasks in the same Movement.
 ## Keyword
-- network name to address mapping
-- /etc/networks lookup
-- symbolic network identifiers
-- subnet naming inventory
+- /etc/networks
+- subnet alias inventory
+- IP addressing reference data
+- network naming configuration
 ## Playbook
 ```yaml
 - name: A wrapper to the unix getent utility (networks)
-  getent:
+  ansible.builtin.getent:
     database: networks
   register: ITA_DFLT_getent_networks
 ```

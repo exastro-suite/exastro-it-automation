@@ -7,7 +7,7 @@
 - 自動的に追加される項目の中には`IDColumn`の項目もあるため、`list-menu-info-pulldown` に指定できる値を取得すること
 
 ## `create-menu`の前に必要なワークフロー
-1. search_docs を使用して menu_definition_and_creation.md を取得し、バンドル/一意制約に関するセクションを参照すること
+1. `get-document`で`menu-reference/menu_definition_and_creation.md`を参照しバンドル/一意制約に関するセクションを参照すること
 2. 使用されているプレイブック内の変数の型を確認し、リスト型がある場合は vertical:1 を設定することを検討すること
 3. create-menu を呼び出す前に、上記の判断結果をユーザーに提示し、同意を得ること
 

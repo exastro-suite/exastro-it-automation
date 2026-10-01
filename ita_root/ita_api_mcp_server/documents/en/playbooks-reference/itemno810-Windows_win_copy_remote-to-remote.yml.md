@@ -5,23 +5,40 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard][Win] Copy file (within host)
 - **playbook_file**: Windows_win_copy_remote-to-remote.yml
 ## Overview
-Copies files between locations on the same remote Windows host (remote-to-remote), using paired lists of source and destination paths (win_copy module with remote_src enabled).
+Copies files between locations on the same Windows target host using `win_copy` with `remote_src: true`, pairing each source path with its destination path positionally.
 ## Description
-- `ITA_DFLT_Src_Files`: the source file path(s) already present on the remote Windows host to copy from (list type, multiple values can be specified).
-- `ITA_DFLT_Dest_Files`: the destination file path(s) on the same remote Windows host to copy to (list type, multiple values can be specified).
+"ITA_DFLT_Src_Files": Path of the source file that already exists on the Windows target host.
+"ITA_DFLT_Dest_Files": Path on the same Windows target host where the corresponding source file is copied to.
+Each of the variables can have multiple values specified at the same time (list type), and the values are paired positionally between the two lists.
+A value given as a single string is automatically treated as a one-element list.
 ## Keyword
-- Windows remote to remote copy
-- win_copy module
-- within-host file duplication
-- file copy on same server
+- Copy file within Windows server
+- Duplicate file on remote host
+- Backup file in place
+- Move data between drives on Windows
 ## Playbook
 ```yaml
+- name: Ensure ITA_DFLT_Src_Files is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Src_Files: "{{ ITA_DFLT_Src_Files }}"
+  when: ITA_DFLT_Src_Files is defined
+
+- name: Ensure ITA_DFLT_Dest_Files is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Dest_Files: "{{ ITA_DFLT_Dest_Files }}"
+  when: ITA_DFLT_Dest_Files is defined
+
 - name: Copy data from remote to remote
-  win_copy:
-    src: "{{ item.0 }}"
-    dest: "{{ item.1 }}"
-    remote_src: yes
-  with_together:
-    - "{{ ITA_DFLT_Src_Files }}"
-    - "{{ ITA_DFLT_Dest_Files }}"
+  ansible.windows.win_copy:
+    src: "{{ item[0] }}"
+    dest: "{{ item[1] }}"
+    remote_src: true
+  loop: >-
+    {{
+      (ITA_DFLT_Src_Files if ITA_DFLT_Src_Files is sequence and ITA_DFLT_Src_Files is not string else [ITA_DFLT_Src_Files])
+      | ansible.builtin.zip_longest(
+          ITA_DFLT_Dest_Files if ITA_DFLT_Dest_Files is sequence and ITA_DFLT_Dest_Files is not string else [ITA_DFLT_Dest_Files]
+        )
+      | list
+    }}
 ```

@@ -5,22 +5,30 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard][Win] Stop service
 - **playbook_file**: Windows_win_service_stopped.yml
 ## Overview
-Uses the `ansible.windows.win_service` module with `state: stopped` to stop one or more Windows services, iterating over a list of service names.
+Stops each listed Windows service with `win_service` using `state: stopped`; the startup mode is not altered.
 ## Description
 This Playbook file stops services specified by "ITA_DFLT_Service_Name".
 "ITA_DFLT_Service_Name" can specify multiple service names (list type).
 ## Keyword
-- Windows service stop
-- halt service
-- service shutdown
+- Take a Windows service offline
+- Maintenance window service shutdown
+- sc stop equivalent
+- Service state not running
 ## Playbook
 ```yaml
 # This Playbook file stops services specified by "ITA_DFLT_Service_Name".
 # "ITA_DFLT_Service_Name" can specify multiple service names (list type).
+- name: Ensure ITA variable is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Service_Name: "{{ ITA_DFLT_Service_Name }}"
+  when: ITA_DFLT_Service_Name is defined
+
 - name: stop Windows services
   ansible.windows.win_service:
     name: "{{ item }}"
     state: stopped
-  with_items:
-    - "{{ ITA_DFLT_Service_Name }}"
+  loop: >-
+    {{
+      ITA_DFLT_Service_Name if ITA_DFLT_Service_Name is sequence and ITA_DFLT_Service_Name is not string else [ITA_DFLT_Service_Name]
+    }}
 ```

@@ -5,15 +5,16 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard] Enable SELinux (enforcing)
 - **playbook_file**: System_selinux_enforcing.yml
 ## Overview
-Uses the `ansible.posix.selinux` module to set the SELinux state to "enforcing" for a given policy on the target host.
+Sets SELinux to `enforcing` with the `ansible.posix.selinux` module for the policy named in `ITA_DFLT_Policy_Name`, writing /etc/selinux/config so policy violations are blocked and logged.
 ## Description
 This Playbook file changes the SELinux settings to "Enforcing".
 Make sure to specify a policy name in "ITA_DFLT_Policy_Name".
 (E.g. targeted)
 ## Keyword
-- security policy
-- mandatory access control
-- turn on SELinux
+- setenforce 1
+- turn mandatory access control fully on
+- security hardening and compliance
+- block and audit policy violations
 ## Playbook
 ```yaml
 # This Playbook file changes the SELinux settings to "Enforcing".

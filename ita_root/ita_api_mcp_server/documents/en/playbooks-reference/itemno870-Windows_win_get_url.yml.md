@@ -5,21 +5,28 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard][Win] Download URL
 - **playbook_file**: Windows_win_get_url.yml
 ## Overview
-Downloads one or more files from HTTP, HTTPS, or FTP URLs to a remote Windows host using the win_get_url module, saving them to a specified or default directory.
+Downloads files over HTTP, HTTPS or FTP onto the Windows target host with `win_get_url`, storing every URL in one destination folder that defaults to %windir%\Temp.
 ## Description
-- `ITA_DFLT_Download_URL`: the URL(s) of the file(s) to download via HTTP, HTTPS, or FTP (list type, multiple values can be specified).
-- `ITA_DFLT_Destination_Directory`: the destination directory on the remote Windows host where downloaded files are saved; defaults to `%windir%\Temp` when not specified.
+"ITA_DFLT_Download_URL": URL of the file to download by HTTP, HTTPS or FTP. Multiple URLs can be specified at the same time (list type) and the download task is repeated for each one.
+"ITA_DFLT_Destination_Directory": Folder on the Windows target host in which the downloaded files are saved. It is optional; when it is not specified, "%windir%\Temp" is used. The same destination applies to all URLs, so it is not paired with the URL list.
 ## Keyword
-- Windows file download
-- win_get_url module
-- HTTP/FTP file retrieval
-- temp directory download
+- Windows download file from internet
+- Fetch installer onto Windows host
+- wget equivalent for Windows
+- Save remote file to temp folder
 ## Playbook
 ```yaml
+- name: Ensure ITA variable is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Download_URL: "{{ ITA_DFLT_Download_URL }}"
+  when: ITA_DFLT_Download_URL is defined
+
 - name: Downloads files from HTTP, HTTPS, or FTP to node
-  win_get_url:
+  ansible.windows.win_get_url:
     url: "{{ item }}"
     dest: "{{ ITA_DFLT_Destination_Directory | default ('%windir%\\Temp') }}"
-  with_items:
-    - "{{ ITA_DFLT_Download_URL }}"
+  loop: >-
+    {{
+      ITA_DFLT_Download_URL if ITA_DFLT_Download_URL is sequence and ITA_DFLT_Download_URL is not string else [ITA_DFLT_Download_URL]
+    }}
 ```

@@ -5,22 +5,30 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard][Win]Start service
 - **playbook_file**: Windows_win_service_started.yml
 ## Overview
-Uses the `ansible.windows.win_service` module with `state: started` to start one or more Windows services, iterating over a list of service names.
+Starts each listed Windows service with `win_service` using `state: started`; the startup mode is not altered.
 ## Description
 This Playbook file starts services specified by "ITA_DFLT_Service_Name".
 "ITA_DFLT_Service_Name" can specify multiple service names (list type).
 ## Keyword
-- Windows service start
-- launch service
-- service activation
+- Bring a Windows service online
+- Recover a stopped service
+- sc start equivalent
+- Service state running
 ## Playbook
 ```yaml
 # This Playbook file starts services specified by "ITA_DFLT_Service_Name".
 # "ITA_DFLT_Service_Name" can specify multiple service names (list type).
+- name: Ensure ITA variable is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Service_Name: "{{ ITA_DFLT_Service_Name }}"
+  when: ITA_DFLT_Service_Name is defined
+
 - name: start Windows services
   ansible.windows.win_service:
     name: "{{ item }}"
     state: started
-  with_items:
-    - "{{ ITA_DFLT_Service_Name }}"
+  loop: >-
+    {{
+      ITA_DFLT_Service_Name if ITA_DFLT_Service_Name is sequence and ITA_DFLT_Service_Name is not string else [ITA_DFLT_Service_Name]
+    }}
 ```

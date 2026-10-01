@@ -52,6 +52,7 @@ CREATE TABLE T_COMN_MENU
     WEB_PRINT_CONFIRM               INT,                                        -- Web表示前確認行数
     XLS_PRINT_LIMIT                 INT,                                        -- Excel出力最大行数
     SORT_KEY                        TEXT,                                       -- ソートキー
+    EXPORT_PERMISSION_CHECK_FLG     VARCHAR(2),                                 -- エクスポート権限チェック
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
@@ -77,6 +78,7 @@ CREATE TABLE T_COMN_MENU_JNL
     WEB_PRINT_CONFIRM               INT,                                        -- Web表示前確認行数
     XLS_PRINT_LIMIT                 INT,                                        -- Excel出力最大行数
     SORT_KEY                        TEXT,                                       -- ソートキー
+    EXPORT_PERMISSION_CHECK_FLG     VARCHAR(2),                                 -- エクスポート権限チェック
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時

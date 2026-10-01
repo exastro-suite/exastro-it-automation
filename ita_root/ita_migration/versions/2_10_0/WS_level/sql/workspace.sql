@@ -1,0 +1,5 @@
+-- ------------------------------------------------------------
+-- T_COMN_MENU: ALTER TABLE
+-- ------------------------------------------------------------
+ALTER TABLE T_COMN_MENU ADD COLUMN IF NOT EXISTS EXPORT_PERMISSION_CHECK_FLG VARCHAR(2) AFTER SORT_KEY;
+ALTER TABLE T_COMN_MENU_JNL ADD COLUMN IF NOT EXISTS EXPORT_PERMISSION_CHECK_FLG VARCHAR(2) AFTER SORT_KEY;

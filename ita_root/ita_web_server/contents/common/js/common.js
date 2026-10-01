@@ -916,7 +916,7 @@ getFile: function( endPoint, method = 'GET', data, option = {} ) {
             } else {
                 // 失敗
                 response.json().then(function( json ){
-                    cmn.responseError( response.status, json ).then(function( result ){
+                    cmn.responseError( response.status, json, null, option ).then(function( result ){
                         progressModal.close();
                         progressModal = null;
                         reject( result );

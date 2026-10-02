@@ -124,6 +124,7 @@ CREATE TABLE T_MENU_COLUMN
     LINK_MAX_LENGTH                 INT,                                        -- リンク 最大バイト数
     LINK_DEFAULT_VALUE              TEXT,                                       -- リンク 初期値
     PARAM_SHEET_LINK_ID             VARCHAR(40),                                -- パラメータシート参照 連携ID
+    DISP_SETTING_JSON               LONGTEXT,                                   -- 表示設定
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)   ,                              -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -171,6 +172,7 @@ CREATE TABLE T_MENU_COLUMN_JNL
     LINK_MAX_LENGTH                 INT,                                        -- リンク 最大バイト数
     LINK_DEFAULT_VALUE              TEXT,                                       -- リンク 初期値
     PARAM_SHEET_LINK_ID             VARCHAR(40),                                -- パラメータシート参照 連携ID
+    DISP_SETTING_JSON               LONGTEXT,                                   -- 表示設定
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)   ,                              -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時

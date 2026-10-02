@@ -394,6 +394,18 @@ export function messageid_en() {
         'FTE01159' : "Group and Item Count",
         'FTE01160' : "An empty group is included. Add items to the group or delete the empty group.",
         'FTE01161' : function(num){ return `Group and Item count exceeds the limit (${num}).`;},
+        'FTE01162' : "Display settings",
+        'FTE01163' : "Open or close the settings used when the parameter sheet is displayed on screen.",
+        'FTE01164' : "Prohibit editing on screen",
+        'FTE01165' : "If checked, this item cannot be edited on the parameter sheet screen.",
+        'FTE01166' : "Header color",
+        'FTE01167' : "Set the background color of this item's header on the parameter sheet screen.",
+        'FTE01168' : "Body color",
+        'FTE01169' : "Set the background color of this item's body (data cells) on the parameter sheet screen.",
+        'FTE01170' : "Not set",
+        'FTE01171' : "Clear the color setting.",
+        'FTE01172' : "Some items are required, have no initial value, and are prohibited from being edited on screen. These items cannot be registered or updated from the parameter sheet screen.",
+        'FTE01173' : "Do you want to register anyway?",
 
         // Conductor
         'FTE02001' : "Conductor instance id is not yet set.",
@@ -922,6 +934,8 @@ export function messageid_en() {
         'FTE10102' : 'If you want to continue, please enter <span style="font-weight: bold;">{0}</span>.',
         'FTE10103' : 'Please enter <span style="font-weight: bold;">{0}</span>.',
         'FTE10104': 'Deletion successful',
+        'FTE10105': 'No matching menus.',
+        'FTE10106': function( count ){ return `${count} hits`;},
 
         // Parameter collection
         'FTE11001': 'Parameter mode',
@@ -1485,6 +1499,8 @@ export function messageid_en() {
         'FTE14391': 'Reflection difference',
         'FTE14392': 'Apply',
         'FTE14393': 'Cancel',
+        'FTE14394': function( name ){ return `${name} (creation status)`},
+        'FTE14395': 'Open the parameter sheet creation history. Menus are created and updated asynchronously, so the menu may not open until the process is complete.',
 
         //gemini
         'FTE14101': 'API KEY',

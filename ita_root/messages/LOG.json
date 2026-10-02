@@ -1206,6 +1206,7 @@
     "MSG-11014": "The '{}' global variable name is used in the global variable list. (Item number:{})",
     "MSG-11015": "Failed to fetch global variable information from the global variable (sensitive) list.",
     "MSG-11016": "There are hosts in the Ansible Automation Platform host list nodes with unconfigured authentication methods or users. Please check the host list nodes.[{}]",
+    "MSG-11017": "[Process] The specified file was not found in the collected files. The item is registered as empty. (File name: {} Host name: {} Variable name: {} Member variable: {})",
     "MSG-30035": "It cannot be imported as the ITA version and the version from which the file was exported do not match.",
     "MSG-30036": "Failed to backup files.",
     "MSG-30037": "Delete",

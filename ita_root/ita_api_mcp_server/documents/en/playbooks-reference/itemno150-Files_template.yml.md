@@ -5,22 +5,38 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard] Deploy template file
 - **playbook_file**: Files_template.yml
 ## Overview
-Uses the Ansible `template` module to render one or more Jinja2 template source files and deploy them to their corresponding destination paths, pairing sources and destinations positionally.
+Renders each Jinja2 template in `ITA_DFLT_Template_Src_Files` with the `template` module and writes the result to the positionally paired path in `ITA_DFLT_Template_Dest_Files`.
 ## Description
-This Playbook file deploys templates specified by "ITA_DFLT_Template_Src_Files" to files specified by "ITA_DFLT_Template_Dest_Files".
+This Playbook file deploys Templates specified by "ITA_DFLT_Template_Src_Files" to files specified by "ITA_DFLT_Template_Dest_Files".
 "ITA_DFLT_Template_Src_Files" can specify multiple templates (list type).
 "ITA_DFLT_Template_Dest_Files" can specify multiple files (list type).
 ## Keyword
-- Jinja2 template
-- configuration file generation
-- template rendering
+- generate a config file from a template
+- Jinja2 variable substitution
+- parameterised configuration deployment
+- per-host configuration generation
 ## Playbook
 ```yaml
+- name: Ensure ITA_DFLT_Template_Src_Files is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Template_Src_Files: "{{ ITA_DFLT_Template_Src_Files }}"
+  when: ITA_DFLT_Template_Src_Files is defined
+
+- name: Ensure ITA_DFLT_Template_Dest_Files is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Template_Dest_Files: "{{ ITA_DFLT_Template_Dest_Files }}"
+  when: ITA_DFLT_Template_Dest_Files is defined
+
 - name: Create template files
-  template:
-    src: "{{ item.0 }}"
-    dest: "{{ item.1 }}"
-  with_together:
-    - "{{ ITA_DFLT_Template_Src_Files }}"
-    - "{{ ITA_DFLT_Template_Dest_Files }}"
+  ansible.builtin.template:
+    src: "{{ item[0] }}"
+    dest: "{{ item[1] }}"
+  loop: >-
+    {{
+      (ITA_DFLT_Template_Src_Files if ITA_DFLT_Template_Src_Files is sequence and ITA_DFLT_Template_Src_Files is not string else [ITA_DFLT_Template_Src_Files])
+      | ansible.builtin.zip_longest(
+          ITA_DFLT_Template_Dest_Files if ITA_DFLT_Template_Dest_Files is sequence and ITA_DFLT_Template_Dest_Files is not string else [ITA_DFLT_Template_Dest_Files]
+        )
+      | list
+    }}
 ```

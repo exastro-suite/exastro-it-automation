@@ -702,6 +702,7 @@ def _insert_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_co
             "WEB_PRINT_LIMIT": 10000,
             "WEB_PRINT_CONFIRM": 1000,
             "SORT_KEY": sort_key,
+            "EXPORT_PERMISSION_CHECK_FLG": "1",
             "DISUSE_FLAG": "0",
             "LAST_UPDATE_USER": g.get('USER_ID')
         }
@@ -1754,6 +1755,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
                 "AFTER_VALIDATE_REGISTER": None,
                 "DESCRIPTION_JA": record.get('DESCRIPTION_JA'),
                 "DESCRIPTION_EN": record.get('DESCRIPTION_EN'),
+                "DISP_SETTING_JSON": record.get('DISP_SETTING_JSON'),
                 "DISUSE_FLAG": "0",
                 "LAST_UPDATE_USER": g.get('USER_ID')
             }

@@ -116,7 +116,8 @@ DEFAULT_FILE_PERMISSIONS = "644"
             }
         },
         "required": ["files"]
-    }
+    },
+    profile=["AgenticAI"]
 )
 def tool_create_attachment_zip_file(arguments: dict, payload: dict) -> dict:
     """

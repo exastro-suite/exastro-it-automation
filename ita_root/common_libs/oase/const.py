@@ -88,6 +88,7 @@ class oaseConst():
     OSTS_Wait_For_Comp_Conf = "8"       # 完了確認待ち
     OSTS_Completion_Conf = "9"          # 完了確認済み
     OSTS_Completion_Conf_Reject = "10"  # 完了確認却下済み
+    OSTS_Launch_Failed = "11"           # 起動失敗
 
     # Conductor ステータス値
     CSTS_Unexecuted = "1"               # 未実行

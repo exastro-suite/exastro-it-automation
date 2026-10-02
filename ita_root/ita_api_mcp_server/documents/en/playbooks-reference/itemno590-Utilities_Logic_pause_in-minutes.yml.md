@@ -5,19 +5,19 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard] Sleep (minutes)
 - **playbook_file**: Utilities_Logic_pause_in-minutes.yml
 ## Overview
-Pauses playbook execution on target hosts for a configurable number of minutes using Ansible's pause module.
+Pauses the playbook run with the `ansible.builtin.pause` module for the number of minutes specified, via the module's `minutes` option.
 ## Description
 This Playbook file uses the time specified in "ITA_DFLT_Sleep_Minutes" to pause (sleep) Jobs and Jobflows.
 ## Keyword
-- wait
-- delay
-- timer
+- Wait between job steps
+- Delay workflow execution
+- Sleep timer in Jobflow
+- Throttle automation timing
 ## Playbook
 ```yaml
 # This Playbook file uses the time specified in "ITA_DFLT_Sleep_Minutes" to pause (sleep) Jobs and Jobflows.
 - name: pause
-  pause:
+  ansible.builtin.pause:
     minutes: "{{ ITA_DFLT_Sleep_Minutes }}"
-
 
 ```

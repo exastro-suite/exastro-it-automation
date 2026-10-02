@@ -13,6 +13,8 @@
 #
 
 from flask import g
+import json
+import copy
 
 from common_libs.oase.const import oaseConst
 from common_libs.notification.sub_classes.oase import OASE, OASENotificationType
@@ -28,6 +30,15 @@ class ActionStatusMonitor():
         # ラベルマスタ取得
         self.LabelMasterDict = getLabelGroup(wsDb)
 
+        # アクション結果の入力テンプレート
+        self.template_action_result = {
+            "action": {
+                "type": None,
+                "result": None,
+                "msg": None
+            }
+        }
+
     def checkRuleMatch(self, actionObj):
         # 判定済みと承認済みを抽出
         status_list = [oaseConst.OSTS_Rule_Match, oaseConst.OSTS_Approved]
@@ -37,24 +48,42 @@ class ActionStatusMonitor():
             # 評価結果の更新（ステータスを「実行中」）
             data_list = {
                 "ACTION_LOG_ID": action_log_row_info["ACTION_LOG_ID"],
-                "STATUS_ID": oaseConst.OSTS_Executing # "2"
+                "STATUS_ID": oaseConst.OSTS_Executing  # "2"
             }
+
+            # アクション起動・実行結果の内容を初期設定: type,resultの値を設定
+            action_result = copy.deepcopy(self.template_action_result)
+            action_result["action"]["type"] = "Conductor"
+            action_result["action"]["result"] = True
+            data_list.setdefault("ACTION_RESULT", json.dumps(action_result, ensure_ascii=False))
+            g.applogger.debug(f"OSTS_Executing Update -> table_update: {data_list=}")
+
             self.wsDb.table_update(oaseConst.T_OASE_ACTION_LOG, data_list, 'ACTION_LOG_ID')
             self.wsDb.db_commit()
 
             # action実行
             g.applogger.info(f"RULE_ID:{action_log_row_info.get('RULE_ID')}, EVENT_ID_LIST:{action_log_row_info.get('EVENT_ID_LIST')}")
             retBool, result = actionObj.run(action_log_row_info)
+
+            # アクション起動・実行結果の内容をaction実行の返り値を設定
+            action_result["action"]["result"] = retBool
+            action_result["action"]["msg"] = result
+            data_list.setdefault("ACTION_RESULT", json.dumps(action_result, ensure_ascii=False))
+
             if retBool is False:
                 # Actionのセットに失敗
                 tmp_msg = g.appmsg.get_log_message("BKY-90019", [result])
                 g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-                # 評価結果の更新（ステータスを「完了（異常）」）
+                # 評価結果の更新（ステータスを「起動失敗」）
                 data_list = {
                     "ACTION_LOG_ID": action_log_row_info["ACTION_LOG_ID"],
-                    "STATUS_ID": oaseConst.OSTS_Completed_Abend # "7"
+                    "STATUS_ID": oaseConst.OSTS_Launch_Failed  # "11"
                 }
+                # アクション起動・実行結果を設定
+                data_list.setdefault("ACTION_RESULT", json.dumps(action_result, ensure_ascii=False))
+                g.applogger.debug(f"actionObj.run():False  -> table_update: {data_list=}")
+
                 self.wsDb.table_update(oaseConst.T_OASE_ACTION_LOG, data_list, 'ACTION_LOG_ID')
                 self.wsDb.db_commit()
             else:
@@ -141,6 +170,26 @@ class ActionStatusMonitor():
             UpdateRow = {}
             for colname in ['ACTION_LOG_ID', 'STATUS_ID']:
                 UpdateRow[colname] = action_log_row_info[colname]
+
+            # 完了（異常）の場合に、評価結果のACTION_RESULTの取得し、result=Falseで更新
+            if action_log_row_info['STATUS_ID'] == oaseConst.OSTS_Completed_Abend:
+                try:
+                    if action_log_row_info.get('ACTION_RESULT'):
+                        action_result = json.loads(action_log_row_info['ACTION_RESULT'])
+                        # 既存の構造が期待通りか確認
+                        if not isinstance(action_result.get('action'), dict):
+                            action_result = copy.deepcopy(self.template_action_result)
+                    else:
+                        action_result = copy.deepcopy(self.template_action_result)
+                except (json.JSONDecodeError, TypeError, AttributeError):
+                    # JSON解析エラーまたは不正な形式の場合はテンプレートを使用
+                    action_result = copy.deepcopy(self.template_action_result)
+                    g.applogger.warning(f"ACTION_LOG_ID:{action_log_row_info['ACTION_LOG_ID']} - Invalid ACTION_RESULT format, using template")
+
+                action_result["action"]["result"] = False
+
+                # 評価結果のACTION_RESULTのresult更新
+                UpdateRow.setdefault("ACTION_RESULT", json.dumps(action_result, ensure_ascii=False))
 
             tmp_msg = g.appmsg.get_log_message("BKY-90038", [action_log_row_info["ACTION_LOG_ID"], action_log_row_info["STATUS_ID"]])
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))

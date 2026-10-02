@@ -65,7 +65,7 @@ TOOL_REGISTRY = {}
 
 
 def tool(name: str, description: str, input_schema: dict = None, enabled: bool = True,
-         required_roles=None, required_menu=None):
+         required_roles=None, required_menu=None, profile=None):
     """
     MCPツールをメタデータとともに登録するデコレーター
 
@@ -78,6 +78,18 @@ def tool(name: str, description: str, input_schema: dict = None, enabled: bool =
             / the tool's input schema (JSON Schema format)
         enabled (bool, optional): ツールの有効/無効状態(デフォルト: True)
             / whether the tool is enabled (default: True)
+        profile (str | list[str], optional): このツールを利用可能なプロファイル名。
+            文字列1つ、または文字列のリスト(複数指定時はいずれか1つの
+            プロファイルと一致すればよい)で指定する。未指定の場合は
+            絞り込み対象外(=どのプロファイルでも利用可能)として扱う。
+            tools/list 呼び出し時のクエリー文字列 `profile` による絞り込みに
+            使用する(詳細は libs/permissions.py の is_tool_in_profile を参照)。
+            / the profile name(s) this tool is available under. May be a
+            single string or a list of strings (when a list is given,
+            matching any one of them is enough). If not specified, the tool
+            is excluded from filtering (i.e. available under every profile).
+            Used to filter tools/list results by the `profile` query string
+            (see is_tool_in_profile in libs/permissions.py for details).
         required_roles (str | list[str], optional): このツールの実行に
             必要なロール(正規表現)。文字列1つ、または文字列の
             リスト(複数指定時はいずれか1つを満たせばよい)で指定する。
@@ -139,6 +151,7 @@ def tool(name: str, description: str, input_schema: dict = None, enabled: bool =
             "enabled": enabled,
             "required_roles": required_roles,
             "required_menu": required_menu,
+            "profile": profile,
             "function": func
         }
         # 元の関数はそのまま返す(呼び出し方法は変えない)
@@ -156,10 +169,10 @@ def load_dynamic_tools() -> list:
     Returns:
         list[dict]: ツール設定のリスト
             各要素には name, description, inputSchema, enabled,
-            required_roles, required_menu が含まれる
+            required_roles, required_menu, profile が含まれる
             / list of tool configuration dicts, each containing
-            name, description, inputSchema, enabled, required_roles
-            and required_menu
+            name, description, inputSchema, enabled, required_roles,
+            required_menu and profile
     """
     tools = [
         {
@@ -168,7 +181,8 @@ def load_dynamic_tools() -> list:
             "inputSchema": t["inputSchema"],
             "enabled": t["enabled"],
             "required_roles": t["required_roles"],
-            "required_menu": t["required_menu"]
+            "required_menu": t["required_menu"],
+            "profile": t["profile"]
         }
         for t in TOOL_REGISTRY.values()
     ]

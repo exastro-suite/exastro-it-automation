@@ -16,13 +16,27 @@ Each of the variables can have multiple values specified at the same time (list 
 - Non-recursive ownership change
 ## Playbook
 ```yaml
-- name: Change the owner of folders or files.
-  win_owner:
-    path: "{{ item.0 }}"
-    user: "{{ item.1 }}"
-    recurse: false
-  with_together:
-    - "{{ ITA_DFLT_Change_owner_paths }}"
-    - "{{ ITA_DFLT_Change_owner_users }}"
+- name: Ensure ITA_DFLT_Change_owner_paths is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Change_owner_paths: "{{ ITA_DFLT_Change_owner_paths }}"
+  when: ITA_DFLT_Change_owner_paths is defined
 
+- name: Ensure ITA_DFLT_Change_owner_users is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Change_owner_users: "{{ ITA_DFLT_Change_owner_users }}"
+  when: ITA_DFLT_Change_owner_users is defined
+
+- name: Change the owner of folders or files.
+  ansible.windows.win_owner:
+    path: "{{ item[0] }}"
+    user: "{{ item[1] }}"
+    recurse: false
+  loop: >-
+    {{
+      (ITA_DFLT_Change_owner_paths if ITA_DFLT_Change_owner_paths is sequence and ITA_DFLT_Change_owner_paths is not string else [ITA_DFLT_Change_owner_paths])
+      | ansible.builtin.zip_longest(
+          ITA_DFLT_Change_owner_users if ITA_DFLT_Change_owner_users is sequence and ITA_DFLT_Change_owner_users is not string else [ITA_DFLT_Change_owner_users]
+        )
+      | list
+    }}
 ```

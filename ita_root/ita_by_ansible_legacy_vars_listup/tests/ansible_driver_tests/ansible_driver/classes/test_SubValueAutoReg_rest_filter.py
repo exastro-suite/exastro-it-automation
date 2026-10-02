@@ -14,8 +14,6 @@
 """
 SubValueAutoReg.rest_filter / convert_colname_restkey の単体テスト
 
-ケース表: SubValueAutoReg_rest_filter_testcases.md
-
 位置づけ:
   test_SubValueAutoReg_getCMDBdata.py では rest_filter をスタブ化しているため、
   rest_filter の戻り値の形が変わっても getCMDBdata のテストは緑のままになる。

@@ -284,7 +284,8 @@ def _resolve_document_source(source: str) -> Path:
             }
         },
         "required": ["query"]
-    }
+    },
+    profile=["AgenticAI", "LLMEditor"]
 )
 def tool_search_documents(arguments: dict, payload: dict) -> dict:
     """
@@ -421,7 +422,8 @@ def tool_search_documents(arguments: dict, payload: dict) -> dict:
             }
         },
         "required": ["source"]
-    }
+    },
+    profile=["AgenticAI", "LLMEditor"]
 )
 def tool_get_document(arguments: dict, payload: dict) -> dict:
     """

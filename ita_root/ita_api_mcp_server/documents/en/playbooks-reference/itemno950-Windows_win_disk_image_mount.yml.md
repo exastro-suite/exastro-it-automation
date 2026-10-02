@@ -5,13 +5,15 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard][Win] Mount
 - **playbook_file**: Windows_win_disk_image_mount.yml
 ## Overview
-Mounts an ISO disk image on a Windows host as a virtual drive and displays the resulting mount path.
+Mounts an ISO disk image on the Windows target host with `win_disk_image` (`state: present`), then prints the first mount path returned by the module.
 ## Description
-"ITA_DFLT_mount_image_path": Path to the ISO disk image file to be mounted on the target Windows host.
+"ITA_DFLT_mount_image_path": Path on the Windows target host of the ISO (disk image) file to be mounted. Only one image is handled per run; no list pairing is involved.
+The module result is stored with register as "disk_image_out", so it is available to later tasks. The playbook itself outputs disk_image_out.mount_paths[0], which is the drive path assigned to the mounted image.
 ## Keyword
-- Mount ISO image
-- Virtual drive
-- Disk image attach
+- Windows ISO mount
+- Attach virtual drive
+- Obtain mounted drive letter
+- Mount installation media
 ## Playbook
 ```yaml
 - name: Ensure an ISO is mounted
@@ -21,7 +23,6 @@ Mounts an ISO disk image on a Windows host as a virtual drive and displays the r
   register: disk_image_out
 
 - name: disk path
-  debug:
+  ansible.builtin.debug:
     msg: "{{ disk_image_out.mount_paths[0] }}"
-
 ```

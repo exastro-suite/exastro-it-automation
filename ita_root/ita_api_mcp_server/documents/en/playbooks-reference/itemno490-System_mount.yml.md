@@ -5,18 +5,19 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard] Mount
 - **playbook_file**: System_mount.yml
 ## Overview
-Mounts a filesystem or device on the target host at a specified path, using a given source, filesystem type, and optional mount options.
+Mounts a device with the `ansible.posix.mount` module using `state: mounted`, which both mounts the filesystem now and records a matching permanent entry in /etc/fstab.
 ## Description
-This Playbook file mounts a device or filesystem on the Target host using Ansible's mount module.
-"ITA_DFLT_mount_path" specifies the mount point path where the device will be mounted.
-"ITA_DFLT_mount_src" specifies the source device or path to be mounted.
-"ITA_DFLT_mount_fstype" specifies the filesystem type of the device.
-"ITA_DFLT_mount_opts" specifies optional mount options; if not set, no options are applied.
+"ITA_DFLT_mount_path": Mount point directory on the Target host where the device is attached. It is created if it does not exist.
+"ITA_DFLT_mount_src": Device or remote share to mount, for example /dev/sdb1, a UUID= or LABEL= specification, or an NFS "server:/export" path.
+"ITA_DFLT_mount_fstype": Filesystem type of the device, for example xfs, ext4 or nfs.
+"ITA_DFLT_mount_opts": Optional comma-separated mount options such as "defaults,noatime". It is filtered through "default(omit)", so when the variable is not supplied the option is dropped and the module default is used.
+Because "state: mounted" is used, the mount point is mounted immediately and the entry is also persisted in /etc/fstab so that it is remounted after a reboot. Each variable takes a single value, so one run of this Playbook file configures one mount point.
 ## Keyword
-- filesystem mount
-- disk mount
-- storage configuration
-- mount point setup
+- /etc/fstab persistent entry
+- attach disk or NFS share
+- storage volume provisioning
+- mount point configuration
+- remount after reboot
 ## Playbook
 ```yaml
 - name: Mount up device.

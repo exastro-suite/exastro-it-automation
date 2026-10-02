@@ -14,7 +14,6 @@
 """
 SubValueAutoReg 結合テストの共通基盤
 
-ケース表: SubValueAutoReg_integration_testcases.md
 利用側:
   - test_SubValueAutoReg_integration.py       (読み取り専用: INT-1〜INT-5、INT-13、INT-14、INT-17)
   - test_SubValueAutoReg_integration_write.py (登録経路: INT-6〜INT-9、INT-12、INT-15〜INT-17)
@@ -61,13 +60,13 @@ ENABLE_ENV = 'INTEGRATION_ENABLE'
 #   結合テストは「データが無ければ skip」で組んであるため、
 #   生成SQLが全パラメータシートで0件になるような回帰が入っても
 #   skip の山ができるだけで**1件も落ちない**(緑と誤読される)。
-#   データを揃えた環境(tests/integration_seed_data.md の段階1〜11)では
+#   データを揃えた環境(tests/README.md の段階1〜11)では
 #   skip は0件になるので、そこでは `INTEGRATION_STRICT=1` を付けて
 #   実行ゲート以外の skip をすべて fail として扱う。
 STRICT_ENV = 'INTEGRATION_STRICT'
 
 # 検証対象ワークスペースを明示する環境変数。
-#   **データ投入スクリプト(tests/integration_seed_data.md)と同じ名前に揃えてある**。
+#   **データ投入スクリプト(sample_data/ita.py)と同じ名前に揃えてある**。
 #   投入とテストで別名にすると、投入したワークスペースとは違うワークスペースを
 #   検証しても気付けない(自動探索が別のWSを拾う)。
 ORGANIZATION_ID_ENV = 'ITA_ORGANIZATION_ID'

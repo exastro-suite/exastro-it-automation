@@ -125,7 +125,8 @@ _DEFAULT_FILE_MIME_TYPE = "application/octet-stream"
             }
         },
         "required": ["menu"]
-    }
+    },
+    profile=["AgenticAI", "LLMEditor"]
 )
 def tool_menu_filter(arguments: dict, payload: dict) -> dict:
     """
@@ -284,7 +285,8 @@ def tool_menu_filter(arguments: dict, payload: dict) -> dict:
             }
         },
         "required": ["menu"]
-    }
+    },
+    profile=["AgenticAI", "LLMEditor"]
 )
 def tool_menu_filter_count(arguments: dict, payload: dict) -> dict:
     """

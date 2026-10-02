@@ -5,7 +5,7 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard] Transfer/Run script
 - **playbook_file**: Commands_script.yml
 ## Overview
-Transfers a script file to the target host and runs it with two arguments, `__workflowdir__` and `__conductor_workflowdir__`, then logs the execution result at debug verbosity 3.
+Uses the `script` module to copy the local script `ITA_DFLT_Script_Name` to the node and run it with __workflowdir__ and __conductor_workflowdir__ as its two arguments; registers the result.
 ## Description
 This Playbook file transfers and executes script files specified by the "ITA_DFLT_Script_Name".
 Doing so adds the following two arguments to the script file, allowing them to be used within said script.
@@ -16,10 +16,10 @@ Similarly, by outputting a file to __conductor_workflowdir__ as a process within
 However, these functions are only enabled when running scripts on a nodes that has access to __workflowdir__ and __conductor_workflowdir__ (e.g. localhost).
 The task results are displayed at debug level 3 (-vvv).
 ## Keyword
-- script transfer
-- remote script execution
-- command automation
-- result debugging
+- run shell script on remote host
+- pass arguments to a script
+- share files between Movements
+- shell script execution
 ## Playbook
 ```yaml
 # This Playbook file transfers and executes script files specified by the "ITA_DFLT_Script_Name".
@@ -31,11 +31,12 @@ The task results are displayed at debug level 3 (-vvv).
 # However, these functions are only enabled when running scripts on a nodes that has access to __workflowdir__ and __conductor_workflowdir__ (e.g. localhost).
 # The task results are displayed at debug level 3 (-vvv).
 - name: Run a script with arguments
-  script: "{{ ITA_DFLT_Script_Name }} {{ __workflowdir__ }} {{ __conductor_workflowdir__ }}"
+  ansible.builtin.script: "{{ ITA_DFLT_Script_Name }} {{ __workflowdir__ }} {{ __conductor_workflowdir__ }}"
   register: ITA_RGST_Script_Result
 
 - name: Debug the result
-  debug:
+  ansible.builtin.debug:
     var: ITA_RGST_Script_Result
     verbosity: 3
+
 ```

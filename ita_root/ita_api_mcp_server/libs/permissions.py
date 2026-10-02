@@ -238,6 +238,47 @@ def get_ita_user_menu_name_rests(organization_id: str, workspace_id: str) -> set
     return menu_name_rests
 
 
+def is_tool_in_profile(tool_config: dict, profile: str) -> bool:
+    """
+    このツールが指定されたプロファイルで利用可能かどうかを判定する。
+
+    tools/list 呼び出し時のクエリー文字列 `profile` によるツールの絞り込みに
+    使用する。profile が指定されていない場合(None・空文字列)は絞り込みを
+    行わず常にTrueとする。tool_config["profile"](@toolデコレーターの
+    profile引数)が未指定のツールも、絞り込み対象外として常にTrueとする
+    (=どのプロファイルでも利用可能)。
+
+    Decide whether this tool is available under the given profile.
+
+    Used to filter tools/list results by the `profile` query string. If
+    profile is not specified (None or empty string), no filtering is applied
+    and this always returns True. A tool whose tool_config["profile"] (the
+    @tool decorator's profile argument) is not set is also excluded from
+    filtering and always returns True (i.e. available under every profile).
+
+    Parameters:
+        tool_config (dict): ツール設定(TOOL_REGISTRYの値) / tool configuration
+        profile (str): クエリー文字列で指定されたプロファイル名
+            / the profile name given in the query string
+
+    Returns:
+        bool: 利用可能な場合True / True if the tool is available
+    """
+    if not profile:
+        return True
+
+    tool_profiles = tool_config.get("profile")
+
+    if not tool_profiles:
+        return True
+
+    # 単一文字列で指定された場合もリストとして扱う
+    # Treat a single string the same as a one-element list
+    tool_profiles = tool_profiles if isinstance(tool_profiles, list) else [tool_profiles]
+
+    return profile in tool_profiles
+
+
 def is_tool_visible(tool_config: dict, payload: dict, menu_cache: dict = None) -> bool:
     """
     tools/list にこのツールを含めてよいかどうかを判定する。

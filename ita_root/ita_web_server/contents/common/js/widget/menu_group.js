@@ -89,6 +89,13 @@ createMenuGroupList( infoData ) {
     // 配列のディープコピー
     const tempMenuGroups = $.extend( true, [], infoData );
 
+    // メニュー表示（show_in_menu）が'0'のメニューを除外する（未設定は表示）
+    for ( const menuGroup of tempMenuGroups ) {
+        if ( menuGroup.menus ) {
+            menuGroup.menus = menuGroup.menus.filter( menu => menu.show_in_menu !== '0' );
+        }
+    }
+
     // 親と子を分ける
     for ( const menuGroup of tempMenuGroups ) {
         if ( menuGroup.parent_id === null ) {
@@ -102,6 +109,8 @@ createMenuGroupList( infoData ) {
     for ( const parent of menuGroupList ) {
         for ( const child of childs ) {
             if ( parent.id === child.parent_id ) {
+                // 表示するメニューがない子グループは追加しない
+                if ( !child.menus || !child.menus.length ) continue;
                 child.main_menu_rest = null;
                 if ( child.menus && child.menus.length ) {
                     wg.dispSeqSort( child.menus );

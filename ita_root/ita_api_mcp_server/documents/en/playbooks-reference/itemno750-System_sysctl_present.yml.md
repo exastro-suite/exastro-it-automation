@@ -5,24 +5,41 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard] sysctly settings
 - **playbook_file**: System_sysctl_present.yml
 ## Overview
-Uses the `sysctl` module to set one or more kernel parameters to specified values on the target host, pairing parameter names with values by list position, and reloads the sysctl configuration.
+Calls `ansible.posix.sysctl` with `state: present` and `reload: true`, pairing `ITA_DFLT_Parameter_Names` with `ITA_DFLT_Parameter_Values` positionally via a zip_longest loop.
 ## Description
-"ITA_DFLT_Parameter_Names" specifies one or more sysctl parameter names (list type) to configure on the target host.
-"ITA_DFLT_Parameter_Values" specifies the corresponding values (list type) to set for each parameter name, matched by position with "ITA_DFLT_Parameter_Names".
+This Playbook file registers Parameter names specified by "ITA_DFLT_Parameter_Names" and values specified by "ITA_DFLT_Parameter_Values" to sysctl.
+"ITA_DFLT_Parameter_Names" can specify multiple parameter names (list type).
+"ITA_DFLT_Parameter_Values" can specify multiple values (list type).
 ## Keyword
-- kernel parameter configuration
-- sysctl settings
-- system tuning
-- kernel tuning
+- kernel parameter tuning
+- /etc/sysctl.conf entry
+- set kernel runtime value
+- sysctl -p reload
+- persistent kernel setting
 ## Playbook
 ```yaml
+- name: Ensure ITA_DFLT_Parameter_Names is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Parameter_Names: "{{ ITA_DFLT_Parameter_Names }}"
+  when: ITA_DFLT_Parameter_Names is defined
+
+- name: Ensure ITA_DFLT_Parameter_Values is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Parameter_Values: "{{ ITA_DFLT_Parameter_Values }}"
+  when: ITA_DFLT_Parameter_Values is defined
+
 - name: Entry parameter
-  sysctl:
-    name: "{{ item.0 }}"
-    value: "{{ item.1 }}"
+  ansible.posix.sysctl:
+    name: "{{ item[0] }}"
+    value: "{{ item[1] }}"
     state: present
-    reload: yes
-  with_together:
-    - "{{ ITA_DFLT_Parameter_Names }}"
-    - "{{ ITA_DFLT_Parameter_Values }}"
+    reload: true
+  loop: >-
+    {{
+      (ITA_DFLT_Parameter_Names if ITA_DFLT_Parameter_Names is sequence and ITA_DFLT_Parameter_Names is not string else [ITA_DFLT_Parameter_Names])
+      | ansible.builtin.zip_longest(
+          ITA_DFLT_Parameter_Values if ITA_DFLT_Parameter_Values is sequence and ITA_DFLT_Parameter_Values is not string else [ITA_DFLT_Parameter_Values]
+        )
+      | list
+    }}
 ```

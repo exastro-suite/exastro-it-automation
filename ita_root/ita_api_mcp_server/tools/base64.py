@@ -56,7 +56,8 @@ from libs import tool
             }
         },
         "required": ["text"]
-    }
+    },
+    profile=["AgenticAI", "LLMEditor"]
 )
 def tool_base64_encode(arguments: dict, payload: dict) -> dict:
     """
@@ -106,7 +107,8 @@ def tool_base64_encode(arguments: dict, payload: dict) -> dict:
             }
         },
         "required": ["text"]
-    }
+    },
+    profile=["AgenticAI", "LLMEditor"]
 )
 def tool_base64_decode(arguments: dict, payload: dict) -> dict:
     """

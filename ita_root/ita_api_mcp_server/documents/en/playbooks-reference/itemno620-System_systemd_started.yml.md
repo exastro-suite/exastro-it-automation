@@ -5,21 +5,28 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard] Start systemd
 - **playbook_file**: System_systemd_started.yml
 ## Overview
-Starts one or more systemd-managed services on target hosts using Ansible's systemd module, iterating over a list of service names.
+Calls `ansible.builtin.systemd` with `state: started` for each name in `ITA_DFLT_Services`, activating any unit that is not already running (idempotent).
 ## Description
 This Playbook file starts services specified by "ITA_DFLT_Services".
 "ITA_DFLT_Services" can specify multiple services (list type).
 ## Keyword
-- systemd start
-- unit file
-- launch daemon
+- systemctl start
+- bring up a systemd unit
+- ensure unit is active
+- systemd module rather than service module
 ## Playbook
 ```yaml
+- name: Ensure ITA variable is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Services: "{{ ITA_DFLT_Services }}"
+  when: ITA_DFLT_Services is defined
+
 - name: Start service
-  systemd:
+  ansible.builtin.systemd:
     name: "{{ item }}"
     state: started
-  with_items:
-    - "{{ ITA_DFLT_Services }}"
-
+  loop: >-
+    {{
+      ITA_DFLT_Services if ITA_DFLT_Services is sequence and ITA_DFLT_Services is not string else [ITA_DFLT_Services]
+    }}
 ```

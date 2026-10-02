@@ -5,18 +5,19 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard] Get entry(protocols)
 - **playbook_file**: System_getent_protocols.yml
 ## Overview
-Queries the system protocols database using the Ansible getent module and stores the retrieved network protocol name-to-number mappings in a registered variable for later use.
+Queries the target's `protocols` database with the `getent` module, registering the protocol name and protocol number entries in `ITA_DFLT_getent_protocols`.
 ## Description
-This playbook takes no input variables. It runs the Ansible `getent` module against the `protocols` database, which maps network protocol names to their protocol numbers as normally found in `/etc/protocols`, and saves the output into the registered variable `ITA_DFLT_getent_protocols` so that later tasks can reference the protocol information.
+This Playbook file has no parameters. It always queries the fixed "protocols" database of the Target host (/etc/protocols), i.e. the known internet protocols with their official numbers and aliases, such as tcp, udp and icmp.
+The retrieved entries are stored in the registered variable "ITA_DFLT_getent_protocols", so they are available to later tasks in the same Movement.
 ## Keyword
-- protocol name to number mapping
-- /etc/protocols lookup
-- IP protocol identifiers
-- network protocol inventory
+- /etc/protocols
+- IP protocol number reference
+- TCP UDP ICMP definitions
+- network stack configuration audit
 ## Playbook
 ```yaml
 - name: A wrapper to the unix getent utility (protocols)
-  getent:
+  ansible.builtin.getent:
     database: protocols
   register: ITA_DFLT_getent_protocols
 ```

@@ -5,26 +5,26 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard] Text block operation
 - **playbook_file**: Files_blockinfile.yml
 ## Overview
-Inserts, replaces, or removes a marked multi-line block of text within a file on target hosts using Ansible's blockinfile module.
+Uses `blockinfile` to insert, replace or remove a marker-delimited text block in the file given by `ITA_DFLT_file_path`; marker, anchor and block body are optional, and state defaults to present.
 ## Description
-This Playbook file uses the following variables to insert, update, or remove a block of text in a file:
-- "ITA_DFLT_file_path": the path of the file to be edited.
-- "ITA_DFLT_block_marker": the marker text used to identify the boundaries of the managed block; if omitted, the module default marker is used.
-- "ITA_DFLT_block_state": whether the block should be present or absent in the file; defaults to "present" if not specified.
-- "ITA_DFLT_insertafter": a pattern indicating where the block should be inserted after; if omitted, the module default behavior is used.
-- "ITA_DFLT_block_string": the text content of the block to insert; if omitted, no block content is set.
+"ITA_DFLT_file_path": Path of the file on the target node to be edited. This is the only variable with no default, so it must always be given.
+"ITA_DFLT_block_marker": Marker line template used to delimit the managed block (it must contain {mark}). Optional - when not given the option is omitted and the blockinfile module's own default marker ("# BEGIN/END ANSIBLE MANAGED BLOCK") is used.
+"ITA_DFLT_block_state": Either "present" to insert/update the block or "absent" to delete it. Defaults to "present".
+"ITA_DFLT_insertafter": Regular expression (or "EOF"/"BOF") indicating the position after which the block is inserted. Optional - when not given the option is omitted and the block is placed at the end of the file.
+"ITA_DFLT_block_string": The multi-line text written between the markers. Optional - when omitted with state "present" an empty block containing only the markers is produced.
+Because the block is identified by its markers, re-running the Playbook file updates the existing block instead of appending a duplicate.
 ## Keyword
-- edit configuration file
-- text block insertion
-- managed block
+- edit configuration file idempotently
+- Ansible managed block in config file
+- multi-line text insertion
+- remove a text block from a file
 ## Playbook
 ```yaml
 - name: Insert or replace text blocks.
-  blockinfile:
+  ansible.builtin.blockinfile:
     path: "{{ ITA_DFLT_file_path }}"
     marker: "{{ ITA_DFLT_block_marker | default(omit) }}"
     state: "{{ ITA_DFLT_block_state | default('present') }}"
     insertafter: "{{ ITA_DFLT_insertafter | default(omit) }}"
-    block: |
-      {{ ITA_DFLT_block_string | default(omit) }}
+    block: "{{ ITA_DFLT_block_string | default(omit) }}"
 ```

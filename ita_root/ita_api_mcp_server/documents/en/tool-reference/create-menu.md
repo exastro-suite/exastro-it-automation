@@ -7,7 +7,7 @@ If more detailed parameters are needed, refer to `tool-reference/create-menu-ful
 - Some of the automatically added items are `IDColumn` items, so retrieve the values that can be specified for `list-menu-info-pulldown`
 
 ## Workflow required before `create-menu`
-1. Use search_docs to retrieve menu_definition_and_creation.md and refer to the section on bundles/unique constraints
+1. Use `get-document` to refer to `menu-reference/menu_definition_and_creation.md` and review the section on bundles/unique constraints
 2. Check the types of variables used in the playbook being used, and if there is a list type, consider setting vertical:1
 3. Before calling create-menu, present the above judgment results to the user and obtain agreement
 

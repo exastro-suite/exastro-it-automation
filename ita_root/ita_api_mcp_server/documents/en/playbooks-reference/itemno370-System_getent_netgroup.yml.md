@@ -5,18 +5,19 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard] Get entry(netgroup
 - **playbook_file**: System_getent_netgroup.yml
 ## Overview
-Queries the system netgroup database using the Ansible getent module and stores the retrieved network group definitions in a registered variable for later use.
+Queries the target's `netgroup` database with the `getent` module, registering the netgroup entries (host, user, domain triples) in `ITA_DFLT_getent_netgroup`.
 ## Description
-This playbook takes no input variables. It runs the Ansible `getent` module against the `netgroup` database, which defines network-wide groups of hosts, users, and domains used for access control (typically distributed via NIS), and saves the output into the registered variable `ITA_DFLT_getent_netgroup` so that later tasks can reference the netgroup information.
+This Playbook file has no parameters. It always queries the fixed "netgroup" database of the Target host, i.e. the netgroup definitions, each a set of (host, user, domain) triples used to group machines and accounts together.
+The retrieved entries are stored in the registered variable "ITA_DFLT_getent_netgroup", so they are available to later tasks in the same Movement.
 ## Keyword
-- NIS netgroup lookup
-- network access control groups
-- host/user/domain triplets
-- centralized access grouping
+- NIS netgroup
+- access control list of hosts and users
+- LDAP netgroup inventory
+- centralised account grouping
 ## Playbook
 ```yaml
 - name: A wrapper to the unix getent utility (netgroup)
-  getent:
+  ansible.builtin.getent:
     database: netgroup
   register: ITA_DFLT_getent_netgroup
 ```

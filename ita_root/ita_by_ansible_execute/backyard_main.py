@@ -16,7 +16,6 @@ import subprocess
 import time
 import re
 import os
-import hashlib
 import datetime
 
 from flask import g
@@ -258,25 +257,23 @@ def execute_control(common_db, all_execution_limit, org_execution_limit):
             else:
                 time_book = rec["TIME_BOOK"]
 
-            # EXECUTION_NO + VIEW_NAME ＋ ワークスペースID + オーガナイゼーションIDのHASH値
-            data = rec["EXECUTION_NO"] + rec["VIEW_NAME"] + rec["WORKSPACE_ID"] + rec["ORGANIZATION_ID"]
-            hs = hashlib.md5(data.encode()).hexdigest()
             tmp_dict = {"ORGANIZATION_PRIORITY": organization_priority,
                         "TIME_BOOK": time_book,
                         "TIME_REGISTER": rec["TIME_REGISTER"],
-                        "HASH": hs,
                         "ORGANIZATION_ID": rec["ORGANIZATION_ID"],
                         "WORKSPACE_ID": rec["WORKSPACE_ID"],
                         "EXECUTION_NO": rec["EXECUTION_NO"],
                         "WORKSPACE_DB": rec["WORKSPACE_DB"],
                         "VIEW_NAME": rec["VIEW_NAME"]}
             execution_list.append(tmp_dict)
-            # 処理対象のソート
-            execution_list = sorted(execution_list, key=lambda x: (x["ORGANIZATION_PRIORITY"], x["TIME_BOOK"], x["TIME_REGISTER"], x["HASH"]))
 
             # organizationに実行中の処理があるか確認
             if rec["ORGANIZATION_ID"] not in org_exec_count_list:
                 org_exec_count_list[rec["ORGANIZATION_ID"]] = 0
+
+        # 処理対象のソート
+        execution_list = sorted(execution_list, key=lambda x: (x["ORGANIZATION_PRIORITY"], x["TIME_BOOK"], x["TIME_REGISTER"], x["EXECUTION_NO"]))
+
         return execution_list, all_exec_count, org_exec_count_list, records
     else:
         return [], 0, {}, []

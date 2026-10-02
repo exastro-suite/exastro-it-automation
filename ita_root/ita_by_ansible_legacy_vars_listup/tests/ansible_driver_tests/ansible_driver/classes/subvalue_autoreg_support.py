@@ -14,7 +14,7 @@
 """
 SubValueAutoReg.getCMDBdata 用のテスト基盤（サポートモジュール）
 
-testtable.md のパターン表を満たすテストを書くための共通部品を提供する。
+パターン表を満たすテストを書くための共通部品を提供する。
 
   - MockWsDb          : WorkspaceDB(WS_DB) のモック。SQL/テーブル参照を内容で振り分ける。
   - _FakeLoadTable    : load_table.loadTable の戻り（menu_name_rest / カラム定義を保持）。

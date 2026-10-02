@@ -5,18 +5,19 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard] Get entry(services)
 - **playbook_file**: System_getent_services.yml
 ## Overview
-Queries the system services database using the Ansible getent module and stores the retrieved service name-to-port/protocol mappings in a registered variable for later use.
+Queries the target's `services` database with the `getent` module, registering the service name, port number and protocol entries in `ITA_DFLT_getent_services`.
 ## Description
-This playbook takes no input variables. It runs the Ansible `getent` module against the `services` database, which maps network service names to port numbers and protocols as normally found in `/etc/services`, and saves the output into the registered variable `ITA_DFLT_getent_services` so that later tasks can reference the service port information.
+This Playbook file has no parameters. It always queries the fixed "services" database of the Target host (/etc/services), i.e. the known network services with their assigned port numbers, protocols and aliases.
+The retrieved entries are stored in the registered variable "ITA_DFLT_getent_services", so they are available to later tasks in the same Movement.
 ## Keyword
-- service name to port mapping
-- /etc/services lookup
-- well-known port inventory
-- TCP/UDP service registry
+- /etc/services
+- well-known port numbers
+- port to service name mapping
+- firewall planning reference
 ## Playbook
 ```yaml
 - name: A wrapper to the unix getent utility (services)
-  getent:
+  ansible.builtin.getent:
     database: services
   register: ITA_DFLT_getent_services
 ```

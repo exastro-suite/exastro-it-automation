@@ -5,18 +5,19 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard] Get entry(initgroups)
 - **playbook_file**: System_getent_initgroups.yml
 ## Overview
-Queries the system initgroups database using the Ansible getent module and stores the retrieved initial group membership entries in a registered variable for later use.
+Queries the target's `initgroups` database with the `getent` module, registering the supplementary groups a user receives at login in `ITA_DFLT_getent_initgroups`.
 ## Description
-This playbook takes no input variables. It runs the Ansible `getent` module against the `initgroups` database, which lists the supplementary groups a user belongs to at login, and saves the output into the registered variable `ITA_DFLT_getent_initgroups` so that later tasks can reference the group membership information.
+This Playbook file has no parameters. It always queries the fixed "initgroups" database of the Target host, i.e. the list of supplementary groups that each user is placed in when logging in.
+The retrieved entries are stored in the registered variable "ITA_DFLT_getent_initgroups", so they are available to later tasks in the same Movement.
 ## Keyword
-- user group membership lookup
-- supplementary groups
-- login group resolution
-- account privilege inventory
+- secondary group membership
+- user privilege assignment audit
+- login session groups
+- NSS initgroups source
 ## Playbook
 ```yaml
 - name: A wrapper to the unix getent utility (initgroups)
-  getent:
+  ansible.builtin.getent:
     database: initgroups
   register: ITA_DFLT_getent_initgroups
 ```

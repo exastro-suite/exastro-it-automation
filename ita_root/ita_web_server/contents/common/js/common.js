@@ -916,7 +916,7 @@ getFile: function( endPoint, method = 'GET', data, option = {} ) {
             } else {
                 // 失敗
                 response.json().then(function( json ){
-                    cmn.responseError( response.status, json ).then(function( result ){
+                    cmn.responseError( response.status, json, null, option ).then(function( result ){
                         progressModal.close();
                         progressModal = null;
                         reject( result );
@@ -2864,6 +2864,39 @@ blackOrWhite: function( hexcolor, num ) {
     b = parseInt( hexcolor.substring( 5, 7 ), 16 );
 
 	return (((( r * 299 ) + ( g * 587 ) + ( b * 114 )) / 1000 ) < 180 * num )? '#FFFFFF': '#333333';
+},
+/*
+##################################################
+    色を少し濃くする（#rrggbb）
+    ※比率だと明るいチャンネル（例：#FF9999のR）の変化が小さく差が出にくいため、
+      各チャンネルから一定量を引く
+##################################################
+*/
+darkenColor: function( hexcolor, amount = 20 ) {
+    if ( !/^#[0-9a-fA-F]{6}$/.test( hexcolor ) ) return '';
+    const rgb = [ 1, 3, 5 ].map( i => Math.max( 0, parseInt( hexcolor.slice( i, i + 2 ), 16 ) - amount ) );
+    return '#' + rgb.map( v => v.toString( 16 ).padStart( 2, '0') ).join('');
+},
+/*
+##################################################
+    背景色から見やすいテキストカラーを判定
+    （WCAGのコントラスト比で白と黒を比較）
+##################################################
+*/
+contrastTextColor: function( hexcolor ) {
+    if ( !/^#[0-9a-fA-F]{6}$/.test( hexcolor ) ) return '';
+    const luminance = function( hex ) {
+        const rgb = [ 1, 3, 5 ].map( i => {
+            const c = parseInt( hex.slice( i, i + 2 ), 16 ) / 255;
+            return ( c <= 0.03928 )? c / 12.92: Math.pow( ( c + 0.055 ) / 1.055, 2.4 );
+        });
+        return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+    };
+    const light = '#FFFFFF', dark = '#1A1B1C';
+    const bg = luminance( hexcolor );
+    const lightRatio = ( luminance( light ) + 0.05 ) / ( bg + 0.05 );
+    const darkRatio = ( bg + 0.05 ) / ( luminance( dark ) + 0.05 );
+    return ( lightRatio >= darkRatio )? light: dark;
 },
 /*
 ##################################################

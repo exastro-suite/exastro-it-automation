@@ -1249,6 +1249,7 @@
     "MSG-11014": "The '{}' global variable name is used in the global variable list. (Item number:{})",
     "MSG-11015": "Failed to fetch global variable information from the global variable (sensitive) list.",
     "MSG-11016": "There are hosts in the Ansible Automation Platform host list nodes with unconfigured authentication methods or users. Please check the host list nodes.[{}]",
+    "MSG-11017": "[Process] The specified file was not found in the collected files. The item is registered as empty. (File name: {} Host name: {} Variable name: {} Member variable: {})",
     "MSG-10938": "Out of the input range. (Minimum value: {}, Maximum value: {}, Input value: {})\nMaximum value can be changed in the Management console/System management.",
     "MSG-20001": "Main menu",
     "MSG-20002": "[Main Menu] can not be set.",

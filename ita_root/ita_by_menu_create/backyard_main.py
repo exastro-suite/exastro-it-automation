@@ -1755,6 +1755,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
                 "AFTER_VALIDATE_REGISTER": None,
                 "DESCRIPTION_JA": record.get('DESCRIPTION_JA'),
                 "DESCRIPTION_EN": record.get('DESCRIPTION_EN'),
+                "DISP_SETTING_JSON": record.get('DISP_SETTING_JSON'),
                 "DISUSE_FLAG": "0",
                 "LAST_UPDATE_USER": g.get('USER_ID')
             }

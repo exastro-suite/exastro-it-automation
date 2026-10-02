@@ -256,6 +256,16 @@ def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, 
                 initial_value = datetime.datetime.strptime(initial_value, '%Y-%m-%d %H:%M:%S')
                 initial_value = initial_value.strftime('%Y/%m/%d')
 
+            # 表示設定(JSON)を取得
+            display_settings = None
+            disp_setting_json = record.get('DISP_SETTING_JSON')
+            if disp_setting_json:
+                try:
+                    display_settings = json.loads(disp_setting_json)
+                except json.JSONDecodeError:
+                    # JSONとして解釈できない場合は保存値をそのまま返却する(JsonColumnの出力仕様に合わせる)
+                    display_settings = disp_setting_json
+
             detail = {
                 'column_id': record.get('COLUMN_DEFINITION_ID'),
                 'column_name': record.get('COLUMN_NAME_' + lang.upper()),
@@ -282,7 +292,8 @@ def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, 
                 'initial_value': initial_value,
                 'validate_option': validate_option,
                 'before_validate_register': before_validate_register,
-                'after_validate_register': after_validate_register
+                'after_validate_register': after_validate_register,
+                'display_settings': display_settings
             }
             col_num = 'c{}'.format(count)
             column_info_data[col_num] = detail

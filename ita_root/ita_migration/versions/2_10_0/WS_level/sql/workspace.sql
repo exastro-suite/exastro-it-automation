@@ -1,8 +1,35 @@
 -- ------------------------------------------------------------
 -- T_COMN_MENU: ALTER TABLE
 -- ------------------------------------------------------------
-ALTER TABLE T_COMN_MENU ADD COLUMN IF NOT EXISTS EXPORT_PERMISSION_CHECK_FLG VARCHAR(2) AFTER SORT_KEY;
-ALTER TABLE T_COMN_MENU_JNL ADD COLUMN IF NOT EXISTS EXPORT_PERMISSION_CHECK_FLG VARCHAR(2) AFTER SORT_KEY;
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE table_schema = DATABASE()
+      AND table_name   = 'T_COMN_MENU'
+      AND column_name  = 'EXPORT_PERMISSION_CHECK_FLG'
+);
+SET @sql := IF(@exist = 0,
+    'ALTER TABLE T_COMN_MENU ADD COLUMN EXPORT_PERMISSION_CHECK_FLG VARCHAR(2) AFTER SORT_KEY',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE table_schema = DATABASE()
+      AND table_name   = 'T_COMN_MENU_JNL'
+      AND column_name  = 'EXPORT_PERMISSION_CHECK_FLG'
+);
+SET @sql := IF(@exist = 0,
+    'ALTER TABLE T_COMN_MENU_JNL ADD COLUMN EXPORT_PERMISSION_CHECK_FLG VARCHAR(2) AFTER SORT_KEY',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 -- T_COMN_MENU にカラム追加
 SET @exist := (

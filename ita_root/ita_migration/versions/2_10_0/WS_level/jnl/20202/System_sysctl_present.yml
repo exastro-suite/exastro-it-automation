@@ -1,0 +1,24 @@
+- name: Ensure ITA_DFLT_Parameter_Names is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Parameter_Names: "{{ ITA_DFLT_Parameter_Names }}"
+  when: ITA_DFLT_Parameter_Names is defined
+
+- name: Ensure ITA_DFLT_Parameter_Values is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Parameter_Values: "{{ ITA_DFLT_Parameter_Values }}"
+  when: ITA_DFLT_Parameter_Values is defined
+
+- name: Entry parameter
+  ansible.posix.sysctl:
+    name: "{{ item[0] }}"
+    value: "{{ item[1] }}"
+    state: present
+    reload: true
+  loop: >-
+    {{
+      (ITA_DFLT_Parameter_Names if ITA_DFLT_Parameter_Names is sequence and ITA_DFLT_Parameter_Names is not string else [ITA_DFLT_Parameter_Names])
+      | ansible.builtin.zip_longest(
+          ITA_DFLT_Parameter_Values if ITA_DFLT_Parameter_Values is sequence and ITA_DFLT_Parameter_Values is not string else [ITA_DFLT_Parameter_Values]
+        )
+      | list
+    }}

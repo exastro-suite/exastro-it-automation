@@ -1,4 +1,5 @@
 [
     ["", "workspace_master.sql"],
-    ["ai_assistant.sql", "ai_assistant_master.sql"]
+    ["ai_assistant.sql", "ai_assistant_master.sql"],
+    ["", "ansible_master.sql"]
 ]

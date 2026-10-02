@@ -1,0 +1,25 @@
+# This Playbook file unzips archived files specified by "ITA_DFLT_Target_File_Name" and extracts the files to directories specified by "ITA_DFLT_Dest_Directory".
+# "ITA_DFLT_Target_File_Name" can specify multiple compressed files (list type).
+# "ITA_DFLT_Dest_Directory" can specify multiple directories (list type).
+- name: Ensure ITA_DFLT_Target_File_Name is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Target_File_Name: "{{ ITA_DFLT_Target_File_Name }}"
+  when: ITA_DFLT_Target_File_Name is defined
+
+- name: Ensure ITA_DFLT_Dest_Directory is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Dest_Directory: "{{ ITA_DFLT_Dest_Directory }}"
+  when: ITA_DFLT_Dest_Directory is defined
+
+- name: Unpacks an archive after (optionally) copying it from the local machine
+  ansible.builtin.unarchive:
+    src: "{{ item[0] }}"
+    dest: "{{ item[1] }}"
+  loop: >-
+    {{
+      (ITA_DFLT_Target_File_Name if ITA_DFLT_Target_File_Name is sequence and ITA_DFLT_Target_File_Name is not string else [ITA_DFLT_Target_File_Name])
+      | ansible.builtin.zip_longest(
+          ITA_DFLT_Dest_Directory if ITA_DFLT_Dest_Directory is sequence and ITA_DFLT_Dest_Directory is not string else [ITA_DFLT_Dest_Directory]
+        )
+      | list
+    }}

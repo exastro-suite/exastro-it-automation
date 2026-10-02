@@ -1,0 +1,13 @@
+- name: Ensure ITA variable is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Remove_File_or_Directory: "{{ ITA_DFLT_Remove_File_or_Directory }}"
+  when: ITA_DFLT_Remove_File_or_Directory is defined
+
+- name: Recursively remove directory or remove file
+  ansible.windows.win_file:
+    path: "{{ item }}"
+    state: absent
+  loop: >-
+    {{
+      ITA_DFLT_Remove_File_or_Directory if ITA_DFLT_Remove_File_or_Directory is sequence and ITA_DFLT_Remove_File_or_Directory is not string else [ITA_DFLT_Remove_File_or_Directory]
+    }}

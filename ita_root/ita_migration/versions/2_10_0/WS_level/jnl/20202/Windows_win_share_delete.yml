@@ -1,0 +1,15 @@
+# This Playbook file deletes shared names specified by "ITA_DFLY_Share_Name".
+# "ITA_DFLT_Share_Name" can specify multiple share names (list type).
+- name: Ensure ITA variable is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Share_Name: "{{ ITA_DFLT_Share_Name }}"
+  when: ITA_DFLT_Share_Name is defined
+
+- name: delete Windows shares
+  ansible.windows.win_share:
+    name: "{{ item }}"
+    state: absent
+  loop: >-
+    {{
+      ITA_DFLT_Share_Name if ITA_DFLT_Share_Name is sequence and ITA_DFLT_Share_Name is not string else [ITA_DFLT_Share_Name]
+    }}

@@ -1,0 +1,5 @@
+- name: A wrapper to the unix getent utility (gshadow)
+  ansible.builtin.getent:
+    database: gshadow
+  register: ITA_DFLT_getent_gshadow
+  no_log: true # 機密情報を含むため、ログを抑止（デバッグしたいときはfalseに変更してください）

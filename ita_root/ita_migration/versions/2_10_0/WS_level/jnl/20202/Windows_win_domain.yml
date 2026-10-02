@@ -1,0 +1,24 @@
+- name: Ensure ITA_DFLT_dns_domain_name is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_dns_domain_name: "{{ ITA_DFLT_dns_domain_name }}"
+  when: ITA_DFLT_dns_domain_name is defined
+
+- name: Ensure ITA_DFLT_domain_safe_mode_password is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_domain_safe_mode_password: "{{ ITA_DFLT_domain_safe_mode_password }}"
+  when: ITA_DFLT_domain_safe_mode_password is defined
+  no_log: true
+
+- name: Create new domain in a new forest on the target host
+  ansible.windows.win_domain:
+    dns_domain_name: "{{ item[0] }}"
+    safe_mode_password: "{{ item[1] }}"
+  loop: >-
+    {{
+      (ITA_DFLT_dns_domain_name if ITA_DFLT_dns_domain_name is sequence and ITA_DFLT_dns_domain_name is not string else [ITA_DFLT_dns_domain_name])
+      | ansible.builtin.zip_longest(
+          ITA_DFLT_domain_safe_mode_password if ITA_DFLT_domain_safe_mode_password is sequence and ITA_DFLT_domain_safe_mode_password is not string else [ITA_DFLT_domain_safe_mode_password]
+        )
+      | list
+    }}
+  no_log: true # 機密情報を含むため、ログを抑止（デバッグしたいときはfalseに変更してください）

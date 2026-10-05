@@ -1,5 +1,5 @@
 -- ホストグループ一覧
-CREATE TABLE T_HGSP_HOSTGROUP_LIST
+CREATE TABLE IF NOT EXISTS T_HGSP_HOSTGROUP_LIST
 (
     ROW_ID                          VARCHAR(40),                                -- ホストグループID
     HOSTGROUP_NAME                  VARCHAR(255),                               -- ホストグループ名
@@ -11,7 +11,7 @@ CREATE TABLE T_HGSP_HOSTGROUP_LIST
     PRIMARY KEY(ROW_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_HGSP_HOSTGROUP_LIST_JNL
+CREATE TABLE IF NOT EXISTS T_HGSP_HOSTGROUP_LIST_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -29,7 +29,7 @@ CREATE TABLE T_HGSP_HOSTGROUP_LIST_JNL
 
 
 -- ホストグループ親子紐付
-CREATE TABLE T_HGSP_HOST_LINK_LIST
+CREATE TABLE IF NOT EXISTS T_HGSP_HOST_LINK_LIST
 (
     ROW_ID                          VARCHAR(40),                                -- 項番
     PA_HOSTGROUP                    VARCHAR(40),                                -- 親ホストグループ
@@ -41,7 +41,7 @@ CREATE TABLE T_HGSP_HOST_LINK_LIST
     PRIMARY KEY(ROW_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_HGSP_HOST_LINK_LIST_JNL
+CREATE TABLE IF NOT EXISTS T_HGSP_HOST_LINK_LIST_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -59,7 +59,7 @@ CREATE TABLE T_HGSP_HOST_LINK_LIST_JNL
 
 
 -- ホスト紐付管理
-CREATE TABLE T_HGSP_HOST_LINK
+CREATE TABLE IF NOT EXISTS T_HGSP_HOST_LINK
 (
     ROW_ID                          VARCHAR(40),                                -- 項番
     HOSTGROUP_NAME                  VARCHAR(255),                               -- ホストグループ名
@@ -72,7 +72,7 @@ CREATE TABLE T_HGSP_HOST_LINK
     PRIMARY KEY(ROW_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_HGSP_HOST_LINK_JNL
+CREATE TABLE IF NOT EXISTS T_HGSP_HOST_LINK_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -91,7 +91,7 @@ CREATE TABLE T_HGSP_HOST_LINK_JNL
 
 
 -- ホストグループ分割対象
-CREATE TABLE T_HGSP_SPLIT_TARGET
+CREATE TABLE IF NOT EXISTS T_HGSP_SPLIT_TARGET
 (
     ROW_ID                          VARCHAR(40),                                -- 項番
     INPUT_MENU_ID                   VARCHAR(40),                                -- 分割対象メニュー
@@ -108,7 +108,7 @@ CREATE TABLE T_HGSP_SPLIT_TARGET
 
 
 -- ホスト一覧プルダウン用
-CREATE VIEW V_HGSP_UQ_HOST_LIST AS
+CREATE OR REPLACE VIEW V_HGSP_UQ_HOST_LIST AS
 SELECT
     SYSTEM_ID AS KY_KEY,
     CONCAT('[H]', HOST_NAME) AS KY_VALUE,
@@ -139,7 +139,7 @@ WHERE
 
 
 -- 分割対象メニュープルダウン用
-CREATE VIEW V_HGSP_SPLIT_TARGET_MENU AS 
+CREATE OR REPLACE VIEW V_HGSP_SPLIT_TARGET_MENU AS 
 SELECT
     TAB_A.*,
     TAB_C.MENU_GROUP_NAME_JA,
@@ -161,7 +161,7 @@ AND TAB_B.HOSTGROUP = 1
 
 
 -- 登録対象メニュープルダウン用
-CREATE VIEW V_HGSP_REGISTER_TARGET_MENU AS 
+CREATE OR REPLACE VIEW V_HGSP_REGISTER_TARGET_MENU AS 
 SELECT
     TAB_A.*,
     TAB_C.MENU_GROUP_NAME_JA,

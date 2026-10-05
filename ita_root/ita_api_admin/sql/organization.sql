@@ -1,5 +1,5 @@
 -- WorkspaceDB管理
-CREATE TABLE T_COMN_WORKSPACE_DB_INFO
+CREATE TABLE IF NOT EXISTS T_COMN_WORKSPACE_DB_INFO
 (
     PRIMARY_KEY                             VARCHAR(40),                        -- 主キー
     WORKSPACE_ID                            VARCHAR(255),                       -- workspaceのID
@@ -24,7 +24,19 @@ CREATE TABLE T_COMN_WORKSPACE_DB_INFO
 
 
 -- インデックス
-CREATE INDEX IND_T_COMN_WORKSPACE_DB_INFO_01 ON T_COMN_WORKSPACE_DB_INFO (DISUSE_FLAG);
-
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_COMN_WORKSPACE_DB_INFO'
+        AND index_name   = 'IND_T_COMN_WORKSPACE_DB_INFO_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_COMN_WORKSPACE_DB_INFO_01 ON T_COMN_WORKSPACE_DB_INFO (DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 

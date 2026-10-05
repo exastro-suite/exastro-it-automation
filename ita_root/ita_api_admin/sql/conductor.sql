@@ -1,77 +1,3 @@
--- Conductorインターフェース
-CREATE TABLE IF NOT EXISTS T_COMN_CONDUCTOR_IF_INFO
-(
-    CONDUCTOR_IF_INFO_ID            VARCHAR(40),                                -- ConductorインターフェースID
-    CONDUCTOR_REFRESH_INTERVAL      INT,                                        -- 状態監視周期(単位ミリ秒)
-    NOTE                            VARCHAR(4000),                              -- 備考
-    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
-    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
-    PRIMARY KEY(CONDUCTOR_IF_INFO_ID)
-)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
-
-CREATE TABLE IF NOT EXISTS T_COMN_CONDUCTOR_IF_INFO_JNL
-(
-    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
-    JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
-    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
-    CONDUCTOR_IF_INFO_ID            VARCHAR(40),                                -- ConductorインターフェースID
-    CONDUCTOR_REFRESH_INTERVAL      INT,                                        -- 状態監視周期(単位ミリ秒)
-    NOTE                            VARCHAR(4000),                              -- 備考
-    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
-    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
-    PRIMARY KEY(JOURNAL_SEQ_NO)
-)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
-
-
-
--- Conductor通知
-CREATE TABLE IF NOT EXISTS T_COMN_CONDUCTOR_NOTICE
-(
-    CONDUCTOR_NOTICE_ID             VARCHAR(40),                                -- Conductor通知ID
-    NOTICE_NAME                     VARCHAR(255),                               -- 通知名称
-    NOTICE_URL                      VARCHAR(4096),                              -- 通知先
-    HEADER                          TEXT,                                       -- ヘッダー
-    FIELDS                          TEXT,                                       -- メッセージ
-    PROXY_URL                       VARCHAR(4096),                              -- Proxy URL
-    PROXY_PORT                      INT,                                        -- Proxy Port
-    FQDN                            VARCHAR(4096),                              -- 作業確認URL
-    OTHER                           VARCHAR(255),                               -- その他
-    SUPPRESS_START                  DATETIME(6),                                -- 抑止開始日時
-    SUPPRESS_END                    DATETIME(6),                                -- 抑止終了日時
-    NOTE                            TEXT,                                       -- 備考
-    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
-    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
-    PRIMARY KEY(CONDUCTOR_NOTICE_ID)
-)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
-
-CREATE TABLE IF NOT EXISTS T_COMN_CONDUCTOR_NOTICE_JNL
-(
-    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
-    JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
-    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
-    CONDUCTOR_NOTICE_ID             VARCHAR(40),                                -- Conductor通知ID
-    NOTICE_NAME                     VARCHAR(255),                               -- 通知名称
-    NOTICE_URL                      VARCHAR(4096),                              -- 通知先
-    HEADER                          TEXT,                                       -- ヘッダー
-    FIELDS                          TEXT,                                       -- メッセージ
-    PROXY_URL                       VARCHAR(4096),                              -- Proxy URL
-    PROXY_PORT                      INT,                                        -- Proxy Port
-    FQDN                            VARCHAR(4096),                              -- 作業確認URL
-    OTHER                           VARCHAR(255),                               -- その他
-    SUPPRESS_START                  DATETIME(6),                                -- 抑止開始日時
-    SUPPRESS_END                    DATETIME(6),                                -- 抑止終了日時
-    NOTE                            TEXT,                                       -- 備考
-    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
-    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
-    PRIMARY KEY(JOURNAL_SEQ_NO)
-)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
-
-
-
 -- Conductorクラス
 CREATE TABLE IF NOT EXISTS T_COMN_CONDUCTOR_CLASS
 (
@@ -302,6 +228,80 @@ CREATE TABLE IF NOT EXISTS T_COMN_CONDUCTOR_NODE
 
 
 
+-- Conductorインターフェース
+CREATE TABLE IF NOT EXISTS T_COMN_CONDUCTOR_IF_INFO
+(
+    CONDUCTOR_IF_INFO_ID            VARCHAR(40),                                -- ConductorインターフェースID
+    CONDUCTOR_REFRESH_INTERVAL      INT,                                        -- 状態監視周期(単位ミリ秒)
+    NOTE                            VARCHAR(4000),                              -- 備考
+    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(CONDUCTOR_IF_INFO_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+CREATE TABLE IF NOT EXISTS T_COMN_CONDUCTOR_IF_INFO_JNL
+(
+    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
+    JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
+    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
+    CONDUCTOR_IF_INFO_ID            VARCHAR(40),                                -- ConductorインターフェースID
+    CONDUCTOR_REFRESH_INTERVAL      INT,                                        -- 状態監視周期(単位ミリ秒)
+    NOTE                            VARCHAR(4000),                              -- 備考
+    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(JOURNAL_SEQ_NO)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
+-- Conductor通知
+CREATE TABLE IF NOT EXISTS T_COMN_CONDUCTOR_NOTICE
+(
+    CONDUCTOR_NOTICE_ID             VARCHAR(40),                                -- Conductor通知ID
+    NOTICE_NAME                     VARCHAR(255),                               -- 通知名称
+    NOTICE_URL                      VARCHAR(4096),                              -- 通知先
+    HEADER                          TEXT,                                       -- ヘッダー
+    FIELDS                          TEXT,                                       -- メッセージ
+    PROXY_URL                       VARCHAR(4096),                              -- Proxy URL
+    PROXY_PORT                      INT,                                        -- Proxy Port
+    FQDN                            VARCHAR(4096),                              -- 作業確認URL
+    OTHER                           VARCHAR(255),                               -- その他
+    SUPPRESS_START                  DATETIME(6),                                -- 抑止開始日時
+    SUPPRESS_END                    DATETIME(6),                                -- 抑止終了日時
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(CONDUCTOR_NOTICE_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+CREATE TABLE IF NOT EXISTS T_COMN_CONDUCTOR_NOTICE_JNL
+(
+    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
+    JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
+    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
+    CONDUCTOR_NOTICE_ID             VARCHAR(40),                                -- Conductor通知ID
+    NOTICE_NAME                     VARCHAR(255),                               -- 通知名称
+    NOTICE_URL                      VARCHAR(4096),                              -- 通知先
+    HEADER                          TEXT,                                       -- ヘッダー
+    FIELDS                          TEXT,                                       -- メッセージ
+    PROXY_URL                       VARCHAR(4096),                              -- Proxy URL
+    PROXY_PORT                      INT,                                        -- Proxy Port
+    FQDN                            VARCHAR(4096),                              -- 作業確認URL
+    OTHER                           VARCHAR(255),                               -- その他
+    SUPPRESS_START                  DATETIME(6),                                -- 抑止開始日時
+    SUPPRESS_END                    DATETIME(6),                                -- 抑止終了日時
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(JOURNAL_SEQ_NO)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
 -- Conductor定期作業実行リスト
 CREATE TABLE IF NOT EXISTS T_COMN_CONDUCTOR_REGULARLY_LIST
 (
@@ -449,27 +449,342 @@ FROM
 
 
 -- インデックス
-CREATE INDEX IND_T_COMN_CONDUCTOR_CLASS_01 ON T_COMN_CONDUCTOR_CLASS (DISUSE_FLAG);
-CREATE INDEX IND_T_COMN_CONDUCTOR_CLASS_02 ON T_COMN_CONDUCTOR_CLASS (DISUSE_FLAG,CONDUCTOR_NAME);
-CREATE INDEX IND_T_COMN_CONDUCTOR_INSTANCE_01 ON T_COMN_CONDUCTOR_INSTANCE (DISUSE_FLAG);
-CREATE INDEX IND_T_COMN_CONDUCTOR_INSTANCE_02 ON T_COMN_CONDUCTOR_INSTANCE (DISUSE_FLAG,STATUS_ID,TIME_BOOK,TIME_REGISTER);
-CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_INSTANCE_01 ON T_COMN_CONDUCTOR_NODE_INSTANCE (DISUSE_FLAG);
-CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_INSTANCE_02 ON T_COMN_CONDUCTOR_NODE_INSTANCE (DISUSE_FLAG,CONDUCTOR_INSTANCE_ID,NODE_TYPE_ID );
-CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_INSTANCE_03 ON T_COMN_CONDUCTOR_NODE_INSTANCE (DISUSE_FLAG,CONDUCTOR_INSTANCE_ID,NODE_TYPE_ID,EXECUTION_ID );
-CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_INSTANCE_04 ON T_COMN_CONDUCTOR_NODE_INSTANCE (CONDUCTOR_INSTANCE_ID);
-CREATE INDEX IND_T_COMN_CONDUCTOR_STATUS_01 ON T_COMN_CONDUCTOR_STATUS (DISUSE_FLAG);
-CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_STATUS_01 ON T_COMN_CONDUCTOR_NODE_STATUS (DISUSE_FLAG);
-CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_01 ON T_COMN_CONDUCTOR_NODE (DISUSE_FLAG);
-CREATE INDEX IND_T_COMN_CONDUCTOR_IF_INFO_01 ON T_COMN_CONDUCTOR_IF_INFO (DISUSE_FLAG);
-CREATE INDEX IND_T_COMN_CONDUCTOR_INSTANCE_03 ON T_COMN_CONDUCTOR_INSTANCE (CONDUCTOR_INSTANCE_ID, STATUS_ID);
-CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_INSTANCE_JNL_01 ON T_COMN_CONDUCTOR_NODE_INSTANCE_JNL (NODE_INSTANCE_ID, LAST_UPDATE_TIMESTAMP DESC);
-CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_INSTANCE_JNL_02 ON T_COMN_CONDUCTOR_NODE_INSTANCE_JNL (NODE_INSTANCE_ID, JOURNAL_REG_DATETIME DESC);
-CREATE INDEX IND_T_COMN_CONDUCTOR_INSTANCE_JNL_01 ON T_COMN_CONDUCTOR_INSTANCE_JNL (CONDUCTOR_INSTANCE_ID, LAST_UPDATE_TIMESTAMP DESC);
-CREATE INDEX IND_T_COMN_CONDUCTOR_STATUS_02 ON T_COMN_CONDUCTOR_STATUS (DISUSE_FLAG, DISP_SEQ);
-CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_STATUS_02 ON T_COMN_CONDUCTOR_NODE_STATUS (DISUSE_FLAG, DISP_SEQ);
-CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_02 ON T_COMN_CONDUCTOR_NODE (DISUSE_FLAG, DISP_SEQ);
-CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_INSTANCE_05 ON T_COMN_CONDUCTOR_NODE_INSTANCE (CONDUCTOR_INSTANCE_ID, NODE_INSTANCE_ID);
-CREATE INDEX IND_T_COMN_CONDUCTOR_INSTANCE_04 ON T_COMN_CONDUCTOR_INSTANCE (STATUS_ID, TIME_BOOK, TIME_REGISTER);
+--  CREATE INDEX IND_T_COMN_CONDUCTOR_CLASS_01 ON T_COMN_CONDUCTOR_CLASS (DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_COMN_CONDUCTOR_CLASS'
+        AND index_name   = 'IND_T_COMN_CONDUCTOR_CLASS_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_COMN_CONDUCTOR_CLASS_01 ON T_COMN_CONDUCTOR_CLASS (DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_COMN_CONDUCTOR_CLASS_02 ON T_COMN_CONDUCTOR_CLASS (DISUSE_FLAG,CONDUCTOR_NAME);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_COMN_CONDUCTOR_CLASS'
+        AND index_name   = 'IND_T_COMN_CONDUCTOR_CLASS_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_COMN_CONDUCTOR_CLASS_02 ON T_COMN_CONDUCTOR_CLASS (DISUSE_FLAG,CONDUCTOR_NAME)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_COMN_CONDUCTOR_INSTANCE_01 ON T_COMN_CONDUCTOR_INSTANCE (DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_COMN_CONDUCTOR_INSTANCE'
+        AND index_name   = 'IND_T_COMN_CONDUCTOR_INSTANCE_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_COMN_CONDUCTOR_INSTANCE_01 ON T_COMN_CONDUCTOR_INSTANCE (DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_COMN_CONDUCTOR_INSTANCE_02 ON T_COMN_CONDUCTOR_INSTANCE (DISUSE_FLAG,STATUS_ID,TIME_BOOK,TIME_REGISTER);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_COMN_CONDUCTOR_INSTANCE'
+        AND index_name   = 'IND_T_COMN_CONDUCTOR_INSTANCE_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_COMN_CONDUCTOR_INSTANCE_02 ON T_COMN_CONDUCTOR_INSTANCE (DISUSE_FLAG,STATUS_ID,TIME_BOOK,TIME_REGISTER)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_INSTANCE_01 ON T_COMN_CONDUCTOR_NODE_INSTANCE (DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_COMN_CONDUCTOR_NODE_INSTANCE'
+        AND index_name   = 'IND_T_COMN_CONDUCTOR_NODE_INSTANCE_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_INSTANCE_01 ON T_COMN_CONDUCTOR_NODE_INSTANCE (DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_INSTANCE_02 ON T_COMN_CONDUCTOR_NODE_INSTANCE (DISUSE_FLAG,CONDUCTOR_INSTANCE_ID,NODE_TYPE_ID );
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_COMN_CONDUCTOR_NODE_INSTANCE'
+        AND index_name   = 'IND_T_COMN_CONDUCTOR_NODE_INSTANCE_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_INSTANCE_02 ON T_COMN_CONDUCTOR_NODE_INSTANCE (DISUSE_FLAG,CONDUCTOR_INSTANCE_ID,NODE_TYPE_ID )',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_INSTANCE_03 ON T_COMN_CONDUCTOR_NODE_INSTANCE (DISUSE_FLAG,CONDUCTOR_INSTANCE_ID,NODE_TYPE_ID,EXECUTION_ID );
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_COMN_CONDUCTOR_NODE_INSTANCE'
+        AND index_name   = 'IND_T_COMN_CONDUCTOR_NODE_INSTANCE_03'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_INSTANCE_03 ON T_COMN_CONDUCTOR_NODE_INSTANCE (DISUSE_FLAG,CONDUCTOR_INSTANCE_ID,NODE_TYPE_ID,EXECUTION_ID )',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_INSTANCE_04 ON T_COMN_CONDUCTOR_NODE_INSTANCE (CONDUCTOR_INSTANCE_ID);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_COMN_CONDUCTOR_NODE_INSTANCE'
+        AND index_name   = 'IND_T_COMN_CONDUCTOR_NODE_INSTANCE_04'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_INSTANCE_04 ON T_COMN_CONDUCTOR_NODE_INSTANCE (CONDUCTOR_INSTANCE_ID)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_COMN_CONDUCTOR_STATUS_01 ON T_COMN_CONDUCTOR_STATUS (DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_COMN_CONDUCTOR_STATUS'
+        AND index_name   = 'IND_T_COMN_CONDUCTOR_STATUS_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_COMN_CONDUCTOR_STATUS_01 ON T_COMN_CONDUCTOR_STATUS (DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_STATUS_01 ON T_COMN_CONDUCTOR_NODE_STATUS (DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_COMN_CONDUCTOR_NODE_STATUS'
+        AND index_name   = 'IND_T_COMN_CONDUCTOR_NODE_STATUS_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_STATUS_01 ON T_COMN_CONDUCTOR_NODE_STATUS (DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_01 ON T_COMN_CONDUCTOR_NODE (DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_COMN_CONDUCTOR_NODE'
+        AND index_name   = 'IND_T_COMN_CONDUCTOR_NODE_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_01 ON T_COMN_CONDUCTOR_NODE (DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_COMN_CONDUCTOR_IF_INFO_01 ON T_COMN_CONDUCTOR_IF_INFO (DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_COMN_CONDUCTOR_IF_INFO'
+        AND index_name   = 'IND_T_COMN_CONDUCTOR_IF_INFO_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_COMN_CONDUCTOR_IF_INFO_01 ON T_COMN_CONDUCTOR_IF_INFO (DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_COMN_CONDUCTOR_INSTANCE_03 ON T_COMN_CONDUCTOR_INSTANCE (CONDUCTOR_INSTANCE_ID, STATUS_ID);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_COMN_CONDUCTOR_INSTANCE'
+        AND index_name   = 'IND_T_COMN_CONDUCTOR_INSTANCE_03'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_COMN_CONDUCTOR_INSTANCE_03 ON T_COMN_CONDUCTOR_INSTANCE (CONDUCTOR_INSTANCE_ID, STATUS_ID)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_INSTANCE_JNL_01 ON T_COMN_CONDUCTOR_NODE_INSTANCE_JNL (NODE_INSTANCE_ID, LAST_UPDATE_TIMESTAMP DESC);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_COMN_CONDUCTOR_NODE_INSTANCE_JNL'
+        AND index_name   = 'IND_T_COMN_CONDUCTOR_NODE_INSTANCE_JNL_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_INSTANCE_JNL_01 ON T_COMN_CONDUCTOR_NODE_INSTANCE_JNL (NODE_INSTANCE_ID, LAST_UPDATE_TIMESTAMP DESC)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_INSTANCE_JNL_02 ON T_COMN_CONDUCTOR_NODE_INSTANCE_JNL (NODE_INSTANCE_ID, JOURNAL_REG_DATETIME DESC);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_COMN_CONDUCTOR_NODE_INSTANCE_JNL'
+        AND index_name   = 'IND_T_COMN_CONDUCTOR_NODE_INSTANCE_JNL_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_INSTANCE_JNL_02 ON T_COMN_CONDUCTOR_NODE_INSTANCE_JNL (NODE_INSTANCE_ID, JOURNAL_REG_DATETIME DESC)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_COMN_CONDUCTOR_INSTANCE_JNL_01 ON T_COMN_CONDUCTOR_INSTANCE_JNL (CONDUCTOR_INSTANCE_ID, LAST_UPDATE_TIMESTAMP DESC);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_COMN_CONDUCTOR_INSTANCE_JNL'
+        AND index_name   = 'IND_T_COMN_CONDUCTOR_INSTANCE_JNL_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_COMN_CONDUCTOR_INSTANCE_JNL_01 ON T_COMN_CONDUCTOR_INSTANCE_JNL (CONDUCTOR_INSTANCE_ID, LAST_UPDATE_TIMESTAMP DESC)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_COMN_CONDUCTOR_STATUS_02 ON T_COMN_CONDUCTOR_STATUS (DISUSE_FLAG, DISP_SEQ);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_COMN_CONDUCTOR_STATUS'
+        AND index_name   = 'IND_T_COMN_CONDUCTOR_STATUS_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_COMN_CONDUCTOR_STATUS_02 ON T_COMN_CONDUCTOR_STATUS (DISUSE_FLAG, DISP_SEQ)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_STATUS_02 ON T_COMN_CONDUCTOR_NODE_STATUS (DISUSE_FLAG, DISP_SEQ);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_COMN_CONDUCTOR_NODE_STATUS'
+        AND index_name   = 'IND_T_COMN_CONDUCTOR_NODE_STATUS_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_STATUS_02 ON T_COMN_CONDUCTOR_NODE_STATUS (DISUSE_FLAG, DISP_SEQ)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_02 ON T_COMN_CONDUCTOR_NODE (DISUSE_FLAG, DISP_SEQ);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_COMN_CONDUCTOR_NODE'
+        AND index_name   = 'IND_T_COMN_CONDUCTOR_NODE_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_02 ON T_COMN_CONDUCTOR_NODE (DISUSE_FLAG, DISP_SEQ)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_INSTANCE_05 ON T_COMN_CONDUCTOR_NODE_INSTANCE (CONDUCTOR_INSTANCE_ID, NODE_INSTANCE_ID);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_COMN_CONDUCTOR_NODE_INSTANCE'
+        AND index_name   = 'IND_T_COMN_CONDUCTOR_NODE_INSTANCE_05'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_INSTANCE_05 ON T_COMN_CONDUCTOR_NODE_INSTANCE (CONDUCTOR_INSTANCE_ID, NODE_INSTANCE_ID)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_COMN_CONDUCTOR_INSTANCE_04 ON T_COMN_CONDUCTOR_INSTANCE (STATUS_ID, TIME_BOOK, TIME_REGISTER);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_COMN_CONDUCTOR_INSTANCE'
+        AND index_name   = 'IND_T_COMN_CONDUCTOR_INSTANCE_04'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_COMN_CONDUCTOR_INSTANCE_04 ON T_COMN_CONDUCTOR_INSTANCE (STATUS_ID, TIME_BOOK, TIME_REGISTER)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
 
 
 

@@ -1,5 +1,5 @@
 -- パラメータシート定義一覧
-CREATE TABLE T_MENU_DEFINE
+CREATE TABLE IF NOT EXISTS T_MENU_DEFINE
 (
     MENU_CREATE_ID                  VARCHAR(40),                                -- 項番(UUID)
     MENU_NAME_JA                    VARCHAR(255),                               -- メニュー名_JA
@@ -22,7 +22,7 @@ CREATE TABLE T_MENU_DEFINE
     PRIMARY KEY(MENU_CREATE_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_MENU_DEFINE_JNL
+CREATE TABLE IF NOT EXISTS T_MENU_DEFINE_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -51,7 +51,7 @@ CREATE TABLE T_MENU_DEFINE_JNL
 
 
 -- カラムグループ作成情報
-CREATE TABLE T_MENU_COLUMN_GROUP
+CREATE TABLE IF NOT EXISTS T_MENU_COLUMN_GROUP
 (
     CREATE_COL_GROUP_ID             VARCHAR(40),                                -- 項番(UUID)
     PA_COL_GROUP_ID                 VARCHAR(40),                                -- 親カラムグループID
@@ -66,7 +66,7 @@ CREATE TABLE T_MENU_COLUMN_GROUP
     PRIMARY KEY(CREATE_COL_GROUP_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_MENU_COLUMN_GROUP_JNL
+CREATE TABLE IF NOT EXISTS T_MENU_COLUMN_GROUP_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -87,7 +87,7 @@ CREATE TABLE T_MENU_COLUMN_GROUP_JNL
 
 
 -- パラメータシート項目作成情報
-CREATE TABLE T_MENU_COLUMN
+CREATE TABLE IF NOT EXISTS T_MENU_COLUMN
 (
     CREATE_COLUMN_ID                VARCHAR(40),                                -- 項番(UUID)
     MENU_CREATE_ID                  VARCHAR(40),                                -- パラメータシート定義一覧のID
@@ -132,7 +132,7 @@ CREATE TABLE T_MENU_COLUMN
     PRIMARY KEY(CREATE_COLUMN_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_MENU_COLUMN_JNL
+CREATE TABLE IF NOT EXISTS T_MENU_COLUMN_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -183,7 +183,7 @@ CREATE TABLE T_MENU_COLUMN_JNL
 
 
 -- 一意制約(複数項目)作成情報
-CREATE TABLE T_MENU_UNIQUE_CONSTRAINT
+CREATE TABLE IF NOT EXISTS T_MENU_UNIQUE_CONSTRAINT
 (
     UNIQUE_CONSTRAINT_ID            VARCHAR(40),                                -- 項番(UUID)
     MENU_CREATE_ID                  VARCHAR(40),                                -- パラメータシート定義一覧のID
@@ -195,7 +195,7 @@ CREATE TABLE T_MENU_UNIQUE_CONSTRAINT
     PRIMARY KEY(UNIQUE_CONSTRAINT_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_MENU_UNIQUE_CONSTRAINT_JNL
+CREATE TABLE IF NOT EXISTS T_MENU_UNIQUE_CONSTRAINT_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -213,7 +213,7 @@ CREATE TABLE T_MENU_UNIQUE_CONSTRAINT_JNL
 
 
 -- パラメータシートロール作成情報
-CREATE TABLE T_MENU_ROLE
+CREATE TABLE IF NOT EXISTS T_MENU_ROLE
 (
     MENU_ROLE_ID                    VARCHAR(40),                                -- 項番(UUID)
     MENU_CREATE_ID                  VARCHAR(40),                                -- パラメータシート定義一覧のID
@@ -225,7 +225,7 @@ CREATE TABLE T_MENU_ROLE
     PRIMARY KEY(MENU_ROLE_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_MENU_ROLE_JNL
+CREATE TABLE IF NOT EXISTS T_MENU_ROLE_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -243,7 +243,7 @@ CREATE TABLE T_MENU_ROLE_JNL
 
 
 -- パラメータシート作成履歴
-CREATE TABLE T_MENU_CREATE_HISTORY
+CREATE TABLE IF NOT EXISTS T_MENU_CREATE_HISTORY
 (
     HISTORY_ID                      VARCHAR(40),                                -- 項番(UUID)
     MENU_CREATE_ID                  VARCHAR(40),                                -- パラメータシート定義一覧のID
@@ -256,7 +256,7 @@ CREATE TABLE T_MENU_CREATE_HISTORY
     PRIMARY KEY(HISTORY_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_MENU_CREATE_HISTORY_JNL
+CREATE TABLE IF NOT EXISTS T_MENU_CREATE_HISTORY_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -275,7 +275,7 @@ CREATE TABLE T_MENU_CREATE_HISTORY_JNL
 
 
 -- パラメータシート定義-テーブル紐付管理
-CREATE TABLE T_MENU_TABLE_LINK
+CREATE TABLE IF NOT EXISTS T_MENU_TABLE_LINK
 (
     MENU_TABLE_LINK_ID              VARCHAR(40),                                -- 項番(UUID)
     MENU_ID                         VARCHAR(40),                                -- メニュー一覧のID
@@ -290,7 +290,7 @@ CREATE TABLE T_MENU_TABLE_LINK
     PRIMARY KEY(MENU_TABLE_LINK_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_MENU_TABLE_LINK_JNL
+CREATE TABLE IF NOT EXISTS T_MENU_TABLE_LINK_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -311,7 +311,7 @@ CREATE TABLE T_MENU_TABLE_LINK_JNL
 
 
 -- 他メニュー連携
-CREATE TABLE T_MENU_OTHER_LINK
+CREATE TABLE IF NOT EXISTS T_MENU_OTHER_LINK
 (
     LINK_ID                         VARCHAR(40),                                -- 項番(UUID)
     MENU_ID                         VARCHAR(40),                                -- メニュー一覧のID
@@ -332,7 +332,7 @@ CREATE TABLE T_MENU_OTHER_LINK
     PRIMARY KEY(LINK_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_MENU_OTHER_LINK_JNL
+CREATE TABLE IF NOT EXISTS T_MENU_OTHER_LINK_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -440,7 +440,7 @@ WHERE TAB_B.DISUSE_FLAG='0' AND TAB_C.DISUSE_FLAG='0' AND (TAB_D.DISUSE_FLAG='0'
 
 
 -- 参照項目情報
-CREATE TABLE T_MENU_REFERENCE_ITEM
+CREATE TABLE IF NOT EXISTS T_MENU_REFERENCE_ITEM
 (
     REFERENCE_ID                    VARCHAR(40),                                -- 項番
     LINK_ID                         VARCHAR(40),                                -- 他メニュー連携のID
@@ -463,7 +463,7 @@ CREATE TABLE T_MENU_REFERENCE_ITEM
     PRIMARY KEY(REFERENCE_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_MENU_REFERENCE_ITEM_JNL
+CREATE TABLE IF NOT EXISTS T_MENU_REFERENCE_ITEM_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -563,7 +563,7 @@ WHERE TAB_B.DISUSE_FLAG='0'
 
 
 -- 選択1
-CREATE TABLE T_MENU_SELECT_1
+CREATE TABLE IF NOT EXISTS T_MENU_SELECT_1
 (
     SELECT_ID                       VARCHAR(40),                                -- 項番
     STATUS_VALUE                    VARCHAR(255),                               -- *-(ブランク)
@@ -579,7 +579,7 @@ CREATE TABLE T_MENU_SELECT_1
 
 
 -- 選択2
-CREATE TABLE T_MENU_SELECT_2
+CREATE TABLE IF NOT EXISTS T_MENU_SELECT_2
 (
     SELECT_ID                       VARCHAR(40),                                -- 項番
     STATUS_VALUE_1                  VARCHAR(255),                               -- Yes-No
@@ -596,7 +596,7 @@ CREATE TABLE T_MENU_SELECT_2
 
 
 -- パラメータ集検索条件情報
-CREATE TABLE T_MENU_COLLECTION_FILTER_DATA
+CREATE TABLE IF NOT EXISTS T_MENU_COLLECTION_FILTER_DATA
 (
     UUID                            VARCHAR(40),                                -- 項番
     FILTER_NAME                     VARCHAR(255),                               -- 検索条件名
@@ -611,7 +611,7 @@ CREATE TABLE T_MENU_COLLECTION_FILTER_DATA
 
 
 -- パラメータシート作成ステータスマスタ
-CREATE TABLE T_MENU_CREATE_STATUS
+CREATE TABLE IF NOT EXISTS T_MENU_CREATE_STATUS
 (
     STATUS_ID                       VARCHAR(40),                                -- 項番
     STATUS_NAME_JA                  VARCHAR(255),                               -- ステータス名(ja)
@@ -628,7 +628,7 @@ CREATE TABLE T_MENU_CREATE_STATUS
 
 
 -- パラメータシート作成タイプマスタ
-CREATE TABLE T_MENU_CREATE_TYPE
+CREATE TABLE IF NOT EXISTS T_MENU_CREATE_TYPE
 (
     TYPE_ID                         VARCHAR(40),                                -- 項番
     TYPE_NAME_JA                    VARCHAR(255),                               -- タイプ名(ja)
@@ -645,7 +645,7 @@ CREATE TABLE T_MENU_CREATE_TYPE
 
 
 -- パラメータシート作成用途マスタ
-CREATE TABLE T_MENU_PARAM_PURPOSE
+CREATE TABLE IF NOT EXISTS T_MENU_PARAM_PURPOSE
 (
     PURPOSE_ID                      VARCHAR(40),                                -- 項番
     PURPOSE_NAME_JA                 VARCHAR(255),                               -- 用途(ja)
@@ -662,7 +662,7 @@ CREATE TABLE T_MENU_PARAM_PURPOSE
 
 
 -- パラメータシート作成状態マスタ
-CREATE TABLE T_MENU_CREATE_DONE_STATUS
+CREATE TABLE IF NOT EXISTS T_MENU_CREATE_DONE_STATUS
 (
     DONE_STATUS_ID                  VARCHAR(40),                                -- 項番
     DONE_STATUS_NAME_JA             VARCHAR(255),                               -- 作成状態(ja)
@@ -887,16 +887,166 @@ AND TAB_E.DISUSE_FLAG = 0
 
 
 -- インデックス
-CREATE INDEX IND_T_MENU_DEFINE_01 ON T_MENU_DEFINE (DISUSE_FLAG);
-CREATE INDEX IND_T_MENU_COLUMN_GROUP_01 ON T_MENU_COLUMN_GROUP (DISUSE_FLAG);
-CREATE INDEX IND_T_MENU_COLUMN_01 ON T_MENU_COLUMN (DISUSE_FLAG);
-CREATE INDEX IND_T_MENU_COLUMN_02 ON T_MENU_COLUMN (DISP_SEQ);
-CREATE INDEX IND_T_MENU_UNIQUE_CONSTRAINT_01 ON T_MENU_UNIQUE_CONSTRAINT (DISUSE_FLAG);
-CREATE INDEX IND_T_MENU_ROLE_01 ON T_MENU_ROLE (DISUSE_FLAG);
-CREATE INDEX IND_T_MENU_CREATE_HISTORY_01 ON T_MENU_CREATE_HISTORY (DISUSE_FLAG);
-CREATE INDEX IND_T_MENU_TABLE_LINK_01 ON T_MENU_TABLE_LINK (DISUSE_FLAG);
-CREATE INDEX IND_T_MENU_OTHER_LINK_01 ON T_MENU_OTHER_LINK (DISUSE_FLAG);
-CREATE INDEX IND_T_MENU_REFERENCE_ITEM_01 ON T_MENU_REFERENCE_ITEM (DISUSE_FLAG);
+--  CREATE INDEX IND_T_MENU_DEFINE_01 ON T_MENU_DEFINE (DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_MENU_DEFINE'
+        AND index_name   = 'IND_T_MENU_DEFINE_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_MENU_DEFINE_01 ON T_MENU_DEFINE (DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_MENU_COLUMN_GROUP_01 ON T_MENU_COLUMN_GROUP (DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_MENU_COLUMN_GROUP'
+        AND index_name   = 'IND_T_MENU_COLUMN_GROUP_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_MENU_COLUMN_GROUP_01 ON T_MENU_COLUMN_GROUP (DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_MENU_COLUMN_01 ON T_MENU_COLUMN (DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_MENU_COLUMN'
+        AND index_name   = 'IND_T_MENU_COLUMN_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_MENU_COLUMN_01 ON T_MENU_COLUMN (DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_MENU_COLUMN_02 ON T_MENU_COLUMN (DISP_SEQ);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_MENU_COLUMN'
+        AND index_name   = 'IND_T_MENU_COLUMN_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_MENU_COLUMN_02 ON T_MENU_COLUMN (DISP_SEQ)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_MENU_UNIQUE_CONSTRAINT_01 ON T_MENU_UNIQUE_CONSTRAINT (DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_MENU_UNIQUE_CONSTRAINT'
+        AND index_name   = 'IND_T_MENU_UNIQUE_CONSTRAINT_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_MENU_UNIQUE_CONSTRAINT_01 ON T_MENU_UNIQUE_CONSTRAINT (DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_MENU_ROLE_01 ON T_MENU_ROLE (DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_MENU_ROLE'
+        AND index_name   = 'IND_T_MENU_ROLE_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_MENU_ROLE_01 ON T_MENU_ROLE (DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_MENU_CREATE_HISTORY_01 ON T_MENU_CREATE_HISTORY (DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_MENU_CREATE_HISTORY'
+        AND index_name   = 'IND_T_MENU_CREATE_HISTORY_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_MENU_CREATE_HISTORY_01 ON T_MENU_CREATE_HISTORY (DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_MENU_TABLE_LINK_01 ON T_MENU_TABLE_LINK (DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_MENU_TABLE_LINK'
+        AND index_name   = 'IND_T_MENU_TABLE_LINK_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_MENU_TABLE_LINK_01 ON T_MENU_TABLE_LINK (DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_MENU_OTHER_LINK_01 ON T_MENU_OTHER_LINK (DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_MENU_OTHER_LINK'
+        AND index_name   = 'IND_T_MENU_OTHER_LINK_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_MENU_OTHER_LINK_01 ON T_MENU_OTHER_LINK (DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_MENU_REFERENCE_ITEM_01 ON T_MENU_REFERENCE_ITEM (DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_MENU_REFERENCE_ITEM'
+        AND index_name   = 'IND_T_MENU_REFERENCE_ITEM_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_MENU_REFERENCE_ITEM_01 ON T_MENU_REFERENCE_ITEM (DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
 
 
 

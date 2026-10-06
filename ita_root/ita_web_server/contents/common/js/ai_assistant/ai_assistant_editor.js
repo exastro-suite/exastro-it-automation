@@ -67,6 +67,7 @@ static get assets() {
         // 画面専用ツール（ツールごとに定義と動作を1ファイルにまとめている）
         { type: 'js', url: '/_/ita/js/ai_assistant/tools/ai_assistant_tool_ask_user_choice.js'},
         { type: 'js', url: '/_/ita/js/ai_assistant/tools/ai_assistant_tool_display_html.js'},
+        { type: 'js', url: '/_/ita/js/ai_assistant/tools/ai_assistant_tool_download_attachment_file.js'},
         // チャット部分
         { type: 'js', url: '/_/ita/js/ai_assistant/ai_assistant_chat.js'},
         // プラットフォームAPIの一覧表示用Table（会話履歴・学習事項の一覧に使う）

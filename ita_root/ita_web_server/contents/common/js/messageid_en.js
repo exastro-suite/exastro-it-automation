@@ -1209,7 +1209,7 @@ export function messageid_en() {
         'FTE14122': 'No lesson content is specified.',
         'FTE14123': 'No lesson ID is specified.',
         'FTE14124': 'No lesson to enable or disable is specified.',
-        'FTE14125': function( status ){ return `The response timed out (HTTP ${status}).\nDo you want to try again?`},
+        'FTE14125': function( status ){ return `The response timed out (${( status )? `HTTP ${status}`: 'the connection was lost'}).\nDo you want to try again?`},
         'FTE14126': 'The retry was stopped because of the timeout.',
 
         // AI assistant (text passed to the AI as the information of the attached files)
@@ -1234,7 +1234,7 @@ export function messageid_en() {
         'FTE14149': 'No AI service is registered.',
         'FTE14150': 'Please register the authentication information of the AI service you use.',
         'FTE14151': 'The AI service to use cannot be changed during a conversation. The authentication information can be updated.',
-        'FTE14152': 'Please select the AI service to use and apply it.',
+        'FTE14152': 'To change the AI service, select the AI service you wish to use and click "Apply."',
         'FTE14153': 'Registered AI services',
         'FTE14154': function( num ){ return `${num} items`},
         'FTE14155': function( date ){ return `Expiration date: ${date}`},
@@ -1383,7 +1383,7 @@ export function messageid_en() {
         'FTE14301': 'Ended without being able to determine the execution status.<br>Please check the latest status with "Check the work status".',
         'FTE14302': '(This operation was interrupted because the page was left. It may already have been executed on the server side. Do not carelessly run the same operation again. If necessary, check the current status and then report it to the user.)',
         'FTE14303': function( message ){ return `There is a conversation that was interrupted last time, but it cannot be resumed because the authentication does not pass.\n\n${message}`},
-        'FTE14304': 'The previous conversation has been restored. If you answer the options above, you can resume from there.',
+        'FTE14304': 'The previous conversation has been restored. If you answer the options below, you can resume from there.',
         'FTE14305': 'The previous conversation has been restored.',
         'FTE14306': 'The page was closed in the middle of the work last time.',
         'FTE14307': 'There is work that was interrupted last time. Do you want to resume it?\n\nIf you select "Yes", the AI resumes the processing (operations on ITA (Exastro) and token consumption may occur).\nIf you select "No", the conversation stays in the restored state and you can continue it manually.',
@@ -1501,6 +1501,36 @@ export function messageid_en() {
         'FTE14393': 'Cancel',
         'FTE14394': function( name ){ return `${name} (creation status)`},
         'FTE14395': 'Open the parameter sheet creation history. Menus are created and updated asynchronously, so the menu may not open until the process is complete.',
+        'FTE14396': function( answer ){ return `The user selected "${answer}" with an option button.`},
+        'FTE14397': function( answer ){ return `The user did not use the option buttons and wrote the following in the input field (it may not be one of the options).\n${answer}`},
+        'FTE14398': function( question, labels, answer, selected ){ return `This is the answer to the previous question.\nQuestion: ${question}\nOptions: ${labels.map(( label ) => `"${label}"`).join(', ')}\n`
+            + ( selected ? `Answer: The user selected "${answer}" with an option button.` : `Answer: The user did not use the option buttons and wrote the following in the input field (it may not be one of the options).\n${answer}`)},
+        'FTE14399': function( count ){ return `Selected from ${count} options`},
+        'FTE14400': function( count ){ return `Entered without using the options (${count} options)`},
+
+        // AI Assistant (resending after a response timeout)
+        'FTE14401': 'The previous request timed out because the response took too long. Do not deliberate too deeply; first reply briefly with only the key points (the approach or the single next step). If the task is large, do not do everything in one response; proceed in stages.',
+        'FTE14402': 'The response timed out',
+        'FTE14403': 'Resend',
+        'FTE14404': 'Cancel',
+        'FTE14405': 'Resend with an instruction to respond briefly (recommended)',
+        'FTE14406': function( name ){ return `Switch the model to "${name}" and resend`},
+        'FTE14407': 'Resend as is',
+        'FTE14408': function( status ){ return `The AI response timed out (${( status )? `HTTP ${status}`: 'the connection was lost'}).\nResending the same content as is may time out again. Please choose how to resend.`},
+
+        // AI assistant (attachment file download tool)
+        'FTE14409': function( filename, size ){ return `A download button for the file "${filename}" (${size} bytes) has been displayed in the chat area. The file is not downloaded automatically, so guide the user to press the download button to save the file. The file has a retention period and can no longer be downloaded after it expires, so also advise the user to save it soon. The file content is not returned to the LLM.`},
+        'FTE14410': function( fileId, message ){ return `Failed to download the file (file_id: ${fileId}). ${message}`},
+        'FTE14411': function( status ){ return `Failed to get the attachment file (HTTP ${status}).`},
+        'FTE14412': 'Download',
+        'FTE14413': 'The retention period of the file has expired.',
+        'FTE14414': 'Press the download button to save the file.',
+        'FTE14415': '* Files are kept only for a limited period and can no longer be downloaded after it expires. Please save the file soon.',
+
+        // AI assistant (auth error in AI service settings)
+        'FTE14416': 'Unavailable',
+        'FTE14417': 'This AI service cannot be used because authentication failed. Please update the authentication information with "Update".',
+        'FTE14418': 'No AI service is selected for the chat. Select the AI service you want to use and click "Apply".',
 
         //gemini
         'FTE14101': 'API KEY',

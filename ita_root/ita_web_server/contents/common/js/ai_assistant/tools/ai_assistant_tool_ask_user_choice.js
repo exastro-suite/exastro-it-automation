@@ -109,9 +109,7 @@ execute( toolUse ) {
     const question = typeof input.question === 'string' ? input.question : '';
     // options は文字列配列（旧形式）／オブジェクト配列（新形式）を許容する。
     // さらに、モデルのフォーマット崩れで options 自体が文字列化されている場合も救済する。
-    const options = this.coerceOptions( input.options )
-        .map(( opt ) => this.normalizeOption( opt ) )
-        .filter(( opt ) => opt.label !== '');
+    const options = this.extractOptions( input );
 
     // 質問文をアシスタントメッセージとして表示
     if ( question ) {
@@ -125,6 +123,7 @@ execute( toolUse ) {
     if ( toolUse.id ) {
         this.chat.pendingChoiceToolId = toolUse.id;
         this.chat.pendingExtraChoiceToolIds = Array.isArray( toolUse._extraIds ) ? toolUse._extraIds : [];
+        this.chat.pendingChoiceContext = this.buildContext( input );
     }
 
     // 選択肢を追加する
@@ -138,10 +137,20 @@ execute( toolUse ) {
    履歴からの復元
 ##################################################
 */
+// 未回答のまま残っている選択肢のボタンを再表示する（履歴からの再開・選択肢までの巻き戻し時）。
+// 質問文は resume で復元済みのため、ここではボタンだけを末尾に表示する。
+// 回答待ちの保留状態（pendingChoiceToolId 等）は呼び出し側（restorePendingChoice）が設定する。
+resumePending( toolUse ) {
+    const input = toolUse?.arguments ?? toolUse?.input ?? {};
+    const options = this.extractOptions( input );
+    if ( options.length ) {
+        this.chat.updateChat({ role: 'userChoice', options: options, toolId: toolUse.id ?? ''}, false );
+    }
+}
 // 選択肢ツールの質問文は tool_use の input に入っており、textブロックとしては履歴に残らない。
 // ライブ表示（execute）と同様に、質問文をアシスタントメッセージとして復元する。
 // （選択肢ボタン自体は、回答済みならユーザ発言として復元されるため描画しない。
-//   未回答の場合は AiAssistantChat.restorePendingChoice が回答待ちとして復元する）
+//   未回答の場合は AiAssistantChat.restorePendingChoice が回答待ちとして復元し、resumePending でボタンを再表示する）
 resume( toolUse, block ) {
     const input = toolUse.arguments ?? toolUse.input ?? {};
     if ( typeof input.question === 'string' && input.question ) {
@@ -163,6 +172,18 @@ normalizeOption( opt ) {
         return { label, action };
     }
     return { label: String( opt ?? ''), action: 'other'};
+}
+// tool_use の input から、表示する選択肢（{ label, action } の配列。空ラベルは除く）を取り出す。
+extractOptions( input ) {
+    return this.coerceOptions( input?.options )
+        .map(( opt ) => this.normalizeOption( opt ) )
+        .filter(( opt ) => opt.label !== '');
+}
+// tool_use の input から、回答時に LLM へ添える選択肢の内容（{ question, labels }）を作る。
+buildContext( input ) {
+    const question = typeof input?.question === 'string' ? input.question : '';
+    const labels = this.extractOptions( input ).map(( opt ) => opt.label );
+    return { question, labels };
 }
 // options を配列に正規化する。
 // 長文脈になるとモデルがツール入力のフォーマットを崩し、options を配列ではなく

@@ -163,8 +163,18 @@ static get retryStatuses() {
     return [ 425, 429, 500, 502, 503 ];
 }
 // タイムアウトのHTTPステータス（待たされた末の再試行になるため、再送前にユーザーへ確認する）
+// 502 はゲートウェイが応答待ちの途中で接続を切ったときに返ることがあるため、問い合わせ（completions）では
+// タイムアウトとして扱う（自動で再送すると、同じ長考がくり返されたりユーザーターンが二重に保存されたりする）。
 static get timeoutStatuses() {
-    return [ 408, 504 ];
+    return [ 408, 502, 504 ];
+}
+// 問い合わせ（completions）で自動再送するHTTPステータス（タイムアウトとして扱うものを除く）
+static get completionRetryStatuses() {
+    return AiAssistantLlm.retryStatuses.filter(( status ) => !AiAssistantLlm.timeoutStatuses.includes( status ) );
+}
+// タイムアウトとして扱うエラーか（タイムアウトのHTTPステータス、または応答を得る前に接続が切れた）
+static isTimeoutError( error ) {
+    return AiAssistantLlm.timeoutStatuses.includes( error?.status ) || error?.networkError === true;
 }
 /*
 ##################################################
@@ -735,7 +745,8 @@ appendToolResults( toolResults ) {
 // prompt  … テキスト（文字列）または contentブロックの配列（tool_result等）
 // files   … 送信するファイル（アップロード済みの情報。useLlm=trueのものは実体も渡す）
 // signal  … 停止用のAbortSignal
-// options … { displayText, systemAction, timestamp, alreadyPushed }
+// options … { displayText, systemAction, timestamp, alreadyPushed, onTimeout }
+//   onTimeout … タイムアウト時に再送の方法を選ばせる関数（→ askTimeoutRetry）。省略時は確認ダイアログ
 async send( prompt, files, signal, options = {} ) {
     // 継続送信（alreadyPushed）の場合、送るべきメッセージ（tool_result等）は呼び出し側が
     // 既に履歴へ積んでいるため、ここでは積まない。
@@ -786,23 +797,57 @@ async send( prompt, files, signal, options = {} ) {
             // 履歴の全置換（syncHistory）や会話の作成は計測に含めない。
             // これはプラットフォームAPI経由のAIサービス呼び出しの往復時間であり、
             // ツールの実行時間は含まない。
-            const requestStart = performance.now();
-            try {
-                const response = await this.requestCompletion( signal, messageText );
-                thinkingMs = Math.round( performance.now() - requestStart );
-                return response;
-            } catch ( error ) {
-                // タイムアウトは同じ内容の再送で解消することがあるため、ユーザーに確認して1度だけ再送する
-                if ( !AiAssistantLlm.timeoutStatuses.includes( error?.status ) ) throw error;
-                const proceed = window.confirm( getMessage.FTE14125( error.status ) );
-                if ( !proceed ) throw new Error( getMessage.FTE14126 );
-                retried = true;
-                // 再送の場合は、待たされた末に失敗した1度目ではなく再送分の往復時間を記録する
+            // タイムアウトした場合は、ユーザーに再送の方法を選ばせて送り直す（中止するまで繰り返す）。
+            // 同じ内容をそのまま送り直すと同じ長考が始まって再びタイムアウトしやすいため、
+            // 「簡潔に応答する指示を添える」「別のモデルに切り替える」といった条件を変えた再送も選べる。
+            let requestMessageText = messageText;
+            let hinted = false;
+            for (;;) {
+                // 再送の場合は、待たされた末に失敗した回ではなく再送分の往復時間を記録する
                 // （ユーザーの確認待ちの時間も含めない）
-                const retryStart = performance.now();
-                const response = await this.requestCompletion( signal, messageText );
-                thinkingMs = Math.round( performance.now() - retryStart );
-                return response;
+                const requestStart = performance.now();
+                try {
+                    const response = await this.requestCompletion( signal, requestMessageText );
+                    thinkingMs = Math.round( performance.now() - requestStart );
+                    return response;
+                } catch ( error ) {
+                    if ( !AiAssistantLlm.isTimeoutError( error ) ) throw error;
+                    // タイムアウトまでの時間（裏で完了していた応答を採用する場合の往復時間。実際はこれ以上かかっている）
+                    const timeoutMs = Math.round( performance.now() - requestStart );
+
+                    // ゲートウェイが先に切れただけで、裏では応答が完了して履歴へ保存されていることがある。
+                    // その場合は再送せずに保存済みの応答を採用する（長考のやり直しと、ターンの二重保存を避ける）。
+                    const recovered = await this.findTimedOutResponse( requestMessageText );
+                    if ( recovered ) {
+                        thinkingMs = timeoutMs;
+                        return recovered;
+                    }
+
+                    const choice = await this.askTimeoutRetry( error.status ?? null, options.onTimeout, { canHint: !hinted } );
+                    if ( !choice ) throw new Error( getMessage.FTE14126 );
+
+                    // ユーザーが選んでいる間に裏で完了していることもあるため、送り直す前にもう一度確かめる
+                    const lateRecovered = await this.findTimedOutResponse( requestMessageText );
+                    if ( lateRecovered ) {
+                        thinkingMs = timeoutMs;
+                        return lateRecovered;
+                    }
+
+                    retried = true;
+                    if ( choice.modelId ) this.setModel( choice.modelId );
+                    if ( choice.hint && !hinted ) {
+                        // 送信するユーザーターン（継続送信なら呼び出し側が積んだ tool_result 等のターン）に
+                        // 簡潔に応答する指示を持たせる。指示は toApiHistory で差し込みブロックとして渡すため、
+                        // 吹き出しには表示されない。messageでは送れない形になるので、履歴を全置換して問い合わせる。
+                        const lastTurn = this.messages[ this.messages.length - 1 ];
+                        if ( lastTurn?.role === 'user') {
+                            hinted = true;
+                            lastTurn._timeoutHint = getMessage.FTE14401;
+                            requestMessageText = null;
+                            await this.syncHistory( signal );
+                        }
+                    }
+                }
             }
         });
         contents = this.responseContents( data );
@@ -850,16 +895,72 @@ async send( prompt, files, signal, options = {} ) {
 // 履歴へ保存されるため、それと同じ形のターン（テキスト1ブロックのみ・添付なし）だけを対象にする。
 // ツール結果（tool_result）や添付ファイル（image / document、_attachmentsのメタ情報）を含むターンは
 // messageでは表現できないので、履歴の全置換（PUT /messages）で渡す。
-// 画面表示用の情報（_displayText / _displaySystem）を持つターンも、messageで送ると保存されずに
+// 画面表示用の情報（_displayText / _displaySystem / _choiceSelected）を持つターンも、messageで送ると保存されずに
 // 失われてしまうため、同様に全置換で渡す。
 static completionMessageText( userMessage ) {
     if ( !userMessage || userMessage._attachments ) return null;
-    if ( userMessage._displayText !== undefined || userMessage._displaySystem !== undefined ) return null;
+    if ( userMessage._displayText !== undefined || userMessage._displaySystem !== undefined || userMessage._choiceSelected !== undefined ) return null;
+    // タイムアウト時に添えた指示（_timeoutHint）は差し込みブロックとして渡すため、messageでは送れない
+    if ( userMessage._timeoutHint !== undefined ) return null;
     const content = userMessage.content;
     if ( !Array.isArray( content ) || content.length !== 1 ) return null;
     const block = content[0];
     if ( !block || block.type !== 'text' || typeof block.text !== 'string' || block.text === '') return null;
     return block.text;
+}
+/*
+##################################################
+   タイムアウト時の再送
+##################################################
+*/
+// タイムアウトした問い合わせの応答が、裏で完了してサーバー側の履歴へ保存されていれば返す（無ければnull）。
+// messageを指定した問い合わせは、プラットフォーム側がユーザーターンとAI応答を履歴へ自動保存するため、
+// ゲートウェイのタイムアウト（504）後も処理が続いて保存まで終わっていることがある。
+// messageなしの問い合わせ（tool_result・添付ファイル付きなど）は保存されないため確かめられない。
+//
+// サーバー側の履歴が「画面側の履歴（今回のユーザーターンまで）＋AI応答」になっている場合だけ採用する。
+// 返す値は completions の応答と同じ形（content_blocks / stop_reason / saved）。
+// stop_reason は履歴に残らないため、tool_use ブロックの有無から決める。
+async findTimedOutResponse( messageText ) {
+    if ( messageText === null || !this.conversationId ) return null;
+    let history;
+    try {
+        history = await AiAssistantLlm.fetchHistory( this.conversationId );
+    } catch ( error ) {
+        // 確かめられない場合は、応答が無いものとして再送の確認へ進む
+        console.warn('タイムアウトした応答の確認に失敗しました。', error );
+        return null;
+    }
+    if ( !Array.isArray( history ) || history.length !== this.messages.length + 1 ) return null;
+
+    const userTurn = history[ history.length - 2 ];
+    const assistantTurn = history[ history.length - 1 ];
+    if ( userTurn?.role !== 'user' || assistantTurn?.role !== 'assistant') return null;
+    if ( AiAssistantLlm.completionMessageText( userTurn ) !== messageText ) return null;
+    if ( !Array.isArray( assistantTurn.content ) || !assistantTurn.content.length ) return null;
+
+    console.warn('タイムアウトした問い合わせの応答が保存されていたため、再送せずに採用します。');
+    const hasToolUse = assistantTurn.content.some(( block ) => block?.type === 'tool_use');
+    return {
+        content_blocks: assistantTurn.content,
+        stop_reason: ( hasToolUse )? 'tool_use': 'end_turn',
+        saved: true
+    };
+}
+// タイムアウト時に再送の方法をユーザーに選ばせる。
+// 戻り値: { hint, modelId } … hint=true なら簡潔に応答する指示を添える、modelId があればそのモデルで再送
+//         null … 再送を中止
+// onTimeout（画面側のダイアログ）が無い場合は、従来どおり確認ダイアログでそのまま再送するかを聞く。
+async askTimeoutRetry( status, onTimeout, param = {} ) {
+    if ( typeof onTimeout === 'function') {
+        return await onTimeout( status, { canHint: param.canHint === true, modelId: this.modelId });
+    }
+    return ( window.confirm( getMessage.FTE14125( status ) ) )? { hint: false, modelId: null }: null;
+}
+// タイムアウト時に添えた指示のテキストブロックを作る（toApiHistory で差し込む）
+static timeoutHintBlock( hint ) {
+    if ( typeof hint !== 'string' || hint === '') return null;
+    return { 'type': 'text', 'text': hint };
 }
 /*
 ##################################################
@@ -945,6 +1046,10 @@ buildUserMessage( prompt, files, options = {} ) {
     // 画面表示用の別文言があれば持たせる（履歴保存・復元用。LLMには渡さない）
     if ( typeof options.displayText === 'string' && options.displayText !== '') {
         userMessage._displayText = options.displayText;
+    }
+    // 選択肢への回答の場合、ボタンで選んだか（true）自由入力か（false）を持たせる（同上）
+    if ( typeof options.choiceSelected === 'boolean') {
+        userMessage._choiceSelected = options.choiceSelected;
     }
     // システム操作（会話終了など）としての表示種別を持たせる（同上）
     if ( options.systemAction === true ) {
@@ -1059,6 +1164,13 @@ toApiHistory( messages ) {
             entries = [ ...toolResults, ...insertEntries, ...others ];
             turn.content = entries.map(( entry ) => entry.block );
         }
+        // タイムアウト時に添えた指示は、ユーザーの発言（ツール結果）の後ろに付け足す
+        const hintBlock = ( !injected('timeoutHint') )
+            ? AiAssistantLlm.timeoutHintBlock( message._timeoutHint ): null;
+        if ( hintBlock ) {
+            entries = [ ...entries, { 'block': hintBlock, 'injected': 'timeoutHint'} ];
+            turn.content = entries.map(( entry ) => entry.block );
+        }
 
         // 差し込んだブロックの位置と種別を目印として持たせる（→ isInjectedBlock）。
         // 並べ替えで位置が変わるため、目印はこの時点のcontentに対して毎回作り直す。
@@ -1080,7 +1192,7 @@ static get attachmentMetaPrefix() {
     return getMessage.FTE14127;
 }
 // contentブロックが toApiHistory で差し込まれたものかを判定する。
-//   'attachment' … 添付ファイルのメタ情報   null … それ以外
+//   'attachment' … 添付ファイルのメタ情報   'timeoutHint' … タイムアウト時に添えた指示   null … それ以外
 // index … turn.content の中での位置（目印での判定に必要）
 //
 // contentブロック内に _ 始まりの目印を持たせる方法は使えない（プラットフォーム側の _ 除去は
@@ -1161,7 +1273,63 @@ async requestCompletion( signal, messageText = null ) {
         menu_id: this.menu
     };
     if ( messageText !== null ) body.message = messageText;
-    return await this.request(AiAssistantLlm.apiUrl.completion( this.conversationId ), 'POST', body, signal );
+    // タイムアウトとして扱うもの（タイムアウトのHTTPステータス・ネットワークエラー）は自動で再送しない。
+    // 長考の末に切れた問い合わせを同じ内容で送り直すと同じ長考がくり返され、messageを指定した問い合わせでは
+    // 1度目が裏で保存まで終わっているとユーザーターンが二重に保存されるため。呼び出し側（send）が
+    // 保存済みの応答を確かめたうえで、ユーザーに再送の方法を選ばせる。
+    const completionRetryOptions = {
+        retryStatuses: AiAssistantLlm.completionRetryStatuses,
+        retryNetworkError: false
+    };
+
+    // TODO: 【一時的なデバッグ用】タイムアウト時の動作確認が終わったら削除する
+    const debugTimeout = AiAssistantLlm.takeDebugTimeout();
+    if ( debugTimeout ) {
+        // after … 実際に問い合わせてから応答を捨てる（裏で完了・保存されていたケース）
+        if ( debugTimeout.mode === 'after') {
+            await this.request(AiAssistantLlm.apiUrl.completion( this.conversationId ), 'POST', body, signal, completionRetryOptions );
+        }
+        console.warn(`[debug] タイムアウトを擬似的に発生させます（mode=${debugTimeout.mode}、残り${debugTimeout.rest}回）`);
+        // network … 応答を得る前に接続が切れた（request() が付けるネットワークエラーの目印を再現する）
+        if ( debugTimeout.mode === 'network') {
+            const error = new TypeError('[debug] pseudo network error (Failed to fetch)');
+            error.networkError = true;
+            throw error;
+        }
+        const error = new Error('[debug] pseudo timeout');
+        error.status = 504;
+        throw error;
+    }
+
+    return await this.request(AiAssistantLlm.apiUrl.completion( this.conversationId ), 'POST', body, signal, completionRetryOptions );
+}
+// TODO: 【一時的なデバッグ用】タイムアウトを擬似的に発生させる設定を1回分取り出す（無ければnull）
+// ブラウザのコンソールで localStorage に "モード:回数" を設定すると、その回数だけ問い合わせが504になる。
+//   localStorage.setItem('aiAssistantDebugTimeout', 'before:1')  … 送らずに504（サーバーには何も残らない）
+//   localStorage.setItem('aiAssistantDebugTimeout', 'after:1')   … 問い合わせてから504（応答はサーバーに保存される）
+//   localStorage.setItem('aiAssistantDebugTimeout', 'network:1') … 送らずに接続断（ネットワークエラー）
+//   localStorage.removeItem('aiAssistantDebugTimeout')           … 解除
+// 回数を省略すると1回。使い切ると自動で解除される。
+static takeDebugTimeout() {
+    const key = 'aiAssistantDebugTimeout';
+    let value = null;
+    try { value = window.localStorage.getItem( key ); } catch ( error ) { return null; }
+    if ( !value ) return null;
+
+    const [ mode, countText ] = value.split(':');
+    if ( !['before', 'after', 'network'].includes( mode ) ) return null;
+    const count = Number( countText ?? 1 );
+    if ( !Number.isInteger( count ) || count < 1 ) {
+        window.localStorage.removeItem( key );
+        return null;
+    }
+    const rest = count - 1;
+    if ( rest > 0 ) {
+        window.localStorage.setItem( key, `${mode}:${rest}`);
+    } else {
+        window.localStorage.removeItem( key );
+    }
+    return { mode, rest };
 }
 /*
 ##################################################
@@ -1200,7 +1368,8 @@ getToken() {
    プラットフォームAPIへリクエストを送信する
 ##################################################
 */
-async request( url, method, body, signal ) {
+// retryOptions … fetchWithRetry のリトライ設定（省略時は retryStatuses で再送し、ネットワークエラーも再送する）
+async request( url, method, body, signal, retryOptions = {} ) {
     const token = this.getToken();
     const options = {
         method: method,
@@ -1212,9 +1381,19 @@ async request( url, method, body, signal ) {
     if ( body ) options.body = JSON.stringify( body );
     if ( signal ) options.signal = signal;
 
-    const response = await AiAssistantChat.fetchWithRetry( url, options, {
-        retryStatuses: AiAssistantLlm.retryStatuses
-    });
+    let response;
+    try {
+        response = await AiAssistantChat.fetchWithRetry( url, options, {
+            retryStatuses: AiAssistantLlm.retryStatuses,
+            ...retryOptions
+        });
+    } catch ( error ) {
+        // 応答を得る前に接続が切れた（ネットワークエラー）ことを、呼び出し側での再送判断に使えるようにする
+        if ( error?.name !== 'AbortError' && !signal?.aborted && error && typeof error === 'object') {
+            error.networkError = true;
+        }
+        throw error;
+    }
 
     const json = await response.json().catch( () => null );
     if ( !response.ok ) {

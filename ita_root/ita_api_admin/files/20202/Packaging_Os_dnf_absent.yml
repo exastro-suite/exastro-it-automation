@@ -1,5 +1,5 @@
 # This Playbook file uninstalls packages specified by "ITA_DFLT_Uninstall_Target_packages".
-# "ITA_DFLT_uninstall_Target_packages" can specify multiple files (list type).
+# "ITA_DFLT_Uninstall_Target_packages" can specify multiple packages (list type).
 # The task results are displayed at debug level 3 (-vvv).
 - name: Ensure ITA variable is recognized
   ansible.builtin.set_fact:

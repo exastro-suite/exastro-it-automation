@@ -1,4 +1,4 @@
-# This Playbook file deletes the Registry key.
+# This Playbook file deletes the Registry value (entry).
 # The variables are as follows:
 # "ITA_DFLT_Regedit_Path": Registry Path name
 # "ITA_DFLT_Regedit_Name": Registry Entry name

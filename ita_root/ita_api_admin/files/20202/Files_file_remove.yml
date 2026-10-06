@@ -1,5 +1,5 @@
-# This Playbook file deletes packages specified by "ITA_DFLT_Remove_File_or_Directory".
-# "ITA_DFLT_Remove_File_or_Directory" can specify multiple files (list type).
+# This Playbook file deletes files or directories specified by "ITA_DFLT_Remove_File_or_Directory".
+# "ITA_DFLT_Remove_File_or_Directory" can specify multiple files or directories (list type).
 # The task results are displayed at debug level 3 (-vvv).
 - name: Ensure ITA variable is recognized
   ansible.builtin.set_fact:

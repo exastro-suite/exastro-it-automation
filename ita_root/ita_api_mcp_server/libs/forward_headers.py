@@ -29,7 +29,34 @@ ITA / Exastro Platform API. Placed under libs/ (rather than inside a
 specific tool module such as tools/platform_user.py) so that it can be
 shared across multiple tools.
 """
+import os
+
 from flask import request
+
+# APACHE_TIMEOUT未設定・不正値の場合に使う値(DockerfileのENV APACHE_TIMEOUTの既定値と同じ)
+# Fallback when APACHE_TIMEOUT is unset/invalid (same as the Dockerfile's ENV APACHE_TIMEOUT default)
+_DEFAULT_APACHE_TIMEOUT_SECONDS = 300
+
+# ダウンストリーム側(Apache)のタイムアウトより後に打ち切るための猶予秒数
+# Margin so that we give up only after the downstream (Apache) timeout has elapsed
+_DOWNSTREAM_TIMEOUT_MARGIN_SECONDS = 30
+
+
+def get_downstream_timeout() -> int:
+    """
+    ダウンストリームAPI呼び出しのタイムアウト秒数(APACHE_TIMEOUT + 30秒)を返す。
+
+    Return the timeout in seconds for downstream API calls (APACHE_TIMEOUT + 30s).
+
+    Returns:
+        int: タイムアウト秒数 / timeout in seconds
+    """
+    try:
+        apache_timeout = int(os.environ.get("APACHE_TIMEOUT", _DEFAULT_APACHE_TIMEOUT_SECONDS))
+    except ValueError:
+        apache_timeout = _DEFAULT_APACHE_TIMEOUT_SECONDS
+
+    return apache_timeout + _DOWNSTREAM_TIMEOUT_MARGIN_SECONDS
 
 
 def build_forward_headers(method: str = "GET") -> dict:

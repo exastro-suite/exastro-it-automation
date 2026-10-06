@@ -55,7 +55,7 @@ import os
 import requests
 from flask import g
 
-from libs import tool, HTTPException, build_forward_headers
+from libs import tool, HTTPException, build_forward_headers, get_downstream_timeout
 from .attachment_file import fetch_attachment_file
 
 # recordのtypeに指定可能な操作タイプ
@@ -242,7 +242,7 @@ def tool_maintenance_all(arguments: dict, payload: dict) -> dict:
 
     # ITAのAPIへ一括メンテナンスのPOSTリクエストを送信する
     # Send a POST request to ITA's API to perform the bulk maintenance operation
-    req = requests.post(url, json=records, headers=headers)
+    req = requests.post(url, json=records, headers=headers, timeout=get_downstream_timeout())
 
     # ステータスコードが200以外の場合は異常終了として例外を発生させる
     # If the status code is not 200, treat it as a failure and raise an exception
@@ -332,7 +332,8 @@ def _update_operation_list_language(organization_id: str, workspace_id: str, res
     # build_forward_headers() always fixes it to "en", so override with the actual Language header value
     filter_headers = build_forward_headers(method="POST")
     filter_headers["Language"] = language
-    req = requests.post(filter_url, json=filter_conditions, headers=filter_headers, params={"file": "no"})
+    req = requests.post(filter_url, json=filter_conditions, headers=filter_headers, params={"file": "no"},
+                        timeout=get_downstream_timeout())
     if req.status_code != 200:
         g.applogger.info(
             "Failed to get operation_list records for language update: {} - {}".format(req.status_code, req.text)
@@ -371,7 +372,7 @@ def _update_operation_list_language(organization_id: str, workspace_id: str, res
     # the intended value
     update_headers = build_forward_headers(method="POST")
     update_headers["Language"] = language
-    req = requests.post(maintenance_url, json=update_records, headers=update_headers)
+    req = requests.post(maintenance_url, json=update_records, headers=update_headers, timeout=get_downstream_timeout())
     if req.status_code != 200:
         g.applogger.info("Failed to update operation_list language: {} - {}".format(req.status_code, req.text))
         raise HTTPException("maintenance-all", req)

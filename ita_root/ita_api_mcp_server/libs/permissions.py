@@ -78,7 +78,7 @@ import re
 import requests
 from flask import g, request
 
-from .forward_headers import build_forward_headers
+from .forward_headers import build_forward_headers, get_downstream_timeout
 
 
 def _decode_role_detail() -> list:
@@ -208,7 +208,7 @@ def get_ita_user_menu_name_rests(organization_id: str, workspace_id: str) -> set
     try:
         # ユーザがアクセス可能なメニューグループ・メニューの一覧を取得する
         # Fetch the list of menu groups/menus accessible to the user
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, timeout=get_downstream_timeout())
     except Exception as e:
         g.applogger.error("Failed to call ITA user/menus API: {}".format(e))
         return set()

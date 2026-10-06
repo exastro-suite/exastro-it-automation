@@ -66,6 +66,10 @@ from common_libs.ci.util import set_service_loglevel
 # (Same pattern as organization_common.py / admin_common.py)
 HEALTH_CHECK_URL_PATTERN = r"/internal-api/health-check/liveness$|/internal-api/health-check/readiness$"
 
+# organization_id/workspace_idを含むURL("/api/<organization_id>/workspaces/<workspace_id>/...")の正規表現
+# Regex for URLs containing organization_id/workspace_id ("/api/<organization_id>/workspaces/<workspace_id>/...")
+ORG_WS_URL_PATTERN = re.compile(r"^/api/(?P<organization_id>[^/]+)/workspaces/(?P<workspace_id>[^/]+)(/|$)")
+
 # ai_assistantドライバがインストール対象外(無効)にされているかどうかの判定に
 # 使う対象文字列。ita_api_organization/controllers/menu_info_controller.py の
 # ai_assistant_enabled判定と同じチェック方式(NO_INSTALL_DRIVERの文字列に
@@ -165,18 +169,30 @@ def before_request_handler():
         #
         # For health-check URLs, skip the User-Id/Roles validation and the
         # organization_id/workspace_id resolution below (not needed for a health check).
-        if re.search(HEALTH_CHECK_URL_PATTERN, request.url) is None:
-            # MCPのエンドポイントは "/api/<organization_id>/workspaces/<workspace_id>/mcp" の
-            # 形式(ita_api_organizationのURL設計を踏襲)なので、パスを"/"で分割して
-            # organization_id(index=2)・workspace_id(index=4)を取得する。
-            #
-            # The MCP endpoint URL is shaped like
-            # "/api/<organization_id>/workspaces/<workspace_id>/mcp"
-            # (following ita_api_organization's URL design), so we split the path
-            # by "/" and take organization_id at index 2 and workspace_id at index 4.
-            organization_id = request.path.split("/")[2]
+        #
+        # MCPのエンドポイントは "/api/<organization_id>/workspaces/<workspace_id>/mcp" の
+        # 形式(ita_api_organizationのURL設計を踏襲)なので、正規表現で
+        # organization_id・workspace_idを取得する。
+        # この形式に一致しないURL("/", "/mcp", "/rpc"等)では、以降のヘッダーチェック等を
+        # 行わずにルーティングへ任せ、api.pyのフォールバック(400)またはFlask標準の404を返す。
+        #
+        # The MCP endpoint URL is shaped like
+        # "/api/<organization_id>/workspaces/<workspace_id>/mcp"
+        # (following ita_api_organization's URL design), so organization_id /
+        # workspace_id are extracted with a regex.
+        # For URLs not matching this shape ("/", "/mcp", "/rpc", etc.), the checks
+        # below are skipped and routing decides the response: api.py's fallback
+        # (400) or Flask's standard 404.
+        is_health_check = re.search(HEALTH_CHECK_URL_PATTERN, request.url) is not None
+        org_ws_match = ORG_WS_URL_PATTERN.match(request.path)
+
+        if not is_health_check and org_ws_match is None:
+            g.applogger.info("[ts={}][api-start] url:{}".format(get_api_timestamp(), request.method + ":" + request.url))
+
+        elif not is_health_check:
+            organization_id = org_ws_match.group("organization_id")
             g.ORGANIZATION_ID = organization_id
-            workspace_id = request.path.split("/")[4]
+            workspace_id = org_ws_match.group("workspace_id")
             g.WORKSPACE_ID = workspace_id
 
             # ita_api_mcp_serverの機能はai_assistantドライバに属するため、

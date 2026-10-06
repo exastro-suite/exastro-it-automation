@@ -508,6 +508,37 @@ class TestToolCreateAttachmentZipFile:
         with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
             assert zf.namelist() == ["etc/passwd_dir/sub/evil.txt"]
 
+    @pytest.mark.parametrize("path", ["", "docs"])
+    @pytest.mark.parametrize("filename", [
+        "../../etc/cron.d/evil",
+        "/etc/cron.d/evil",
+        "..\\..\\etc\\cron.d\\evil",
+        "a/../../etc/cron.d/evil",
+    ])
+    def test_zip_slip_filename_traversal_is_sanitized(self, mock_flask_g, mocker, path, filename):
+        # 異常系: 登録済みファイル名に".."・絶対パス・"\\"区切りが含まれていても、
+        # ディレクトリ部分は除去され、アーカイブ外へ出るエントリが作られないこと(zip slip対策)
+        mocker.patch(
+            "tools.attachment_zip_file.fetch_attachment_file",
+            return_value={"filename": filename, "mime_type": "text/plain", "content": b"payload"},
+        )
+        mock_create = mocker.patch(
+            "tools.attachment_zip_file.create_attachment_file",
+            return_value={"file_id": "fid", "filename": "archive.zip", "mime_type": "application/zip", "size": 1},
+        )
+
+        result = attachment_zip_file.tool_create_attachment_zip_file(
+            {"files": [{"file_id": "file-1", "path": path}]},
+            {"organization_id": "o", "workspace_id": "w", "user_id": "u"},
+        )
+
+        expected = "docs/evil" if path else "evil"
+        assert result["included_files"][0]["filename"] == expected
+
+        zip_bytes = mock_create.call_args[0][5]
+        with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+            assert zf.namelist() == [expected]
+
     def test_empty_string_path_uses_archive_root(self, mock_flask_g, mocker):
         # 境界値: pathが空文字/未指定の場合はzipのルートに格納されること
         mocker.patch(
@@ -613,3 +644,16 @@ class TestUniqueArcname:
         # 境界値: ファイル名が空文字の場合、"file"という既定名にフォールバックすること
         used = set()
         assert attachment_zip_file._unique_arcname("", "", used) == "file"
+
+    @pytest.mark.parametrize("filename", ["..", "../..", "/", "./"])
+    def test_falls_back_to_file_when_filename_has_only_dot_segments(self, filename):
+        # 境界値: ファイル名が"."・".."・"/"のみの場合、正規化後に空になるため
+        # "file"という既定名にフォールバックすること
+        used = set()
+        assert attachment_zip_file._unique_arcname("docs", filename, used) == "docs/file"
+
+    def test_filenames_colliding_after_sanitize_are_disambiguated(self):
+        # 正常系: 正規化後に同名となるファイル名同士でも、連番サフィックスで一意になること
+        used = set()
+        assert attachment_zip_file._unique_arcname("", "../a.txt", used) == "a.txt"
+        assert attachment_zip_file._unique_arcname("", "x/a.txt", used) == "a_1.txt"

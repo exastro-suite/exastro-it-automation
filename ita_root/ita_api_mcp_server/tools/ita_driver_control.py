@@ -93,7 +93,7 @@ import os
 import requests
 from flask import g
 
-from libs import tool, HTTPException, build_forward_headers
+from libs import tool, HTTPException, build_forward_headers, get_downstream_timeout
 
 # execute-driver / dry-run-driverが対象とするAnsible用menuのmenu_name_rest
 # menu_name_rest values of the Ansible menus targeted by execute-driver / dry-run-driver
@@ -233,7 +233,7 @@ def tool_execute_driver(arguments: dict, payload: dict) -> dict:
 
     # ITAのAPIへドライバー実行開始のPOSTリクエストを送信する
     # Send a POST request to ITA's API to start the driver execution
-    req = requests.post(url, json=execute_data, headers=headers)
+    req = requests.post(url, json=execute_data, headers=headers, timeout=get_downstream_timeout())
 
     # ステータスコードが200以外の場合は異常終了として例外を発生させる
     # If the status code is not 200, treat it as a failure and raise an exception
@@ -319,7 +319,7 @@ def tool_dry_run_driver(arguments: dict, payload: dict) -> dict:
 
     # ITAのAPIへドライラン実行開始のPOSTリクエストを送信する
     # Send a POST request to ITA's API to start the dry-run execution
-    req = requests.post(url, json=execute_data, headers=headers)
+    req = requests.post(url, json=execute_data, headers=headers, timeout=get_downstream_timeout())
 
     # ステータスコードが200以外の場合は異常終了として例外を発生させる
     # If the status code is not 200, treat it as a failure and raise an exception
@@ -416,7 +416,7 @@ def tool_get_driver_status(arguments: dict, payload: dict) -> dict:
 
     # ITAのAPIへドライバー実行状態取得のGETリクエストを送信する
     # Send a GET request to ITA's API to fetch the driver execution status
-    req = requests.get(url, headers=headers)
+    req = requests.get(url, headers=headers, timeout=get_downstream_timeout())
 
     # ステータスコードが200以外の場合は異常終了として例外を発生させる
     # If the status code is not 200, treat it as a failure and raise an exception

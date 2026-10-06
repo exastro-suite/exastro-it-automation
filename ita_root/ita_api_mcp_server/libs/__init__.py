@@ -35,7 +35,7 @@ from .tools_decorator import (
     check_tool_permission
 )
 from .exceptions import HTTPException
-from .forward_headers import build_forward_headers
+from .forward_headers import build_forward_headers, get_downstream_timeout
 from .permissions import is_tool_visible, is_tool_in_profile
 
 # `from libs import *` した際に公開される名前一覧
@@ -48,6 +48,7 @@ __all__ = [
     "check_tool_permission",
     "HTTPException",
     "build_forward_headers",
+    "get_downstream_timeout",
     "is_tool_visible",
     "is_tool_in_profile"
 ]

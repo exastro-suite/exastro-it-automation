@@ -775,6 +775,62 @@ flex: 1 1 auto;
     font-size: 12px;
     opacity: .8;
 }
+/* 選択肢への回答：提示された選択肢の一覧（開閉式） */
+.aiAssistantChatUserMessageChoices {
+    margin-top: 8px;
+    padding-top: 4px;
+    border-top: 1px solid rgba(255, 255, 255, .3);
+    font-size: 12px;
+}
+.aiAssistantChatUserMessageChoicesSummary {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    list-style: none;
+    cursor: pointer;
+    opacity: .8;
+    user-select: none;
+    -webkit-user-select: none;
+}
+.aiAssistantChatUserMessageChoicesSummary::-webkit-details-marker {
+    display: none;
+}
+.aiAssistantChatUserMessageChoicesSummary::before {
+    content: '';
+    width: 0; height: 0;
+    border-style: solid;
+    border-width: 4px 0 4px 6px;
+    border-color: transparent transparent transparent currentColor;
+    transition: transform .15s;
+}
+.aiAssistantChatUserMessageChoices[open] .aiAssistantChatUserMessageChoicesSummary::before {
+    transform: rotate(90deg);
+}
+.aiAssistantChatUserMessageChoicesSummary:hover {
+    opacity: 1;
+}
+.aiAssistantChatUserMessageChoiceList {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 4px;
+    padding-left: 10px;
+}
+.aiAssistantChatUserMessageChoiceItem {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    opacity: .6;
+}
+.aiAssistantChatUserMessageChoiceItem .icon {
+    flex: 0 0 12px;
+    font-size: 10px;
+    text-align: center;
+}
+.aiAssistantChatUserMessageChoiceItemSelected {
+    font-weight: bold;
+    opacity: 1;
+}
 /* ============================== *\
    ユーザメッセージの操作メニュー
    （吹き出し下側に、アイコンのみのボタンを横並びで表示。ホバー時のみ表示）
@@ -963,6 +1019,44 @@ flex: 1 1 auto;
 .aiAssistantChatDisplayHtmlHost {
     display: block;
     overflow-x: auto;
+}
+/* ============================== *\
+   画面専用 添付ファイルダウンロード（download_attachment_file）
+\* ============================== */
+.aiAssistantChatDownloadFileInner {
+    padding: 12px 16px;
+}
+/* ダウンロードボタンを押すよう促す案内文 */
+.aiAssistantChatDownloadFileGuide {
+    margin-bottom: 8px;
+    color: var(--black80);
+}
+/* 保存期間の注意書き */
+.aiAssistantChatDownloadFileNote {
+    margin: -4px 0 8px;
+    color: var(--black50);
+    font-size: 12px;
+}
+/* ファイル名（左）＋ サイズ ＋ ダウンロードボタン（右）の行 */
+.aiAssistantChatDownloadFile {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.aiAssistantChatDownloadFileName {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-weight: 600;
+    color: var(--black80);
+    word-break: break-all;
+}
+.aiAssistantChatDownloadFileSize {
+    flex: 0 0 auto;
+    color: var(--black50);
+    font-size: 12px;
+}
+.aiAssistantChatDownloadFileButton {
+    flex: 0 0 auto;
 }
 /* ============================== *\
    メッセージ時刻（年 / 月日 / 時刻の3行スタック）
@@ -2051,6 +2145,24 @@ will-change: auto!important;
 .aiSettingItemStatus[data-status="expired"] {
     color: #333;
     background-color: #FFDD00;
+}
+.aiSettingItemStatus[data-status="authError"] {
+    background-color: #D9333F;
+}
+/* 認証エラーの案内 */
+.aiSettingAuthError {
+    border: 1px solid #D9333F;
+    border-radius: 4px;
+    padding: 6px 10px;
+    background-color: #FDECEE;
+    font-family: "Osaka-mono", "MS Gothic", monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    color: #C00000;
+}
+.aiSettingAuthErrorDetail {
+    white-space: pre-wrap;
+    word-break: break-all;
 }
 .aiSettingItemService,
 .aiSettingItemInfo {

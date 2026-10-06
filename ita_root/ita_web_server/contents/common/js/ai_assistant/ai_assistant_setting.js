@@ -95,6 +95,9 @@ static get statusText() {
 //                                 使用するAIサービスを変更できない状態か（会話中など）を返す。
 //                                 trueの間は一覧での選択と適用ができなくなる（認証情報の
 //                                 登録・更新・削除・確認とモデルの選択は行える）
+//   getAuthError: () => String|null
+//                                 使用中のAIサービスの認証が通らなかった場合に理由（空文字可）を返す。
+//                                 通っている・未確認の場合はnull（呼び出し側で確認した結果を一覧へ反映する）
 // }
 constructor( params, option = {} ) {
     this.params = params;
@@ -109,6 +112,9 @@ constructor( params, option = {} ) {
     this.credentials = {};
     // Credentialの取得に失敗したAIサービス（ai_service_id → エラーメッセージ）
     this.credentialErrors = {};
+    // ダイアログ内で確認した認証の結果（ai_service_id → 認証エラーの理由。通った場合はnull）
+    //   未確認のAIサービスは、使用中であれば呼び出し側の確認結果（getAuthError）を使う
+    this.authErrors = {};
     // 取得済みのモデル一覧（ai_service_id → モデルの配列）
     //   モデル一覧の取得はBedrockへの問い合わせが必要で時間がかかるため、
     //   一度取得したものは一覧の表示名に流用する
@@ -348,6 +354,10 @@ async getModelList( aiServiceId ) {
     登録済みCredentialの合計件数
 ##################################################
 */
+// 使用するAIサービスを一覧から選べるか（2件以上登録されている場合のみ）
+get isServiceSelectable() {
+    return this.registeredCount > 1;
+}
 get registeredCount() {
     return Object.values( this.credentials ).filter(( credential ) => credential ).length;
 }
@@ -525,6 +535,8 @@ async open() {
     const apply = () => { this.applyUseService(); };
     const dialog = new Dialog( this.dialogConfig, { apply: apply, close: close });
     this.dialog = dialog;
+    // 認証の状態は開くたびに呼び出し側の確認結果から始める
+    this.authErrors = {};
 
     // bodyなしで開くとローディング表示になる
     dialog.open();
@@ -565,7 +577,23 @@ async loadServiceList() {
     // 選択中のAIサービスと、AIサービスごとのモデルを一覧に表示するため、AI利用設定も読み直す
     await this.getPreference();
     await this.getServicePreferenceList();
+    await this.applySingleService();
     return;
+}
+// 登録が1件のみの場合は選択・適用ができないため、そのAIサービスを使用するAIサービスにする
+//   （複数件から使用中のものを削除して1件になった場合など、未適用のまま残るのを防ぐ）
+//   モデルが未設定の場合はチャットを開始できないため適用しない（モデルの保存時に適用される）
+async applySingleService() {
+    if ( this.registeredCount !== 1 || this.serviceChangeLocked ) return;
+    const service = this.serviceList.find(( item ) => this.getCredential( item.ai_service_id ) );
+    const aiServiceId = service?.ai_service_id;
+    if ( !aiServiceId || this.isCurrentService( aiServiceId ) || !this.getSelectedModel( aiServiceId ) ) return;
+    try {
+        await this.setPreference( aiServiceId );
+    } catch ( error ) {
+        // 適用できなくても一覧は表示する（次に開いたときに再度適用を試みる）
+        console.error( error );
+    }
 }
 /*
 ##################################################
@@ -617,22 +645,53 @@ createServiceListHtml() {
         if ( credential ) html.push( this.createServiceItemHtml( service, credential ) );
     }
     // 会話中はAIサービスを変更できないため、選択のかわりに理由を案内する
-    const note = ( this.serviceChangeLocked )
-        ? getMessage.FTE14151
-        : getMessage.FTE14152;
+    // 未適用の場合は選択を、適用済みの場合は変更のしかたを案内する
+    // （1件のみの場合は選べるものがないため、迷わないよう案内自体を表示しない）
+    const note = ( !this.isServiceSelectable )
+        ? ''
+        : ( this.serviceChangeLocked )
+            ? `<br>${getMessage.FTE14151}`
+            : ( this.preference?.ai_service_id )
+                ? `<br>${getMessage.FTE14152}`
+                : `<br>${getMessage.FTE14418}`;
     return `
     <div class="commonSection">
         <div class="aiSettingListHeader">
-            <div class="aiSettingListTitle">${getMessage.FTE14153}<span class="aiSettingListCount">${getMessage.FTE14154( this.registeredCount )}</span><br>
-            ${note}</div>
+            <div class="aiSettingListTitle">${getMessage.FTE14153}<span class="aiSettingListCount">${getMessage.FTE14154( this.registeredCount )}</span>${note}</div>
             <div class="aiSettingListMenu">${this.createAddServiceButtonHtml()}</div>
         </div>
         <ul class="aiSettingList">${html.join('')}</ul>
     </div>`;
 }
+// 認証エラーの理由を返す（エラーでない・未確認の場合はnull）
+getAuthError( aiServiceId ) {
+    if ( aiServiceId in this.authErrors ) return this.authErrors[ aiServiceId ];
+    if ( !this.isCurrentService( aiServiceId ) || !this.option.getAuthError ) return null;
+    return this.option.getAuthError() ?? null;
+}
+// ステータス
+//   Credentialのstatusは登録内容から判定されるため、有効期限内でも認証が通らないことがある
+//   （ログインキャッシュの失効など）。認証エラーと分かっている場合は使用できない旨を表示する。
+createItemStatusHtml( aiServiceId, credential ) {
+    if ( this.getAuthError( aiServiceId ) !== null ) {
+        return `<div class="aiSettingItemStatus" data-status="authError">${getMessage.FTE14416}</div>`;
+    }
+    const status = credential.status ?? '';
+    return `<div class="aiSettingItemStatus" data-status="${fn.escape( status )}">${AiAssistantSetting.statusText[ status ] ?? fn.escape( status )}</div>`;
+}
+// 認証エラーの案内（ステータスの下に表示する。認証エラーでない場合は空）
+createItemAuthErrorHtml( aiServiceId ) {
+    const authError = this.getAuthError( aiServiceId );
+    if ( authError === null ) return '';
+    const detail = ( authError )? `<div class="aiSettingAuthErrorDetail">${fn.escape( authError )}</div>`: '';
+    return `
+    <div class="aiSettingAuthError">
+        <div class="aiSettingAuthErrorMessage">${getMessage.FTE14417}</div>
+        ${detail}
+    </div>`;
+}
 // Credential 1件
 createServiceItemHtml( service, credential ) {
-    const status = credential.status ?? '';
     const info = [];
     if ( credential.expires_at ) {
         info.push(`<div class="aiSettingItemInfo">${getMessage.FTE14155( fn.date( credential.expires_at, 'yyyy/MM/dd HH:mm') )}</div>`);
@@ -647,18 +706,22 @@ createServiceItemHtml( service, credential ) {
     const checkAttrs = ( isCurrent )? { checked: 'checked'}: {};
     // 会話中は選択を変えられないようにする（使用中がどれかは表示したままにする）
     if ( this.serviceChangeLocked ) checkAttrs.disabled = 'disabled';
+    // 1件のみの場合は選択欄を表示しない（使用中かどうかはバッジで分かる）
+    const checkHtml = ( this.isServiceSelectable )
+        ? `<div class="aiSettingItemCheck">
+                ${fn.html.radio('aiSettingUseRadio', fn.escape( aiServiceId ), 'use_ai_service', `aiSettingUse_${fn.escape( aiServiceId )}`, checkAttrs )}
+            </div>`
+        : '';
     const currentHtml = ( isCurrent )? `<div class="aiSettingItemCurrent">${getMessage.FTE14157}</div>`: '';
 
     return `
     <li class="aiSettingItem" data-ai-service="${fn.escape( aiServiceId )}">
         <div class="aiSettingItemMain">
-            <div class="aiSettingItemCheck">
-                ${fn.html.radio('aiSettingUseRadio', fn.escape( aiServiceId ), 'use_ai_service', `aiSettingUse_${fn.escape( aiServiceId )}`, checkAttrs )}
-            </div>
+            ${checkHtml}
             <div class="aiSettingItemBody">
                 <div class="aiSettingItemHeader">
                     <div class="aiSettingItemName">${fn.escape( credential.credential_name )}</div>
-                    <div class="aiSettingItemStatus" data-status="${fn.escape( status )}">${AiAssistantSetting.statusText[ status ] ?? fn.escape( status )}</div>
+                    ${this.createItemStatusHtml( aiServiceId, credential )}
                     ${currentHtml}
                 </div>
                 <div class="aiSettingItemService">${fn.escape( service.ai_service_name ?? service.ai_service_id )}</div>
@@ -671,6 +734,7 @@ createServiceItemHtml( service, credential ) {
                 ${fn.html.iconButton('trash', '', 'itaButton aiSettingDeleteButton popup', { action: 'danger', title: getMessage.FTE14161 })}
             </div>
         </div>
+        ${this.createItemAuthErrorHtml( aiServiceId )}
         ${this.createItemModelHtml( service )}
     </li>`;
 }
@@ -777,6 +841,8 @@ getCheckedAiServiceId() {
 // 使用中のAIサービスから選択が変わっていない場合（会話中の場合も）は適用できない
 setApplyButtonState() {
     if ( !this.dialog ) return;
+    // 1件以下の場合は選べるものがないため、適用ボタン自体を表示しない
+    this.dialog.$.footer.find('.dialogPositive').closest('.dialogFooterMenuItem').toggle( this.isServiceSelectable );
     const checkedId = this.getCheckedAiServiceId();
     this.dialog.buttonPositiveDisabled(
         this.serviceChangeLocked || !checkedId || this.isCurrentService( checkedId ) );
@@ -878,6 +944,7 @@ async verifyServiceItem( aiServiceId, button ) {
     let message = '';
     try {
         const result = await this.verifyCredential( aiServiceId );
+        this.authErrors[ aiServiceId ] = ( result?.valid )? null: result?.message ?? '';
         if ( result?.valid ) {
             const detail = ( result.account_id )? `<br>${getMessage.FTE14174( fn.escape( result.account_id ) )}`: '';
             message = `${getMessage.FTE14173}${detail}`;
@@ -891,6 +958,15 @@ async verifyServiceItem( aiServiceId, button ) {
 
     processing.close();
     await fn.alert( title, message );
+
+    // 確認の結果をステータスへ反映する（確認そのものに失敗した場合は変わらない）
+    const credential = this.getCredential( aiServiceId );
+    if ( credential ) {
+        const $item = $button.closest('.aiSettingItem');
+        $item.find('.aiSettingItemStatus').replaceWith( this.createItemStatusHtml( aiServiceId, credential ) );
+        $item.find('.aiSettingAuthError').remove();
+        $item.find('.aiSettingItemMain').after( this.createItemAuthErrorHtml( aiServiceId ) );
+    }
 
     $button.prop('disabled', false );
     return;
@@ -1215,9 +1291,12 @@ async saveFromDialog( dialog, mode, aiServiceId = null ) {
     }
 
     // 保存できたら続けて検証する。検証に失敗しても保存自体は残す。
+    // 認証情報が変わったため、以前の認証エラーは表示しない（検証できた場合はその結果にする）
+    this.authErrors[ serviceId ] = null;
     const savedText = ( mode === 'update')? getMessage.FTE14196: getMessage.FTE14197;
     try {
         const verify = await this.verifyCredential( serviceId );
+        this.authErrors[ serviceId ] = ( verify?.valid )? null: verify?.message ?? '';
         if ( !verify?.valid ) {
             await fn.alert( title, getMessage.FTE14198( savedText, fn.escape( verify?.message ?? '') ) );
         }

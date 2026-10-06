@@ -106,7 +106,7 @@ import re
 import requests
 from flask import g, request
 
-from libs import tool, HTTPException, build_forward_headers
+from libs import tool, HTTPException, build_forward_headers, get_downstream_timeout
 
 # 権限チェック対象のメニュー(「パラメータシート定義・作成」)のmenu_name_rest
 # menu_name_rest of the permission-gating menu ("Parameter sheet definition and creation")
@@ -455,7 +455,7 @@ def _register_menu(arguments: dict, payload: dict, new: bool) -> dict:
 
     # ITAのAPIへメニュー作成/更新のPOSTリクエストを送信する
     # Send a POST request to ITA's API to create/update the menu
-    req = requests.post(url, json=menu_definition, headers=headers)
+    req = requests.post(url, json=menu_definition, headers=headers, timeout=get_downstream_timeout())
 
     # ステータスコードが200以外の場合は異常終了として例外を発生させる
     # If the status code is not 200, treat it as a failure and raise an exception
@@ -539,7 +539,7 @@ def _resolve_default_role_list(organization_id: str, workspace_id: str) -> list:
 
     headers = build_forward_headers(method="GET")
 
-    req = requests.get(url, headers=headers, params={"kind": "workspace"})
+    req = requests.get(url, headers=headers, params={"kind": "workspace"}, timeout=get_downstream_timeout())
     if req.status_code != 200:
         g.applogger.info("Failed to fetch platform roles: {} - {}".format(req.status_code, req.text))
         raise HTTPException("create-menu", req)
@@ -664,7 +664,7 @@ def tool_get_menu_definition(arguments: dict, payload: dict) -> dict:
 
     # ITAのAPIへメニュー定義情報取得のGETリクエストを送信する
     # Send a GET request to ITA's API to fetch the menu definition
-    req = requests.get(url, headers=headers)
+    req = requests.get(url, headers=headers, timeout=get_downstream_timeout())
 
     # ステータスコードが200以外の場合は異常終了として例外を発生させる
     # If the status code is not 200, treat it as a failure and raise an exception

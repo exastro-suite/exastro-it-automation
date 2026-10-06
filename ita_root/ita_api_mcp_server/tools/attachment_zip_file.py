@@ -300,10 +300,17 @@ def _unique_arcname(path, filename, used_names):
 
     Return a unique in-archive path so that entries never collide inside the ZIP.
 
+    filenameは呼び出し元(LLM・アップロードAPI)が任意に指定できるため、
+    pathと同様に正規化した上で末尾のセグメントのみを使う(zip slip対策)。
+
+    filename can be chosen freely by the caller (LLM / upload API), so it is
+    normalized like path and only its last segment is used (zip slip guard).
+
     Args:
         path (str): zip内の格納ディレクトリ(_sanitize_zip_pathで正規化する)
             / directory inside the ZIP (normalized via _sanitize_zip_path)
-        filename (str): 元のファイル名 / the original file name
+        filename (str): 元のファイル名(ディレクトリ部分は除去する)
+            / the original file name (any directory part is stripped)
         used_names (set): 既に使用済みのアーカイブ内パスの集合
             (この関数内で更新される) / set of already-used in-archive paths
             (updated in place by this function)
@@ -312,7 +319,7 @@ def _unique_arcname(path, filename, used_names):
         str: zip内で一意なパス / a unique in-archive path
     """
     directory = _sanitize_zip_path(path)
-    base_name = filename or "file"
+    base_name = posixpath.basename(_sanitize_zip_path(filename)) or "file"
     arcname = posixpath.join(directory, base_name) if directory else base_name
 
     if arcname not in used_names:

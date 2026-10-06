@@ -70,7 +70,7 @@ import os
 import requests
 from flask import g
 
-from libs import tool, HTTPException, build_forward_headers
+from libs import tool, HTTPException, build_forward_headers, get_downstream_timeout
 from .attachment_file import create_attachment_file
 
 # menu-filterでfile="yes"を指定した際、file列をfile_idに変換する処理を行う
@@ -213,7 +213,7 @@ def tool_menu_filter(arguments: dict, payload: dict) -> dict:
 
     # ITAのAPIへレコード取得のPOSTリクエストを送信する
     # Send a POST request to ITA's API to fetch the records
-    req = requests.post(url, json=filter_conditions, headers=headers, params=params)
+    req = requests.post(url, json=filter_conditions, headers=headers, params=params, timeout=get_downstream_timeout())
 
     # ステータスコードが200以外の場合は異常終了として例外を発生させる
     # If the status code is not 200, treat it as a failure and raise an exception
@@ -345,7 +345,7 @@ def tool_menu_filter_count(arguments: dict, payload: dict) -> dict:
 
     # ITAのAPIへレコード件数取得のPOSTリクエストを送信する
     # Send a POST request to ITA's API to fetch the record count
-    req = requests.post(url, json=filter_conditions, headers=headers)
+    req = requests.post(url, json=filter_conditions, headers=headers, timeout=get_downstream_timeout())
 
     # ステータスコードが200以外の場合は異常終了として例外を発生させる
     # If the status code is not 200, treat it as a failure and raise an exception

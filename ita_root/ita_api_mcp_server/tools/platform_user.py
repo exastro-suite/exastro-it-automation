@@ -44,7 +44,7 @@ import os
 import requests
 from flask import g
 
-from libs import tool, HTTPException, build_forward_headers
+from libs import tool, HTTPException, build_forward_headers, get_downstream_timeout
 
 
 @tool(
@@ -101,7 +101,7 @@ def tool_list_users(arguments: dict, payload: dict) -> dict:
 
     # プラットフォームAPIへユーザー一覧取得のGETリクエストを送信する
     # Send a GET request to the platform API to fetch the user list
-    req = requests.get(url, headers=headers)
+    req = requests.get(url, headers=headers, timeout=get_downstream_timeout())
 
     # ステータスコードが200以外の場合は異常終了として例外を発生させる
     # If the status code is not 200, treat it as a failure and raise an exception
@@ -203,7 +203,7 @@ def tool_create_user(arguments: dict, payload: dict) -> dict:
 
     # プラットフォームAPIへユーザー作成のPOSTリクエストを送信する
     # Send a POST request to the platform API to create the user
-    req = requests.post(url, json=user_data, headers=headers)
+    req = requests.post(url, json=user_data, headers=headers, timeout=get_downstream_timeout())
 
     # ステータスコードが200以外の場合は異常終了として例外を発生させる
     # If the status code is not 200, treat it as a failure and raise an exception

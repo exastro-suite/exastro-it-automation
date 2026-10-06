@@ -197,3 +197,45 @@ class TestToolGetDriverStatus:
 
         assert exc_info.value.status_code == 404
         assert exc_info.value.tool_name == "get-driver-status"
+
+
+class TestPathEncoding:
+    # menu/execution_noに "/" "?" ".." を含めても、別のエンドポイントへ到達せず1つのパスセグメントとして送られること
+    INJECTED = "../../../ws2/ita/menu/x?a="
+    ENCODED = "..%2F..%2F..%2Fws2%2Fita%2Fmenu%2Fx%3Fa%3D"
+
+    def _url(self, suffix):
+        return "http://{}:{}/api/{}/workspaces/{}/ita/menu/{}".format(HOST, PORT, ORG_ID, WS_ID, suffix)
+
+    def test_execute_driver_encodes_menu(self, mock_flask_g, requests_mock):
+        url = self._url("{}/driver/execute/".format(self.ENCODED))
+        requests_mock.post(url, json={}, status_code=200)
+
+        driver_tool.tool_execute_driver(
+            {"menu": self.INJECTED, "movement_name": "mv", "operation_name": "op"},
+            {"organization_id": ORG_ID, "workspace_id": WS_ID}
+        )
+
+        assert requests_mock.last_request.url == url
+
+    def test_dry_run_driver_encodes_menu(self, mock_flask_g, requests_mock):
+        url = self._url("{}/driver/execute_dry_run/".format(self.ENCODED))
+        requests_mock.post(url, json={}, status_code=200)
+
+        driver_tool.tool_dry_run_driver(
+            {"menu": self.INJECTED, "movement_name": "mv", "operation_name": "op"},
+            {"organization_id": ORG_ID, "workspace_id": WS_ID}
+        )
+
+        assert requests_mock.last_request.url == url
+
+    def test_get_driver_status_encodes_menu_and_execution_no(self, mock_flask_g, requests_mock):
+        url = self._url("{}/driver/{}/".format(self.ENCODED, self.ENCODED))
+        requests_mock.get(url, json={}, status_code=200)
+
+        driver_tool.tool_get_driver_status(
+            {"menu": self.INJECTED, "execution_no": self.INJECTED},
+            {"organization_id": ORG_ID, "workspace_id": WS_ID}
+        )
+
+        assert requests_mock.last_request.url == url

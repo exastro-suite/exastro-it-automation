@@ -104,3 +104,31 @@ class TestBeforeRequestHandlerUrlResolution:
         )
 
         assert res.status_code == 403
+
+    @pytest.mark.parametrize("user_id", [None, ""])
+    def test_missing_or_empty_user_id_is_rejected(self, client, mocker, user_id):
+        # 異常系: User-Idヘッダーが無い、または空文字の場合はヘッダー不正として拒否され、ハンドラまで到達しないこと
+        mocker.patch("libs.mcp_server_common._is_ai_assistant_driver_enabled", return_value=True)
+        # MessageTemplateをモックしているため、エラー応答の生成もモックしてエラーコードだけを検証する
+        mock_app_exception_response = mocker.patch(
+            "libs.mcp_server_common.app_exception_response", return_value=("", 400)
+        )
+        fake_handler = mocker.Mock(return_value={"tools": []})
+        mocker.patch.dict(api.JSONRPC_METHODS, {"tools/list": fake_handler})
+        headers = _auth_headers()
+        if user_id is None:
+            del headers["User-Id"]
+        else:
+            headers["User-Id"] = user_id
+
+        res = client.post(
+            "/api/{}/workspaces/{}/mcp".format(ORG_ID, WS_ID),
+            json={"jsonrpc": "2.0", "method": "tools/list", "id": 1},
+            headers=headers,
+        )
+
+        assert res.status_code == 400
+        raised = mock_app_exception_response.call_args.args[0]
+        assert raised.args[0] == "400-00001"
+        assert raised.args[2] == ["User-Id or Roles"]
+        fake_handler.assert_not_called()

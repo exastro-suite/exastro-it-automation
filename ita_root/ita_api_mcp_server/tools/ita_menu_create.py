@@ -102,6 +102,7 @@ access this parameter sheet):
 import base64
 import os
 import re
+from urllib.parse import quote
 
 import requests
 from flask import g, request
@@ -655,7 +656,7 @@ def tool_get_menu_definition(arguments: dict, payload: dict) -> dict:
     # プロトコルは常にhttp固定とする(ITAサービス間通信はhttpを使用する)
     # Protocol is always fixed to http (inter-service communication within ITA uses http)
     url = "http://{}:{}/api/{}/workspaces/{}/ita/create/define/{}/".format(
-        ita_api_host, ita_api_port, organization_id, workspace_id, menu_rest_name
+        ita_api_host, ita_api_port, organization_id, workspace_id, quote(str(menu_rest_name), safe="")
     )
 
     # 転送用ヘッダーを組み立てる

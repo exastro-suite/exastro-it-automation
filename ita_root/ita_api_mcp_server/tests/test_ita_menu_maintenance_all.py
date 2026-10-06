@@ -436,3 +436,16 @@ class TestOperationListLanguageUpdate:
         # response_jsonがNoneでも例外にならないこと(id_listが空とみなされる)
         mock_flask_g.LANGUAGE = "ja"
         assert maintenance_tool._update_operation_list_language(ORG_ID, WS_ID, None) is None
+
+
+class TestMenuPathEncoding:
+    def test_menu_is_url_encoded(self, mock_flask_g, requests_mock):
+        # menuに "/" "?" ".." を含めても、別のエンドポイントへ到達せず1つのパスセグメントとして送られること
+        encoded = "..%2F..%2F..%2Fws2%2Fita%2Fmenu%2Fx%3Fa%3D"
+        requests_mock.post(_maintenance_url(encoded), json={"data": {}}, status_code=200)
+
+        maintenance_tool.tool_maintenance_all(
+            {"menu": "../../../ws2/ita/menu/x?a=", "records": [_basic_record()]}, _payload()
+        )
+
+        assert requests_mock.last_request.url == _maintenance_url(encoded)

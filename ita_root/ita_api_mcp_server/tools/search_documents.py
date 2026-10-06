@@ -275,7 +275,8 @@ def _resolve_document_source(source: str) -> Path:
             "limit": {
                 "type": "integer",
                 "description": "Maximum number of results to return (default: 5, max: 20)",
-                "default": 5
+                "default": 5,
+                "minimum": 1
             },
             "score_threshold": {
                 "type": "number",
@@ -326,7 +327,13 @@ def tool_search_documents(arguments: dict, payload: dict) -> dict:
         raise Exception("search-docs tool is not properly initialized: {}".format(init_error))
 
     query = arguments.get("query", "")
-    limit = min(arguments.get("limit", 5), 20)
+    limit = arguments.get("limit")
+    if limit is None:
+        limit = 5
+    # boolはintのサブクラスのため明示的に除外する / bool is a subclass of int, so exclude it explicitly
+    if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1:
+        raise Exception("limit must be an integer greater than or equal to 1: {!r}".format(limit))
+    limit = min(limit, 20)
     score_threshold = arguments.get("score_threshold", 0.6)
 
     user_id = payload.get("user_id", "unknown")
@@ -373,8 +380,9 @@ def tool_search_documents(arguments: dict, payload: dict) -> dict:
         hybrid_results.sort(key=lambda r: r["score"], reverse=True)
         filtered_results = [r for r in hybrid_results if r["score"] >= score_threshold]
 
-        # 上位スコアから大きく離れた結果は除外する(ただし最低3件は残す)
-        # Drop results whose score trails far behind the top score (but keep at least 3 if available)
+        # 上位スコアから大きく離れた結果は除外する(ただしlimitを超えない範囲で最低3件は残す)
+        # Drop results whose score trails far behind the top score
+        # (but keep at least 3 if available, never exceeding limit)
         results = []
         if filtered_results:
             top_score = filtered_results[0]["score"]
@@ -386,10 +394,9 @@ def tool_search_documents(arguments: dict, payload: dict) -> dict:
                 else:
                     break
 
-            if len(results) < 3 and len(filtered_results) >= 3:
-                results = filtered_results[:3]
-            elif not results:
-                results = filtered_results[:1]
+            min_results = min(3, limit)
+            if len(results) < min_results and len(filtered_results) >= min_results:
+                results = filtered_results[:min_results]
 
         g.applogger.info("Search completed: {} initial -> {} filtered -> {} final for user={}".format(
             len(search_result.points), len(filtered_results), len(results), user_id

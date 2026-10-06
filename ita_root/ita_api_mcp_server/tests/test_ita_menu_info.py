@@ -159,3 +159,27 @@ class TestToolListMenuInfoPulldown:
 
         assert exc_info.value.status_code == 400
         assert exc_info.value.message == "bad request"
+
+
+class TestMenuPathEncoding:
+    # menuに "/" "?" ".." を含めても、別のエンドポイントへ到達せず1つのパスセグメントとして送られること
+    INJECTED = "../../../ws2/ita/menu/x?a="
+    ENCODED = "..%2F..%2F..%2Fws2%2Fita%2Fmenu%2Fx%3Fa%3D"
+
+    def test_list_menu_info_encodes_menu(self, mock_flask_g, requests_mock):
+        requests_mock.get(_info_url(self.ENCODED), json={}, status_code=200)
+
+        menu_info_tool.tool_list_menu_info(
+            {"menu": self.INJECTED}, {"organization_id": ORG_ID, "workspace_id": WS_ID}
+        )
+
+        assert requests_mock.last_request.url == _info_url(self.ENCODED)
+
+    def test_list_menu_info_pulldown_encodes_menu(self, mock_flask_g, requests_mock):
+        requests_mock.get(_pulldown_url(self.ENCODED), json={}, status_code=200)
+
+        menu_info_tool.tool_list_menu_info_pulldown(
+            {"menu": self.INJECTED}, {"organization_id": ORG_ID, "workspace_id": WS_ID}
+        )
+
+        assert requests_mock.last_request.url == _pulldown_url(self.ENCODED)

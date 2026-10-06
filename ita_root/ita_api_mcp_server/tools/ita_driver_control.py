@@ -89,6 +89,7 @@ menu_name_rest actually needs to be accessible depends on the value of
     lists these three instead.
 """
 import os
+from urllib.parse import quote
 
 import requests
 from flask import g
@@ -224,7 +225,7 @@ def tool_execute_driver(arguments: dict, payload: dict) -> dict:
     # プロトコルは常にhttp固定とする(ITAサービス間通信はhttpを使用する)
     # Protocol is always fixed to http (inter-service communication within ITA uses http)
     url = "http://{}:{}/api/{}/workspaces/{}/ita/menu/{}/driver/execute/".format(
-        ita_api_host, ita_api_port, organization_id, workspace_id, menu
+        ita_api_host, ita_api_port, organization_id, workspace_id, quote(str(menu), safe="")
     )
 
     # 転送用ヘッダーを組み立てる(POSTでボディを送るため"Content-Type"も付与する)
@@ -310,7 +311,7 @@ def tool_dry_run_driver(arguments: dict, payload: dict) -> dict:
     # プロトコルは常にhttp固定とする(ITAサービス間通信はhttpを使用する)
     # Protocol is always fixed to http (inter-service communication within ITA uses http)
     url = "http://{}:{}/api/{}/workspaces/{}/ita/menu/{}/driver/execute_dry_run/".format(
-        ita_api_host, ita_api_port, organization_id, workspace_id, menu
+        ita_api_host, ita_api_port, organization_id, workspace_id, quote(str(menu), safe="")
     )
 
     # 転送用ヘッダーを組み立てる(POSTでボディを送るため"Content-Type"も付与する)
@@ -407,7 +408,8 @@ def tool_get_driver_status(arguments: dict, payload: dict) -> dict:
     # プロトコルは常にhttp固定とする(ITAサービス間通信はhttpを使用する)
     # Protocol is always fixed to http (inter-service communication within ITA uses http)
     url = "http://{}:{}/api/{}/workspaces/{}/ita/menu/{}/driver/{}/".format(
-        ita_api_host, ita_api_port, organization_id, workspace_id, menu, execution_no
+        ita_api_host, ita_api_port, organization_id, workspace_id,
+        quote(str(menu), safe=""), quote(str(execution_no), safe="")
     )
 
     # 転送用ヘッダーを組み立てる

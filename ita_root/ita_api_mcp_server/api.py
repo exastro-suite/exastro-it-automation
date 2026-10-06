@@ -61,6 +61,12 @@ from libs import (
     is_tool_visible, is_tool_in_profile
 )
 
+# .env ファイルの環境変数を読み込む(既存値は上書きする)
+# tools配下のモジュールはimport時に環境変数を読むため、import tools より前に実行する
+# Load environment variables from the .env file (override existing ones)
+# Must run before "import tools" because modules under tools read env vars at import time
+load_dotenv(override=True)
+
 # tools パッケージをimportすることで、配下の @tool デコレーター付き関数が
 # レジストリ(libs.tools_decorator.TOOL_REGISTRY)に登録される。
 # また、attachment_file.py のように@toolデコレーターではなく通常のFlaskルート
@@ -72,12 +78,7 @@ from libs import (
 # It also makes Blueprints provided as ordinary Flask routes instead of
 # @tool-decorated functions (e.g. attachment_file.py) available as
 # tools.attachment_file_bp through this import.
-import tools
-
-
-# .env ファイルの環境変数を読み込む(既存値は上書きする)
-# Load environment variables from the .env file (override existing ones)
-load_dotenv(override=True)
+import tools  # noqa: E402
 
 # connexionを使わない素のFlaskアプリケーションを生成する
 # (ita_api_organization/admin は connexion.FlaskApp を使うが、本サービスは
@@ -239,6 +240,15 @@ def handle_initialize(params: dict, payload: dict) -> dict:
             "version": "1.0.0"
         }
     }
+
+
+def handle_ping(params: dict, payload: dict) -> dict:
+    """
+    MCPの "ping" メソッドを処理する(仕様上、空の結果を返す)
+
+    Handle the MCP "ping" method (the spec requires an empty result).
+    """
+    return {}
 
 
 def handle_tools_list(params: dict, payload: dict) -> dict:
@@ -442,6 +452,7 @@ def handle_tools_call(params: dict, payload: dict) -> dict:
 #  scope for this task.)
 JSONRPC_METHODS = {
     "initialize": handle_initialize,
+    "ping": handle_ping,
     "tools/list": handle_tools_list,
     "tools/call": handle_tools_call,
 }
@@ -506,6 +517,14 @@ def jsonrpc_handler(organization_id, workspace_id):
         # If method is not specified, raise an error
         if not method:
             return create_error_response("Method is required", -32600, request_id, 400)
+
+        # MCPの通知(notifications/initialized 等)は応答を返さないメッセージのため、
+        # 仕様(Streamable HTTP)に従いボディ無しの202 Acceptedを返す
+        # MCP notifications (e.g. notifications/initialized) expect no response,
+        # so return 202 Accepted with no body as the Streamable HTTP spec requires
+        if method.startswith("notifications/"):
+            g.applogger.info("Notification received: {}".format(method))
+            return "", 202
 
         # 呼び出しコンテキスト(payload)を組み立てる。
         # User-Id/Rolesヘッダーの検証、organization_id/workspace_idの解決は

@@ -191,3 +191,37 @@ class TestHandleInitialize:
         assert result["protocolVersion"] == "2024-11-05"
         assert result["serverInfo"]["name"] == "ita-api-mcp-server"
         assert "tools" in result["capabilities"]
+
+
+class TestStandardMcpMessages:
+    """ping / notifications/* がMCPの仕様どおりに応答されることを確認する"""
+
+    def _post(self, app, body):
+        with app.test_request_context(
+            "/api/{}/workspaces/{}/mcp".format(ORG_ID, WS_ID), method="POST", json=body
+        ):
+            _set_g_mocks()
+            g.ORGANIZATION_ID = ORG_ID
+            g.WORKSPACE_ID = WS_ID
+            g.USER_ID = "user-1"
+            g.ROLES = []
+            return app.make_response(api.jsonrpc_handler(ORG_ID, WS_ID))
+
+    def test_ping_returns_empty_result(self, app):
+        response = self._post(app, {"jsonrpc": "2.0", "method": "ping", "id": 7})
+
+        assert response.status_code == 200
+        assert response.get_json() == {"jsonrpc": "2.0", "result": {}, "id": 7}
+
+    @pytest.mark.parametrize("method", ["notifications/initialized", "notifications/cancelled"])
+    def test_notification_returns_202_without_body(self, app, method):
+        response = self._post(app, {"jsonrpc": "2.0", "method": method})
+
+        assert response.status_code == 202
+        assert response.get_data() == b""
+
+    def test_unknown_method_still_returns_method_not_found(self, app):
+        response = self._post(app, {"jsonrpc": "2.0", "method": "resources/list", "id": 8})
+
+        assert response.status_code == 404
+        assert response.get_json()["error"]["code"] == -32601

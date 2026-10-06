@@ -685,3 +685,14 @@ class TestToolGetMenuDefinition:
 
         assert exc_info.value.status_code == 503
         assert str(exc_info.value) == "get-menu-definition failed: HTTP 503"
+
+    def test_menu_rest_name_is_url_encoded(self, mock_flask_g, requests_mock):
+        # menu_rest_nameに "/" "?" ".." を含めても、別のエンドポイントへ到達せず1つのパスセグメントとして送られること
+        encoded = "..%2F..%2F..%2Fws2%2Fita%2Fmenu%2Fx%3Fa%3D"
+        requests_mock.get(_get_menu_definition_url(encoded), json={"data": {}}, status_code=200)
+
+        menu_create_tool.tool_get_menu_definition(
+            {"menu_rest_name": "../../../ws2/ita/menu/x?a="}, _payload()
+        )
+
+        assert requests_mock.last_request.url == _get_menu_definition_url(encoded)

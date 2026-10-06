@@ -227,9 +227,9 @@ def before_request_handler():
                 raise AppException("400-00001", ["Roles"], ["Roles"])
             roles = roles_decode.split("\n")
 
-            # User-Id または Roles が取得できない場合はリクエストヘッダー不正とする
-            # If either User-Id or Roles could not be resolved, the request header is invalid
-            if user_id is None or roles is None or type(roles) is not list:
+            # User-Id が無い/空、または Roles が取得できない場合はリクエストヘッダー不正とする
+            # If User-Id is missing/empty or Roles could not be resolved, the request header is invalid
+            if not user_id or roles is None or type(roles) is not list:
                 raise AppException("400-00001", ["User-Id or Roles"], ["User-Id or Roles"])
 
             # 取得したUser-Id/Rolesをリクエストスコープ(g)に保存する

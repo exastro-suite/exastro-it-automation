@@ -66,6 +66,7 @@ and
 """
 import base64
 import os
+from urllib.parse import quote
 
 import requests
 from flask import g
@@ -192,7 +193,7 @@ def tool_menu_filter(arguments: dict, payload: dict) -> dict:
     # プロトコルは常にhttp固定とする(ITAサービス間通信はhttpを使用する)
     # Protocol is always fixed to http (inter-service communication within ITA uses http)
     url = "http://{}:{}/api/{}/workspaces/{}/ita/menu/{}/filter/".format(
-        ita_api_host, ita_api_port, organization_id, workspace_id, menu
+        ita_api_host, ita_api_port, organization_id, workspace_id, quote(str(menu), safe="")
     )
 
     # 転送用ヘッダーを組み立てる(POSTでボディを送るため"Content-Type"も付与する)
@@ -271,7 +272,10 @@ def tool_menu_filter(arguments: dict, payload: dict) -> dict:
 
 @tool(
     name="menu-filter-count",
-    description="Get the count of records from an ITA menu by specifying search conditions",
+    description=(
+        "Get the count of records from an ITA menu by specifying search conditions. Discarded records "
+        "(discard=1) are excluded by default unless a 'discard' condition is explicitly given."
+    ),
     input_schema={
         "type": "object",
         "properties": {
@@ -325,6 +329,11 @@ def tool_menu_filter_count(arguments: dict, payload: dict) -> dict:
 
     g.applogger.info(f'Parameter menu={menu}')
 
+    # menu-filterと件数を一致させるため、discard条件が未指定の場合は同じデフォルト条件を追加する
+    # Add the same default 'discard' condition as menu-filter so that the counts match
+    if "discard" not in filter_conditions:
+        filter_conditions["discard"] = {"NORMAL": "0"}
+
     # menu-filterと同じITA自身のAPI(ita_api_organization)を呼び出すため、
     # 同じ環境変数 ITA_API_ORAGANIZATION_HOST / ITA_API_ORAGANIZATION_PORT を使用する
     #
@@ -336,7 +345,7 @@ def tool_menu_filter_count(arguments: dict, payload: dict) -> dict:
     # プロトコルは常にhttp固定とする(ITAサービス間通信はhttpを使用する)
     # Protocol is always fixed to http (inter-service communication within ITA uses http)
     url = "http://{}:{}/api/{}/workspaces/{}/ita/menu/{}/filter/count/".format(
-        ita_api_host, ita_api_port, organization_id, workspace_id, menu
+        ita_api_host, ita_api_port, organization_id, workspace_id, quote(str(menu), safe="")
     )
 
     # 転送用ヘッダーを組み立てる(POSTでボディを送るため"Content-Type"も付与する)

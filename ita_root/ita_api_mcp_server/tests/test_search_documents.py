@@ -376,22 +376,67 @@ class TestToolSearchDocuments:
         assert result["count"] == 1
         assert result["results"][0]["source"] == "a.md"
 
-    def test_limit_zero_falls_back_to_top_one_result(self, mock_flask_g, monkeypatch):
-        # limit=0の場合、gapフィルタのループ自体が実行されずresultsが空のままとなり、
-        # filtered_resultsが3件未満なので「最低3件に復元」は働かず、
-        # 代わりに上位1件だけが返る分岐(results = filtered_results[:1])を確認する
-        hits = [_make_hit(text="a", title="A", source="a.md", score=0.9)]
+    @pytest.mark.parametrize("limit, expected_sources", [
+        (1, ["a.md"]),
+        (2, ["a.md", "b.md"]),
+        (3, ["a.md", "b.md", "c.md"]),
+    ])
+    def test_backfill_never_exceeds_limit(self, mock_flask_g, monkeypatch, limit, expected_sources):
+        # gapフィルタで1件しか残らない場合の「最低3件に復元」は、limitを超えないこと
+        hits = [
+            _make_hit(text="a", title="A", source="a.md", score=0.99),
+            _make_hit(text="b", title="B", source="b.md", score=0.75),
+            _make_hit(text="c", title="C", source="c.md", score=0.70),
+            _make_hit(text="d", title="D", source="d.md", score=0.60),
+        ]
         monkeypatch.setattr(search_documents, "model", _make_model())
         fake_client = mock.Mock()
         fake_client.query_points = mock.Mock(return_value=_make_search_result(hits))
         monkeypatch.setattr(search_documents, "client", fake_client)
 
         result = search_documents.tool_search_documents(
-            {"query": "xy", "limit": 0, "score_threshold": 0.5}, {}
+            {"query": "xy", "limit": limit, "score_threshold": 0.5}, {}
         )
 
+        assert [r["source"] for r in result["results"]] == expected_sources
+
+    @pytest.mark.parametrize("limit", [0, -1, "abc", "5", 2.5, True])
+    def test_invalid_limit_raises(self, mock_flask_g, monkeypatch, limit):
+        # 異常系: limitが1以上の整数でない場合は例外となり、Qdrantへの検索は行われないこと
+        monkeypatch.setattr(search_documents, "model", _make_model())
+        fake_client = mock.Mock()
+        monkeypatch.setattr(search_documents, "client", fake_client)
+
+        with pytest.raises(Exception, match="limit must be an integer greater than or equal to 1"):
+            search_documents.tool_search_documents({"query": "xy", "limit": limit}, {})
+
+        fake_client.query_points.assert_not_called()
+
+    def test_limit_none_uses_default(self, mock_flask_g, monkeypatch):
+        # 境界値: limitにnullが渡された場合は未指定と同じく既定値5として扱われること
+        monkeypatch.setattr(search_documents, "model", _make_model())
+        fake_client = mock.Mock()
+        fake_client.query_points = mock.Mock(return_value=_make_search_result([]))
+        monkeypatch.setattr(search_documents, "client", fake_client)
+
+        search_documents.tool_search_documents({"query": "xy", "limit": None}, {})
+
+        _, kwargs = fake_client.query_points.call_args
+        assert kwargs["limit"] == 15
+
+    def test_limit_one_is_accepted(self, mock_flask_g, monkeypatch):
+        # 境界値: limit=1(最小値)は受け付けられ、search_limitは3になること
+        hits = [_make_hit(text="a", title="A", source="a.md", score=0.9)]
+        monkeypatch.setattr(search_documents, "model", _make_model())
+        fake_client = mock.Mock()
+        fake_client.query_points = mock.Mock(return_value=_make_search_result(hits))
+        monkeypatch.setattr(search_documents, "client", fake_client)
+
+        result = search_documents.tool_search_documents({"query": "xy", "limit": 1, "score_threshold": 0.5}, {})
+
         assert result["count"] == 1
-        assert result["results"][0]["source"] == "a.md"
+        _, kwargs = fake_client.query_points.call_args
+        assert kwargs["limit"] == 3
 
     def test_query_embed_failure_raises_wrapped_exception(self, mock_flask_g, monkeypatch):
         # 異常系: model.query_embedが例外を発生させた場合、元の例外メッセージを

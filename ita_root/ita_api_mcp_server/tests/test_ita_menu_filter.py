@@ -228,15 +228,25 @@ class TestToolMenuFilterCount:
         assert result["message"] == "Menu record count fetched successfully."
         assert result["menu"] == MENU
         sent_body = requests_mock.last_request.json()
-        assert sent_body == {"col": {"NORMAL": "v"}}
+        assert sent_body == {"col": {"NORMAL": "v"}, "discard": {"NORMAL": "0"}}
 
-    def test_default_filter_conditions_empty_body(self, mock_flask_g, requests_mock):
-        # 境界値: filter_conditionsが未指定の場合、空のJSONボディが送信されること
+    def test_default_filter_conditions_adds_discard(self, mock_flask_g, requests_mock):
+        # 境界値: filter_conditionsが未指定の場合、menu-filterと同じdiscard=0の条件だけが送信されること
         requests_mock.post(_filter_count_url(), json={"count": 0}, status_code=200)
 
         menu_filter_tool.tool_menu_filter_count({"menu": MENU}, _payload())
 
-        assert requests_mock.last_request.json() == {}
+        assert requests_mock.last_request.json() == {"discard": {"NORMAL": "0"}}
+
+    def test_explicit_discard_condition_not_overridden(self, mock_flask_g, requests_mock):
+        # 正常系: discardが指定されている場合、デフォルト条件で上書きされないこと
+        requests_mock.post(_filter_count_url(), json={"count": 0}, status_code=200)
+
+        menu_filter_tool.tool_menu_filter_count(
+            {"menu": MENU, "filter_conditions": {"discard": {"NORMAL": "1"}}}, _payload()
+        )
+
+        assert requests_mock.last_request.json() == {"discard": {"NORMAL": "1"}}
 
     def test_missing_menu_raises(self, mock_flask_g):
         # 異常系: menuが指定されていない場合は例外が発生すること
@@ -252,3 +262,23 @@ class TestToolMenuFilterCount:
 
         assert exc_info.value.status_code == 500
         assert exc_info.value.message == "menu-filter-count failed: HTTP 500"
+
+
+class TestMenuPathEncoding:
+    # menuに "/" "?" ".." を含めても、別のエンドポイントへ到達せず1つのパスセグメントとして送られること
+    INJECTED = "../../../ws2/ita/menu/x?a="
+    ENCODED = "..%2F..%2F..%2Fws2%2Fita%2Fmenu%2Fx%3Fa%3D"
+
+    def test_menu_filter_encodes_menu(self, mock_flask_g, requests_mock):
+        requests_mock.post(_filter_url(self.ENCODED), json={"data": []}, status_code=200)
+
+        menu_filter_tool.tool_menu_filter({"menu": self.INJECTED}, _payload())
+
+        assert requests_mock.last_request.url == _filter_url(self.ENCODED) + "?file=no"
+
+    def test_menu_filter_count_encodes_menu(self, mock_flask_g, requests_mock):
+        requests_mock.post(_filter_count_url(self.ENCODED), json={"data": 0}, status_code=200)
+
+        menu_filter_tool.tool_menu_filter_count({"menu": self.INJECTED}, _payload())
+
+        assert requests_mock.last_request.url == _filter_count_url(self.ENCODED)

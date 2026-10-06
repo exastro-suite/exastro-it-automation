@@ -57,6 +57,7 @@ and
 "/api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/pulldown/".
 """
 import os
+from urllib.parse import quote
 
 import requests
 from flask import g
@@ -125,7 +126,7 @@ def tool_list_menu_info(arguments: dict, payload: dict) -> dict:
     # プロトコルは常にhttp固定とする(ITAサービス間通信はhttpを使用する)
     # Protocol is always fixed to http (inter-service communication within ITA uses http)
     url = "http://{}:{}/api/{}/workspaces/{}/ita/menu/{}/info/".format(
-        ita_api_host, ita_api_port, organization_id, workspace_id, menu
+        ita_api_host, ita_api_port, organization_id, workspace_id, quote(str(menu), safe="")
     )
 
     # 転送用ヘッダーを組み立てる
@@ -226,7 +227,7 @@ def tool_list_menu_info_pulldown(arguments: dict, payload: dict) -> dict:
     # プロトコルは常にhttp固定とする(ITAサービス間通信はhttpを使用する)
     # Protocol is always fixed to http (inter-service communication within ITA uses http)
     url = "http://{}:{}/api/{}/workspaces/{}/ita/menu/{}/info/pulldown/".format(
-        ita_api_host, ita_api_port, organization_id, workspace_id, menu
+        ita_api_host, ita_api_port, organization_id, workspace_id, quote(str(menu), safe="")
     )
 
     # 転送用ヘッダーを組み立てる

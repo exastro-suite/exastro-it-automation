@@ -51,6 +51,7 @@ Each record can specify a file item (FileUploadColumn) in one of two ways.
 """
 import base64
 import os
+from urllib.parse import quote
 
 import requests
 from flask import g
@@ -233,7 +234,7 @@ def tool_maintenance_all(arguments: dict, payload: dict) -> dict:
     # プロトコルは常にhttp固定とする(ITAサービス間通信はhttpを使用する)
     # Protocol is always fixed to http (inter-service communication within ITA uses http)
     url = "http://{}:{}/api/{}/workspaces/{}/ita/menu/{}/maintenance/all/".format(
-        ita_api_host, ita_api_port, organization_id, workspace_id, menu
+        ita_api_host, ita_api_port, organization_id, workspace_id, quote(str(menu), safe="")
     )
 
     # 転送用ヘッダーを組み立てる(POSTでボディを送るため"Content-Type"も付与する)

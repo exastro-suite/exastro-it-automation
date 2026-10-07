@@ -100,9 +100,12 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
 # embedding_modelのダウンロード
 COPY ./ita_root/ita_api_mcp_server/download_embedding_model.py $APP_PATH/
 
+# httpx(huggingface_hub)・hf_xetはOSの証明書ストアを参照しないため、SSL検査プロキシ環境向けに明示的に指定する
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
     mkdir -p $EMBEDDING_MODEL_CACHE_PATH \
-&&  python3 $APP_PATH/download_embedding_model.py --model-name $EMBEDDING_MODEL --cache-path $EMBEDDING_MODEL_CACHE_PATH \
+&&  SSL_CERT_FILE=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+    REQUESTS_CA_BUNDLE=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+    python3 $APP_PATH/download_embedding_model.py --model-name $EMBEDDING_MODEL --cache-path $EMBEDDING_MODEL_CACHE_PATH \
 &&  chown -R $USERNAME:$GROUPNAME $EMBEDDING_MODEL_CACHE_PATH
 
 ENV HF_HUB_OFFLINE 1

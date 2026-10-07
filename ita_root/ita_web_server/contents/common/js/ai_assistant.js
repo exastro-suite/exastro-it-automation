@@ -207,7 +207,7 @@ async resumeConversation( conversation ) {
         // 新規チャット相当の初期化（入力欄の構築・LLMの用意）を行ってから履歴を復元する
         // （初期化を飛ばすと入力欄が無くなる）。自動再開と同じ順序。
         await chat.newChatStart();
-        await chat.resumeChat( history, conversationId );
+        await chat.resumeChat( history, conversationId, conversation?.title ?? null );
 
         // 復元したチャットを表示する（タブをクリックしたときと同じ切り替え）
         aa.openTab('container');
@@ -282,6 +282,8 @@ async editConversationTitle( conversation ) {
     let error = null;
     try {
         await AiAssistantLlm.updateConversationTitle( conversationId, title );
+        // 表示中のチャットの会話であれば、控えているタイトルも合わせる（要約を引き継ぐときに使う）
+        if ( aa.chat?.llm?.conversationId === conversationId ) aa.chat.llm.title = title;
     } catch ( e ) {
         console.error( e );
         error = e;

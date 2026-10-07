@@ -831,6 +831,16 @@ flex: 1 1 auto;
     font-weight: bold;
     opacity: 1;
 }
+/* 要約を引き継いで始めた会話：前の会話の要約（開閉式。見出しは選択肢の一覧と共通） */
+.aiAssistantChatUserMessageCarryOverText {
+    max-height: 320px;
+    margin-top: 4px;
+    padding-left: 10px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    opacity: .9;
+}
 /* ============================== *\
    ユーザメッセージの操作メニュー
    （吹き出し下側に、アイコンのみのボタンを横並びで表示。ホバー時のみ表示）
@@ -1880,6 +1890,67 @@ will-change: auto!important;
     width: 100%;
     padding: 8px;
     line-height: 1.5;
+}
+/* コンテキスト上限超過ダイアログ（要約して続けるか、終了するかの選択） */
+.aiOverflowAlert {
+    display: flex;
+    align-items: flex-start;
+    width: 100%;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding: 10px 12px;
+    background-color: var(--accentColor10);
+    border: 1px solid var(--accentColor50);
+    border-left: 4px solid var(--accentColor100);
+    border-radius: 4px;
+    line-height: 1.6;
+}
+.aiOverflowAlertIcon {
+    flex: 0 0 auto;
+    color: var(--accentColor100);
+    font-size: 18px;
+    line-height: 1.4;
+}
+.aiOverflowLead {
+    margin-bottom: 8px;
+    font-size: 13px;
+}
+.aiOverflowOptionList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.aiOverflowOption {
+    padding: 10px 14px;
+    background-color: var(--white100);
+    border: 1px solid var(--black20);
+    border-radius: 6px;
+}
+.aiOverflowOptionTitle {
+    margin-bottom: 4px;
+    font-weight: bold;
+    font-size: 14px;
+}
+.aiOverflowOptionText {
+    color: var(--black70);
+    font-size: 13px;
+    line-height: 1.5;
+}
+.aiOverflowOptionNote {
+    margin-top: 4px;
+    color: var(--black70);
+    font-size: 12px;
+}
+.aiOverflowFootnote {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    margin-top: 14px;
+    color: var(--black60);
+    font-size: 12px;
 }
 /* 学習事項の登録確認ダイアログ（抽出結果の選択・修正） */
 .aiLessonsDescription {

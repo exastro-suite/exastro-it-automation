@@ -43,6 +43,8 @@
 // ・サーバー側の履歴が画面側とずれているかは this.serverSynced で管理する。
 // ・会話（プラットフォーム側のレコード）は最初の送信・保存のときに作成する（title は最初の発言から作る）。
 //   画面を開いただけで空の会話が残らないようにするため、setup() では作成しない。
+// ・テスト用に、AIのタイムアウトやコンテキスト上限超過を擬似的に発生させられる
+//   （localStorage で設定する。使い方は「テスト用機能（擬似エラー）」の節を参照）。
 class AiAssistantLlm {
 /*
 ##################################################
@@ -136,9 +138,9 @@ static get lessonsPromptMaxCount() {
 static get defaultTitle() {
     return getMessage.FTE14110;
 }
-// 会話タイトルの最大文字数（プラットフォーム側の TITLE カラムに合わせる）
+// 会話タイトルの最大文字数（プラットフォーム側のバリデーション const.length_conversation_title に合わせる）
 static get titleLength() {
-    return 256;
+    return 255;
 }
 // AIに生成させた会話タイトルの最大文字数。
 // プラットフォーム側のプロンプトは30文字以内を指示しているが、多少超えた応答を捨てずに
@@ -176,6 +178,29 @@ static get completionRetryStatuses() {
 static isTimeoutError( error ) {
     return AiAssistantLlm.timeoutStatuses.includes( error?.status ) || error?.networkError === true;
 }
+// 入力（会話履歴）がモデルのコンテキスト上限を超えたエラーか
+// （プラットフォームAPIは AIサービスのエラー文をそのまま message に含めて返す）
+//   例: "prompt is too long: 205000 tokens > 200000 maximum" / "Input is too long for requested model." /
+//       "input length and `max_tokens` exceed context limit: ..."
+static isContextOverflowError( error ) {
+    if ( error?.status === 413 ) return true;
+    const raw = error?.message ?? '';
+    return /too long|too large|exceed(?:s|ed)? (?:the )?context|context (?:limit|length|window)/i.test( raw );
+}
+// コンテキスト上限を超えたときに古いツール結果を省略する際、省略せずに残す直近のターン数
+// （tool_use と tool_result の対を崩さないよう2以上）
+static get contextTrimKeepRecent() {
+    return 6;
+}
+// 古いツール結果を省略する際、これより短い（文字列化した長さ）ツール結果は省略しない
+static get contextTrimMinChars() {
+    return 500;
+}
+// 省略したツール結果の代わりに入れる文言（LLM向けのため英語固定）
+static get contextTrimPlaceholder() {
+    return '[Omitted: this earlier tool result was removed because the conversation exceeded the context limit. '
+        + 'Call the tool again if its details are needed.]';
+}
 /*
 ##################################################
    Constructor
@@ -188,6 +213,10 @@ constructor( promptProfile ) {
     this.promptProfile = promptProfile ?? AiAssistantLlm.promptProfile;
     // 会話ID（最初の送信・保存のときに作成する。履歴復元時は復元元の会話IDを引き継ぐ）
     this.conversationId = null;
+    // 会話のタイトル（分かっている場合のみ。会話の作成時・復元時・タイトルの変更時に控える）
+    //   会話の要約を引き継いで新しいチャットを始めるとき、続きのタイトルを作るのに使う。
+    //   作成前に設定しておくと、会話の作成時にそのタイトルを使う（未設定なら最初の発言から作る）。
+    this.title = null;
     // 会話履歴（Anthropic Messages API形式のターン配列）
     //   画面の表示・巻き戻し・サーバーへの履歴保存もこの配列を使う
     this.messages = [];
@@ -198,6 +227,9 @@ constructor( promptProfile ) {
     // 全置換（PUT /messages）以降にプラットフォーム側が追加したスナップショットのレコード数。
     //   messageを指定した問い合わせが成功するたびに1件増える。全置換で1レコードへ圧縮すると0に戻る。
     this.snapshotCount = 0;
+    // 入力がモデルのコンテキスト上限を超えたため、古いツール結果を省略して問い合わせているか
+    //   一度超えたら、この会話では以降も省略した履歴で問い合わせる（→ requestHistory）
+    this.contextTrimmed = false;
     // 使用するAIサービス
     this.aiServiceId = '';
     // 使用するモデル（フッターで切り替えられる）
@@ -247,8 +279,9 @@ async ensureConversation() {
     if ( !this.aiServiceId ) throw new Error( getMessage.FTE14111 );
     if ( !this.modelId ) throw new Error( getMessage.FTE14112 );
 
+    if ( !this.title ) this.title = AiAssistantLlm.buildTitle( this.messages );
     const data = await this.request(AiAssistantLlm.apiUrl.conversation(), 'POST', {
-        title: AiAssistantLlm.buildTitle( this.messages ),
+        title: this.title.slice( 0, AiAssistantLlm.titleLength ),
         model_id: this.modelId,
         ai_service_id: this.aiServiceId,
         prompt_profile: this.promptProfile,
@@ -262,9 +295,11 @@ async ensureConversation() {
     return this.conversationId;
 }
 // 保存済みの会話を引き継ぐ（履歴復元）。復元元の会話へ続きを保存するため、新しい会話は作らない。
-attachConversation( conversationId, history ) {
+// title … 復元元の会話のタイトル（分からない場合は省略）
+attachConversation( conversationId, history, title = null ) {
     if ( !conversationId ) throw new Error( getMessage.FTE14114 );
     this.conversationId = conversationId;
+    this.title = ( typeof title === 'string' && title !== '')? title: null;
     this.setChatHistory( history );
 }
 // 会話のタイトルを作る。会話の作成時（POST /conversations）に渡す初期のタイトルで、
@@ -289,6 +324,16 @@ static buildTitle( messages ) {
     }
     title = title.replace( /[\t\r\n]/g, '').slice( 0, AiAssistantLlm.titleLength );
     return ( title !== '')? title: AiAssistantLlm.defaultTitle;
+}
+// 会話の要約を引き継いで始める新しい会話のタイトルを作る（元の会話のタイトル＋「（続き）」）。
+// 続きの会話からさらに引き継ぐ場合に「（続き）（続き）」と重ならないよう、末尾の目印は付け直す。
+// 目印を付けても上限文字数に収まるよう、元のタイトルの側を切り詰める。
+static continuationTitle( title ) {
+    const suffix = getMessage.FTE14432;
+    let base = String( title ?? '').trim();
+    while ( suffix && base.endsWith( suffix ) ) base = base.slice( 0, -suffix.length ).trim();
+    if ( !base ) base = AiAssistantLlm.defaultTitle;
+    return base.slice( 0, AiAssistantLlm.titleLength - suffix.length ) + suffix;
 }
 /*
 ##################################################
@@ -447,6 +492,55 @@ static async generateTitle( transcript, param = {}, signal ) {
         conversationId: conversationId,
         title: AiAssistantLlm.parseTitle(
             AiAssistantLlm.blocksText( llm.responseContents( response ) ) )
+    };
+}
+/*
+##################################################
+   会話の要約（新しいチャットへの引き継ぎ）
+##################################################
+*/
+// 会話の内容をAIに要約してもらう。会話が長くなりコンテキスト上限を超えたとき、
+// 要約を新しいチャットへ引き継いで続けるために使う。
+// 要約用の会話（prompt_profile は呼び出し元の会話と同じ）を1つ作り、1回だけ問い合わせる
+// （学習事項の抽出・タイトルの生成と同じつくり。要約の指示は message に含めて渡す）。
+// param = { aiServiceId, modelId, promptProfile }
+// 戻り値 { conversationId, summary } … conversationId は、要約に使った会話のID。
+//   要約用の会話は使い捨てのため、要約できたかどうかに関わらず呼び出し側で削除すること。
+//   summary は応答のテキスト（取り出せなかった場合は空文字）。
+// 要約そのものの失敗（会話の作成・問い合わせの失敗）は例外を投げる。
+static async summarizeConversation( transcript, param = {}, signal ) {
+    const aiServiceId = param.aiServiceId ?? '';
+    const modelId = param.modelId ?? '';
+    if ( !aiServiceId ) throw new Error( getMessage.FTE14111 );
+    if ( !modelId ) throw new Error( getMessage.FTE14112 );
+
+    const llm = new AiAssistantLlm( param.promptProfile );
+    // ツールは渡さない（ツール呼び出しを抑止し、純粋なテキスト応答だけを得る）
+    const data = await llm.request(AiAssistantLlm.apiUrl.conversation(), 'POST', {
+        title: AiAssistantLlm.disposableTitle( getMessage.FTE14420 ),
+        model_id: modelId,
+        ai_service_id: aiServiceId,
+        prompt_profile: llm.promptProfile
+    });
+    const conversationId = data.conversation_id ?? null;
+    if ( !conversationId ) throw new Error( getMessage.FTE14113 );
+
+    let response;
+    try {
+        response = await llm.request(AiAssistantLlm.apiUrl.completion( conversationId ), 'POST', {
+            model_id: modelId,
+            message: getMessage.FTE14421( transcript )
+        }, signal );
+    } catch ( error ) {
+        // 失敗しても、作成済みの会話には問い合わせ内容が保存されていることがある。
+        // 使い捨ての会話を会話一覧に残さないよう、後片付けできる会話IDをエラーへ載せて返す。
+        error.conversationId = conversationId;
+        throw error;
+    }
+
+    return {
+        conversationId: conversationId,
+        summary: AiAssistantLlm.blocksText( llm.responseContents( response ) )
     };
 }
 // LLMの応答テキストから会話のタイトルを取り出す。
@@ -777,6 +871,10 @@ async send( prompt, files, signal, options = {} ) {
                 messageText = AiAssistantLlm.completionMessageText( userMessage );
             }
 
+            // 古いツール結果を省略して問い合わせている場合、messageを指定するとサーバー側に保存された
+            // 省略前の履歴で問い合わせることになるため、省略した履歴で全置換してから問い合わせる。
+            if ( this.contextTrimmed ) messageText = null;
+
             // 会話が未作成なら、ここで作成する（タイトルは積んだユーザー発言から作られる）
             await this.ensureConversation();
 
@@ -790,7 +888,7 @@ async send( prompt, files, signal, options = {} ) {
             } else {
                 // messageで送れないターン（tool_result・添付ファイル付きなど）は、
                 // 問い合わせに使われるサーバー側の履歴を全置換して渡す。
-                await this.syncHistory( signal );
+                await this.syncHistory( signal, this.requestHistory() );
             }
 
             // 問い合わせの往復時間を測る。「AIの応答を待った時間」だけを見たいので、
@@ -802,15 +900,31 @@ async send( prompt, files, signal, options = {} ) {
             // 「簡潔に応答する指示を添える」「別のモデルに切り替える」といった条件を変えた再送も選べる。
             let requestMessageText = messageText;
             let hinted = false;
+            // 【テスト用機能】コンテキスト上限超過の擬似エラー（→「テスト用機能（擬似エラー）」の節）。
+            // 設定は送信1回分ずつ取り出し、この送信の中の問い合わせ（省略後の再送を含む）で共通に使う。
+            const debugContextOverflow = AiAssistantLlm.takeDebugContextOverflow();
             for (;;) {
                 // 再送の場合は、待たされた末に失敗した回ではなく再送分の往復時間を記録する
                 // （ユーザーの確認待ちの時間も含めない）
                 const requestStart = performance.now();
                 try {
-                    const response = await this.requestCompletion( signal, requestMessageText );
+                    const response = await this.requestCompletion( signal, requestMessageText, debugContextOverflow );
                     thinkingMs = Math.round( performance.now() - requestStart );
                     return response;
                 } catch ( error ) {
+                    // 会話が長くなり入力がモデルのコンテキスト上限を超えた場合は、古いツール結果を省略した
+                    // 履歴で全置換して1回だけ送り直す（省略できるものが無い・省略しても超える場合はエラーにする）。
+                    // サーバー側の履歴は省略した内容になるが、応答後の保存（saveHistory）で画面側の
+                    // 省略前の履歴に戻る（messageなしの問い合わせは保存されず、serverSynced=falseになるため）。
+                    if ( !this.contextTrimmed && AiAssistantLlm.isContextOverflowError( error ) ) {
+                        const trimmed = AiAssistantLlm.trimOldToolResults( this.messages, AiAssistantLlm.contextTrimKeepRecent );
+                        if ( !trimmed.count ) throw error;
+                        console.warn(`会話がコンテキスト上限を超えたため、古いツール結果（${trimmed.count}件）を省略して再送します。`, error );
+                        this.contextTrimmed = true;
+                        requestMessageText = null;
+                        await this.syncHistory( signal, trimmed.messages );
+                        continue;
+                    }
                     if ( !AiAssistantLlm.isTimeoutError( error ) ) throw error;
                     // タイムアウトまでの時間（裏で完了していた応答を採用する場合の往復時間。実際はこれ以上かかっている）
                     const timeoutMs = Math.round( performance.now() - requestStart );
@@ -844,7 +958,7 @@ async send( prompt, files, signal, options = {} ) {
                             hinted = true;
                             lastTurn._timeoutHint = getMessage.FTE14401;
                             requestMessageText = null;
-                            await this.syncHistory( signal );
+                            await this.syncHistory( signal, this.requestHistory() );
                         }
                     }
                 }
@@ -902,6 +1016,8 @@ static completionMessageText( userMessage ) {
     if ( userMessage._displayText !== undefined || userMessage._displaySystem !== undefined || userMessage._choiceSelected !== undefined ) return null;
     // タイムアウト時に添えた指示（_timeoutHint）は差し込みブロックとして渡すため、messageでは送れない
     if ( userMessage._timeoutHint !== undefined ) return null;
+    // 引き継いだ要約（_carryOverSummary）も、messageで送ると保存されずに失われるため全置換で渡す
+    if ( userMessage._carryOverSummary !== undefined ) return null;
     const content = userMessage.content;
     if ( !Array.isArray( content ) || content.length !== 1 ) return null;
     const block = content[0];
@@ -1055,6 +1171,10 @@ buildUserMessage( prompt, files, options = {} ) {
     if ( options.systemAction === true ) {
         userMessage._displaySystem = true;
     }
+    // 前の会話から引き継いだ要約（吹き出しに開閉式で表示する。本文にも含めてLLMへ渡している）（同上）
+    if ( typeof options.carryOverSummary === 'string' && options.carryOverSummary !== '') {
+        userMessage._carryOverSummary = options.carryOverSummary;
+    }
     // 発言時刻（履歴保存・復元表示用）。画面表示と一致させるため、呼び出し側の時刻を優先する。
     userMessage._timestamp = ( typeof options.timestamp === 'string' && options.timestamp )
         ? options.timestamp
@@ -1112,6 +1232,36 @@ static storableHistory( messages ) {
         if ( !Array.isArray( turn?.content ) || !turn.content.some( isDropBlock ) ) return turn;
         return { ...turn, content: turn.content.filter(( block ) => !isDropBlock( block ) ) };
     });
+}
+// 問い合わせに使う履歴（全置換してから問い合わせるときに渡す）。
+// コンテキスト上限を超えた後（contextTrimmed）は古いツール結果を省略したもの、それ以外は画面側の履歴そのもの。
+requestHistory() {
+    if ( !this.contextTrimmed ) return this.messages;
+    return AiAssistantLlm.trimOldToolResults( this.messages, AiAssistantLlm.contextTrimKeepRecent ).messages;
+}
+// 直近 keepRecent ターンより前のツール結果（tool_result）の中身を短い文言に置き換える。
+// tool_resultブロック自体（tool_use_id等）は残すため、tool_use と tool_result の対応は崩れない。
+// 渡された履歴（画面側の正の履歴）は変更せず、置き換えたターンだけ新しいオブジェクトを作る。
+// 戻り値: { messages: 置き換え後の履歴, count: 省略したツール結果の件数 }
+static trimOldToolResults( messages, keepRecent ) {
+    const history = ( Array.isArray( messages ) )? messages: [];
+    const cutoff = history.length - keepRecent;
+    let count = 0;
+    const isLarge = ( block ) => JSON.stringify( block.content ?? '').length > AiAssistantLlm.contextTrimMinChars;
+
+    const trimmed = history.map(( turn, index ) => {
+        if ( index >= cutoff || !Array.isArray( turn?.content ) ) return turn;
+        if ( !turn.content.some(( block ) => block?.type === 'tool_result' && isLarge( block ) ) ) return turn;
+        return {
+            ...turn,
+            content: turn.content.map(( block ) => {
+                if ( block?.type !== 'tool_result' || !isLarge( block ) ) return block;
+                count++;
+                return { ...block, content: AiAssistantLlm.contextTrimPlaceholder };
+            })
+        };
+    });
+    return { messages: trimmed, count };
 }
 // サーバーに保存されている履歴（最新のスナップショット）を画面側の履歴で全置換する。
 // completionsはサーバーの保存内容を使って問い合わせるため、画面側とずれている場合に呼ぶ。
@@ -1266,7 +1416,8 @@ static attachmentMetaBlock( attachments ) {
 //                AI応答も含めて保存する（レスポンスの saved が true になる）。
 //                nullのときはmessageを指定せず、同期済みの履歴（添付ファイルやtool_resultを含む
 //                contentブロック）だけで問い合わせる（プラットフォーム側でユーザーターンを追加させない）。
-async requestCompletion( signal, messageText = null ) {
+// debugContextOverflow … 【テスト用機能】コンテキスト上限超過の擬似エラーの設定（→ takeDebugContextOverflow）。通常はnull
+async requestCompletion( signal, messageText = null, debugContextOverflow = null ) {
     const body = {
         // 会話のデフォルトモデルを上書きする（フッターで切り替えたモデルを使う）
         model_id: this.modelId,
@@ -1282,7 +1433,16 @@ async requestCompletion( signal, messageText = null ) {
         retryNetworkError: false
     };
 
-    // TODO: 【一時的なデバッグ用】タイムアウト時の動作確認が終わったら削除する
+    // 【テスト用機能】コンテキスト上限超過の擬似エラー（→「テスト用機能（擬似エラー）」の節）
+    //   trim … 省略前の問い合わせだけ失敗させる / full … 省略後の再送も失敗させる
+    if ( debugContextOverflow && ( debugContextOverflow.mode === 'full' || !this.contextTrimmed ) ) {
+        console.warn(`[debug] コンテキスト上限超過を擬似的に発生させます（mode=${debugContextOverflow.mode}、残り${debugContextOverflow.rest}回）`);
+        const error = new Error('[debug] AIサービスAPIエラー (ValidationException): prompt is too long: 250000 tokens > 200000 maximum');
+        error.status = 400;
+        throw error;
+    }
+
+    // 【テスト用機能】タイムアウトの擬似エラー（→「テスト用機能（擬似エラー）」の節）
     const debugTimeout = AiAssistantLlm.takeDebugTimeout();
     if ( debugTimeout ) {
         // after … 実際に問い合わせてから応答を捨てる（裏で完了・保存されていたケース）
@@ -1303,13 +1463,42 @@ async requestCompletion( signal, messageText = null ) {
 
     return await this.request(AiAssistantLlm.apiUrl.completion( this.conversationId ), 'POST', body, signal, completionRetryOptions );
 }
-// TODO: 【一時的なデバッグ用】タイムアウトを擬似的に発生させる設定を1回分取り出す（無ければnull）
-// ブラウザのコンソールで localStorage に "モード:回数" を設定すると、その回数だけ問い合わせが504になる。
+/*
+##################################################
+   テスト用機能（擬似エラー）
+##################################################
+*/
+// 実際に起こすのが難しいエラー（AIのタイムアウト・コンテキスト上限超過）を擬似的に発生させ、
+// 画面側の処理（再送の方法を選ぶダイアログ、古いツール結果の省略、要約して新しいチャットで続ける等）を
+// 確かめるためのテスト用機能。localStorage に設定したときだけ動き、通常の利用には影響しない。
+//
+// ■ 使い方
+//   AIアシスタントの画面でブラウザの開発者ツールのコンソールを開き、localStorage に
+//   "モード:回数" を設定してからメッセージを送信する（ページの再読み込みは不要）。
+//   ・回数を省略すると1回。設定した回数を使い切ると自動で解除される。
+//   ・途中でやめる場合は localStorage.removeItem( キー ) で解除する。
+//   ・擬似エラーを発生させると、コンソールに "[debug] …" の警告を出す。
+//   ・AIアシスタントが iframe 内に表示されている場合は、コンソールの実行コンテキストで
+//     そのフレームを選んでから設定する。
+//
+// ■ タイムアウト（キー: aiAssistantDebugTimeout）… 問い合わせ1回ごとに数える
 //   localStorage.setItem('aiAssistantDebugTimeout', 'before:1')  … 送らずに504（サーバーには何も残らない）
 //   localStorage.setItem('aiAssistantDebugTimeout', 'after:1')   … 問い合わせてから504（応答はサーバーに保存される）
 //   localStorage.setItem('aiAssistantDebugTimeout', 'network:1') … 送らずに接続断（ネットワークエラー）
 //   localStorage.removeItem('aiAssistantDebugTimeout')           … 解除
-// 回数を省略すると1回。使い切ると自動で解除される。
+//
+// ■ コンテキスト上限超過（キー: aiAssistantDebugContextOverflow）… 送信1回ごとに数える
+//   localStorage.setItem('aiAssistantDebugContextOverflow', 'trim:1') … 省略前だけ失敗（古いツール結果を省略して再送すると成功する）
+//   localStorage.setItem('aiAssistantDebugContextOverflow', 'full:1') … 省略後の再送も失敗（要約して続ける／終了するのダイアログが出る）
+//   localStorage.removeItem('aiAssistantDebugContextOverflow')        … 解除
+//   ・full:1 で「要約して新しいチャットで続ける」を選ぶと、要約の作成と新しいチャットへの最初の送信は
+//     通常どおりAIへ問い合わせる（回数を使い切っているため）。
+//   ・省略できる古いツール結果（直近のターンより前の大きな tool_result）が無い会話では、trim でも
+//     再送せずにダイアログが出る。省略を確かめる場合は、ツールを何度か使った会話で試す。
+//   ・一度省略した会話（contextTrimmed）では、trim は失敗させずに回数だけ消費する。
+
+// タイムアウトの擬似エラーの設定を、問い合わせ1回分取り出す（設定が無ければnull）。
+// 戻り値: { mode: 'before' | 'after' | 'network', rest: 残りの回数 }
 static takeDebugTimeout() {
     const key = 'aiAssistantDebugTimeout';
     let value = null;
@@ -1318,6 +1507,30 @@ static takeDebugTimeout() {
 
     const [ mode, countText ] = value.split(':');
     if ( !['before', 'after', 'network'].includes( mode ) ) return null;
+    const count = Number( countText ?? 1 );
+    if ( !Number.isInteger( count ) || count < 1 ) {
+        window.localStorage.removeItem( key );
+        return null;
+    }
+    const rest = count - 1;
+    if ( rest > 0 ) {
+        window.localStorage.setItem( key, `${mode}:${rest}`);
+    } else {
+        window.localStorage.removeItem( key );
+    }
+    return { mode, rest };
+}
+// コンテキスト上限超過の擬似エラーの設定を、送信1回分取り出す（設定が無ければnull）。
+// send() が送信のはじめに1回だけ呼び、その送信の中の問い合わせ（省略後の再送を含む）に同じ設定を渡す。
+// 戻り値: { mode: 'trim' | 'full', rest: 残りの回数 }
+static takeDebugContextOverflow() {
+    const key = 'aiAssistantDebugContextOverflow';
+    let value = null;
+    try { value = window.localStorage.getItem( key ); } catch ( error ) { return null; }
+    if ( !value ) return null;
+
+    const [ mode, countText ] = value.split(':');
+    if ( !['trim', 'full'].includes( mode ) ) return null;
     const count = Number( countText ?? 1 );
     if ( !Number.isInteger( count ) || count < 1 ) {
         window.localStorage.removeItem( key );

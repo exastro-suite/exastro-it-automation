@@ -323,6 +323,13 @@ uiTool( name ) {
 isUiChoiceTool( name ) {
     return name === AiAssistantToolAskUserChoice.toolName;
 }
+// 回答待ちの選択肢・退避中ツール結果などの保留状態をすべて破棄する
+clearPendingChoiceState() {
+    this.pendingChoiceToolId = null;
+    this.pendingExtraChoiceToolIds = [];
+    this.pendingToolResults = [];
+    this.pendingChoiceContext = null;
+}
 // 選択肢を表示してユーザーの回答を待つ（tool_result は次の送信で返す）
 askUserChoice( toolUse ) {
     return this.uiTool( AiAssistantToolAskUserChoice.toolName )?.execute( toolUse ) ?? null;
@@ -1128,6 +1135,9 @@ setNewChat() {
     this.chatId = this.chatIdCounter++;
     // 新しい会話を始めるので、中断再開マーカーは破棄する（前の会話を自動再開しない）。
     this._clearActiveChat();
+    // 前の会話の選択肢・退避中ツール結果などの保留状態も破棄する
+    // （残っていると、最初の送信が前の会話の選択肢への回答として扱われてしまう）。
+    this.clearPendingChoiceState();
     this.clearFile();
     // 破棄する吹き出しの画像プレビュー（objectURL）を解放する。
     this.revokeAttachmentPreviews();
@@ -2075,7 +2085,9 @@ async sendMessage( message, options = {} ) {
     let historyDisplayText = options.displayText;
     // 選択肢への回答かどうか（ボタン選択なら true、自由入力なら false）。履歴に保存し、
     // 復元時も吹き出しの選択肢一覧で「どれを選んだか／自由入力か」を表示できるようにする。
-    const choiceSelected = pendingChoiceToolId ? ( options.choiceSelected === true ) : undefined;
+    // システム操作（会話終了など）はユーザーの回答ではないため、選択肢への回答としては扱わない。
+    const isChoiceAnswer = ( pendingChoiceToolId && options.systemAction !== true );
+    const choiceSelected = isChoiceAnswer ? ( options.choiceSelected === true ) : undefined;
 
     // Textareaの値を消す
     this.elements.message.value = '';
@@ -2105,7 +2117,7 @@ async sendMessage( message, options = {} ) {
             return attachment;
         }),
         // 選択肢への回答なら、提示された選択肢の一覧を吹き出しに表示する
-        choice: ( pendingChoiceToolId && pendingChoiceContext )
+        choice: ( isChoiceAnswer && pendingChoiceContext )
             ? { labels: pendingChoiceContext.labels, selected: choiceSelected }
             : null,
         // 前の会話から引き継いだ要約なら、吹き出しに開閉式で表示する
@@ -2141,7 +2153,22 @@ async sendMessage( message, options = {} ) {
             ( id ) => lastAssistantToolUseIds.has( id )
         );
 
-        if ( validChoiceId ) {
+        if ( validChoiceId && !isChoiceAnswer ) {
+            // 選択肢に回答しないままシステム操作（会話終了など）を送る場合。
+            // tool_use には tool_result を返す必要があるため、回答せずに終了した旨を tool_result で返し、
+            // 指示文はユーザーの回答と取り違えられないよう、同じ user ターンの後ろに text として続ける
+            // （tool_result はターンの先頭に置く必要がある）。表示用の文言（displayText）はそのまま保存する。
+            sendPayload = [
+                ...validPendingToolResults,
+                { type: 'tool_result', tool_use_id: validChoiceId, content: getMessage.FTE14440 },
+                ...validExtraIds.map(( id ) => ({
+                    type: 'tool_result',
+                    tool_use_id: id,
+                    content: getMessage.FTE14273,
+                })),
+                { type: 'text', text: message },
+            ];
+        } else if ( validChoiceId ) {
             // 選択肢と同じ応答で先に実行済みの通常ツール結果（退避分）を先頭に置き、
             // 続けて選択肢への回答を tool_result として返す。
             // （tool_use の直後の user ターンは、その応答に含まれる全 tool_use 分の
@@ -2170,7 +2197,7 @@ async sendMessage( message, options = {} ) {
             // tool_result は送れないため、通常のテキストメッセージとして送る。
             // LLM は選択肢の内容を参照できないため、質問と選択肢の一覧を本文に添える。
             console.warn('pendingChoiceToolId に対応する tool_use が履歴末尾に見つからないため、tool_result 送信を取りやめてテキスト送信にフォールバックします。', pendingChoiceToolId );
-            if ( pendingChoiceContext ) {
+            if ( pendingChoiceContext && isChoiceAnswer ) {
                 sendPayload = getMessage.FTE14398(
                     pendingChoiceContext.question,
                     pendingChoiceContext.labels,
@@ -3400,6 +3427,21 @@ _renderChatHistory( history ) {
                     choiceAnswerShown = true;
                     // 選択肢への回答は応答の区切り。ここまでの更新ページのリンクを先に表示する。
                     this.renderUpdatedMenuLinks( false );
+                    // 選択肢に回答しないまま送られたシステム操作（会話終了など）は、
+                    // 送信時と同じくシステム通知として復元する（巻き戻しの起点にはしない）。
+                    // 指示文の text ブロックを持つターンは、そちらでシステム通知を表示するためここでは表示しない
+                    // （text ブロックを持たないのは、指示文を tool_result に入れて送っていた以前の形式）。
+                    if ( block._displaySystem === true ) {
+                        if ( content.some(( b ) => b.type === 'text') ) continue;
+                        this.updateChat({
+                            role: 'system',
+                            text: ( typeof block._displayText === 'string' && block._displayText !== '')
+                                ? block._displayText
+                                : this.extractChoiceAnswerText( item ),
+                            timestamp: block._timestamp,
+                        }, false );
+                        continue;
+                    }
                     // 選択肢への回答は tool_result として保存されているため、
                     // ユーザメッセージとして復元表示する（送信時と同じ見た目）。
                     // この位置まで巻き戻すと直前の選択肢が未応答（回答待ち）状態に戻るため、
@@ -3458,8 +3500,7 @@ async resumeChat( savedHistory, conversationId, title = null ) {
     }
     const toolResultMap = this._renderChatHistory( history );
 
-    this.pendingChoiceToolId = null;
-    this.pendingChoiceContext = null;
+    this.clearPendingChoiceState();
     this.restorePendingChoice( history, toolResultMap );
 
     // 再開ごとに新しいchatIdを採番し、独立した保存state（historyQueues）を持たせる。
@@ -3543,10 +3584,7 @@ async rewindConversation( historyIndex ) {
     if ( typeof llm.setChatHistory === 'function' ) llm.setChatHistory( truncated );
 
     // 途中で切ったため、選択肢・退避中ツール結果などの保留状態はすべて破棄する。
-    this.pendingChoiceToolId = null;
-    this.pendingExtraChoiceToolIds = [];
-    this.pendingToolResults = [];
-    this.pendingChoiceContext = null;
+    this.clearPendingChoiceState();
 
     // 表示を作り直す（現在の会話を継続するため、chatId と会話IDは維持する）
     const toolResultMap = this._renderChatHistory( truncated );

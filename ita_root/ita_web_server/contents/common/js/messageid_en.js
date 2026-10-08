@@ -1551,6 +1551,7 @@ export function messageid_en() {
         'FTE14436': '* The request that could not be sent is also sent in the new chat.',
         'FTE14437': 'In either case, this chat can be viewed in the conversation history.',
         'FTE14439': 'Choose one of the buttons below.',
+        'FTE14440': 'The user ended the chat without answering the options.',
 
         //gemini
         'FTE14101': 'API KEY',

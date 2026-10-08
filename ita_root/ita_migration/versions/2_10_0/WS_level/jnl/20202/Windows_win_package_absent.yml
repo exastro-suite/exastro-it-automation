@@ -1,0 +1,36 @@
+- name: Ensure ITA_DFLT_Install_Target_packages is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Install_Target_packages: "{{ ITA_DFLT_Install_Target_packages }}"
+  when: ITA_DFLT_Install_Target_packages is defined
+
+- name: Ensure ITA_DFLT_Install_Target_packages_product_id is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Install_Target_packages_product_id: "{{ ITA_DFLT_Install_Target_packages_product_id }}"
+  when: ITA_DFLT_Install_Target_packages_product_id is defined
+
+- name: Ensure ITA_DFLT_Install_Target_packages_with_args is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Install_Target_packages_with_args: "{{ ITA_DFLT_Install_Target_packages_with_args }}"
+  when: ITA_DFLT_Install_Target_packages_with_args is defined
+
+- name: Uninstall package
+  ansible.windows.win_package:
+    path: "{{ item[0] | default(omit) }}"
+    product_id: "{{ item[1] | default(omit) }}"
+    arguments: "{{ item[2] | default(omit) }}"
+    state: absent
+  loop: >-
+    {{
+      (ITA_DFLT_Install_Target_packages if ITA_DFLT_Install_Target_packages is sequence and ITA_DFLT_Install_Target_packages is not string else [ITA_DFLT_Install_Target_packages])
+      | ansible.builtin.zip_longest(
+          ITA_DFLT_Install_Target_packages_product_id if ITA_DFLT_Install_Target_packages_product_id is sequence and ITA_DFLT_Install_Target_packages_product_id is not string else [ITA_DFLT_Install_Target_packages_product_id],
+          ITA_DFLT_Install_Target_packages_with_args if ITA_DFLT_Install_Target_packages_with_args is sequence and ITA_DFLT_Install_Target_packages_with_args is not string else [ITA_DFLT_Install_Target_packages_with_args]
+        )
+      | list
+    }}
+  register: ITA_RGST_WinPackageInstall_Result
+
+- name: Debug the result
+  ansible.builtin.debug:
+    var: ITA_RGST_WinPackageInstall_Result
+    verbosity: 3

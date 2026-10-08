@@ -1,23 +1,13 @@
-# This Playbook file deletes files or directories specified by "ITA_DFLT_Remove_File_or_Directory".
-# "ITA_DFLT_Remove_File_or_Directory" can specify multiple files or directories (list type).
-# The task results are displayed at debug level 3 (-vvv).
 - name: Ensure ITA variable is recognized
   ansible.builtin.set_fact:
     ITA_DFLT_Remove_File_or_Directory: "{{ ITA_DFLT_Remove_File_or_Directory }}"
   when: ITA_DFLT_Remove_File_or_Directory is defined
 
 - name: Recursively remove directory or remove file
-  ansible.builtin.file:
+  ansible.windows.win_file:
     path: "{{ item }}"
     state: absent
   loop: >-
     {{
       ITA_DFLT_Remove_File_or_Directory if ITA_DFLT_Remove_File_or_Directory is sequence and ITA_DFLT_Remove_File_or_Directory is not string else [ITA_DFLT_Remove_File_or_Directory]
     }}
-  register: ITA_RGST_Absent_Result
-
-- name: Debug the result
-  ansible.builtin.debug:
-    var: ITA_RGST_Absent_Result
-    verbosity: 3
-

@@ -1,0 +1,4 @@
+- name: A wrapper to the unix getent utility (networks)
+  ansible.builtin.getent:
+    database: networks
+  register: ITA_DFLT_getent_networks

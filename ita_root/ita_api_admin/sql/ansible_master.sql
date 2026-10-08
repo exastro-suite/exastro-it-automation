@@ -4822,12 +4822,12 @@ INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLA
 「ITA_DFLT_User_Names」には複数ユーザーの指定(リスト型)が可能です。
 「ITA_DFLT_User_Group_Names」には複数グループの指定(リスト型)が可能です。','This Playbook file registers users specified by "ITA_DFLT_User_Names" to groups specified by "ITA_DFLT_User_Group_Names".
 "ITA_DFLT_User_Names" can specify multiple users (list type).
-"ITA_DFLT_Group_Names" can specify multiple groups (list type).',NULL,'0',_____DATE_____,1);
+"ITA_DFLT_User_Group_Names" can specify multiple groups (list type).',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(60,_____DATE_____,'INSERT',60,'~[Exastro standard] Add user','System_user_add.yml','5019101',NULL,NULL,'5019101','このPlaybook素材は、「ITA_DFLT_User_Names」で指定したユーザーを「ITA_DFLT_User_Group_Names」で指定したグループに登録します。
 「ITA_DFLT_User_Names」には複数ユーザーの指定(リスト型)が可能です。
 「ITA_DFLT_User_Group_Names」には複数グループの指定(リスト型)が可能です。','This Playbook file registers users specified by "ITA_DFLT_User_Names" to groups specified by "ITA_DFLT_User_Group_Names".
 "ITA_DFLT_User_Names" can specify multiple users (list type).
-"ITA_DFLT_Group_Names" can specify multiple groups (list type).',NULL,'0',_____DATE_____,1);
+"ITA_DFLT_User_Group_Names" can specify multiple groups (list type).',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(70,'~[Exastro standard] Copy directory (WD to CWD)','Files_copy_workdir-copy-wd-to-cwd.yml','5019101',NULL,NULL,'5019101','このPlaybook素材は、
 __workflowdir__に格納されているファイルを__conductor_workflowdir__にコピーします。
 __conductor_workflowdir__のファイルは、Movement終了後に後続のMvemenetからアクセス可能です。
@@ -4860,16 +4860,14 @@ INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOU
 ',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(90,'~[Exastro standard] Copy file (within host)','Files_copy_remote-to-remote.yml','5019101',NULL,NULL,'5019101','このPlaybook素材は、「ITA_DFLT_Src_Files」で指定したリモートのファイルを「ITA_DFLT_Dest_Files」で指定したリモートのファイルにコピーします。
 「ITA_DFLT_Src_Files」には複数ファイルの指定(リスト型)が可能です。
-「ITA_DFLT_Dest_Files」には複数ファイルの指定(リスト型)が可能です。','This Playbook file copies local files specified by "ITA_DFLT_Src_Files" to remote files specified by "ITA_DFLT_Dest_Files".
+「ITA_DFLT_Dest_Files」には複数ファイルの指定(リスト型)が可能です。','This Playbook file copies remote files specified by "ITA_DFLT_Src_Files" to remote files specified by "ITA_DFLT_Dest_Files".
 "ITA_DFLT_Src_Files" can specify multiple files (list type).
-"ITA_DFLT_Dest_Files" can specify multiple files (list type).
-',NULL,'0',_____DATE_____,1);
+"ITA_DFLT_Dest_Files" can specify multiple files (list type).',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(90,_____DATE_____,'INSERT',90,'~[Exastro standard] Copy file (within host)','Files_copy_remote-to-remote.yml','5019101',NULL,NULL,'5019101','このPlaybook素材は、「ITA_DFLT_Src_Files」で指定したリモートのファイルを「ITA_DFLT_Dest_Files」で指定したリモートのファイルにコピーします。
 「ITA_DFLT_Src_Files」には複数ファイルの指定(リスト型)が可能です。
-「ITA_DFLT_Dest_Files」には複数ファイルの指定(リスト型)が可能です。','This Playbook file copies local files specified by "ITA_DFLT_Src_Files" to remote files specified by "ITA_DFLT_Dest_Files".
+「ITA_DFLT_Dest_Files」には複数ファイルの指定(リスト型)が可能です。','This Playbook file copies remote files specified by "ITA_DFLT_Src_Files" to remote files specified by "ITA_DFLT_Dest_Files".
 "ITA_DFLT_Src_Files" can specify multiple files (list type).
-"ITA_DFLT_Dest_Files" can specify multiple files (list type).
-',NULL,'0',_____DATE_____,1);
+"ITA_DFLT_Dest_Files" can specify multiple files (list type).',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(100,'~[Exastro standard] Create directory','Files_file_mkdir.yml','5019101',NULL,NULL,'5019101','このPlaybook素材は、「ITA_DFLT_Create_Directories」で指定したディレクトリを作成します。
 「ITA_DFLT_Create_Directories」には複数ディレクトリの指定(リスト型)が可能です。','This Playbook file creates directories specified by "ITA_DFLT_Create_Directories".
 "ITA_DFLT_Create_Directories" can specify multiple directories (list type).
@@ -4884,13 +4882,13 @@ INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLA
 INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(120,_____DATE_____,'INSERT',120,'~[Exastro standard] Debug message (constant output)','Utilities_Logic_debug_verbosity-0.yml','5019101','5019101',NULL,NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(130,'~[Exastro standard] Delete files/Directories','Files_file_remove.yml','5019101',NULL,NULL,'5019101','このPlaybook素材は、「ITA_DFLT_Remove_File_or_Directory」で指定したファイルまたはディレクトリを削除します。
 「ITA_DFLT_Remove_File_or_Directory」には複数ファイルまたはディレクトリの指定(リスト型)が可能です。
-またデバッグレベル3(-vvv)の際にタスクの実行結果を表示します。','This Playbook file deletes packages specified by "ITA_DFLT_Remove_File_or_Directory".
-"ITA_DFLT_Remove_File_or_Directory" can specify multiple files (list type).
+またデバッグレベル3(-vvv)の際にタスクの実行結果を表示します。','This Playbook file deletes files or directories specified by "ITA_DFLT_Remove_File_or_Directory".
+"ITA_DFLT_Remove_File_or_Directory" can specify multiple files or directories (list type).
 The task results are displayed at debug level 3 (-vvv).',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(130,_____DATE_____,'INSERT',130,'~[Exastro standard] Delete files/Directories','Files_file_remove.yml','5019101',NULL,NULL,'5019101','このPlaybook素材は、「ITA_DFLT_Remove_File_or_Directory」で指定したファイルまたはディレクトリを削除します。
 「ITA_DFLT_Remove_File_or_Directory」には複数ファイルまたはディレクトリの指定(リスト型)が可能です。
-またデバッグレベル3(-vvv)の際にタスクの実行結果を表示します。','This Playbook file deletes packages specified by "ITA_DFLT_Remove_File_or_Directory".
-"ITA_DFLT_Remove_File_or_Directory" can specify multiple files (list type).
+またデバッグレベル3(-vvv)の際にタスクの実行結果を表示します。','This Playbook file deletes files or directories specified by "ITA_DFLT_Remove_File_or_Directory".
+"ITA_DFLT_Remove_File_or_Directory" can specify multiple files or directories (list type).
 The task results are displayed at debug level 3 (-vvv).',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(140,'~[Exastro standard] Delete sysctl','System_sysctl_absent.yml','5019101',NULL,NULL,'5019101','このPlaybook素材は、「ITA_DFLT_Parameter_Names」で指定したパラメータ名をsysctlから削除します。
 「ITA_DFLT_Parameter_Names」には複数パラメータ名の指定(リスト型)が可能です。','This Playbook file removes Parameter names specified by "ITA_DFLT_Parameter_Names" from sysctl.
@@ -4982,14 +4980,14 @@ INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLA
 「ITA_DFLT_Target_File_Name」には複数ファイルの指定(リスト型)が可能です。
 __workflowdir__に格納されたファイルは、Movement終了後に結果データとして取得することが可能です。
 またデバッグレベル3(-vvv)の際にタスクの実行結果を表示します。','This Playbook file stores files specified by "ITA_DFLT_Target_File_Name" to "__workflowdir__".
-"ITA_DFLT_Target_File_name" can specify multiple files (list type).
+"ITA_DFLT_Target_File_Name" can specify multiple files (list type).
 Files stored in "__workflowdir__" can be retrieved as result data after the Movement ends.
 The task results are displayed at debug level 3 (-vvv).',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(250,_____DATE_____,'INSERT',250,'~[Exastro standard] Fetch files','Files_fetch.yml','5019101','5019101',NULL,NULL,'このPlaybook素材は、「ITA_DFLT_Target_File_Name」で指定したファイルを__workflowdir__に格納します。
 「ITA_DFLT_Target_File_Name」には複数ファイルの指定(リスト型)が可能です。
 __workflowdir__に格納されたファイルは、Movement終了後に結果データとして取得することが可能です。
 またデバッグレベル3(-vvv)の際にタスクの実行結果を表示します。','This Playbook file stores files specified by "ITA_DFLT_Target_File_Name" to "__workflowdir__".
-"ITA_DFLT_Target_File_name" can specify multiple files (list type).
+"ITA_DFLT_Target_File_Name" can specify multiple files (list type).
 Files stored in "__workflowdir__" can be retrieved as result data after the Movement ends.
 The task results are displayed at debug level 3 (-vvv).',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(260,'~[Exastro standard] Find Filemaster','Files_stat.yml','5019101',NULL,NULL,'5019101',NULL,NULL,NULL,'0',_____DATE_____,1);
@@ -5052,14 +5050,12 @@ INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLA
 「ITA_DFLT_Target_Path」には複数ディレクトリ/ファイルの指定(リスト型)が可能です。
 「ITA_DFLT_Mode」には複数パーミッションの指定(リスト型)が可能です。','This Playbook file changes permissions specified by "ITA_DFLT_Mode" for the files/directories specified by "ITA_DFLT_Target_Path".
 "ITA_DFLT_Target_Path" can specify multiple file/directories (list type).
-"TA_DFLT_Mode" can specify multiple permissions (list type).
-',NULL,'0',_____DATE_____,1);
+"ITA_DFLT_Mode" can specify multiple permissions (list type).',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(480,_____DATE_____,'INSERT',480,'~[Exastro standard] Modify permissions','Files_file_modify.yml','5019101',NULL,NULL,'5019101','このPlaybook素材は、「ITA_DFLT_Target_Path」で指定したディレクトリ/ファイルを「ITA_DFLT_Mode」で指定したパーミッションに変更します。
 「ITA_DFLT_Target_Path」には複数ディレクトリ/ファイルの指定(リスト型)が可能です。
 「ITA_DFLT_Mode」には複数パーミッションの指定(リスト型)が可能です。','This Playbook file changes permissions specified by "ITA_DFLT_Mode" for the files/directories specified by "ITA_DFLT_Target_Path".
 "ITA_DFLT_Target_Path" can specify multiple file/directories (list type).
-"TA_DFLT_Mode" can specify multiple permissions (list type).
-',NULL,'0',_____DATE_____,1);
+"ITA_DFLT_Mode" can specify multiple permissions (list type).',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(490,'~[Exastro standard] Mount','System_mount.yml','5019101',NULL,NULL,'5019101',NULL,NULL,NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(490,_____DATE_____,'INSERT',490,'~[Exastro standard] Mount','System_mount.yml','5019101',NULL,NULL,'5019101',NULL,NULL,NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(500,'~[Exastro standard] Ping','System_ping.yml','5019101',NULL,NULL,'5019101','このPlaybook素材は、ターゲットホストに接続し、使用可能なPythonの有無を確認します。
@@ -5086,12 +5082,12 @@ INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOU
 「ITA_DFLT_Authorized_Keys」には複数SSH認証鍵の指定(リスト型)が可能です。','This Playbook file removes SSH authentication keys specified by "ITA_DFLT_Authorized_Keys" from users specified by "ITA_DFLT_Users".
 "ITA_DFLT_Users" can specify multiple users (list type).
 "ITA_DFLT_Authorized_Keys" can specify multiple SSH authentication keys (list type).',NULL,'0',_____DATE_____,1);
-INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(530,'~[Exastro standard] Remove RPM key','Packaging_Os_rpm_key_remove.yml','5019101',NULL,NULL,'5019101','このPlaybook素材は、「ITA_DFLT_Gpg_Keys」で指定したGPGキーをrpmデータベースから削除します。
-「ITA_DFLT_Gpg_Keys」には複数GPGキーの指定(リスト型)が可能です。','This Playbok file deletes GPG keys specified by "ITA_DFLT_Gpg_Keys" from the RPM database.
-"ITA_DFLT_Gpg_Keys" can specify multiple GPG keys (list type).',NULL,'0',_____DATE_____,1);
-INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(530,_____DATE_____,'INSERT',530,'~[Exastro standard] Remove RPM key','Packaging_Os_rpm_key_remove.yml','5019101',NULL,NULL,'5019101','このPlaybook素材は、「ITA_DFLT_Gpg_Keys」で指定したGPGキーをrpmデータベースから削除します。
-「ITA_DFLT_Gpg_Keys」には複数GPGキーの指定(リスト型)が可能です。','This Playbok file deletes GPG keys specified by "ITA_DFLT_Gpg_Keys" from the RPM database.
-"ITA_DFLT_Gpg_Keys" can specify multiple GPG keys (list type).',NULL,'0',_____DATE_____,1);
+INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(530,'~[Exastro standard] Remove RPM key','Packaging_Os_rpm_key_remove.yml','5019101',NULL,NULL,'5019101','このPlaybook素材は、「ITA_DFLT_Gpg_Key_Ids」で指定したGPGキーをrpmデータベースから削除します。
+「ITA_DFLT_Gpg_Key_Ids」には複数GPGキーの指定(リスト型)が可能です。','This Playbook file deletes GPG keys specified by "ITA_DFLT_Gpg_Key_Ids" from the RPM database.
+"ITA_DFLT_Gpg_Key_Ids" can specify multiple GPG keys (list type).',NULL,'0',_____DATE_____,1);
+INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(530,_____DATE_____,'INSERT',530,'~[Exastro standard] Remove RPM key','Packaging_Os_rpm_key_remove.yml','5019101',NULL,NULL,'5019101','このPlaybook素材は、「ITA_DFLT_Gpg_Key_Ids」で指定したGPGキーをrpmデータベースから削除します。
+「ITA_DFLT_Gpg_Key_Ids」には複数GPGキーの指定(リスト型)が可能です。','This Playbook file deletes GPG keys specified by "ITA_DFLT_Gpg_Key_Ids" from the RPM database.
+"ITA_DFLT_Gpg_Key_Ids" can specify multiple GPG keys (list type).',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(540,'~[Exastro standard] Remove group','System_group_remove.yml','5019101',NULL,NULL,'5019101','このPlaybook素材は、「ITA_DFLT_Groups」で指定したグループを削除します。
 「ITA_DFLT_Groups」には複数グループの指定(リスト型)が可能です。','This Playbook file deletes groups specified by "ITA_DFLT_Groups".
 "ITA_DFLT_Groups" can specify multiple groups (list type).',NULL,'0',_____DATE_____,1);
@@ -5099,22 +5095,22 @@ INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOU
 「ITA_DFLT_Groups」には複数グループの指定(リスト型)が可能です。','This Playbook file deletes groups specified by "ITA_DFLT_Groups".
 "ITA_DFLT_Groups" can specify multiple groups (list type).',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(550,'~[Exastro standard] Remove user','System_user_remove.yml','5019101',NULL,NULL,'5019101','このPlaybook素材は、「ITA_DFLT_User_Names」で指定したユーザーを削除します。
-「ITA_DFLT_User_Names」には複数サユーザーの指定(リスト型)が可能です。','This Playbook deletes users specified by "ITA_DFLY_User_Names".
+「ITA_DFLT_User_Names」には複数ユーザーの指定(リスト型)が可能です。','This Playbook file deletes users specified by "ITA_DFLT_User_Names".
 "ITA_DFLT_User_Names" can specify multiple users (list type).',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(550,_____DATE_____,'INSERT',550,'~[Exastro standard] Remove user','System_user_remove.yml','5019101',NULL,NULL,'5019101','このPlaybook素材は、「ITA_DFLT_User_Names」で指定したユーザーを削除します。
-「ITA_DFLT_User_Names」には複数サユーザーの指定(リスト型)が可能です。','This Playbook deletes users specified by "ITA_DFLY_User_Names".
+「ITA_DFLT_User_Names」には複数ユーザーの指定(リスト型)が可能です。','This Playbook file deletes users specified by "ITA_DFLT_User_Names".
 "ITA_DFLT_User_Names" can specify multiple users (list type).',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(560,'~[Exastro standard] Restart service','System_service_restarted.yml','5019101',NULL,NULL,'5019101','このPlaybook素材は、「ITA_DFLT_Services」で指定したサービスを再起動します。
-「ITA_DFLT_Services」には複数サービスの指定(リスト型)が可能です。','This Playbook file reboots services specified by "ITA_DFLT_Services".
+「ITA_DFLT_Services」には複数サービスの指定(リスト型)が可能です。','This Playbook file restarts services specified by "ITA_DFLT_Services".
 "ITA_DFLT_Services" can specify multiple services (list type).',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(560,_____DATE_____,'INSERT',560,'~[Exastro standard] Restart service','System_service_restarted.yml','5019101',NULL,NULL,'5019101','このPlaybook素材は、「ITA_DFLT_Services」で指定したサービスを再起動します。
-「ITA_DFLT_Services」には複数サービスの指定(リスト型)が可能です。','This Playbook file reboots services specified by "ITA_DFLT_Services".
+「ITA_DFLT_Services」には複数サービスの指定(リスト型)が可能です。','This Playbook file restarts services specified by "ITA_DFLT_Services".
 "ITA_DFLT_Services" can specify multiple services (list type).',NULL,'0',_____DATE_____,1);
-INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(570,'~[Exastro standard] Restart systemd','System_systemd_restarted.yml','5019101',NULL,NULL,'5019101','このPlaybook素材は、「ITA_DFLT_Services」で指定したサービスを再起動します。
-「ITA_DFLT_Services」には複数サービスの指定(リスト型)が可能です。','This Playbook file reboots services specified by "ITA_DFLT_Services".
+INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(570,'~[Exastro standard] Restart systemd','System_systemd_restarted.yml','5019101',NULL,NULL,'5019101','このPlaybook素材は、systemdの設定を再読み込みした後、「ITA_DFLT_Services」で指定したサービスを再起動します。
+「ITA_DFLT_Services」には複数サービスの指定(リスト型)が可能です。','This Playbook file reloads the systemd configuration and then restarts services specified by "ITA_DFLT_Services".
 "ITA_DFLT_Services" can specify multiple services (list type).',NULL,'0',_____DATE_____,1);
-INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(570,_____DATE_____,'INSERT',570,'~[Exastro standard] Restart systemd','System_systemd_restarted.yml','5019101',NULL,NULL,'5019101','このPlaybook素材は、「ITA_DFLT_Services」で指定したサービスを再起動します。
-「ITA_DFLT_Services」には複数サービスの指定(リスト型)が可能です。','This Playbook file reboots services specified by "ITA_DFLT_Services".
+INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(570,_____DATE_____,'INSERT',570,'~[Exastro standard] Restart systemd','System_systemd_restarted.yml','5019101',NULL,NULL,'5019101','このPlaybook素材は、systemdの設定を再読み込みした後、「ITA_DFLT_Services」で指定したサービスを再起動します。
+「ITA_DFLT_Services」には複数サービスの指定(リスト型)が可能です。','This Playbook file reloads the systemd configuration and then restarts services specified by "ITA_DFLT_Services".
 "ITA_DFLT_Services" can specify multiple services (list type).',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(580,'~[Exastro standard] Run command','Commands_command.yml','5019101',NULL,NULL,'5019101','このPlaybook素材は、変数「ITA_DFLT_Command_String」で与えられた文字列を、Ansibleのcommandモジュールに引き渡して実行する単純なものです。
 またデバッグレベル3(-vvv)の際にタスクの実行結果を表示します。','This Playbook file is simple.
@@ -5140,17 +5136,17 @@ INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLA
 INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(620,_____DATE_____,'INSERT',620,'~[Exastro standard] Start systemd','System_systemd_started.yml','5019101',NULL,NULL,'5019101','このPlaybook素材は、「ITA_DFLT_Services」で指定したサービスを起動します。
 「ITA_DFLT_Services」には複数サービスの指定(リスト型)が可能です。','This Playbook file starts services specified by "ITA_DFLT_Services".
 "ITA_DFLT_Services" can specify multiple services (list type).',NULL,'0',_____DATE_____,1);
-INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(630,'~[Exastro standard] Stop service','System_service_stopped.yml','5019101',NULL,NULL,'5019101','このPlaybook素材は、「ITA_DFLT_Services」で指定したサービスを削除します。
-「ITA_DFLT_Services」には複数サービスの指定(リスト型)が可能です。','This Playbook file deletes services specified by "ITA_DFLT_Services".
+INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(630,'~[Exastro standard] Stop service','System_service_stopped.yml','5019101',NULL,NULL,'5019101','このPlaybook素材は、「ITA_DFLT_Services」で指定したサービスを停止します。
+「ITA_DFLT_Services」には複数サービスの指定(リスト型)が可能です。','This Playbook file stops services specified by "ITA_DFLT_Services".
 "ITA_DFLT_Services" can specify multiple services (list type).',NULL,'0',_____DATE_____,1);
-INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(630,_____DATE_____,'INSERT',630,'~[Exastro standard] Stop service','System_service_stopped.yml','5019101',NULL,NULL,'5019101','このPlaybook素材は、「ITA_DFLT_Services」で指定したサービスを削除します。
-「ITA_DFLT_Services」には複数サービスの指定(リスト型)が可能です。','This Playbook file deletes services specified by "ITA_DFLT_Services".
+INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(630,_____DATE_____,'INSERT',630,'~[Exastro standard] Stop service','System_service_stopped.yml','5019101',NULL,NULL,'5019101','このPlaybook素材は、「ITA_DFLT_Services」で指定したサービスを停止します。
+「ITA_DFLT_Services」には複数サービスの指定(リスト型)が可能です。','This Playbook file stops services specified by "ITA_DFLT_Services".
 "ITA_DFLT_Services" can specify multiple services (list type).',NULL,'0',_____DATE_____,1);
-INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(640,'~[Exastro standard] Stop systemd','System_systemd_stopped.yml','5019101',NULL,NULL,'5019101','このPlaybook素材は、「ITA_DFLT_Services」で指定したサービスを削除します。
-「ITA_DFLT_Services」には複数サービスの指定(リスト型)が可能です。','This Playbook file deletes services specified by "ITA_DFLT_Services".
+INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(640,'~[Exastro standard] Stop systemd','System_systemd_stopped.yml','5019101',NULL,NULL,'5019101','このPlaybook素材は、「ITA_DFLT_Services」で指定したサービスを停止します。
+「ITA_DFLT_Services」には複数サービスの指定(リスト型)が可能です。','This Playbook file stops services specified by "ITA_DFLT_Services".
 "ITA_DFLT_Services" can specify multiple services (list type).',NULL,'0',_____DATE_____,1);
-INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(640,_____DATE_____,'INSERT',640,'~[Exastro standard] Stop systemd','System_systemd_stopped.yml','5019101',NULL,NULL,'5019101','このPlaybook素材は、「ITA_DFLT_Services」で指定したサービスを削除します。
-「ITA_DFLT_Services」には複数サービスの指定(リスト型)が可能です。','This Playbook file deletes services specified by "ITA_DFLT_Services".
+INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(640,_____DATE_____,'INSERT',640,'~[Exastro standard] Stop systemd','System_systemd_stopped.yml','5019101',NULL,NULL,'5019101','このPlaybook素材は、「ITA_DFLT_Services」で指定したサービスを停止します。
+「ITA_DFLT_Services」には複数サービスの指定(リスト型)が可能です。','This Playbook file stops services specified by "ITA_DFLT_Services".
 "ITA_DFLT_Services" can specify multiple services (list type).',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(650,'~[Exastro standard] Text block operation','Files_blockinfile.yml','5019101',NULL,NULL,'5019101',NULL,NULL,NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(650,_____DATE_____,'INSERT',650,'~[Exastro standard] Text block operation','Files_blockinfile.yml','5019101',NULL,NULL,'5019101',NULL,NULL,NULL,'0',_____DATE_____,1);
@@ -5187,14 +5183,14 @@ Similarly, by outputting a file to __conductor_workflowdir__ as a process within
 However, these functions are only enabled when running scripts on a nodes that has access to __workflowdir__ and __conductor_workflowdir__ (e.g. localhost).
 The task results are displayed at debug level 3 (-vvv).',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(680,'~[Exastro standard] Uninstall dnf','Packaging_Os_dnf_absent.yml','5019101',NULL,NULL,NULL,'このPlaybook素材は、「ITA_DFLT_Uninstall_Target_packages」で指定したパッケージをアンインストールします。
-「ITA_DFLT_Uninstall_Target_packages」には複数ファイルの指定(リスト型)が可能です。
+「ITA_DFLT_Uninstall_Target_packages」には複数パッケージの指定(リスト型)が可能です。
 またデバッグレベル3(-vvv)の際にタスクの実行結果を表示します。','This Playbook file uninstalls packages specified by "ITA_DFLT_Uninstall_Target_packages".
-"ITA_DFLT_uninstall_Target_packages" can specify multiple files (list type).
+"ITA_DFLT_Uninstall_Target_packages" can specify multiple packages (list type).
 The task results are displayed at debug level 3 (-vvv).',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(680,_____DATE_____,'INSERT',680,'~[Exastro standard] Uninstall dnf','Packaging_Os_dnf_absent.yml','5019101',NULL,NULL,NULL,'このPlaybook素材は、「ITA_DFLT_Uninstall_Target_packages」で指定したパッケージをアンインストールします。
-「ITA_DFLT_Uninstall_Target_packages」には複数ファイルの指定(リスト型)が可能です。
+「ITA_DFLT_Uninstall_Target_packages」には複数パッケージの指定(リスト型)が可能です。
 またデバッグレベル3(-vvv)の際にタスクの実行結果を表示します。','This Playbook file uninstalls packages specified by "ITA_DFLT_Uninstall_Target_packages".
-"ITA_DFLT_uninstall_Target_packages" can specify multiple files (list type).
+"ITA_DFLT_Uninstall_Target_packages" can specify multiple packages (list type).
 The task results are displayed at debug level 3 (-vvv).',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(690,'~[Exastro standard] Uninstall package','Packaging_Os_package_absent.yml','5019101',NULL,NULL,'5019101',NULL,NULL,NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(690,_____DATE_____,'INSERT',690,'~[Exastro standard] Uninstall package','Packaging_Os_package_absent.yml','5019101',NULL,NULL,'5019101',NULL,NULL,NULL,'0',_____DATE_____,1);
@@ -5251,21 +5247,21 @@ INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOU
 "ITA_DFLT_Scope" specifies the level at which the specified environment variable must be managed.
 Each of the variables can have multiple specified at the same time (list type).',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(780,'~[Exastro standard][Win] Add user','Windows_win_user_create-or-modify.yml',NULL,'5019101',NULL,NULL,'このPlaybook素材は、「ITA_DFLT_Win_User_Name」で指定したユーザーを「ITA_DFLT_Win_Password」で指定したパスワードで「ITA_DFLT_Win_Groups」で指定したグループに作成します。
-「ITA_DFLT_Win_User_Name」には複数テンプレートの指定(リスト型)が可能です。
-「ITA_DFLT_Win_Password」には複数ファイルの指定(リスト型)が可能です。
-「ITA_DFLT_Win_Groups」には複数ファイルの指定(リスト型)が可能です。','This Playbook file creates the users specified with "ITA_DFLT_Win_User_Name" with the passwords specified with "ITA_DFLT_Win_Password". The users are put in the groups specified by "ITA_DFLT_Win_Groups".
-"ITA_DFLT_Win_User_Name" can specify multiple templates (list type).
-"ITA_DFLT_Win_Password" can specify multiple files (list type).
-"ITA_DFLT_Win_Groups" can specify multiple files (list type).',NULL,'0',_____DATE_____,1);
+「ITA_DFLT_Win_User_Name」には複数ユーザー名の指定(リスト型)が可能です。
+「ITA_DFLT_Win_Password」には複数パスワードの指定(リスト型)が可能です。
+「ITA_DFLT_Win_Groups」には複数グループ名の指定(リスト型)が可能です。','This Playbook file creates the users specified with "ITA_DFLT_Win_User_Name" with the passwords specified with "ITA_DFLT_Win_Password". The users are put in the groups specified by "ITA_DFLT_Win_Groups".
+"ITA_DFLT_Win_User_Name" can specify multiple user names (list type).
+"ITA_DFLT_Win_Password" can specify multiple passwords (list type).
+"ITA_DFLT_Win_Groups" can specify multiple group names (list type).',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(780,_____DATE_____,'INSERT',780,'~[Exastro standard][Win] Add user','Windows_win_user_create-or-modify.yml',NULL,'5019101',NULL,NULL,'このPlaybook素材は、「ITA_DFLT_Win_User_Name」で指定したユーザーを「ITA_DFLT_Win_Password」で指定したパスワードで「ITA_DFLT_Win_Groups」で指定したグループに作成します。
-「ITA_DFLT_Win_User_Name」には複数テンプレートの指定(リスト型)が可能です。
-「ITA_DFLT_Win_Password」には複数ファイルの指定(リスト型)が可能です。
-「ITA_DFLT_Win_Groups」には複数ファイルの指定(リスト型)が可能です。','This Playbook file creates the users specified with "ITA_DFLT_Win_User_Name" with the passwords specified with "ITA_DFLT_Win_Password". The users are put in the groups specified by "ITA_DFLT_Win_Groups".
-"ITA_DFLT_Win_User_Name" can specify multiple templates (list type).
-"ITA_DFLT_Win_Password" can specify multiple files (list type).
-"ITA_DFLT_Win_Groups" can specify multiple files (list type).',NULL,'0',_____DATE_____,1);
-INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(790,'~[Exastro standard][Win] Check Domain','Windows_win_domain.yml',NULL,'5019101',NULL,NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
-INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(790,_____DATE_____,'INSERT',790,'~[Exastro standard][Win] Check Domain','Windows_win_domain.yml',NULL,'5019101',NULL,NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
+「ITA_DFLT_Win_User_Name」には複数ユーザー名の指定(リスト型)が可能です。
+「ITA_DFLT_Win_Password」には複数パスワードの指定(リスト型)が可能です。
+「ITA_DFLT_Win_Groups」には複数グループ名の指定(リスト型)が可能です。','This Playbook file creates the users specified with "ITA_DFLT_Win_User_Name" with the passwords specified with "ITA_DFLT_Win_Password". The users are put in the groups specified by "ITA_DFLT_Win_Groups".
+"ITA_DFLT_Win_User_Name" can specify multiple user names (list type).
+"ITA_DFLT_Win_Password" can specify multiple passwords (list type).
+"ITA_DFLT_Win_Groups" can specify multiple group names (list type).',NULL,'0',_____DATE_____,1);
+INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(790,'~[Exastro standard][Win] Create Domain','Windows_win_domain.yml',NULL,'5019101',NULL,NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
+INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(790,_____DATE_____,'INSERT',790,'~[Exastro standard][Win] Create Domain','Windows_win_domain.yml',NULL,'5019101',NULL,NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(800,'~[Exastro standard][Win] Copy file','Windows_win_copy_local-to-remote.yml',NULL,'5019101',NULL,NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(800,_____DATE_____,'INSERT',800,'~[Exastro standard][Win] Copy file','Windows_win_copy_local-to-remote.yml',NULL,'5019101',NULL,NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(810,'~[Exastro standard][Win] Copy file (within host)','Windows_win_copy_remote-to-remote.yml',NULL,'5019101',NULL,NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
@@ -5275,35 +5271,35 @@ INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOU
 INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(830,'~[Exastro standard][Win] Delete File/Folder','Windows_win_file_remove.yml',NULL,'5019101',NULL,NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(830,_____DATE_____,'INSERT',830,'~[Exastro standard][Win] Delete File/Folder','Windows_win_file_remove.yml',NULL,'5019101',NULL,NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(840,'~[Exastro standard][Win] Delete shared settings','Windows_win_share_delete.yml',NULL,'5019101',NULL,NULL,'このPlaybook素材は、「ITA_DFLT_Share_Name」に指定された共有を削除します。
-「ITA_DFLT_Share_Name」には複数の共有名の指定(リスト型)が可能です。','This Playbook file deletes shared names specified by "ITA_DFLY_Share_Name".
+「ITA_DFLT_Share_Name」には複数の共有名の指定(リスト型)が可能です。','This Playbook file deletes shared names specified by "ITA_DFLT_Share_Name".
 "ITA_DFLT_Share_Name" can specify multiple share names (list type).',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(840,_____DATE_____,'INSERT',840,'~[Exastro standard][Win] Delete shared settings','Windows_win_share_delete.yml',NULL,'5019101',NULL,NULL,'このPlaybook素材は、「ITA_DFLT_Share_Name」に指定された共有を削除します。
-「ITA_DFLT_Share_Name」には複数の共有名の指定(リスト型)が可能です。','This Playbook file deletes shared names specified by "ITA_DFLY_Share_Name".
+「ITA_DFLT_Share_Name」には複数の共有名の指定(リスト型)が可能です。','This Playbook file deletes shared names specified by "ITA_DFLT_Share_Name".
 "ITA_DFLT_Share_Name" can specify multiple share names (list type).',NULL,'0',_____DATE_____,1);
-INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(850,'~[Exastro standard][Win] Deploy template file','Windows_win_template.yml',NULL,'5019101',NULL,NULL,'このPlaybook素材は、「ITA_DFLT_Win_Template_Src_File_Name」で指定したテンプレートを「ITA_DFLT_Win_Template_Dest_Directory」で指定したファイルに配置します。
+INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(850,'~[Exastro standard][Win] Deploy template file','Windows_win_template.yml',NULL,'5019101',NULL,NULL,'このPlaybook素材は、「ITA_DFLT_Win_Template_Src_File_Name」で指定したテンプレートを「ITA_DFLT_Win_Template_Dest_Directory」で指定したディレクトリに配置します。
 「ITA_DFLT_Win_Template_Src_File_Name」には複数テンプレートの指定(リスト型)が可能です。
-「ITA_DFLT_Win_Template_Dest_Directory」には複数ファイルの指定(リスト型)が可能です。','This Playbook file deploys Templates specified by "ITA_DFLT_Win_Template_Dest_Director" to files specified by "ITA_DFLT_Win_Template_Dest_Directory".
+「ITA_DFLT_Win_Template_Dest_Directory」には複数ディレクトリの指定(リスト型)が可能です。','This Playbook file deploys templates specified by "ITA_DFLT_Win_Template_Src_File_Name" to directories specified by "ITA_DFLT_Win_Template_Dest_Directory".
 "ITA_DFLT_Win_Template_Src_File_Name" can specify multiple templates (list type).
-"ITA_DFLT_Win_Template_Dest_Directory" can specify multiple files (list type).',NULL,'0',_____DATE_____,1);
-INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(850,_____DATE_____,'INSERT',850,'~[Exastro standard][Win] Deploy template file','Windows_win_template.yml',NULL,'5019101',NULL,NULL,'このPlaybook素材は、「ITA_DFLT_Win_Template_Src_File_Name」で指定したテンプレートを「ITA_DFLT_Win_Template_Dest_Directory」で指定したファイルに配置します。
+"ITA_DFLT_Win_Template_Dest_Directory" can specify multiple directories (list type).',NULL,'0',_____DATE_____,1);
+INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(850,_____DATE_____,'INSERT',850,'~[Exastro standard][Win] Deploy template file','Windows_win_template.yml',NULL,'5019101',NULL,NULL,'このPlaybook素材は、「ITA_DFLT_Win_Template_Src_File_Name」で指定したテンプレートを「ITA_DFLT_Win_Template_Dest_Directory」で指定したディレクトリに配置します。
 「ITA_DFLT_Win_Template_Src_File_Name」には複数テンプレートの指定(リスト型)が可能です。
-「ITA_DFLT_Win_Template_Dest_Directory」には複数ファイルの指定(リスト型)が可能です。','This Playbook file deploys Templates specified by "ITA_DFLT_Win_Template_Dest_Director" to files specified by "ITA_DFLT_Win_Template_Dest_Directory".
+「ITA_DFLT_Win_Template_Dest_Directory」には複数ディレクトリの指定(リスト型)が可能です。','This Playbook file deploys templates specified by "ITA_DFLT_Win_Template_Src_File_Name" to directories specified by "ITA_DFLT_Win_Template_Dest_Directory".
 "ITA_DFLT_Win_Template_Src_File_Name" can specify multiple templates (list type).
-"ITA_DFLT_Win_Template_Dest_Directory" can specify multiple files (list type).',NULL,'0',_____DATE_____,1);
+"ITA_DFLT_Win_Template_Dest_Directory" can specify multiple directories (list type).',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(860,'~[Exastro standard][Win] Disable service startup','Windows_win_service_disabled.yml',NULL,'5019101',NULL,NULL,'このPlaybook素材は、「ITA_DFLT_Service_Name」で指定されたサービスの自動起動を無効にします。
-「ITA_DFLT_Service_Name」には複数のサービス名の指定(リスト型)が可能です。','This Playbook file deactivates "automatic boot mode" for the services specified by "ITA_DFL_Service_Name".
+「ITA_DFLT_Service_Name」には複数のサービス名の指定(リスト型)が可能です。','This Playbook file deactivates "automatic boot mode" for the services specified by "ITA_DFLT_Service_Name".
 "ITA_DFLT_Service_Name" can specify multiple service names (list type).',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(860,_____DATE_____,'INSERT',860,'~[Exastro standard][Win] Disable service startup','Windows_win_service_disabled.yml',NULL,'5019101',NULL,NULL,'このPlaybook素材は、「ITA_DFLT_Service_Name」で指定されたサービスの自動起動を無効にします。
-「ITA_DFLT_Service_Name」には複数のサービス名の指定(リスト型)が可能です。','This Playbook file deactivates "automatic boot mode" for the services specified by "ITA_DFL_Service_Name".
+「ITA_DFLT_Service_Name」には複数のサービス名の指定(リスト型)が可能です。','This Playbook file deactivates "automatic boot mode" for the services specified by "ITA_DFLT_Service_Name".
 "ITA_DFLT_Service_Name" can specify multiple service names (list type).',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(870,'~[Exastro standard][Win] Download URL','Windows_win_get_url.yml',NULL,'5019101',NULL,NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(870,_____DATE_____,'INSERT',870,'~[Exastro standard][Win] Download URL','Windows_win_get_url.yml',NULL,'5019101',NULL,NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(880,'~[Exastro standard][Win] Enable service startup','Windows_win_service_enabled.yml',NULL,'5019101',NULL,NULL,'このPlaybook素材は、「ITA_DFLT_Service_Name」で指定されたサービスの起動モードを自動にします。
 「ITA_DFLT_Service_Name」には複数のサービス名の指定(リスト型)が可能です。','This Playbook file changes the boot mode for services specified by "ITA_DFLT_Service_Name" to automatic.
-"Ita_DFLT_Service_Name" can specify multiple service names (list type).',NULL,'0',_____DATE_____,1);
+"ITA_DFLT_Service_Name" can specify multiple service names (list type).',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(880,_____DATE_____,'INSERT',880,'~[Exastro standard][Win] Enable service startup','Windows_win_service_enabled.yml',NULL,'5019101',NULL,NULL,'このPlaybook素材は、「ITA_DFLT_Service_Name」で指定されたサービスの起動モードを自動にします。
 「ITA_DFLT_Service_Name」には複数のサービス名の指定(リスト型)が可能です。','This Playbook file changes the boot mode for services specified by "ITA_DFLT_Service_Name" to automatic.
-"Ita_DFLT_Service_Name" can specify multiple service names (list type).',NULL,'0',_____DATE_____,1);
+"ITA_DFLT_Service_Name" can specify multiple service names (list type).',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(890,'~[Exastro standard][Win] Get file status','Windows_win_stat.yml',NULL,'5019101',NULL,NULL,'このPlaybook素材は、「ITA_DFLT_File_Path」で指定されたファイルパスの情報を取得します。
 「ITA_DFLT_File_Path」には複数のファイルパスの指定(リスト型)が可能です。','This Playbook file acquires the file path information specified by "ITA_DFLT_File_Path".
 "ITA_DFLT_File_Path" can specify multiple file paths (list type).',NULL,'0',_____DATE_____,1);
@@ -5360,7 +5356,7 @@ The variables are as follows:
 "ITA_DFLT_Filelist_Permission": Access base list
 "ITA_DFLT_Full_Control": List of users who need to get full access (divide with comma).※1
 "ITA_DFLT_Change": List over users who will get access to read and write (divide with comma).※1
-"ITA__DFLT_Read_Only": List over users who will get access to read (divide with comma).※1
+"ITA_DFLT_Read_Only": List over users who will get access to read (divide with comma).※1
 Each of the variables can have multiple specified at the same time (list type).
 ※1 Assumes that null link is set to "True" in the Automatic substitute value registration settings.',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(940,_____DATE_____,'INSERT',940,'~[Exastro standard][Win] Modify/create shared settings','Windows_win_share_create-or-modify.yml',NULL,'5019101',NULL,NULL,'このPlaybook素材は、Windows 上のフォルダに対して共有設定を行います。
@@ -5381,7 +5377,7 @@ The variables are as follows:
 "ITA_DFLT_Filelist_Permission": Access base list
 "ITA_DFLT_Full_Control": List of users who need to get full access (divide with comma).※1
 "ITA_DFLT_Change": List over users who will get access to read and write (divide with comma).※1
-"ITA__DFLT_Read_Only": List over users who will get access to read (divide with comma).※1
+"ITA_DFLT_Read_Only": List over users who will get access to read (divide with comma).※1
 Each of the variables can have multiple specified at the same time (list type).
 ※1 Assumes that null link is set to "True" in the Automatic substitute value registration settings.',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(950,'~[Exastro standard][Win] Mount','Windows_win_disk_image_mount.yml',NULL,'5019101',NULL,NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
@@ -5414,20 +5410,20 @@ INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOU
 各変数には複数指定(リスト型)が可能です。','This Playbook file removes the environment variable names specified by "ITA_DFLT_Environment_Name" with the path element specified by "ITA_DFLT_Elements".
 "ITA_DFLT_Scope" specifies the level at which the specified environment variable must be managed.
 Each of the variables can have multiple specified at the same time (list type).',NULL,'0',_____DATE_____,1);
-INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(1000,'~[Exastro standard][Win] Remove registry','Windows_win_regedit_delete.yml',NULL,'5019101',NULL,NULL,'このPlaybook素材は、レジストリ キーを削除します。
+INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(1000,'~[Exastro standard][Win] Remove registry','Windows_win_regedit_delete.yml',NULL,'5019101',NULL,NULL,'このPlaybook素材は、レジストリ値（エントリ）を削除します。
 各変数について下記します。
 「ITA_DFLT_Regedit_Path」：レジストリ パスの名前
 「ITA_DFLT_Regedit_Name」：レジストリ エントリの名前
-各変数には複数指定(リスト型)が可能です。','This Playbook file deletes the Registry key.
+各変数には複数指定(リスト型)が可能です。','This Playbook file deletes the Registry value (entry).
 The variables are as follows:
 "ITA_DFLT_Regedit_Path": Registry Path name
 "ITA_DFLT_Regedit_Name": Registry Entry name
 Each of the variables can have multiple specified at the same time (list type).',NULL,'0',_____DATE_____,1);
-INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(1000,_____DATE_____,'INSERT',1000,'~[Exastro standard][Win] Remove registry','Windows_win_regedit_delete.yml',NULL,'5019101',NULL,NULL,'このPlaybook素材は、レジストリ キーを削除します。
+INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(1000,_____DATE_____,'INSERT',1000,'~[Exastro standard][Win] Remove registry','Windows_win_regedit_delete.yml',NULL,'5019101',NULL,NULL,'このPlaybook素材は、レジストリ値（エントリ）を削除します。
 各変数について下記します。
 「ITA_DFLT_Regedit_Path」：レジストリ パスの名前
 「ITA_DFLT_Regedit_Name」：レジストリ エントリの名前
-各変数には複数指定(リスト型)が可能です。','This Playbook file deletes the Registry key.
+各変数には複数指定(リスト型)が可能です。','This Playbook file deletes the Registry value (entry).
 The variables are as follows:
 "ITA_DFLT_Regedit_Path": Registry Path name
 "ITA_DFLT_Regedit_Name": Registry Entry name
@@ -5439,10 +5435,10 @@ INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOU
 「ITA_DFLT_Win_User_Name」には複数のユーザ名の指定(リスト型)が可能です。','This Playbook file deletes users specified by "ITA_DFLT_Win_User_Name".
 "ITA_DFLT_Win_User_Name" can specify multiple user names (list type).',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(1020,'~[Exastro standard][Win] Restart service','Windows_win_service_restarted.yml',NULL,'5019101',NULL,NULL,'このPlaybook素材は、「ITA_DFLT_Service_Name」で指定されたサービスを再起動します。
-「ITA_DFLT_Service_Name」には複数のサービス名の指定(リスト型)が可能です。','This Playbook file reboots services specified by "ITA_DFLT_Service_Name".
+「ITA_DFLT_Service_Name」には複数のサービス名の指定(リスト型)が可能です。','This Playbook file restarts services specified by "ITA_DFLT_Service_Name".
 "ITA_DFLT_Service_Name" can specify multiple service names (list type).',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(1020,_____DATE_____,'INSERT',1020,'~[Exastro standard][Win] Restart service','Windows_win_service_restarted.yml',NULL,'5019101',NULL,NULL,'このPlaybook素材は、「ITA_DFLT_Service_Name」で指定されたサービスを再起動します。
-「ITA_DFLT_Service_Name」には複数のサービス名の指定(リスト型)が可能です。','This Playbook file reboots services specified by "ITA_DFLT_Service_Name".
+「ITA_DFLT_Service_Name」には複数のサービス名の指定(リスト型)が可能です。','This Playbook file restarts services specified by "ITA_DFLT_Service_Name".
 "ITA_DFLT_Service_Name" can specify multiple service names (list type).',NULL,'0',_____DATE_____,1);
 INSERT IGNORE INTO T_ANSL_MATL_COLL (PLAYBOOK_MATTER_ID,PLAYBOOK_MATTER_NAME,PLAYBOOK_MATTER_FILE,TARGET_LINUX,TARGET_WINDOWS,TARGET_OTHER,PYTHON_NECESSARY,DESCRIPTION,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(1030,'~[Exastro standard][Win] Stop service','Windows_win_service_stopped.yml',NULL,'5019101',NULL,NULL,'このPlaybook素材は、「ITA_DFLT_Service_Name」で指定されたサービスを停止します。
 「ITA_DFLT_Service_Name」には複数のサービス名の指定(リスト型)が可能です。','This Playbook file stops services specified by "ITA_DFLT_Service_Name".

@@ -1,0 +1,3204 @@
+{
+    "20202": {
+        "10": [
+            {
+                "10-2": [
+                    "10",
+                    {
+                        "JOURNAL_SEQ_NO": "10-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "10",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] API call/Basic authentication",
+                        "PLAYBOOK_MATTER_FILE": "Net_Tools_Basics_uri_get-workspaces_using_basic.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Net_Tools_Basics_uri_get-workspaces_using_basic.yml",
+                            "/playbook_file/10/old/10-2/",
+                            "/playbook_file/10/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "20": [
+            {
+                "20-2": [
+                    "20",
+                    {
+                        "JOURNAL_SEQ_NO": "20-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "20",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] API call/OAuth authentication",
+                        "PLAYBOOK_MATTER_FILE": "Net_Tools_Basics_uri_get-workspaces_using_oauth.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Net_Tools_Basics_uri_get-workspaces_using_oauth.yml",
+                            "/playbook_file/20/old/20-2/",
+                            "/playbook_file/20/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "30": [
+            {
+                "30-2": [
+                    "30",
+                    {
+                        "JOURNAL_SEQ_NO": "30-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "30",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Add Authorized key",
+                        "PLAYBOOK_MATTER_FILE": "System_authorized_key_add.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Users」で指定したユーザーに「ITA_DFLT_Authorized_Keys」で指定したSSH認証鍵を登録します。\n「ITA_DFLT_Users」には複数ユーザーの指定(リスト型)が可能です。\n「ITA_DFLT_Authorized_Keys」には複数SSH認証鍵の指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file registers SSH authentication keys specified by \"ITA_DFLT_Authorized_Keys\" to users specified by \"ITA_DFLT_Users\".\n\"ITA_DFLT_Users\" can specify multiple users (list type).\n\"ITA_DFLT_Authorized_Keys\" can specify multiple SSH authentication keys (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_authorized_key_add.yml",
+                            "/playbook_file/30/old/30-2/",
+                            "/playbook_file/30/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "40": [
+            {
+                "40-2": [
+                    "40",
+                    {
+                        "JOURNAL_SEQ_NO": "40-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "40",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Add RPM key",
+                        "PLAYBOOK_MATTER_FILE": "Packaging_Os_rpm_key_add.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Gpg_Keys」で指定したGPGキーをrpmデータベースに登録します。\n「ITA_DFLT_Gpg_Keys」には複数GPGキーの指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file registers GPG keys specified by \"ITA_DFLT_Gpg_Keys\" to the RPM database.\n\"ITA_DFLT_Gpg_Keys\" can specify multiple GPG keys (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Packaging_Os_rpm_key_add.yml",
+                            "/playbook_file/40/old/40-2/",
+                            "/playbook_file/40/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "50": [
+            {
+                "50-2": [
+                    "50",
+                    {
+                        "JOURNAL_SEQ_NO": "50-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "50",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Add group",
+                        "PLAYBOOK_MATTER_FILE": "System_group_add.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Groups」で指定したグループを登録します。\n「ITA_DFLT_Groups」には複数グループの指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file registers groups specified by \"ITA_DFLT_Groups\".\n\"ITA_DFLT_Groups\" can specify multiple groups (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_group_add.yml",
+                            "/playbook_file/50/old/50-2/",
+                            "/playbook_file/50/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "60": [
+            {
+                "60-2": [
+                    "60",
+                    {
+                        "JOURNAL_SEQ_NO": "60-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "60",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Add user",
+                        "PLAYBOOK_MATTER_FILE": "System_user_add.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_User_Names」で指定したユーザーを「ITA_DFLT_User_Group_Names」で指定したグループに登録します。\n「ITA_DFLT_User_Names」には複数ユーザーの指定(リスト型)が可能です。\n「ITA_DFLT_User_Group_Names」には複数グループの指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file registers users specified by \"ITA_DFLT_User_Names\" to groups specified by \"ITA_DFLT_User_Group_Names\".\n\"ITA_DFLT_User_Names\" can specify multiple users (list type).\n\"ITA_DFLT_User_Group_Names\" can specify multiple groups (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_user_add.yml",
+                            "/playbook_file/60/old/60-2/",
+                            "/playbook_file/60/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "70": [
+            {
+                "70-2": [
+                    "70",
+                    {
+                        "JOURNAL_SEQ_NO": "70-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "70",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Copy directory (WD to CWD)",
+                        "PLAYBOOK_MATTER_FILE": "Files_copy_workdir-copy-wd-to-cwd.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": "このPlaybook素材は、\n__workflowdir__に格納されているファイルを__conductor_workflowdir__にコピーします。\n__conductor_workflowdir__のファイルは、Movement終了後に後続のMvemenetからアクセス可能です。\nMovement間を超えて情報伝達が必要な場合に役立ちます。\nなお、このPlaybook素材には外部からコントロールする変数が含まれていないので、単独でMovementに紐づけての利用はお勧めしません。\n他のPlaybook素材と併せて利用してください。",
+                        "DESCRIPTION_EN": "This Playbook file copies files stored in \"__workflowdir__\" to \"__conductor_workflowdir__\".\n The \"__conductor_workflowdir__\" files are accesible from subsequent Movements are the Movement ends.\nUse this for transfering information over Movements.\nNote that as this Playbook file does not contain variables that can be externally controlled, we do not recommend using it linked to a Movement alone, but together with other Playbook files.",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Files_copy_workdir-copy-wd-to-cwd.yml",
+                            "/playbook_file/70/old/70-2/",
+                            "/playbook_file/70/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "80": [
+            {
+                "80-2": [
+                    "80",
+                    {
+                        "JOURNAL_SEQ_NO": "80-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "80",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Copy file",
+                        "PLAYBOOK_MATTER_FILE": "Files_copy_local-to-remote.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Src_Files」で指定したローカルのファイルを「ITA_DFLT_Dest_Files」で指定したリモートのファイルにコピーします。\n「ITA_DFLT_Src_Files」には複数ファイルの指定(リスト型)が可能です。\n「ITA_DFLT_Dest_Files」には複数ファイルの指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file copies local files specified by \"ITA_DFLT_Src_Files\" to remote files specified by \"ITA_DFLT_Dest_Files\".\n\"ITA_DFLT_Src_Files\" can specify multiple files (list type).\n\"ITA_DFLT_Dest_Files\" can specify multiple files (list type).\n",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Files_copy_local-to-remote.yml",
+                            "/playbook_file/80/old/80-2/",
+                            "/playbook_file/80/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "90": [
+            {
+                "90-2": [
+                    "90",
+                    {
+                        "JOURNAL_SEQ_NO": "90-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "90",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Copy file (within host)",
+                        "PLAYBOOK_MATTER_FILE": "Files_copy_remote-to-remote.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Src_Files」で指定したリモートのファイルを「ITA_DFLT_Dest_Files」で指定したリモートのファイルにコピーします。\n「ITA_DFLT_Src_Files」には複数ファイルの指定(リスト型)が可能です。\n「ITA_DFLT_Dest_Files」には複数ファイルの指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file copies remote files specified by \"ITA_DFLT_Src_Files\" to remote files specified by \"ITA_DFLT_Dest_Files\".\n\"ITA_DFLT_Src_Files\" can specify multiple files (list type).\n\"ITA_DFLT_Dest_Files\" can specify multiple files (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Files_copy_remote-to-remote.yml",
+                            "/playbook_file/90/old/90-2/",
+                            "/playbook_file/90/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "100": [
+            {
+                "100-2": [
+                    "100",
+                    {
+                        "JOURNAL_SEQ_NO": "100-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "100",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Create directory",
+                        "PLAYBOOK_MATTER_FILE": "Files_file_mkdir.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Create_Directories」で指定したディレクトリを作成します。\n「ITA_DFLT_Create_Directories」には複数ディレクトリの指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file creates directories specified by \"ITA_DFLT_Create_Directories\".\n\"ITA_DFLT_Create_Directories\" can specify multiple directories (list type).\n",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Files_file_mkdir.yml",
+                            "/playbook_file/100/old/100-2/",
+                            "/playbook_file/100/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "110": [
+            {
+                "110-2": [
+                    "110",
+                    {
+                        "JOURNAL_SEQ_NO": "110-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "110",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Debug message (-vvv display)",
+                        "PLAYBOOK_MATTER_FILE": "Utilities_Logic_debug_verbosity-3.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Utilities_Logic_debug_verbosity-3.yml",
+                            "/playbook_file/110/old/110-2/",
+                            "/playbook_file/110/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "120": [
+            {
+                "120-2": [
+                    "120",
+                    {
+                        "JOURNAL_SEQ_NO": "120-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "120",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Debug message (constant output)",
+                        "PLAYBOOK_MATTER_FILE": "Utilities_Logic_debug_verbosity-0.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Utilities_Logic_debug_verbosity-0.yml",
+                            "/playbook_file/120/old/120-2/",
+                            "/playbook_file/120/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "130": [
+            {
+                "130-2": [
+                    "130",
+                    {
+                        "JOURNAL_SEQ_NO": "130-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "130",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Delete files/Directories",
+                        "PLAYBOOK_MATTER_FILE": "Files_file_remove.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Remove_File_or_Directory」で指定したファイルまたはディレクトリを削除します。\n「ITA_DFLT_Remove_File_or_Directory」には複数ファイルまたはディレクトリの指定(リスト型)が可能です。\nまたデバッグレベル3(-vvv)の際にタスクの実行結果を表示します。",
+                        "DESCRIPTION_EN": "This Playbook file deletes files or directories specified by \"ITA_DFLT_Remove_File_or_Directory\".\n\"ITA_DFLT_Remove_File_or_Directory\" can specify multiple files or directories (list type).\nThe task results are displayed at debug level 3 (-vvv).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Files_file_remove.yml",
+                            "/playbook_file/130/old/130-2/",
+                            "/playbook_file/130/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "140": [
+            {
+                "140-2": [
+                    "140",
+                    {
+                        "JOURNAL_SEQ_NO": "140-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "140",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Delete sysctl",
+                        "PLAYBOOK_MATTER_FILE": "System_sysctl_absent.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Parameter_Names」で指定したパラメータ名をsysctlから削除します。\n「ITA_DFLT_Parameter_Names」には複数パラメータ名の指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file removes Parameter names specified by \"ITA_DFLT_Parameter_Names\" from sysctl.\n\"ITA_DFLT_Parameter_Names\" can specify multiple parameter names(list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_sysctl_absent.yml",
+                            "/playbook_file/140/old/140-2/",
+                            "/playbook_file/140/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "150": [
+            {
+                "150-2": [
+                    "150",
+                    {
+                        "JOURNAL_SEQ_NO": "150-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "150",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Deploy template file",
+                        "PLAYBOOK_MATTER_FILE": "Files_template.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Template_Src_Files」で指定したテンプレートを「ITA_DFLT_Template_Dest_Files」で指定したファイルに配置します。\n「ITA_DFLT_Template_Src_Files」には複数テンプレートの指定(リスト型)が可能です。\n「ITA_DFLT_Template_Dest_Files」には複数ファイルの指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file deploys Templates specified by \"ITA_DFLT_Template_Src_Files\" to files specified by \"ITA_DFLT_Template_Dest_Files\".\n\"ITA_DFLT_Template_Src_Files\" can specify multiple templates (list type).\n\"ITA_DFLT_Template_Dest_Files\" can specify multiple files (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Files_template.yml",
+                            "/playbook_file/150/old/150-2/",
+                            "/playbook_file/150/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "160": [
+            {
+                "160-2": [
+                    "160",
+                    {
+                        "JOURNAL_SEQ_NO": "160-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "160",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Deploy/unzip files",
+                        "PLAYBOOK_MATTER_FILE": "Files_unarchive.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Target_File_Name」で指定したアーカイブファイルを「ITA_DFLT_Dest_Directory」で指定したディレクトリに解凍します。\n「ITA_DFLT_Target_File_Name」には複数の圧縮されたファイルの指定(リスト型)が可能です。\n「ITA_DFLT_Dest_Directory」には複数ディレクトリの指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file unzips archived files specified by \"ITA_DFLT_Target_File_Name\" and extracts the files to directories specified by \"ITA_DFLT_Dest_Directory\".\n\"ITA_DFLT_Target_File_Name\" can specify multiple compressed files (list type).\n\"ITA_DFLT_Dest_Directory\" can specify multiple directories (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Files_unarchive.yml",
+                            "/playbook_file/160/old/160-2/",
+                            "/playbook_file/160/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "180": [
+            {
+                "180-2": [
+                    "180",
+                    {
+                        "JOURNAL_SEQ_NO": "180-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "180",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Disable service startup",
+                        "PLAYBOOK_MATTER_FILE": "System_service_disabled.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Services」で指定したサービスに対してサーバ起動時に起動する設定を解除します。\n「ITA_DFLT_Services」には複数サービスの指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file removes the configuration that makes services specified by \"ITA_DFLT_Services\" to run on server startup.\nITA_DFLT_Services\" can specify multiple services (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_service_disabled.yml",
+                            "/playbook_file/180/old/180-2/",
+                            "/playbook_file/180/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "190": [
+            {
+                "190-2": [
+                    "190",
+                    {
+                        "JOURNAL_SEQ_NO": "190-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "190",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Disable systemd startup",
+                        "PLAYBOOK_MATTER_FILE": "System_systemd_disabled.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Services」で指定したサービスに対してサーバ起動時に起動する設定を解除します。\n「ITA_DFLT_Services」には複数サービスの指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file removes the configuration that makes services specified by \"ITA_DFLT_Services\" to run on server startup.\nITA_DFLT_Services\" can specify multiple services (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_systemd_disabled.yml",
+                            "/playbook_file/190/old/190-2/",
+                            "/playbook_file/190/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "200": [
+            {
+                "200-2": [
+                    "200",
+                    {
+                        "JOURNAL_SEQ_NO": "200-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "200",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Download URL",
+                        "PLAYBOOK_MATTER_FILE": "Net_Tools_Basics_get_url.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Net_Tools_Basics_get_url.yml",
+                            "/playbook_file/200/old/200-2/",
+                            "/playbook_file/200/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "230": [
+            {
+                "230-2": [
+                    "230",
+                    {
+                        "JOURNAL_SEQ_NO": "230-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "230",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Enable service startup",
+                        "PLAYBOOK_MATTER_FILE": "System_service_enabled.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Services」で指定したサービスに対してサーバ起動時に起動する設定をします。\n「ITA_DFLT_Services」には複数サービスの指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file configures services specified by \"ITA_DFLT_Services\" to run on server startup.\n\"ITA_DFLT_Services\" can specify multiple services (list type).\n",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_service_enabled.yml",
+                            "/playbook_file/230/old/230-2/",
+                            "/playbook_file/230/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "240": [
+            {
+                "240-2": [
+                    "240",
+                    {
+                        "JOURNAL_SEQ_NO": "240-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "240",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Enable systemd startup",
+                        "PLAYBOOK_MATTER_FILE": "System_systemd_enabled.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Services」で指定したサービスに対してサーバ起動時に起動する設定をします。\n「ITA_DFLT_Services」には複数サービスの指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file configures services specified by \"ITA_DFLT_Services\" to run on server startup.\n\"ITA_DFLT_Services\" can specify multiple services (list type).\n",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_systemd_enabled.yml",
+                            "/playbook_file/240/old/240-2/",
+                            "/playbook_file/240/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "250": [
+            {
+                "250-2": [
+                    "250",
+                    {
+                        "JOURNAL_SEQ_NO": "250-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "250",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Fetch files",
+                        "PLAYBOOK_MATTER_FILE": "Files_fetch.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Target_File_Name」で指定したファイルを__workflowdir__に格納します。\n「ITA_DFLT_Target_File_Name」には複数ファイルの指定(リスト型)が可能です。\n__workflowdir__に格納されたファイルは、Movement終了後に結果データとして取得することが可能です。\nまたデバッグレベル3(-vvv)の際にタスクの実行結果を表示します。",
+                        "DESCRIPTION_EN": "This Playbook file stores files specified by \"ITA_DFLT_Target_File_Name\" to \"__workflowdir__\".\n\"ITA_DFLT_Target_File_Name\" can specify multiple files (list type).\nFiles stored in \"__workflowdir__\" can be retrieved as result data after the Movement ends.\nThe task results are displayed at debug level 3 (-vvv).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Files_fetch.yml",
+                            "/playbook_file/250/old/250-2/",
+                            "/playbook_file/250/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "260": [
+            {
+                "260-2": [
+                    "260",
+                    {
+                        "JOURNAL_SEQ_NO": "260-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "260",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Find Filemaster",
+                        "PLAYBOOK_MATTER_FILE": "Files_stat.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Files_stat.yml",
+                            "/playbook_file/260/old/260-2/",
+                            "/playbook_file/260/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "270": [
+            {
+                "270-2": [
+                    "270",
+                    {
+                        "JOURNAL_SEQ_NO": "270-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "270",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Find file list",
+                        "PLAYBOOK_MATTER_FILE": "Files_find.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Files_find.yml",
+                            "/playbook_file/270/old/270-2/",
+                            "/playbook_file/270/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "280": [
+            {
+                "280-2": [
+                    "280",
+                    {
+                        "JOURNAL_SEQ_NO": "280-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "280",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Get entry(ahosts)",
+                        "PLAYBOOK_MATTER_FILE": "System_getent_ahosts.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_getent_ahosts.yml",
+                            "/playbook_file/280/old/280-2/",
+                            "/playbook_file/280/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "290": [
+            {
+                "290-2": [
+                    "290",
+                    {
+                        "JOURNAL_SEQ_NO": "290-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "290",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Get entry(ahostsv4)",
+                        "PLAYBOOK_MATTER_FILE": "System_getent_ahostsv4.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_getent_ahostsv4.yml",
+                            "/playbook_file/290/old/290-2/",
+                            "/playbook_file/290/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "300": [
+            {
+                "300-2": [
+                    "300",
+                    {
+                        "JOURNAL_SEQ_NO": "300-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "300",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Get entry(ahostsv6)",
+                        "PLAYBOOK_MATTER_FILE": "System_getent_ahostsv6.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_getent_ahostsv6.yml",
+                            "/playbook_file/300/old/300-2/",
+                            "/playbook_file/300/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "310": [
+            {
+                "310-2": [
+                    "310",
+                    {
+                        "JOURNAL_SEQ_NO": "310-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "310",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Get entry(aliases)",
+                        "PLAYBOOK_MATTER_FILE": "System_getent_aliases.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_getent_aliases.yml",
+                            "/playbook_file/310/old/310-2/",
+                            "/playbook_file/310/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "320": [
+            {
+                "320-2": [
+                    "320",
+                    {
+                        "JOURNAL_SEQ_NO": "320-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "320",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Get entry(ethers)",
+                        "PLAYBOOK_MATTER_FILE": "System_getent_ethers.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_getent_ethers.yml",
+                            "/playbook_file/320/old/320-2/",
+                            "/playbook_file/320/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "330": [
+            {
+                "330-2": [
+                    "330",
+                    {
+                        "JOURNAL_SEQ_NO": "330-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "330",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Get entry(group)",
+                        "PLAYBOOK_MATTER_FILE": "System_getent_group.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_getent_group.yml",
+                            "/playbook_file/330/old/330-2/",
+                            "/playbook_file/330/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "340": [
+            {
+                "340-2": [
+                    "340",
+                    {
+                        "JOURNAL_SEQ_NO": "340-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "340",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Get entry(gshadow)",
+                        "PLAYBOOK_MATTER_FILE": "System_getent_gshadow.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_getent_gshadow.yml",
+                            "/playbook_file/340/old/340-2/",
+                            "/playbook_file/340/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "350": [
+            {
+                "350-2": [
+                    "350",
+                    {
+                        "JOURNAL_SEQ_NO": "350-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "350",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Get entry(hosts)",
+                        "PLAYBOOK_MATTER_FILE": "System_getent_hosts.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_getent_hosts.yml",
+                            "/playbook_file/350/old/350-2/",
+                            "/playbook_file/350/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "360": [
+            {
+                "360-2": [
+                    "360",
+                    {
+                        "JOURNAL_SEQ_NO": "360-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "360",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Get entry(initgroups)",
+                        "PLAYBOOK_MATTER_FILE": "System_getent_initgroups.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_getent_initgroups.yml",
+                            "/playbook_file/360/old/360-2/",
+                            "/playbook_file/360/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "370": [
+            {
+                "370-2": [
+                    "370",
+                    {
+                        "JOURNAL_SEQ_NO": "370-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "370",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Get entry(netgroup",
+                        "PLAYBOOK_MATTER_FILE": "System_getent_netgroup.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_getent_netgroup.yml",
+                            "/playbook_file/370/old/370-2/",
+                            "/playbook_file/370/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "380": [
+            {
+                "380-2": [
+                    "380",
+                    {
+                        "JOURNAL_SEQ_NO": "380-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "380",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Get entry(networks)",
+                        "PLAYBOOK_MATTER_FILE": "System_getent_networks.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_getent_networks.yml",
+                            "/playbook_file/380/old/380-2/",
+                            "/playbook_file/380/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "390": [
+            {
+                "390-2": [
+                    "390",
+                    {
+                        "JOURNAL_SEQ_NO": "390-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "390",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Get entry(passwd)",
+                        "PLAYBOOK_MATTER_FILE": "System_getent_passwd.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_getent_passwd.yml",
+                            "/playbook_file/390/old/390-2/",
+                            "/playbook_file/390/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "400": [
+            {
+                "400-2": [
+                    "400",
+                    {
+                        "JOURNAL_SEQ_NO": "400-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "400",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Get entry(protocols)",
+                        "PLAYBOOK_MATTER_FILE": "System_getent_protocols.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_getent_protocols.yml",
+                            "/playbook_file/400/old/400-2/",
+                            "/playbook_file/400/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "410": [
+            {
+                "410-2": [
+                    "410",
+                    {
+                        "JOURNAL_SEQ_NO": "410-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "410",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Get entry(rpc)",
+                        "PLAYBOOK_MATTER_FILE": "System_getent_rpc.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_getent_rpc.yml",
+                            "/playbook_file/410/old/410-2/",
+                            "/playbook_file/410/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "420": [
+            {
+                "420-2": [
+                    "420",
+                    {
+                        "JOURNAL_SEQ_NO": "420-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "420",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Get entry(services)",
+                        "PLAYBOOK_MATTER_FILE": "System_getent_services.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_getent_services.yml",
+                            "/playbook_file/420/old/420-2/",
+                            "/playbook_file/420/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "430": [
+            {
+                "430-2": [
+                    "430",
+                    {
+                        "JOURNAL_SEQ_NO": "430-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "430",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Get entry(shadow)",
+                        "PLAYBOOK_MATTER_FILE": "System_getent_shadow.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_getent_shadow.yml",
+                            "/playbook_file/430/old/430-2/",
+                            "/playbook_file/430/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "440": [
+            {
+                "440-2": [
+                    "440",
+                    {
+                        "JOURNAL_SEQ_NO": "440-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "440",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Install dnf",
+                        "PLAYBOOK_MATTER_FILE": "Packaging_Os_dnf_present.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Install_Target_packages」で指定したパッケージをインストールします。\n「ITA_DFLT_Install_Target_packages」には複数ファイルの指定(リスト型)が可能です。\nまたデバッグレベル3(-vvv)の際にタスクの実行結果を表示します。",
+                        "DESCRIPTION_EN": "This Playbook file installs packages specified by \"ITA_DFLT_Install_Target_packages\".\n\"ITA_DFLT_Install_Target_packages\" can specify multiple files (list type).\nThe task results are displayed at debug level 3 (-vvv).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Packaging_Os_dnf_present.yml",
+                            "/playbook_file/440/old/440-2/",
+                            "/playbook_file/440/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "450": [
+            {
+                "450-2": [
+                    "450",
+                    {
+                        "JOURNAL_SEQ_NO": "450-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "450",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Install package",
+                        "PLAYBOOK_MATTER_FILE": "Packaging_Os_package_present.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Packaging_Os_package_present.yml",
+                            "/playbook_file/450/old/450-2/",
+                            "/playbook_file/450/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "460": [
+            {
+                "460-2": [
+                    "460",
+                    {
+                        "JOURNAL_SEQ_NO": "460-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "460",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Load file",
+                        "PLAYBOOK_MATTER_FILE": "Net_Tools_Basics_slurp.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Net_Tools_Basics_slurp.yml",
+                            "/playbook_file/460/old/460-2/",
+                            "/playbook_file/460/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "470": [
+            {
+                "470-2": [
+                    "470",
+                    {
+                        "JOURNAL_SEQ_NO": "470-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "470",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Modify SELinux",
+                        "PLAYBOOK_MATTER_FILE": "System_seboolean.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Booleans_Name」で指定した名前のブール値を「ITA_DFLT_State」で指定した値(true/false)に切り替え、「ITA_DFLT_Persistent」の値(true/false)で再起動後も設定を存続するかを設定します。\n各変数には複数指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file changes the bool values for the names specified by \"ITA_DFLT_Booleans_Name\" using the values (true/false) specified by \"ITA_DFLT_State\" and uses the values (true/false) specified by \"ITA_DFLT_Persistent\" to configure the persistency of the files (If the files will keep the settings after reboot or not).\nEach of the variables can have multiple specified at the same time (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_seboolean.yml",
+                            "/playbook_file/470/old/470-2/",
+                            "/playbook_file/470/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "480": [
+            {
+                "480-2": [
+                    "480",
+                    {
+                        "JOURNAL_SEQ_NO": "480-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "480",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Modify permissions",
+                        "PLAYBOOK_MATTER_FILE": "Files_file_modify.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Target_Path」で指定したディレクトリ/ファイルを「ITA_DFLT_Mode」で指定したパーミッションに変更します。\n「ITA_DFLT_Target_Path」には複数ディレクトリ/ファイルの指定(リスト型)が可能です。\n「ITA_DFLT_Mode」には複数パーミッションの指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file changes permissions specified by \"ITA_DFLT_Mode\" for the files/directories specified by \"ITA_DFLT_Target_Path\".\n\"ITA_DFLT_Target_Path\" can specify multiple file/directories (list type).\n\"ITA_DFLT_Mode\" can specify multiple permissions (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Files_file_modify.yml",
+                            "/playbook_file/480/old/480-2/",
+                            "/playbook_file/480/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "500": [
+            {
+                "500-2": [
+                    "500",
+                    {
+                        "JOURNAL_SEQ_NO": "500-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "500",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Ping",
+                        "PLAYBOOK_MATTER_FILE": "System_ping.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": "このPlaybook素材は、ターゲットホストに接続し、使用可能なPythonの有無を確認します。\nなお、このPlaybook素材には外部からコントロールする変数が含まれていないので、単独でMovementに紐づけての利用はお勧めしません。\n他のPlaybook素材と併せて利用してください。",
+                        "DESCRIPTION_EN": "This Playbook file connects to the Target host and checks for usable Python.\nNote that as this Playbook file does not contain variables that can be externally controlled, we do not recommend using it linked to a Movement alone, but together with other Playbook files.",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_ping.yml",
+                            "/playbook_file/500/old/500-2/",
+                            "/playbook_file/500/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "510": [
+            {
+                "510-2": [
+                    "510",
+                    {
+                        "JOURNAL_SEQ_NO": "510-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "510",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Reboot",
+                        "PLAYBOOK_MATTER_FILE": "System_reboot.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": "このPlaybook素材は、ターゲットホストを再起動します。\n「ITA_DFLT_Reboot_Timeout」でタイムアウト時間を指定することが可能です。",
+                        "DESCRIPTION_EN": "This Playbook file reboots the Target host.\nThe user can specify timeout time with \"ITA_DFLT_Reboot_Timeout\".",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_reboot.yml",
+                            "/playbook_file/510/old/510-2/",
+                            "/playbook_file/510/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "520": [
+            {
+                "520-2": [
+                    "520",
+                    {
+                        "JOURNAL_SEQ_NO": "520-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "520",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Remove Authorized key",
+                        "PLAYBOOK_MATTER_FILE": "System_authorized_key_remove.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Users」で指定したユーザーから「ITA_DFLT_Authorized_Keys」で指定したSSH認証鍵を削除します。\n「ITA_DFLT_Users」には複数ユーザーの指定(リスト型)が可能です。\n「ITA_DFLT_Authorized_Keys」には複数SSH認証鍵の指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file removes SSH authentication keys specified by \"ITA_DFLT_Authorized_Keys\" from users specified by \"ITA_DFLT_Users\".\n\"ITA_DFLT_Users\" can specify multiple users (list type).\n\"ITA_DFLT_Authorized_Keys\" can specify multiple SSH authentication keys (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_authorized_key_remove.yml",
+                            "/playbook_file/520/old/520-2/",
+                            "/playbook_file/520/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "530": [
+            {
+                "530-2": [
+                    "530",
+                    {
+                        "JOURNAL_SEQ_NO": "530-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "530",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Remove RPM key",
+                        "PLAYBOOK_MATTER_FILE": "Packaging_Os_rpm_key_remove.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Gpg_Key_Ids」で指定したGPGキーをrpmデータベースから削除します。\n「ITA_DFLT_Gpg_Key_Ids」には複数GPGキーの指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file deletes GPG keys specified by \"ITA_DFLT_Gpg_Key_Ids\" from the RPM database.\n\"ITA_DFLT_Gpg_Key_Ids\" can specify multiple GPG keys (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Packaging_Os_rpm_key_remove.yml",
+                            "/playbook_file/530/old/530-2/",
+                            "/playbook_file/530/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "540": [
+            {
+                "540-2": [
+                    "540",
+                    {
+                        "JOURNAL_SEQ_NO": "540-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "540",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Remove group",
+                        "PLAYBOOK_MATTER_FILE": "System_group_remove.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Groups」で指定したグループを削除します。\n「ITA_DFLT_Groups」には複数グループの指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file deletes groups specified by \"ITA_DFLT_Groups\".\n\"ITA_DFLT_Groups\" can specify multiple groups (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_group_remove.yml",
+                            "/playbook_file/540/old/540-2/",
+                            "/playbook_file/540/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "550": [
+            {
+                "550-2": [
+                    "550",
+                    {
+                        "JOURNAL_SEQ_NO": "550-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "550",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Remove user",
+                        "PLAYBOOK_MATTER_FILE": "System_user_remove.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_User_Names」で指定したユーザーを削除します。\n「ITA_DFLT_User_Names」には複数ユーザーの指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file deletes users specified by \"ITA_DFLT_User_Names\".\n\"ITA_DFLT_User_Names\" can specify multiple users (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_user_remove.yml",
+                            "/playbook_file/550/old/550-2/",
+                            "/playbook_file/550/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "560": [
+            {
+                "560-2": [
+                    "560",
+                    {
+                        "JOURNAL_SEQ_NO": "560-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "560",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Restart service",
+                        "PLAYBOOK_MATTER_FILE": "System_service_restarted.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Services」で指定したサービスを再起動します。\n「ITA_DFLT_Services」には複数サービスの指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file restarts services specified by \"ITA_DFLT_Services\".\n\"ITA_DFLT_Services\" can specify multiple services (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_service_restarted.yml",
+                            "/playbook_file/560/old/560-2/",
+                            "/playbook_file/560/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "570": [
+            {
+                "570-2": [
+                    "570",
+                    {
+                        "JOURNAL_SEQ_NO": "570-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "570",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Restart systemd",
+                        "PLAYBOOK_MATTER_FILE": "System_systemd_restarted.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": "このPlaybook素材は、systemdの設定を再読み込みした後、「ITA_DFLT_Services」で指定したサービスを再起動します。\n「ITA_DFLT_Services」には複数サービスの指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file reloads the systemd configuration and then restarts services specified by \"ITA_DFLT_Services\".\n\"ITA_DFLT_Services\" can specify multiple services (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_systemd_restarted.yml",
+                            "/playbook_file/570/old/570-2/",
+                            "/playbook_file/570/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "580": [
+            {
+                "580-2": [
+                    "580",
+                    {
+                        "JOURNAL_SEQ_NO": "580-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "580",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Run command",
+                        "PLAYBOOK_MATTER_FILE": "Commands_command.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": "このPlaybook素材は、変数「ITA_DFLT_Command_String」で与えられた文字列を、Ansibleのcommandモジュールに引き渡して実行する単純なものです。\nまたデバッグレベル3(-vvv)の際にタスクの実行結果を表示します。",
+                        "DESCRIPTION_EN": "This Playbook file is simple.\nIt passes the variable given string, \"ITA_DFLT_Command_String\", to the Ansible command module and executes it.\nThe task results are displayed at debug level 3 (-vvv).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Commands_command.yml",
+                            "/playbook_file/580/old/580-2/",
+                            "/playbook_file/580/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "590": [
+            {
+                "590-2": [
+                    "590",
+                    {
+                        "JOURNAL_SEQ_NO": "590-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "590",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Sleep (minutes)",
+                        "PLAYBOOK_MATTER_FILE": "Utilities_Logic_pause_in-minutes.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Sleep_Minutes」で指定した分だけポーズ(スリープ)します。",
+                        "DESCRIPTION_EN": "This Playbook file uses the time specified in \"ITA_DFLT_Sleep_Minutes\" to pause (sleep) Jobs and Jobflows.",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Utilities_Logic_pause_in-minutes.yml",
+                            "/playbook_file/590/old/590-2/",
+                            "/playbook_file/590/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "600": [
+            {
+                "600-2": [
+                    "600",
+                    {
+                        "JOURNAL_SEQ_NO": "600-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "600",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Sleep (seconds)",
+                        "PLAYBOOK_MATTER_FILE": "Utilities_Logic_pause_in-seconds.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Sleep_Seconds」で指定した秒だけポーズ(スリープ)します。",
+                        "DESCRIPTION_EN": "This Playbook file uses the time specified in \"ITA_DFLT_Sleep_Seconds\" to pause (sleep) Jobs and Jobflows.",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Utilities_Logic_pause_in-seconds.yml",
+                            "/playbook_file/600/old/600-2/",
+                            "/playbook_file/600/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "610": [
+            {
+                "610-2": [
+                    "610",
+                    {
+                        "JOURNAL_SEQ_NO": "610-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "610",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Start service",
+                        "PLAYBOOK_MATTER_FILE": "System_service_started.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Services」で指定したサービスを起動します。\n「ITA_DFLT_Services」には複数サービスの指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file starts services specified by \"ITA_DFLT_Services\".\n\"ITA_DFLT_Services\" can specify multiple services (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_service_started.yml",
+                            "/playbook_file/610/old/610-2/",
+                            "/playbook_file/610/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "620": [
+            {
+                "620-2": [
+                    "620",
+                    {
+                        "JOURNAL_SEQ_NO": "620-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "620",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Start systemd",
+                        "PLAYBOOK_MATTER_FILE": "System_systemd_started.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Services」で指定したサービスを起動します。\n「ITA_DFLT_Services」には複数サービスの指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file starts services specified by \"ITA_DFLT_Services\".\n\"ITA_DFLT_Services\" can specify multiple services (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_systemd_started.yml",
+                            "/playbook_file/620/old/620-2/",
+                            "/playbook_file/620/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "630": [
+            {
+                "630-2": [
+                    "630",
+                    {
+                        "JOURNAL_SEQ_NO": "630-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "630",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Stop service",
+                        "PLAYBOOK_MATTER_FILE": "System_service_stopped.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Services」で指定したサービスを停止します。\n「ITA_DFLT_Services」には複数サービスの指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file stops services specified by \"ITA_DFLT_Services\".\n\"ITA_DFLT_Services\" can specify multiple services (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_service_stopped.yml",
+                            "/playbook_file/630/old/630-2/",
+                            "/playbook_file/630/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "640": [
+            {
+                "640-2": [
+                    "640",
+                    {
+                        "JOURNAL_SEQ_NO": "640-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "640",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Stop systemd",
+                        "PLAYBOOK_MATTER_FILE": "System_systemd_stopped.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Services」で指定したサービスを停止します。\n「ITA_DFLT_Services」には複数サービスの指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file stops services specified by \"ITA_DFLT_Services\".\n\"ITA_DFLT_Services\" can specify multiple services (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_systemd_stopped.yml",
+                            "/playbook_file/640/old/640-2/",
+                            "/playbook_file/640/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "650": [
+            {
+                "650-2": [
+                    "650",
+                    {
+                        "JOURNAL_SEQ_NO": "650-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "650",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Text block operation",
+                        "PLAYBOOK_MATTER_FILE": "Files_blockinfile.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Files_blockinfile.yml",
+                            "/playbook_file/650/old/650-2/",
+                            "/playbook_file/650/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "660": [
+            {
+                "660-2": [
+                    "660",
+                    {
+                        "JOURNAL_SEQ_NO": "660-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "660",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Text line operation",
+                        "PLAYBOOK_MATTER_FILE": "Files_lineinfile.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Files_lineinfile.yml",
+                            "/playbook_file/660/old/660-2/",
+                            "/playbook_file/660/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "670": [
+            {
+                "670-2": [
+                    "670",
+                    {
+                        "JOURNAL_SEQ_NO": "670-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "670",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Transfer/Run script",
+                        "PLAYBOOK_MATTER_FILE": "Commands_script.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Script_Name」変数で指定したスクリプトファイルを転送し実行します。\nその際、スクリプトファイルの引数として以下の2つを付けており、スクリプト内での活用を可能としています。\n第一引数：__workflowdir__\n第二引数：__conductor_workflowdir__\n例えば、スクリプト内の処理で__workflowdir__にファイル出力すれば、Movement終了後に結果データとして取得することが可能になります。\n同じく、スクリプト内の処理で__conductor_workflowdir__にファイル出力すれば、Movement終了後に後続のMvemenetに情報を伝えることが可能です。\nただし、これらは__workflowdir__や__conductor_workflowdir__にアクセスできるノード(例：localhost)でスクリプトを動作させる場合に有効です。\nまたデバッグレベル3(-vvv)の際にタスクの実行結果を表示します。",
+                        "DESCRIPTION_EN": "This Playbook file transfers and executes script files specified by the \"ITA_DFLT_Script_Name\".\nDoing so adds the following two arguments to the script file, allowing them to be used within said script.\nFirst argument: __workflowdir__\nSecond argument: __conductor_workflowdir__\nFor example, if a file is output to \"__workflowdir__\" while the script is processing, the user will be able to retrieve it as result data after the Movement ends.\nSimilarly, by outputting a file to __conductor_workflowdir__ as a process within the script, it is possible to convey information to subsequent Movemenet after the Movement ends.\nHowever, these functions are only enabled when running scripts on a nodes that has access to __workflowdir__ and __conductor_workflowdir__ (e.g. localhost).\nThe task results are displayed at debug level 3 (-vvv).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Commands_script.yml",
+                            "/playbook_file/670/old/670-2/",
+                            "/playbook_file/670/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "680": [
+            {
+                "680-2": [
+                    "680",
+                    {
+                        "JOURNAL_SEQ_NO": "680-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "680",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Uninstall dnf",
+                        "PLAYBOOK_MATTER_FILE": "Packaging_Os_dnf_absent.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Uninstall_Target_packages」で指定したパッケージをアンインストールします。\n「ITA_DFLT_Uninstall_Target_packages」には複数パッケージの指定(リスト型)が可能です。\nまたデバッグレベル3(-vvv)の際にタスクの実行結果を表示します。",
+                        "DESCRIPTION_EN": "This Playbook file uninstalls packages specified by \"ITA_DFLT_Uninstall_Target_packages\".\n\"ITA_DFLT_Uninstall_Target_packages\" can specify multiple packages (list type).\nThe task results are displayed at debug level 3 (-vvv).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Packaging_Os_dnf_absent.yml",
+                            "/playbook_file/680/old/680-2/",
+                            "/playbook_file/680/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "690": [
+            {
+                "690-2": [
+                    "690",
+                    {
+                        "JOURNAL_SEQ_NO": "690-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "690",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Uninstall package",
+                        "PLAYBOOK_MATTER_FILE": "Packaging_Os_package_absent.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Packaging_Os_package_absent.yml",
+                            "/playbook_file/690/old/690-2/",
+                            "/playbook_file/690/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "710": [
+            {
+                "710-2": [
+                    "710",
+                    {
+                        "JOURNAL_SEQ_NO": "710-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "710",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Update dnf",
+                        "PLAYBOOK_MATTER_FILE": "Packaging_Os_dnf_latest.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Update_Target_packages」で指定したパッケージを最新バージョンにアップデートします。\n「ITA_DFLT_Update_Target_packages」には複数ファイルの指定(リスト型)が可能です。\nまたデバッグレベル3(-vvv)の際にタスクの実行結果を表示します。",
+                        "DESCRIPTION_EN": "This Playbook file updates packages specified by \"ITA_DFLT_Update_Target_packages\" to the latest version available.\n\"ITA_DFLT_Update_Target_packages\" can specify multiple files (list type).\nThe task results are displayed at debug level 3 (-vvv). ",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Packaging_Os_dnf_latest.yml",
+                            "/playbook_file/710/old/710-2/",
+                            "/playbook_file/710/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "720": [
+            {
+                "720-2": [
+                    "720",
+                    {
+                        "JOURNAL_SEQ_NO": "720-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "720",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Update package",
+                        "PLAYBOOK_MATTER_FILE": "Packaging_Os_package_latest.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Packaging_Os_package_latest.yml",
+                            "/playbook_file/720/old/720-2/",
+                            "/playbook_file/720/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "730": [
+            {
+                "730-2": [
+                    "730",
+                    {
+                        "JOURNAL_SEQ_NO": "730-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "730",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] Wait for connection",
+                        "PLAYBOOK_MATTER_FILE": "Utilities_Logic_wait_for_connection.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": "このPlaybook素材は、ターゲットホストが到達可能/使用可能になるまで待機します。\n「ITA_DFLT_Wait_Delay」でポーリング開始前に待機する秒数、「ITA_DFLT_Wait_Timeout」で待機する最大秒数を指定することが可能です。",
+                        "DESCRIPTION_EN": "This Playbook file makes the workflow wait until the Target host can be used or reached.\nThe user can specify how long to wait until the polling starts with \"ITA_DFLT_Wait_Delay\" and the maximum wait time with \"ITA_DFLT_Wait_Timeout\".",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Utilities_Logic_wait_for_connection.yml",
+                            "/playbook_file/730/old/730-2/",
+                            "/playbook_file/730/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "740": [
+            {
+                "740-2": [
+                    "740",
+                    {
+                        "JOURNAL_SEQ_NO": "740-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "740",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] pip",
+                        "PLAYBOOK_MATTER_FILE": "Packaging_Language_pip.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Target_Package_Name」で指定したパッケージ名インストールします。\nインストール済みの場合は何もしません。\n「ITA_DFLT_Target_Package_Name」には複数のパッケージ名が指定（リスト型）が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file installs package names specified by \"ITA_DFLT_Target_Package_Name\".\nNothing will happen if the specified package names are already installed.\n\"ITA_DFLT_Target_Package_Name\" can specify multiple package names (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Packaging_Language_pip.yml",
+                            "/playbook_file/740/old/740-2/",
+                            "/playbook_file/740/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "750": [
+            {
+                "750-2": [
+                    "750",
+                    {
+                        "JOURNAL_SEQ_NO": "750-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "750",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard] sysctly settings",
+                        "PLAYBOOK_MATTER_FILE": "System_sysctl_present.yml",
+                        "TARGET_LINUX": "5019101",
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": "5019101",
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Parameter_Names」で指定したパラメータ名、「ITA_DFLT_Parameter_Values」で指定した値をsysctlに登録します。\n「ITA_DFLT_Parameter_Names」には複数パラメータ名の指定(リスト型)が可能です。\n「ITA_DFLT_Parameter_Values」には複数値の指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file registers Parameter names specified by \"ITA_DFLT_Parameter_Names\" and values specified by \"ITA_DFLT_Parameter_Values\" to sysctl.\n\"ITA_DFLT_Parameter_Names\" can specify multiple parameter names (list type).\n\"ITA_DFLT_Parameter_Values\" can specify multiple values (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "System_sysctl_present.yml",
+                            "/playbook_file/750/old/750-2/",
+                            "/playbook_file/750/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "760": [
+            {
+                "760-2": [
+                    "760",
+                    {
+                        "JOURNAL_SEQ_NO": "760-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "760",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard][Win] Add group",
+                        "PLAYBOOK_MATTER_FILE": "Windows_win_group_add.yml",
+                        "TARGET_LINUX": null,
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Windows_win_group_add.yml",
+                            "/playbook_file/760/old/760-2/",
+                            "/playbook_file/760/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "770": [
+            {
+                "770-2": [
+                    "770",
+                    {
+                        "JOURNAL_SEQ_NO": "770-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "770",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard][Win] Add path",
+                        "PLAYBOOK_MATTER_FILE": "Windows_win_path_add.yml",
+                        "TARGET_LINUX": null,
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Environment_Name」で指定した環境変数名を「ITA_DFLT_Elements」で指定されたパス要素で追加します。\n「ITA_DFLT_Scope」には指定された環境変数を管理する必要があるレベルを指定します。\n各変数には複数指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file adds the environment variable names specified by \"ITA_DFLT_Environment_Name\" with the path element specified by \"ITA_DFLT_Elements\".\n\"ITA_DFLT_Scope\" specifies the level at which the specified environment variable must be managed.\nEach of the variables can have multiple specified at the same time (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Windows_win_path_add.yml",
+                            "/playbook_file/770/old/770-2/",
+                            "/playbook_file/770/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "780": [
+            {
+                "780-2": [
+                    "780",
+                    {
+                        "JOURNAL_SEQ_NO": "780-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "780",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard][Win] Add user",
+                        "PLAYBOOK_MATTER_FILE": "Windows_win_user_create-or-modify.yml",
+                        "TARGET_LINUX": null,
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Win_User_Name」で指定したユーザーを「ITA_DFLT_Win_Password」で指定したパスワードで「ITA_DFLT_Win_Groups」で指定したグループに作成します。\n「ITA_DFLT_Win_User_Name」には複数ユーザー名の指定(リスト型)が可能です。\n「ITA_DFLT_Win_Password」には複数パスワードの指定(リスト型)が可能です。\n「ITA_DFLT_Win_Groups」には複数グループ名の指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file creates the users specified with \"ITA_DFLT_Win_User_Name\" with the passwords specified with \"ITA_DFLT_Win_Password\". The users are put in the groups specified by \"ITA_DFLT_Win_Groups\".\n\"ITA_DFLT_Win_User_Name\" can specify multiple user names (list type).\n\"ITA_DFLT_Win_Password\" can specify multiple passwords (list type).\n\"ITA_DFLT_Win_Groups\" can specify multiple group names (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Windows_win_user_create-or-modify.yml",
+                            "/playbook_file/780/old/780-2/",
+                            "/playbook_file/780/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "790": [
+            {
+                "790-2": [
+                    "790",
+                    {
+                        "JOURNAL_SEQ_NO": "790-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "790",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard][Win] Create Domain",
+                        "PLAYBOOK_MATTER_FILE": "Windows_win_domain.yml",
+                        "TARGET_LINUX": null,
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Windows_win_domain.yml",
+                            "/playbook_file/790/old/790-2/",
+                            "/playbook_file/790/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "800": [
+            {
+                "800-2": [
+                    "800",
+                    {
+                        "JOURNAL_SEQ_NO": "800-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "800",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard][Win] Copy file",
+                        "PLAYBOOK_MATTER_FILE": "Windows_win_copy_local-to-remote.yml",
+                        "TARGET_LINUX": null,
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Windows_win_copy_local-to-remote.yml",
+                            "/playbook_file/800/old/800-2/",
+                            "/playbook_file/800/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "810": [
+            {
+                "810-2": [
+                    "810",
+                    {
+                        "JOURNAL_SEQ_NO": "810-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "810",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard][Win] Copy file (within host)",
+                        "PLAYBOOK_MATTER_FILE": "Windows_win_copy_remote-to-remote.yml",
+                        "TARGET_LINUX": null,
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Windows_win_copy_remote-to-remote.yml",
+                            "/playbook_file/810/old/810-2/",
+                            "/playbook_file/810/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "820": [
+            {
+                "820-2": [
+                    "820",
+                    {
+                        "JOURNAL_SEQ_NO": "820-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "820",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard][Win] Create folder",
+                        "PLAYBOOK_MATTER_FILE": "Windows_win_file_mkdir.yml",
+                        "TARGET_LINUX": null,
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Windows_win_file_mkdir.yml",
+                            "/playbook_file/820/old/820-2/",
+                            "/playbook_file/820/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "830": [
+            {
+                "830-2": [
+                    "830",
+                    {
+                        "JOURNAL_SEQ_NO": "830-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "830",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard][Win] Delete File/Folder",
+                        "PLAYBOOK_MATTER_FILE": "Windows_win_file_remove.yml",
+                        "TARGET_LINUX": null,
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Windows_win_file_remove.yml",
+                            "/playbook_file/830/old/830-2/",
+                            "/playbook_file/830/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "840": [
+            {
+                "840-2": [
+                    "840",
+                    {
+                        "JOURNAL_SEQ_NO": "840-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "840",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard][Win] Delete shared settings",
+                        "PLAYBOOK_MATTER_FILE": "Windows_win_share_delete.yml",
+                        "TARGET_LINUX": null,
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Share_Name」に指定された共有を削除します。\n「ITA_DFLT_Share_Name」には複数の共有名の指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file deletes shared names specified by \"ITA_DFLT_Share_Name\".\n\"ITA_DFLT_Share_Name\" can specify multiple share names (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Windows_win_share_delete.yml",
+                            "/playbook_file/840/old/840-2/",
+                            "/playbook_file/840/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "850": [
+            {
+                "850-2": [
+                    "850",
+                    {
+                        "JOURNAL_SEQ_NO": "850-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "850",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard][Win] Deploy template file",
+                        "PLAYBOOK_MATTER_FILE": "Windows_win_template.yml",
+                        "TARGET_LINUX": null,
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Win_Template_Src_File_Name」で指定したテンプレートを「ITA_DFLT_Win_Template_Dest_Directory」で指定したディレクトリに配置します。\n「ITA_DFLT_Win_Template_Src_File_Name」には複数テンプレートの指定(リスト型)が可能です。\n「ITA_DFLT_Win_Template_Dest_Directory」には複数ディレクトリの指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file deploys templates specified by \"ITA_DFLT_Win_Template_Src_File_Name\" to directories specified by \"ITA_DFLT_Win_Template_Dest_Directory\".\n\"ITA_DFLT_Win_Template_Src_File_Name\" can specify multiple templates (list type).\n\"ITA_DFLT_Win_Template_Dest_Directory\" can specify multiple directories (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Windows_win_template.yml",
+                            "/playbook_file/850/old/850-2/",
+                            "/playbook_file/850/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "860": [
+            {
+                "860-2": [
+                    "860",
+                    {
+                        "JOURNAL_SEQ_NO": "860-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "860",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard][Win] Disable service startup",
+                        "PLAYBOOK_MATTER_FILE": "Windows_win_service_disabled.yml",
+                        "TARGET_LINUX": null,
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Service_Name」で指定されたサービスの自動起動を無効にします。\n「ITA_DFLT_Service_Name」には複数のサービス名の指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file deactivates \"automatic boot mode\" for the services specified by \"ITA_DFLT_Service_Name\".\n\"ITA_DFLT_Service_Name\" can specify multiple service names (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Windows_win_service_disabled.yml",
+                            "/playbook_file/860/old/860-2/",
+                            "/playbook_file/860/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "870": [
+            {
+                "870-2": [
+                    "870",
+                    {
+                        "JOURNAL_SEQ_NO": "870-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "870",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard][Win] Download URL",
+                        "PLAYBOOK_MATTER_FILE": "Windows_win_get_url.yml",
+                        "TARGET_LINUX": null,
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Windows_win_get_url.yml",
+                            "/playbook_file/870/old/870-2/",
+                            "/playbook_file/870/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "880": [
+            {
+                "880-2": [
+                    "880",
+                    {
+                        "JOURNAL_SEQ_NO": "880-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "880",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard][Win] Enable service startup",
+                        "PLAYBOOK_MATTER_FILE": "Windows_win_service_enabled.yml",
+                        "TARGET_LINUX": null,
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Service_Name」で指定されたサービスの起動モードを自動にします。\n「ITA_DFLT_Service_Name」には複数のサービス名の指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file changes the boot mode for services specified by \"ITA_DFLT_Service_Name\" to automatic.\n\"ITA_DFLT_Service_Name\" can specify multiple service names (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Windows_win_service_enabled.yml",
+                            "/playbook_file/880/old/880-2/",
+                            "/playbook_file/880/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "890": [
+            {
+                "890-2": [
+                    "890",
+                    {
+                        "JOURNAL_SEQ_NO": "890-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "890",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard][Win] Get file status",
+                        "PLAYBOOK_MATTER_FILE": "Windows_win_stat.yml",
+                        "TARGET_LINUX": null,
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_File_Path」で指定されたファイルパスの情報を取得します。\n「ITA_DFLT_File_Path」には複数のファイルパスの指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file acquires the file path information specified by \"ITA_DFLT_File_Path\".\n\"ITA_DFLT_File_Path\" can specify multiple file paths (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Windows_win_stat.yml",
+                            "/playbook_file/890/old/890-2/",
+                            "/playbook_file/890/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "900": [
+            {
+                "900-2": [
+                    "900",
+                    {
+                        "JOURNAL_SEQ_NO": "900-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "900",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard][Win] Install package",
+                        "PLAYBOOK_MATTER_FILE": "Windows_win_package_present.yml",
+                        "TARGET_LINUX": null,
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Windows_win_package_present.yml",
+                            "/playbook_file/900/old/900-2/",
+                            "/playbook_file/900/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "910": [
+            {
+                "910-2": [
+                    "910",
+                    {
+                        "JOURNAL_SEQ_NO": "910-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "910",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard][Win] Modify owner (no recursion)",
+                        "PLAYBOOK_MATTER_FILE": "Windows_win_owner_normal.yml",
+                        "TARGET_LINUX": null,
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Windows_win_owner_normal.yml",
+                            "/playbook_file/910/old/910-2/",
+                            "/playbook_file/910/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "920": [
+            {
+                "920-2": [
+                    "920",
+                    {
+                        "JOURNAL_SEQ_NO": "920-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "920",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard][Win] Modify owner (with recursion)",
+                        "PLAYBOOK_MATTER_FILE": "Windows_win_owner_recursive.yml",
+                        "TARGET_LINUX": null,
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Windows_win_owner_recursive.yml",
+                            "/playbook_file/920/old/920-2/",
+                            "/playbook_file/920/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "930": [
+            {
+                "930-2": [
+                    "930",
+                    {
+                        "JOURNAL_SEQ_NO": "930-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "930",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard][Win] Modify/add registry",
+                        "PLAYBOOK_MATTER_FILE": "Windows_win_regedit_create-or-modify.yml",
+                        "TARGET_LINUX": null,
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": "このPlaybook素材は、レジストリ キーと値を追加、変更をします。\n各変数について下記します。\n「ITA_DFLT_Regedit_Path」：レジストリ パスの名前\n「ITA_DFLT_Regedit_Name」：レジストリ エントリの名前\n「ITA_DFLT_Regedit_Data」：レジストリ エントリの値\n「ITA_DFLT_Regedit_Type」：レジストリ値のデータ型\n各変数には複数指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file adds or edits registry keys and values.\nThe variables are as follows:\n\"ITA_DFLT_Regedit_Path\": Registry Path name\n\"ITA_DFLT_Regedit_Name\": Registry Entry name\n\"ITA_DFLT_Regedit_Data\": Registry Entry value\n\"ITA_DFLT_Regedit_Type\": Registry value Data type\nEach of the variables can have multiple specified at the same time (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Windows_win_regedit_create-or-modify.yml",
+                            "/playbook_file/930/old/930-2/",
+                            "/playbook_file/930/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "940": [
+            {
+                "940-2": [
+                    "940",
+                    {
+                        "JOURNAL_SEQ_NO": "940-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "940",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard][Win] Modify/create shared settings",
+                        "PLAYBOOK_MATTER_FILE": "Windows_win_share_create-or-modify.yml",
+                        "TARGET_LINUX": null,
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": "このPlaybook素材は、Windows 上のフォルダに対して共有設定を行います。\n各変数について下記します。\n「ITA_DFLT_Share_Name」：共有名\n「ITA_DFLT_Description」：共有の説明\n「ITA_DFLT_Directory_Path」：共有したいディレクトリのパス\n「ITA_DFLT_Filelist_Permission」：アクセスベースの列挙\n「ITA_DFLT_Full_Control」：フルアクセスを取得する必要があるユーザーリスト（カンマで区切って指定）※1\n「ITA_DFLT_Change」：読み取りおよび書き込みアクセスを取得するユーザーリスト（カンマで区切って指定）※1\n「ITA_DFLT_Read_Only」：読み取りアクセス権を取得するユーザーリスト（カンマで区切って指定）※1\n各変数には複数指定(リスト型)が可能です。\n※1 代入値自動登録設定のNULL連携をTrueにする想定",
+                        "DESCRIPTION_EN": "This Playbook file configures shared settings for Windows folders.\nThe variables are as follows:\n\"ITA_DFLT_Share_Name\": Share name\n\"ITA_DFLT_Description\": Share description\n\"ITA_DFLT_Directory_Path\": Path of Share Directory\n\"ITA_DFLT_Filelist_Permission\": Access base list\n\"ITA_DFLT_Full_Control\": List of users who need to get full access (divide with comma).※1\n\"ITA_DFLT_Change\": List over users who will get access to read and write (divide with comma).※1\n\"ITA_DFLT_Read_Only\": List over users who will get access to read (divide with comma).※1\nEach of the variables can have multiple specified at the same time (list type).\n※1 Assumes that null link is set to \"True\" in the Automatic substitute value registration settings.",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Windows_win_share_create-or-modify.yml",
+                            "/playbook_file/940/old/940-2/",
+                            "/playbook_file/940/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "950": [
+            {
+                "950-2": [
+                    "950",
+                    {
+                        "JOURNAL_SEQ_NO": "950-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "950",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard][Win] Mount",
+                        "PLAYBOOK_MATTER_FILE": "Windows_win_disk_image_mount.yml",
+                        "TARGET_LINUX": null,
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Windows_win_disk_image_mount.yml",
+                            "/playbook_file/950/old/950-2/",
+                            "/playbook_file/950/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "960": [
+            {
+                "960-2": [
+                    "960",
+                    {
+                        "JOURNAL_SEQ_NO": "960-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "960",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard][Win] Ping",
+                        "PLAYBOOK_MATTER_FILE": "Windows_win_ping.yml",
+                        "TARGET_LINUX": null,
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": "このPlaybook素材は、ターゲットホストへの接続を確認します。\nなお、このPlaybook素材には外部からコントロールする変数が含まれていないので、単独でMovementに紐づけての利用はお勧めしません。\n他のPlaybook素材と併せて利用してください。",
+                        "DESCRIPTION_EN": "This Playbook file checks the connection to the target host.\nNote that as this Playbook file does not contain variables that can be externally controlled, we do not recommend using it linked to a Movement alone, but together with other Playbook files.\n",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Windows_win_ping.yml",
+                            "/playbook_file/960/old/960-2/",
+                            "/playbook_file/960/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "970": [
+            {
+                "970-2": [
+                    "970",
+                    {
+                        "JOURNAL_SEQ_NO": "970-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "970",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard][Win] Reboot",
+                        "PLAYBOOK_MATTER_FILE": "Windows_win_reboot.yml",
+                        "TARGET_LINUX": null,
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": "このPlaybook素材は、ターゲットホストを再起動します。\n「ITA_DFLT_Reboot_Timeout」でタイムアウト時間を指定することが可能です。",
+                        "DESCRIPTION_EN": "This Playbook file reboots the Target host.\nThe user can specify timeout time with \"ITA_DFLT_Reboot_Timeout\".",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Windows_win_reboot.yml",
+                            "/playbook_file/970/old/970-2/",
+                            "/playbook_file/970/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "980": [
+            {
+                "980-2": [
+                    "980",
+                    {
+                        "JOURNAL_SEQ_NO": "980-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "980",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard][Win] Remove group",
+                        "PLAYBOOK_MATTER_FILE": "Windows_win_group_remove.yml",
+                        "TARGET_LINUX": null,
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Windows_win_group_remove.yml",
+                            "/playbook_file/980/old/980-2/",
+                            "/playbook_file/980/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "990": [
+            {
+                "990-2": [
+                    "990",
+                    {
+                        "JOURNAL_SEQ_NO": "990-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "990",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard][Win] Remove path",
+                        "PLAYBOOK_MATTER_FILE": "Windows_win_path_remove.yml",
+                        "TARGET_LINUX": null,
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Environment_Name」で指定した環境変数名を「ITA_DFLT_Elements」で指定されたパス要素で削除します。\n「ITA_DFLT_Scope」には指定された環境変数を管理する必要があるレベルを指定します。\n各変数には複数指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file removes the environment variable names specified by \"ITA_DFLT_Environment_Name\" with the path element specified by \"ITA_DFLT_Elements\".\n\"ITA_DFLT_Scope\" specifies the level at which the specified environment variable must be managed.\nEach of the variables can have multiple specified at the same time (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Windows_win_path_remove.yml",
+                            "/playbook_file/990/old/990-2/",
+                            "/playbook_file/990/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "1000": [
+            {
+                "1000-2": [
+                    "1000",
+                    {
+                        "JOURNAL_SEQ_NO": "1000-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "1000",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard][Win] Remove registry",
+                        "PLAYBOOK_MATTER_FILE": "Windows_win_regedit_delete.yml",
+                        "TARGET_LINUX": null,
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": "このPlaybook素材は、レジストリ値（エントリ）を削除します。\n各変数について下記します。\n「ITA_DFLT_Regedit_Path」：レジストリ パスの名前\n「ITA_DFLT_Regedit_Name」：レジストリ エントリの名前\n各変数には複数指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file deletes the Registry value (entry).\nThe variables are as follows:\n\"ITA_DFLT_Regedit_Path\": Registry Path name\n\"ITA_DFLT_Regedit_Name\": Registry Entry name\nEach of the variables can have multiple specified at the same time (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Windows_win_regedit_delete.yml",
+                            "/playbook_file/1000/old/1000-2/",
+                            "/playbook_file/1000/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "1010": [
+            {
+                "1010-2": [
+                    "1010",
+                    {
+                        "JOURNAL_SEQ_NO": "1010-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "1010",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard][Win] Remove user",
+                        "PLAYBOOK_MATTER_FILE": "Windows_win_user_delete.yml",
+                        "TARGET_LINUX": null,
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Win_User_Name」に指定されたユーザーを削除します。\n「ITA_DFLT_Win_User_Name」には複数のユーザ名の指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file deletes users specified by \"ITA_DFLT_Win_User_Name\".\n\"ITA_DFLT_Win_User_Name\" can specify multiple user names (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Windows_win_user_delete.yml",
+                            "/playbook_file/1010/old/1010-2/",
+                            "/playbook_file/1010/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "1020": [
+            {
+                "1020-2": [
+                    "1020",
+                    {
+                        "JOURNAL_SEQ_NO": "1020-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "1020",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard][Win] Restart service",
+                        "PLAYBOOK_MATTER_FILE": "Windows_win_service_restarted.yml",
+                        "TARGET_LINUX": null,
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Service_Name」で指定されたサービスを再起動します。\n「ITA_DFLT_Service_Name」には複数のサービス名の指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file restarts services specified by \"ITA_DFLT_Service_Name\".\n\"ITA_DFLT_Service_Name\" can specify multiple service names (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Windows_win_service_restarted.yml",
+                            "/playbook_file/1020/old/1020-2/",
+                            "/playbook_file/1020/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "1030": [
+            {
+                "1030-2": [
+                    "1030",
+                    {
+                        "JOURNAL_SEQ_NO": "1030-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "1030",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard][Win] Stop service",
+                        "PLAYBOOK_MATTER_FILE": "Windows_win_service_stopped.yml",
+                        "TARGET_LINUX": null,
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Service_Name」で指定されたサービスを停止します。\n「ITA_DFLT_Service_Name」には複数のサービス名の指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file stops services specified by \"ITA_DFLT_Service_Name\".\n\"ITA_DFLT_Service_Name\" can specify multiple service names (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Windows_win_service_stopped.yml",
+                            "/playbook_file/1030/old/1030-2/",
+                            "/playbook_file/1030/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "1040": [
+            {
+                "1040-2": [
+                    "1040",
+                    {
+                        "JOURNAL_SEQ_NO": "1040-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "1040",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard][Win] Uninstall package",
+                        "PLAYBOOK_MATTER_FILE": "Windows_win_package_absent.yml",
+                        "TARGET_LINUX": null,
+                        "TARGET_WINDOWS": "5019101",
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": null,
+                        "DESCRIPTION_EN": null,
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Windows_win_package_absent.yml",
+                            "/playbook_file/1040/old/1040-2/",
+                            "/playbook_file/1040/"
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "1080": [
+            {
+                "1080-2": [
+                    "1080",
+                    {
+                        "JOURNAL_SEQ_NO": "1080-2",
+                        "JOURNAL_REG_DATETIME": "_____DATE_____",
+                        "JOURNAL_ACTION_CLASS": "UPDATE",
+                        "PLAYBOOK_MATTER_ID": "1080",
+                        "PLAYBOOK_MATTER_NAME": "~[Exastro standard][Win]Start service",
+                        "PLAYBOOK_MATTER_FILE": "Windows_win_service_started.yml",
+                        "TARGET_LINUX": null,
+                        "TARGET_WINDOWS": null,
+                        "TARGET_OTHER": null,
+                        "PYTHON_NECESSARY": null,
+                        "DESCRIPTION": "このPlaybook素材は、「ITA_DFLT_Service_Name」で指定されたサービスを開始します。\n「ITA_DFLT_Service_Name」には複数のサービス名の指定(リスト型)が可能です。",
+                        "DESCRIPTION_EN": "This Playbook file starts services specified by \"ITA_DFLT_Service_Name\".\n\"ITA_DFLT_Service_Name\" can specify multiple service names (list type).",
+                        "NOTE": null,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_TIMESTAMP": "_____DATE_____",
+                        "LAST_UPDATE_USER": "1"
+                    },
+                    [
+                        [
+                            "Windows_win_service_started.yml",
+                            "/playbook_file/1080/old/1080-2/",
+                            "/playbook_file/1080/"
+                        ]
+                    ]
+                ]
+            }
+        ]
+    }
+}

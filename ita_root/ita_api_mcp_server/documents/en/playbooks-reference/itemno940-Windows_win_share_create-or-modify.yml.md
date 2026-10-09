@@ -15,9 +15,10 @@ The variables are as follows:
 "ITA_DFLT_Filelist_Permission": Access base list
 "ITA_DFLT_Full_Control": List of users who need to get full access (divide with comma).※1
 "ITA_DFLT_Change": List over users who will get access to read and write (divide with comma).※1
-"ITA__DFLT_Read_Only": List over users who will get access to read (divide with comma).※1
+"ITA_DFLT_Read_Only": List over users who will get access to read (divide with comma).※1
 Each of the variables can have multiple specified at the same time (list type).
 ※1 Assumes that null link is set to "True" in the Automatic substitute value registration settings.
+
 ## Keyword
 - SMB file sharing
 - Network share permissions

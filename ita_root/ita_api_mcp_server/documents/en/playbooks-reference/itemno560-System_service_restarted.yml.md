@@ -7,8 +7,9 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 ## Overview
 Calls `ansible.builtin.service` with `state: restarted` for each name in `ITA_DFLT_Services`, stopping and starting each one unconditionally.
 ## Description
-This Playbook file reboots services specified by "ITA_DFLT_Services".
+This Playbook file restarts services specified by "ITA_DFLT_Services".
 "ITA_DFLT_Services" can specify multiple services (list type).
+
 ## Keyword
 - bounce a daemon
 - apply configuration changes to a running process

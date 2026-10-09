@@ -7,8 +7,9 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 ## Overview
 Calls `ansible.builtin.systemd` with `state: stopped` for each name in `ITA_DFLT_Services`; it deactivates the running units only and does not remove or delete anything.
 ## Description
-This Playbook file deletes services specified by "ITA_DFLT_Services".
+This Playbook file stops services specified by "ITA_DFLT_Services".
 "ITA_DFLT_Services" can specify multiple services (list type).
+
 ## Keyword
 - systemctl stop
 - deactivate a systemd unit

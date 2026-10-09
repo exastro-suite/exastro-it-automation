@@ -8,7 +8,8 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 Sets each listed Windows service to `start_mode: auto` with `win_service` so it starts automatically at boot; the current running state is left untouched.
 ## Description
 This Playbook file changes the boot mode for services specified by "ITA_DFLT_Service_Name" to automatic.
-"Ita_DFLT_Service_Name" can specify multiple service names (list type).
+"ITA_DFLT_Service_Name" can specify multiple service names (list type).
+
 ## Keyword
 - Service startup type
 - Auto-start at boot
@@ -17,7 +18,7 @@ This Playbook file changes the boot mode for services specified by "ITA_DFLT_Ser
 ## Playbook
 ```yaml
 # This Playbook file changes the boot mode for services specified by "ITA_DFLT_Service_Name" to automatic.
-# "Ita_DFLT_Service_Name" can specify multiple service names (list type).
+# "ITA_DFLT_Service_Name" can specify multiple service names (list type).
 - name: Ensure ITA variable is recognized
   ansible.builtin.set_fact:
     ITA_DFLT_Service_Name: "{{ ITA_DFLT_Service_Name }}"

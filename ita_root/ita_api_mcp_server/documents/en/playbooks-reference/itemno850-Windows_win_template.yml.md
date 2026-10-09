@@ -7,9 +7,10 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 ## Overview
 Renders Jinja2 template files onto the Windows target with `win_template`, writing each source file into its positionally paired destination directory under the source file's basename.
 ## Description
-This Playbook file deploys Templates specified by "ITA_DFLT_Win_Template_Dest_Director" to files specified by "ITA_DFLT_Win_Template_Dest_Directory".
+This Playbook file deploys templates specified by "ITA_DFLT_Win_Template_Src_File_Name" to directories specified by "ITA_DFLT_Win_Template_Dest_Directory".
 "ITA_DFLT_Win_Template_Src_File_Name" can specify multiple templates (list type).
-"ITA_DFLT_Win_Template_Dest_Directory" can specify multiple files (list type).
+"ITA_DFLT_Win_Template_Dest_Directory" can specify multiple directories (list type).
+
 ## Keyword
 - Jinja2 variable substitution
 - Generate configuration files

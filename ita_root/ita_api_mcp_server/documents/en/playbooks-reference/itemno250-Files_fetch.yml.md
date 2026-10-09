@@ -8,9 +8,10 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 Fetches every file in `ITA_DFLT_Target_File_Name` from the target nodes into __workflowdir__ using `fetch`, registering `ITA_RGST_Fetch_Result` and dumping it with `debug`.
 ## Description
 This Playbook file stores files specified by "ITA_DFLT_Target_File_Name" to "__workflowdir__".
-"ITA_DFLT_Target_File_name" can specify multiple files (list type).
+"ITA_DFLT_Target_File_Name" can specify multiple files (list type).
 Files stored in "__workflowdir__" can be retrieved as result data after the Movement ends.
 The task results are displayed at debug level 3 (-vvv).
+
 ## Keyword
 - collect logs from servers
 - download a file from a managed node
@@ -19,7 +20,7 @@ The task results are displayed at debug level 3 (-vvv).
 ## Playbook
 ```yaml
 # This Playbook file stores files specified by "ITA_DFLT_Target_File_Name" to "__workflowdir__".
-# "ITA_DFLT_Target_File_name" can specify multiple files (list type).
+# "ITA_DFLT_Target_File_Name" can specify multiple files (list type).
 # Files stored in "__workflowdir__" can be retrieved as result data after the Movement ends.
 # The task results are displayed at debug level 3 (-vvv).
 - name: Ensure ITA variable is recognized
@@ -41,5 +42,4 @@ The task results are displayed at debug level 3 (-vvv).
   ansible.builtin.debug:
     var: ITA_RGST_Fetch_Result
     verbosity: 3
-
 ```

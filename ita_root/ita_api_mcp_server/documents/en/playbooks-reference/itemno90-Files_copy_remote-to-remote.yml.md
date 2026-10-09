@@ -7,9 +7,10 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 ## Overview
 Copies files inside the target host itself - `copy` is called with remote_src true - pairing each source in `ITA_DFLT_Src_Files` positionally with a destination in `ITA_DFLT_Dest_Files`.
 ## Description
-This Playbook file copies local files specified by "ITA_DFLT_Src_Files" to remote files specified by "ITA_DFLT_Dest_Files".
+This Playbook file copies remote files specified by "ITA_DFLT_Src_Files" to remote files specified by "ITA_DFLT_Dest_Files".
 "ITA_DFLT_Src_Files" can specify multiple files (list type).
 "ITA_DFLT_Dest_Files" can specify multiple files (list type).
+
 ## Keyword
 - duplicate a file on the same host
 - copy within a server

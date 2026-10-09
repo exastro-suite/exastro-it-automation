@@ -8,8 +8,9 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 Removes packages from a Red Hat-family host with the `dnf` module and `state: absent`, looping over `ITA_DFLT_Uninstall_Target_packages`; the registered result is printed at verbosity 3.
 ## Description
 This Playbook file uninstalls packages specified by "ITA_DFLT_Uninstall_Target_packages".
-"ITA_DFLT_uninstall_Target_packages" can specify multiple files (list type).
+"ITA_DFLT_Uninstall_Target_packages" can specify multiple packages (list type).
 The task results are displayed at debug level 3 (-vvv).
+
 ## Keyword
 - RPM package removal on RHEL
 - erase installed software
@@ -18,7 +19,7 @@ The task results are displayed at debug level 3 (-vvv).
 ## Playbook
 ```yaml
 # This Playbook file uninstalls packages specified by "ITA_DFLT_Uninstall_Target_packages".
-# "ITA_DFLT_uninstall_Target_packages" can specify multiple files (list type).
+# "ITA_DFLT_Uninstall_Target_packages" can specify multiple packages (list type).
 # The task results are displayed at debug level 3 (-vvv).
 - name: Ensure ITA variable is recognized
   ansible.builtin.set_fact:
@@ -39,5 +40,4 @@ The task results are displayed at debug level 3 (-vvv).
   ansible.builtin.debug:
     var: ITA_RGST_DnfUninstall_Result
     verbosity: 3
-
 ```

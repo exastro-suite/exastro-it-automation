@@ -8,9 +8,10 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 Creates or updates Windows local users with `win_user` and `state: present`, taking name, password and group membership from three positionally zipped lists; `no_log` hides credentials.
 ## Description
 This Playbook file creates the users specified with "ITA_DFLT_Win_User_Name" with the passwords specified with "ITA_DFLT_Win_Password". The users are put in the groups specified by "ITA_DFLT_Win_Groups".
-"ITA_DFLT_Win_User_Name" can specify multiple templates (list type).
-"ITA_DFLT_Win_Password" can specify multiple files (list type).
-"ITA_DFLT_Win_Groups" can specify multiple files (list type).
+"ITA_DFLT_Win_User_Name" can specify multiple user names (list type).
+"ITA_DFLT_Win_Password" can specify multiple passwords (list type).
+"ITA_DFLT_Win_Groups" can specify multiple group names (list type).
+
 ## Keyword
 - Local account provisioning
 - Set a user password
@@ -19,9 +20,9 @@ This Playbook file creates the users specified with "ITA_DFLT_Win_User_Name" wit
 ## Playbook
 ```yaml
 # This Playbook file creates the users specified with "ITA_DFLT_Win_User_Name" with the passwords specified with "ITA_DFLT_Win_Password". The users are put in the groups specified by "ITA_DFLT_Win_Groups".
-# "ITA_DFLT_Win_User_Name" can specify multiple templates (list type).
-# "ITA_DFLT_Win_Password" can specify multiple files (list type).
-# "ITA_DFLT_Win_Groups" can specify multiple files (list type).
+# "ITA_DFLT_Win_User_Name" can specify multiple user names (list type).
+# "ITA_DFLT_Win_Password" can specify multiple passwords (list type).
+# "ITA_DFLT_Win_Groups" can specify multiple group names (list type).
 - name: Ensure ITA_DFLT_Win_User_Name is recognized
   ansible.builtin.set_fact:
     ITA_DFLT_Win_User_Name: "{{ ITA_DFLT_Win_User_Name }}"

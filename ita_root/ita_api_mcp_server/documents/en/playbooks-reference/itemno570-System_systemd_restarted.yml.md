@@ -7,8 +7,9 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 ## Overview
 Calls `ansible.builtin.systemd` with `state: restarted` and `daemon_reload: true` for each name in `ITA_DFLT_Services`, so edited unit files are re-read before each unit is restarted.
 ## Description
-This Playbook file reboots services specified by "ITA_DFLT_Services".
+This Playbook file reloads the systemd configuration and then restarts services specified by "ITA_DFLT_Services".
 "ITA_DFLT_Services" can specify multiple services (list type).
+
 ## Keyword
 - systemctl restart
 - systemctl daemon-reload

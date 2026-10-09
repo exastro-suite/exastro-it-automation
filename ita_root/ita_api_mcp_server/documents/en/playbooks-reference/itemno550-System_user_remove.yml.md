@@ -7,8 +7,9 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 ## Overview
 Deletes accounts with `ansible.builtin.user` using `state: absent` and `remove: true` for each name in `ITA_DFLT_User_Names`, so each user's home directory and mail spool are deleted too.
 ## Description
-This Playbook deletes users specified by "ITA_DFLY_User_Names".
+This Playbook file deletes users specified by "ITA_DFLT_User_Names".
 "ITA_DFLT_User_Names" can specify multiple users (list type).
+
 ## Keyword
 - userdel -r
 - delete a Linux account

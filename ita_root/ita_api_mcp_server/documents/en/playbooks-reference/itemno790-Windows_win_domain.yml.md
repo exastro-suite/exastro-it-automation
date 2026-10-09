@@ -2,7 +2,7 @@
 This playbook describes the playbooks initially registered in Exastro's playbook_list.
 ## Exastro Registration Info
 - **item_no**: 790
-- **playbook_name**: ~[Exastro standard][Win] Check Domain
+- **playbook_name**: ~[Exastro standard][Win] Create Domain
 - **playbook_file**: Windows_win_domain.yml
 ## Overview
 Creates a new Active Directory domain in a new forest on the Windows target with `win_domain`, pairing each DNS domain name with its safe mode password; logging is suppressed.

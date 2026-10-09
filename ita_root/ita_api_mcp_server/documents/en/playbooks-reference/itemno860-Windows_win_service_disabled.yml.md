@@ -7,8 +7,9 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 ## Overview
 Sets each listed Windows service to `start_mode: disabled` with `win_service` so it can no longer start automatically; the current running state is left untouched.
 ## Description
-This Playbook file deactivates "automatic boot mode" for the services specified by "ITA_DFL_Service_Name".
+This Playbook file deactivates "automatic boot mode" for the services specified by "ITA_DFLT_Service_Name".
 "ITA_DFLT_Service_Name" can specify multiple service names (list type).
+
 ## Keyword
 - Prevent service auto-start
 - Service startup type
@@ -16,7 +17,7 @@ This Playbook file deactivates "automatic boot mode" for the services specified 
 - Services console startup type
 ## Playbook
 ```yaml
-# This Playbook file deactivates "automatic boot mode" for the services specified by "ITA_DFL_Service_Name".
+# This Playbook file deactivates "automatic boot mode" for the services specified by "ITA_DFLT_Service_Name".
 # "ITA_DFLT_Service_Name" can specify multiple service names (list type).
 - name: Ensure ITA variable is recognized
   ansible.builtin.set_fact:

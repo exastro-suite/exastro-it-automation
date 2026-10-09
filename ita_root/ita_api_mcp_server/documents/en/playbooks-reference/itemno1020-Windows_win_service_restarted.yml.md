@@ -7,8 +7,9 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 ## Overview
 Restarts each listed Windows service with `win_service` using `state: restarted`; the startup mode is not altered.
 ## Description
-This Playbook file reboots services specified by "ITA_DFLT_Service_Name".
+This Playbook file restarts services specified by "ITA_DFLT_Service_Name".
 "ITA_DFLT_Service_Name" can specify multiple service names (list type).
+
 ## Keyword
 - Apply configuration change to a service
 - Bounce a Windows service
@@ -16,7 +17,7 @@ This Playbook file reboots services specified by "ITA_DFLT_Service_Name".
 - sc stop and start equivalent
 ## Playbook
 ```yaml
-# This Playbook file reboots services specified by "ITA_DFLT_Service_Name".
+# This Playbook file restarts services specified by "ITA_DFLT_Service_Name".
 # "ITA_DFLT_Service_Name" can specify multiple service names (list type).
 - name: Ensure ITA variable is recognized
   ansible.builtin.set_fact:

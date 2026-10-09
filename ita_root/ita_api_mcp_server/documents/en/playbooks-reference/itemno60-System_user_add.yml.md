@@ -9,7 +9,8 @@ Creates accounts with `ansible.builtin.user` (`state: present`), pairing each na
 ## Description
 This Playbook file registers users specified by "ITA_DFLT_User_Names" to groups specified by "ITA_DFLT_User_Group_Names".
 "ITA_DFLT_User_Names" can specify multiple users (list type).
-"ITA_DFLT_Group_Names" can specify multiple groups (list type).
+"ITA_DFLT_User_Group_Names" can specify multiple groups (list type).
+
 ## Keyword
 - useradd
 - create a Linux account

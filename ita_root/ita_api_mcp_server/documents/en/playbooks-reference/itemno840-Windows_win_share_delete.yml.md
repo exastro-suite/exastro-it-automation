@@ -7,8 +7,9 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 ## Overview
 Removes Windows SMB shares with `win_share` and `state: absent`, looping over each supplied share name; the underlying folder itself is kept.
 ## Description
-This Playbook file deletes shared names specified by "ITA_DFLY_Share_Name".
+This Playbook file deletes shared names specified by "ITA_DFLT_Share_Name".
 "ITA_DFLT_Share_Name" can specify multiple share names (list type).
+
 ## Keyword
 - SMB share removal
 - Unshare a Windows folder
@@ -16,7 +17,7 @@ This Playbook file deletes shared names specified by "ITA_DFLY_Share_Name".
 - Decommission a file share
 ## Playbook
 ```yaml
-# This Playbook file deletes shared names specified by "ITA_DFLY_Share_Name".
+# This Playbook file deletes shared names specified by "ITA_DFLT_Share_Name".
 # "ITA_DFLT_Share_Name" can specify multiple share names (list type).
 - name: Ensure ITA variable is recognized
   ansible.builtin.set_fact:

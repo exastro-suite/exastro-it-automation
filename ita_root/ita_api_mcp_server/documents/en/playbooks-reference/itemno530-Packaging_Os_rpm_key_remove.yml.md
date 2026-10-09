@@ -7,8 +7,9 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 ## Overview
 Deletes trusted GPG keys from the RPM keyring with the `rpm_key` module and `state: absent`, looping over each value of `ITA_DFLT_Gpg_Key_Ids`.
 ## Description
-This Playbok file deletes GPG keys specified by "ITA_DFLT_Gpg_Keys" from the RPM database.
-"ITA_DFLT_Gpg_Keys" can specify multiple GPG keys (list type).
+This Playbook file deletes GPG keys specified by "ITA_DFLT_Gpg_Key_Ids" from the RPM database.
+"ITA_DFLT_Gpg_Key_Ids" can specify multiple GPG keys (list type).
+
 ## Keyword
 - untrust repository signing key
 - remove public key from yum

@@ -9,7 +9,8 @@ Sets the permission mode of each path using the `file` module, pairing `ITA_DFLT
 ## Description
 This Playbook file changes permissions specified by "ITA_DFLT_Mode" for the files/directories specified by "ITA_DFLT_Target_Path".
 "ITA_DFLT_Target_Path" can specify multiple file/directories (list type).
-"TA_DFLT_Mode" can specify multiple permissions (list type).
+"ITA_DFLT_Mode" can specify multiple permissions (list type).
+
 ## Keyword
 - chmod a remote file
 - file permission bits

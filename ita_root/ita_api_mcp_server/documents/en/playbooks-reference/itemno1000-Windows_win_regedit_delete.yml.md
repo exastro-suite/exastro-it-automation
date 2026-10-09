@@ -7,11 +7,12 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 ## Overview
 Deletes Windows registry entries with `win_regedit` and `state: absent`, pairing the registry path list and the entry name list positionally.
 ## Description
-This Playbook file deletes the Registry key.
+This Playbook file deletes the Registry value (entry).
 The variables are as follows:
 "ITA_DFLT_Regedit_Path": Registry Path name
 "ITA_DFLT_Regedit_Name": Registry Entry name
 Each of the variables can have multiple specified at the same time (list type).
+
 ## Keyword
 - HKLM hive
 - Undo registry customization
@@ -19,7 +20,7 @@ Each of the variables can have multiple specified at the same time (list type).
 - Purge registry property
 ## Playbook
 ```yaml
-# This Playbook file deletes the Registry key.
+# This Playbook file deletes the Registry value (entry).
 # The variables are as follows:
 # "ITA_DFLT_Regedit_Path": Registry Path name
 # "ITA_DFLT_Regedit_Name": Registry Entry name

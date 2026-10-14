@@ -31,6 +31,8 @@ ENV SERVICE_NAME=ita-by-oase-conclusion
 ENV NOTIFICATION_BUFFER_SIZE=100
 
 ENV EVALUATE_LATENT_INFINITE_LOOP_LIMIT=1000
+ENV MULTIPLE_EVALUATE_LOOP_LIMIT=1000
+ENV REGISTER_ACTION_LIMIT=25
 # ハングアップ監視用ファイル
 ENV FILE_PATH_LIVENESS=/tmp/liveness
 
@@ -55,10 +57,10 @@ RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted
     --exclude=python3.11-setuptools \
 &&  alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 10 \
 &&  alternatives --install /usr/bin/pip3 pip3 /usr/bin/pip3.11 10 \
-&&  alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 1 
+&&  alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 1
 # &&  alternatives --set python3 /usr/bin/python3.11 \
 #\
-# start pypy install  
+# start pypy install
 RUN set -eux; \
 # PyPyのバージョンはPyPyバージョン("v"major.minor.patch)とPythonバージョン(major.minor)の2つを持ちます
 # 例: PyPyバージョンv7.3.20ではPythonバージョンの3.11と2.7の2つを実装しています

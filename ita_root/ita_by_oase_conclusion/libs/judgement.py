@@ -69,7 +69,7 @@ class Judgement:
             EventJudgList.append(self.makeEventJudgList(LabelKeyName, LabelValue, LabelCondition))
 
         ret, UsedEventIdList = self.EventJudge(EventJudgList)
-        if search_condition_Id == '1' and ret is True and len(UsedEventIdList) > 1:
+        if search_condition_Id == oaseConst.DF_SEARCH_CONDITION_UNIQUE and ret is True and len(UsedEventIdList) > 1:
             # 検索方法がユニークでかつ複数件イベントが合致した時
             return True, []
         else:
@@ -307,6 +307,8 @@ class Judgement:
     ) -> tuple[bool, list[ObjectId], bool]:
         # 判定結果が後続イベントを含むかどうか
         judged_result_has_subsequent_event = False
+        # 任意のルールに複数回マッチする（マッチするイベントが複数ある）かどうか
+        multicple_match = False
         UseEventIdList = []
 
         # Rule verdict process started RULE_ID:{} RULE_NAME:{} FILTER_A:{} FILTER_OPERATOR:{} FILTER_B:{}
@@ -326,7 +328,7 @@ class Judgement:
         # ルールに設定されているアクションIDが異常ではないかチェック
         action_id = RuleRow['ACTION_ID']
         if action_id is not None and action_id not in actionIdList:
-            return False, UseEventIdList, judged_result_has_subsequent_event
+            return False, UseEventIdList, judged_result_has_subsequent_event, multicple_match
 
         # ルールに設定されている結論ラベルが異常ではないかチェック
         if type(RuleRow["CONCLUSION_LABEL_SETTINGS"]) is str:
@@ -336,7 +338,7 @@ class Judgement:
             label_key = row.get('label_key')
             name = getIDtoLabelName(self.LabelMasterDict, label_key)
             if name is False:
-                return False, UseEventIdList, judged_result_has_subsequent_event
+                return False, UseEventIdList, judged_result_has_subsequent_event, multicple_match
 
         FilterResultDict['Operator'] = str(RuleRow['FILTER_OPERATOR'])
 
@@ -350,17 +352,18 @@ class Judgement:
         Filter_AB_List.append(RuleRow['FILTER_A'])
         # フィルタID毎にマッチしたイベントを保存する(グルーピング用)
         filtered_event_map: dict[str, dict[str]] = {}
+
         if RuleRow['FILTER_B'] is not None:
             Filter_AB_List.append(RuleRow['FILTER_B'])
-        for FilterId in Filter_AB_List:
-            tmp_msg = g.appmsg.get_log_message("BKY-90052", [FilterId])
+        for filter_id in Filter_AB_List:
+            tmp_msg = g.appmsg.get_log_message("BKY-90052", [filter_id])
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-            ret, EventRow = self.getFilterJudge(FilterId, IncidentDict, preserved_events)
-            filtered_event_map[FilterId] = EventRow
+            ret, EventRow = self.getFilterJudge(filter_id, IncidentDict, preserved_events)
+            filtered_event_map[filter_id] = EventRow
 
             # グルーピングの場合、追加で後続イベントチェックを行う
-            filter_row = filterIDMap[FilterId]
+            filter_row = filterIDMap[filter_id]
             if (
                 ret
                 and filter_row["SEARCH_CONDITION_ID"]
@@ -382,14 +385,6 @@ class Judgement:
 
             # フィルタ判定結果退避
             FilterResultDict[str(ret)] += 1
-
-            # フィルタ判定に使用したイベントID退避
-            if ret is True:
-                tmp_msg = g.appmsg.get_log_message("BKY-90053", [FilterId])
-                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-            else:
-                tmp_msg = g.appmsg.get_log_message("BKY-90054", [FilterId])
-                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         tmp_msg = g.appmsg.get_log_message("BKY-90055", [str(ret)])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -417,37 +412,60 @@ class Judgement:
                 if not is_first_event:
                     judged_result_has_subsequent_event = True
 
-                    # 後続イベントの場合はOASE Conclusion上ではイベント扱いとしない
-
-                    # ルールがマッチした時と同じく予約済みとする
-                    preserved_events.update(IncidentDict[filter_id])
-                    # IncidentDictから削除する
-                    IncidentDict[filter_id].remove(event["_id"])
                     # 後続イベントを判定済み扱いとする
                     if event["labels"]["_exastro_evaluated"] != "1":
                         self.EventObj.update_label_flag([event["_id"]], {'_exastro_evaluated': '1'})
-                    # FilterResultDict['EventList']からの削除は不要(存在しない)
 
         if ret is True:
-            tmp_msg = g.appmsg.get_log_message("BKY-90056", [RuleRow['RULE_ID'], RuleRow['RULE_NAME'], RuleRow['FILTER_A'], RuleRow['FILTER_OPERATOR'], RuleRow['FILTER_B']])
+            tmp_msg = g.appmsg.get_log_message("BKY-90056", [RuleRow['RULE_ID'], RuleRow['RULE_NAME'], RuleRow['FILTER_A'], RuleRow['FILTER_OPERATOR'], RuleRow['FILTER_B']])  # Ruled verdict results: Matched RULE_ID:{} RULE_NAME:{} FILTER_A:{} FILTER_OPERATOR:{} FILTER_B:{}
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         else:
-            tmp_msg = g.appmsg.get_log_message("BKY-90057", [RuleRow['RULE_ID'], RuleRow['RULE_NAME'], RuleRow['FILTER_A'], RuleRow['FILTER_OPERATOR'], RuleRow['FILTER_B']])
+            tmp_msg = g.appmsg.get_log_message("BKY-90057", [RuleRow['RULE_ID'], RuleRow['RULE_NAME'], RuleRow['FILTER_A'], RuleRow['FILTER_OPERATOR'], RuleRow['FILTER_B']])  # Rule verdict results: No match RULE_ID:{} RULE_NAME:{} FILTER_A:{} FILTER_OPERATOR:{} FILTER_B:{}
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-            return False, UseEventIdList, judged_result_has_subsequent_event
+            ret = False
 
-        # ルールにマッチしたイベントを予約済みとする(下位ルールで使用しない)
-        preserved_events.update(
-            event_id
-            for filter_id in Filter_AB_List
-            if filter_id in IncidentDict
-            for event_id in IncidentDict[filter_id]
-        )
+        # 任意のルールに複数回マッチする（マッチするイベントが複数ある）かどうか
+        # multicple_matchフラグを後続のイベントを連続判定させるために利用する
+        # グルーピングの場合などは、今回の判定がFalseでも（後続イベントである場合）、連続判定を行う必要がある
+        for filter_id in Filter_AB_List:
+            if filter_id not in IncidentDict:
+                multicple_match = False
+                continue
 
-        for EventRow in FilterResultDict['EventList']:
-            UseEventIdList.append(EventRow['_id'])
+            match_f_list_len = len(IncidentDict[filter_id])
+            judged_event  = filtered_event_map[filter_id]
 
-        return True, UseEventIdList, judged_result_has_subsequent_event
+            if filterIDMap[filter_id]["SEARCH_CONDITION_ID"] == oaseConst.DF_SEARCH_CONDITION_UNIQUE:
+                multicple_match = False
+                break
+            elif filterIDMap[filter_id]["SEARCH_CONDITION_ID"] == oaseConst.DF_SEARCH_CONDITION_QUEUING:
+                if ret is False or match_f_list_len <= 1 or ('_id' in judged_event and IncidentDict[filter_id][match_f_list_len-1] == judged_event['_id']):
+                    multicple_match = False
+                    break
+            else:
+                if  (ret is False and judged_result_has_subsequent_event is False) or match_f_list_len <= 1 or ('_id' in judged_event and IncidentDict[filter_id][match_f_list_len-1] == judged_event['_id']):
+                    multicple_match = False
+                    break
+
+            multicple_match = True
+
+        # ルールにマッチした全イベントを予約済みとする(下位ルールで使用しない)
+        if multicple_match is False and ret is True:
+            preserved_events.update(
+                event_id
+                for filter_id in Filter_AB_List
+                if filter_id in IncidentDict
+                for event_id in IncidentDict[filter_id]
+            )
+            # g.applogger.debug(f"{preserved_events=}")
+
+        # 今回ルールにマッチしたイベントのみを退避
+        if ret is True:
+            for EventRow in FilterResultDict['EventList']:
+                UseEventIdList.append(EventRow['_id'])
+
+
+        return ret, UseEventIdList, judged_result_has_subsequent_event, multicple_match
 
     def getFilterJudge(
         self,

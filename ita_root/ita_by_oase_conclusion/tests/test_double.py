@@ -31,6 +31,10 @@ class DummyDB:
             oaseConst.T_OASE_ACTION_LOG: [],
         }
 
+    def db_transaction_start(self):
+        """トランザクション開始"""
+        self.ended = False
+
     def db_transaction_end(self, flag):
         """トランザクション終了"""
         self.ended = True

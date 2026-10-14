@@ -68,7 +68,7 @@ def backyard_main(organization_id, workspace_id):
 
     NotificationProcessManager.start_workspace_processing(organization_id, workspace_id)
     WriterProcessManager.start_workspace_processing(organization_id, workspace_id)
-    
+
     try:
         # 処理時間
         judgeTime = int(datetime.datetime.now().timestamp())
@@ -91,6 +91,10 @@ def backyard_main(organization_id, workspace_id):
         # WriterProcessManagerに遅延書き込みはここまでに完了させる
         #   T_OASE_ACTION_LOGへの参照がここ以降で発生するため、ここまでに書き込みを完了させる
         WriterProcessManager.flush_buffer()
+
+        # autocommit=Falseのため、wsDbオブジェクトのREPEATABLE READ のMVCCスナップショットを更新して、WriterProcessManagerオブジェクトで書き込んだデータをwsDbインスタンスから見えるようにする必要がある
+        wsDb.db_transaction_start()      # _is_transaction を True にする
+        wsDb.db_transaction_end(True)    # commit → スナップショット更新
 
         # 評価結果のステータスを監視するクラス
         action_status_monitor = ActionStatusMonitor(wsDb, EventObj)
@@ -268,15 +272,22 @@ def JudgeMain(wsDb: DBConnectWs, judgeTime: int, EventObj: ManageEvents, actionO
     # region 全レベルループ
     newIncidentCount = {}
 
-    # 無限ループ対策用のループ上限値を環境変数から取得
-    evaluate_latent_infinite_loop_limit = int(os.environ.get("EVALUATE_LATENT_INFINITE_LOOP_LIMIT", 1000))
+    evaluate_latent_infinite_loop_limit = int(os.environ.get("EVALUATE_LATENT_INFINITE_LOOP_LIMIT", 1000))  # 無限ループ対策用のループ上限値
+    multiple_evaluate_loop_limit = int(os.environ.get("MULTIPLE_EVALUATE_LOOP_LIMIT", 1000))   #  同一ルールの複数マッチ時の一度の判定上限値
+    register_action_limit = int(os.environ.get("REGISTER_ACTION_LIMIT", 25))   # アクション登録上限値
 
+    register_action_count = 0
     while True:
+        if register_action_count >= register_action_limit:
+            break
+
         # region レベル毎のループ
         for TargetLevel in JudgeLevelList:
+            if register_action_count >= register_action_limit:
+                break
             # Level{} Rule verdict Started
             tmp_msg = g.appmsg.get_log_message("BKY-90017", [TargetLevel, 'Started'])
-            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
             newIncidentCount[TargetLevel] = 0
 
@@ -285,76 +296,109 @@ def JudgeMain(wsDb: DBConnectWs, judgeTime: int, EventObj: ManageEvents, actionO
             g.applogger.debug(addline_msg('TargetRuleList={}'.format(TargetRuleList)))  # noqa: F405
 
             newIncident_Flg = True
-            preserved_events = set()
+            preserved_events = set() # 判定結果が後続イベントを含むかどうか
 
             # region レベル毎の結論イベント未発生確認のループ
             while newIncident_Flg is True:
+                if register_action_count >= register_action_limit:
+                    break
                 newIncident_Flg = False
 
                 # region レベル毎のルール判定のループ
                 for ruleInfo in TargetRuleList:
-                    # ルール判定
-                    ret, UseEventIdList, judged_result_has_subsequent_event = (
-                        judgeObj.RuleJudge(
-                            ruleInfo,
-                            IncidentDict,
-                            actionIdList,
-                            filterIDMap,
-                            preserved_events,
+                    if register_action_count >= register_action_limit:
+                        break
+                    multicple_match = True # 任意のルールに複数回マッチする（マッチするイベントが複数ある）かどうか
+
+                    multicple_match_count = 0
+                    while multicple_match is True:
+                        multicple_match = False
+                        register_action_count_flg = False  #アクションが設定されたか
+
+                        # ルール判定　→1ルールに複数回マッチする場合でも、1組のみマッチ
+                        ret, UseEventIdList, judged_result_has_subsequent_event, multicple_match = (
+                            judgeObj.RuleJudge(
+                                ruleInfo,
+                                IncidentDict,
+                                actionIdList,
+                                filterIDMap,
+                                preserved_events,
+                            )
                         )
-                    )
 
-                    # ルール判定 マッチ
-                    if ret is True:
-                        # 判定済みの結果を評価結果に登録
-                        action_log_row = actionObj.RegisterActionLog(ruleInfo, UseEventIdList, judgeObj.LabelMasterDict)
+                        # ルール判定 マッチ
+                        if ret is True:
+                            # 判定済みの結果を評価結果に登録
+                            action_log_row = actionObj.RegisterActionLog(ruleInfo, UseEventIdList, judgeObj.LabelMasterDict)
 
-                        if action_log_row.get("ACTION_ID", ""):
-                            # アクションが設定されている場合・・・ループの外での実行処理を待つ
-                            pass
-                        else:
-                            # アクションが設定されていない場合・・・すぐに結論イベントを出す
+                            if action_log_row.get("ACTION_ID", ""):
+                                # アクションが設定されている場合・・・ループの外での実行処理を待つ
+                                register_action_count_flg = True
+                                register_action_count += 1
+                                pass
+                            else:
+                                # アクションが設定されていない場合・・・すぐに結論イベントを出す
 
-                            # 結論イベントの登録
-                            ret, ConclusionEventRow = InsertConclusionEvent(EventObj, ruleInfo, UseEventIdList, action_log_row['CONCLUSION_EVENT_LABELS'])
-                            # キャッシュに保存
-                            EventObj.append_event(ConclusionEventRow)
+                                # 結論イベントの登録
+                                ret, ConclusionEventRow = InsertConclusionEvent(EventObj, ruleInfo, UseEventIdList, action_log_row['CONCLUSION_EVENT_LABELS'])
+                                # キャッシュに保存
+                                EventObj.append_event(ConclusionEventRow)
 
-                            # 結論イベントに対応するフィルタ確認
-                            ret, UsedFilterIdList = judgeObj.ConclusionLabelUsedInFilter(ConclusionEventRow["labels"], filterIDMap)
-                            # Verifying conclusion event filters{}
-                            tmp_msg = g.appmsg.get_log_message("BKY-90021", [str(ret)])
-                            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                                # 結論イベントに対応するフィルタ確認
+                                ret, UsedFilterIdList = judgeObj.ConclusionLabelUsedInFilter(ConclusionEventRow["labels"], filterIDMap)
+                                # Verifying conclusion event filters{}
+                                tmp_msg = g.appmsg.get_log_message("BKY-90021", [str(ret)])
+                                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-                            if ret is True:
-                                for UsedFilterId in UsedFilterIdList:
-                                    # Registering link between conclusion event filter and event. FILTER_ID: {} EVENT_ID: {}
-                                    tmp_msg = g.appmsg.get_log_message("BKY-90022", [UsedFilterId, ConclusionEventRow['_id']])
+                                if ret is True:
+                                    for UsedFilterId in UsedFilterIdList:
+                                        # Registering link between conclusion event filter and event. FILTER_ID: {} EVENT_ID: {}
+                                        tmp_msg = g.appmsg.get_log_message("BKY-90022", [UsedFilterId, ConclusionEventRow['_id']])
 
-                                    if UsedFilterId in IncidentDict:
-                                        if len(IncidentDict[UsedFilterId]) > 0:
-                                            if filterIDMap[UsedFilterId]["SEARCH_CONDITION_ID"] == '1':
-                                                # ユニークのフィルターに既にイベントがある場合
-                                                judged_events = []  # 何かしら判定済みのイベントのリスト
-                                                unevaluated_events = []  # 未評価のイベントのリスト
-                                                for event_id in IncidentDict[UsedFilterId]:
-                                                    ret, EventRow = EventObj.get_events(event_id)
-                                                    if ret is True:
-                                                        if (
-                                                            EventRow['labels']['_exastro_evaluated'] == '0' and
-                                                            EventRow['labels']['_exastro_timeout'] == '0' and
-                                                            EventRow['labels']['_exastro_undetected'] == '0'
-                                                        ):
-                                                            unevaluated_events.append(event_id)
+                                        if UsedFilterId in IncidentDict:
+                                            if len(IncidentDict[UsedFilterId]) > 0:
+                                                if filterIDMap[UsedFilterId]["SEARCH_CONDITION_ID"] == '1':
+                                                    # ユニークのフィルターに既にイベントがある場合
+                                                    judged_events = []  # 何かしら判定済みのイベントのリスト
+                                                    unevaluated_events = []  # 未評価のイベントのリスト
+                                                    for event_id in IncidentDict[UsedFilterId]:
+                                                        ret, EventRow = EventObj.get_events(event_id)
+                                                        if ret is True:
+                                                            if (
+                                                                EventRow['labels']['_exastro_evaluated'] == '0' and
+                                                                EventRow['labels']['_exastro_timeout'] == '0' and
+                                                                EventRow['labels']['_exastro_undetected'] == '0'
+                                                            ):
+                                                                unevaluated_events.append(event_id)
+                                                            else:
+                                                                judged_events.append(event_id)
                                                         else:
-                                                            judged_events.append(event_id)
-                                                    else:
-                                                        # 見つからないものは破棄
-                                                        pass
+                                                            # 見つからないものは破棄
+                                                            pass
 
-                                                if len(unevaluated_events) == 0:
-                                                    # 判定済みのものしかなかったので、結論イベントを追加する
-                                                    IncidentDict[UsedFilterId] = judged_events + [ConclusionEventRow['_id']]
+                                                    if len(unevaluated_events) == 0:
+                                                        # 判定済みのものしかなかったので、結論イベントを追加する
+                                                        IncidentDict[UsedFilterId] = judged_events + [ConclusionEventRow['_id']]
+                                                        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                                                        # 結論イベントを抽出対象とするフィルターを含むルールのマッチ候補となるイベントも予約済みにする
+                                                        for rule in (
+                                                            rule
+                                                            for rule in ruleList
+                                                            if UsedFilterId
+                                                            in (rule["FILTER_A"], rule["FILTER_B"])
+                                                        ):
+                                                            preserved_events.update(
+                                                                IncidentDict.get(rule["FILTER_A"], ()),
+                                                                IncidentDict.get(rule["FILTER_B"], ()),
+                                                            )
+                                                    else:
+                                                        # 破棄するイベントを予約済みから取り除く
+                                                        preserved_events.difference_update(IncidentDict[UsedFilterId])
+                                                        # 複数合致することになるので、未評価のもの（結論イベント含む）は破棄する→未知におとす予定
+                                                        IncidentDict[UsedFilterId] = judged_events
+                                                else:
+                                                    # キューイングの場合
+                                                    IncidentDict[UsedFilterId].append(ConclusionEventRow['_id'])
                                                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                                                     # 結論イベントを抽出対象とするフィルターを含むルールのマッチ候補となるイベントも予約済みにする
                                                     for rule in (
@@ -367,64 +411,54 @@ def JudgeMain(wsDb: DBConnectWs, judgeTime: int, EventObj: ManageEvents, actionO
                                                             IncidentDict.get(rule["FILTER_A"], ()),
                                                             IncidentDict.get(rule["FILTER_B"], ()),
                                                         )
-                                                else:
-                                                    # 破棄するイベントを予約済みから取り除く
-                                                    preserved_events.difference_update(IncidentDict[UsedFilterId])
-                                                    # 複数合致することになるので、未評価のもの（結論イベント含む）は破棄する→未知におとす予定
-                                                    IncidentDict[UsedFilterId] = judged_events
                                             else:
-                                                # キューイングの場合
-                                                IncidentDict[UsedFilterId].append(ConclusionEventRow['_id'])
-                                                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-                                                # 結論イベントを抽出対象とするフィルターを含むルールのマッチ候補となるイベントも予約済みにする
-                                                for rule in (
-                                                    rule
-                                                    for rule in ruleList
-                                                    if UsedFilterId
-                                                    in (rule["FILTER_A"], rule["FILTER_B"])
-                                                ):
-                                                    preserved_events.update(
-                                                        IncidentDict.get(rule["FILTER_A"], ()),
-                                                        IncidentDict.get(rule["FILTER_B"], ()),
-                                                    )
+                                                # 空配列。既に未知判定（ユニーク検索かつ複数イベント合致）されているため、結論イベントも破棄する→未知におとす予定
+                                                pass
                                         else:
-                                            # 空配列。既に未知判定（ユニーク検索かつ複数イベント合致）されているため、結論イベントも破棄する→未知におとす予定
-                                            pass
-                                    else:
-                                        # 初めてフィルターにかかった
-                                        IncidentDict[UsedFilterId] = [ConclusionEventRow['_id']]
-                                        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-                                        # 結論イベントを抽出対象とするフィルターを含むルールのマッチ候補となるイベントも予約済みにする
-                                        for rule in (
-                                            rule
-                                            for rule in ruleList
-                                            if UsedFilterId
-                                            in (rule["FILTER_A"], rule["FILTER_B"])
-                                        ):
-                                            preserved_events.update(
-                                                IncidentDict.get(rule["FILTER_A"], ()),
-                                                IncidentDict.get(rule["FILTER_B"], ()),
-                                            )
+                                            # 初めてフィルターにかかった
+                                            IncidentDict[UsedFilterId] = [ConclusionEventRow['_id']]
+                                            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                                            # 結論イベントを抽出対象とするフィルターを含むルールのマッチ候補となるイベントも予約済みにする
+                                            for rule in (
+                                                rule
+                                                for rule in ruleList
+                                                if UsedFilterId
+                                                in (rule["FILTER_A"], rule["FILTER_B"])
+                                            ):
+                                                preserved_events.update(
+                                                    IncidentDict.get(rule["FILTER_A"], ()),
+                                                    IncidentDict.get(rule["FILTER_B"], ()),
+                                                )
 
-                            newIncident_Flg = True
+                                newIncident_Flg = True
 
-                            # 評価結果の更新（完了）
-                            data_list = {
-                                "ACTION_LOG_ID": action_log_row["ACTION_LOG_ID"],
-                                "STATUS_ID": oaseConst.OSTS_Completed  # "6"
-                            }
-                            WriterProcessManager.update_oase_action_log(data_list)
-                    else:
-                        # ルール判定 アンマッチ
-                        if judged_result_has_subsequent_event:
-                            # 判定結果が後続イベントを含む場合は、ループ継続のために結論イベントが生じたものとして扱う
-                            newIncident_Flg = True
+                                # 評価結果の更新（完了）
+                                data_list = {
+                                    "ACTION_LOG_ID": action_log_row["ACTION_LOG_ID"],
+                                    "STATUS_ID": oaseConst.OSTS_Completed  # "6"
+                                }
+                                WriterProcessManager.update_oase_action_log(data_list)
+                        else:
+                            # ルール判定 アンマッチ
+                            pass
 
+                        if judged_result_has_subsequent_event is False:
+                            # 後続イベントの場合はカウントしない
+                            multicple_match_count += 1
+
+                        if register_action_count_flg == True and register_action_count >= register_action_limit:
+                            # アクションが設定されている場合、登録上限を超えたら、連続ルール判定は１回しか行わないものとする
+                            g.applogger.warning(f"register_action_count({register_action_count}) is over 'register_action_limit'")
+                            multicple_match = False
+                        elif multicple_match_count > multiple_evaluate_loop_limit:
+                            g.applogger.warning("multicple_match_count is over 'multiple_evaluate_loop_limit'")
+                            multicple_match = False
                 # endregion レベル毎のルール判定のループ
 
                 # 結論イベントの追加判定
                 if newIncident_Flg is True:
                     newIncidentCount[TargetLevel] += 1
+
                     tmp_msg = g.appmsg.get_log_message("BKY-90023", [])
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     tmp_msg = g.appmsg.get_log_message("BKY-90024", [TargetLevel])

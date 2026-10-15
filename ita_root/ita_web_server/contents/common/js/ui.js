@@ -331,12 +331,6 @@ setSideMenuEvents() {
                 e.preventDefault();
                 $links.first().focus();
             break;
-            case 'Enter':
-                if ( $links.length ) {
-                    e.preventDefault();
-                    $links.get(0).click();
-                }
-            break;
             case 'Escape':
                 ui.menuSearchResultClose();
             break;

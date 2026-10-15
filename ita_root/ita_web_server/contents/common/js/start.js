@@ -23,6 +23,9 @@
 let getMessage;
 (function () {
     CommonAuth.onAuthSuccess(() => {
+        // ログインユーザ等が切り替わった場合はWebStorageをクリアする
+        fn.clearStorageByUser();
+
         // 複数タブ間で共有するキャッシュに接続する
         fn.cache.init();
 

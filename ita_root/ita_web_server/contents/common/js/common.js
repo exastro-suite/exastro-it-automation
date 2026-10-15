@@ -1283,6 +1283,42 @@ createStorageKey: function( key ) {
 },
 /*
 ##################################################
+   WebStorageのクリア
+   前のデータが一瞬表示されるのを防ぐ
+   ・Session storage：ログインユーザ、オーガナイゼーション、ワークスペースが切り替わった場合
+     （データ（パネル画像など）を複数保持しないようにする）
+   ・Local storage：ログインユーザが切り替わった場合
+     （タブ間で共有されるため、ワークスペースごとのタブで交互に消えないようにする）
+   ※認証完了後に呼び出す
+##################################################
+*/
+clearStorageByUser: function() {
+    if ( !windowFlag ) return;
+
+    const userId = cmn.cache.getUserId();
+    if ( userId === null ) return;
+
+    const ownerKey = 'ita_ui_owner',
+          owners = {
+              session: `${organization_id}/${workspace_id}/${userId}`,
+              local: userId
+          };
+
+    for ( const type in owners ) {
+        const owner = owners[ type ];
+        if ( cmn.storage.get( ownerKey, type, false ) === owner ) continue;
+
+        const keys = cmn.storage.getKeys( type );
+        for ( const key of keys ) {
+            if ( key.indexOf('ita_ui_') === 0 ) {
+                cmn.storage.remove( key, type, false );
+            }
+        }
+        cmn.storage.set( ownerKey, owner, type, false );
+    }
+},
+/*
+##################################################
    Shared cache
    複数タブ間で共有するメモリ上のキャッシュ（cache_worker.js）
    ※ディスクには保存されないため、全タブを閉じると破棄される
@@ -5375,24 +5411,6 @@ commonTab: function( $target ) {
 }
 
 }; // end cmn
-
-    // document.referrerが空の場合、WebStorageをクリア
-    if ( windowFlag && !document.referrer.length ) {
-        // Local storage
-        const localKeys = cmn.storage.getKeys('local');
-        for ( const key of localKeys ) {
-            if ( key.indexOf('ita_ui_') === 0 ) {
-                cmn.storage.remove( key, 'local', false );
-            }
-        }
-        // Session storage
-        const sessionKeys = cmn.storage.getKeys('session');
-        for ( const key of sessionKeys ) {
-            if ( key.indexOf('ita_ui_') === 0 ) {
-                cmn.storage.remove( key, 'session', false );
-            }
-        }
-    }
 
     // 共通パラメーター
     const commonParams = {};

@@ -96,7 +96,9 @@ async init() {
         onClose: () => this.reloadSetting(),
         isServiceChangeLocked: () => this.newChat !== true,
         // 認証が通らなかった場合は、設定の一覧でも使用できない旨を表示する
-        getAuthError: () => ( this.isAuthError() )? this.auth.message: null
+        getAuthError: () => ( this.isAuthError() )? this.auth.message: null,
+        // 認証を確認中の場合は、結果が出てから一覧を表示させる
+        waitAuthCheck: () => this.waitAiAssistantAuth()
     });
 
     // 先に画面の枠を作る（このあとの取得が失敗しても、フッターと通知は表示できる）
@@ -169,6 +171,8 @@ initVariable() {
     //   error   … 確認そのものに失敗したか（通信エラーなど。認証情報が無効と判断できた
     //             わけではないため、会話中の認証切れの判定には使わない）
     this.auth = { checked: false, valid: false, message: '', error: false };
+    // 実行中の認証確認（確認中でなければnull。完了を待てるようにPromiseを保持する）
+    this.authCheck = null;
     // 初期化のうち、失敗しても画面は表示できる処理のエラー内容（新規チャット画面に表示する）
     //   mcpError     … MCPツール一覧の取得に失敗（ITAの操作ができない）
     //   settingError … AI利用設定の読み込みに失敗（チャットを開始できない）
@@ -713,7 +717,31 @@ checkAiAssistantSetting( assistantCheck = false) {
 // 会話中でも、確認するのは設定で選択中のAIサービスの認証情報でよい（会話は作成時の
 // AIサービスに固定されるが、会話中はAIサービスを変更できないようにしているため、
 // 選択中のAIサービスと会話のAIサービスは一致する）。
-async checkAiAssistantAuth() {
+//
+// 確認中はauthが未確認の状態になり、認証エラーかどうかがわからない。認証の確認は
+// 環境によって時間がかかるため、確認中に設定ダイアログを開かれると、認証が通らない
+// AIサービスを有効と表示してしまう。そうならないよう、確認の完了を待てるようにしておく。
+checkAiAssistantAuth() {
+    const check = this.verifyAiAssistantAuth();
+    this.authCheck = check;
+    this.updateSettingButtonState();
+    const clear = () => {
+        if ( this.authCheck !== check ) return;
+        this.authCheck = null;
+        this.updateSettingButtonState();
+    };
+    check.then( clear, clear );
+    return check;
+}
+// 認証の確認が終わるまで待つ（確認中でなければすぐに返る）
+//   待っている間に次の確認が始まった場合は、それも待つ
+async waitAiAssistantAuth() {
+    while ( this.authCheck ) {
+        await this.authCheck.catch(() => {});
+    }
+    return this.auth;
+}
+async verifyAiAssistantAuth() {
     this.auth = { checked: false, valid: false, message: '', error: false };
 
     // AIサービスが未設定の場合は確認する認証情報がない
@@ -839,6 +867,7 @@ async checkAuthAfterError() {
     // （エラーの内容は送信エラーとして表示済み）
     if ( this.auth.error === true ) {
         this.auth = before;
+        this.updateSettingButtonState();
         return false;
     }
 
@@ -875,10 +904,18 @@ async reloadSetting() {
     // 判定するために、開く前の状態を控えておく
     const wasAuthError = this.isAuthError();
 
-    if ( this.settingError ) {
-        await this.loadSetting();
-    } else {
-        await this.checkAiAssistantAuth();
+    // 認証の確認は環境によって時間がかかるため、確認中であることを表示する
+    // （確認する認証情報がない場合はすぐに終わるため表示しない）
+    const processing = ( this.settingError || this.checkAiAssistantSetting( true ) )
+        ? fn.processingModal( getMessage.FTE14441 ): null;
+    try {
+        if ( this.settingError ) {
+            await this.loadSetting();
+        } else {
+            await this.checkAiAssistantAuth();
+        }
+    } finally {
+        if ( processing ) processing.close();
     }
 
     // 新規チャット画面のみ作り直す（チャット中は表示を維持し、フッターだけ更新する）
@@ -952,10 +989,11 @@ createHeaderMenuHtml() {
 // 会話中はAI利用設定を変更できないようにしている（使用するAIサービスが入れ替わると
 // 進行中の会話と噛み合わなくなるため）。ただし認証が切れている場合は、認証情報を
 // 更新しないと会話を続けられないため、会話中でも設定を開けるようにする。
+// 認証の確認中は、認証エラーかどうかがわからないため開けないようにする。
 updateSettingButtonState() {
     const button = this.elements?.settingButton;
     if ( !button ) return;
-    button.disabled = ( this.newChat !== true && !this.isAuthError() );
+    button.disabled = ( this.authCheck !== null || ( this.newChat !== true && !this.isAuthError() ) );
 }
 /*
 ##################################################

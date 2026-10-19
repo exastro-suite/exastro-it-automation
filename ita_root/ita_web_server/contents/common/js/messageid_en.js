@@ -1417,8 +1417,8 @@ export function messageid_en() {
             '- What kind of work was performed: the request of the user and the content of the work performed for it.',
             '- What changes occurred in the system: the menus and data created, updated, or deleted, the work performed, and other impacts on ITA (Exastro).',
             '- What the result of the work was: whether it succeeded or failed, and the work log that is the basis for it (the tools and processes that were run and their results, and so on).',
-            '- Quantitative analysis: the number of pieces of work performed, the number of successes and failures, the number of calls of the tools and processes used, and other metrics that can be shown as numbers, as far as possible.',
-            '- Qualitative analysis: an evaluation from the viewpoint of the accuracy, the coverage, and the efficiency of the work, and what went well, the issues, and the points to improve.',
+            '- Quantitative analysis: show the quality of the work in numbers, as far as possible: the status of the requested items (the number of items completed, partially handled, and not handled), the number of pieces of data created, updated, or deleted, the number of successes and failures of the work performed, the number of errors and the resulting re-runs and rework, and so on. Do not analyze numbers about the processing of the AI itself, such as the number of LLM responses or the thinking time.',
+            '- Qualitative analysis: evaluate the quality of the work from the viewpoints of whether the work was done as requested (accuracy), whether anything was left undone (coverage), whether there are problems with the consistency of the settings and data or the impact on the existing settings (safety), and whether checks were made before the work and the results were confirmed after the work (reliability), and describe what went well, the risks and concerns, and the points to improve.',
             '- Supplement: the points that were hard to judge, and the matters that the user needs to check or handle.'
         ],
         'FTE14326': [
@@ -1427,8 +1427,8 @@ export function messageid_en() {
             '- What kind of work was performed: the request of the user and the content of the work performed for it.',
             '- What changes occurred in the system: the menus and data created, updated, or deleted, the work performed, and other impacts on ITA (Exastro).',
             '- What the result of the work was: whether it succeeded or failed, and the work log that is the basis for it (the tools and processes that were run and their results, and so on).',
-            '- Quantitative analysis: the number of pieces of work performed, the number of successes and failures, the number of calls of the tools and processes used, and other metrics that can be shown as numbers, as far as possible.',
-            '- Qualitative analysis: an evaluation from the viewpoint of the accuracy, the coverage, and the efficiency of the work, and what went well, the issues, and the points to improve.',
+            '- Quantitative analysis: show the quality of the work in numbers, as far as possible: the status of the requested items (the number of items completed, partially handled, and not handled), the number of pieces of data created, updated, or deleted, the number of successes and failures of the work performed, the number of errors and the resulting re-runs and rework, and so on. Do not analyze numbers about the processing of the AI itself, such as the number of LLM responses or the thinking time.',
+            '- Qualitative analysis: evaluate the quality of the work from the viewpoints of whether the work was done as requested (accuracy), whether anything was left undone (coverage), whether there are problems with the consistency of the settings and data or the impact on the existing settings (safety), and whether checks were made before the work and the results were confirmed after the work (reliability), and describe what went well, the risks and concerns, and the points to improve.',
             '- Supplement: the points that were hard to judge, and the matters that the user needs to check or handle.'
         ],
         'FTE14327': '- Please create the design as follows. Use rich expressions that are hard to express in normal Markdown, such as a card layout, diagrams, and charts. Do not make the appearance different every time. Always follow the common design guidelines shown in the description of the display_html tool (the design tokens, the cards, the stat cards, and the color rules), and output a design with a unified look.',
@@ -1451,8 +1451,8 @@ export function messageid_en() {
         'FTE14339': function( order, sec, model, label ){ return `    - Response No. ${order} (${sec} sec / model: ${model}): ${label}`},
         'FTE14340': '- Thinking time by model (slowest average first):',
         'FTE14341': function( model, count, avg, min, max ){ return `    - ${model}: ${count} responses, average ${avg} sec (shortest ${min} sec / longest ${max} sec)`},
-        'FTE14342': function( modelNote ){ return `Always include this thinking time data in the "Quantitative analysis" of the report. Also mention which responses took long and with which model they were generated. ${modelNote}The above are measured values. Quote them as they are, without changing them or filling them in with guesses. Note that the thinking time is the round-trip time of the LLM response and does not include the execution time of the tools.`},
-        'FTE14343': 'Because the model was changed during the conversation, also mention the tendency of slow and fast by model. ',
+        'FTE14342': function( modelNote ){ return `This thinking time data does not show the quality of the work, so do not include it in the "Quantitative analysis" or the "Qualitative analysis". If you put it in the report, only describe it briefly as reference information at the end of the "Supplement". ${modelNote}The above are measured values. Quote them as they are, without changing them or filling them in with guesses. Note that the thinking time is the round-trip time of the LLM response and does not include the execution time of the tools.`},
+        'FTE14343': 'Because the model was changed during the conversation, also show the values by model if you describe it as reference information. ',
 
         // AI assistant (extracting and registering the lessons)
         'FTE14344': 'There was no lesson that should be recorded from this conversation.',
@@ -1552,6 +1552,7 @@ export function messageid_en() {
         'FTE14437': 'In either case, this chat can be viewed in the conversation history.',
         'FTE14439': 'Choose one of the buttons below.',
         'FTE14440': 'The user ended the chat without answering the options.',
+        'FTE14441': 'Checking AI service authentication',
 
         //gemini
         'FTE14101': 'API KEY',

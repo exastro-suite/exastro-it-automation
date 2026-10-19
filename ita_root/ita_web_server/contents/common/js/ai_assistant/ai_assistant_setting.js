@@ -98,6 +98,9 @@ static get statusText() {
 //   getAuthError: () => String|null
 //                                 使用中のAIサービスの認証が通らなかった場合に理由（空文字可）を返す。
 //                                 通っている・未確認の場合はnull（呼び出し側で確認した結果を一覧へ反映する）
+//   waitAuthCheck: () => Promise
+//                                 呼び出し側で認証を確認中の場合に、その完了を待つ。
+//                                 確認中はgetAuthErrorが未確認（null）を返すため、一覧の表示前に待つ
 // }
 constructor( params, option = {} ) {
     this.params = params;
@@ -121,6 +124,8 @@ constructor( params, option = {} ) {
     this.modelLists = {};
     // 設定ダイアログ
     this.dialog = null;
+    // 設定ダイアログを閉じたあとの処理中か（呼び出し側の再読み込みが終わるまでtrue）
+    this.closing = false;
     // AIサービスの登録・更新ダイアログ
     this.credentialDialog = null;
     // モデル選択ダイアログ
@@ -529,7 +534,9 @@ get dialogConfig() {
 */
 async open() {
     // 二重に開かない
-    if ( this.dialog ) return;
+    //   閉じたあとの処理中も開かない（ダイアログを閉じるとフォーカスが設定ボタンへ戻るため、
+    //   すぐにEnterを押すと、呼び出し側が認証の確認を始める前に開けてしまう）
+    if ( this.dialog || this.closing ) return;
 
     const close = () => { this.close(); };
     const apply = () => { this.applyUseService(); };
@@ -544,6 +551,8 @@ async open() {
 
     try {
         await this.loadServiceList();
+        // 読み込み中に始まった確認も待つため、読み込みのあとで待つ
+        await this.waitAuthCheck();
         dialog.setBody( this.createBodyHtml() );
         this.setApplyButtonState();
     } catch ( error ) {
@@ -551,6 +560,18 @@ async open() {
         dialog.setBody( this.createLoadErrorHtml( error ) );
     }
     return;
+}
+// 呼び出し側の認証の確認が終わるまで待つ
+//   確認中に一覧を表示すると、認証が通らないAIサービスも登録内容から判定した
+//   ステータス（有効など）で表示されてしまうため
+async waitAuthCheck() {
+    if ( !this.option.waitAuthCheck ) return;
+    try {
+        await this.option.waitAuthCheck();
+    } catch ( error ) {
+        // 確認の結果がわからなくても一覧は表示する
+        console.error( error );
+    }
 }
 /*
 ##################################################
@@ -561,9 +582,14 @@ async close() {
     if ( !this.dialog ) return;
     const dialog = this.dialog;
     this.dialog = null;
-    await dialog.close();
-    // 閉じたあとの設定内容を呼び出し側へ通知する
-    if ( this.option.onClose ) await this.option.onClose( this.preference );
+    this.closing = true;
+    try {
+        await dialog.close();
+        // 閉じたあとの設定内容を呼び出し側へ通知する
+        if ( this.option.onClose ) await this.option.onClose( this.preference );
+    } finally {
+        this.closing = false;
+    }
     return;
 }
 /*

@@ -3,5 +3,7 @@
     ["ai_assistant.sql", "ai_assistant_master.sql"],
     ["oase.sql", "oase_master.sql"],
     ["menu_create.sql", "menu_create_master.sql"],
-    ["", "ansible_master.sql"]
+    ["", "ansible_master.sql"],
+    ["compare.sql", ""],
+    ["hostgroup.sql", ""]
 ]

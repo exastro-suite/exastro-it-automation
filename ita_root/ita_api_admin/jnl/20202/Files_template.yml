@@ -1,0 +1,22 @@
+- name: Ensure ITA_DFLT_Template_Src_Files is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Template_Src_Files: "{{ ITA_DFLT_Template_Src_Files }}"
+  when: ITA_DFLT_Template_Src_Files is defined
+
+- name: Ensure ITA_DFLT_Template_Dest_Files is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Template_Dest_Files: "{{ ITA_DFLT_Template_Dest_Files }}"
+  when: ITA_DFLT_Template_Dest_Files is defined
+
+- name: Create template files
+  ansible.builtin.template:
+    src: "{{ item[0] }}"
+    dest: "{{ item[1] }}"
+  loop: >-
+    {{
+      (ITA_DFLT_Template_Src_Files if ITA_DFLT_Template_Src_Files is sequence and ITA_DFLT_Template_Src_Files is not string else [ITA_DFLT_Template_Src_Files])
+      | ansible.builtin.zip_longest(
+          ITA_DFLT_Template_Dest_Files if ITA_DFLT_Template_Dest_Files is sequence and ITA_DFLT_Template_Dest_Files is not string else [ITA_DFLT_Template_Dest_Files]
+        )
+      | list
+    }}

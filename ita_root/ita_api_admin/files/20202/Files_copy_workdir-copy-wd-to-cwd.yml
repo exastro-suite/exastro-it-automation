@@ -3,7 +3,8 @@
 # Use this for transfering information over Movements.
 # Note that as this Playbook file does not contain variables that can be externally controlled, we do not recommend using it linked to a Movement alone, but together with other Playbook files.
 - name: Copy data from workdir to conductor_workdir
-  ansible.builtin.copy:
+  local_action:
+    module: copy
     src: "{{ __workflowdir__ }}/"
     dest: "{{ __conductor_workflowdir__ }}/"
-  delegate_to: localhost
+

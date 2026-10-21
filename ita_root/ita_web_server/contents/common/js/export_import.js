@@ -456,7 +456,7 @@ exportEvents() {
 
                 // 読み込み中
                 let process = fn.processingModal( getMessage.FTE07013 );
-                fn.fetch( rest, null, 'POST', exportData ).then(function( result ){
+                fn.fetch( rest, null, 'POST', exportData, { authorityErrMove: false }).then(function( result ){
                     const filter = { execution_no: { NORMAL: result.execution_no } };
                     window.location.href = `?menu=${manage}&filter=${fn.filterEncode( filter )}`;
                 }).catch(function( error ){
@@ -912,7 +912,7 @@ importModal() {
                 const rest = ( ex.type === 'menuImport')? '/menu/import/execute/': '/excel/bulk/import/execute/',
                     manage = ( ex.type === 'menuImport')? 'menu_export_import_list': 'bulk_excel_export_import_list';
                 let process = fn.processingModal( getMessage.FTE07032 );
-                fn.fetch( rest, null, 'POST', restData ).then(function( result ){
+                fn.fetch( rest, null, 'POST', restData, { authorityErrMove: false }).then(function( result ){
                     const filter = { execution_no: { NORMAL: result.execution_no } };
                     window.location.href = `?menu=${manage}&filter=${fn.filterEncode( filter )}`;
                 }).catch(function( error ){

@@ -36,6 +36,12 @@ from common_libs.common import storage_access
 from common_libs.column import *  # noqa: F403
 from common_libs.common.util import print_exception_msg, get_ita_version
 
+# メニュー一括エクスポート/インポートで必要な権限（T_COMN_ROLE_MENU_LINK.PRIVILEGE）
+# エクスポート: 閲覧のみ以上（バックアップ目的でエクスポートのみ行うロールに書き込み権限を与えずに済むようにする）
+# インポート: メンテナンス可以上
+EXPORT_PRIVILEGE_LIST = ['0', '1', '2']
+IMPORT_PRIVILEGE_LIST = ['0', '1']
+
 
 def get_menu_export_list(objdbca, organization_id, workspace_id):
     """
@@ -62,12 +68,12 @@ def get_menu_export_list(objdbca, organization_id, workspace_id):
             menu_id_list.remove(hide_menu_id)
 
     # T_COMN_MENU から EXPORT_PERMISSION_CHECK_FLG を取得
-    # FLAG=NULL は '1' と同様に扱う（権限チェック必須）
+    # FLAG=NULL は '1' と同様に扱う（権限チェックする）
     t_comn_menu = 'T_COMN_MENU'
     ret_menu = objdbca.table_select(t_comn_menu, 'WHERE MENU_ID IN %s', [menu_id_list])
     menu_flag_map = {record['MENU_ID']: record.get('EXPORT_PERMISSION_CHECK_FLG') for record in ret_menu}
 
-    # ロール-メニュー紐付を全件取得（メニュー一括エクスポートはインポートとペアで使用されるため、書き込み権限が必要）
+    # ロール-メニュー紐付を全件取得
     role_id_list = g.get('ROLES')
     ret_role_menu_link = objdbca.table_select(
         t_comn_role_menu_link,
@@ -95,9 +101,9 @@ def get_menu_export_list(objdbca, organization_id, workspace_id):
             if links:
                 permitted_menu_ids.append(menu_id)
         else:
-            # 通常メニュー（FLAG='1' or NULL）：書き込み権限（PRIVILEGE='0', '1'）＋有効な紐付（DISUSE_FLAG='0'）が必要
+            # 通常メニュー（FLAG='1' or NULL）：エクスポート権限（閲覧のみ以上）＋有効な紐付（DISUSE_FLAG='0'）が必要
             for link in links:
-                if link.get('PRIVILEGE') in ['0', '1'] and link.get('DISUSE_FLAG') in [0, '0']:
+                if link.get('PRIVILEGE') in EXPORT_PRIVILEGE_LIST and link.get('DISUSE_FLAG') in [0, '0']:
                     permitted_menu_ids.append(menu_id)
                     break
 
@@ -232,18 +238,19 @@ def _create_export_menu_data(objdbca, menu_id_list):
     return menus_data
 
 
-def _get_write_permission_menu_id_list(objdbca, menu_id_list):
+def _get_permitted_menu_id_list(objdbca, menu_id_list, privilege_list):
     """
-        EXPORT_PERMISSION_CHECK_FLG を考慮して書き込み権限のあるメニューIDリストを取得
+        EXPORT_PERMISSION_CHECK_FLG を考慮して指定の権限のあるメニューIDリストを取得
 
         - FLAG='0': 権限チェックをスキップ（内部定義メニュー用）
-        - FLAG='1' or NULL: 書き込み権限（PRIVILEGE='0' or '1'）が必要
+        - FLAG='1' or NULL: privilege_list のいずれかの権限が必要
 
         ARGS:
             objdbca: DB接クラス DBConnectWs()
             menu_id_list: チェック対象のメニューIDリスト
+            privilege_list: 必要な権限（PRIVILEGE）のリスト EXPORT_PRIVILEGE_LIST / IMPORT_PRIVILEGE_LIST
         RETURN:
-            書き込み権限のあるメニューIDリスト（入力順序を維持）
+            権限のあるメニューIDリスト（入力順序を維持）
     """
     if not menu_id_list:
         return []
@@ -266,20 +273,18 @@ def _get_write_permission_menu_id_list(objdbca, menu_id_list):
             # FLAG='1' or NULL の場合は権限チェックが必要
             need_check_menu_ids.append(menu_id)
 
-    # FLAG='1' のメニューについて、書き込み権限をチェック
+    # FLAG='1' のメニューについて、権限をチェック
     permitted_menu_ids = set()
     if need_check_menu_ids:
         t_comn_role_menu_link = 'T_COMN_ROLE_MENU_LINK'
         role_id_list = g.get('ROLES')
 
-        # エクスポート/インポートはペアで使用されるため、書き込み権限（PRIVILEGE='0', '1'）を要求
-        # エクスポート時に書き込み権限がない場合、後のインポート時にエラーとなるのを防ぐ
         # 廃止済みの紐付は権限なしとする（get_menu_export_list の通常メニューと同じ条件）
         # ワークスペース作成時に廃止済みで作成される紐付は FLAG='0' のメニューのため、ここでは対象外
         ret_role_menu_link = objdbca.table_select(
             t_comn_role_menu_link,
             'WHERE MENU_ID IN %s AND ROLE_ID IN %s AND PRIVILEGE IN %s AND DISUSE_FLAG = %s ORDER BY MENU_ID',
-            [need_check_menu_ids, role_id_list, ['0', '1'], 0]
+            [need_check_menu_ids, role_id_list, privilege_list, 0]
         )
 
         for record in ret_role_menu_link:
@@ -294,9 +299,9 @@ def _get_write_permission_menu_id_list(objdbca, menu_id_list):
     return result
 
 
-def get_denied_menu_rest_set(objdbca, menu_rest_list):
+def get_denied_menu_rest_set(objdbca, menu_rest_list, privilege_list):
     """
-        書き込み権限のないメニューRESTIDを一括で取得する
+        指定の権限のないメニューRESTIDを一括で取得する
 
         check_export_menu_permission / check_import_menu_permission と同じ判定条件
         （T_COMN_MENUに存在しないメニュー、EXPORT_PERMISSION_CHECK_FLG='0' のメニューは対象外）
@@ -304,8 +309,9 @@ def get_denied_menu_rest_set(objdbca, menu_rest_list):
         ARGS:
             objdbca: DB接クラス DBConnectWs()
             menu_rest_list: メニューRESTIDリスト
+            privilege_list: 必要な権限（PRIVILEGE）のリスト EXPORT_PRIVILEGE_LIST / IMPORT_PRIVILEGE_LIST
         RETURN:
-            書き込み権限のないメニューRESTIDのset
+            権限のないメニューRESTIDのset
     """
     if not menu_rest_list:
         return set()
@@ -313,7 +319,7 @@ def get_denied_menu_rest_set(objdbca, menu_rest_list):
     ret_menu = objdbca.table_select('T_COMN_MENU', 'WHERE MENU_NAME_REST IN %s', [menu_rest_list])
     menu_id_to_rest = {record.get('MENU_ID'): record.get('MENU_NAME_REST') for record in ret_menu}
 
-    permitted_menu_ids = _get_write_permission_menu_id_list(objdbca, list(menu_id_to_rest.keys()))
+    permitted_menu_ids = _get_permitted_menu_id_list(objdbca, list(menu_id_to_rest.keys()), privilege_list)
 
     return {menu_rest for menu_id, menu_rest in menu_id_to_rest.items() if menu_id not in permitted_menu_ids}
 
@@ -322,13 +328,13 @@ def check_export_menu_permission(objdbca, menu_rest_list):
     """
         メニュー一括エクスポート実行時の権限チェック
 
-        エクスポート/インポートはセットで使用されるため、エクスポート時に
-        書き込み権限を要求し、後のインポート実行を保証する
+        バックアップ目的でエクスポートのみ行うロールもあるため、閲覧のみ以上の権限でエクスポート可能とする
+        （インポート時は check_import_menu_permission でメンテナンス可以上を要求する）
 
-        Excel一括エクスポートは対象外（閲覧権限でOK、インポート時にunimport_listでチェック）
+        Excel一括エクスポートは対象外（インポート時にunimport_listでチェック）
 
         EXPORT_PERMISSION_CHECK_FLG='0' のメニューはチェックスキップ（内部定義メニュー）
-        それ以外は書き込み権限（PRIVILEGE='0' or '1'）が必要
+        それ以外は閲覧のみ以上の権限（PRIVILEGE='0' or '1' or '2'）が必要
 
         ARGS:
             objdbca: DB接クラス DBConnectWs()
@@ -360,8 +366,8 @@ def check_export_menu_permission(objdbca, menu_rest_list):
     # 入力されたメニューRESTIDの順序でMENU_IDリストを作成
     menu_id_list = [menu_rest_to_id[menu_rest] for menu_rest in menu_rest_list if menu_rest in menu_rest_to_id]
 
-    # 書き込み権限のあるメニューIDを取得
-    permitted_menu_ids = _get_write_permission_menu_id_list(objdbca, menu_id_list)
+    # エクスポート権限のあるメニューIDを取得
+    permitted_menu_ids = _get_permitted_menu_id_list(objdbca, menu_id_list, EXPORT_PRIVILEGE_LIST)
 
     # 権限のないメニューを抽出
     denied_menu_ids = [menu_id for menu_id in menu_id_list if menu_id not in permitted_menu_ids]
@@ -425,7 +431,7 @@ def check_import_menu_permission(objdbca, menu_rest_list):
         return
 
     # 書き込み権限のあるメニューIDを取得
-    permitted_menu_ids = _get_write_permission_menu_id_list(objdbca, check_target_menu_ids)
+    permitted_menu_ids = _get_permitted_menu_id_list(objdbca, check_target_menu_ids, IMPORT_PRIVILEGE_LIST)
 
     # 権限のないメニューを抽出
     denied_menu_ids = [menu_id for menu_id in check_target_menu_ids if menu_id not in permitted_menu_ids]
@@ -547,8 +553,8 @@ def execute_menu_bulk_export(objdbca, menu, body):
         # 親子メニューグループの際にメニューが重複することがあり、重複排除を行う事にする
         body["menu"] = list(dict.fromkeys(body["menu"]))
 
-        # メニュー一括エクスポートは書き込み権限必須（後のインポート実行を保証）
-        # Excel一括エクスポートは閲覧権限でOK（別処理）
+        # メニュー一括エクスポートは閲覧のみ以上の権限が必要
+        # Excel一括エクスポートは権限チェックなし（別処理）
         check_export_menu_permission(objdbca, body["menu"])
 
         # 登録用パラメータを作成

@@ -21,7 +21,10 @@ from common_libs.common.mongoconnect.const import Const
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
 from common_libs.loadtable import *
 from common_libs.loadcollection.load_collection import loadCollection
-from libs.export_import import check_export_menu_permission, check_import_menu_permission, get_denied_menu_rest_set
+from libs.export_import import (
+    check_export_menu_permission, check_import_menu_permission, get_denied_menu_rest_set,
+    EXPORT_PRIVILEGE_LIST, IMPORT_PRIVILEGE_LIST
+)
 
 # 処理種別（T_DP_EXECUTION_TYPE.ROW_ID）: インポート
 EXECUTION_TYPE_IMPORT = '2'
@@ -72,7 +75,7 @@ def _check_export_download_permission(objdbca, objmenu, menu, record_id, journal
         # インポート実行時と同じ条件でチェック（EXPORT_PERMISSION_CHECK_FLG を考慮）
         check_import_menu_permission(objdbca, menu_list)
     else:
-        # エクスポート対象メニューへの書き込み権限をチェック（EXPORT_PERMISSION_CHECK_FLG を考慮）
+        # エクスポート実行時と同じ条件でチェック（EXPORT_PERMISSION_CHECK_FLG を考慮）
         check_export_menu_permission(objdbca, menu_list)
 
 
@@ -108,7 +111,7 @@ def _get_export_record_menu_list(record):
 
 def _mask_export_file_data(objdbca, objmenu, result, journal=False):
     """
-        エクスポート管理メニューのレコード取得時、書き込み権限のないメニューを含むレコードのファイルデータを除外する
+        エクスポート管理メニューのレコード取得時、権限のないメニューを含むレコードのファイルデータを除外する
         （ファイルダウンロード時の権限チェックと同じ条件）
 
         ARGS:
@@ -134,21 +137,33 @@ def _mask_export_file_data(objdbca, objmenu, result, journal=False):
     record_id_list = [item.get('parameter', {}).get(key_rest) for item in result]
     ret = objdbca.table_select(table_name, f'WHERE {key_col} IN %s', [record_id_list])
 
-    # レコードごとの対象メニュー（特定できない場合は None）
+    # レコードごとの対象メニュー（特定できない場合は None）と処理種別
     record_menu_map = {}
+    record_import_map = {}
     for record in ret:
         menu_list, reason = _get_export_record_menu_list(record)
         if menu_list is None:
             g.applogger.info(f"[Filter Permission Check] {reason}: record_id={record.get(key_col)}")
         record_menu_map[str(record.get(key_col))] = menu_list
+        record_import_map[str(record.get(key_col))] = str(record.get('EXECUTION_TYPE')) == EXECUTION_TYPE_IMPORT
 
-    # 全レコードの対象メニューをまとめて権限チェック
-    all_menu_list = list({menu_rest for menu_list in record_menu_map.values() if menu_list for menu_rest in menu_list})
-    denied_menu_set = get_denied_menu_rest_set(objdbca, all_menu_list)
+    # エクスポート/インポートで必要な権限が異なるため、処理種別ごとに全レコードの対象メニューをまとめて権限チェック
+    export_menu_set = set()
+    import_menu_set = set()
+    for record_id, menu_list in record_menu_map.items():
+        if not menu_list:
+            continue
+        if record_import_map[record_id]:
+            import_menu_set.update(menu_list)
+        else:
+            export_menu_set.update(menu_list)
+    denied_export_menu_set = get_denied_menu_rest_set(objdbca, list(export_menu_set), EXPORT_PRIVILEGE_LIST)
+    denied_import_menu_set = get_denied_menu_rest_set(objdbca, list(import_menu_set), IMPORT_PRIVILEGE_LIST)
 
     for item in result:
         record_id = str(item.get('parameter', {}).get(key_rest))
         menu_list = record_menu_map.get(record_id)
+        denied_menu_set = denied_import_menu_set if record_import_map.get(record_id) else denied_export_menu_set
         if menu_list is None or any(menu_rest in denied_menu_set for menu_rest in menu_list):
             # file=no 指定時と同じ形式にする
             item['file'] = {}
@@ -241,7 +256,7 @@ def rest_filter(objdbca, menu, filter_parameter, base64_file_flg=True):
         api_msg_args = [msg]
         raise AppException(status_code, log_msg_args, api_msg_args)
 
-    # エクスポート管理メニューの場合、書き込み権限のないメニューを含むレコードのファイルデータを除外
+    # エクスポート管理メニューの場合、権限のないメニューを含むレコードのファイルデータを除外
     if menu == 'menu_export_import_list' and base64_file_flg:
         _mask_export_file_data(objdbca, objmenu, result)
 
@@ -275,7 +290,7 @@ def rest_filter_journal(objdbca, menu, uuid, base64_file_flg=True):
         api_msg_args = [msg]
         raise AppException(status_code, log_msg_args, api_msg_args)
 
-    # エクスポート管理メニューの場合、書き込み権限のないメニューを含むレコードのファイルデータを除外
+    # エクスポート管理メニューの場合、権限のないメニューを含むレコードのファイルデータを除外
     if menu == 'menu_export_import_list' and base64_file_flg:
         _mask_export_file_data(objdbca, objmenu, result, journal=True)
 
@@ -309,7 +324,7 @@ def get_file_path(objdbca, menu, uuid, column):
     if len(result) == 0:
         return None
 
-    # エクスポート管理メニューの場合、エクスポート対象メニューへの書き込み権限をチェック
+    # エクスポート管理メニューの場合、エクスポート・インポート対象メニューへの権限をチェック
     # Excel一括エクスポートは閲覧権限でエクスポート可能なため対象外
     if menu == 'menu_export_import_list':
         _check_export_download_permission(objdbca, objmenu, menu, uuid)
@@ -372,7 +387,7 @@ def get_history_file_path(objdbca, menu, uuid, column, journal_uuid):
     if len(result) == 0:
         return None
 
-    # エクスポート管理メニューの場合、エクスポート対象メニューへの書き込み権限をチェック
+    # エクスポート管理メニューの場合、エクスポート・インポート対象メニューへの権限をチェック
     # Excel一括エクスポートは閲覧権限でエクスポート可能なため対象外
     if menu == 'menu_export_import_list':
         _check_export_download_permission(objdbca, objmenu, menu, uuid, journal_uuid)

@@ -16,7 +16,7 @@
 エクスポート権限チェック機能のテスト
 
 今回追加した以下の機能をテストします:
-- _get_write_permission_menu_id_list(): EXPORT_PERMISSION_CHECK_FLG を考慮した権限フィルタ
+- _get_permitted_menu_id_list(): EXPORT_PERMISSION_CHECK_FLG を考慮した権限フィルタ
 - check_export_menu_permission(): メニュー一括エクスポート実行時の権限チェック
 - check_import_menu_permission(): メニュー一括インポート実行時の権限チェック
 - _check_export_download_permission(): エクスポート管理メニューのファイルダウンロード時の権限チェック
@@ -30,13 +30,16 @@
   - **実装要件**:
     - リストAPI (`get_excel_bulk_export_list`): PRIVILEGE IN [0, 1, 2] を表示
     - エクスポート実行: 権限チェックなし
-- **メニュー一括エクスポート**: 権限チェック必須（書き込み権限が必要）
-  - 理由: エクスポート/インポートは常にセットで使用される（環境移行）
-  - エクスポート時に権限チェックすることで、後のインポート実行を保証
+- **メニュー一括エクスポート**: 権限チェック必須（閲覧のみ以上の権限が必要）
+  - 理由: バックアップ目的でエクスポートのみ行い、インポートは別ユーザーで行うロールがある
+    エクスポートに書き込み権限を要求すると、そのロールに不要な書き込み権限を与えることになるため
   - **実装要件**:
-    - リストAPI (`get_menu_export_list`): PRIVILEGE IN ['0', '1'] のみ表示（PRIVILEGE='2'は除外）
-    - エクスポート実行 (`check_export_menu_permission`): PRIVILEGE IN ['0', '1'] をチェック
-    - **重要**: ユーザーが選択できないメニュー（PRIVILEGE='2'）を選択肢に表示してはいけない
+    - リストAPI (`get_menu_export_list`): PRIVILEGE IN ['0', '1', '2'] を表示（EXPORT_PRIVILEGE_LIST）
+    - エクスポート実行 (`check_export_menu_permission`): PRIVILEGE IN ['0', '1', '2'] をチェック（EXPORT_PRIVILEGE_LIST）
+    - **重要**: リストAPIとエクスポート実行APIの条件を一致させること
+- **メニュー一括インポート**: 権限チェック必須（書き込み権限が必要）
+  - **実装要件**:
+    - インポート実行 (`check_import_menu_permission`): PRIVILEGE IN ['0', '1'] をチェック（IMPORT_PRIVILEGE_LIST）
 
 ### EXPORT_PERMISSION_CHECK_FLG の意味
 - **'0'**: 内部メニュー用、権限チェックをスキップ
@@ -46,7 +49,7 @@
     - パターン2: PRIVILEGE='1'(メンテナンス可) + DISUSE_FLAG='1'(廃止済み)
     - パターン3: PRIVILEGE='2'(閲覧のみ) + DISUSE_FLAG='0'(有効)
   - 具体的なメニューリストは、マイグレーションスクリプト (ita_migration/versions/2_10_0/WS_level/specific/update_export_permission_check_flag.py) を参照
-- **'1' または NULL**: 通常メニュー、書き込み権限（PRIVILEGE IN ['0', '1']）が必要
+- **'1' または NULL**: 通常メニュー、エクスポートは閲覧のみ以上（PRIVILEGE IN ['0', '1', '2']）、インポートは書き込み権限（PRIVILEGE IN ['0', '1']）が必要
   - NULL は '1' として扱われる（デフォルトは権限チェック必須）
 
 ### PRIVILEGE の意味（T_COMN_ROLE_MENU_LINK）
@@ -58,13 +61,14 @@
 
 ### 実装チェックリスト（対応漏れ防止）
 メニュー一括エクスポートの実装時には、以下の両方を確認すること：
-- [ ] リストAPI: `get_menu_export_list()` が PRIVILEGE IN ['0', '1'] のみを返す
-- [ ] エクスポート実行API: `check_export_menu_permission()` が PRIVILEGE IN ['0', '1'] をチェックする
+- [ ] リストAPI: `get_menu_export_list()` が PRIVILEGE IN ['0', '1', '2'] を返す
+- [ ] エクスポート実行API: `check_export_menu_permission()` が PRIVILEGE IN ['0', '1', '2'] をチェックする
+- [ ] インポート実行API: `check_import_menu_permission()` が PRIVILEGE IN ['0', '1'] をチェックする
 - [ ] Excel一括エクスポート: `get_excel_bulk_export_list()` は PRIVILEGE IN [0, 1, 2] を返す（変更しない）
 - [ ] テストコード: リストAPIとエクスポート実行APIの両方にテストケースがある
 
 ### ロールメニュー紐付のクエリ
-- 権限チェック（_get_write_permission_menu_id_list）: DISUSE_FLAG='0' の紐付のみ有効（廃止済みの紐付は権限なし）
+- 権限チェック（_get_permitted_menu_id_list）: DISUSE_FLAG='0' の紐付のみ有効（廃止済みの紐付は権限なし）
 - 選択肢一覧（get_menu_export_list）: 通常メニューは DISUSE_FLAG='0' のみ、FLAG='0' の内部メニューは廃止済み紐付も含める
   （ワークスペース作成時に廃止済みで作成される紐付は FLAG='0' のメニューのみ）
 
@@ -88,8 +92,9 @@
 
 ### レコード取得（filter）時のファイルデータ除外
 - 対象メニュー: menu_export_import_list のみ（file=no 指定時は対象外）
-- 書き込み権限のないメニューを含むレコード、対象メニューを特定できないレコードは file を {} にする
-- 権限判定は get_denied_menu_rest_set() で全レコード分をまとめて行う
+- 権限のないメニューを含むレコード、対象メニューを特定できないレコードは file を {} にする
+  - エクスポートのレコード: EXPORT_PRIVILEGE_LIST、インポートのレコード: IMPORT_PRIVILEGE_LIST で判定
+- 権限判定は get_denied_menu_rest_set() で処理種別ごとに全レコード分をまとめて行う
 - 通常テーブルと履歴テーブル（_JNL）の両方に対応
 - プライマリキーは objmenu.get_primary_key() で動的に取得（ハードコード禁止）
 
@@ -104,7 +109,9 @@ from unittest.mock import MagicMock, patch
 from flask import g
 
 from libs.export_import import (
-    _get_write_permission_menu_id_list,
+    _get_permitted_menu_id_list,
+    EXPORT_PRIVILEGE_LIST,
+    IMPORT_PRIVILEGE_LIST,
     check_export_menu_permission,
     check_import_menu_permission,
     get_menu_export_list,
@@ -143,12 +150,12 @@ class TestDataBuilder:
 builder = TestDataBuilder()
 
 
-class TestGetWritePermissionMenuIdList:
-    """_get_write_permission_menu_id_list() のテスト"""
+class TestGetPermittedMenuIdList:
+    """_get_permitted_menu_id_list() のテスト"""
 
     def test_empty_list(self, mock_objdbca, mock_g_with_roles):
         """空リストを渡した場合、空リストが返る"""
-        result = _get_write_permission_menu_id_list(mock_objdbca, [])
+        result = _get_permitted_menu_id_list(mock_objdbca, [], IMPORT_PRIVILEGE_LIST)
         assert result == []
 
     def test_all_flag_0_menus(self, mock_objdbca, mock_g_with_roles):
@@ -162,7 +169,7 @@ class TestGetWritePermissionMenuIdList:
             {'MENU_ID': '50102', 'EXPORT_PERMISSION_CHECK_FLG': '0'},
         ]
 
-        result = _get_write_permission_menu_id_list(mock_objdbca, menu_id_list)
+        result = _get_permitted_menu_id_list(mock_objdbca, menu_id_list, IMPORT_PRIVILEGE_LIST)
 
         # FLAG=0 なので全部返る（権限チェックなし）
         assert result == ['10203', '10204', '50102']
@@ -190,7 +197,7 @@ class TestGetWritePermissionMenuIdList:
             ],
         ]
 
-        result = _get_write_permission_menu_id_list(mock_objdbca, menu_id_list)
+        result = _get_permitted_menu_id_list(mock_objdbca, menu_id_list, IMPORT_PRIVILEGE_LIST)
 
         # 全部書き込み権限があるので全部返る
         assert result == ['10101', '10102', '10201']
@@ -212,7 +219,7 @@ class TestGetWritePermissionMenuIdList:
             ],
         ]
 
-        result = _get_write_permission_menu_id_list(mock_objdbca, menu_id_list)
+        result = _get_permitted_menu_id_list(mock_objdbca, menu_id_list, IMPORT_PRIVILEGE_LIST)
 
         # 10101 のみ権限があるので返る
         assert result == ['10101']
@@ -239,7 +246,7 @@ class TestGetWritePermissionMenuIdList:
             ],
         ]
 
-        result = _get_write_permission_menu_id_list(mock_objdbca, menu_id_list)
+        result = _get_permitted_menu_id_list(mock_objdbca, menu_id_list, IMPORT_PRIVILEGE_LIST)
 
         # FLAG=0 の 10203, 50102 と、権限ありの 10101 が返る
         # 10102 は FLAG=1 で権限なしなので除外
@@ -260,10 +267,24 @@ class TestGetWritePermissionMenuIdList:
             ],
         ]
 
-        result = _get_write_permission_menu_id_list(mock_objdbca, menu_id_list)
+        result = _get_permitted_menu_id_list(mock_objdbca, menu_id_list, IMPORT_PRIVILEGE_LIST)
 
         # 入力順序が維持される
         assert result == ['50102', '10203', '10101']
+
+    @pytest.mark.parametrize('privilege_list', [EXPORT_PRIVILEGE_LIST, IMPORT_PRIVILEGE_LIST])
+    def test_privilege_list_is_used_in_query(self, privilege_list, mock_objdbca, mock_g_with_roles):
+        """引数の privilege_list で T_COMN_ROLE_MENU_LINK を検索する"""
+        mock_objdbca.table_select.side_effect = [
+            [{'MENU_ID': '10101', 'EXPORT_PERMISSION_CHECK_FLG': '1'}],
+            [{'MENU_ID': '10101', 'PRIVILEGE': '1'}],
+        ]
+
+        _get_permitted_menu_id_list(mock_objdbca, ['10101'], privilege_list)
+
+        where, bind = mock_objdbca.table_select.call_args[0][1:]
+        assert 'PRIVILEGE IN %s' in where
+        assert bind[2] == privilege_list
 
 
 class TestCheckExportMenuPermission:
@@ -279,8 +300,8 @@ class TestCheckExportMenuPermission:
         # 例外が投げられないことを確認
         check_export_menu_permission(mock_objdbca, [])
 
-    def test_all_menus_have_write_permission(self, mock_objdbca, mock_g_with_roles):
-        """すべてのメニューに書き込み権限がある場合"""
+    def test_all_menus_have_permission(self, mock_objdbca, mock_g_with_roles):
+        """すべてのメニューに権限がある場合"""
         menu_rest_list = ['menu1', 'menu2']
 
         mock_objdbca.table_select.side_effect = [
@@ -304,8 +325,8 @@ class TestCheckExportMenuPermission:
         # 例外が投げられないことを確認
         check_export_menu_permission(mock_objdbca, menu_rest_list)
 
-    def test_no_write_permission_raises_exception(self, mock_objdbca, mock_g_with_roles):
-        """書き込み権限がないメニューがある場合、例外が投げられる"""
+    def test_no_permission_raises_exception(self, mock_objdbca, mock_g_with_roles):
+        """権限（閲覧のみ以上）がないメニューがある場合、例外が投げられる"""
         menu_rest_list = ['menu1', 'menu2']
 
         mock_objdbca.table_select.side_effect = [
@@ -380,6 +401,31 @@ class TestCheckExportMenuPermission:
         # T_COMN_ROLE_MENU_LINK へのクエリは実行されない
         assert mock_objdbca.table_select.call_count == 2
 
+    def test_readonly_permission_allowed(self, mock_objdbca, mock_g_with_roles):
+        """閲覧のみ（PRIVILEGE='2'）の権限でもエクスポートできる（バックアップ目的のロール）"""
+        menu_rest_list = ['menu1']
+
+        mock_objdbca.table_select.side_effect = [
+            # 1回目: T_COMN_MENU
+            [
+                {'MENU_ID': '10101', 'MENU_NAME_REST': 'menu1', 'MENU_NAME_JA': 'メニュー1', 'MENU_NAME_EN': 'Menu 1'},
+            ],
+            # 2回目: T_COMN_MENU (EXPORT_PERMISSION_CHECK_FLG)
+            [
+                {'MENU_ID': '10101', 'EXPORT_PERMISSION_CHECK_FLG': '1'},
+            ],
+            # 3回目: T_COMN_ROLE_MENU_LINK (閲覧のみ)
+            [
+                {'MENU_ID': '10101', 'PRIVILEGE': '2'},
+            ],
+        ]
+
+        # 例外が投げられないことを確認
+        check_export_menu_permission(mock_objdbca, menu_rest_list)
+        # 閲覧のみ以上の権限で検索している
+        bind = mock_objdbca.table_select.call_args[0][2]
+        assert bind[2] == ['0', '1', '2']
+
 
 class TestCheckImportMenuPermission:
     """check_import_menu_permission() のテスト"""
@@ -422,7 +468,7 @@ class TestCheckImportMenuPermission:
 
         # 例外が投げられないことを確認（FLAG=0 なので権限チェックスキップ）
         check_import_menu_permission(mock_objdbca, menu_rest_list)
-        # T_COMN_MENU のみ呼ばれる（_get_write_permission_menu_id_list は呼ばれない）
+        # T_COMN_MENU のみ呼ばれる（_get_permitted_menu_id_list は呼ばれない）
         assert mock_objdbca.table_select.call_count == 1
 
     def test_existing_menu_with_flag_1_and_write_permission(self, mock_objdbca, mock_g_with_roles):
@@ -447,7 +493,7 @@ class TestCheckImportMenuPermission:
                     'EXPORT_PERMISSION_CHECK_FLG': '1'
                 },
             ],
-            # 2回目: T_COMN_MENU (_get_write_permission_menu_id_list 内)
+            # 2回目: T_COMN_MENU (_get_permitted_menu_id_list 内)
             [
                 {'MENU_ID': '10101', 'EXPORT_PERMISSION_CHECK_FLG': '1'},
                 {'MENU_ID': '10102', 'EXPORT_PERMISSION_CHECK_FLG': '1'},
@@ -461,6 +507,9 @@ class TestCheckImportMenuPermission:
 
         # 例外が投げられないことを確認
         check_import_menu_permission(mock_objdbca, menu_rest_list)
+        # インポートは書き込み権限（閲覧のみは含まない）で検索している
+        bind = mock_objdbca.table_select.call_args[0][2]
+        assert bind[2] == ['0', '1']
 
     def test_existing_menu_with_flag_1_without_write_permission(self, mock_objdbca, mock_g_with_roles):
         """既存メニューで FLAG=1 だが書き込み権限なし → 例外"""
@@ -484,7 +533,7 @@ class TestCheckImportMenuPermission:
                     'EXPORT_PERMISSION_CHECK_FLG': '1'
                 },
             ],
-            # 2回目: T_COMN_MENU (_get_write_permission_menu_id_list 内)
+            # 2回目: T_COMN_MENU (_get_permitted_menu_id_list 内)
             [
                 {'MENU_ID': '10101', 'EXPORT_PERMISSION_CHECK_FLG': '1'},
                 {'MENU_ID': '10102', 'EXPORT_PERMISSION_CHECK_FLG': '1'},
@@ -525,7 +574,7 @@ class TestCheckImportMenuPermission:
                     'EXPORT_PERMISSION_CHECK_FLG': '1'
                 },
             ],
-            # 2回目: T_COMN_MENU (_get_write_permission_menu_id_list 内、10101のみ)
+            # 2回目: T_COMN_MENU (_get_permitted_menu_id_list 内、10101のみ)
             [
                 {'MENU_ID': '10101', 'EXPORT_PERMISSION_CHECK_FLG': '1'},
             ],
@@ -829,13 +878,13 @@ class TestGetMenuExportList:
     get_menu_export_list() のテスト
 
     メニュー一括エクスポートの対象メニューリスト取得
-    書き込み権限（PRIVILEGE='0' or '1'）を持つメニューのみを返すことを確認
+    閲覧のみ以上の権限（PRIVILEGE='0' or '1' or '2'）を持つメニューを返すことを確認
     """
 
     @patch('libs.export_import._get_target_menu_id_list')
     @patch('libs.export_import._create_export_menu_data')
-    def test_only_write_permission_menus(self, mock_create_data, mock_get_target, mock_objdbca, mock_g_with_roles):
-        """書き込み権限（PRIVILEGE='0', '1'）のメニューのみが返される"""
+    def test_only_permitted_menus(self, mock_create_data, mock_get_target, mock_objdbca, mock_g_with_roles):
+        """権限のあるメニューのみが返される（紐付のないメニューは除外）"""
         mock_get_target.return_value = ['menu1', 'menu2', 'menu3', 'menu4']
 
         mock_objdbca.table_select.side_effect = [
@@ -862,13 +911,13 @@ class TestGetMenuExportList:
         call_args = mock_create_data.call_args[0]
         permitted_menu_ids = call_args[1]
 
-        # PRIVILEGE='0', '1' のメニューのみが含まれる
+        # 紐付のある menu1, menu2 のみが含まれる
         assert permitted_menu_ids == ['menu1', 'menu2']
 
     @patch('libs.export_import._get_target_menu_id_list')
     @patch('libs.export_import._create_export_menu_data')
-    def test_excludes_readonly_permission_menus(self, mock_create_data, mock_get_target, mock_objdbca, mock_g_with_roles):
-        """閲覧のみ（PRIVILEGE='2'）のメニューが除外される"""
+    def test_includes_readonly_permission_menus(self, mock_create_data, mock_get_target, mock_objdbca, mock_g_with_roles):
+        """閲覧のみ（PRIVILEGE='2'）のメニューも含まれる（廃止済みの紐付は除外）"""
         mock_get_target.return_value = ['menu1', 'menu2', 'menu3']
 
         mock_objdbca.table_select.side_effect = [
@@ -884,6 +933,7 @@ class TestGetMenuExportList:
             [
                 {'MENU_ID': 'menu1', 'PRIVILEGE': '1', 'DISUSE_FLAG': 0},
                 {'MENU_ID': 'menu2', 'PRIVILEGE': '2', 'DISUSE_FLAG': 0},  # 閲覧のみ
+                {'MENU_ID': 'menu3', 'PRIVILEGE': '2', 'DISUSE_FLAG': '1'},  # 閲覧のみ（廃止済み）
             ],
         ]
 
@@ -894,12 +944,8 @@ class TestGetMenuExportList:
         call_args = mock_create_data.call_args[0]
         permitted_menu_ids = call_args[1]
 
-        # PRIVILEGE='1' のメニューのみが含まれる
-        assert 'menu1' in permitted_menu_ids
-        # PRIVILEGE='2' のメニューは除外されている（menu2は含まれない）
-        assert 'menu2' not in permitted_menu_ids
-        # 紐付のないmenu3も含まれない
-        assert 'menu3' not in permitted_menu_ids
+        # PRIVILEGE='1', '2' のメニューが含まれ、廃止済みの紐付しかない menu3 は含まれない
+        assert permitted_menu_ids == ['menu1', 'menu2']
 
     @patch('libs.export_import._get_target_menu_id_list')
     @patch('libs.export_import._create_export_menu_data')
@@ -999,11 +1045,11 @@ class TestGetDeniedMenuRestSet:
 
     def test_empty_list(self, mock_objdbca, mock_g_with_roles):
         """空リストの場合は空setを返し、DBアクセスしない"""
-        assert get_denied_menu_rest_set(mock_objdbca, []) == set()
+        assert get_denied_menu_rest_set(mock_objdbca, [], EXPORT_PRIVILEGE_LIST) == set()
         mock_objdbca.table_select.assert_not_called()
 
     def test_denied_menus(self, mock_objdbca, mock_g_with_roles):
-        """書き込み権限のないメニューのみ返す（存在しないメニュー、FLAG=0 のメニューは対象外）"""
+        """権限のないメニューのみ返す（存在しないメニュー、FLAG=0 のメニューは対象外）"""
         mock_objdbca.table_select.side_effect = [
             # 1回目: T_COMN_MENU（new_menu は存在しない）
             [
@@ -1011,7 +1057,7 @@ class TestGetDeniedMenuRestSet:
                 {'MENU_ID': '10102', 'MENU_NAME_REST': 'menu2'},
                 {'MENU_ID': '10203', 'MENU_NAME_REST': 'menu_flag0'},
             ],
-            # 2回目: T_COMN_MENU (_get_write_permission_menu_id_list 内)
+            # 2回目: T_COMN_MENU (_get_permitted_menu_id_list 内)
             [
                 {'MENU_ID': '10101', 'EXPORT_PERMISSION_CHECK_FLG': '1'},
                 {'MENU_ID': '10102', 'EXPORT_PERMISSION_CHECK_FLG': '1'},
@@ -1023,9 +1069,11 @@ class TestGetDeniedMenuRestSet:
             ],
         ]
 
-        result = get_denied_menu_rest_set(mock_objdbca, ['menu1', 'menu2', 'menu_flag0', 'new_menu'])
+        result = get_denied_menu_rest_set(mock_objdbca, ['menu1', 'menu2', 'menu_flag0', 'new_menu'], IMPORT_PRIVILEGE_LIST)
 
         assert result == {'menu2'}
+        # 引数の privilege_list で検索している
+        assert mock_objdbca.table_select.call_args[0][2][2] == IMPORT_PRIVILEGE_LIST
 
 
 class TestMaskExportFileData:
@@ -1059,9 +1107,10 @@ class TestMaskExportFileData:
         _mask_export_file_data(mock_objdbca, self._objmenu(), result)
 
         assert [bool(item['file']) for item in result] == [True, False, True, False, False]
-        # 全レコードの対象メニューをまとめて1回で判定する
-        mock_denied.assert_called_once()
-        assert sorted(mock_denied.call_args[0][1]) == ['menu1', 'menu2']
+        # 処理種別ごとに全レコードの対象メニューをまとめて判定する
+        assert mock_denied.call_count == 2
+        calls = {tuple(c[0][2]): sorted(c[0][1]) for c in mock_denied.call_args_list}
+        assert calls == {tuple(EXPORT_PRIVILEGE_LIST): ['menu1', 'menu2'], tuple(IMPORT_PRIVILEGE_LIST): ['menu1', 'menu2']}
         # 廃止済みレコードも対象（DISUSE_FLAG で絞り込まない）
         call_args = mock_objdbca.table_select.call_args[0]
         assert call_args[0] == 'T_MENU_EXPORT_IMPORT'
@@ -1083,6 +1132,25 @@ class TestMaskExportFileData:
         call_args = mock_objdbca.table_select.call_args[0]
         assert call_args[0] == 'T_MENU_EXPORT_IMPORT_JNL'
         assert 'JOURNAL_SEQ_NO' in call_args[1]
+
+    @patch('libs.menu_filter.get_denied_menu_rest_set')
+    def test_export_and_import_use_different_privilege(self, mock_denied, mock_objdbca, mock_g_with_roles):
+        """エクスポートのレコードは閲覧のみ以上、インポートのレコードは書き込み権限で判定する"""
+        mock_objdbca.table_select.return_value = [
+            {'EXECUTION_NO': 'e1', 'EXECUTION_TYPE': '1', 'JSON_STORAGE_ITEM': json.dumps({'menu': ['menu_readonly']})},
+            {'EXECUTION_NO': 'i1', 'EXECUTION_TYPE': '2', 'JSON_STORAGE_ITEM': 'menu_readonly'},
+        ]
+
+        # 閲覧のみのメニュー: エクスポート権限はあるが、インポート権限はない
+        def denied(objdbca, menu_rest_list, privilege_list):
+            return set() if privilege_list == EXPORT_PRIVILEGE_LIST else set(menu_rest_list)
+        mock_denied.side_effect = denied
+        result = [self._item('execution_no', rid) for rid in ['e1', 'i1']]
+
+        _mask_export_file_data(mock_objdbca, self._objmenu(), result)
+
+        # エクスポートのレコードはファイルデータあり、インポートのレコードは除外
+        assert [bool(item['file']) for item in result] == [True, False]
 
     def test_empty_result(self, mock_objdbca, mock_g_with_roles):
         """結果が0件の場合はDBアクセスしない"""

@@ -5,19 +5,29 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard] Get entry(initgroups)
 - **playbook_file**: System_getent_initgroups.yml
 ## Overview
-Queries the target's `initgroups` database with the `getent` module, registering the supplementary groups a user receives at login in `ITA_DFLT_getent_initgroups`.
+Enumerates every user in the `passwd` database on the target host, then looks up each user name in the `initgroups` database through the `getent` module, registering the per-user supplementary group results as `ITA_DFLT_getent_initgroups`.
 ## Description
-This Playbook file has no parameters. It always queries the fixed "initgroups" database of the Target host, i.e. the list of supplementary groups that each user is placed in when logging in.
-The retrieved entries are stored in the registered variable "ITA_DFLT_getent_initgroups", so they are available to later tasks in the same Movement.
+For users listed by getent passwd, the GIDs of their supplementary groups (secondary groups) can be obtained. 
+The primary group is not included. 
+In cases where enumeration is disabled in SSSD, users from external databases (such as LDAP or AD) may not be included.
 ## Keyword
 - secondary group membership
+- supplementary group GID lookup
 - user privilege assignment audit
-- login session groups
 - NSS initgroups source
 ## Playbook
 ```yaml
+- name: Get users from the passwd database
+  ansible.builtin.getent:
+    database: passwd
+  register: ITA_RGST_getent_passwd
+  no_log: true # 機密情報を含むため、ログを抑止（デバッグしたいときはfalseに変更してください）
+
 - name: A wrapper to the unix getent utility (initgroups)
   ansible.builtin.getent:
     database: initgroups
+    key: "{{ item }}"
+    fail_key: false
+  loop: "{{ ITA_RGST_getent_passwd.ansible_facts.getent_passwd.keys() | list }}"
   register: ITA_DFLT_getent_initgroups
 ```

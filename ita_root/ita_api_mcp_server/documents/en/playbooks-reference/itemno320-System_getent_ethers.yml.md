@@ -5,19 +5,32 @@ This playbook describes the playbooks initially registered in Exastro's playbook
 - **playbook_name**: ~[Exastro standard] Get entry(ethers)
 - **playbook_file**: System_getent_ethers.yml
 ## Overview
-Uses the `getent` module on the `ethers` database to enumerate the MAC address to host name mappings defined on the host, registering the output as `ITA_DFLT_getent_ethers`.
+Reads `/etc/ethers` on the target host, extracts each MAC address found at the start of a line, and looks up every one of those addresses in the `ethers` database through the `getent` module, registering the per-address results as `ITA_DFLT_getent_ethers`.
 ## Description
-This Playbook file takes no parameters. The database name `ethers` is fixed in the task and no key is specified, so every Ethernet address entry the host publishes (normally the contents of /etc/ethers) is enumerated, pairing each hardware address with a host name.
-The lookup result is stored with `register` under the name "ITA_DFLT_getent_ethers", so later tasks in the same run can reference it; the module also sets the collected entries as the fact `getent_ethers`.
+For each MAC address listed in /etc/ethers, the corresponding hostname is retrieved. 
+Entries that exist only in external databases (such as LDAP or NIS) are not included.
 ## Keyword
-- MAC address to host mapping
-- etc ethers inventory
+- MAC address to hostname mapping
+- RARP host resolution
 - hardware address lookup
-- RARP and bootp host registration
+- Ethernet address inventory
 ## Playbook
 ```yaml
+- name: Read /etc/ethers
+  ansible.builtin.slurp:
+    src: /etc/ethers
+  register: ITA_RGST_ethers_file
+  failed_when: false
+
 - name: A wrapper to the unix getent utility (ethers)
   ansible.builtin.getent:
     database: ethers
+    key: "{{ item }}"
+    fail_key: false
+  loop: >-
+    {{
+      ITA_RGST_ethers_file.content | default('') | b64decode
+      | regex_findall('(?m)^[ \t]*([0-9A-Fa-f]{1,2}(?::[0-9A-Fa-f]{1,2}){5})[ \t]')
+    }}
   register: ITA_DFLT_getent_ethers
 ```

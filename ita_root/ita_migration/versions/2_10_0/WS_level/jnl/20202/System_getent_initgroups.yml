@@ -1,4 +1,13 @@
+- name: Get users from the passwd database
+  ansible.builtin.getent:
+    database: passwd
+  register: ITA_RGST_getent_passwd
+  no_log: true # 機密情報を含むため、ログを抑止（デバッグしたいときはfalseに変更してください）
+
 - name: A wrapper to the unix getent utility (initgroups)
   ansible.builtin.getent:
     database: initgroups
+    key: "{{ item }}"
+    fail_key: false
+  loop: "{{ ITA_RGST_getent_passwd.ansible_facts.getent_passwd.keys() | list }}"
   register: ITA_DFLT_getent_initgroups

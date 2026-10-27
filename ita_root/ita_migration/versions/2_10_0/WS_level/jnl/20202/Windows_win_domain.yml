@@ -10,9 +10,10 @@
   no_log: true
 
 - name: Create new domain in a new forest on the target host
-  ansible.windows.win_domain:
+  microsoft.ad.domain:
     dns_domain_name: "{{ item[0] }}"
     safe_mode_password: "{{ item[1] }}"
+    reboot: true
   loop: >-
     {{
       (ITA_DFLT_dns_domain_name if ITA_DFLT_dns_domain_name is sequence and ITA_DFLT_dns_domain_name is not string else [ITA_DFLT_dns_domain_name])

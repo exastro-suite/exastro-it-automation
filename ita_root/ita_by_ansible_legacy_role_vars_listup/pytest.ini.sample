@@ -1,0 +1,8 @@
+; 当ファイルをpytest.iniにコピーして利用してください
+[pytest]
+; pythonのimportディレクトリを/appからカレントディレクトリ(/workspace/ita_root/***)に変更
+; この設定を読み込まないとpytestのカバレッジやdebuggerがうまく動きません(/app配下のソースがimportされちゃう)
+;   .  : このモジュール自身(backyard_libs / tests)
+;   .. : ita_root(common_libs)
+; 当モジュールのテストはDBに接続しないため、環境変数(env)の設定は不要
+pythonpath = . ..

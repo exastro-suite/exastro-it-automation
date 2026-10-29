@@ -29,7 +29,7 @@ const fn = ( function() {
     'use strict';
 
     // バージョン
-    const version = '2.9.0';
+    const version = '2.10.0';
 
     // AbortController
     const controller = new AbortController();
@@ -916,7 +916,7 @@ getFile: function( endPoint, method = 'GET', data, option = {} ) {
             } else {
                 // 失敗
                 response.json().then(function( json ){
-                    cmn.responseError( response.status, json ).then(function( result ){
+                    cmn.responseError( response.status, json, null, option ).then(function( result ){
                         progressModal.close();
                         progressModal = null;
                         reject( result );
@@ -1280,6 +1280,231 @@ storage: {
 createStorageKey: function( key ) {
     key = `ita_ui_${organization_id}_${workspace_id}_${key}`;
     return key;
+},
+/*
+##################################################
+   WebStorageのクリア
+   前のデータが一瞬表示されるのを防ぐ
+   ・Session storage：ログインユーザ、オーガナイゼーション、ワークスペースが切り替わった場合
+     （データ（パネル画像など）を複数保持しないようにする）
+   ・Local storage：ログインユーザが切り替わった場合
+     （タブ間で共有されるため、ワークスペースごとのタブで交互に消えないようにする）
+   ※認証完了後に呼び出す
+##################################################
+*/
+clearStorageByUser: function() {
+    if ( !windowFlag ) return;
+
+    const userId = cmn.cache.getUserId();
+    if ( userId === null ) return;
+
+    const ownerKey = 'ita_ui_owner',
+          owners = {
+              session: `${organization_id}/${workspace_id}/${userId}`,
+              local: userId
+          };
+
+    for ( const type in owners ) {
+        const owner = owners[ type ];
+        if ( cmn.storage.get( ownerKey, type, false ) === owner ) continue;
+
+        const keys = cmn.storage.getKeys( type );
+        for ( const key of keys ) {
+            if ( key.indexOf('ita_ui_') === 0 ) {
+                cmn.storage.remove( key, type, false );
+            }
+        }
+        cmn.storage.set( ownerKey, owner, type, false );
+    }
+},
+/*
+##################################################
+   Shared cache
+   複数タブ間で共有するメモリ上のキャッシュ（cache_worker.js）
+   ※ディスクには保存されないため、全タブを閉じると破棄される
+##################################################
+*/
+cache: {
+    port: null,
+    seq: 0,
+    wait: new Map(),
+    owner: null,
+
+    // SharedWorkerに接続する（未対応・失敗時はキャッシュ無効として動作する）
+    init: function() {
+        if ( cmn.cache.port !== null ) return false;
+        if ( !windowFlag || typeof SharedWorker === 'undefined') return false;
+
+        // オーナー（ユーザID）※表示名やログイン名は使い回される可能性があるためsubを使う
+        cmn.cache.owner = cmn.cache.getUserId();
+        if ( cmn.cache.owner === null ) return false;
+
+        try {
+            const worker = new SharedWorker(
+                `${commonParams.dir}/js/cache_worker.js?v=${cmn.getUiVersion()}`,
+                { name: 'ita_shared_cache'}
+            );
+
+            worker.port.addEventListener('message', function( e ){
+                cmn.cache.receive( e.data );
+            });
+
+            // ワーカー側のエラーで待ち続けないようにする
+            worker.addEventListener('error', function( error ){
+                window.console.error('Shared cache error.', error );
+                cmn.cache.disable();
+            });
+
+            worker.port.start();
+            cmn.cache.port = worker.port;
+
+            // ワーカーにオーナーを登録する（他ユーザのエントリを参照させないため）
+            cmn.cache.send({ type: 'attach', owner: cmn.cache.owner });
+
+            // ログアウトを検出してキャッシュを破棄する
+            cmn.cache.watchAuth();
+
+            return true;
+        } catch( e ) {
+            window.console.warn('Shared cache is unavailable.', e );
+            cmn.cache.disable();
+            return false;
+        }
+    },
+
+    // ログイン中のユーザID（keycloakのsub）を返す
+    getUserId: function() {
+        try {
+            if ( cmmonAuthFlag ) return CommonAuth.getUserId();
+            if ( iframeFlag && window.parent.CommonAuth ) return window.parent.CommonAuth.getUserId();
+        } catch( e ) {
+            // 未認証
+        }
+        return null;
+    },
+
+    // ログアウトを検出してキャッシュを破棄する
+    //  keycloakアダプタのonAuthLogoutは、自タブのログアウトだけでなく、
+    //  セッション監視iframeが他タブ・他アプリ・管理者によるセッション破棄を
+    //  検出したときにも発火する
+    watchAuth: function() {
+        const keycloak = ( cmmonAuthFlag )? CommonAuth.keycloak:
+            ( iframeFlag && window.parent.CommonAuth )? window.parent.CommonAuth.keycloak: null;
+
+        if ( !keycloak ) return false;
+
+        // 既に登録されているハンドラを消さないように包む
+        const hook = function( name ) {
+            const original = keycloak[ name ];
+            keycloak[ name ] = function() {
+                try {
+                    cmn.cache.clear();
+                } catch( e ) {
+                    window.console.error( e );
+                }
+                if ( typeof original === 'function') original.apply( this, arguments );
+            };
+        };
+
+        hook('onAuthLogout');       // ログアウト、SSOセッションの消滅
+        hook('onAuthRefreshError'); // トークンのリフレッシュ失敗（セッション期限切れ）
+
+        return true;
+    },
+
+    // 応答を待っているPromiseを解決する
+    receive: function( data ) {
+        if ( data === undefined || data === null || data.id === undefined ) return;
+
+        const resolve = cmn.cache.wait.get( data.id );
+        if ( resolve !== undefined ) {
+            cmn.cache.wait.delete( data.id );
+            resolve( data );
+        }
+    },
+
+    // キャッシュを無効にし、待機中の処理をすべて解放する
+    disable: function() {
+        cmn.cache.port = null;
+        for ( const resolve of cmn.cache.wait.values() ) {
+            resolve({ hit: false });
+        }
+        cmn.cache.wait.clear();
+    },
+
+    // 応答を待つ
+    call: function( message ) {
+        return new Promise(function( resolve ){
+            if ( cmn.cache.port === null ) {
+                resolve({ hit: false });
+                return;
+            }
+            message.id = ++cmn.cache.seq;
+            cmn.cache.wait.set( message.id, resolve );
+            cmn.cache.port.postMessage( message );
+        });
+    },
+
+    // 応答を待たない
+    send: function( message ) {
+        if ( cmn.cache.port === null ) return false;
+        cmn.cache.port.postMessage( message );
+        return true;
+    },
+
+    // キャッシュキー（ユーザ・組織・ワークスペースごとに分離する）
+    createKey: function( key ) {
+        return `${cmn.cache.owner}/${organization_id}/${workspace_id}/${key}`;
+    },
+
+    // キャッシュを取得する（未登録・期限切れ・キャッシュ無効の場合はnull）
+    get: async function( key ) {
+        const result = await cmn.cache.call({ type: 'get', key: cmn.cache.createKey( key ) });
+        if ( !result.hit ) return null;
+
+        try {
+            return JSON.parse( result.json );
+        } catch( e ) {
+            window.console.error(`Shared cache parse error: ${key}`, e );
+            return null;
+        }
+    },
+
+    // キャッシュを登録する（ttlはミリ秒）
+    set: function( key, value, ttl = 60000 ) {
+        let json;
+        try {
+            json = JSON.stringify( value );
+        } catch( e ) {
+            window.console.error(`Shared cache stringify error: ${key}`, e );
+            return false;
+        }
+        if ( json === undefined ) return false;
+
+        return cmn.cache.send({
+            type: 'set',
+            key: cmn.cache.createKey( key ),
+            json: json,
+            ttl: ttl
+        });
+    },
+
+    // 前方一致でまとめて破棄する（更新系の処理を行ったあとなど）
+    invalidate: function( prefix = '') {
+        return cmn.cache.send({ type: 'invalidate', prefix: cmn.cache.createKey( prefix ) });
+    },
+
+    // ログイン中のユーザのキャッシュをすべて破棄する（ログアウト時）
+    //  ※別ユーザ・別組織のタブが同時に開かれている場合、そちらには影響しない
+    clear: function() {
+        return cmn.cache.send({ type: 'clear'});
+    },
+
+    // 状態を取得する（デバッグ用）
+    status: async function() {
+        const result = await cmn.cache.call({ type: 'status'});
+        return ( result.status !== undefined )? result.status: null;
+    }
 },
 /*
 ##################################################
@@ -2075,8 +2300,12 @@ html: {
         const passwordButtonClass = ['itaButton', 'inputPasswordToggleButton'];
         if ( attrs.disabled ) eyeAttrs.disabled = 'disabled';
         if ( option.textarea ) passwordButtonClass.push('inputPasswordTextareaToggleButton');
+        // option.subButtonを渡した場合はパスワード表示ボタンの下に並べる
         input = `<div class="inputPasswordBody">${input}</div>`
-        + `<div class="inputPasswordToggle">${cmn.html.button( cmn.html.icon('eye_close'), passwordButtonClass.join(' '), eyeAttrs )}</div>`;
+        + `<div class="inputPasswordToggle">`
+            + cmn.html.button( cmn.html.icon('eye_close'), passwordButtonClass.join(' '), eyeAttrs )
+            + ( option.subButton ?? '')
+        + `</div>`;
 
         // パスワード削除
         if ( option.deleteToggle ) {
@@ -2671,6 +2900,39 @@ blackOrWhite: function( hexcolor, num ) {
     b = parseInt( hexcolor.substring( 5, 7 ), 16 );
 
 	return (((( r * 299 ) + ( g * 587 ) + ( b * 114 )) / 1000 ) < 180 * num )? '#FFFFFF': '#333333';
+},
+/*
+##################################################
+    色を少し濃くする（#rrggbb）
+    ※比率だと明るいチャンネル（例：#FF9999のR）の変化が小さく差が出にくいため、
+      各チャンネルから一定量を引く
+##################################################
+*/
+darkenColor: function( hexcolor, amount = 20 ) {
+    if ( !/^#[0-9a-fA-F]{6}$/.test( hexcolor ) ) return '';
+    const rgb = [ 1, 3, 5 ].map( i => Math.max( 0, parseInt( hexcolor.slice( i, i + 2 ), 16 ) - amount ) );
+    return '#' + rgb.map( v => v.toString( 16 ).padStart( 2, '0') ).join('');
+},
+/*
+##################################################
+    背景色から見やすいテキストカラーを判定
+    （WCAGのコントラスト比で白と黒を比較）
+##################################################
+*/
+contrastTextColor: function( hexcolor ) {
+    if ( !/^#[0-9a-fA-F]{6}$/.test( hexcolor ) ) return '';
+    const luminance = function( hex ) {
+        const rgb = [ 1, 3, 5 ].map( i => {
+            const c = parseInt( hex.slice( i, i + 2 ), 16 ) / 255;
+            return ( c <= 0.03928 )? c / 12.92: Math.pow( ( c + 0.055 ) / 1.055, 2.4 );
+        });
+        return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+    };
+    const light = '#FFFFFF', dark = '#1A1B1C';
+    const bg = luminance( hexcolor );
+    const lightRatio = ( luminance( light ) + 0.05 ) / ( bg + 0.05 );
+    const darkRatio = ( bg + 0.05 ) / ( luminance( dark ) + 0.05 );
+    return ( lightRatio >= darkRatio )? light: dark;
 },
 /*
 ##################################################
@@ -4887,7 +5149,9 @@ fileEditor: function( fileData, fileName, mode = 'edit', option = {} ) {
 
                 const langTools = ace.require('ace/ext/language_tools');
 
-                const aceEditor = ace.edit('aceEditor', {
+                // IDではなく要素で指定する（エディターの上に別のエディターを重ねて開くと
+                // id="aceEditor"が重複し、下のエディターが対象になってしまうため）
+                const aceEditor = ace.edit( modal.$.dbody.find('.editorBody').get(0), {
                     theme: `ace/theme/${aceTheme}`,
                     mode: `ace/mode/${fileMode}`,
                     displayIndentGuides: true,
@@ -4987,13 +5251,12 @@ fileEditor: function( fileData, fileName, mode = 'edit', option = {} ) {
                     });
                 };
 
-                // 開発サポート
-                const aiEnabled = option.aiAssistantEnabled;
-                if ( typeof DevelopmentSupport === 'function' && mode === 'edit' && aiEnabled) {
-                    const support = new DevelopmentSupport();
-                    support.setup( modal, aceEditor );
-                } else {
-                    console.warn('DevelopmentSupport is not defined.');
+                // AIアシスタント（編集モードで、メニューでAIアシスタントが有効な場合のみ）。
+                // フッターのボタンからダイアログの右側に開き、編集中のファイルの作成・修正を
+                // 手伝ってもらう（AIアシスタント一式の読み込みは、開くときまで行わない）。
+                if ( typeof AiAssistantEditor === 'function' && mode === 'edit' && option.aiAssistantEnabled ) {
+                    const aiAssistantEditor = new AiAssistantEditor();
+                    aiAssistantEditor.setup( modal, aceEditor );
                 }
             });
         } else if ( fileType === 'image') {
@@ -5148,24 +5411,6 @@ commonTab: function( $target ) {
 }
 
 }; // end cmn
-
-    // document.referrerが空の場合、WebStorageをクリア
-    if ( windowFlag && !document.referrer.length ) {
-        // Local storage
-        const localKeys = cmn.storage.getKeys('local');
-        for ( const key of localKeys ) {
-            if ( key.indexOf('ita_ui_') === 0 ) {
-                cmn.storage.remove( key, 'local', false );
-            }
-        }
-        // Session storage
-        const sessionKeys = cmn.storage.getKeys('session');
-        for ( const key of sessionKeys ) {
-            if ( key.indexOf('ita_ui_') === 0 ) {
-                cmn.storage.remove( key, 'session', false );
-            }
-        }
-    }
 
     // 共通パラメーター
     const commonParams = {};

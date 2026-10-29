@@ -28,6 +28,9 @@ certifi = ">=0.0.0"
 debugpy = ">=0.0.0"
 flake8 = ">=0.0.0"
 autopep8 = ">=0.0.0"
+pytest = "^9.1.1"
+pytest-env = "^1.7.0"
+pytest-cov = "^7.1.0"
 
 [build-system]
 requires = ["poetry-core"]

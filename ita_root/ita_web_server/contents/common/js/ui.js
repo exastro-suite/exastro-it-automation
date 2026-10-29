@@ -302,21 +302,39 @@ setSideMenuEvents() {
         }
     });
 
-    // メニュー検索
+    // メニュー検索（結果をポップアップでツリー表示）
     ui.$.menu.on('input', '.menuSearchText', function(){
         const $input = $( this ),
-              $menuLink = $input.closest('.menuBlock').find('.menuLink'),
-              val = $input.val().toLowerCase();
+              val = $input.val();
 
-        $menuLink.each(function(){
-            const $link = $( this ),
-                  text = $link.text().toLowerCase();
-            if ( text.indexOf( val ) === -1 ) {
-                $link.hide();
-            } else {
-                $link.show();
-            }
-        });
+        // 画面更新後も残すためSession storageに保存
+        if ( val !== '') {
+            fn.storage.set('menuSearchText', val, 'session');
+        } else {
+            fn.storage.remove('menuSearchText', 'session');
+        }
+        ui.$.menu.find('.menuSearchText').not( $input ).val( val );
+
+        ui.menuSearchResult( $input );
+    });
+
+    // 入力済みの状態でクリックした場合は再表示
+    ui.$.menu.on('click', '.menuSearchText', function(){
+        if ( !ui.$.menuSearchResult ) ui.menuSearchResult( $( this ) );
+    });
+
+    ui.$.menu.on('keydown', '.menuSearchText', function( e ){
+        if ( !ui.$.menuSearchResult ) return;
+        const $links = ui.$.menuSearchResult.find('.menuSearchResultLink');
+        switch ( e.key ) {
+            case 'ArrowDown':
+                e.preventDefault();
+                $links.first().focus();
+            break;
+            case 'Escape':
+                ui.menuSearchResultClose();
+            break;
+        }
     });
 
     // メニュー検索クリア
@@ -324,6 +342,166 @@ setSideMenuEvents() {
         const $input = $( this ).prev('.menuSearchText');
         $input.val('').trigger('input');
     });
+}
+/*
+##################################################
+   メニュー検索結果（ツリー形式ポップアップ）
+##################################################
+*/
+menuSearchResult( $input ) {
+    const ui = this;
+
+    const val = $input.val().trim();
+    if ( val === '') {
+        ui.menuSearchResultClose();
+        return;
+    }
+
+    const matchReg = new RegExp( fn.regexpEscape( val ), 'i'),
+          splitReg = new RegExp(`(${fn.regexpEscape( val )})`, 'gi');
+    let count = 0;
+
+    // マッチ箇所をハイライト
+    const highlight = function( name ) {
+        return name.split( splitReg ).map(function( text, i ){
+            text = fn.escape( text );
+            return ( i % 2 )? `<mark class="menuSearchResultMark">${text}</mark>`: text;
+        }).join('');
+    };
+
+    // マッチしたメニューとその親グループのみを残したツリー
+    const tree = function( menus ) {
+        const html = [];
+        for ( const menu of menus ) {
+            if ( menu.menus ) {
+                const child = tree( menu.menus );
+                if ( child ) {
+                    html.push(`<li class="menuSearchResultItem">`
+                        + `<div class="menuSearchResultGroup">${fn.cv( menu.menu_group_name, '', true )}</div>`
+                        + `<ul class="menuSearchResultList">${child}</ul>`
+                    + `</li>`);
+                }
+            } else {
+                const menuName = fn.cv( menu.menu_name, ''),
+                      menuNameRest = fn.cv( menu.menu_name_rest, ''),
+                      menuRest = fn.escape( menuNameRest ),
+                      restMatch = matchReg.test( menuNameRest );
+                // メニュー名、メニュー名（REST）のどちらかにマッチ（非表示メニューは対象外）
+                if ( menu.show_in_menu !== '0' && ( matchReg.test( menuName ) || restMatch ) ) {
+                    const className = ['menuSearchResultLink'];
+                    if ( menuNameRest === ui.params.menuNameRest ) className.push('current');
+                    // RESTでマッチした場合はREST名も表示
+                    const restHtml = ( restMatch )? `<span class="menuSearchResultRest">${highlight( menuNameRest )}</span>`: '';
+                    html.push(`<li class="menuSearchResultItem">`
+                        + `<a class="${className.join(' ')}" href="${ui.params.path}?menu=${menuRest}">`
+                            + `<span class="menuSearchResultName">${highlight( menuName )}</span>${restHtml}`
+                        + `</a>`
+                    + `</li>`);
+                    count++;
+                }
+            }
+        }
+        return html.join('');
+    };
+
+    const groups = [];
+    for ( const menuGroup of ui.menuGroupList ) {
+        const child = tree( menuGroup.menus );
+        if ( child ) {
+            const title = fn.cv( menuGroup.menu_group_name, '', true ),
+                  panel = ui.getPanelImage( title, null, ui.rest.panel[ menuGroup.id ] );
+            groups.push(`<li class="menuSearchResultItem menuSearchResultTop">`
+                + `<div class="menuSearchResultGroup menuSearchResultTopGroup">`
+                    + `<span class="menuSearchResultPanel">${panel}</span>`
+                    + `<span class="menuSearchResultTitle">${title}</span>`
+                + `</div>`
+                + `<ul class="menuSearchResultList">${child}</ul>`
+            + `</li>`);
+        }
+    }
+
+    const body = ( groups.length )?
+        `<ul class="menuSearchResultTree">${groups.join('')}</ul>`:
+        `<div class="menuSearchResultEmpty">${getMessage.FTE10105}</div>`;
+
+    // ポップアップ作成
+    if ( !ui.$.menuSearchResult ) {
+        const $result = $('<div class="menuSearchResult"></div>');
+        ui.$.body.append( $result );
+        ui.$.menuSearchResult = $result;
+
+        // 範囲外クリックで閉じる
+        const close = function( e ) {
+            if ( !$( e.target ).closest('.menuSearchResult, .menuSearch').length ) {
+                ui.menuSearchResultClose();
+            }
+        };
+        ui.menuSearchResultIframe = ui.$.content.find('.customMenuIframe');
+        $( window ).on('mousedown.menuSearch', close ).on('resize.menuSearch', function(){
+            ui.menuSearchResultClose();
+        });
+        if ( ui.menuSearchResultIframe.length ) ui.menuSearchResultIframe.contents().on('mousedown.menuSearch', close );
+
+        // キーボード操作
+        $result.on('keydown', '.menuSearchResultLink', function( e ){
+            const $links = $result.find('.menuSearchResultLink'),
+                  index = $links.index( this );
+            switch ( e.key ) {
+                case 'ArrowDown':
+                    e.preventDefault();
+                    $links.eq( Math.min( index + 1, $links.length - 1 ) ).focus();
+                break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    if ( index === 0 ) {
+                        ui.menuSearchInput.focus();
+                    } else {
+                        $links.eq( index - 1 ).focus();
+                    }
+                break;
+                case 'Escape':
+                    ui.menuSearchResultClose();
+                    ui.menuSearchInput.focus();
+                break;
+            }
+        });
+    }
+    ui.menuSearchInput = $input;
+
+    ui.$.menuSearchResult.html(``
+        + `<div class="menuSearchResultHeader">`
+            + `<span class="icon icon-search"></span>`
+            + `<span class="menuSearchResultHeaderText">${getMessage.FTE10106( count )}</span>`
+        + `</div>`
+        + `<div class="menuSearchResultBody">${body}</div>`
+    );
+
+    // サイドメニューの右側、検索欄の下端に合わせて表示
+    const menuRect = ui.$.menu.get(0).getBoundingClientRect(),
+          searchRect = $input.closest('.menuSearch').get(0).getBoundingClientRect();
+    ui.$.menuSearchResult.css({
+        left: menuRect.right,
+        bottom: window.innerHeight - searchRect.bottom + 4,
+        maxHeight: searchRect.bottom - menuRect.top
+    });
+}
+/*
+##################################################
+   メニュー検索結果を閉じる
+##################################################
+*/
+menuSearchResultClose() {
+    const ui = this;
+    if ( !ui.$.menuSearchResult ) return;
+
+    ui.$.menuSearchResult.remove();
+    ui.$.menuSearchResult = null;
+
+    $( window ).off('mousedown.menuSearch resize.menuSearch');
+    if ( ui.menuSearchResultIframe && ui.menuSearchResultIframe.length ) {
+        ui.menuSearchResultIframe.contents().off('mousedown.menuSearch');
+    }
+    ui.menuSearchResultIframe = null;
 }
 /*
 ##################################################
@@ -367,6 +545,9 @@ getSideMenuData() {
 */
 setSideMenu() {
     const ui = this;
+
+    // 再描画時は検索結果を閉じる
+    ui.menuSearchResultClose();
 
     // Secondary(Child) menu
     ui.menuSecondaryToggleSpeed = 300;
@@ -417,6 +598,10 @@ setSideMenu() {
     ui.$.menu.find(`.menuTabLink[href="${ui.menuTab}"]`).addClass('tabOpen').attr('tabindex', -1 );
     ui.$.menu.find( ui.menuTab ).addClass('tabOpen');
 
+    // 保存しているメニュー検索テキストを復元
+    const menuSearchText = fn.storage.get('menuSearchText', 'session');
+    if ( menuSearchText ) ui.$.menu.find('.menuSearchText').val( menuSearchText );
+
     // トピックパスをセット
     ui.topicPath();
 }
@@ -436,6 +621,14 @@ createMenuGroupList() {
     // 配列のディープコピー
     const tempMenuGroups = $.extend( true, [], ui.rest.menuGroups );
 
+    // メニュー表示（show_in_menu）が'0'のメニューを除外する（未設定は表示）
+    // ※URLで直接開いている場合は、グループやタイトルを判定できるよう表示中のメニューのみ残す
+    for ( const menuGroup of tempMenuGroups ) {
+        if ( menuGroup.menus ) {
+            menuGroup.menus = menuGroup.menus.filter( menu => menu.show_in_menu !== '0' || menu.menu_name_rest === ui.params.menuNameRest );
+        }
+    }
+
     // 親と子を分ける
     for ( const menuGroup of tempMenuGroups ) {
         if ( menuGroup.parent_id === null ) {
@@ -449,6 +642,8 @@ createMenuGroupList() {
     for ( const parent of ui.menuGroupList ) {
         for ( const child of childs ) {
             if ( parent.id === child.parent_id ) {
+                // 表示するメニューがない子グループは追加しない
+                if ( !child.menus || !child.menus.length ) continue;
                 child.main_menu_rest = null;
                 if ( child.menus && child.menus.length ) {
                     ui.dispSeqSort( child.menus );
@@ -486,6 +681,9 @@ createMenuGroupList() {
         }
         if ( !parent.main_menu_rest && subRest ) parent.main_menu_rest = subRest;
     }
+
+    // 表示するメニューがない親グループを除外する
+    ui.menuGroupList = ui.menuGroupList.filter( parent => parent.menus && parent.menus.length );
     ui.dispSeqSort( ui.menuGroupList );
 
     if ( ui.currentMenuGroupList ) {
@@ -969,6 +1167,11 @@ sheetType() {
             case '28':
                 mn.$.content.addClass('tabContent');
                 mn.defaultMenu('standard', 'n', false);
+            break;
+            // AIアシスタント
+            case '29':
+                mn.$.content.addClass('tabContent');
+                mn.aiAssistant()
             break;
             // 99 : 独自メニュー
             case '99':
@@ -1939,6 +2142,60 @@ eventFlow() {
         ef.setup('#eventFlow');
 
         mn.onReady();
+    });
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//   AIアシスタント
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+aiAssistant() {
+    const mn = this;
+    const assets = [
+        { type: 'js', url: '/_/ita/js/ai_assistant.js'},
+        { type: 'js', url: '/_/ita/js/ai_assistant/ai_assistant_setting.js'},
+        { type: 'js', url: '/_/ita/js/ai_assistant/ai_assistant_llm.js'},
+        // 会話履歴・学習事項のインポート／エクスポート
+        { type: 'js', url: '/_/ita/js/ai_assistant/ai_assistant_transfer.js'},
+        // 画面専用ツール（ツールごとに定義と動作を1ファイルにまとめている）
+        { type: 'js', url: '/_/ita/js/ai_assistant/tools/ai_assistant_tool_ask_user_choice.js'},
+        { type: 'js', url: '/_/ita/js/ai_assistant/tools/ai_assistant_tool_display_html.js'},
+        { type: 'js', url: '/_/ita/js/ai_assistant/tools/ai_assistant_tool_download_attachment_file.js'},
+        // チャット部分
+        { type: 'js', url: '/_/ita/js/ai_assistant/ai_assistant_chat.js'},
+        // プラットフォームAPIの一覧表示用Table（メッセージ履歴の表示に使う）
+        { type: 'js', url: '/_/ita/js/table_pf.js'},
+        { type: 'css', url: '/_/ita/css/conductor.css'},
+        { type: 'css', url: '/_/ita/css/ai_assistant.css'},
+    ];
+    const tabs = [
+        { name: 'ai_assistant_container', title: getMessage.FTE14022, type: 'blank'},
+        { name: 'ai_assistant_conversations', title: getMessage.FTE14023, type: 'blank'},
+        { name: 'ai_assistant_lessons', title: getMessage.FTE14024, type: 'blank'}
+    ];
+    const menuInfo = fn.cv( mn.info.menu_info.menu_info, '', true );
+    mn.onReady();
+    mn.$.content.addClass('nowLoading');
+
+    fn.loadAssets( assets ).then( async () => {
+        mn.$.content.html( mn.commonContainer( mn.title, menuInfo, mn.contentTab( tabs ) ) );
+        mn.setCommonEvents();
+        mn.contentTabEvent('#ai_assistant_container');
+
+        const params = mn.params;
+        params.user = mn.rest.user;
+
+        const aa = new AiAssistant( mn.info, params );
+        await aa.setup();
+    }).catch(function( error ){
+        // 画面が成立しない初期化エラー（スクリプトの読み込み失敗・ユーザ情報の取得失敗など）。
+        // 一部の機能が使えないだけの失敗はAIアシスタント側で画面に表示するため、ここには来ない。
+        window.console.error( error );
+        fn.gotoErrPage( error.message );
+    }).finally(function(){
+        // エラー時も読み込み中の表示を解除する（解除しないと読み込み中のまま止まって見える）
+        mn.$.content.removeClass('nowLoading');
     });
 }
 

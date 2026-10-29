@@ -1595,6 +1595,8 @@ def execute_excel_maintenance(
         if backyard_exec is True:
             return status_code
 
+        # post_excel_maintenance_tmp.xlsxを削除してからエラーとする
+        retry_remove(file_path, raise_error=False)   # noqa:F405
         raise AppException(status_code)     # noqa: F405
 
     ret = objdbca.table_select(

@@ -1,0 +1,35 @@
+-- ------------------------------------------------------------
+-- T_MENU_COLUMN: ALTER - Add DISP_SETTING_JSON Column
+-- ------------------------------------------------------------
+-- 表示設定カラムを追加（UIで表示する際の設定をJSON形式で保存）
+
+-- T_MENU_COLUMN にカラム追加
+SET @exist := (
+    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'T_MENU_COLUMN'
+    AND COLUMN_NAME = 'DISP_SETTING_JSON'
+);
+SET @sql := IF(@exist = 0,
+    'ALTER TABLE T_MENU_COLUMN ADD COLUMN DISP_SETTING_JSON LONGTEXT AFTER PARAM_SHEET_LINK_ID',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- T_MENU_COLUMN_JNL にカラム追加
+SET @exist := (
+    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'T_MENU_COLUMN_JNL'
+    AND COLUMN_NAME = 'DISP_SETTING_JSON'
+);
+SET @sql := IF(@exist = 0,
+    'ALTER TABLE T_MENU_COLUMN_JNL ADD COLUMN DISP_SETTING_JSON LONGTEXT AFTER PARAM_SHEET_LINK_ID',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+

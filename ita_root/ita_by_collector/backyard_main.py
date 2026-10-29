@@ -91,6 +91,26 @@ def getTargetPath(TargetPath, file_paths):
     return file_paths
 
 
+def searchUploadFilePath(hostname, filename, arrTargetUploadLists, arrTargetUploadListFullpath):
+
+    upload_filepath = ""
+
+    # ファイル名が無い場合は、ファイルの検索をしない
+    if not filename:
+        pass
+    # ファイル名のみでの検索
+    elif hostname in arrTargetUploadLists and filename in arrTargetUploadLists[hostname]:
+        upload_filepath = arrTargetUploadLists[hostname][filename]
+    # パス + ファイル名での検索
+    elif hostname in arrTargetUploadListFullpath:
+        for tmpfilekey, tmparrfilepath in arrTargetUploadListFullpath[hostname].items():
+            if (tmpfilekey == filename) or (tmpfilekey.endswith(filename)):
+                upload_filepath = tmparrfilepath
+                break
+
+    return upload_filepath
+
+
 def is_num(s):
     try:
         float(s)
@@ -625,6 +645,8 @@ def backyard_main(organization_id, workspace_id):
 
                                     arrSqlinsertParm = {}
                                     arrFileUploadList = {}
+                                    # 指定ファイルが収集結果に無かった項目のログ(メニュー名ごと。MSG-10849 の後に出力する)
+                                    missing_file_logs = {}
 
                                     # ソースファイルからパラメータ整形(ファイル名、メニューID、項目名、値)
                                     for filename, vardata in parmdata.items():
@@ -736,20 +758,18 @@ def backyard_main(organization_id, workspace_id):
                                                             tmp_param['file'][col_name] = ''
 
                                                         # ファイルアップロード対象リストのファイルデータをセット
-                                                        upload_filepath = ""
+                                                        upload_filepath = searchUploadFilePath(hostname, varmembermembervalue, arrTargetUploadLists, arrTargetUploadListFullpath)
 
-                                                        # ファイル名が無い場合は、ファイルの検索をしない
-                                                        if not varmembermembervalue:
-                                                            pass
-                                                        # ファイル名のみでの検索
-                                                        elif hostname in arrTargetUploadLists and varmembermembervalue in arrTargetUploadLists[hostname]:
-                                                            upload_filepath = arrTargetUploadLists[hostname][varmembermembervalue]
-                                                        # パス + ファイル名での検索
-                                                        elif hostname in arrTargetUploadListFullpath:
-                                                            for tmpfilekey, tmparrfilepath in arrTargetUploadListFullpath[hostname].items():
-                                                                if (tmpfilekey == varmembermembervalue) or (tmpfilekey.endswith(varmembermembervalue)):
-                                                                    upload_filepath = tmparrfilepath
-                                                                    break
+                                                        # 指定されたファイルが収集結果に無い場合は、収集ログに出力して通知ありにする
+                                                        # (項目は空で登録・更新する)
+                                                        if varmembermembervalue and not upload_filepath:
+                                                            member_name = varmember if type(varvalue) in (list, dict) else ""
+                                                            FREE_LOG = g.appmsg.get_api_message("MSG-11017", [varmembermembervalue, hostname, varname, member_name])
+                                                            g.applogger.debug(FREE_LOG)
+                                                            if menu_name not in missing_file_logs:
+                                                                missing_file_logs[menu_name] = []
+                                                            missing_file_logs[menu_name].append(FREE_LOG)
+                                                            NOTICE_FLG = 2  # 2:収集済み(通知あり)
 
                                                         # ファイル情報をパラメーターにセット
                                                         tmp_param['file'][col_name] = upload_filepath if varmembermembervalue else varmembermembervalue
@@ -782,6 +802,10 @@ def backyard_main(organization_id, workspace_id):
                                                 if output_flag is True:
                                                     FREE_LOG1 = g.appmsg.get_api_message("MSG-10849", [hostname, filename])
                                                     collection_log = '%s\n%s' % (collection_log, FREE_LOG1) if collection_log else FREE_LOG1
+                                                    # 指定ファイルが収集結果に無かった項目のログを出力
+                                                    if menu_name in missing_file_logs:
+                                                        for FREE_LOG in missing_file_logs[menu_name]:
+                                                            collection_log = '%s\n%s' % (collection_log, FREE_LOG) if collection_log else FREE_LOG
                                                     output_flag = False
 
                                                 vertical_flag = True if menu_name in bandle_menus else False

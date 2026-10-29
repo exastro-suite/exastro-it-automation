@@ -1,0 +1,72 @@
+; 当ファイルをpytest.iniにコピーして利用してください
+;   cp pytest.ini.sample pytest.ini
+; テストの動かし方は tests/README.md を参照
+
+[pytest]
+; pythonのimportディレクトリを/appからカレントディレクトリ(/workspace/ita_root/***)に変更
+; この設定を読み込まないとpytestのカバレッジやdebuggerがうまく動きません(/app配下のソースがimportされちゃう)
+pythonpath=.
+
+; マーカー定義
+;   integration: 稼働中のスタック(MariaDB)に実接続する結合テスト。
+;                既定では実行しない。ただし `addopts = -m "not integration"` は使わない。
+;                deselect するとVSCodeのテスト一覧からケースごと消えて
+;                「テストが存在しない」と誤読されるため、
+;                収集はさせて **フィクスチャ側で skip** する方式にしている
+;                (skip 理由付きで一覧に出る)。
+;                実行するには環境変数 INTEGRATION_ENABLE=1 を設定する。
+;                接続情報は pytest.ini の env ではなく
+;                subvalue_autoreg_integration_support.py が自前で解決する
+;                (INTEGRATION_ENV_FILE / ITA_ORGANIZATION_ID / ITA_WORKSPACE_ID)。
+;                対象ワークスペースの環境変数名は
+;                データ投入スクリプト(tests/ansible_driver_tests/ansible_driver/sample_data/)と揃えてある。
+;                結合テストだけを流す場合は `-m integration` で絞れる。
+;   exhaustive : SubValueAutoReg.getCMDBdata の実現可能な全組合せ(431,424件)を
+;                1本のテストの中でループして現実装のゴールデンと突き合わせる。
+;                実行ゲートは無く**既定で実行する**(環境変数は不要)。
+;                そのぶん pytest 全体が約140秒延びる(該当は2本、1本あたり約70秒)。
+;                急いでいるときだけ `-m "not exhaustive"` で外す。
+;                全件だけを流す場合は `-m exhaustive` で絞れる。
+markers =
+    integration: 実DBに接続する結合テスト(INTEGRATION_ENABLE=1 のときだけ実行、既定は skip)
+    exhaustive: getCMDBdata の全組合せ(431,424件)実行(既定で実行。外すときは -m "not exhaustive")
+
+;
+; 環境変数
+;
+env =
+    ; unit test用のコンテナに接続に切り替え
+    DB_HOST=unittest-ita-db
+    DB_DATABASE=ITA_DB
+    DB_USER=ITA_USER
+    DB_PASSWORD=password
+    DB_ADMIN_USER=root
+    DB_ADMIN_PASSWORD=password
+    ; Platformはmockするので要求は飛ばないが、間違って本物に飛ばないようにするため置き換える
+    PLATFORM_API_HOST=dummy
+    PLATFORM_API_PORT=7999
+    ; ITA API接続情報
+    ITA_API_ADMIN_HOST=unittest-ita-api-admin
+    ITA_API_ADMIN_PORT=8079
+    ITA_API_ORGANIZATION_HOST=unittest-ita-api-organization
+    ITA_API_ORGANIZATION_PORT=8000
+    ; ストレージパス(単体テストは実ファイルを読まないのでパスの存在は不要。
+    ; 結合テストは INTEGRATION_STORAGEPATH / 既定の devcontainer のパスで上書きする)
+    STORAGEPATH=/workspace/exastro-it-automation-dev/ita_root/ita_by_ansible_legacy_vars_listup/tests/storage/
+
+    ; pytest起動時にunit test用のコンテナを起動するかの指定
+    ;
+    ;   DOCKER_COMPOSE_UP_UNITTEST_NODE=MANUAL (開発時は基本こちらで利用)
+    ;       手動でunit test用のコンテナを起動します
+    ;       起動を待つ時間が省かれるのでunit testの実行時間が短くて済みます
+    ;
+    ;   DOCKER_COMPOSE_UP_UNITTEST_NODE=AUTO
+    ;       自動でunit test用のコンテナを起動・停止します
+    ;       毎回起動・停止するので環境的にはクリーンになりますが、unit testの実行時間は遅くなります
+    ;
+    DOCKER_COMPOSE_UP_UNITTEST_NODE=MANUAL
+    ; DOCKER_COMPOSE_UP_UNITTEST_NODE=AUTO
+
+; pytestのデバック（debugger使用）時のみコメントアウトを解除してください
+; ※コメントアウトを解除中はカバレッジの情報は更新されません
+; addopts=--no-cov

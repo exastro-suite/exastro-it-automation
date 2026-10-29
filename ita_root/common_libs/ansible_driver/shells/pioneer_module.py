@@ -269,8 +269,10 @@ def main():
   expect_cmd=''
   expect_name=''
   parameter_cmd=''
+  parameter_cmd_list=[]
   shell_cmd=''
   stdout_file=''
+  stdout_file_tmp_flg=0
   success_exit=''
   ignore_errors=''
   register_cmd=''
@@ -380,8 +382,11 @@ def main():
       expect_cmd=''
       expect_name=''
       parameter_cmd=''
+      # #3089 exec_listの要素毎にparameterをリセットする
+      parameter_cmd_list=[]
       shell_cmd=''
       stdout_file=''
+      stdout_file_tmp_flg=0
       success_exit=str(False)
       ignore_errors=str(False)
       when_cmd = {}
@@ -536,7 +541,8 @@ def main():
             # error log
             logstr = 'command(state->' + cmd + ') not service'
             exec_log_output(logstr)
-            private_output(log_file_name,host_name,logstr)
+            # #3089 private_output()は未定義のためNameErrorになっていた
+            private_log_output(log_file_name,host_name,logstr)
 
             #########################################################
             # fail exit
@@ -572,7 +578,9 @@ def main():
 
           craete_stdout_file(pass_rep_stdout_file,edit_stdout_data)
         else:
+          # #3089 stdout_file未指定の場合はITAが一時ファイルを生成し、検査後に削除する
           stdout_file="/tmp/.ita_pioneer_module_stdout." + str(os.getpid())
+          stdout_file_tmp_flg=1
           craete_stdout_file(stdout_file,edit_stdout_data)
 
         if shell_cmd:
@@ -588,7 +596,8 @@ def main():
             private_log_output(log_file_name,host_name,logstr)
             exec_log_output(logstr)
 
-            def_shell_cmd = ["sh ", shlex.quote(pass_rep_shell_cmd), shlex.quote(pass_rep_stdout_file)] + parameter_cmd_list
+            # #3089 shell=Trueで実行するため、コマンドに埋め込む値は全てshlex.quote()でクォートする(#1414)
+            def_shell_cmd = "sh " + shlex.quote(pass_rep_shell_cmd) + " " + shlex.quote(pass_rep_stdout_file) + " " + " ".join(parameter_cmd_list)
             shell_ret = subprocess.run(def_shell_cmd, shell=True)
           except:
             import sys
@@ -613,10 +622,9 @@ def main():
             private_log_output(log_file_name,host_name,logstr)
             exec_log_output(logstr)
 
-            def_shell_cmd = ["sh ", shlex.quote(shell_name), shlex.quote(pass_rep_stdout_file)] + parameter_cmd_list
+            # #3089 shell=Trueで実行するため、コマンドに埋め込む値は全てshlex.quote()でクォートする(#1414)
+            def_shell_cmd = "sh " + shlex.quote(shell_name) + " " + shlex.quote(pass_rep_stdout_file) + " " + " ".join(parameter_cmd_list)
             shell_ret = subprocess.run(def_shell_cmd, shell=True)
-            if os.path.isfile(pass_rep_stdout_file):
-                os.remove(pass_rep_stdout_file)
           except:
             import sys
             import traceback
@@ -629,6 +637,11 @@ def main():
             # fail exit
             #########################################################
             private_fail_json(obj=module,msg=host_name + ':' + logstr,exec_log=exec_log)
+
+        # #3089 ITAが生成した一時ファイルのみ削除する
+        # (stdout_fileに指定されたファイルは結果データとして残す)
+        if stdout_file_tmp_flg == 1 and os.path.isfile(stdout_file):
+          os.remove(stdout_file)
 
         # shell result check
         if shell_ret.returncode == 0:

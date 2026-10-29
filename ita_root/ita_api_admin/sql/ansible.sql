@@ -1,5 +1,5 @@
 -- 20101 機器一覧
-CREATE TABLE T_ANSC_DEVICE
+CREATE TABLE IF NOT EXISTS T_ANSC_DEVICE
 (
     SYSTEM_ID                       VARCHAR(40),                                -- 項番
     HARDAWRE_TYPE_ID                VARCHAR(2),                                 -- HW機器種別
@@ -28,7 +28,7 @@ CREATE TABLE T_ANSC_DEVICE
     PRIMARY KEY(SYSTEM_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_ANSC_DEVICE_JNL
+CREATE TABLE IF NOT EXISTS T_ANSC_DEVICE_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -63,7 +63,7 @@ CREATE TABLE T_ANSC_DEVICE_JNL
 
 
 -- 20102 インターフェース情報
-CREATE TABLE T_ANSC_IF_INFO
+CREATE TABLE IF NOT EXISTS T_ANSC_IF_INFO
 (
     ANSIBLE_IF_INFO_ID              VARCHAR(40),                                -- 項番
     ANSIBLE_EXEC_MODE               VARCHAR(2),                                 -- 実行エンジン
@@ -99,7 +99,7 @@ CREATE TABLE T_ANSC_IF_INFO
     PRIMARY KEY(ANSIBLE_IF_INFO_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_ANSC_IF_INFO_JNL
+CREATE TABLE IF NOT EXISTS T_ANSC_IF_INFO_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -141,7 +141,7 @@ CREATE TABLE T_ANSC_IF_INFO_JNL
 
 
 -- 20103 AAC ホスト一覧
-CREATE TABLE T_ANSC_TOWER_HOST
+CREATE TABLE IF NOT EXISTS T_ANSC_TOWER_HOST
 (
     ANSTWR_HOST_ID                  VARCHAR(40),                                -- 項番
     ANSTWR_HOSTNAME                 VARCHAR(255),                               -- ホスト
@@ -159,7 +159,7 @@ CREATE TABLE T_ANSC_TOWER_HOST
     PRIMARY KEY(ANSTWR_HOST_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_ANSC_TOWER_HOST_JNL
+CREATE TABLE IF NOT EXISTS T_ANSC_TOWER_HOST_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -183,7 +183,7 @@ CREATE TABLE T_ANSC_TOWER_HOST_JNL
 
 
 -- 20104 グローバル変数管理
-CREATE TABLE T_ANSC_GLOBAL_VAR
+CREATE TABLE IF NOT EXISTS T_ANSC_GLOBAL_VAR
 (
     GBL_VARS_NAME_ID                VARCHAR(40),                                -- 項番
     VARS_NAME                       VARCHAR(255),                               -- グローバル変数名
@@ -196,7 +196,7 @@ CREATE TABLE T_ANSC_GLOBAL_VAR
     PRIMARY KEY(GBL_VARS_NAME_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_ANSC_GLOBAL_VAR_JNL
+CREATE TABLE IF NOT EXISTS T_ANSC_GLOBAL_VAR_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -215,7 +215,7 @@ CREATE TABLE T_ANSC_GLOBAL_VAR_JNL
 
 
 -- 20105 ファイル管理
-CREATE TABLE T_ANSC_CONTENTS_FILE
+CREATE TABLE IF NOT EXISTS T_ANSC_CONTENTS_FILE
 (
     CONTENTS_FILE_ID                VARCHAR(40),                                -- 素材ID
     CONTENTS_FILE_VARS_NAME         VARCHAR(255),                               -- ファイル埋込変数名
@@ -227,7 +227,7 @@ CREATE TABLE T_ANSC_CONTENTS_FILE
     PRIMARY KEY(CONTENTS_FILE_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_ANSC_CONTENTS_FILE_JNL
+CREATE TABLE IF NOT EXISTS T_ANSC_CONTENTS_FILE_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -245,7 +245,7 @@ CREATE TABLE T_ANSC_CONTENTS_FILE_JNL
 
 
 -- 20106 テンプレート管理
-CREATE TABLE T_ANSC_TEMPLATE_FILE
+CREATE TABLE IF NOT EXISTS T_ANSC_TEMPLATE_FILE
 (
     ANS_TEMPLATE_ID                 VARCHAR(40),                                -- 素材ID
     ANS_TEMPLATE_VARS_NAME          VARCHAR(255),                               -- テンプレート埋込変数名
@@ -260,7 +260,7 @@ CREATE TABLE T_ANSC_TEMPLATE_FILE
     PRIMARY KEY(ANS_TEMPLATE_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_ANSC_TEMPLATE_FILE_JNL
+CREATE TABLE IF NOT EXISTS T_ANSC_TEMPLATE_FILE_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -281,7 +281,7 @@ CREATE TABLE T_ANSC_TEMPLATE_FILE_JNL
 
 
 -- 20107 共通変数使用一覧
-CREATE TABLE T_ANSC_COMVRAS_USLIST
+CREATE TABLE IF NOT EXISTS T_ANSC_COMVRAS_USLIST
 (
     ROW_ID                          VARCHAR(40),                                -- 項番
     FILE_ID                         VARCHAR(2),                                 -- 資材種別
@@ -300,7 +300,7 @@ CREATE TABLE T_ANSC_COMVRAS_USLIST
 
 
 -- 20108 管理対象外変数一覧
-CREATE TABLE T_ANSC_UNMANAGED_VARLIST
+CREATE TABLE IF NOT EXISTS T_ANSC_UNMANAGED_VARLIST
 (
     ROW_ID                          VARCHAR(40),                                -- 項番
     VAR_NAME                        VARCHAR(255),                               -- 変数名
@@ -311,7 +311,7 @@ CREATE TABLE T_ANSC_UNMANAGED_VARLIST
     PRIMARY KEY(ROW_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_ANSC_UNMANAGED_VARLIST_JNL
+CREATE TABLE IF NOT EXISTS T_ANSC_UNMANAGED_VARLIST_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -328,7 +328,7 @@ CREATE TABLE T_ANSC_UNMANAGED_VARLIST_JNL
 
 
 -- 20109 収集項目値管理
-CREATE TABLE T_ANSC_CMDB_LINK
+CREATE TABLE IF NOT EXISTS T_ANSC_CMDB_LINK
 (
     ROW_ID                          VARCHAR(40),                                -- 項番
     FILE_PREFIX                     VARCHAR(4000),                              -- PREFIX(ファイル名)
@@ -344,7 +344,7 @@ CREATE TABLE T_ANSC_CMDB_LINK
     PRIMARY KEY(ROW_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_ANSC_CMDB_LINK_JNL
+CREATE TABLE IF NOT EXISTS T_ANSC_CMDB_LINK_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -366,7 +366,7 @@ CREATE TABLE T_ANSC_CMDB_LINK_JNL
 
 
 -- 20110 実行環境定義テンプレート管理
-CREATE TABLE T_ANSC_EXECDEV_TEMPLATE_FILE
+CREATE TABLE IF NOT EXISTS T_ANSC_EXECDEV_TEMPLATE_FILE
 (
     ROW_ID                          VARCHAR(40),                                -- 項番
     TEMPLATE_NAME                   VARCHAR(255),                               -- テンプレート名
@@ -378,7 +378,7 @@ CREATE TABLE T_ANSC_EXECDEV_TEMPLATE_FILE
     PRIMARY KEY(ROW_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_ANSC_EXECDEV_TEMPLATE_FILE_JNL
+CREATE TABLE IF NOT EXISTS T_ANSC_EXECDEV_TEMPLATE_FILE_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -396,7 +396,7 @@ CREATE TABLE T_ANSC_EXECDEV_TEMPLATE_FILE_JNL
 
 
 -- 20111 実行環境管理
-CREATE TABLE T_ANSC_EXECDEV
+CREATE TABLE IF NOT EXISTS T_ANSC_EXECDEV
 (
     ROW_ID                          VARCHAR(40),                                -- 項番
     EXECUTION_ENVIRONMENT_NAME      VARCHAR(255),                               -- 実行環境名
@@ -411,7 +411,7 @@ CREATE TABLE T_ANSC_EXECDEV
     PRIMARY KEY(ROW_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_ANSC_EXECDEV_JNL
+CREATE TABLE IF NOT EXISTS T_ANSC_EXECDEV_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -432,7 +432,7 @@ CREATE TABLE T_ANSC_EXECDEV_JNL
 
 
 -- 20112 エージェント管理
-CREATE TABLE T_ANSC_AGENT
+CREATE TABLE IF NOT EXISTS T_ANSC_AGENT
 (
     ROW_ID                          VARCHAR(40),                                -- 項番
     AGENT_NAME                      VARCHAR(255),                               -- エージェント名
@@ -449,7 +449,7 @@ CREATE TABLE T_ANSC_AGENT
 
 
 -- 20113 グローバル変数（センシティブ）管理
-CREATE TABLE T_ANSC_GLOBAL_VAR_SENSITIVE
+CREATE TABLE IF NOT EXISTS T_ANSC_GLOBAL_VAR_SENSITIVE
 (
     GBL_VARS_NAME_ID                VARCHAR(40),                                -- 項番
     VARS_NAME                       VARCHAR(255),                               -- グローバル変数名
@@ -462,7 +462,7 @@ CREATE TABLE T_ANSC_GLOBAL_VAR_SENSITIVE
     PRIMARY KEY(GBL_VARS_NAME_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_ANSC_GLOBAL_VAR_SENSITIVE_JNL
+CREATE TABLE IF NOT EXISTS T_ANSC_GLOBAL_VAR_SENSITIVE_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -481,7 +481,7 @@ CREATE TABLE T_ANSC_GLOBAL_VAR_SENSITIVE_JNL
 
 
 -- 20214 AAP(Cloud)連携用資材
-CREATE TABLE T_ANSC_AAP_CLOUD_LINK_ASSETS
+CREATE TABLE IF NOT EXISTS T_ANSC_AAP_CLOUD_LINK_ASSETS
 (
     ROW_ID                          VARCHAR(40),                                -- 項番
     ASSET_NAME                      VARCHAR(255),                               -- 資材名
@@ -495,7 +495,7 @@ CREATE TABLE T_ANSC_AAP_CLOUD_LINK_ASSETS
     PRIMARY KEY(ROW_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_ANSC_AAP_CLOUD_LINK_ASSETS_JNL
+CREATE TABLE IF NOT EXISTS T_ANSC_AAP_CLOUD_LINK_ASSETS_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -515,8 +515,8 @@ CREATE TABLE T_ANSC_AAP_CLOUD_LINK_ASSETS_JNL
 
 
 -- 20201 Legacy Movemnet一覧
-CREATE VIEW V_ANSL_MOVEMENT AS
-SELECT
+CREATE OR REPLACE VIEW V_ANSL_MOVEMENT AS
+SELECT 
 MOVEMENT_ID,
 MOVEMENT_NAME,
 ITA_EXT_STM_ID,
@@ -534,12 +534,12 @@ NOTE,
 DISUSE_FLAG,
 LAST_UPDATE_TIMESTAMP,
 LAST_UPDATE_USER
-FROM
+FROM 
   T_COMN_MOVEMENT
-WHERE
+WHERE 
   ITA_EXT_STM_ID = 1;
-CREATE VIEW V_ANSL_MOVEMENT_JNL AS
-SELECT
+CREATE OR REPLACE VIEW V_ANSL_MOVEMENT_JNL AS
+SELECT 
 JOURNAL_SEQ_NO,
 JOURNAL_REG_DATETIME,
 JOURNAL_ACTION_CLASS,
@@ -560,15 +560,15 @@ NOTE,
 DISUSE_FLAG,
 LAST_UPDATE_TIMESTAMP,
 LAST_UPDATE_USER
-FROM
+FROM 
   T_COMN_MOVEMENT_JNL
-WHERE
+WHERE 
   ITA_EXT_STM_ID = 1;
 
 
 
 -- 20202 Legacy Playbook素材集
-CREATE TABLE T_ANSL_MATL_COLL
+CREATE TABLE IF NOT EXISTS T_ANSL_MATL_COLL
 (
     PLAYBOOK_MATTER_ID              VARCHAR(40),                                -- 項番
     PLAYBOOK_MATTER_NAME            VARCHAR(255),                               -- Playbook素材名
@@ -586,7 +586,7 @@ CREATE TABLE T_ANSL_MATL_COLL
     PRIMARY KEY(PLAYBOOK_MATTER_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_ANSL_MATL_COLL_JNL
+CREATE TABLE IF NOT EXISTS T_ANSL_MATL_COLL_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -610,7 +610,7 @@ CREATE TABLE T_ANSL_MATL_COLL_JNL
 
 
 -- 20203 Legacy Movement-変数紐付
-CREATE TABLE T_ANSL_MVMT_VAR_LINK
+CREATE TABLE IF NOT EXISTS T_ANSL_MVMT_VAR_LINK
 (
     MVMT_VAR_LINK_ID                VARCHAR(40),                                -- 項番
     MOVEMENT_ID                     VARCHAR(40),                                -- Movement
@@ -626,7 +626,7 @@ CREATE TABLE T_ANSL_MVMT_VAR_LINK
 
 
 -- 20204 Legacy Move-Playbook紐付
-CREATE TABLE T_ANSL_MVMT_MATL_LINK
+CREATE TABLE IF NOT EXISTS T_ANSL_MVMT_MATL_LINK
 (
     MVMT_MATL_LINK_ID               VARCHAR(40),                                -- 項番
     MOVEMENT_ID                     VARCHAR(40),                                -- Movement
@@ -639,7 +639,7 @@ CREATE TABLE T_ANSL_MVMT_MATL_LINK
     PRIMARY KEY(MVMT_MATL_LINK_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_ANSL_MVMT_MATL_LINK_JNL
+CREATE TABLE IF NOT EXISTS T_ANSL_MVMT_MATL_LINK_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -658,7 +658,7 @@ CREATE TABLE T_ANSL_MVMT_MATL_LINK_JNL
 
 
 -- 20205 Legacy 代入値自動登録
-CREATE TABLE T_ANSL_VALUE_AUTOREG
+CREATE TABLE IF NOT EXISTS T_ANSL_VALUE_AUTOREG
 (
     COLUMN_ID                       VARCHAR(40),                                -- 項番
     MENU_NAME_REST                  VARCHAR(40),                                -- メニュー名(REST)
@@ -677,7 +677,7 @@ CREATE TABLE T_ANSL_VALUE_AUTOREG
     PRIMARY KEY(COLUMN_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_ANSL_VALUE_AUTOREG_JNL
+CREATE TABLE IF NOT EXISTS T_ANSL_VALUE_AUTOREG_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -702,7 +702,7 @@ CREATE TABLE T_ANSL_VALUE_AUTOREG_JNL
 
 
 -- 20206 Legacy 作業対象ホスト
-CREATE TABLE T_ANSL_TGT_HOST
+CREATE TABLE IF NOT EXISTS T_ANSL_TGT_HOST
 (
     PHO_LINK_ID                     VARCHAR(40),                                -- 項番
     EXECUTION_NO                    VARCHAR(40),                                -- 作業実行番号
@@ -720,7 +720,7 @@ CREATE TABLE T_ANSL_TGT_HOST
 
 
 -- 20207 Legacy 代入値管理
-CREATE TABLE T_ANSL_VALUE
+CREATE TABLE IF NOT EXISTS T_ANSL_VALUE
 (
     ASSIGN_ID                       VARCHAR(40),                                -- 項番
     EXECUTION_NO                    VARCHAR(40),                                -- 作業実行番号
@@ -744,7 +744,7 @@ CREATE TABLE T_ANSL_VALUE
 
 
 -- 20209 Legacy 作業管理
-CREATE TABLE T_ANSL_EXEC_STS_INST
+CREATE TABLE IF NOT EXISTS T_ANSL_EXEC_STS_INST
 (
     EXECUTION_NO                    VARCHAR(40),                                -- 作業番号
     RUN_MODE                        VARCHAR(2),                                 -- 実行種別
@@ -786,7 +786,7 @@ CREATE TABLE T_ANSL_EXEC_STS_INST
     PRIMARY KEY(EXECUTION_NO)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_ANSL_EXEC_STS_INST_JNL
+CREATE TABLE IF NOT EXISTS T_ANSL_EXEC_STS_INST_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -834,8 +834,8 @@ CREATE TABLE T_ANSL_EXEC_STS_INST_JNL
 
 
 -- 20301 Pionner Movemnet一覧
-CREATE VIEW V_ANSP_MOVEMENT AS
-SELECT
+CREATE OR REPLACE VIEW V_ANSP_MOVEMENT AS
+SELECT 
 MOVEMENT_ID,
 MOVEMENT_NAME,
 ITA_EXT_STM_ID,
@@ -853,12 +853,12 @@ NOTE,
 DISUSE_FLAG,
 LAST_UPDATE_TIMESTAMP,
 LAST_UPDATE_USER
-FROM
+FROM 
   T_COMN_MOVEMENT
-WHERE
+WHERE 
   ITA_EXT_STM_ID = 2;
-CREATE VIEW V_ANSP_MOVEMENT_JNL AS
-SELECT
+CREATE OR REPLACE VIEW V_ANSP_MOVEMENT_JNL AS
+SELECT 
 JOURNAL_SEQ_NO,
 JOURNAL_REG_DATETIME,
 JOURNAL_ACTION_CLASS,
@@ -879,15 +879,15 @@ NOTE,
 DISUSE_FLAG,
 LAST_UPDATE_TIMESTAMP,
 LAST_UPDATE_USER
-FROM
+FROM 
   T_COMN_MOVEMENT_JNL
-WHERE
+WHERE 
   ITA_EXT_STM_ID = 2;
 
 
 
 -- 20302 Pionner 対話種別
-CREATE TABLE T_ANSP_DIALOG_TYPE
+CREATE TABLE IF NOT EXISTS T_ANSP_DIALOG_TYPE
 (
     DIALOG_TYPE_ID                  VARCHAR(40),                                -- 項番
     DIALOG_TYPE_NAME                VARCHAR(255),                               -- 対話種別名
@@ -898,7 +898,7 @@ CREATE TABLE T_ANSP_DIALOG_TYPE
     PRIMARY KEY(DIALOG_TYPE_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_ANSP_DIALOG_TYPE_JNL
+CREATE TABLE IF NOT EXISTS T_ANSP_DIALOG_TYPE_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -915,7 +915,7 @@ CREATE TABLE T_ANSP_DIALOG_TYPE_JNL
 
 
 -- 20303 Pionner OS種別
-CREATE TABLE T_ANSP_OS_TYPE
+CREATE TABLE IF NOT EXISTS T_ANSP_OS_TYPE
 (
     OS_TYPE_ID                      VARCHAR(40),                                -- 項番
     OS_TYPE_NAME                    VARCHAR(255),                               -- OS種別名
@@ -929,7 +929,7 @@ CREATE TABLE T_ANSP_OS_TYPE
     PRIMARY KEY(OS_TYPE_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_ANSP_OS_TYPE_JNL
+CREATE TABLE IF NOT EXISTS T_ANSP_OS_TYPE_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -949,7 +949,7 @@ CREATE TABLE T_ANSP_OS_TYPE_JNL
 
 
 -- 20304 Pionner 対話ファイル素材集
-CREATE TABLE T_ANSP_MATL_COLL
+CREATE TABLE IF NOT EXISTS T_ANSP_MATL_COLL
 (
     DIALOG_MATTER_ID                VARCHAR(40),                                -- 項番
     DIALOG_TYPE_ID                  VARCHAR(40),                                -- 対話種別
@@ -968,7 +968,7 @@ CREATE TABLE T_ANSP_MATL_COLL
     PRIMARY KEY(DIALOG_MATTER_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_ANSP_MATL_COLL_JNL
+CREATE TABLE IF NOT EXISTS T_ANSP_MATL_COLL_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -993,7 +993,7 @@ CREATE TABLE T_ANSP_MATL_COLL_JNL
 
 
 -- 20305 Pionner Movement-変数紐付
-CREATE TABLE T_ANSP_MVMT_VAR_LINK
+CREATE TABLE IF NOT EXISTS T_ANSP_MVMT_VAR_LINK
 (
     MVMT_VAR_LINK_ID                VARCHAR(40),                                -- 項番
     MOVEMENT_ID                     VARCHAR(40),                                -- Movement
@@ -1009,7 +1009,7 @@ CREATE TABLE T_ANSP_MVMT_VAR_LINK
 
 
 -- 20306 Pioneer Movement-対話種別紐付
-CREATE TABLE T_ANSP_MVMT_MATL_LINK
+CREATE TABLE IF NOT EXISTS T_ANSP_MVMT_MATL_LINK
 (
     MVMT_MATL_LINK_ID               VARCHAR(40),                                -- 項番
     MOVEMENT_ID                     VARCHAR(40),                                -- Movement
@@ -1022,7 +1022,7 @@ CREATE TABLE T_ANSP_MVMT_MATL_LINK
     PRIMARY KEY(MVMT_MATL_LINK_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_ANSP_MVMT_MATL_LINK_JNL
+CREATE TABLE IF NOT EXISTS T_ANSP_MVMT_MATL_LINK_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -1041,7 +1041,7 @@ CREATE TABLE T_ANSP_MVMT_MATL_LINK_JNL
 
 
 -- 20307 Pioneer 代入値自動登録
-CREATE TABLE T_ANSP_VALUE_AUTOREG
+CREATE TABLE IF NOT EXISTS T_ANSP_VALUE_AUTOREG
 (
     COLUMN_ID                       VARCHAR(40),                                -- 項番
     MENU_NAME_REST                  VARCHAR(40),                                -- メニュー名(REST)
@@ -1060,7 +1060,7 @@ CREATE TABLE T_ANSP_VALUE_AUTOREG
     PRIMARY KEY(COLUMN_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_ANSP_VALUE_AUTOREG_JNL
+CREATE TABLE IF NOT EXISTS T_ANSP_VALUE_AUTOREG_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -1085,7 +1085,7 @@ CREATE TABLE T_ANSP_VALUE_AUTOREG_JNL
 
 
 -- 20308 Pioneer 作業対象ホスト
-CREATE TABLE T_ANSP_TGT_HOST
+CREATE TABLE IF NOT EXISTS T_ANSP_TGT_HOST
 (
     PHO_LINK_ID                     VARCHAR(40),                                -- 項番
     EXECUTION_NO                    VARCHAR(40),                                -- 作業実行番号
@@ -1103,7 +1103,7 @@ CREATE TABLE T_ANSP_TGT_HOST
 
 
 -- 20309 Pioneer 代入値管理
-CREATE TABLE T_ANSP_VALUE
+CREATE TABLE IF NOT EXISTS T_ANSP_VALUE
 (
     ASSIGN_ID                       VARCHAR(40),                                -- 項番
     EXECUTION_NO                    VARCHAR(40),                                -- 作業実行番号
@@ -1127,7 +1127,7 @@ CREATE TABLE T_ANSP_VALUE
 
 
 -- 20310 Pioneer 作業管理
-CREATE TABLE T_ANSP_EXEC_STS_INST
+CREATE TABLE IF NOT EXISTS T_ANSP_EXEC_STS_INST
 (
     EXECUTION_NO                    VARCHAR(40),                                -- 作業番号
     RUN_MODE                        VARCHAR(2),                                 -- 実行種別
@@ -1169,7 +1169,7 @@ CREATE TABLE T_ANSP_EXEC_STS_INST
     PRIMARY KEY(EXECUTION_NO)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_ANSP_EXEC_STS_INST_JNL
+CREATE TABLE IF NOT EXISTS T_ANSP_EXEC_STS_INST_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -1217,7 +1217,7 @@ CREATE TABLE T_ANSP_EXEC_STS_INST_JNL
 
 
 -- 20401 Role ロール名管理
-CREATE TABLE T_ANSR_ROLE_NAME
+CREATE TABLE IF NOT EXISTS T_ANSR_ROLE_NAME
 (
     ROLE_ID                         VARCHAR(40),                                -- 項番
     ROLE_PACKAGE_ID                 VARCHAR(40),                                -- ロールパッケージ名
@@ -1233,8 +1233,8 @@ CREATE TABLE T_ANSR_ROLE_NAME
 
 
 -- 20402 Role Movemnet一覧
-CREATE VIEW V_ANSR_MOVEMENT AS
-SELECT
+CREATE OR REPLACE VIEW V_ANSR_MOVEMENT AS
+SELECT 
 MOVEMENT_ID,
 MOVEMENT_NAME,
 ITA_EXT_STM_ID,
@@ -1252,12 +1252,12 @@ NOTE,
 DISUSE_FLAG,
 LAST_UPDATE_TIMESTAMP,
 LAST_UPDATE_USER
-FROM
+FROM 
   T_COMN_MOVEMENT
-WHERE
+WHERE 
   ITA_EXT_STM_ID = 3;
-CREATE VIEW V_ANSR_MOVEMENT_JNL AS
-SELECT
+CREATE OR REPLACE VIEW V_ANSR_MOVEMENT_JNL AS
+SELECT 
 JOURNAL_SEQ_NO,
 JOURNAL_REG_DATETIME,
 JOURNAL_ACTION_CLASS,
@@ -1278,15 +1278,15 @@ NOTE,
 DISUSE_FLAG,
 LAST_UPDATE_TIMESTAMP,
 LAST_UPDATE_USER
-FROM
+FROM 
   T_COMN_MOVEMENT_JNL
-WHERE
+WHERE 
   ITA_EXT_STM_ID = 3;
 
 
 
 -- 20403 Role ロールパッケージ管理
-CREATE TABLE T_ANSR_MATL_COLL
+CREATE TABLE IF NOT EXISTS T_ANSR_MATL_COLL
 (
     ROLE_PACKAGE_ID                 VARCHAR(40),                                -- 項番
     ROLE_PACKAGE_NAME               VARCHAR(255),                               -- ロールパッケージ名
@@ -1305,7 +1305,7 @@ CREATE TABLE T_ANSR_MATL_COLL
     PRIMARY KEY(ROLE_PACKAGE_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_ANSR_MATL_COLL_JNL
+CREATE TABLE IF NOT EXISTS T_ANSR_MATL_COLL_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -1330,7 +1330,7 @@ CREATE TABLE T_ANSR_MATL_COLL_JNL
 
 
 -- 20404 Role Movement-ロール紐付
-CREATE TABLE T_ANSR_MVMT_MATL_LINK
+CREATE TABLE IF NOT EXISTS T_ANSR_MVMT_MATL_LINK
 (
     MVMT_MATL_LINK_ID               VARCHAR(40),                                -- 項番
     MOVEMENT_ID                     VARCHAR(40),                                -- Movement
@@ -1344,7 +1344,7 @@ CREATE TABLE T_ANSR_MVMT_MATL_LINK
     PRIMARY KEY(MVMT_MATL_LINK_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_ANSR_MVMT_MATL_LINK_JNL
+CREATE TABLE IF NOT EXISTS T_ANSR_MVMT_MATL_LINK_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -1364,7 +1364,7 @@ CREATE TABLE T_ANSR_MVMT_MATL_LINK_JNL
 
 
 -- 20405 Role Movement-変数紐付
-CREATE TABLE T_ANSR_MVMT_VAR_LINK
+CREATE TABLE IF NOT EXISTS T_ANSR_MVMT_VAR_LINK
 (
     MVMT_VAR_LINK_ID                VARCHAR(40),                                -- 項番
     MOVEMENT_ID                     VARCHAR(40),                                -- Movement
@@ -1381,7 +1381,7 @@ CREATE TABLE T_ANSR_MVMT_VAR_LINK
 
 
 -- 20406 Role 変数ネスト管理
-CREATE TABLE T_ANSR_NESTVAR_MEMBER_MAX_COL
+CREATE TABLE IF NOT EXISTS T_ANSR_NESTVAR_MEMBER_MAX_COL
 (
     MAX_COL_SEQ_ID                  VARCHAR(40),                                -- 項番
     MVMT_VAR_LINK_ID                VARCHAR(40),                                -- 変数名
@@ -1394,7 +1394,7 @@ CREATE TABLE T_ANSR_NESTVAR_MEMBER_MAX_COL
     PRIMARY KEY(MAX_COL_SEQ_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_ANSR_NESTVAR_MEMBER_MAX_COL_JNL
+CREATE TABLE IF NOT EXISTS T_ANSR_NESTVAR_MEMBER_MAX_COL_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -1413,7 +1413,7 @@ CREATE TABLE T_ANSR_NESTVAR_MEMBER_MAX_COL_JNL
 
 
 -- 20407 Role 代入値自動登録
-CREATE TABLE T_ANSR_VALUE_AUTOREG
+CREATE TABLE IF NOT EXISTS T_ANSR_VALUE_AUTOREG
 (
     COLUMN_ID                       VARCHAR(40),                                -- 項番
     MENU_NAME_REST                  VARCHAR(40),                                -- メニュー名(REST)
@@ -1433,7 +1433,7 @@ CREATE TABLE T_ANSR_VALUE_AUTOREG
     PRIMARY KEY(COLUMN_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_ANSR_VALUE_AUTOREG_JNL
+CREATE TABLE IF NOT EXISTS T_ANSR_VALUE_AUTOREG_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -1459,7 +1459,7 @@ CREATE TABLE T_ANSR_VALUE_AUTOREG_JNL
 
 
 -- 20408 Role 作業対象ホスト
-CREATE TABLE T_ANSR_TGT_HOST
+CREATE TABLE IF NOT EXISTS T_ANSR_TGT_HOST
 (
     PHO_LINK_ID                     VARCHAR(40),                                -- 項番
     EXECUTION_NO                    VARCHAR(40),                                -- 作業No.
@@ -1477,7 +1477,7 @@ CREATE TABLE T_ANSR_TGT_HOST
 
 
 -- 20409 Role 代入値管理
-CREATE TABLE T_ANSR_VALUE
+CREATE TABLE IF NOT EXISTS T_ANSR_VALUE
 (
     ASSIGN_ID                       VARCHAR(40),                                -- 項番
     EXECUTION_NO                    VARCHAR(40),                                -- 作業No.
@@ -1502,7 +1502,7 @@ CREATE TABLE T_ANSR_VALUE
 
 
 -- 20412 Role 作業管理
-CREATE TABLE T_ANSR_EXEC_STS_INST
+CREATE TABLE IF NOT EXISTS T_ANSR_EXEC_STS_INST
 (
     EXECUTION_NO                    VARCHAR(40),                                -- 作業番号
     RUN_MODE                        VARCHAR(2),                                 -- 実行種別
@@ -1544,7 +1544,7 @@ CREATE TABLE T_ANSR_EXEC_STS_INST
     PRIMARY KEY(EXECUTION_NO)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_ANSR_EXEC_STS_INST_JNL
+CREATE TABLE IF NOT EXISTS T_ANSR_EXEC_STS_INST_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -1592,7 +1592,7 @@ CREATE TABLE T_ANSR_EXEC_STS_INST_JNL
 
 
 -- 20413 Role 多段変数メンバー管理
-CREATE TABLE T_ANSR_NESTVAR_MEMBER
+CREATE TABLE IF NOT EXISTS T_ANSR_NESTVAR_MEMBER
 (
     ARRAY_MEMBER_ID                 VARCHAR(40),                                -- 項番
     MVMT_VAR_LINK_ID                VARCHAR(40),                                -- 親変数名
@@ -1617,7 +1617,7 @@ CREATE TABLE T_ANSR_NESTVAR_MEMBER
 
 
 -- 20414 Role 多段変数配列組合せ管理
-CREATE TABLE T_ANSR_NESTVAR_MEMBER_COL_COMB
+CREATE TABLE IF NOT EXISTS T_ANSR_NESTVAR_MEMBER_COL_COMB
 (
     COL_SEQ_COMBINATION_ID          VARCHAR(40),                                -- 項番
     MVMT_VAR_LINK_ID                VARCHAR(40),                                -- 変数名
@@ -1635,7 +1635,7 @@ CREATE TABLE T_ANSR_NESTVAR_MEMBER_COL_COMB
 
 
 -- M001_登録方式マスタ
-CREATE TABLE T_ANSC_AUTOREG_REG_TYPE
+CREATE TABLE IF NOT EXISTS T_ANSC_AUTOREG_REG_TYPE
 (
     TYPE_ID                         VARCHAR(2),                                 -- UUID
     TYPE_NAME_JA                    VARCHAR(256),                               -- 登録方式名(ja)
@@ -1652,7 +1652,7 @@ CREATE TABLE T_ANSC_AUTOREG_REG_TYPE
 
 
 -- M002_Ansible実行種別マスタ
-CREATE TABLE T_ANSC_EXEC_MODE
+CREATE TABLE IF NOT EXISTS T_ANSC_EXEC_MODE
 (
     EXEC_MODE_ID                    VARCHAR(2),                                 -- UUID
     EXEC_MODE_NAME_JA               VARCHAR(256),                               -- 実行モード名(ja)
@@ -1669,7 +1669,7 @@ CREATE TABLE T_ANSC_EXEC_MODE
 
 
 -- M003_変数タイプマスタ
-CREATE TABLE T_ANSC_VAR_TYPE
+CREATE TABLE IF NOT EXISTS T_ANSC_VAR_TYPE
 (
     TYPE_ID                         VARCHAR(2),                                 -- UUID
     TYPE_NAME_JA                    VARCHAR(256),                               -- 変数タイプ名(ja)
@@ -1686,7 +1686,7 @@ CREATE TABLE T_ANSC_VAR_TYPE
 
 
 -- M004_Pionnerプロトコルマスタ
-CREATE TABLE T_ANSC_PIONEER_PROTOCOL_TYPE
+CREATE TABLE IF NOT EXISTS T_ANSC_PIONEER_PROTOCOL_TYPE
 (
     PROTOCOL_ID                     VARCHAR(2),                                 -- UUID
     PROTOCOL_NAME                   VARCHAR(256),                               -- プロトコル名
@@ -1702,7 +1702,7 @@ CREATE TABLE T_ANSC_PIONEER_PROTOCOL_TYPE
 
 
 -- M005_ログイン認証方式マスタ
-CREATE TABLE T_ANSC_LOGIN_AUTH_TYPE
+CREATE TABLE IF NOT EXISTS T_ANSC_LOGIN_AUTH_TYPE
 (
     LOGIN_AUTH_TYPE_ID              VARCHAR(2),                                 -- UUID
     LOGIN_AUTH_TYPE_NAME_JA         VARCHAR(256),                               -- 認証方式名(ja)
@@ -1719,7 +1719,7 @@ CREATE TABLE T_ANSC_LOGIN_AUTH_TYPE
 
 
 -- M006_Ansibleステータスマスタ
-CREATE TABLE T_ANSC_EXEC_STATUS
+CREATE TABLE IF NOT EXISTS T_ANSC_EXEC_STATUS
 (
     EXEC_STATUS_ID                  VARCHAR(2),                                 -- UUID
     EXEC_STATUS_NAME_JA             VARCHAR(256),                               -- 実行状態名(ja)
@@ -1736,7 +1736,7 @@ CREATE TABLE T_ANSC_EXEC_STATUS
 
 
 -- M007_AnsiblePioneerLNAGマスタ
-CREATE TABLE T_ANSC_PIONEER_LANG
+CREATE TABLE IF NOT EXISTS T_ANSC_PIONEER_LANG
 (
     ID                              VARCHAR(2),                                 -- UUID
     NAME                            VARCHAR(256),                               -- 文字コード名
@@ -1752,7 +1752,7 @@ CREATE TABLE T_ANSC_PIONEER_LANG
 
 
 -- M008_Ansible実行区分マスタ
-CREATE TABLE T_ANSC_EXEC_ENGINE
+CREATE TABLE IF NOT EXISTS T_ANSC_EXEC_ENGINE
 (
     ID                              VARCHAR(2),                                 -- UUID
     NAME                            VARCHAR(256),                               -- 実行エンジン名
@@ -1768,7 +1768,7 @@ CREATE TABLE T_ANSC_EXEC_ENGINE
 
 
 -- M009_TowerJobTemplateプロパティ
-CREATE TABLE T_ANSC_TWR_JOBTP_PROPERTY
+CREATE TABLE IF NOT EXISTS T_ANSC_TWR_JOBTP_PROPERTY
 (
     ROWID                           VARCHAR(2),                                 -- UUID
     KEY_NAME                        VARCHAR(64),                                -- パラメータ名
@@ -1788,7 +1788,7 @@ CREATE TABLE T_ANSC_TWR_JOBTP_PROPERTY
 
 
 -- M010_ANSIBLETOWER_組織名マスタ
-CREATE TABLE T_ANSC_TWR_ORGANIZATION
+CREATE TABLE IF NOT EXISTS T_ANSC_TWR_ORGANIZATION
 (
     ORGANIZATION_ITA_MANAGED_ID     VARCHAR(40),                                -- UUID
     ORGANIZATION_NAME               VARCHAR(256),                               -- 組織名
@@ -1804,7 +1804,7 @@ CREATE TABLE T_ANSC_TWR_ORGANIZATION
 
 
 -- M011_AnsibleTower認証情報 接続タイプマスタ
-CREATE TABLE T_ANSC_TWR_CREDENTIAL_TYPE
+CREATE TABLE IF NOT EXISTS T_ANSC_TWR_CREDENTIAL_TYPE
 (
     CREDENTIAL_TYPE_ID              VARCHAR(2),                                 -- UUID
     CREDENTIAL_TYPE_NAME            VARCHAR(256),                               -- Tower認証タイプ名
@@ -1820,7 +1820,7 @@ CREATE TABLE T_ANSC_TWR_CREDENTIAL_TYPE
 
 
 -- M012_収集状況マスタ
-CREATE TABLE T_ANSC_COLLECT_STATUS
+CREATE TABLE IF NOT EXISTS T_ANSC_COLLECT_STATUS
 (
     COLLECT_STATUS_ID               VARCHAR(2),                                 -- UUID
     COLLECT_STATUS_NAME_JA          VARCHAR(256),                               -- 収集状態名(ja)
@@ -1837,7 +1837,7 @@ CREATE TABLE T_ANSC_COLLECT_STATUS
 
 
 -- M013_Ansible共通変数利用リスト_変数種別マスタ
-CREATE TABLE T_ANSC_COMVRAS_USLIST_V_ID
+CREATE TABLE IF NOT EXISTS T_ANSC_COMVRAS_USLIST_V_ID
 (
     ROW_ID                          VARCHAR(2),                                 -- UUID
     NAME                            VARCHAR(64),                                -- 変数種別
@@ -1853,7 +1853,7 @@ CREATE TABLE T_ANSC_COMVRAS_USLIST_V_ID
 
 
 -- M014_Ansible共通変数利用リスト_ファイル種別マスタ
-CREATE TABLE T_ANSC_COMVRAS_USLIST_F_ID
+CREATE TABLE IF NOT EXISTS T_ANSC_COMVRAS_USLIST_F_ID
 (
     ROW_ID                          VARCHAR(2),                                 -- UUID
     NAME                            VARCHAR(64),                                -- 素材種別
@@ -1869,7 +1869,7 @@ CREATE TABLE T_ANSC_COMVRAS_USLIST_F_ID
 
 
 -- M015_ハードウェア種別マスタ
-CREATE TABLE T_ANSC_HARDAWRE_TYPE
+CREATE TABLE IF NOT EXISTS T_ANSC_HARDAWRE_TYPE
 (
     HARDAWRE_TYPE_ID                VARCHAR(2),                                 -- UUID
     HARDAWRE_TYPE_NAME              VARCHAR(255),                               -- ハードウェア種別
@@ -1885,7 +1885,7 @@ CREATE TABLE T_ANSC_HARDAWRE_TYPE
 
 
 -- M016_収集機能パースタイプマスタ
-CREATE TABLE T_ANSC_PARSE_TYPE
+CREATE TABLE IF NOT EXISTS T_ANSC_PARSE_TYPE
 (
     PARSE_TYPE_ID                   VARCHAR(2),                                 -- ROW_ID
     PARSE_TYPE_NAME                 VARCHAR(255),                               -- パース形式名
@@ -1901,7 +1901,7 @@ CREATE TABLE T_ANSC_PARSE_TYPE
 
 
 -- M017_実行環境構築方法マスタ
-CREATE TABLE T_ANSC_EXECDEV_BUILD_TYPE
+CREATE TABLE IF NOT EXISTS T_ANSC_EXECDEV_BUILD_TYPE
 (
     ROW_ID                          VARCHAR(2),                                 -- ROW_ID
     NAME                            VARCHAR(64),                                -- 構築方法名
@@ -1917,7 +1917,7 @@ CREATE TABLE T_ANSC_EXECDEV_BUILD_TYPE
 
 
 -- M019_AnsibleExecutionステータスマスタ
-CREATE TABLE T_ANSC_EXECUTION_STATUS
+CREATE TABLE IF NOT EXISTS T_ANSC_EXECUTION_STATUS
 (
     STATUS_ID                       VARCHAR(2),                                 -- UUID
     STATUS_NAME_JA                  VARCHAR(256),                               -- ステータス名(ja)
@@ -1934,7 +1934,7 @@ CREATE TABLE T_ANSC_EXECUTION_STATUS
 
 
 -- AACインスタンスグループ管理
-CREATE TABLE T_ANSC_TWR_INSTANCE_GROUP
+CREATE TABLE IF NOT EXISTS T_ANSC_TWR_INSTANCE_GROUP
 (
     INSTANCE_GROUP_ITA_MANAGED_ID   VARCHAR(40),                                -- UUID
     INSTANCE_GROUP_NAME             VARCHAR(256),                               -- インスタンスグループ名
@@ -1950,18 +1950,18 @@ CREATE TABLE T_ANSC_TWR_INSTANCE_GROUP
 
 
 -- AAC用ログイン認証方式マスタ
-CREATE VIEW V_ANSC_TWR_LOGIN_AUTH_TYPE AS
-SELECT
+CREATE OR REPLACE VIEW V_ANSC_TWR_LOGIN_AUTH_TYPE AS
+SELECT 
   *
-FROM
+FROM 
   T_ANSC_LOGIN_AUTH_TYPE
-WHERE
+WHERE 
   LOGIN_AUTH_TYPE_ID <= 4;
 
 
 
 -- V001_代入値自動登録用項目表示ビュー
-CREATE VIEW V_ANSC_COLUMN_LIST AS
+CREATE OR REPLACE VIEW V_ANSC_COLUMN_LIST AS 
 SELECT
 TAB_A.COLUMN_DEFINITION_ID,
 TAB_A.MENU_ID,
@@ -2004,11 +2004,11 @@ ELSE
     concat(TAB_D.MENU_GROUP_NAME_JA, ":", concat(TAB_C.MENU_NAME_JA, ":" , TAB_E.FULL_COL_GROUP_NAME_JA, '/', TAB_A.COLUMN_NAME_JA))
 END as GROUP_MENU_COLUMN_NAME_JA,
 CASE WHEN TAB_E.FULL_COL_GROUP_NAME_EN IS NULL OR TAB_E.FULL_COL_GROUP_NAME_EN = '' THEN
-    concat(TAB_D.MENU_GROUP_NAME_EN, ":", concat(TAB_C.MENU_NAME_EN, ":" , TAB_A.COLUMN_NAME_EN))
+    concat(TAB_D.MENU_GROUP_NAME_EN, ":", concat(TAB_C.MENU_NAME_EN, ":" , TAB_A.COLUMN_NAME_EN)) 
 ELSE
     concat(TAB_D.MENU_GROUP_NAME_EN, ":", concat(TAB_C.MENU_NAME_EN, ":" , TAB_E.FULL_COL_GROUP_NAME_EN, '/', TAB_A.COLUMN_NAME_EN))
 END as GROUP_MENU_COLUMN_NAME_EN
-FROM T_COMN_MENU_COLUMN_LINK TAB_A
+FROM T_COMN_MENU_COLUMN_LINK TAB_A 
 LEFT JOIN T_COMN_MENU_TABLE_LINK TAB_B ON (TAB_A.MENU_ID = TAB_B.MENU_ID)
 LEFT JOIN T_COMN_MENU TAB_C ON (TAB_B.MENU_ID = TAB_C.MENU_ID)
 LEFT JOIN T_COMN_MENU_GROUP TAB_D ON ( TAB_C.MENU_GROUP_ID = TAB_D.MENU_GROUP_ID )
@@ -2021,7 +2021,7 @@ AND TAB_B.SUBSTITUTION_VALUE_LINK_FLAG =1
 AND TAB_C.DISUSE_FLAG = 0
 AND TAB_D.DISUSE_FLAG = 0
 AND (TAB_E.DISUSE_FLAG = 0 OR TAB_E.DISUSE_FLAG is NULL);
-CREATE VIEW V_ANSC_COLUMN_LIST_JNL AS
+CREATE OR REPLACE VIEW V_ANSC_COLUMN_LIST_JNL AS 
 SELECT
 TAB_A.JOURNAL_SEQ_NO,
 TAB_A.JOURNAL_REG_DATETIME,
@@ -2067,11 +2067,11 @@ ELSE
     concat(TAB_D.MENU_GROUP_NAME_JA, ":", concat(TAB_C.MENU_NAME_JA, ":" , TAB_E.FULL_COL_GROUP_NAME_JA, '/', TAB_A.COLUMN_NAME_JA))
 END as GROUP_MENU_COLUMN_NAME_JA,
 CASE WHEN TAB_E.FULL_COL_GROUP_NAME_EN IS NULL OR TAB_E.FULL_COL_GROUP_NAME_EN = '' THEN
-    concat(TAB_D.MENU_GROUP_NAME_EN, ":", concat(TAB_C.MENU_NAME_EN, ":" , TAB_A.COLUMN_NAME_EN))
+    concat(TAB_D.MENU_GROUP_NAME_EN, ":", concat(TAB_C.MENU_NAME_EN, ":" , TAB_A.COLUMN_NAME_EN)) 
 ELSE
     concat(TAB_D.MENU_GROUP_NAME_EN, ":", concat(TAB_C.MENU_NAME_EN, ":" , TAB_E.FULL_COL_GROUP_NAME_EN, '/', TAB_A.COLUMN_NAME_EN))
 END as GROUP_MENU_COLUMN_NAME_EN
-FROM T_COMN_MENU_COLUMN_LINK_JNL TAB_A
+FROM T_COMN_MENU_COLUMN_LINK_JNL TAB_A 
 LEFT JOIN T_COMN_MENU_TABLE_LINK_JNL TAB_B ON (TAB_A.MENU_ID = TAB_B.MENU_ID)
 LEFT JOIN T_COMN_MENU_JNL TAB_C ON (TAB_B.MENU_ID = TAB_C.MENU_ID)
 LEFT JOIN T_COMN_MENU_GROUP_JNL TAB_D ON ( TAB_C.MENU_GROUP_ID = TAB_D.MENU_GROUP_ID )
@@ -2088,7 +2088,7 @@ AND (TAB_E.DISUSE_FLAG = 0 OR TAB_E.DISUSE_FLAG is NULL);
 
 
 -- V002_作業管理検索ビュー
-CREATE VIEW V_ANSC_EXEC_STS_INST     AS
+CREATE OR REPLACE VIEW V_ANSC_EXEC_STS_INST     AS
 SELECT
   'Legacy' as DRIVER_NAME, 'L' as DRIVER_ID, EXECUTION_NO, STATUS_ID, TIME_BOOK, DISUSE_FLAG, LAST_UPDATE_TIMESTAMP, TIME_REGISTER
 FROM
@@ -2113,7 +2113,7 @@ WHERE
 
 
 -- V003_代表ホストビュー
-CREATE VIEW V_ANSC_HOST AS
+CREATE OR REPLACE VIEW V_ANSC_HOST AS 
 SELECT
 TAB_A.ANSTWR_HOST_ID,
 TAB_A.ANSTWR_HOSTNAME,
@@ -2127,13 +2127,13 @@ TAB_A.NOTE,
 TAB_A.DISUSE_FLAG,
 TAB_A.LAST_UPDATE_TIMESTAMP,
 TAB_A.LAST_UPDATE_USER
-FROM
+FROM 
 T_ANSC_TOWER_HOST TAB_A
-WHERE
+WHERE 
 TAB_A.DISUSE_FLAG = 0
-AND
+AND 
 (TAB_A.ANSTWR_ISOLATED_TYPE is NULL OR TAB_A.ANSTWR_ISOLATED_TYPE <> '1');
-CREATE VIEW V_ANSC_HOST_JNL AS
+CREATE OR REPLACE VIEW V_ANSC_HOST_JNL AS 
 SELECT
 TAB_A.JOURNAL_SEQ_NO,
 TAB_A.JOURNAL_REG_DATETIME,
@@ -2150,17 +2150,17 @@ TAB_A.NOTE,
 TAB_A.DISUSE_FLAG,
 TAB_A.LAST_UPDATE_TIMESTAMP,
 TAB_A.LAST_UPDATE_USER
-FROM
+FROM 
 T_ANSC_TOWER_HOST_JNL TAB_A
-WHERE
+WHERE 
 TAB_A.DISUSE_FLAG = 0
-AND
+AND 
 (TAB_A.ANSTWR_ISOLATED_TYPE is NULL OR TAB_A.ANSTWR_ISOLATED_TYPE <> '1');
 
 
 
 -- V004_ロールパッケージ名_ロール名ビュー
-CREATE VIEW V_ANSR_ROLE AS
+CREATE OR REPLACE VIEW V_ANSR_ROLE AS
 SELECT
 TAB_A.ROLE_ID,
 TAB_A.ROLE_PACKAGE_ID,
@@ -2178,7 +2178,7 @@ WHERE
 TAB_A.DISUSE_FLAG = 0
 AND
 TAB_B.DISUSE_FLAG = 0;
-CREATE VIEW V_ANSR_ROLE_JNL AS
+CREATE OR REPLACE VIEW V_ANSR_ROLE_JNL AS
 SELECT
 TAB_A.ROLE_ID,
 TAB_A.ROLE_PACKAGE_ID,
@@ -2200,8 +2200,8 @@ TAB_B.DISUSE_FLAG = 0;
 
 
 -- V005_変数ネスト管理 move_varビュー
-CREATE VIEW V_ANSR_NESTVAR_MOVEMENT AS
-SELECT
+CREATE OR REPLACE VIEW V_ANSR_NESTVAR_MOVEMENT AS
+SELECT 
 TAB_A.MAX_COL_SEQ_ID,
 TAB_A.MVMT_VAR_LINK_ID,
 TAB_A.ARRAY_MEMBER_ID,
@@ -2214,8 +2214,8 @@ TAB_B.MOVEMENT_ID
 FROM
 T_ANSR_NESTVAR_MEMBER_MAX_COL TAB_A
 LEFT JOIN T_ANSR_MVMT_VAR_LINK TAB_B ON (TAB_A.MVMT_VAR_LINK_ID = TAB_B.MVMT_VAR_LINK_ID);
-CREATE VIEW V_ANSR_NESTVAR_MOVEMENT_JNL AS
-SELECT
+CREATE OR REPLACE VIEW V_ANSR_NESTVAR_MOVEMENT_JNL AS
+SELECT 
 JOURNAL_SEQ_NO,
 JOURNAL_REG_DATETIME,
 JOURNAL_ACTION_CLASS,
@@ -2235,7 +2235,7 @@ LEFT JOIN T_ANSR_MVMT_VAR_LINK TAB_B ON (TAB_A.MVMT_VAR_LINK_ID = TAB_B.MVMT_VAR
 
 
 -- V006_代入値自動登録_メニュー名ビュー
-CREATE VIEW V_ANSC_MENU AS
+CREATE OR REPLACE VIEW V_ANSC_MENU AS 
 SELECT
 TAB_A.COLUMN_DEFINITION_ID,
 TAB_A.MENU_ID,
@@ -2274,7 +2274,7 @@ TAB_A.LAST_UPDATE_USER,
 TAB_C.MENU_NAME_JA,
 TAB_C.MENU_NAME_EN
 FROM
-T_COMN_MENU_COLUMN_LINK TAB_A
+T_COMN_MENU_COLUMN_LINK TAB_A 
 LEFT JOIN
 T_COMN_MENU_TABLE_LINK TAB_B ON (TAB_A.MENU_ID = TAB_B.MENU_ID)
 LEFT JOIN
@@ -2285,7 +2285,7 @@ AND (TAB_B.SHEET_TYPE = 1 OR TAB_B.SHEET_TYPE = 4)
 AND TAB_B.DISUSE_FLAG = 0
 AND TAB_B.SUBSTITUTION_VALUE_LINK_FLAG =1
 AND TAB_C.DISUSE_FLAG = 0;
-CREATE VIEW V_ANSC_MENU_JNL AS
+CREATE OR REPLACE VIEW V_ANSC_MENU_JNL AS 
 SELECT
 TAB_A.JOURNAL_SEQ_NO,
 TAB_A.JOURNAL_REG_DATETIME,
@@ -2327,7 +2327,7 @@ TAB_A.LAST_UPDATE_USER,
 TAB_C.MENU_NAME_JA,
 TAB_C.MENU_NAME_EN
 FROM
-T_COMN_MENU_COLUMN_LINK_JNL TAB_A
+T_COMN_MENU_COLUMN_LINK_JNL TAB_A 
 LEFT JOIN
 T_COMN_MENU_TABLE_LINK_JNL TAB_B ON (TAB_A.MENU_ID = TAB_B.MENU_ID)
 LEFT JOIN
@@ -2342,7 +2342,7 @@ AND TAB_C.DISUSE_FLAG = 0;
 
 
 -- V007_代入値自動登録_Movement名_変数名ビュー
-CREATE VIEW V_ANSR_VAL_VARS_LINK AS
+CREATE OR REPLACE VIEW V_ANSR_VAL_VARS_LINK AS
 SELECT
 TAB_A.MVMT_VAR_LINK_ID,
 TAB_A.MOVEMENT_ID,
@@ -2361,7 +2361,7 @@ WHERE
 TAB_A.DISUSE_FLAG = 0
 AND
 TAB_B.DISUSE_FLAG = 0;
-CREATE VIEW V_ANSR_VAL_VARS_LINK_JNL AS
+CREATE OR REPLACE VIEW V_ANSR_VAL_VARS_LINK_JNL AS
 SELECT
 TAB_A.MVMT_VAR_LINK_ID,
 TAB_A.MOVEMENT_ID,
@@ -2384,7 +2384,7 @@ TAB_B.DISUSE_FLAG = 0;
 
 
 -- V008_代入値自動登録_Movement名_変数名_メンバー
-CREATE VIEW V_ANSR_VAL_COL_SEQ_COMBINATION AS
+CREATE OR REPLACE VIEW V_ANSR_VAL_COL_SEQ_COMBINATION AS
 SELECT
 TAB_A.COL_SEQ_COMBINATION_ID,
 TAB_A.MVMT_VAR_LINK_ID,
@@ -2408,7 +2408,7 @@ AND
 TAB_B.DISUSE_FLAG = 0
 AND
 TAB_D.DISUSE_FLAG = 0;
-CREATE VIEW V_ANSR_VAL_COL_SEQ_COMBINATION_JNL AS
+CREATE OR REPLACE VIEW V_ANSR_VAL_COL_SEQ_COMBINATION_JNL AS
 SELECT
 TAB_A.COL_SEQ_COMBINATION_ID,
 TAB_A.MVMT_VAR_LINK_ID,
@@ -2435,7 +2435,7 @@ TAB_D.DISUSE_FLAG = 0;
 
 
 -- V009_多段変数メンバー管理_Movementビュー
-CREATE VIEW V_ANSR_NESTVAR_MEMBER_MENU AS
+CREATE OR REPLACE VIEW V_ANSR_NESTVAR_MEMBER_MENU AS
 SELECT
 TAB_A.ARRAY_MEMBER_ID,
 TAB_A.MVMT_VAR_LINK_ID,
@@ -2462,7 +2462,7 @@ T_ANSR_MVMT_VAR_LINK TAB_B ON (TAB_A.MVMT_VAR_LINK_ID = TAB_B.MVMT_VAR_LINK_ID);
 
 
 -- V010_多段変数配列組合せ管理_Movementビュー
-CREATE VIEW V_ANSR_NESTVAR_MEMBER_COL_COMB_MENU AS
+CREATE OR REPLACE VIEW V_ANSR_NESTVAR_MEMBER_COL_COMB_MENU AS
 SELECT
 TAB_A.COL_SEQ_COMBINATION_ID,
 TAB_A.MVMT_VAR_LINK_ID,
@@ -2481,7 +2481,7 @@ T_ANSR_MVMT_VAR_LINK TAB_B ON (TAB_A.MVMT_VAR_LINK_ID = TAB_B.MVMT_VAR_LINK_ID);
 
 
 -- V011_代入値自動登録_Movement名_変数名ビュー
-CREATE VIEW V_ANSL_VAL_VARS_LINK AS
+CREATE OR REPLACE VIEW V_ANSL_VAL_VARS_LINK AS
 SELECT
 TAB_A.MVMT_VAR_LINK_ID,
 TAB_A.MOVEMENT_ID,
@@ -2499,7 +2499,7 @@ WHERE
 TAB_A.DISUSE_FLAG = 0
 AND
 TAB_B.DISUSE_FLAG = 0;
-CREATE VIEW V_ANSL_VAL_VARS_LINK_JNL AS
+CREATE OR REPLACE VIEW V_ANSL_VAL_VARS_LINK_JNL AS
 SELECT
 TAB_A.MVMT_VAR_LINK_ID,
 TAB_A.MOVEMENT_ID,
@@ -2521,7 +2521,7 @@ TAB_B.DISUSE_FLAG = 0;
 
 
 -- V012_代入値自動登録_Movement名_変数名ビュー
-CREATE VIEW V_ANSP_VAL_VARS_LINK AS
+CREATE OR REPLACE VIEW V_ANSP_VAL_VARS_LINK AS
 SELECT
 TAB_A.MVMT_VAR_LINK_ID,
 TAB_A.MOVEMENT_ID,
@@ -2539,7 +2539,7 @@ WHERE
 TAB_A.DISUSE_FLAG = 0
 AND
 TAB_B.DISUSE_FLAG = 0;
-CREATE VIEW V_ANSP_VAL_VARS_LINK_JNL AS
+CREATE OR REPLACE VIEW V_ANSP_VAL_VARS_LINK_JNL AS
 SELECT
 TAB_A.MVMT_VAR_LINK_ID,
 TAB_A.MOVEMENT_ID,
@@ -2561,7 +2561,7 @@ TAB_B.DISUSE_FLAG = 0;
 
 
 -- V013_代入値自動登録用項目表示ビュー
-CREATE VIEW V_ANSP_COLUMN_LIST AS
+CREATE OR REPLACE VIEW V_ANSP_COLUMN_LIST AS 
 SELECT
 TAB_A.COLUMN_DEFINITION_ID,
 TAB_A.MENU_ID,
@@ -2604,11 +2604,11 @@ ELSE
     concat(TAB_D.MENU_GROUP_NAME_JA, ":", concat(TAB_C.MENU_NAME_JA, ":" , TAB_E.FULL_COL_GROUP_NAME_JA, '/', TAB_A.COLUMN_NAME_JA))
 END as GROUP_MENU_COLUMN_NAME_JA,
 CASE WHEN TAB_E.FULL_COL_GROUP_NAME_EN IS NULL OR TAB_E.FULL_COL_GROUP_NAME_EN = '' THEN
-    concat(TAB_D.MENU_GROUP_NAME_EN, ":", concat(TAB_C.MENU_NAME_EN, ":" , TAB_A.COLUMN_NAME_EN))
+    concat(TAB_D.MENU_GROUP_NAME_EN, ":", concat(TAB_C.MENU_NAME_EN, ":" , TAB_A.COLUMN_NAME_EN)) 
 ELSE
     concat(TAB_D.MENU_GROUP_NAME_EN, ":", concat(TAB_C.MENU_NAME_EN, ":" , TAB_E.FULL_COL_GROUP_NAME_EN, '/', TAB_A.COLUMN_NAME_EN))
 END as GROUP_MENU_COLUMN_NAME_EN
-FROM T_COMN_MENU_COLUMN_LINK TAB_A
+FROM T_COMN_MENU_COLUMN_LINK TAB_A 
 LEFT JOIN T_COMN_MENU_TABLE_LINK TAB_B ON (TAB_A.MENU_ID = TAB_B.MENU_ID)
 LEFT JOIN T_COMN_MENU TAB_C ON (TAB_B.MENU_ID = TAB_C.MENU_ID)
 LEFT JOIN T_COMN_MENU_GROUP TAB_D ON ( TAB_C.MENU_GROUP_ID = TAB_D.MENU_GROUP_ID )
@@ -2616,13 +2616,13 @@ LEFT JOIN T_COMN_COLUMN_GROUP TAB_E ON ( TAB_A.COL_GROUP_ID = TAB_E.COL_GROUP_ID
 WHERE TAB_A.AUTOREG_HIDE_ITEM = 0
 AND TAB_A.DISUSE_FLAG = 0
 AND (TAB_B.SHEET_TYPE = 1 OR TAB_B.SHEET_TYPE = 4)
-AND TAB_A.COLUMN_CLASS <> 2
+AND TAB_A.COLUMN_CLASS <> 2 
 AND TAB_B.DISUSE_FLAG = 0
 AND TAB_B.SUBSTITUTION_VALUE_LINK_FLAG =1
 AND TAB_C.DISUSE_FLAG = 0
 AND TAB_D.DISUSE_FLAG = 0
 AND (TAB_E.DISUSE_FLAG = 0 OR TAB_E.DISUSE_FLAG is NULL);
-CREATE VIEW V_ANSP_COLUMN_LIST_JNL AS
+CREATE OR REPLACE VIEW V_ANSP_COLUMN_LIST_JNL AS 
 SELECT
 TAB_A.JOURNAL_SEQ_NO,
 TAB_A.JOURNAL_REG_DATETIME,
@@ -2668,11 +2668,11 @@ ELSE
     concat(TAB_D.MENU_GROUP_NAME_JA, ":", concat(TAB_C.MENU_NAME_JA, ":" , TAB_E.FULL_COL_GROUP_NAME_JA, '/', TAB_A.COLUMN_NAME_JA))
 END as GROUP_MENU_COLUMN_NAME_JA,
 CASE WHEN TAB_E.FULL_COL_GROUP_NAME_EN IS NULL OR TAB_E.FULL_COL_GROUP_NAME_EN = '' THEN
-    concat(TAB_D.MENU_GROUP_NAME_EN, ":", concat(TAB_C.MENU_NAME_EN, ":" , TAB_A.COLUMN_NAME_EN))
+    concat(TAB_D.MENU_GROUP_NAME_EN, ":", concat(TAB_C.MENU_NAME_EN, ":" , TAB_A.COLUMN_NAME_EN)) 
 ELSE
     concat(TAB_D.MENU_GROUP_NAME_EN, ":", concat(TAB_C.MENU_NAME_EN, ":" , TAB_E.FULL_COL_GROUP_NAME_EN, '/', TAB_A.COLUMN_NAME_EN))
 END as GROUP_MENU_COLUMN_NAME_EN
-FROM T_COMN_MENU_COLUMN_LINK_JNL TAB_A
+FROM T_COMN_MENU_COLUMN_LINK_JNL TAB_A 
 LEFT JOIN T_COMN_MENU_TABLE_LINK_JNL TAB_B ON (TAB_A.MENU_ID = TAB_B.MENU_ID)
 LEFT JOIN T_COMN_MENU_JNL TAB_C ON (TAB_B.MENU_ID = TAB_C.MENU_ID)
 LEFT JOIN T_COMN_MENU_GROUP_JNL TAB_D ON ( TAB_C.MENU_GROUP_ID = TAB_D.MENU_GROUP_ID )
@@ -2680,7 +2680,7 @@ LEFT JOIN T_COMN_COLUMN_GROUP_JNL TAB_E ON ( TAB_A.COL_GROUP_ID = TAB_E.COL_GROU
 WHERE TAB_A.AUTOREG_HIDE_ITEM = 0
 AND TAB_A.DISUSE_FLAG = 0
 AND (TAB_B.SHEET_TYPE = 1 OR TAB_B.SHEET_TYPE = 4)
-AND TAB_A.COLUMN_CLASS <> 2
+AND TAB_A.COLUMN_CLASS <> 2 
 AND TAB_B.DISUSE_FLAG = 0
 AND TAB_B.SUBSTITUTION_VALUE_LINK_FLAG =1
 AND TAB_C.DISUSE_FLAG = 0
@@ -2690,7 +2690,7 @@ AND (TAB_E.DISUSE_FLAG = 0 OR TAB_E.DISUSE_FLAG is NULL);
 
 
 -- V014_入力用項目表示ビュー
-CREATE VIEW V_ANSC_INPUT_COLUMN_LIST AS
+CREATE OR REPLACE VIEW V_ANSC_INPUT_COLUMN_LIST AS 
 SELECT
 TAB_A.COLUMN_DEFINITION_ID,
 TAB_A.MENU_ID,
@@ -2729,7 +2729,7 @@ TAB_A.LAST_UPDATE_USER,
 TAB_B.VERTICAL,
 concat(TAB_D.MENU_GROUP_NAME_JA, ":", concat(TAB_C.MENU_NAME_JA, ":" , TAB_E.FULL_COL_GROUP_NAME_JA, '/', TAB_A.COLUMN_NAME_JA)) as GROUP_MENU_COLUMN_NAME_JA,
 concat(TAB_D.MENU_GROUP_NAME_EN, ":", concat(TAB_C.MENU_NAME_EN, ":" , TAB_E.FULL_COL_GROUP_NAME_EN, '/', TAB_A.COLUMN_NAME_EN)) as GROUP_MENU_COLUMN_NAME_EN
-FROM T_COMN_MENU_COLUMN_LINK TAB_A
+FROM T_COMN_MENU_COLUMN_LINK TAB_A 
 LEFT JOIN T_COMN_MENU_TABLE_LINK TAB_B ON (TAB_A.MENU_ID = TAB_B.MENU_ID)
 LEFT JOIN T_COMN_MENU TAB_C ON (TAB_B.MENU_ID = TAB_C.MENU_ID)
 LEFT JOIN T_COMN_MENU_GROUP TAB_D ON ( TAB_C.MENU_GROUP_ID = TAB_D.MENU_GROUP_ID )
@@ -2743,7 +2743,7 @@ AND TAB_B.SUBSTITUTION_VALUE_LINK_FLAG =0
 AND TAB_C.DISUSE_FLAG = 0
 AND TAB_D.DISUSE_FLAG = 0
 AND TAB_E.DISUSE_FLAG = 0;
-CREATE VIEW V_ANSC_INPUT_COLUMN_LIST_JNL AS
+CREATE OR REPLACE VIEW V_ANSC_INPUT_COLUMN_LIST_JNL AS 
 SELECT
 TAB_A.JOURNAL_SEQ_NO,
 TAB_A.JOURNAL_REG_DATETIME,
@@ -2785,7 +2785,7 @@ TAB_A.LAST_UPDATE_USER,
 TAB_B.VERTICAL,
 concat(TAB_D.MENU_GROUP_NAME_JA, ":", concat(TAB_C.MENU_NAME_JA, ":" , TAB_E.FULL_COL_GROUP_NAME_JA, '/', TAB_A.COLUMN_NAME_JA)) as GROUP_MENU_COLUMN_NAME_JA,
 concat(TAB_D.MENU_GROUP_NAME_EN, ":", concat(TAB_C.MENU_NAME_EN, ":" , TAB_E.FULL_COL_GROUP_NAME_EN, '/', TAB_A.COLUMN_NAME_EN)) as GROUP_MENU_COLUMN_NAME_EN
-FROM T_COMN_MENU_COLUMN_LINK_JNL TAB_A
+FROM T_COMN_MENU_COLUMN_LINK_JNL TAB_A 
 LEFT JOIN T_COMN_MENU_TABLE_LINK_JNL TAB_B ON (TAB_A.MENU_ID = TAB_B.MENU_ID)
 LEFT JOIN T_COMN_MENU_JNL TAB_C ON (TAB_B.MENU_ID = TAB_C.MENU_ID)
 LEFT JOIN T_COMN_MENU_GROUP_JNL TAB_D ON ( TAB_C.MENU_GROUP_ID = TAB_D.MENU_GROUP_ID )
@@ -2803,7 +2803,7 @@ AND TAB_E.DISUSE_FLAG = 0;
 
 
 -- パラメータシート 実行環境バラメータ定義
-CREATE TABLE `T_CMDB_f7a294e8-a7a7-4d03-8a76-e2f910db55d7`
+CREATE TABLE IF NOT EXISTS `T_CMDB_f7a294e8-a7a7-4d03-8a76-e2f910db55d7`
 (
     ROW_ID                          VARCHAR(40),                                -- ROW_ID
     DATA_JSON                       LONGTEXT,                                   -- 項目定義JOSN
@@ -2818,7 +2818,7 @@ CREATE TABLE `T_CMDB_f7a294e8-a7a7-4d03-8a76-e2f910db55d7`
 
 
 -- パラメータシート 実行環境バラメータ定義(履歴)
-CREATE TABLE `T_CMDB_f7a294e8-a7a7-4d03-8a76-e2f910db55d7_JNL`
+CREATE TABLE IF NOT EXISTS `T_CMDB_f7a294e8-a7a7-4d03-8a76-e2f910db55d7_JNL`
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -2836,83 +2836,1238 @@ CREATE TABLE `T_CMDB_f7a294e8-a7a7-4d03-8a76-e2f910db55d7_JNL`
 
 
 -- INDEX定義
-CREATE INDEX IND_T_ANSC_COMVRAS_USLIST_01 ON T_ANSC_COMVRAS_USLIST(DISUSE_FLAG);
-CREATE INDEX IND_T_ANSC_COMVRAS_USLIST_02 ON T_ANSC_COMVRAS_USLIST(FILE_ID,VRA_ID,CONTENTS_ID,VAR_NAME);
-CREATE INDEX IND_T_ANSC_COMVRAS_USLIST_03 ON T_ANSC_COMVRAS_USLIST(FILE_ID,CONTENTS_ID);
-CREATE INDEX IND_T_ANSC_CONTENTS_FILE_01 ON T_ANSC_CONTENTS_FILE(DISUSE_FLAG);
-CREATE INDEX IND_T_ANSC_CONTENTS_FILE_02 ON T_ANSC_CONTENTS_FILE(CONTENTS_FILE_VARS_NAME,DISUSE_FLAG);
-CREATE INDEX IND_T_ANSC_DEVICE_01 ON T_ANSC_DEVICE(DISUSE_FLAG);
-CREATE INDEX IND_T_ANSC_DEVICE_02 ON T_ANSC_DEVICE(HOST_NAME,DISUSE_FLAG);
-CREATE INDEX IND_T_ANSC_GLOBAL_VAR_01 ON T_ANSC_GLOBAL_VAR(DISUSE_FLAG);
-CREATE INDEX IND_T_ANSC_IF_INFO_01 ON T_ANSC_IF_INFO(DISUSE_FLAG);
-CREATE INDEX IND_T_ANSC_TEMPLATE_FILE_01 ON T_ANSC_TEMPLATE_FILE(DISUSE_FLAG);
-CREATE INDEX IND_T_ANSC_TEMPLATE_FILE_02 ON T_ANSC_TEMPLATE_FILE(ANS_TEMPLATE_VARS_NAME,DISUSE_FLAG);
-CREATE INDEX IND_T_ANSC_TOWER_HOST_01 ON T_ANSC_TOWER_HOST(DISUSE_FLAG);
-CREATE INDEX IND_T_ANSC_UNMANAGED_VARLIST_01 ON T_ANSC_UNMANAGED_VARLIST(DISUSE_FLAG);
-CREATE INDEX IND_T_ANSR_EXEC_STS_INST_01 ON T_ANSR_EXEC_STS_INST(DISUSE_FLAG);
-CREATE INDEX IND_T_ANSR_MATL_COLL_01 ON T_ANSR_MATL_COLL(DISUSE_FLAG);
-CREATE INDEX IND_T_ANSR_MVMT_MATL_LINK_01 ON T_ANSR_MVMT_MATL_LINK (DISUSE_FLAG);
-CREATE INDEX IND_T_ANSR_MVMT_MATL_LINK_02 ON T_ANSR_MVMT_MATL_LINK (MOVEMENT_ID,DISUSE_FLAG);
-CREATE INDEX IND_T_ANSR_MVMT_MATL_LINK_03 ON T_ANSR_MVMT_MATL_LINK (MVMT_MATL_LINK_ID,MOVEMENT_ID,ROLE_PACKAGE_ID,DISUSE_FLAG);
-CREATE INDEX IND_T_ANSR_MVMT_VAR_LINK_01 ON T_ANSR_MVMT_VAR_LINK (DISUSE_FLAG);
-CREATE INDEX IND_T_ANSR_MVMT_VAR_LINK_02 ON T_ANSR_MVMT_VAR_LINK (MOVEMENT_ID,DISUSE_FLAG);
-CREATE INDEX IND_T_ANSR_NESTVAR_MEMBER_01 ON T_ANSR_NESTVAR_MEMBER (DISUSE_FLAG);
-CREATE INDEX IND_T_ANSR_NESTVAR_MEMBER_02 ON T_ANSR_NESTVAR_MEMBER (MVMT_VAR_LINK_ID,DISUSE_FLAG);
-CREATE INDEX IND_T_ANSR_NESTVAR_MEMBER_COL_COMB_01 ON T_ANSR_NESTVAR_MEMBER_COL_COMB (DISUSE_FLAG);
-CREATE INDEX IND_T_ANSR_NESTVAR_MEMBER_COL_COMB_02 ON T_ANSR_NESTVAR_MEMBER_COL_COMB (COL_SEQ_COMBINATION_ID,DISUSE_FLAG);
-CREATE INDEX IND_T_ANSR_NESTVAR_MEMBER_COL_COMB_03 ON T_ANSR_NESTVAR_MEMBER_COL_COMB (MVMT_VAR_LINK_ID,DISUSE_FLAG);
-CREATE INDEX IND_T_ANSR_NESTVAR_MEMBER_MAX_COL_01 ON T_ANSR_NESTVAR_MEMBER_MAX_COL (DISUSE_FLAG);
-CREATE INDEX IND_T_ANSR_ROLE_NAME_01 ON T_ANSR_ROLE_NAME (DISUSE_FLAG);
-CREATE INDEX IND_T_ANSR_TGT_HOST_01 ON T_ANSR_TGT_HOST(DISUSE_FLAG);
-CREATE INDEX IND_T_ANSR_MVMT_MATL_LINK_02 ON T_ANSR_TGT_HOST (EXECUTION_NO,DISUSE_FLAG);
-CREATE INDEX IND_T_ANSR_TGT_HOST_02 ON T_ANSR_TGT_HOST (EXECUTION_NO,OPERATION_ID,MOVEMENT_ID,SYSTEM_ID,DISUSE_FLAG);
-CREATE INDEX IND_T_ANSR_VALUE_01 ON T_ANSR_VALUE(DISUSE_FLAG);
-CREATE INDEX IND_T_ANSR_VALUE_02 ON T_ANSR_VALUE (EXECUTION_NO,VARS_ENTRY_USE_TPFVARS,DISUSE_FLAG);
-CREATE INDEX IND_T_ANSR_VALUE_03 ON T_ANSR_VALUE (EXECUTION_NO,OPERATION_ID,MOVEMENT_ID,DISUSE_FLAG);
-CREATE INDEX IND_T_ANSR_VALUE_AUTOREG_01 ON T_ANSR_VALUE_AUTOREG (DISUSE_FLAG);
-CREATE INDEX IND_T_ANSR_VALUE_AUTOREG_02 ON T_ANSR_VALUE_AUTOREG (MOVEMENT_ID,DISUSE_FLAG);
-CREATE INDEX IND_T_ANSR_VALUE_AUTOREG_03 ON T_ANSR_VALUE_AUTOREG (COLUMN_ID,MENU_ID,MOVEMENT_ID,MVMT_VAR_LINK_ID,COL_SEQ_COMBINATION_ID,ASSIGN_SEQ,DISUSE_FLAG);
-CREATE INDEX IND_T_ANSL_MATL_COLL_01          ON T_ANSL_MATL_COLL(DISUSE_FLAG);
-CREATE INDEX IND_T_ANSL_MVMT_VAR_LINK_01      ON T_ANSL_MVMT_VAR_LINK(DISUSE_FLAG);
-CREATE INDEX IND_T_ANSL_MVMT_VAR_LINK_02      ON T_ANSL_MVMT_VAR_LINK(MVMT_VAR_LINK_ID, MOVEMENT_ID, DISUSE_FLAG);
-CREATE INDEX IND_T_ANSL_MVMT_MATL_LINK_01     ON T_ANSL_MVMT_MATL_LINK(DISUSE_FLAG);
-CREATE INDEX IND_T_ANSL_MVMT_MATL_LINK_02     ON T_ANSL_MVMT_MATL_LINK(MOVEMENT_ID, DISUSE_FLAG);
-CREATE INDEX IND_T_ANSL_VALUE_AUTOREG_01      ON T_ANSL_VALUE_AUTOREG(DISUSE_FLAG);
-CREATE INDEX IND_T_ANSL_VALUE_AUTOREG_02      ON T_ANSL_VALUE_AUTOREG(COLUMN_ID, MOVEMENT_ID, DISUSE_FLAG, MVMT_VAR_LINK_ID, ASSIGN_SEQ);
-CREATE INDEX IND_T_ANSL_VALUE_AUTOREG_03      ON T_ANSL_VALUE_AUTOREG(COLUMN_LIST_ID);
-CREATE INDEX IND_T_ANSL_TGT_HOST_01           ON T_ANSL_TGT_HOST(DISUSE_FLAG);
-CREATE INDEX IND_T_ANSL_TGT_HOST_02           ON T_ANSL_TGT_HOST(EXECUTION_NO, OPERATION_ID, MOVEMENT_ID, SYSTEM_ID, DISUSE_FLAG);
-CREATE INDEX IND_T_ANSL_VALUE_01              ON T_ANSL_VALUE(DISUSE_FLAG);
-CREATE INDEX IND_T_ANSL_VALUE_02              ON T_ANSL_VALUE(EXECUTION_NO, OPERATION_ID, MOVEMENT_ID, SYSTEM_ID, MVMT_VAR_LINK_ID, ASSIGN_SEQ, DISUSE_FLAG);
-CREATE INDEX IND_T_ANSL_EXEC_STS_INST_01      ON T_ANSL_EXEC_STS_INST(DISUSE_FLAG);
-CREATE INDEX IND_T_ANSP_DIALOG_TYPE_01        ON T_ANSP_DIALOG_TYPE(DISUSE_FLAG);
-CREATE INDEX IND_T_ANSP_OS_TYPE_01            ON T_ANSP_OS_TYPE(DISUSE_FLAG);
-CREATE INDEX IND_T_ANSP_MATL_COLL_01          ON T_ANSP_MATL_COLL(DISUSE_FLAG);
-CREATE INDEX IND_T_ANSP_MATL_COLL_02          ON T_ANSP_MATL_COLL(OS_TYPE_ID);
-CREATE INDEX IND_T_ANSP_MVMT_VAR_LINK_01      ON T_ANSP_MVMT_VAR_LINK(DISUSE_FLAG);
-CREATE INDEX IND_T_ANSP_MVMT_VAR_LINK_02      ON T_ANSP_MVMT_VAR_LINK(MVMT_VAR_LINK_ID, MOVEMENT_ID, DISUSE_FLAG);
-CREATE INDEX IND_T_ANSP_MVMT_MATL_LINK_01     ON T_ANSP_MVMT_MATL_LINK(DISUSE_FLAG);
-CREATE INDEX IND_T_ANSP_MVMT_MATL_LINK_02     ON T_ANSP_MVMT_MATL_LINK(MOVEMENT_ID, DISUSE_FLAG);
-CREATE INDEX IND_T_ANSP_VALUE_AUTOREG_01      ON T_ANSP_VALUE_AUTOREG(DISUSE_FLAG);
-CREATE INDEX IND_T_ANSP_VALUE_AUTOREG_02      ON T_ANSP_VALUE_AUTOREG(COLUMN_ID, MOVEMENT_ID, DISUSE_FLAG, MVMT_VAR_LINK_ID, ASSIGN_SEQ);
-CREATE INDEX IND_T_ANSP_TGT_HOST_01           ON T_ANSP_TGT_HOST(DISUSE_FLAG);
-CREATE INDEX IND_T_ANSP_TGT_HOST_02           ON T_ANSP_TGT_HOST(EXECUTION_NO, OPERATION_ID, MOVEMENT_ID, SYSTEM_ID, DISUSE_FLAG);
-CREATE INDEX IND_T_ANSP_VALUE_01              ON T_ANSP_VALUE(DISUSE_FLAG);
-CREATE INDEX IND_T_ANSP_VALUE_02              ON T_ANSP_VALUE(EXECUTION_NO, OPERATION_ID, MOVEMENT_ID, SYSTEM_ID, MVMT_VAR_LINK_ID, ASSIGN_SEQ, DISUSE_FLAG);
-CREATE INDEX IND_T_ANSP_EXEC_STS_INST_01      ON T_ANSP_EXEC_STS_INST(DISUSE_FLAG);
-CREATE INDEX IND_T_ANSC_TWR_INSTANCE_GROUP_01 ON T_ANSC_TWR_INSTANCE_GROUP(DISUSE_FLAG);
-CREATE INDEX IND_T_ANSC_TWR_ORGANIZATION_01   ON T_ANSC_TWR_ORGANIZATION(DISUSE_FLAG);
-CREATE INDEX `IND_T_CMDB_f7a294e8-a7a7-4d03-8a76-e2f910db55d7_01` ON `T_CMDB_f7a294e8-a7a7-4d03-8a76-e2f910db55d7`(DISUSE_FLAG);
-CREATE INDEX IND_T_ANSC_GLOBAL_VAR_SENSITIVE_01 ON T_ANSC_GLOBAL_VAR_SENSITIVE(DISUSE_FLAG);
-CREATE INDEX IND_T_ANSL_EXEC_STS_INST_JNL_01 ON T_ANSL_EXEC_STS_INST_JNL (EXECUTION_NO);
-CREATE INDEX IND_T_ANSP_EXEC_STS_INST_JNL_01 ON T_ANSP_EXEC_STS_INST_JNL (EXECUTION_NO);
-CREATE INDEX IND_T_ANSR_EXEC_STS_INST_JNL_01 ON T_ANSR_EXEC_STS_INST_JNL (EXECUTION_NO);
-CREATE INDEX IND_T_ANSL_EXEC_STS_INST_02 ON T_ANSL_EXEC_STS_INST (STATUS_ID, TIME_REGISTER);
-CREATE INDEX IND_T_ANSP_EXEC_STS_INST_02 ON T_ANSP_EXEC_STS_INST (STATUS_ID, TIME_REGISTER);
-CREATE INDEX IND_T_ANSR_EXEC_STS_INST_02 ON T_ANSR_EXEC_STS_INST (STATUS_ID, TIME_REGISTER);
-CREATE INDEX IND_T_ANSC_AAP_CLOUD_LINK_ASSETS_01 ON T_ANSC_AAP_CLOUD_LINK_ASSETS (DISUSE_FLAG);
-CREATE INDEX IND_T_ANSC_AAP_CLOUD_LINK_ASSETS_02 ON T_ANSC_AAP_CLOUD_LINK_ASSETS (ASSET_NAME);
-CREATE INDEX IND_T_ANSC_AAP_CLOUD_LINK_ASSETS_JNL_01 ON T_ANSC_AAP_CLOUD_LINK_ASSETS_JNL (ROW_ID);
+--  CREATE INDEX IND_T_ANSC_COMVRAS_USLIST_01 ON T_ANSC_COMVRAS_USLIST(DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSC_COMVRAS_USLIST'
+        AND index_name   = 'IND_T_ANSC_COMVRAS_USLIST_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSC_COMVRAS_USLIST_01 ON T_ANSC_COMVRAS_USLIST(DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSC_COMVRAS_USLIST_02 ON T_ANSC_COMVRAS_USLIST(FILE_ID,VRA_ID,CONTENTS_ID,VAR_NAME);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSC_COMVRAS_USLIST'
+        AND index_name   = 'IND_T_ANSC_COMVRAS_USLIST_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSC_COMVRAS_USLIST_02 ON T_ANSC_COMVRAS_USLIST(FILE_ID,VRA_ID,CONTENTS_ID,VAR_NAME)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSC_COMVRAS_USLIST_03 ON T_ANSC_COMVRAS_USLIST(FILE_ID,CONTENTS_ID);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSC_COMVRAS_USLIST'
+        AND index_name   = 'IND_T_ANSC_COMVRAS_USLIST_03'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSC_COMVRAS_USLIST_03 ON T_ANSC_COMVRAS_USLIST(FILE_ID,CONTENTS_ID)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSC_CONTENTS_FILE_01 ON T_ANSC_CONTENTS_FILE(DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSC_CONTENTS_FILE'
+        AND index_name   = 'IND_T_ANSC_CONTENTS_FILE_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSC_CONTENTS_FILE_01 ON T_ANSC_CONTENTS_FILE(DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSC_CONTENTS_FILE_02 ON T_ANSC_CONTENTS_FILE(CONTENTS_FILE_VARS_NAME,DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSC_CONTENTS_FILE'
+        AND index_name   = 'IND_T_ANSC_CONTENTS_FILE_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSC_CONTENTS_FILE_02 ON T_ANSC_CONTENTS_FILE(CONTENTS_FILE_VARS_NAME,DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSC_DEVICE_01 ON T_ANSC_DEVICE(DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSC_DEVICE'
+        AND index_name   = 'IND_T_ANSC_DEVICE_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSC_DEVICE_01 ON T_ANSC_DEVICE(DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSC_DEVICE_02 ON T_ANSC_DEVICE(HOST_NAME,DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSC_DEVICE'
+        AND index_name   = 'IND_T_ANSC_DEVICE_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSC_DEVICE_02 ON T_ANSC_DEVICE(HOST_NAME,DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSC_GLOBAL_VAR_01 ON T_ANSC_GLOBAL_VAR(DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSC_GLOBAL_VAR'
+        AND index_name   = 'IND_T_ANSC_GLOBAL_VAR_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSC_GLOBAL_VAR_01 ON T_ANSC_GLOBAL_VAR(DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSC_IF_INFO_01 ON T_ANSC_IF_INFO(DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSC_IF_INFO'
+        AND index_name   = 'IND_T_ANSC_IF_INFO_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSC_IF_INFO_01 ON T_ANSC_IF_INFO(DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSC_TEMPLATE_FILE_01 ON T_ANSC_TEMPLATE_FILE(DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSC_TEMPLATE_FILE'
+        AND index_name   = 'IND_T_ANSC_TEMPLATE_FILE_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSC_TEMPLATE_FILE_01 ON T_ANSC_TEMPLATE_FILE(DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSC_TEMPLATE_FILE_02 ON T_ANSC_TEMPLATE_FILE(ANS_TEMPLATE_VARS_NAME,DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSC_TEMPLATE_FILE'
+        AND index_name   = 'IND_T_ANSC_TEMPLATE_FILE_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSC_TEMPLATE_FILE_02 ON T_ANSC_TEMPLATE_FILE(ANS_TEMPLATE_VARS_NAME,DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSC_TOWER_HOST_01 ON T_ANSC_TOWER_HOST(DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSC_TOWER_HOST'
+        AND index_name   = 'IND_T_ANSC_TOWER_HOST_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSC_TOWER_HOST_01 ON T_ANSC_TOWER_HOST(DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSC_UNMANAGED_VARLIST_01 ON T_ANSC_UNMANAGED_VARLIST(DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSC_UNMANAGED_VARLIST'
+        AND index_name   = 'IND_T_ANSC_UNMANAGED_VARLIST_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSC_UNMANAGED_VARLIST_01 ON T_ANSC_UNMANAGED_VARLIST(DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSR_EXEC_STS_INST_01 ON T_ANSR_EXEC_STS_INST(DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSR_EXEC_STS_INST'
+        AND index_name   = 'IND_T_ANSR_EXEC_STS_INST_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSR_EXEC_STS_INST_01 ON T_ANSR_EXEC_STS_INST(DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSR_MATL_COLL_01 ON T_ANSR_MATL_COLL(DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSR_MATL_COLL'
+        AND index_name   = 'IND_T_ANSR_MATL_COLL_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSR_MATL_COLL_01 ON T_ANSR_MATL_COLL(DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSR_MVMT_MATL_LINK_01 ON T_ANSR_MVMT_MATL_LINK (DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSR_MVMT_MATL_LINK'
+        AND index_name   = 'IND_T_ANSR_MVMT_MATL_LINK_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSR_MVMT_MATL_LINK_01 ON T_ANSR_MVMT_MATL_LINK (DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSR_MVMT_MATL_LINK_02 ON T_ANSR_MVMT_MATL_LINK (MOVEMENT_ID,DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSR_MVMT_MATL_LINK'
+        AND index_name   = 'IND_T_ANSR_MVMT_MATL_LINK_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSR_MVMT_MATL_LINK_02 ON T_ANSR_MVMT_MATL_LINK (MOVEMENT_ID,DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSR_MVMT_MATL_LINK_03 ON T_ANSR_MVMT_MATL_LINK (MVMT_MATL_LINK_ID,MOVEMENT_ID,ROLE_PACKAGE_ID,DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSR_MVMT_MATL_LINK'
+        AND index_name   = 'IND_T_ANSR_MVMT_MATL_LINK_03'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSR_MVMT_MATL_LINK_03 ON T_ANSR_MVMT_MATL_LINK (MVMT_MATL_LINK_ID,MOVEMENT_ID,ROLE_PACKAGE_ID,DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSR_MVMT_VAR_LINK_01 ON T_ANSR_MVMT_VAR_LINK (DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSR_MVMT_VAR_LINK'
+        AND index_name   = 'IND_T_ANSR_MVMT_VAR_LINK_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSR_MVMT_VAR_LINK_01 ON T_ANSR_MVMT_VAR_LINK (DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSR_MVMT_VAR_LINK_02 ON T_ANSR_MVMT_VAR_LINK (MOVEMENT_ID,DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSR_MVMT_VAR_LINK'
+        AND index_name   = 'IND_T_ANSR_MVMT_VAR_LINK_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSR_MVMT_VAR_LINK_02 ON T_ANSR_MVMT_VAR_LINK (MOVEMENT_ID,DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSR_NESTVAR_MEMBER_01 ON T_ANSR_NESTVAR_MEMBER (DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSR_NESTVAR_MEMBER'
+        AND index_name   = 'IND_T_ANSR_NESTVAR_MEMBER_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSR_NESTVAR_MEMBER_01 ON T_ANSR_NESTVAR_MEMBER (DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSR_NESTVAR_MEMBER_02 ON T_ANSR_NESTVAR_MEMBER (MVMT_VAR_LINK_ID,DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSR_NESTVAR_MEMBER'
+        AND index_name   = 'IND_T_ANSR_NESTVAR_MEMBER_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSR_NESTVAR_MEMBER_02 ON T_ANSR_NESTVAR_MEMBER (MVMT_VAR_LINK_ID,DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSR_NESTVAR_MEMBER_COL_COMB_01 ON T_ANSR_NESTVAR_MEMBER_COL_COMB (DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSR_NESTVAR_MEMBER_COL_COMB'
+        AND index_name   = 'IND_T_ANSR_NESTVAR_MEMBER_COL_COMB_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSR_NESTVAR_MEMBER_COL_COMB_01 ON T_ANSR_NESTVAR_MEMBER_COL_COMB (DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSR_NESTVAR_MEMBER_COL_COMB_02 ON T_ANSR_NESTVAR_MEMBER_COL_COMB (COL_SEQ_COMBINATION_ID,DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSR_NESTVAR_MEMBER_COL_COMB'
+        AND index_name   = 'IND_T_ANSR_NESTVAR_MEMBER_COL_COMB_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSR_NESTVAR_MEMBER_COL_COMB_02 ON T_ANSR_NESTVAR_MEMBER_COL_COMB (COL_SEQ_COMBINATION_ID,DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSR_NESTVAR_MEMBER_COL_COMB_03 ON T_ANSR_NESTVAR_MEMBER_COL_COMB (MVMT_VAR_LINK_ID,DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSR_NESTVAR_MEMBER_COL_COMB'
+        AND index_name   = 'IND_T_ANSR_NESTVAR_MEMBER_COL_COMB_03'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSR_NESTVAR_MEMBER_COL_COMB_03 ON T_ANSR_NESTVAR_MEMBER_COL_COMB (MVMT_VAR_LINK_ID,DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSR_NESTVAR_MEMBER_MAX_COL_01 ON T_ANSR_NESTVAR_MEMBER_MAX_COL (DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSR_NESTVAR_MEMBER_MAX_COL'
+        AND index_name   = 'IND_T_ANSR_NESTVAR_MEMBER_MAX_COL_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSR_NESTVAR_MEMBER_MAX_COL_01 ON T_ANSR_NESTVAR_MEMBER_MAX_COL (DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSR_ROLE_NAME_01 ON T_ANSR_ROLE_NAME (DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSR_ROLE_NAME'
+        AND index_name   = 'IND_T_ANSR_ROLE_NAME_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSR_ROLE_NAME_01 ON T_ANSR_ROLE_NAME (DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSR_TGT_HOST_01 ON T_ANSR_TGT_HOST(DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSR_TGT_HOST'
+        AND index_name   = 'IND_T_ANSR_TGT_HOST_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSR_TGT_HOST_01 ON T_ANSR_TGT_HOST(DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSR_MVMT_MATL_LINK_02 ON T_ANSR_TGT_HOST (EXECUTION_NO,DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSR_TGT_HOST'
+        AND index_name   = 'IND_T_ANSR_MVMT_MATL_LINK_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSR_MVMT_MATL_LINK_02 ON T_ANSR_TGT_HOST (EXECUTION_NO,DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSR_TGT_HOST_02 ON T_ANSR_TGT_HOST (EXECUTION_NO,OPERATION_ID,MOVEMENT_ID,SYSTEM_ID,DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSR_TGT_HOST'
+        AND index_name   = 'IND_T_ANSR_TGT_HOST_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSR_TGT_HOST_02 ON T_ANSR_TGT_HOST (EXECUTION_NO,OPERATION_ID,MOVEMENT_ID,SYSTEM_ID,DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSR_VALUE_01 ON T_ANSR_VALUE(DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSR_VALUE'
+        AND index_name   = 'IND_T_ANSR_VALUE_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSR_VALUE_01 ON T_ANSR_VALUE(DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSR_VALUE_02 ON T_ANSR_VALUE (EXECUTION_NO,VARS_ENTRY_USE_TPFVARS,DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSR_VALUE'
+        AND index_name   = 'IND_T_ANSR_VALUE_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSR_VALUE_02 ON T_ANSR_VALUE (EXECUTION_NO,VARS_ENTRY_USE_TPFVARS,DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSR_VALUE_03 ON T_ANSR_VALUE (EXECUTION_NO,OPERATION_ID,MOVEMENT_ID,DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSR_VALUE'
+        AND index_name   = 'IND_T_ANSR_VALUE_03'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSR_VALUE_03 ON T_ANSR_VALUE (EXECUTION_NO,OPERATION_ID,MOVEMENT_ID,DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSR_VALUE_AUTOREG_01 ON T_ANSR_VALUE_AUTOREG (DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSR_VALUE_AUTOREG'
+        AND index_name   = 'IND_T_ANSR_VALUE_AUTOREG_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSR_VALUE_AUTOREG_01 ON T_ANSR_VALUE_AUTOREG (DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSR_VALUE_AUTOREG_02 ON T_ANSR_VALUE_AUTOREG (MOVEMENT_ID,DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSR_VALUE_AUTOREG'
+        AND index_name   = 'IND_T_ANSR_VALUE_AUTOREG_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSR_VALUE_AUTOREG_02 ON T_ANSR_VALUE_AUTOREG (MOVEMENT_ID,DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSR_VALUE_AUTOREG_03 ON T_ANSR_VALUE_AUTOREG (COLUMN_ID,MENU_ID,MOVEMENT_ID,MVMT_VAR_LINK_ID,COL_SEQ_COMBINATION_ID,ASSIGN_SEQ,DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSR_VALUE_AUTOREG'
+        AND index_name   = 'IND_T_ANSR_VALUE_AUTOREG_03'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSR_VALUE_AUTOREG_03 ON T_ANSR_VALUE_AUTOREG (COLUMN_ID,MENU_ID,MOVEMENT_ID,MVMT_VAR_LINK_ID,COL_SEQ_COMBINATION_ID,ASSIGN_SEQ,DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSL_MATL_COLL_01          ON T_ANSL_MATL_COLL(DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSL_MATL_COLL'
+        AND index_name   = 'IND_T_ANSL_MATL_COLL_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSL_MATL_COLL_01          ON T_ANSL_MATL_COLL(DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSL_MVMT_VAR_LINK_01      ON T_ANSL_MVMT_VAR_LINK(DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSL_MVMT_VAR_LINK'
+        AND index_name   = 'IND_T_ANSL_MVMT_VAR_LINK_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSL_MVMT_VAR_LINK_01      ON T_ANSL_MVMT_VAR_LINK(DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSL_MVMT_VAR_LINK_02      ON T_ANSL_MVMT_VAR_LINK(MVMT_VAR_LINK_ID, MOVEMENT_ID, DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSL_MVMT_VAR_LINK'
+        AND index_name   = 'IND_T_ANSL_MVMT_VAR_LINK_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSL_MVMT_VAR_LINK_02      ON T_ANSL_MVMT_VAR_LINK(MVMT_VAR_LINK_ID, MOVEMENT_ID, DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSL_MVMT_MATL_LINK_01     ON T_ANSL_MVMT_MATL_LINK(DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSL_MVMT_MATL_LINK'
+        AND index_name   = 'IND_T_ANSL_MVMT_MATL_LINK_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSL_MVMT_MATL_LINK_01     ON T_ANSL_MVMT_MATL_LINK(DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSL_MVMT_MATL_LINK_02     ON T_ANSL_MVMT_MATL_LINK(MOVEMENT_ID, DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSL_MVMT_MATL_LINK'
+        AND index_name   = 'IND_T_ANSL_MVMT_MATL_LINK_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSL_MVMT_MATL_LINK_02     ON T_ANSL_MVMT_MATL_LINK(MOVEMENT_ID, DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSL_VALUE_AUTOREG_01      ON T_ANSL_VALUE_AUTOREG(DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSL_VALUE_AUTOREG'
+        AND index_name   = 'IND_T_ANSL_VALUE_AUTOREG_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSL_VALUE_AUTOREG_01      ON T_ANSL_VALUE_AUTOREG(DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSL_VALUE_AUTOREG_02      ON T_ANSL_VALUE_AUTOREG(COLUMN_ID, MOVEMENT_ID, DISUSE_FLAG, MVMT_VAR_LINK_ID, ASSIGN_SEQ);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSL_VALUE_AUTOREG'
+        AND index_name   = 'IND_T_ANSL_VALUE_AUTOREG_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSL_VALUE_AUTOREG_02      ON T_ANSL_VALUE_AUTOREG(COLUMN_ID, MOVEMENT_ID, DISUSE_FLAG, MVMT_VAR_LINK_ID, ASSIGN_SEQ)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSL_VALUE_AUTOREG_03      ON T_ANSL_VALUE_AUTOREG(COLUMN_LIST_ID);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSL_VALUE_AUTOREG'
+        AND index_name   = 'IND_T_ANSL_VALUE_AUTOREG_03'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSL_VALUE_AUTOREG_03      ON T_ANSL_VALUE_AUTOREG(COLUMN_LIST_ID)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSL_TGT_HOST_01           ON T_ANSL_TGT_HOST(DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSL_TGT_HOST'
+        AND index_name   = 'IND_T_ANSL_TGT_HOST_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSL_TGT_HOST_01           ON T_ANSL_TGT_HOST(DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSL_TGT_HOST_02           ON T_ANSL_TGT_HOST(EXECUTION_NO, OPERATION_ID, MOVEMENT_ID, SYSTEM_ID, DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSL_TGT_HOST'
+        AND index_name   = 'IND_T_ANSL_TGT_HOST_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSL_TGT_HOST_02           ON T_ANSL_TGT_HOST(EXECUTION_NO, OPERATION_ID, MOVEMENT_ID, SYSTEM_ID, DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSL_VALUE_01              ON T_ANSL_VALUE(DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSL_VALUE'
+        AND index_name   = 'IND_T_ANSL_VALUE_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSL_VALUE_01              ON T_ANSL_VALUE(DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSL_VALUE_02              ON T_ANSL_VALUE(EXECUTION_NO, OPERATION_ID, MOVEMENT_ID, SYSTEM_ID, MVMT_VAR_LINK_ID, ASSIGN_SEQ, DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSL_VALUE'
+        AND index_name   = 'IND_T_ANSL_VALUE_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSL_VALUE_02              ON T_ANSL_VALUE(EXECUTION_NO, OPERATION_ID, MOVEMENT_ID, SYSTEM_ID, MVMT_VAR_LINK_ID, ASSIGN_SEQ, DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSL_EXEC_STS_INST_01      ON T_ANSL_EXEC_STS_INST(DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSL_EXEC_STS_INST'
+        AND index_name   = 'IND_T_ANSL_EXEC_STS_INST_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSL_EXEC_STS_INST_01      ON T_ANSL_EXEC_STS_INST(DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSP_DIALOG_TYPE_01        ON T_ANSP_DIALOG_TYPE(DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSP_DIALOG_TYPE'
+        AND index_name   = 'IND_T_ANSP_DIALOG_TYPE_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSP_DIALOG_TYPE_01        ON T_ANSP_DIALOG_TYPE(DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSP_OS_TYPE_01            ON T_ANSP_OS_TYPE(DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSP_OS_TYPE'
+        AND index_name   = 'IND_T_ANSP_OS_TYPE_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSP_OS_TYPE_01            ON T_ANSP_OS_TYPE(DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSP_MATL_COLL_01          ON T_ANSP_MATL_COLL(DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSP_MATL_COLL'
+        AND index_name   = 'IND_T_ANSP_MATL_COLL_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSP_MATL_COLL_01          ON T_ANSP_MATL_COLL(DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSP_MATL_COLL_02          ON T_ANSP_MATL_COLL(OS_TYPE_ID);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSP_MATL_COLL'
+        AND index_name   = 'IND_T_ANSP_MATL_COLL_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSP_MATL_COLL_02          ON T_ANSP_MATL_COLL(OS_TYPE_ID)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSP_MVMT_VAR_LINK_01      ON T_ANSP_MVMT_VAR_LINK(DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSP_MVMT_VAR_LINK'
+        AND index_name   = 'IND_T_ANSP_MVMT_VAR_LINK_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSP_MVMT_VAR_LINK_01      ON T_ANSP_MVMT_VAR_LINK(DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSP_MVMT_VAR_LINK_02      ON T_ANSP_MVMT_VAR_LINK(MVMT_VAR_LINK_ID, MOVEMENT_ID, DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSP_MVMT_VAR_LINK'
+        AND index_name   = 'IND_T_ANSP_MVMT_VAR_LINK_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSP_MVMT_VAR_LINK_02      ON T_ANSP_MVMT_VAR_LINK(MVMT_VAR_LINK_ID, MOVEMENT_ID, DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSP_MVMT_MATL_LINK_01     ON T_ANSP_MVMT_MATL_LINK(DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSP_MVMT_MATL_LINK'
+        AND index_name   = 'IND_T_ANSP_MVMT_MATL_LINK_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSP_MVMT_MATL_LINK_01     ON T_ANSP_MVMT_MATL_LINK(DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSP_MVMT_MATL_LINK_02     ON T_ANSP_MVMT_MATL_LINK(MOVEMENT_ID, DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSP_MVMT_MATL_LINK'
+        AND index_name   = 'IND_T_ANSP_MVMT_MATL_LINK_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSP_MVMT_MATL_LINK_02     ON T_ANSP_MVMT_MATL_LINK(MOVEMENT_ID, DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSP_VALUE_AUTOREG_01      ON T_ANSP_VALUE_AUTOREG(DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSP_VALUE_AUTOREG'
+        AND index_name   = 'IND_T_ANSP_VALUE_AUTOREG_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSP_VALUE_AUTOREG_01      ON T_ANSP_VALUE_AUTOREG(DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSP_VALUE_AUTOREG_02      ON T_ANSP_VALUE_AUTOREG(COLUMN_ID, MOVEMENT_ID, DISUSE_FLAG, MVMT_VAR_LINK_ID, ASSIGN_SEQ);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSP_VALUE_AUTOREG'
+        AND index_name   = 'IND_T_ANSP_VALUE_AUTOREG_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSP_VALUE_AUTOREG_02      ON T_ANSP_VALUE_AUTOREG(COLUMN_ID, MOVEMENT_ID, DISUSE_FLAG, MVMT_VAR_LINK_ID, ASSIGN_SEQ)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSP_TGT_HOST_01           ON T_ANSP_TGT_HOST(DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSP_TGT_HOST'
+        AND index_name   = 'IND_T_ANSP_TGT_HOST_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSP_TGT_HOST_01           ON T_ANSP_TGT_HOST(DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSP_TGT_HOST_02           ON T_ANSP_TGT_HOST(EXECUTION_NO, OPERATION_ID, MOVEMENT_ID, SYSTEM_ID, DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSP_TGT_HOST'
+        AND index_name   = 'IND_T_ANSP_TGT_HOST_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSP_TGT_HOST_02           ON T_ANSP_TGT_HOST(EXECUTION_NO, OPERATION_ID, MOVEMENT_ID, SYSTEM_ID, DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSP_VALUE_01              ON T_ANSP_VALUE(DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSP_VALUE'
+        AND index_name   = 'IND_T_ANSP_VALUE_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSP_VALUE_01              ON T_ANSP_VALUE(DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSP_VALUE_02              ON T_ANSP_VALUE(EXECUTION_NO, OPERATION_ID, MOVEMENT_ID, SYSTEM_ID, MVMT_VAR_LINK_ID, ASSIGN_SEQ, DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSP_VALUE'
+        AND index_name   = 'IND_T_ANSP_VALUE_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSP_VALUE_02              ON T_ANSP_VALUE(EXECUTION_NO, OPERATION_ID, MOVEMENT_ID, SYSTEM_ID, MVMT_VAR_LINK_ID, ASSIGN_SEQ, DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSP_EXEC_STS_INST_01      ON T_ANSP_EXEC_STS_INST(DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSP_EXEC_STS_INST'
+        AND index_name   = 'IND_T_ANSP_EXEC_STS_INST_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSP_EXEC_STS_INST_01      ON T_ANSP_EXEC_STS_INST(DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSC_TWR_INSTANCE_GROUP_01 ON T_ANSC_TWR_INSTANCE_GROUP(DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSC_TWR_INSTANCE_GROUP'
+        AND index_name   = 'IND_T_ANSC_TWR_INSTANCE_GROUP_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSC_TWR_INSTANCE_GROUP_01 ON T_ANSC_TWR_INSTANCE_GROUP(DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSC_TWR_ORGANIZATION_01   ON T_ANSC_TWR_ORGANIZATION(DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSC_TWR_ORGANIZATION'
+        AND index_name   = 'IND_T_ANSC_TWR_ORGANIZATION_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSC_TWR_ORGANIZATION_01   ON T_ANSC_TWR_ORGANIZATION(DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX `IND_T_CMDB_f7a294e8-a7a7-4d03-8a76-e2f910db55d7_01` ON `T_CMDB_f7a294e8-a7a7-4d03-8a76-e2f910db55d7`(DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_CMDB_f7a294e8-a7a7-4d03-8a76-e2f910db55d7'
+        AND index_name   = 'IND_T_CMDB_f7a294e8-a7a7-4d03-8a76-e2f910db55d7_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX `IND_T_CMDB_f7a294e8-a7a7-4d03-8a76-e2f910db55d7_01` ON `T_CMDB_f7a294e8-a7a7-4d03-8a76-e2f910db55d7`(DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSC_GLOBAL_VAR_SENSITIVE_01 ON T_ANSC_GLOBAL_VAR_SENSITIVE(DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSC_GLOBAL_VAR_SENSITIVE'
+        AND index_name   = 'IND_T_ANSC_GLOBAL_VAR_SENSITIVE_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSC_GLOBAL_VAR_SENSITIVE_01 ON T_ANSC_GLOBAL_VAR_SENSITIVE(DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSL_EXEC_STS_INST_JNL_01 ON T_ANSL_EXEC_STS_INST_JNL (EXECUTION_NO);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSL_EXEC_STS_INST_JNL'
+        AND index_name   = 'IND_T_ANSL_EXEC_STS_INST_JNL_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSL_EXEC_STS_INST_JNL_01 ON T_ANSL_EXEC_STS_INST_JNL (EXECUTION_NO)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSP_EXEC_STS_INST_JNL_01 ON T_ANSP_EXEC_STS_INST_JNL (EXECUTION_NO);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSP_EXEC_STS_INST_JNL'
+        AND index_name   = 'IND_T_ANSP_EXEC_STS_INST_JNL_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSP_EXEC_STS_INST_JNL_01 ON T_ANSP_EXEC_STS_INST_JNL (EXECUTION_NO)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSR_EXEC_STS_INST_JNL_01 ON T_ANSR_EXEC_STS_INST_JNL (EXECUTION_NO);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSR_EXEC_STS_INST_JNL'
+        AND index_name   = 'IND_T_ANSR_EXEC_STS_INST_JNL_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSR_EXEC_STS_INST_JNL_01 ON T_ANSR_EXEC_STS_INST_JNL (EXECUTION_NO)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSL_EXEC_STS_INST_02 ON T_ANSL_EXEC_STS_INST (STATUS_ID, TIME_REGISTER);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSL_EXEC_STS_INST'
+        AND index_name   = 'IND_T_ANSL_EXEC_STS_INST_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSL_EXEC_STS_INST_02 ON T_ANSL_EXEC_STS_INST (STATUS_ID, TIME_REGISTER)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSP_EXEC_STS_INST_02 ON T_ANSP_EXEC_STS_INST (STATUS_ID, TIME_REGISTER);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSP_EXEC_STS_INST'
+        AND index_name   = 'IND_T_ANSP_EXEC_STS_INST_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSP_EXEC_STS_INST_02 ON T_ANSP_EXEC_STS_INST (STATUS_ID, TIME_REGISTER)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSR_EXEC_STS_INST_02 ON T_ANSR_EXEC_STS_INST (STATUS_ID, TIME_REGISTER);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSR_EXEC_STS_INST'
+        AND index_name   = 'IND_T_ANSR_EXEC_STS_INST_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSR_EXEC_STS_INST_02 ON T_ANSR_EXEC_STS_INST (STATUS_ID, TIME_REGISTER)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSC_AAP_CLOUD_LINK_ASSETS_01 ON T_ANSC_AAP_CLOUD_LINK_ASSETS (DISUSE_FLAG);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSC_AAP_CLOUD_LINK_ASSETS'
+        AND index_name   = 'IND_T_ANSC_AAP_CLOUD_LINK_ASSETS_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSC_AAP_CLOUD_LINK_ASSETS_01 ON T_ANSC_AAP_CLOUD_LINK_ASSETS (DISUSE_FLAG)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSC_AAP_CLOUD_LINK_ASSETS_02 ON T_ANSC_AAP_CLOUD_LINK_ASSETS (ASSET_NAME);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSC_AAP_CLOUD_LINK_ASSETS'
+        AND index_name   = 'IND_T_ANSC_AAP_CLOUD_LINK_ASSETS_02'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSC_AAP_CLOUD_LINK_ASSETS_02 ON T_ANSC_AAP_CLOUD_LINK_ASSETS (ASSET_NAME)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+--  CREATE INDEX IND_T_ANSC_AAP_CLOUD_LINK_ASSETS_JNL_01 ON T_ANSC_AAP_CLOUD_LINK_ASSETS_JNL (ROW_ID);
+SET @exist := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE table_schema = DATABASE()
+        AND table_name   = 'T_ANSC_AAP_CLOUD_LINK_ASSETS_JNL'
+        AND index_name   = 'IND_T_ANSC_AAP_CLOUD_LINK_ASSETS_JNL_01'
+);
+SET @sql := IF(@exist = 0,
+    'CREATE INDEX IND_T_ANSC_AAP_CLOUD_LINK_ASSETS_JNL_01 ON T_ANSC_AAP_CLOUD_LINK_ASSETS_JNL (ROW_ID)',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
 
 
 

@@ -118,6 +118,34 @@ services:
     networks:
       - exastro
 
+  ita-api-mcp-server:
+    user: 1000:1000
+    build:
+      dockerfile: ./ita_root/ita_api_mcp_server/Dockerfile
+      context: ../.
+      args:
+        - HTTP_PROXY=${HTTP_PROXY}
+        - http_proxy=${HTTP_PROXY}
+        - HTTPS_PROXY=${HTTPS_PROXY}
+        - https_proxy=${HTTPS_PROXY}
+    environment:
+      - TZ=Asia/Tokyo
+      - LISTEN_PORT=8000
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - PLATFORM_API_HOST=platform-api
+      - PLATFORM_API_PORT=8000
+      - ITA_API_ORAGANIZATION_HOST=ita-api-organization
+      - ITA_API_ORAGANIZATION_PORT=8000
+      - QDRANT_HOST=ita-qdrant
+      - QDRANT_PORT=6333
+    networks:
+      - exastro
+
   ita-api-oase-receiver:
     user: 1000:1000
     build:
@@ -240,6 +268,22 @@ services:
       - exastro
     profiles:
       - mongo8
+
+  ita-qdrant:
+    build:
+      dockerfile: ./ita_root/ita_qdrant/Dockerfile
+      context: ../.
+      args:
+        - HTTP_PROXY=${HTTP_PROXY}
+        - http_proxy=${HTTP_PROXY}
+        - HTTPS_PROXY=${HTTPS_PROXY}
+        - https_proxy=${HTTPS_PROXY}
+    # ports:
+    #   - "6333:6333"   # REST API
+    # volumes:
+    #   - ./volumes/qdrant:/qdrant/storage
+    networks:
+      - exastro
 
   ita-by-ansible-execute:
     user: 1000:${HOST_DOCKER_GID:-1000}
@@ -974,8 +1018,6 @@ services:
         condition: service_healthy
       platform-migration-2:
         condition: service_completed_successfully
-
-
 
 volumes:
   vol-ita-storage:

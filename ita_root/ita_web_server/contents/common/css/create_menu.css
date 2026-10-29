@@ -492,7 +492,8 @@ border-top: none;
 }
 
 .required-label,
-.unique-label {
+.unique-label,
+.display-setting-label {
 overflow: hidden;
 position: relative;
 z-index: 1;
@@ -504,13 +505,18 @@ text-align: left;
 white-space: nowrap;
 cursor: pointer;
 }
+.display-setting-label {
+    width: 100%;
+}
 .required-label.hover,
-.unique-label.hover {
+.unique-label.hover,
+.display-setting-label.hover {
 background-color: #EEE;
 border-color: #BBB;
 }
 .required-label[disabled],
-.unique-label[disabled] {
+.unique-label[disabled],
+.display-setting-label[disabled] {
 cursor: no-drop;
 color: var(--rowDiscardTextColor)!important;
 }
@@ -565,6 +571,108 @@ border-color: #4F80FF;
 .config-checkbox:disabled + span::after {
 border-bottom-color: #666;
 border-left-color: #666;
+}
+
+/* 画面表示設定 */
+.display-setting-toggle {
+display: flex;
+align-items: center;
+width: 100%;
+padding: 6px 8px;
+background-color: var(--black20);
+background-image: linear-gradient(rgba(255,255,255,.4), rgba(255,255,255,0));
+border: 1px solid #BBB;
+border-radius: 2px;
+font-size: 12px;
+font-weight: bold;
+color: #333;
+text-align: left;
+cursor: pointer;
+}
+.display-setting-toggle:hover {
+border-color: #888;
+}
+.display-setting-toggle-mark {
+display: inline-block;
+width: 0; height: 0;
+margin-right: .5em;
+border-top: 4px solid transparent;
+border-bottom: 4px solid transparent;
+border-left: 6px solid #555;
+transition: transform .1s;
+}
+.display-setting-open .display-setting-toggle-mark {
+transform: rotate(90deg);
+}
+.menu-column-config-table .display-setting-row {
+display: none;
+}
+.menu-column-config-table.display-setting-open .display-setting-row {
+display: flex;
+}
+.display-setting-color {
+display: flex;
+align-items: center;
+width: 100%;
+}
+.menu-column-config-table .display-setting-color .config-color {
+flex: 0 0 auto;
+width: 32px; min-width: 32px;
+height: 22px;
+padding: 0;
+border: 1px solid #AAA;
+border-radius: 2px;
+background-color: #FFF;
+cursor: pointer;
+}
+.menu-column-config-table .display-setting-color .config-color:disabled {
+cursor: no-drop;
+}
+.display-setting-color.color-unset .config-color {
+opacity: .3;
+}
+.display-setting-color-value {
+flex: 1 1 auto;
+min-width: 0;
+margin: 0 4px;
+overflow: hidden;
+text-overflow: ellipsis;
+white-space: nowrap;
+}
+.display-setting-color.color-unset .display-setting-color-value {
+color: #999;
+}
+.display-setting-color-clear {
+position: relative;
+flex: 0 0 auto;
+width: 20px; height: 20px;
+padding: 0;
+background-color: transparent;
+border: 1px solid transparent;
+border-radius: 2px;
+cursor: pointer;
+}
+.display-setting-color-clear::before,
+.display-setting-color-clear::after {
+content: '';
+position: absolute;
+left: 50%; top: 50%;
+width: 10px; height: 2px;
+background-color: #666;
+}
+.display-setting-color-clear::before {
+transform: translate(-50%,-50%) rotate(45deg);
+}
+.display-setting-color-clear::after {
+transform: translate(-50%,-50%) rotate(-45deg);
+}
+.display-setting-color-clear:hover {
+background-color: #EEE;
+border-color: #BBB;
+}
+.display-setting-color.color-unset .display-setting-color-clear,
+.display-setting-color-clear:disabled {
+visibility: hidden;
 }
 
 .config-textarea-wrapper {

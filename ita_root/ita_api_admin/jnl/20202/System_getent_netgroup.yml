@@ -1,0 +1,17 @@
+- name: Read /etc/netgroup
+  ansible.builtin.slurp:
+    src: /etc/netgroup
+  register: ITA_RGST_netgroup_file
+  failed_when: false
+
+- name: A wrapper to the unix getent utility (netgroup)
+  ansible.builtin.getent:
+    database: netgroup
+    key: "{{ item }}"
+    fail_key: false
+  loop: >-
+    {{
+      ITA_RGST_netgroup_file.content | default('') | b64decode
+      | regex_findall('(?m)^([^ \t#(]+)[ \t]')
+    }}
+  register: ITA_DFLT_getent_netgroup

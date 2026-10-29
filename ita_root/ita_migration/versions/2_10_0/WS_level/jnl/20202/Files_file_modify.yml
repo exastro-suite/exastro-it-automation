@@ -1,0 +1,22 @@
+- name: Ensure ITA_DFLT_Target_Path is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Target_Path: "{{ ITA_DFLT_Target_Path }}"
+  when: ITA_DFLT_Target_Path is defined
+
+- name: Ensure ITA_DFLT_Mode is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Mode: "{{ ITA_DFLT_Mode }}"
+  when: ITA_DFLT_Mode is defined
+
+- name: Modify permission
+  ansible.builtin.file:
+    path: "{{ item[0] }}"
+    mode: "{{ item[1] }}"
+  loop: >-
+    {{
+      (ITA_DFLT_Target_Path if ITA_DFLT_Target_Path is sequence and ITA_DFLT_Target_Path is not string else [ITA_DFLT_Target_Path])
+      | ansible.builtin.zip_longest(
+          ITA_DFLT_Mode if ITA_DFLT_Mode is sequence and ITA_DFLT_Mode is not string else [ITA_DFLT_Mode]
+        )
+      | list
+    }}

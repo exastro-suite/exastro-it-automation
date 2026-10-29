@@ -1,0 +1,13 @@
+- name: Ensure ITA variable is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Install_Target_packages: "{{ ITA_DFLT_Install_Target_packages }}"
+  when: ITA_DFLT_Install_Target_packages is defined
+
+- name: Install packages with the generic OS package manager
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop: >-
+    {{
+      ITA_DFLT_Install_Target_packages if ITA_DFLT_Install_Target_packages is sequence and ITA_DFLT_Install_Target_packages is not string else [ITA_DFLT_Install_Target_packages]
+    }}

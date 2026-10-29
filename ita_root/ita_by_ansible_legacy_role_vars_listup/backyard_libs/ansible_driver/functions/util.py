@@ -143,11 +143,13 @@ def expand_vars_member(nest_vars_mem_records, mem_max_col_records):
     メンバ変数を膨らませたレコードリストを作成する
 
     Arguments:
-        nest_vars_mem_records: { pkey: { COL_NAME: value, ... }, ... }
-        mem_max_col_records: { pkey: { COL_NAME: value, ... }, ... }
+        nest_vars_mem_records: 多段変数メンバー管理のレコード（変数の入れ子構造）
+                               { pkey: { COL_NAME: value, ... }, ... }
+        mem_max_col_records: 変数ネスト管理のレコード（配列ノードごとの最大繰返数）
+                             { pkey: { COL_NAME: value, ... }, ... }
 
     Returns:
-        mov_vars_dict: { (movement_id): VariableManager }
+        nominate_mem_col_comb: 多段変数配列組合せ管理の候補レコード [ { COL_NAME: value, ... }, ... ]
     """
     g.applogger.debug("[Trace] Call util.expand_vars_member()")
 
@@ -161,6 +163,11 @@ def expand_vars_member(nest_vars_mem_records, mem_max_col_records):
     sorted_vars_mem_records = sorted(nest_vars_mem_records.values(), key=lambda x: x['ARRAY_NEST_LEVEL'])
 
     top_element_list = []
+    # 生成済みの要素をown_keyで引けるようにする
+    #   own_key    = f"{MVMT_VAR_LINK_ID}-{VARS_KEY_ID}"        （要素自身を指すキー。MemberColCombElementClass参照）
+    #   parent_key = f"{MVMT_VAR_LINK_ID}-{PARENT_VARS_KEY_ID}" （子レコードから見た親のown_key）
+    # 上でARRAY_NEST_LEVEL昇順にソート済みなので、親要素は必ず子要素より先に生成されている。
+    element_dict = {}
     for vars_mem in sorted_vars_mem_records:
 
         # 多段変数最大繰返数メニュー反映要素かどうか
@@ -174,12 +181,14 @@ def expand_vars_member(nest_vars_mem_records, mem_max_col_records):
         else:
             element = NonExpandableElement(vars_mem)
 
+        # 生成した要素をown_keyで登録する
+        element_dict.setdefault(element.own_key, element)
+
         # 既に親が生成されている場合は紐付け
         parent_key = f"{vars_mem['MVMT_VAR_LINK_ID']}-{vars_mem['PARENT_VARS_KEY_ID']}"
-        for top_ele in top_element_list:
-            if top_ele.has_key_recursive(parent_key):
-                top_ele.set_recursive_lower_element(parent_key, element)
-                break
+        parent_element = element_dict.get(parent_key)
+        if parent_element is not None:
+            parent_element.set_lower_element(element)
         # 見つからなければTOP要素としてリストに追加
         else:
             top_element_list.append(element)
@@ -187,10 +196,8 @@ def expand_vars_member(nest_vars_mem_records, mem_max_col_records):
     nominate_mem_col_comb = []
 
     for ele_item in top_element_list:
-        # print(ele_item)
         mem_col_comb_record_array = ele_item.build()
         for record in mem_col_comb_record_array:
-            # print(record)
             nominate_mem_col_comb.append(record)
 
     return nominate_mem_col_comb

@@ -316,7 +316,7 @@ def allow_proc(organization_id, workspace_id):
                 # ファイルが存在する場合でもそれがインポート時のスキップファイル 且つ 自分がメニューエクスポートインポートサービスの場合
                 # バックヤードを動かしたいのでallowed = Falseにはさせない
                 continue
-            g.applogger.debug("Skip proc. org:{}, ws:{}, file:{}".format(organization_id, workspace_id, file_path))
+            g.applogger.info("Skip proc. org:{}, ws:{}, file:{}".format(organization_id, workspace_id, file_path))
             allowed = False
 
     return allowed

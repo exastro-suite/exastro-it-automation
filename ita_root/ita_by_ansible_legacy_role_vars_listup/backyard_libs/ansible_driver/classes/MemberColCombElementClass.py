@@ -80,26 +80,3 @@ class MemberColCombElement(metaclass=ABCMeta):
             result[column] = self.record_data[column] if column in self.record_data else None
 
         return result
-
-    def has_key_recursive(self, parent_key):
-
-        if self.own_key == parent_key:
-            return True
-
-        for element in self.lower_level_elements:
-            if element.has_key_recursive(parent_key):
-                return True
-
-        return False
-
-    def set_recursive_lower_element(self, parent_key, element):
-
-        if self.own_key == parent_key:
-            self.set_lower_element(element)
-            return True
-        else:
-            for low_ele in self.lower_level_elements:
-                if low_ele.set_recursive_lower_element(parent_key, element):
-                    return True
-
-        return False

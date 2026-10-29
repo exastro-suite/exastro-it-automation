@@ -14,3 +14,10 @@ env =
     EXTERNAL_URL=https://example.com
     STORAGEPATH=/workspace/exastro-it-automation-dev/ita_root/ita_by_ansible_execute/tests/storage/
     DOCKER_COMPOSE_UP_UNITTEST_NODE=MANUAL
+    ; pioneer_module.py の結合テスト(tests/ansible_driver_tests/ansible_driver/shells/test_pioneer_module_integration.py)の接続先
+    ; 実行する場合のみコメントアウトを解除して値を設定してください(未設定の場合、結合テストはスキップされます)
+    ; pytest.ini は .gitignore 対象のため、実際の接続情報は pytest.ini にのみ記載し、当ファイルには記載しないでください
+    ; D: を付けると、シェルで同名の環境変数が設定されている場合はそちらが優先されます
+    ; D:ITA_TEST_SSH_HOST=<接続先>
+    ; D:ITA_TEST_SSH_USER=<ユーザー>
+    ; D:ITA_TEST_SSH_PASS=<パスワード>

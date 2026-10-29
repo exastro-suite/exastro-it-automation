@@ -177,6 +177,7 @@ def collect_menus(objdbca, extra_flag=False):
         add_menu['menu_name'] = recode.get('MENU_NAME_' + lang.upper())
         add_menu['menu_name_rest'] = recode.get('MENU_NAME_REST')
         add_menu['disp_seq'] = recode.get('DISP_SEQ')
+        add_menu['show_in_menu'] = recode.get('SHOW_IN_MENU')
         menus[menu_group_id].append(add_menu)
 
     # 『メニューグループ管理』テーブルからメニューグループの一覧を取得

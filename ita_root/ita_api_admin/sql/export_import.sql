@@ -1,5 +1,5 @@
 -- メニューエクスポート・インポート管理
-CREATE TABLE T_MENU_EXPORT_IMPORT
+CREATE TABLE IF NOT EXISTS T_MENU_EXPORT_IMPORT
 (
     EXECUTION_NO                    VARCHAR(40),                                -- 実行No.
     STATUS                          VARCHAR(40),                                -- ステータス
@@ -19,7 +19,7 @@ CREATE TABLE T_MENU_EXPORT_IMPORT
     PRIMARY KEY(EXECUTION_NO)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_MENU_EXPORT_IMPORT_JNL
+CREATE TABLE IF NOT EXISTS T_MENU_EXPORT_IMPORT_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -45,7 +45,7 @@ CREATE TABLE T_MENU_EXPORT_IMPORT_JNL
 
 
 -- Excel一括エクスポート・インポート管理
-CREATE TABLE T_BULK_EXCEL_EXPORT_IMPORT
+CREATE TABLE IF NOT EXISTS T_BULK_EXCEL_EXPORT_IMPORT
 (
     EXECUTION_NO                    VARCHAR(40),                                -- 実行No.
     STATUS                          VARCHAR(40),                                -- ステータス
@@ -62,7 +62,7 @@ CREATE TABLE T_BULK_EXCEL_EXPORT_IMPORT
     PRIMARY KEY(EXECUTION_NO)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_BULK_EXCEL_EXPORT_IMPORT_JNL
+CREATE TABLE IF NOT EXISTS T_BULK_EXCEL_EXPORT_IMPORT_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
@@ -85,7 +85,7 @@ CREATE TABLE T_BULK_EXCEL_EXPORT_IMPORT_JNL
 
 
 -- 非表示メニュー
-CREATE TABLE T_DP_HIDE_MENU_LIST
+CREATE TABLE IF NOT EXISTS T_DP_HIDE_MENU_LIST
 (
     HIDE_ID                         VARCHAR(40),                                -- 識別シーケンス
     MENU_ID                         VARCHAR(40),                                -- メニューID
@@ -96,7 +96,7 @@ CREATE TABLE T_DP_HIDE_MENU_LIST
 
 
 -- ステータスマスタ
-CREATE TABLE T_DP_STATUS_MASTER
+CREATE TABLE IF NOT EXISTS T_DP_STATUS_MASTER
 (
     ROW_ID                          VARCHAR(2),                                 -- 主キー
     TASK_STATUS_NAME_JA             VARCHAR(255),                               -- 形式名(ja)
@@ -113,7 +113,7 @@ CREATE TABLE T_DP_STATUS_MASTER
 
 
 -- 処理種別マスタ
-CREATE TABLE T_DP_EXECUTION_TYPE
+CREATE TABLE IF NOT EXISTS T_DP_EXECUTION_TYPE
 (
     ROW_ID                          VARCHAR(2),                                 -- 主キー
     EXECUTION_TYPE_NAME_JA          VARCHAR(255),                               -- 形式名(ja)
@@ -130,7 +130,7 @@ CREATE TABLE T_DP_EXECUTION_TYPE
 
 
 -- モードマスタ
-CREATE TABLE T_DP_MODE
+CREATE TABLE IF NOT EXISTS T_DP_MODE
 (
     ROW_ID                          VARCHAR(2),                                 -- 主キー
     MODE_NAME_JA                    VARCHAR(255),                               -- 形式名(ja)
@@ -147,7 +147,7 @@ CREATE TABLE T_DP_MODE
 
 
 -- 廃止情報マスタ
-CREATE TABLE T_DP_ABOLISHED_TYPE
+CREATE TABLE IF NOT EXISTS T_DP_ABOLISHED_TYPE
 (
     ROW_ID                          VARCHAR(2),                                 -- 主キー
     ABOLISHED_TYPE_NAME_JA          VARCHAR(255),                               -- 形式名(ja)
@@ -164,7 +164,7 @@ CREATE TABLE T_DP_ABOLISHED_TYPE
 
 
 -- 履歴情報マスタ
-CREATE TABLE T_DP_JOURNAL_TYPE
+CREATE TABLE IF NOT EXISTS T_DP_JOURNAL_TYPE
 (
     ROW_ID                          VARCHAR(2),                                 -- 主キー
     JOURNAL_TYPE_NAME_JA            VARCHAR(255),                               -- 形式名(ja)

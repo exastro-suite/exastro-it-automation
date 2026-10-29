@@ -32,6 +32,10 @@ def is_db_disuse():
     organization_id = g.get('ORGANIZATION_ID')
     workspace_id = g.get('WORKSPACE_ID')
 
+    # ita-by-ansible-executeのメインプロセス（子プロセスは違う）は、workspace毎には処理していないので、対象外として扱う
+    if g.get("SERVICE_NAME") == "ita-by-ansible-execute" and organization_id is None:
+        return False
+
     try:
         ita_db = DBConnectCommon()
         org_rows = ita_db.table_select("T_COMN_ORGANIZATION_DB_INFO", "WHERE `DISUSE_FLAG`=0 AND `ORGANIZATION_ID`=%s", [organization_id])

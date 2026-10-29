@@ -1132,6 +1132,14 @@ theadHtml( filterFlag = true, filterHeaderFlag = true ) {
                     name = getMessage.FTE00038;
                     className.push('discardCell');
                 }
+                // 画面表示設定：ヘッダー色
+                const headerColor = tb.getDisplaySettingColor( column, 'header_color');
+                if ( headerColor ) {
+                    const textColor = fn.contrastTextColor( headerColor );
+                    attr.style = `background-color:${headerColor};color:${textColor};`;
+                    // 黒文字の場合は白の影を消す
+                    if ( textColor !== '#FFFFFF') attr.style += 'text-shadow:none;';
+                }
                 html[i] += fn.html.cell( name, className, 'th', rowspan, 1, attr );
             }
 
@@ -1565,13 +1573,18 @@ setTableEvents() {
                     endPoint += `journal/${journalId}/`;
                 }
                 $a.addClass('nowDownload');
-                fn.getFile( endPoint, 'GET', null, { title: getMessage.FTE00185 }).then(function( file ){
+                fn.getFile( endPoint, 'GET', null, { title: getMessage.FTE00185, authorityErrMove: false }).then(function( file ){
                     fn.download('file', file, fileName );
                     $a.removeClass('nowDownload');
                 }).catch(function( e ){
                     if ( e !== 'break') {
                         console.error( e );
-                        alert( getMessage.FTE00179 );
+                        // バックエンドからの詳細なエラーメッセージを優先して表示
+                        if ( e && e.message ) {
+                            alert( e.message );
+                        } else {
+                            alert( getMessage.FTE00179 );
+                        }
                     }
                     $a.removeClass('nowDownload');
                 });
@@ -1621,14 +1634,19 @@ setTableEvents() {
                 try {
                     const fileType = fn.fileTypeCheck( fileName );
                     if ( fileType !== 'unsupported') {
-                        file = await fn.getFile( option.endPoint, 'GET', null );
+                        file = await fn.getFile( option.endPoint, 'GET', null, { authorityErrMove: false });
                     } else {
                         file = '';
                     }
                 } catch ( e ) {
                     if ( e !== 'break') {
                         console.error( e );
-                        alert( getMessage.FTE00179 );
+                        // バックエンドからの詳細なエラーメッセージを優先して表示
+                        if ( e && e.message ) {
+                            alert( e.message );
+                        } else {
+                            alert( getMessage.FTE00179 );
+                        }
                     }
                     $button.prop('disabled', false );
                     tb.modalFlag = false;
@@ -1905,11 +1923,16 @@ setTableEvents() {
             // ファイルが空、かつ編集可能の場合はファイルを取得する
             if ( tb.option.fileFlag === false && fileName !== '' && file === undefined && fileType !== 'unsupported' ) {
                 try {
-                    file = await fn.getFile( option.endPoint, 'GET', null );
+                    file = await fn.getFile( option.endPoint, 'GET', null, { authorityErrMove: false });
                 } catch ( e ) {
                     if ( e !== 'break') {
                         console.error( e );
-                        alert( getMessage.FTE00179 );
+                        // バックエンドからの詳細なエラーメッセージを優先して表示
+                        if ( e && e.message ) {
+                            alert( e.message );
+                        } else {
+                            alert( getMessage.FTE00179 );
+                        }
                     }
                     $button.prop('disabled', false );
                     tb.modalFlag = false;
@@ -3843,6 +3866,25 @@ tbodyHtml() {
 }
 /*
 ##################################################
+   画面表示設定（display_settings）
+##################################################
+*/
+// 項目の画面表示設定を取得
+getDisplaySettings( columnInfo ) {
+    const displaySettings = ( columnInfo )? columnInfo.display_settings: null;
+    return ( fn.typeof( displaySettings ) === 'object')? displaySettings: {};
+}
+// 画面からの編集を禁止しているか
+isDisableEdit( columnInfo ) {
+    return this.getDisplaySettings( columnInfo ).disable_edit === true;
+}
+// 色を取得（#rrggbb形式のみ有効）
+getDisplaySettingColor( columnInfo, settingKey ) {
+    const color = this.getDisplaySettings( columnInfo )[ settingKey ];
+    return ( fn.typeof( color ) === 'string' && /^#[0-9a-fA-F]{6}$/.test( color ) )? color: null;
+}
+/*
+##################################################
    Cell HTML
 ##################################################
 */
@@ -3883,6 +3925,15 @@ cellHtml( item, columnKey, journal ) {
         }
     }
     className.push( cellClass );
+
+    // 画面表示設定：ボディ色（偶数行はうっすら濃くする）
+    const bodyColor = ( cellClass === 'tBodyTd')? tb.getDisplaySettingColor( columnInfo, 'body_color'): null;
+    if ( bodyColor ) {
+        className.push('tBodyTdDisplayColor');
+        const bodyEvenColor = fn.darkenColor( bodyColor );
+        columnAttr.style = `--displayBodyColor:${bodyColor};--displayBodyEvenColor:${bodyEvenColor};`
+            + `--displayBodyTextColor:${fn.contrastTextColor( bodyColor )};--displayBodyEvenTextColor:${fn.contrastTextColor( bodyEvenColor )}`;
+    }
 
     switch ( tb.mode ) {
         case 'view': case 'parameter':
@@ -4432,6 +4483,11 @@ editCellHtml( item, columnKey ) {
         return `<div class="tableEditInputHiddenText">${value}</div>` + fn.html.inputHidden( inputClassName, value, name, attr );
     }
 
+    // 画面表示設定：画面からの編集を禁止（値は表示のみ。新規登録時は初期値が登録される）
+    if ( tb.isDisableEdit( columnInfo ) ) {
+        return tb.disableEditCellHtml( columnType, value );
+    }
+
     switch ( columnType ) {
         // JsonColumn
         case 'JsonColumn':
@@ -4553,6 +4609,37 @@ editCellHtml( item, columnKey ) {
         default:
             return '?';
     }
+}
+/*
+##################################################
+   編集禁止セルHTML
+##################################################
+*/
+disableEditCellHtml( columnType, value ) {
+    const tb = this;
+    let text;
+    switch ( columnType ) {
+        // パスワードは表示しない
+        case 'PasswordColumn': case 'MultiPasswordColumn': case 'PasswordIDColumn': case 'JsonPasswordIDColumn': case 'MaskColumn':
+        case 'SensitiveSingleTextColumn': case 'SensitiveMultiTextColumn':
+            text = '';
+        break;
+        // editCellHtmlでエスケープしていないカラム
+        case 'JsonColumn':
+        case 'IDColumn': case 'LinkIDColumn': case 'RoleIDColumn': case 'UserIDColumn':
+        case 'EnvironmentIDColumn': case 'JsonIDColumn': case 'NotificationIDColumn':
+        case 'ExecutionEnvironmentDefinitionIDColumn': case 'MultiSelectIDColumn':
+            text = ( fn.typeof( value ) === 'object' || fn.typeof( value ) === 'array')
+                ? fn.escape( fn.jsonStringify( value ) )
+                : fn.cv( value, '', true );
+        break;
+        case 'FilterConditionSettingColumn': case 'ConclusionEventSettingColumn':
+            text = ( tb.partsFlag )? fn.cv( value, '', true ): value;
+        break;
+        default:
+            text = value;
+    }
+    return `<div class="tableEditDisableEdit">${text}</div>`;
 }
 /*
 ##################################################

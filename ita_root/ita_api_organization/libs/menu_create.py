@@ -195,6 +195,16 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
                 "last_update_date_time": last_update_date_time
             }
 
+            # 表示設定(JSON)を格納
+            disp_setting_json = record.get('DISP_SETTING_JSON')
+            col_detail['display_settings'] = None
+            if disp_setting_json:
+                try:
+                    col_detail['display_settings'] = json.loads(disp_setting_json)
+                except json.JSONDecodeError:
+                    # JSONとして解釈できない場合は保存値をそのまま返却する(JsonColumnの出力仕様に合わせる)
+                    col_detail['display_settings'] = disp_setting_json
+
             # フルカラムグループ名を格納
             column_group_id = record.get('CREATE_COL_GROUP_ID')
             col_detail['group_id'] = column_group_id
@@ -1204,6 +1214,7 @@ def _insert_t_menu_column(objdbca, menu_data, column_data_list):
                     "required": required,  # 必須
                     "uniqued": uniqued,  # 一意制約
                     "remarks": column_data.get('remarks'),  # 備考
+                    "display_settings": _get_display_settings(column_data),  # 表示設定
                 }
 
                 # カラムグループがある場合
@@ -1684,6 +1695,7 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
                     "required": required,  # 必須
                     "uniqued": uniqued,  # 一意制約
                     "remarks": column_data.get('remarks'),  # 備考
+                    "display_settings": _get_display_settings(column_data),  # 表示設定
                     "last_update_date_time": last_update_date_time  # 最終更新日時
                 }
 
@@ -1807,6 +1819,21 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
         return False, result_code, msg_args
 
     return True, None, None
+
+
+def _get_display_settings(column_data):
+    """
+        【内部呼び出し用】カラム情報から表示設定(JSON)を取得する
+        ARGS:
+            column_data: カラム情報
+        RETRUN:
+            display_settings: 表示設定(dict)。未設定の場合はNone
+    """
+    display_settings = column_data.get('display_settings')
+    if not isinstance(display_settings, dict) or not display_settings:
+        return None
+
+    return display_settings
 
 
 def _disuse_t_menu_column(objdbca, current_t_menu_column_list, column_data_list):

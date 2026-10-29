@@ -532,7 +532,7 @@ def organization_update(organization_id, body=None):  # noqa: E501
             "terraform_cli": [['terraform_cli.sql', 'terraform_cli_master.sql']],
             "ci_cd": [['cicd.sql', 'cicd_master.sql']],
             "oase": [['oase.sql', 'oase_master.sql']],
-            "ai_assistant": []
+            "ai_assistant": [['ai_assistant.sql', 'ai_assistant_master.sql']]
         }
 
         # アンインストール時に利用するSQLファイル名の一覧
@@ -541,7 +541,7 @@ def organization_update(organization_id, body=None):  # noqa: E501
             "terraform_cli": [['terraform_cli.drop.sql', 'terraform_cli_master.delete.sql']],
             "ci_cd": [['cicd.drop.sql', 'cicd_master.delete.sql']],
             "oase": [['oase.drop.sql', 'oase_master.delete.sql']],
-            "ai_assistant": []
+            "ai_assistant": [['ai_assistant.drop.sql', 'ai_assistant_master.delete.sql']]
         }
 
         # アンインストール時に利用する削除対象ディレクトリのパスの一覧

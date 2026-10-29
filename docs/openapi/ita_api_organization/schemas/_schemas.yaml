@@ -24,6 +24,9 @@ COLUMN_INFO:
 MENU_INFO:
   $ref: "./menu.info.yaml"
 
+AI_ASSISTANT_INFO:
+  $ref: "./ai_assistant.info.yaml"
+
 ERROR_TEMPLATE:
   $ref: "./error.template.yaml"
 

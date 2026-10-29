@@ -73,7 +73,7 @@ class MovementVarsLinkTable(TableBase):
                 'LAST_UPDATE_USER': user_id
             })
 
-        # 登録
+        # 更新
         ret = self._ws_db.table_update(self.table_name, update_list, self.pkey, False)
         if ret is False:
             result_code = "BKY-30011"
@@ -102,11 +102,14 @@ class MovementVarsLinkTable(TableBase):
         for_restore_keys = stored_keys & extracted_keys
         restore_list = []
         for key in for_restore_keys:
-            restore_item = stored_records_by_tuple_key[key]
-            if restore_item['DISUSE_FLAG'] == '1':
-                restore_item['DISUSE_FLAG'] = '0'
-                restore_item['LAST_UPDATE_USER'] = user_id
-                restore_list.append(restore_item)
+            stored_item = stored_records_by_tuple_key[key]
+            if stored_item['DISUSE_FLAG'] == '1':
+                # 全カラムを渡すと直前の変数タイプ更新を巻き戻すため、更新対象カラムのみを渡す
+                restore_list.append({
+                    'MVMT_VAR_LINK_ID': stored_item['MVMT_VAR_LINK_ID'],
+                    'DISUSE_FLAG': '0',
+                    'LAST_UPDATE_USER': user_id
+                })
 
         ret = self._ws_db.table_update(self.table_name, restore_list, self.pkey, False)
         if ret is False:
@@ -118,11 +121,14 @@ class MovementVarsLinkTable(TableBase):
         for_discard_keys = stored_keys - extracted_keys
         discard_list = []
         for key in for_discard_keys:
-            discard_item = stored_records_by_tuple_key[key]
-            if discard_item['DISUSE_FLAG'] == '0':
-                discard_item['DISUSE_FLAG'] = '1'
-                discard_item['LAST_UPDATE_USER'] = user_id
-                discard_list.append(discard_item)
+            stored_item = stored_records_by_tuple_key[key]
+            if stored_item['DISUSE_FLAG'] == '0':
+                # 復活処理と同様に、更新対象カラムのみを渡す
+                discard_list.append({
+                    'MVMT_VAR_LINK_ID': stored_item['MVMT_VAR_LINK_ID'],
+                    'DISUSE_FLAG': '1',
+                    'LAST_UPDATE_USER': user_id
+                })
 
         ret = self._ws_db.table_update(self.table_name, discard_list, self.pkey, False)
         if ret is False:

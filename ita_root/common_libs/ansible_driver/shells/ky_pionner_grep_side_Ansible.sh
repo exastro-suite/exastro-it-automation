@@ -23,51 +23,40 @@
 ##       $2～  :検索文字列(複数指定可能)
 ##
 ##      <<返却値>>
-##       0      検索文字列あり
+##       0      検索文字列あり(複数指定時は全ての検索文字列が検索できた場合)
 ##       1      検索文字列なし
 ##
 ######################################################################
-STDOUT='/tmp/ita_stdout.'$$
 STDERR='/tmp/ita_stderr.'$$
-# 引数からgrepコマンドを生成
-grep_cmd=''
-for idx in `seq 2 ${#}`
+# 検索ファイルを取得
+GREP_FILE="${1}"
+shift
+# 検索文字列が指定されていない場合は異常終了
+if [ ${#} -eq 0 ]; then
+    exit 1
+fi
+EXIT_CODE=0
+# 検索文字列毎に検索ファイルを検索し、全ての検索文字列が検索できた場合のみ正常終了(AND条件)
+for ARG in "$@"
 do
-   if [ $idx -eq 2 ]; then
-      #先頭の検索文字列の場合にgrepコマンドを生成
-      # パラメータのエスケープ処理
-      printf -v GREP_FILE "%q" "${1}"
-      printf -v ARG "%q" "${2}"
-      grep_cmd=grep' '${ARG}' '${GREP_FILE}
-   else
-      # 先頭以降の検索文字列の場合にパイプでgrepコマンドを結合
-      # パラメータのエスケープ処理
-      printf -v ARG "&q" "${2}"
-      grep_cmd=$grep_cmd' '|grep ${ARG}
-   fi
-   shift
-done
-grep_cmd=${grep_cmd}' | wc -l >'${STDOUT}' 2>'${STDERR}
-eval ${grep_cmd}
-RET=$?
-# grepコマンドが実行出来なかった場合
-if [ $RET -ne 0 ]; then
-    EXIT_CODE=$RET
-else
+    # 検索された行数取得
+    CNT=`grep -c -- "${ARG}" "${GREP_FILE}" 2>${STDERR}`
+    RET=$?
+    # grepコマンドが実行出来なかった場合(検索文字列なしは1)
+    if [ ${RET} -gt 1 ]; then
+        EXIT_CODE=${RET}
+        break
+    fi
     # grepコマンドでエラーになった場合
     if [ -s ${STDERR} ]; then
         EXIT_CODE=1
-    else
-        # grepコマンドで検索された行数取得
-        CNT=`cat ${STDOUT}`
-        if [ ${CNT} -eq 0 ]; then
-            # 0行の場合は異常終了
-            EXIT_CODE=1
-        else
-            # 1行でもあれば正常終了
-            EXIT_CODE=0
-        fi
+        break
     fi
-fi
-/bin/rm -rf ${STDOUT} ${STDERR} >/dev/null 2&>1
+    # 0行の場合は異常終了
+    if [ ${CNT} -eq 0 ]; then
+        EXIT_CODE=1
+        break
+    fi
+done
+/bin/rm -rf ${STDERR} >/dev/null 2>&1
 exit ${EXIT_CODE}

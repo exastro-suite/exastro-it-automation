@@ -117,10 +117,7 @@ class CollectionBase():
                                 result[item_name] = self._create_search_value(item_name, value, event_data_dict, column_name_dict)
                             elif rest_key_name == "_exastro_events":
                                 tmp_list = self._create_search_value(item_name, value, event_data_dict, column_name_dict)
-                                for tmp in tmp_list:
-                                    result = {item_name: {"$in": [tmp]}}
-                                    result_list.append(result)
-                                result = {"$and": result_list}
+                                result[item_name] = {"$in": tmp_list}
                             else:
                                 tmp_list = self._create_search_value(item_name, value, event_data_dict)
                                 result[item_name] = {"$regex": tmp_list}

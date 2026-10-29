@@ -1,0 +1,13 @@
+- name: Ensure ITA variable is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Groups: "{{ ITA_DFLT_Groups }}"
+  when: ITA_DFLT_Groups is defined
+
+- name: Remove group
+  ansible.builtin.group:
+    name: "{{ item }}"
+    state: absent
+  loop: >-
+    {{
+      ITA_DFLT_Groups if ITA_DFLT_Groups is sequence and ITA_DFLT_Groups is not string else [ITA_DFLT_Groups]
+    }}

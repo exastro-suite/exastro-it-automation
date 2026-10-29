@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Exastro IT Automation API (System Management)
   description: Exastro IT Automation API for System Manager
-  version: "2.5"
+  version: 2.8.0
 servers:
 - url: "https://{host}"
   description: API endpoint
@@ -65,19 +65,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200'
+                $ref: "#/components/schemas/inline_response_200"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.organization_create_controller
     post:
       tags:
@@ -98,7 +98,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/organization_id_ita_body'
+              $ref: "#/components/schemas/organization_id_ita_body"
         required: false
       responses:
         "200":
@@ -106,19 +106,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_1'
+                $ref: "#/components/schemas/inline_response_200_1"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.organization_create_controller
     delete:
       tags:
@@ -140,19 +140,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_1'
+                $ref: "#/components/schemas/inline_response_200_1"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.organization_create_controller
     patch:
       tags:
@@ -173,7 +173,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/organization_id_ita_body_1'
+              $ref: "#/components/schemas/organization_id_ita_body_1"
         required: false
       responses:
         "200":
@@ -181,19 +181,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_1'
+                $ref: "#/components/schemas/inline_response_200_1"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.organization_create_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/:
     post:
@@ -222,26 +222,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/workspace_id_ita_body'
+              $ref: "#/components/schemas/workspace_id_ita_body"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_1'
+                $ref: "#/components/schemas/inline_response_200_1"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.workspace_create_controller
     delete:
       tags:
@@ -271,19 +271,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_1'
+                $ref: "#/components/schemas/inline_response_200_1"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.workspace_create_controller
   /api/ita/settings/:
     get:
@@ -298,19 +298,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_2'
+                $ref: "#/components/schemas/inline_response_200_2"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.ita_settings_controller
   /api/ita/initial-settings/ansible/:
     get:
@@ -325,19 +325,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_3'
+                $ref: "#/components/schemas/inline_response_200_3"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.initial_settings_ansible_controller
   /api/ita/{organization_id}/initial-settings/ansible/:
     get:
@@ -360,19 +360,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_4'
+                $ref: "#/components/schemas/inline_response_200_4"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.initial_settings_ansible_controller
     post:
       tags:
@@ -392,26 +392,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/initialsettings_ansible_body'
+              $ref: "#/components/schemas/initialsettings_ansible_body"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_1'
+                $ref: "#/components/schemas/inline_response_200_1"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.initial_settings_ansible_controller
   /api/ita/loglevel-settings/:
     get:
@@ -426,19 +426,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_5'
+                $ref: "#/components/schemas/inline_response_200_5"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.loglevel_settings_controller
     patch:
       tags:
@@ -450,26 +450,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ita_loglevelsettings_body'
+              $ref: "#/components/schemas/ita_loglevelsettings_body"
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_1'
+                $ref: "#/components/schemas/inline_response_200_1"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.loglevel_settings_controller
   /api/ita/backyard-execute-check/:
     get:
@@ -484,19 +484,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_6'
+                $ref: "#/components/schemas/inline_response_200_6"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.backyard_execute_check_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/notifications/destinations/{column}/:
     get:
@@ -543,19 +543,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_7'
+                $ref: "#/components/schemas/inline_response_200_7"
         "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
         "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.menu_info_controller
   /internal-api/health-check/liveness:
     get:
@@ -569,13 +569,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_8'
+                $ref: "#/components/schemas/inline_response_200_8"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.internal_health_check_service_controller
   /internal-api/health-check/readiness:
     get:
@@ -589,13 +589,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_8'
+                $ref: "#/components/schemas/inline_response_200_8"
         default:
           description: An unexpected error response.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
+                $ref: "#/components/schemas/ERROR_TEMPLATE"
       x-openapi-router-controller: controllers.internal_health_check_service_controller
 components:
   schemas:
@@ -614,7 +614,7 @@ components:
           type: string
           example: 000-00000
         data:
-          $ref: '#/components/schemas/inline_response_200_data'
+          $ref: "#/components/schemas/inline_response_200_data"
         message:
           type: string
           example: ""
@@ -628,6 +628,7 @@ components:
                 name: mongodb
                 connection_string: mongodb://user:pass@mongo.example.com/?tls=true
             drivers:
+              ai_assistant: true
               oase: true
               terraform_cli: true
               terraform_cloud_ep: true
@@ -644,8 +645,11 @@ components:
           type: boolean
         oase:
           type: boolean
+        ai_assistant:
+          type: boolean
       description: "terraform_cloud_ep: Terraform-Cloud/EPドライバ <br/>terraform_cli:\
-        \ Terraform-CLIドライバ, <br/>ci_cd: CI/CD for IaC, <br/>oase: OASE, "
+        \ Terraform-CLIドライバ, <br/>ci_cd: CI/CD for IaC, <br/>oase: OASE, <br/>ai_assistant:\
+        \ Exastro AI Assistant, "
     apiorganizationsorganization_idita_service_document_store:
       type: object
       properties:
@@ -664,14 +668,14 @@ components:
       type: object
       properties:
         document_store:
-          $ref: '#/components/schemas/apiorganizationsorganization_idita_service_document_store'
+          $ref: "#/components/schemas/apiorganizationsorganization_idita_service_document_store"
     organization_id_ita_body:
       type: object
       properties:
         drivers:
-          $ref: '#/components/schemas/apiorganizationsorganization_idita_drivers'
+          $ref: "#/components/schemas/apiorganizationsorganization_idita_drivers"
         service:
-          $ref: '#/components/schemas/apiorganizationsorganization_idita_service'
+          $ref: "#/components/schemas/apiorganizationsorganization_idita_service"
       nullable: true
     inline_response_200_1:
       type: object
@@ -688,9 +692,9 @@ components:
       type: object
       properties:
         drivers:
-          $ref: '#/components/schemas/apiorganizationsorganization_idita_drivers'
+          $ref: "#/components/schemas/apiorganizationsorganization_idita_drivers"
         service:
-          $ref: '#/components/schemas/apiorganizationsorganization_idita_service'
+          $ref: "#/components/schemas/apiorganizationsorganization_idita_service"
       nullable: true
     workspace_id_ita_body:
       required:
@@ -707,7 +711,7 @@ components:
           type: string
           example: 000-00000
         data:
-          $ref: '#/components/schemas/inline_response_200_2_data'
+          $ref: "#/components/schemas/inline_response_200_2_data"
         message:
           type: string
       example:
@@ -728,6 +732,9 @@ components:
               name: OASE
               enable: true
               description: 利用するためにはMongoDBが必要です。MongoDBがない場合は有効にできません。
+            - id: ai_assistant
+              name: Exastro AI Assistant
+              enable: false
         message: message
     inline_response_200_3:
       type: object
@@ -736,7 +743,7 @@ components:
           type: string
           example: 000-00000
         data:
-          $ref: '#/components/schemas/inline_response_200_3_data'
+          $ref: "#/components/schemas/inline_response_200_3_data"
         message:
           type: string
       example:
@@ -792,7 +799,7 @@ components:
           type: string
           example: 000-00000
         data:
-          $ref: '#/components/schemas/initialsettings_ansible_body'
+          $ref: "#/components/schemas/initialsettings_ansible_body"
         message:
           type: string
       example:
@@ -891,9 +898,9 @@ components:
     apiitaorganization_idinitialsettingsansible_initial_data_ansible_automation_controller_host_list:
       properties:
         file:
-          $ref: '#/components/schemas/apiitaorganization_idinitialsettingsansible_initial_data_file'
+          $ref: "#/components/schemas/apiitaorganization_idinitialsettingsansible_initial_data_file"
         parameter:
-          $ref: '#/components/schemas/apiitaorganization_idinitialsettingsansible_initial_data_parameter'
+          $ref: "#/components/schemas/apiitaorganization_idinitialsettingsansible_initial_data_parameter"
       example:
         file:
           ssh_private_key_file: ssh_private_key_file
@@ -951,7 +958,7 @@ components:
       type: object
       properties:
         parameter:
-          $ref: '#/components/schemas/apiitaorganization_idinitialsettingsansible_initial_data_interface_info_ansible_parameter'
+          $ref: "#/components/schemas/apiitaorganization_idinitialsettingsansible_initial_data_interface_info_ansible_parameter"
       example:
         parameter:
           proxy_port: proxy_port
@@ -969,9 +976,9 @@ components:
         ansible_automation_controller_host_list:
           type: array
           items:
-            $ref: '#/components/schemas/apiitaorganization_idinitialsettingsansible_initial_data_ansible_automation_controller_host_list'
+            $ref: "#/components/schemas/apiitaorganization_idinitialsettingsansible_initial_data_ansible_automation_controller_host_list"
         interface_info_ansible:
-          $ref: '#/components/schemas/apiitaorganization_idinitialsettingsansible_initial_data_interface_info_ansible'
+          $ref: "#/components/schemas/apiitaorganization_idinitialsettingsansible_initial_data_interface_info_ansible"
       example:
         interface_info_ansible:
           parameter:
@@ -1019,7 +1026,7 @@ components:
           items:
             type: string
         initial_data:
-          $ref: '#/components/schemas/apiitaorganization_idinitialsettingsansible_initial_data'
+          $ref: "#/components/schemas/apiitaorganization_idinitialsettingsansible_initial_data"
       example:
         execution_engine_list:
         - execution_engine_list
@@ -1069,7 +1076,7 @@ components:
           type: string
           example: 000-00000
         data:
-          $ref: '#/components/schemas/inline_response_200_5_data'
+          $ref: "#/components/schemas/inline_response_200_5_data"
         message:
           type: string
       example:
@@ -1094,18 +1101,18 @@ components:
           type: string
           example: 000-00000
         data:
-          $ref: '#/components/schemas/inline_response_200_6_data'
+          $ref: "#/components/schemas/inline_response_200_6_data"
         message:
           type: string
       example:
         result: 000-00000
         data:
-          execute_count: 0.80082819046101150206595775671303272247314453125
+          execute_count: 0.8008281904610115
           organizations:
-          - execute_count: 6.02745618307040320615897144307382404804229736328125
+          - execute_count: 6.027456183070403
             id: (organiation_id)
             workspaces:
-            - execute_count: 1.46581298050294517310021547018550336360931396484375
+            - execute_count: 1.4658129805029452
               backyards:
                 (backyard_container_name):
                 - status_id: "1"
@@ -1117,7 +1124,7 @@ components:
                   status_name: 未実行
                   id: (uuid)
               id: (workspace_id)
-            - execute_count: 1.46581298050294517310021547018550336360931396484375
+            - execute_count: 1.4658129805029452
               backyards:
                 (backyard_container_name):
                 - status_id: "1"
@@ -1129,10 +1136,10 @@ components:
                   status_name: 未実行
                   id: (uuid)
               id: (workspace_id)
-          - execute_count: 6.02745618307040320615897144307382404804229736328125
+          - execute_count: 6.027456183070403
             id: (organiation_id)
             workspaces:
-            - execute_count: 1.46581298050294517310021547018550336360931396484375
+            - execute_count: 1.4658129805029452
               backyards:
                 (backyard_container_name):
                 - status_id: "1"
@@ -1144,7 +1151,7 @@ components:
                   status_name: 未実行
                   id: (uuid)
               id: (workspace_id)
-            - execute_count: 1.46581298050294517310021547018550336360931396484375
+            - execute_count: 1.4658129805029452
               backyards:
                 (backyard_container_name):
                 - status_id: "1"
@@ -1206,7 +1213,10 @@ components:
           type: boolean
         oase:
           type: boolean
+        ai_assistant:
+          type: boolean
       example:
+        ai_assistant: true
         oase: true
         terraform_cli: true
         terraform_cloud_ep: true
@@ -1233,7 +1243,7 @@ components:
       type: object
       properties:
         document_store:
-          $ref: '#/components/schemas/inline_response_200_data_optionsIta_service_document_store'
+          $ref: "#/components/schemas/inline_response_200_data_optionsIta_service_document_store"
       example:
         document_store:
           owner: false
@@ -1243,9 +1253,9 @@ components:
       type: object
       properties:
         drivers:
-          $ref: '#/components/schemas/inline_response_200_data_optionsIta_drivers'
+          $ref: "#/components/schemas/inline_response_200_data_optionsIta_drivers"
         service:
-          $ref: '#/components/schemas/inline_response_200_data_optionsIta_service'
+          $ref: "#/components/schemas/inline_response_200_data_optionsIta_service"
       example:
         service:
           document_store:
@@ -1253,6 +1263,7 @@ components:
             name: mongodb
             connection_string: mongodb://user:pass@mongo.example.com/?tls=true
         drivers:
+          ai_assistant: true
           oase: true
           terraform_cli: true
           terraform_cloud_ep: true
@@ -1261,7 +1272,7 @@ components:
       type: object
       properties:
         optionsIta:
-          $ref: '#/components/schemas/inline_response_200_data_optionsIta'
+          $ref: "#/components/schemas/inline_response_200_data_optionsIta"
       example:
         optionsIta:
           service:
@@ -1270,6 +1281,7 @@ components:
               name: mongodb
               connection_string: mongodb://user:pass@mongo.example.com/?tls=true
           drivers:
+            ai_assistant: true
             oase: true
             terraform_cli: true
             terraform_cloud_ep: true
@@ -1300,8 +1312,11 @@ components:
             name: OASE
             enable: true
             description: 利用するためにはMongoDBが必要です。MongoDBがない場合は有効にできません。
+          - id: ai_assistant
+            name: Exastro AI Assistant
+            enable: false
           items:
-            $ref: '#/components/schemas/inline_response_200_2_data_drivers_options'
+            $ref: "#/components/schemas/inline_response_200_2_data_drivers_options"
       example:
         options:
         - id: terraform_cloud_ep
@@ -1317,10 +1332,13 @@ components:
           name: OASE
           enable: true
           description: 利用するためにはMongoDBが必要です。MongoDBがない場合は有効にできません。
+        - id: ai_assistant
+          name: Exastro AI Assistant
+          enable: false
     inline_response_200_2_data:
       properties:
         drivers:
-          $ref: '#/components/schemas/inline_response_200_2_data_drivers'
+          $ref: "#/components/schemas/inline_response_200_2_data_drivers"
       example:
         drivers:
           options:
@@ -1337,6 +1355,9 @@ components:
             name: OASE
             enable: true
             description: 利用するためにはMongoDBが必要です。MongoDBがない場合は有効にできません。
+          - id: ai_assistant
+            name: Exastro AI Assistant
+            enable: false
     inline_response_200_3_data_organization_id_initial_data_parameter:
       type: object
       properties:
@@ -1379,9 +1400,9 @@ components:
     inline_response_200_3_data_organization_id_initial_data_ansible_automation_controller_host_list:
       properties:
         file:
-          $ref: '#/components/schemas/apiitaorganization_idinitialsettingsansible_initial_data_file'
+          $ref: "#/components/schemas/apiitaorganization_idinitialsettingsansible_initial_data_file"
         parameter:
-          $ref: '#/components/schemas/inline_response_200_3_data_organization_id_initial_data_parameter'
+          $ref: "#/components/schemas/inline_response_200_3_data_organization_id_initial_data_parameter"
       example:
         file:
           ssh_private_key_file: ssh_private_key_file
@@ -1401,9 +1422,9 @@ components:
         ansible_automation_controller_host_list:
           type: array
           items:
-            $ref: '#/components/schemas/inline_response_200_3_data_organization_id_initial_data_ansible_automation_controller_host_list'
+            $ref: "#/components/schemas/inline_response_200_3_data_organization_id_initial_data_ansible_automation_controller_host_list"
         interface_info_ansible:
-          $ref: '#/components/schemas/apiitaorganization_idinitialsettingsansible_initial_data_interface_info_ansible'
+          $ref: "#/components/schemas/apiitaorganization_idinitialsettingsansible_initial_data_interface_info_ansible"
       example:
         interface_info_ansible:
           parameter:
@@ -1451,7 +1472,7 @@ components:
           items:
             type: string
         initial_data:
-          $ref: '#/components/schemas/inline_response_200_3_data_organization_id_initial_data'
+          $ref: "#/components/schemas/inline_response_200_3_data_organization_id_initial_data"
       example:
         execution_engine_list:
         - execution_engine_list
@@ -1497,7 +1518,7 @@ components:
     inline_response_200_3_data:
       properties:
         (organization_id):
-          $ref: '#/components/schemas/inline_response_200_3_data_organization_id'
+          $ref: "#/components/schemas/inline_response_200_3_data_organization_id"
       example:
         (organization_id):
           execution_engine_list:
@@ -1578,7 +1599,7 @@ components:
         (backyard_container_name):
           type: array
           items:
-            $ref: '#/components/schemas/inline_response_200_6_data_backyards_backyard_container_name'
+            $ref: "#/components/schemas/inline_response_200_6_data_backyards_backyard_container_name"
       example:
         (backyard_container_name):
         - status_id: "1"
@@ -1598,9 +1619,9 @@ components:
         execute_count:
           type: number
         backyards:
-          $ref: '#/components/schemas/inline_response_200_6_data_backyards'
+          $ref: "#/components/schemas/inline_response_200_6_data_backyards"
       example:
-        execute_count: 1.46581298050294517310021547018550336360931396484375
+        execute_count: 1.4658129805029452
         backyards:
           (backyard_container_name):
           - status_id: "1"
@@ -1623,12 +1644,12 @@ components:
         workspaces:
           type: array
           items:
-            $ref: '#/components/schemas/inline_response_200_6_data_workspaces'
+            $ref: "#/components/schemas/inline_response_200_6_data_workspaces"
       example:
-        execute_count: 6.02745618307040320615897144307382404804229736328125
+        execute_count: 6.027456183070403
         id: (organiation_id)
         workspaces:
-        - execute_count: 1.46581298050294517310021547018550336360931396484375
+        - execute_count: 1.4658129805029452
           backyards:
             (backyard_container_name):
             - status_id: "1"
@@ -1640,7 +1661,7 @@ components:
               status_name: 未実行
               id: (uuid)
           id: (workspace_id)
-        - execute_count: 1.46581298050294517310021547018550336360931396484375
+        - execute_count: 1.4658129805029452
           backyards:
             (backyard_container_name):
             - status_id: "1"
@@ -1659,14 +1680,14 @@ components:
         organizations:
           type: array
           items:
-            $ref: '#/components/schemas/inline_response_200_6_data_organizations'
+            $ref: "#/components/schemas/inline_response_200_6_data_organizations"
       example:
-        execute_count: 0.80082819046101150206595775671303272247314453125
+        execute_count: 0.8008281904610115
         organizations:
-        - execute_count: 6.02745618307040320615897144307382404804229736328125
+        - execute_count: 6.027456183070403
           id: (organiation_id)
           workspaces:
-          - execute_count: 1.46581298050294517310021547018550336360931396484375
+          - execute_count: 1.4658129805029452
             backyards:
               (backyard_container_name):
               - status_id: "1"
@@ -1678,7 +1699,7 @@ components:
                 status_name: 未実行
                 id: (uuid)
             id: (workspace_id)
-          - execute_count: 1.46581298050294517310021547018550336360931396484375
+          - execute_count: 1.4658129805029452
             backyards:
               (backyard_container_name):
               - status_id: "1"
@@ -1690,10 +1711,10 @@ components:
                 status_name: 未実行
                 id: (uuid)
             id: (workspace_id)
-        - execute_count: 6.02745618307040320615897144307382404804229736328125
+        - execute_count: 6.027456183070403
           id: (organiation_id)
           workspaces:
-          - execute_count: 1.46581298050294517310021547018550336360931396484375
+          - execute_count: 1.4658129805029452
             backyards:
               (backyard_container_name):
               - status_id: "1"
@@ -1705,7 +1726,7 @@ components:
                 status_name: 未実行
                 id: (uuid)
             id: (workspace_id)
-          - execute_count: 1.46581298050294517310021547018550336360931396484375
+          - execute_count: 1.4658129805029452
             backyards:
               (backyard_container_name):
               - status_id: "1"

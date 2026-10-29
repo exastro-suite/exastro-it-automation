@@ -1,0 +1,13 @@
+- name: Ensure ITA variable is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_Gpg_Keys: "{{ ITA_DFLT_Gpg_Keys }}"
+  when: ITA_DFLT_Gpg_Keys is defined
+
+- name: Add gpg key
+  ansible.builtin.rpm_key:
+    key: "{{ item }}"
+    state: present
+  loop: >-
+    {{
+      ITA_DFLT_Gpg_Keys if ITA_DFLT_Gpg_Keys is sequence and ITA_DFLT_Gpg_Keys is not string else [ITA_DFLT_Gpg_Keys]
+    }}

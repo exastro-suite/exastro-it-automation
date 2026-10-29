@@ -106,6 +106,7 @@ class AnscConst:
     DF_EXEC_MODE_ANSIBLE = '1'    # Ansibleで実行
     DF_EXEC_MODE_AAC = '2'        # ansible automation controllerで実行
     DF_EXEC_MODE_AG = '3'        # Ansible Execution Agentで実行
+    DF_EXEC_MODE_AAP_CLOUD = '4'        # AAP on Cloudで実行
 
     # 機器一覧 AACホスト一覧  認証方式(LOGIN_AUTH_TYPE)
     DF_LOGIN_AUTH_TYPE_KEY = '1'         # 鍵認証(パスフレーズなし)
@@ -174,6 +175,8 @@ class AnscConst:
     DF_TowerProjectPath = "/var/lib/awx/projects"
     # Tower Exastro専用 Project Path
     DF_TowerExastroProjectPath = "/var/lib/exastro"
+    # AAP-Cloud専用 Project Path
+    DF_AAPCloudExastroProjectPath = "/runner/project"
 
     LC_RUN_MODE_STD = "0"      # 標準
     LC_RUN_MODE_VARFILE = "1"  # 変数定義ファイルの構造チェック
@@ -228,6 +231,8 @@ class AnscConst:
     ITA_SP_VAR_CPF_VAR_NAME = "CPF_[0-9a-zA-Z_]*"
     ITA_SP_VAR_TPF_VAR_NAME = "TPF_[0-9a-zA-Z_]*"
     ITA_SP_VAR_GBL_VAR_NAME = "GBL_[0-9a-zA-Z_]*"
+    # AAP-Cloud用 ServiceAccount RefreshTokenで使用する変数
+    ITA_SP_VAR_SA_TOKEN = "__sa_refreshtoken__"
 
     # 変数抜出から除外するITA独自変数リスト
     Unmanaged_ITA_sp_varlist = [ITA_SP_VAR_ANS_PROTOCOL_VAR_NAME,
@@ -255,7 +260,8 @@ class AnscConst:
                                 ITA_SP_VAR_ANS_EXECUTION_NO,
                                 ITA_SP_VAR_CPF_VAR_NAME,
                                 ITA_SP_VAR_TPF_VAR_NAME,
-                                ITA_SP_VAR_GBL_VAR_NAME]
+                                ITA_SP_VAR_GBL_VAR_NAME,
+                                ITA_SP_VAR_SA_TOKEN]
 
     # Unmanaged_ITA_sp_varlistからTPF/CPF/GBLを省いたITA独自変数リスト
     CannotValueAssign_ITA_sp_varlist = [ITA_SP_VAR_ANS_PROTOCOL_VAR_NAME,
@@ -280,7 +286,8 @@ class AnscConst:
                                         ITA_SP_VAR_MOVEMENT_STS_FILE,
                                         ITA_SP_VAR_CONDUCTOR_ID,
                                         ITA_SP_VAR_ANS_MOVEMENT_ID,
-                                        ITA_SP_VAR_ANS_EXECUTION_NO]
+                                        ITA_SP_VAR_ANS_EXECUTION_NO,
+                                        ITA_SP_VAR_SA_TOKEN]
 
     # 具体値がない可能性があるITA独自変数リスト
     notHaveSpecificValues_ITA_sp_varlist = [ITA_SP_VAR_ANS_PROTOCOL_VAR_NAME,
@@ -288,4 +295,5 @@ class AnscConst:
                                             ITA_SP_VAR_ANS_PASSWD_VAR_NAME,
                                             ITA_SP_VAR_ANS_DNSHOSTNAME_VAR_NAME,
                                             ITA_SP_VAR_ANS_IPADDRESS_VAR_NAME,
-                                            ITA_SP_VAR_CONDUCTOR_ID]
+                                            ITA_SP_VAR_CONDUCTOR_ID,
+                                            ITA_SP_VAR_SA_TOKEN]

@@ -412,7 +412,7 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
     option_parameter = option_parameter.replace("--verbose", "-v")
 
     # Tower実行の場合にオプションパラメータをチェックする。
-    if ans_exec_mode == ansc_const.DF_EXEC_MODE_AAC:
+    if ans_exec_mode == ansc_const.DF_EXEC_MODE_AAC or ans_exec_mode == ansc_const.DF_EXEC_MODE_AAP_CLOUD:
         # Pioneerの場合の並列実行数のパラメータ設定
         if driver_id == ansc_const.DF_PIONEER_DRIVER_ID:
             if tgt_exec_count != '0':
@@ -526,7 +526,7 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
                 os.path.basename(inspect.currentframe().f_code.co_filename),
                 str(inspect.currentframe().f_lineno), err_msg, log_dir)
             return False, execute_data, err_msg
-    elif ans_exec_mode == ansc_const.DF_EXEC_MODE_AAC:
+    elif ans_exec_mode == ansc_const.DF_EXEC_MODE_AAC or ans_exec_mode == ansc_const.DF_EXEC_MODE_AAP_CLOUD:
         uiexec_log_path = ansdrv.getAnsible_out_Dir() + "/exec.log"  # 使ってる？
         uierror_log_path = ansdrv.getAnsible_out_Dir() + "/error.log"  # 使ってる？
         multiple_log_mark = ""
@@ -623,7 +623,7 @@ def instance_checkcondition(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, a
             ansdrv.LocalLogPrint(
                 os.path.basename(inspect.currentframe().f_code.co_filename),
                 str(inspect.currentframe().f_lineno), err_msg, log_dir)
-    elif ans_exec_mode == ansc_const.DF_EXEC_MODE_AAC:
+    elif ans_exec_mode == ansc_const.DF_EXEC_MODE_AAC or ans_exec_mode == ansc_const.DF_EXEC_MODE_AAP_CLOUD:
         uiexec_log_path = ansdrv.getAnsible_out_Dir() + "/exec.log"  # 使ってる？
         uierror_log_path = ansdrv.getAnsible_out_Dir() + "/error.log"  # 使ってる？
         multiple_log_mark = ""
@@ -658,15 +658,6 @@ def instance_checkcondition(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, a
             db_update_need = True
             db_update_need_no_jnl = True
 
-        # 5:正常終了時
-        # 6:完了(異常)
-        # 7:想定外エラー
-        # 8:緊急停止
-        if status in [ansc_const.COMPLETE, ansc_const.FAILURE, ansc_const.EXCEPTION, ansc_const.SCRAM]:
-            pass
-        else:
-            status = -1
-
     else:
         # 実行エンジンがAnsible Agenntの場合
         status, db_update_need = ag_execute_statuscheck(ansdrv, ansc_const, execution_no, execute_data, Timeout_Interval)
@@ -683,7 +674,7 @@ def instance_checkcondition(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, a
         if status in [ansc_const.COMPLETE, ansc_const.FAILURE, ansc_const.EXCEPTION, ansc_const.SCRAM] or error_flag != 0:
             db_update_need = True
             # 実行エンジンを判定　実行エンジンがAACの場合
-            if ans_exec_mode == ansc_const.DF_EXEC_MODE_AAC:
+            if ans_exec_mode == ansc_const.DF_EXEC_MODE_AAC or ans_exec_mode == ansc_const.DF_EXEC_MODE_AAP_CLOUD:
                 # 実行結果ファイルをTowerから転送
                 # 戻り値は確認しない
                 multiple_log_mark = ""
@@ -779,7 +770,7 @@ def instance_checkcondition(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, a
             execute_data["STATUS_ID"] = ansc_const.PROCESS_DELAYED
 
     # 実行エンジンを判定
-    if ans_exec_mode == ansc_const.DF_EXEC_MODE_AAC:
+    if ans_exec_mode == ansc_const.DF_EXEC_MODE_AAC or ans_exec_mode == ansc_const.DF_EXEC_MODE_AAP_CLOUD:
         # 5:正常終了時
         # 6:完了(異常)
         # 7:想定外エラー
@@ -937,6 +928,8 @@ def call_CreateAnsibleExecFiles(ansdrv: CreateAnsibleExecFiles, execute_data, dr
             return False, g.appmsg.get_log_message("BKY-00004", ["CreateAnsibleExecFiles.getDBRoleVarList", "error occured"])
 
     host_vars = ansdrv.addSystemvars(host_vars, hostinfolist, execution_no, movement_id)
+    if host_vars is False:
+        return False, g.appmsg.get_log_message("BKY-00004", ["CreateAnsibleExecFiles.addSystemvars", "error occured"])
 
     # Legacy-Role 多次元配列　恒久版対応
     # ansibleで実行するファイル作成

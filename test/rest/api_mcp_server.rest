@@ -1,0 +1,572 @@
+###### MCP Server ######
+
+# Global values
+# not quate strings
+@org-user-id = admin
+@org-user-pw = password
+@base_org_url = http://platform-auth:{{org-mng-port}}
+@organization_id = org1
+@workspace_id = ws1
+
+
+###
+# MCPの初期化(initialize)を行う
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/mcp
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "method": "initialize",
+  "params": {},
+  "id": 1
+}
+
+###
+# 利用可能なツールの一覧を取得する(tools/list)
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/mcp
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "method": "tools/list",
+  "params": {},
+  "id": 2
+}
+
+###
+# 利用可能なツールの一覧を取得する(tools/list) - LLMEditor
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/mcp?profile=LLMEditor
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "method": "tools/list",
+  "params": {},
+  "id": 2
+}
+
+###
+# 利用可能なツールの一覧を取得する(tools/list) - AgenticAI
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/mcp?profile=AgenticAI
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "method": "tools/list",
+  "params": {},
+  "id": 2
+}
+
+###
+# ツール "list-users" を呼び出し、組織内のユーザー一覧を取得する(tools/call)
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/mcp
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "method": "tools/call",
+  "params": {
+    "name": "list-users",
+    "arguments": {}
+  },
+  "id": 3
+}
+
+###
+# ツール "create-user" を呼び出し、組織内に新規ユーザーを作成する(tools/call)
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/mcp
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "method": "tools/call",
+  "params": {
+    "name": "create-user",
+    "arguments": {
+      "username": "mcp_test_user1_{{$timestamp}}",
+      "password": "password",
+      "email": "mcp_test_user1_{{$timestamp}}@test.com"
+    }
+  },
+  "id": 4
+}
+
+###
+# @name create_attachment_text_file
+# ツール "create-attachment-text-file" を呼び出し、添付ファイルを作成します(tools/call)
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/mcp
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "create-attachment-text-file",
+    "arguments": {
+      "filename": "example.txt",
+      "text": "Hello Exastro\nCreated by mcp create-attachment-text-file tool\ndatetime=${{$localDatetime iso8601}}",
+      "mime_type": "text/plain"
+    }
+  }
+}
+
+###
+@create_attachment_text_file_id = {{create_attachment_text_file.response.body.$.result.structuredContent.file_id}}
+
+###
+# ツール "get-attachment-text-file" を呼び出し、添付ファイルを取得します(tools/call)
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/mcp
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "get-attachment-text-file",
+    "arguments": {
+      "file_id": "{{create_attachment_text_file_id}}",
+      "encoding": "utf-8"
+    }
+  }
+}
+
+###
+# GET "mcp/attachment_file/file_id" を呼び出し、添付ファイルのmatadataを取得します
+GET {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/mcp/attachment_file/{{create_attachment_text_file_id}}
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+###
+# GET "mcp/attachment_file/file_id/download" を呼び出し、添付ファイルのデータを取得します
+GET {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/mcp/attachment_file/{{create_attachment_text_file_id}}/download
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+###
+# @name post_attachment_file
+# POST "mcp/attachment_file" を呼び出し、添付ファイルを作成します(tools/call)
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/mcp/attachment_file
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+Content-Type: multipart/form-data; boundary=----ExastroBoundary7MA4YWxkTrZu0gW
+
+------ExastroBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="example.txt"
+Content-Type: text/plain
+
+Hello Exastro
+Created by mcp/attachment_file Rest API
+datetime=${{$localDatetime iso8601}}
+------ExastroBoundary7MA4YWxkTrZu0gW--
+
+###
+@post_attachment_file_id = {{post_attachment_file.response.body.$.file_id}}
+
+###
+# ツール "get-attachment-text-file" を呼び出し、添付ファイルを取得します(tools/call)
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/mcp
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "get-attachment-text-file",
+    "arguments": {
+      "file_id": "{{post_attachment_file_id}}",
+      "encoding": "utf-8"
+    }
+  }
+}
+
+###
+# @name create_attachment_zip_file
+# ツール "create-attachment-zip-file" を呼び出し、添付ファイル(zip)を作成します(tools/call)
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/mcp
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "create-attachment-zip-file",
+    "arguments": {
+      "files": [
+        {"file_id": "{{create_attachment_text_file_id}}"}
+      ],
+      "zip_filename": "archive.zip"
+    }
+  }
+}
+
+###
+@zip_file_id = {{create_attachment_zip_file.response.body.$.result.structuredContent.file_id}}
+
+###
+# GET "mcp/attachment_file/file_id/download" を呼び出し、添付ファイルのデータを取得します
+GET {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/mcp/attachment_file/{{zip_file_id}}/download
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+
+###
+# @name base64_encode
+# ツール "base64-encode" を呼び出し、テキストをBase64エンコードします(tools/call)
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/mcp
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "base64-encode",
+    "arguments": {
+      "text": "Hello Exastro\ndatetime=${{$localDatetime iso8601}}"
+    }
+  }
+}
+
+###
+@base64_encoded_text = {{base64_encode.response.body.$.result.structuredContent.result}}
+
+###
+# ツール "base64-decode" を呼び出し、Base64文字列をデコードします(tools/call)
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/mcp
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "base64-decode",
+    "arguments": {
+      "text": "{{base64_encoded_text}}"
+    }
+  }
+}
+
+###
+# ツール "list-accessible-menus" を呼び出し、アクセス可能なメニュー一覧を取得します(tools/call)
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/mcp
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "list-accessible-menus",
+    "arguments": {}
+  }
+}
+
+###
+@list_menu_prm_menu = device_list
+
+###
+# ツール "list-menu-info" を呼び出し、メニューの基本情報・項目情報を取得します(tools/call)
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/mcp
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "list-menu-info",
+    "arguments": {
+      "menu": "{{list_menu_prm_menu}}"
+    }
+  }
+}
+
+###
+# ツール "list-menu-info-pulldown" を呼び出し、IDColumn項目の指定可能な値の一覧を取得します(tools/call)
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/mcp
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "list-menu-info-pulldown",
+    "arguments": {
+      "menu": "{{list_menu_prm_menu}}"
+    }
+  }
+}
+
+###
+@menu_filter_prm_menu = playbook_files
+
+###
+# ツール "menu-filter" を呼び出し、検索条件を指定してメニューのレコードを取得します(tools/call)
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/mcp
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "menu-filter",
+    "arguments": {
+      "menu": "{{menu_filter_prm_menu}}",
+      "file": "yes"
+    }
+  }
+}
+
+###
+# @name get_playbook_file
+# ツール "menu-filter" を呼び出し、検索条件を指定してメニューのレコードを取得します(tools/call)
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/mcp
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "menu-filter",
+    "arguments": {
+      "menu": "{{menu_filter_prm_menu}}",
+      "filter_conditions": {
+        "item_no": {"LIST": ["10"]}
+      },
+      "file": "yes"
+    }
+  }
+}
+
+###
+@playbook_file_id = {{get_playbook_file.response.body.$.result.structuredContent.result.data[0].fileid.playbook_file}}
+
+###
+# GET "mcp/attachment_file/file_id/download" を呼び出し、添付ファイルのデータを取得します
+GET {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/mcp/attachment_file/{{playbook_file_id}}/download
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+
+###
+# ツール "menu-filter-count" を呼び出し、検索条件を指定してメニューのレコード件数を取得します(tools/call)
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/mcp
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "menu-filter-count",
+    "arguments": {
+      "menu": "{{menu_filter_prm_menu}}",
+      "filter_conditions": {
+        "item_no": {"LIST": ["10"]}
+      }
+    }
+  }
+}
+
+###
+@opration_datetime = {{$localDatetime "YYYY/MM/DD HH:mm:ss"}}
+
+###
+# @name maintenance_all_register
+# ツール "maintenance-all" を呼び出し、レコードを新規登録します(tools/call)
+# ※ parameterの内容は対象メニューの実際の項目(column_name_rest)に合わせて指定してください
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/mcp
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "maintenance-all",
+    "arguments": {
+      "menu": "operation_list",
+      "records": [
+        {
+          "type": "Register",
+          "parameter": {
+            "operation_name": "Operation {{opration_datetime}}",
+            "scheduled_date_for_execution": "{{opration_datetime}}"
+          }
+        }
+      ]
+    }
+  }
+}
+
+###
+# @name create_menu
+# ツール "create-menu" を呼び出し、新規のパラメータシート(メニュー)を作成します(tools/call)
+# ※ {{$timestamp}} はリクエストの度に再評価されるため、実際に作成されたmenu_name_restは
+#   create_menuのレスポンスから取得して以降のリクエストで使用する
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/mcp
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "create-menu",
+    "arguments": {
+      "menu_definition": {
+        "menu": {
+          "menu_name": "AI Test Parameter Sheet {{$timestamp}}",
+          "menu_name_rest": "ai_test_param_sheet_{{$timestamp}}",
+          "description": "A simple parameter sheet created by the create-menu tool test",
+          "sheet_type_id": "1",
+          "hostgroup": "0",
+          "vertical": "0"
+        },
+        "column": {
+          "c1": {
+            "item_name": "A text field",
+            "item_name_rest": "a_text_field",
+            "required": "1",
+            "column_class": "SingleTextColumn",
+            "single_string_maximum_bytes": "256"
+          }
+        }
+      }
+    }
+  }
+}
+
+###
+@menu_create_rest_name = {{create_menu.response.body.$.result.structuredContent.result.data.menu_name_rest}}
+
+###
+# @name get_menu_definition
+# ツール "get-menu-definition" を呼び出し、作成したパラメータシートの定義情報を取得します(tools/call)
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/mcp
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "get-menu-definition",
+    "arguments": {
+      "menu_rest_name": "{{menu_create_rest_name}}"
+    }
+  }
+}
+
+###
+@menu_create_id = {{get_menu_definition.response.body.$.result.structuredContent.result.menu_definition.menu.menu_create_id}}
+@menu_create_update_at = {{get_menu_definition.response.body.$.result.structuredContent.result.menu_definition.menu.last_update_date_time}}
+@menu_create_role_list = {{get_menu_definition.response.body.$.result.structuredContent.result.menu_definition.menu.role_list}}
+@menu_create_column_id = {{get_menu_definition.response.body.$.result.structuredContent.result.menu_definition.column.c1.create_column_id}}
+@menu_create_column_update_at = {{get_menu_definition.response.body.$.result.structuredContent.result.menu_definition.column.c1.last_update_date_time}}
+
+###
+# ツール "update-menu" を呼び出し、作成したパラメータシートの説明を更新します(tools/call)
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/mcp
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "update-menu",
+    "arguments": {
+      "menu_definition": {
+        "menu": {
+          "menu_create_id": "{{menu_create_id}}",
+          "menu_name": "AI Test Parameter Sheet Update {{$timestamp}}",
+          "menu_name_rest": "{{menu_create_rest_name}}",
+          "description": "A simple parameter sheet updated by the update-menu tool test",
+          "sheet_type_id": "1",
+          "hostgroup": "0",
+          "vertical": "0",
+          "last_update_date_time": "{{menu_create_update_at}}",
+          "role_list": {{menu_create_role_list}}
+        },
+        "column": {
+          "c1": {
+            "create_column_id": "{{menu_create_column_id}}",
+            "last_update_date_time": "{{menu_create_column_update_at}}",
+            "item_name": "A text field",
+            "item_name_rest": "a_text_field",
+            "required": "1",
+            "column_class": "SingleTextColumn",
+            "single_string_maximum_bytes": "256"
+          }
+        }
+      }
+    }
+  }
+}
+
+###
+# @name search_docs
+# ツール "search-docs" を呼び出し、ITAドキュメントをハイブリッド検索(ベクトル検索+キーワードマッチング)します(tools/call)
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/mcp
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "search-docs",
+    "arguments": {
+      "query": "how to create a menu",
+      "limit": 3
+    }
+  }
+}
+
+###
+@search_docs_source = {{search_docs.response.body.$.result.structuredContent.results[0].source}}
+
+###
+# ツール "get-document" を呼び出し、search-docsが返したsourceからドキュメントの全文を取得します(tools/call)
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/mcp
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "get-document",
+    "arguments": {
+      "source": "{{search_docs_source}}"
+    }
+  }
+}

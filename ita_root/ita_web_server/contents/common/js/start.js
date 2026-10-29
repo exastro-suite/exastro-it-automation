@@ -23,6 +23,12 @@
 let getMessage;
 (function () {
     CommonAuth.onAuthSuccess(() => {
+        // ログインユーザ等が切り替わった場合はWebStorageをクリアする
+        fn.clearStorageByUser();
+
+        // 複数タブ間で共有するキャッシュに接続する
+        fn.cache.init();
+
         const ui = new CommonUi();
         ui.init().then(function(){
             ui.setUi();

@@ -22,9 +22,13 @@ def external_valid_menu_before(objdbca, objtable, option):
 
     cmd_type = option.get("cmd_type")
     if cmd_type in ["Register", "Update", "Restore"]:
-        entry_parameter = option.get('entry_parameter')
-        input_order = entry_parameter.get('parameter').get('input_order')
-        menu_group_menu_item = entry_parameter.get('parameter').get('menu_group_menu_item')
+        # 「復活」時や一部の項目のみを指定した「更新」時はentry_parameterに対象の項目が含まれないため、current_parameterで補完する
+        current_parameter = (option.get('current_parameter') or {}).get('parameter') or {}
+        entry_parameter = (option.get('entry_parameter') or {}).get('parameter') or {}
+        parameter = {**current_parameter, **entry_parameter}
+
+        input_order = parameter.get('input_order')
+        menu_group_menu_item = parameter.get('menu_group_menu_item')
 
         sql_str = textwrap.dedent("""
             SELECT * FROM `T_COMN_MENU_COLUMN_LINK` TAB_A
@@ -37,6 +41,12 @@ def external_valid_menu_before(objdbca, objtable, option):
 
         if len(rows) == 1:
             row = rows[0]
+            # Issue2828対応まではホストグループ利用のパラメータシートを選択させないようにする
+            hostgroup = row.get('HOSTGROUP')
+            if hostgroup == "1":
+                msg = g.appmsg.get_api_message('499-00921')
+                return False, msg, option,
+
             vertical = row.get('VERTICAL')
             # parameter_sheet * input_order /  bundle * input_order
             if vertical == "0" and input_order is not None:

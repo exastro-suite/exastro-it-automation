@@ -18,8 +18,12 @@
 ### OS要件
     RHEL9:
         Red Hat Enterprise Linux release 9.4 (Plow)：(動作確認済み)
-    Almalinux8:
-        AlmaLinux release 8.9 (Midnight Oncilla)：(動作確認済み)
+    RHEL10:
+        Red Hat Enterprise Linux release 10.1 (Coughlan)：(動作確認済み)
+    AlmaLinux8:
+        AlmaLinux release 8.10 (Cerulean Leopard)：(動作確認済み)
+    AlmaLinux9:
+        AlmaLinux release 9.7 (Moss Jungle Cat)：(動作確認済み)
 
     ※SELinuxがPermissiveに変更されていること。
         $ sudo vi /etc/selinux/config
@@ -83,8 +87,51 @@
     インストーラを実行するユーザーが実行できる権限に変更してください。
         chmod 755 setup.sh
 
-    インストーラを実行
-    ./setup.sh <install / uninstall>
+        インストーラを実行
+        ./setup.sh <install / uninstall> [options]
+
+        ヘルプ表示
+        ./setup.sh --help
+
+### コマンドライン実行オプション(非対話)
+        対話入力をスキップして実行する場合は、以下を指定してください。
+
+        Common options:
+            --non-interactive, -y
+            --sudo-password <password>
+            --source-update <y|n>
+            --start-service <y|n>
+
+        非対話実行時のsudoについて:
+            ・パスワードレスsudoが使える場合は、--sudo-password不要です。
+            ・sudoでパスワードが必要な場合は、--sudo-passwordを指定してください。
+            ・認証に失敗した場合は以下エラーになります。
+                non-interactive sudo authentication failed. Check --sudo-password.
+            ・パスワードレスsudoでも--sudo-password未指定でもない場合は以下エラーになります。
+                non-interactive mode requires passwordless sudo or --sudo-password.
+
+        Install options:
+            --install-type <1|2|3|4>
+            --agent-version <main|X.Y.Z|branch>
+            --agent-service-id-yn <y|n>
+            --agent-service-id <value>
+            --install-path <path>
+            --data-path <path>
+            --ansible-support <1|2>
+            --exastro-url <url>
+            --organization-id <id>
+            --workspace-id <id>
+            --refresh-token <token>
+            --reference-env-path <path>
+
+        Uninstall options:
+            --uninstall-type <1|2|3>
+            --service-name <name>
+            --storage-path <path>
+
+        実行例(非対話):
+            ./setup.sh install --non-interactive --sudo-password '<sudo_password>'  --source-update y --start-service y --install-type 1 --agent-version main --agent-service-id-yn n --agent-service-id agent-ws1 --install-path /home/cloud-user/exastro --data-path /home/cloud-user/exastro --ansible-support 1 --exastro-url http://exastro.example.com:30080 --organization-id <ORGANIZATION_ID> --workspace-id <WORKSPACE_ID> --refresh-token '<REFRESH_TOKEN>'
+
 
 ### エージェントインストーラでの対話事項
     エージェントのバージョン情報
@@ -102,7 +149,9 @@
         1: 必要なモジュールのインストール、サービスのソースコードのインストール、サービスの登録・起動を行います。
         2: 追加でサービスの登録・起動を行います。
         3: envファイルを指定して、サービスの登録・起動を行います。
-        ※ 2.3については、1が実行されている前提になります。
+        4: .envファイルのみ作成します。
+        ※ 2, 3については、1が実行されている前提になります。
+        ※ 対話メニューは 1, 2, 3 の表示ですが、オプション指定では --install-type 4 も利用可能です。
 
     Please select which process to execute.
         1: Create ENV, Install, Register service
@@ -113,7 +162,7 @@
 
     以下、「default: xxxxxx」がある項目については、Enterを押下すると、defaultの値が適用されます。
 
-    以下①で、1, 2を指定した場合です。
+    以下①で、1を指定した場合です。
 
         ②以下、Enterを押下すると、必要な設定値を対話形式での入力が開始されます。
         'No value + Enter' is input while default value exists, the default value will be used.
@@ -175,6 +224,15 @@
             Env Path:           /home/cloud-user/exastro/<サービスの一意な識別子:yyyyMMddHHmmssfff or 対話で指定した文字列>/.env
 
 
+    以下①で、2を指定した場合です。
+        ②以下、Enterを押下すると、必要な設定値を対話形式での入力が開始されます。
+        'No value + Enter' is input while default value exists, the default value will be used.
+        ->  Enter
+
+        ③以降は、基本的に「1」を指定した場合と同様ですが、以下は入力対象外です。
+        ・エージェントバージョン
+        ・使用するAnsible-builder / Ansible-runner(ANSIBLE_SUPPORT)
+
     以下①で、3を指定した場合です。
         ③使用する.envのパスを指定してください。envの情報をもとに、サービスの登録・起動を行います。
         Input the full path for the .env file.:
@@ -189,6 +247,10 @@
             Agent Service Name: ita-ag-ansible-execution-<サービスの一意な識別子:yyyyMMddHHmmssfff or 対話で指定した文字列>
             Storage Path:       /home/cloud-user/exastro/<サービスの一意な識別子:yyyyMMddHHmmssfff or 対話で指定した文字列>/storage
             Env Path:           /home/cloud-user/exastro/<サービスの一意な識別子:yyyyMMddHHmmssfff or 対話で指定した文字列>/.env
+
+    以下①で、4を指定した場合です。
+        .envファイルのみを作成します。サービス登録・起動、ソースコード配置は実施しません。
+        生成先は実行ディレクトリ配下の ./<AGENT_SERVICE_ID>.env です。
 
 
 ### エージェントサービスの各種操作
@@ -261,6 +323,7 @@ RHEL9
 
 ### エージェントサービスの設定値
     作成された.envファイル
+        IS_NON_CONTAINER_LOG=1
         LOG_LEVEL=INFO
         #LOGGING_MAX_SIZE=10485760
         #LOGGING_MAX_FILE=30
@@ -273,13 +336,15 @@ RHEL9
         LOGPATH=/home/cloud-user/exastro/<サービスの一意な識別子:yyyyMMddHHmmssfff or 対話で指定した文字列>/log
         EXASTRO_ORGANIZATION_ID=<接続先のITAのオーガナイゼーション>
         EXASTRO_WORKSPACE_ID=<接続先のITAのワークスペース>
-        EXASTRO_URL=<払い出したリフレッシュトークン:http://exastro.example.com:30080>
+        EXASTRO_URL=<接続先のITAのURL:http://exastro.example.com:30080>
         EXASTRO_REFRESH_TOKEN=<払い出したリフレッシュトークン:xxxxxxx>
         EXECUTION_ENVIRONMENT_NAMES=
         AGENT_NAME=ita-ag-ansible-execution-<サービスの一意な識別子:yyyyMMddHHmmssfff or 対話で指定した文字列>
         USER_ID=<サービスの一意な識別子:yyyyMMddHHmmssfff or 対話で指定した文字列>
         ITERATION=10
         EXECUTE_INTERVAL=5
+        MOVEMENT_LIMIT=1
+        EXECUTION_LIMIT=5
 
     以下の設定値については、インストーラで固定値で設定されますので、必要に応じて、コメントアウト外す、値を変更してください。
         LOG_LEVEL=INFO                  :ログ出力のレベル <INFO/DEBUG>

@@ -213,7 +213,7 @@ def test_label_event_success_case1(mock_wsdb, mock_wsmongo, mock_g, app_context)
         }
     ]
     # 関数を呼び出し
-    result = label_event.label_event(mock_wsdb, mock_wsmongo, events_data)
+    result = label_event.label_event(mock_wsdb, events_data, ['5f6c522f-d87e-4dc2-84a3-7f23ed71da8b'])
 
     # 期待される結果を検証
     assert mock_wsdb.table_select.call_count == 2
@@ -286,7 +286,7 @@ def test_label_event_success_case2(mock_wsdb, mock_wsmongo, mock_g, app_context)
         }
     ]
     # 関数を呼び出し
-    result = label_event.label_event(mock_wsdb, mock_wsmongo, events_data)
+    result = label_event.label_event(mock_wsdb, events_data, ['5f6c522f-d87e-4dc2-84a3-7f23ed71da8b'])
 
     # 期待される結果を検証
     assert mock_wsdb.table_select.call_count == 2
@@ -364,7 +364,7 @@ def test_label_event_no_labeling_settings(mock_wsdb, mock_wsmongo, mock_g, app_c
     ]
 
     # 関数を実行
-    result = label_event.label_event(mock_wsdb, mock_wsmongo, events_data)
+    result = label_event.label_event(mock_wsdb, events_data, ['5f6c522f-d87e-4dc2-84a3-7f23ed71da8b'])
 
     # 期待される結果を検証
     doc = result[0]["labels"]  # returnのlabel内容
@@ -394,7 +394,7 @@ def test_label_event_empty_events(mock_wsdb, mock_wsmongo, mock_g, app_context):
     ]
     events_data = []
 
-    result = label_event.label_event(mock_wsdb, mock_wsmongo, events_data)
+    result = label_event.label_event(mock_wsdb, events_data, ['5f6c522f-d87e-4dc2-84a3-7f23ed71da8b'])
 
     # 戻り値が空リストであることを確認
     assert result == []

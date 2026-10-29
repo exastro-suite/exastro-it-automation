@@ -1,0 +1,58 @@
+# 対象のフォルダを圧縮、存在しなければ空フォルダを圧縮
+- shell: |
+    if [ -d "{{ item.path }}" ]; then
+      tar czf {{ item.dest }} -C {{ item.path }} .
+    else
+      tar czf {{ item.dest }} -C "$(mktemp -d)" .
+    fi
+  loop:
+    - { path: "{{ __parameter_dir__ | dirname }}", dest: "/tmp/outdir.tar.gz" }
+    - { path: "{{ __parameters_dir_for_epc__ }}", dest: "/tmp/parameters.tar.gz" }
+    - { path: "{{ __parameters_file_dir_for_epc__ }}", dest: "/tmp/parameters_file.tar.gz" }
+    - { path: "{{ __conductor_workflowdir__ }}", dest: "/tmp/conductor.tar.gz" }
+  delegate_to: localhost
+
+# AccessToken取得
+- uri:
+    url: "{{ __external_url__ }}/auth/realms/{{ __organization_id__ }}/protocol/openid-connect/token"
+    method: POST
+    headers:
+      Content-Type: "application/x-www-form-urlencoded"
+    body_format: form-urlencoded
+    body:
+      client_id: "_{{ __organization_id__ }}-api"
+      grant_type: "refresh_token"
+      refresh_token: "{{ __sa_refreshtoken__ }}"
+    return_content: yes
+  delegate_to: localhost
+  register: __sa_accesstoken__
+  until: "__sa_accesstoken__.status == 200"
+  retries: 3
+  delay: 1
+
+# 連携資材転送
+- shell: |
+    curl -X POST -s -w "%{http_code}" -o /dev/null \
+      "{{ __external_url__ }}/api/{{ __organization_id__ }}/workspaces/{{ __workspace_id__ }}/aap/{{ __execution_no__ }}/result_data" \
+      -H "Authorization: Bearer {{ (__sa_accesstoken__.json | default({'access_token': ''})).access_token }}" \
+      -F "out_tar_data=@/tmp/outdir.tar.gz" \
+      -F "parameters_tar_data=@/tmp/parameters.tar.gz" \
+      -F "parameters_file_tar_data=@/tmp/parameters_file.tar.gz" \
+      -F "conductor_tar_data=@/tmp/conductor.tar.gz"
+  delegate_to: localhost
+  register: __result_data__
+  until: "__result_data__.rc == 0 and __result_data__.stdout == '200'"
+  retries: 3
+  delay: 1
+
+# 連携資材転送用一時ファイル削除
+- file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "/tmp/outdir.tar.gz"
+    - "/tmp/parameters.tar.gz"
+    - "/tmp/parameters_file.tar.gz"
+    - "/tmp/conductor.tar.gz"
+  delegate_to: localhost
+  ignore_errors: yes

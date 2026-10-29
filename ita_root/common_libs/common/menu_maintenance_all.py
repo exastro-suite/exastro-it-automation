@@ -137,6 +137,14 @@ def create_maintenance_parameters(connexion_request, tmp_path):
                         file_path = os.path.join(tmp_file_path, file_name)
                         file_paths[_list_num][_list_key] = file_path
 
+                        # ファイル名の文字列長チェック（255バイト上限）
+                        if len(file_name.encode('utf-8')) > 255:
+                            msg = g.appmsg.get_api_message("MSG-00008", [255, len(file_name.encode('utf-8'))])
+                            args_dict.setdefault(str(files_count), {check_msg: [msg]})
+                            args = json.dumps(args_dict)
+                            status_code = "499-00201"
+                            raise AppException(status_code, [args], [args])
+
                         # ファイルを保存できる容量があるかどうか確認
                         _file_data.seek(0,2)
                         file_size = _file_data.tell()

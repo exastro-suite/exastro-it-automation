@@ -48,8 +48,8 @@ def connect_retry(db_connect):
                 error_code = e.args[1]  # DBのエラーコード
 
                 retry_error_list = [
-                    -2, # Name or service not known
-                    2003 # Can't connect to MySQL server (timed out / Connection refused)
+                    -2,  # Name or service not known
+                    2003  # Can't connect to MySQL server (timed out / Connection refused)
                 ]
                 if error_code in retry_error_list:
                     if retry_count == retry_limit:
@@ -66,6 +66,7 @@ def connect_retry(db_connect):
                 raise AppException("999-00002", [apl_msg_arg, e])
 
     return wrapper
+
 
 class DBConnectCommon:
     """
@@ -374,50 +375,11 @@ class DBConnectCommon:
             or
             update failure: (bool)False
         """
-        if isinstance(data_list, dict):
-            data_list = [data_list]
+        # _table_insert_with_ids 呼ぶ
+        data_list, _uuids = self._table_insert_with_ids(table_name, data_list, primary_key_name, is_register_history)
 
-        self.db_transaction_start()
-
-        is_last_res = True
-        for data in data_list:
-            # auto set
-            timestamp = get_timestamp()
-            if primary_key_name not in data or not data[primary_key_name]:
-                data[primary_key_name] = str(self._uuid_create())
-            data[self._COLUMN_NAME_TIMESTAMP] = timestamp
-
-            # make sql statement
-            column_list = list(data.keys())
-            prepared_list = ["%s"]*len(column_list)
-            value_list = list(data.values())
-
-            sql = "INSERT INTO `{}` ({}) VALUES ({})".format(table_name, ','.join(column_list), ','.join(prepared_list))
-            res = self.sql_execute(sql, value_list)
-            if res is False:
-                is_last_res = False
-                break
-
-            if is_register_history is False:
-                continue
-            # insert history table
-            history_table_name = table_name + "_JNL"
-            add_data = self._get_history_table_data("INSERT", timestamp)
-            # make history data
-            history_data = dict(data, **add_data)
-
-            # make sql statement
-            column_list = list(history_data.keys())
-            prepared_list = ["%s"]*len(column_list)
-            value_list = list(history_data.values())
-
-            sql = "INSERT INTO `{}` ({}) VALUES ({})".format(history_table_name, ','.join(column_list), ','.join(prepared_list))
-            res = self.sql_execute(sql, value_list)
-            if res is False:
-                is_last_res = False
-                break
-
-        return data_list if is_last_res is True else is_last_res
+        # data_listのみ返却する
+        return data_list
 
     def table_update(self, table_name, data_list, primary_key_name, is_register_history=False, last_timestamp=True):
         """
@@ -432,12 +394,118 @@ class DBConnectCommon:
             or
             update failure: (bool)False
         """
+        # _table_update_with_ids 呼ぶ
+        data_list, _uuids = self._table_update_with_ids(table_name, data_list, primary_key_name, is_register_history)
+
+        # data_listのみ返却する
+        return data_list
+
+    def table_insert_with_ids(self, table_name, data_list, primary_key_name, is_register_history=False):
+        """
+        insert table and return uuid and journal uuid
+
+        Arguments:
+            data_list: data list for insert ex.[{"name":"なまえ", "number":"3"}]
+            primary_key_name: primary key column name
+            is_register_history: (bool)is register history table
+        Returns:
+            table data list, uuids list : tuple(list(tuple), list(tuple))
+            or
+            update failure: (bool)False, []
+        """
+        # _table_insert_with_ids 呼ぶ、結果と発行したUUIDのリストを返却する
+        return self._table_insert_with_ids(table_name, data_list, primary_key_name, is_register_history)
+
+    def table_update_with_ids(self, table_name, data_list, primary_key_name, is_register_history=False, last_timestamp=True):
+        """
+        update table and return uuid and journal uuid
+
+        Arguments:
+            data_list: data list for update ex.[{primary_key_name:"{uuid}", "name":"なまえ", "number":"3"}]
+            primary_key_name: primary key column name
+            is_register_history: (bool)is register history table
+        Returns:
+            table data list, uuids list : tuple(list(tuple), list(tuple))
+            or
+            update failure: (bool)False, []
+        """
+        # _table_update_with_ids 呼ぶ、結果と発行したUUIDのリストを返却する
+        return self._table_update_with_ids(table_name, data_list, primary_key_name, is_register_history)
+
+    def _table_insert_with_ids(self, table_name, data_list, primary_key_name, is_register_history=False):
+        """
+        insert table and return uuid and journal uuid
+
+        Arguments:
+            data_list: data list for insert ex.[{"name":"なまえ", "number":"3"}]
+            primary_key_name: primary key column name
+            is_register_history: (bool)is register history table
+        Returns:
+            table data list, uuids list : tuple(list(tuple), list(tuple))
+            or
+            update failure: (bool)False, []
+        """
         if isinstance(data_list, dict):
             data_list = [data_list]
 
         self.db_transaction_start()
 
         is_last_res = True
+        uuids_list = []
+        for data in data_list:
+            # auto set
+            timestamp = get_timestamp()
+            if primary_key_name not in data or not data[primary_key_name]:
+                data[primary_key_name] = str(self._uuid_create())
+            data[self._COLUMN_NAME_TIMESTAMP] = timestamp
+
+            # make sql statement
+            column_list = list(data.keys())
+            prepared_list = ["%s"] * len(column_list)
+            value_list = list(data.values())
+
+            sql = "INSERT INTO `{}` ({}) VALUES ({})".format(table_name, ','.join(column_list), ','.join(prepared_list))
+            res = self.sql_execute(sql, value_list)
+            if res is False:
+                is_last_res = False
+                break
+
+            if is_register_history is False:
+                uuids_list.append((data[primary_key_name], None))
+                continue
+
+            # insert history table
+            add_data = self._get_history_table_data("INSERT", timestamp)
+            history_data = dict(data, **add_data)
+
+            res = self._insert_history(table_name, history_data)
+            if res is False:
+                is_last_res = False
+                break
+            uuids_list.append((data[primary_key_name], history_data["JOURNAL_SEQ_NO"]))
+
+        return (data_list, uuids_list) if is_last_res is True else (is_last_res, [])
+
+    def _table_update_with_ids(self, table_name, data_list, primary_key_name, is_register_history=False, last_timestamp=True):
+        """
+        update table and return uuid and journal uuid
+
+        Arguments:
+            data_list: data list for update ex.[{primary_key_name:"{uuid}", "name":"なまえ", "number":"3"}]
+            primary_key_name: primary key column name
+            is_register_history: (bool)is register history table
+        Returns:
+            table data list, uuids list : tuple(list(tuple), list(tuple))
+            or
+            update failure: (bool)False, []
+        """
+        if isinstance(data_list, dict):
+            data_list = [data_list]
+
+        self.db_transaction_start()
+
+        is_last_res = True
+        uuids_list = []
         for data in data_list:
             # auto set
             if last_timestamp is True:
@@ -458,32 +526,45 @@ class DBConnectCommon:
                 break
 
             if is_register_history is False:
+                uuids_list.append((data[primary_key_name], None))
                 continue
+
             # insert history table
-            history_table_name = table_name + "_JNL"
             add_data = self._get_history_table_data("UPDATE", timestamp)
 
             # re-get all column data
             data = self.table_select(table_name, "WHERE `{}` = %s".format(primary_key_name), [primary_key_value])
             if len(data) == 0:
-                return False
+                return False, []
             data = dict(data[0])
-            # make history data
             history_data = dict(data, **add_data)
 
-            # make sql statement
-            column_list = list(history_data.keys())
-            prepared_list = ["%s"]*len(column_list)
-            value_list = list(history_data.values())
-
-            sql = "INSERT INTO `{}` ({}) VALUES ({})".format(history_table_name, ','.join(column_list), ','.join(prepared_list))
-            res = self.sql_execute(sql, value_list)
+            res = self._insert_history(table_name, history_data)
             if res is False:
                 is_last_res = False
                 break
+            uuids_list.append((data[primary_key_name], history_data["JOURNAL_SEQ_NO"]))
 
-        return data_list if is_last_res is True else is_last_res
+        return (data_list, uuids_list) if is_last_res is True else (is_last_res, [])
 
+    def _insert_history(self, table_name, history_data):
+        """
+        insert into history JNL table
+
+        Arguments:
+            table_name: base table name (without "_JNL")
+            history_data: data dict for history table
+        Returns:
+            sql_execute result
+        """
+        history_table_name = table_name + "_JNL"
+
+        column_list = list(history_data.keys())
+        prepared_list = ["%s"] * len(column_list)
+        value_list = list(history_data.values())
+
+        sql = "INSERT INTO `{}` ({}) VALUES ({})".format(history_table_name, ','.join(column_list), ','.join(prepared_list))
+        return self.sql_execute(sql, value_list)
 
     def table_delete(self, table_name, data_list, primary_key_name, is_register_history=False):
         """
@@ -505,8 +586,8 @@ class DBConnectCommon:
         for data in data_list:
 
             # make sql statement
-            prepared_list = list(map(lambda k: "`" + k + "`=%s", data.keys()))
-            value_list = list(data.values())
+            # prepared_list = list(map(lambda k: "`" + k + "`=%s", data.keys()))
+            # value_list = list(data.values())
             primary_key_value = data[primary_key_name]
 
             sql = "DELETE FROM `{}` WHERE `{}`=%s".format(table_name, primary_key_name)
@@ -531,7 +612,6 @@ class DBConnectCommon:
         # If it fails even once, return False
         return is_last_res
 
-
     def table_permanent_delete(self, table_name, where_str="", bind_value_list=[], is_delete_history=False):
         """
         delete permanently from table
@@ -546,12 +626,12 @@ class DBConnectCommon:
         """
         where_str = " {}".format(where_str) if where_str else ""
         sql = "DELETE FROM `{}`{}".format(table_name, where_str)
-        ret = self.sql_execute(sql, bind_value_list)
+        self.sql_execute(sql, bind_value_list)
 
         if is_delete_history is True:
             history_table_name = table_name + "_JNL"
             sql = "DELETE FROM `{}`{}".format(history_table_name, where_str)
-            ret = self.sql_execute(sql, bind_value_list)
+            self.sql_execute(sql, bind_value_list)
 
     def table_lock(self, table_name_list=[]):
         """
@@ -565,25 +645,65 @@ class DBConnectCommon:
         if isinstance(table_name_list, str):
             table_name_list = [table_name_list]
 
-        prepared_list = ['%s']*len(table_name_list)
+        prepared_list = ['%s'] * len(table_name_list)
 
         sql = "SELECT `TABLE_NAME` FROM `T_COMN_RECODE_LOCK_TABLE` WHERE `TABLE_NAME` IN ({}) FOR UPDATE".format(",".join(prepared_list))
         res = self.sql_execute(sql, table_name_list)
 
-        res_table_name_list = [ _r.get("TABLE_NAME") for _r in res]
+        res_table_name_list = [_r.get("TABLE_NAME") for _r in res]
         # select for update no data: insert `t_comn_recode_lock_table` and retry select for update
         if len(res) != len(table_name_list):
             # create insert sql and sql_execute
             target_table_name = [_tn for _tn in table_name_list if _tn not in res_table_name_list] if res_table_name_list else table_name_list
-            prepared_list = ['(%s)']*len(target_table_name)
+            prepared_list = ['(%s)'] * len(target_table_name)
             sql = "INSERT INTO `T_COMN_RECODE_LOCK_TABLE` (`TABLE_NAME`) VALUES " + "{};".format(",".join(prepared_list))
             res = self.sql_execute(sql, target_table_name)
 
             # retry select for update
-            prepared_list = ['%s']*len(target_table_name)
+            prepared_list = ['%s'] * len(target_table_name)
             sql = "SELECT `TABLE_NAME` FROM `T_COMN_RECODE_LOCK_TABLE` WHERE `TABLE_NAME` IN ({}) FOR UPDATE".format(",".join(prepared_list))
             res = self.sql_execute(sql, target_table_name)
         return res
+
+    @classmethod
+    def get_db_errno(cls, e):
+        """sql_execute() で発生した例外から MariaDB の errno を取り出す。
+        sql_execute は SQLエラーを AppException("999-00003", [db, sql, pymysql_error], []) に
+        ラップして飛ばす。このラップ形を知るこのクラスに errno の取り出しを集約する
+        （args[1][2] が元 pymysql 例外、その .args[0] が errno）。
+        形が想定と違えば（別経路の例外・ラップ形変更など）安全側で None を返す。
+
+        Arguments:
+            e: 例外オブジェクト（AppException）
+        Returns:
+            int: MariaDB の errno。取り出せなければ None
+        """
+        try:
+            return e.args[1][2].args[0]
+        except (AttributeError, IndexError, TypeError):
+            return None
+
+    @classmethod
+    def is_deadlock_exception(cls, e):
+        """sql_execute() で発生した例外が MariaDB のデッドロック(errno 1213)によるものかを判定する。
+
+        Arguments:
+            e: 例外オブジェクト（AppException）
+        Returns:
+            bool: デッドロック(1213)なら True
+        """
+        return cls.get_db_errno(e) == 1213
+
+    @classmethod
+    def is_lock_wait_timeout_exception(cls, e):
+        """sql_execute() で発生した例外が MariaDB のロック待ちタイムアウト(errno 1205)によるものかを判定する。
+
+        Arguments:
+            e: 例外オブジェクト（AppException）
+        Returns:
+            bool: ロック待ちタイムアウト(1205)なら True
+        """
+        return cls.get_db_errno(e) == 1205
 
     def prepared_val_escape(self, val):
         """
@@ -776,6 +896,7 @@ class DBConnectCommon:
         where_str = " {}".format(where_str) if where_str else ""
         sql = "SELECT * FROM `{}`{}".format(table_name, where_str)
         return self.sql_execute_cursor(sql, bind_value_list)
+
 
 class DBConnectCommonRoot(DBConnectCommon):
     """

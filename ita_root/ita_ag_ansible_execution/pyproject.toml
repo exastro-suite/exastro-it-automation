@@ -6,7 +6,7 @@ authors = ["Your Name <you@example.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = ">=3.11,<3.13"
 setuptools = ">=0.0.0"
 connexion = {version = "^2.0.0", extras = ["swagger-ui", "uvicorn"]}
 requests = ">=0.0.0"
@@ -15,8 +15,8 @@ flask = "^2.0.0"
 six = ">=0.0.0"
 pycryptodome = ">=0.0.0"
 python-dotenv = ">=0.0.0"
-ansible-builder = ">=3.0.0"
-ansible-runner = ">=2.0.0"
+ansible-builder = "3.1.1"
+ansible-runner = "2.4.3"
 requests-toolbelt = ">=0.0.0"
 pip = "^24.3.1"
 

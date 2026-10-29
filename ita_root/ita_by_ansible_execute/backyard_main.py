@@ -16,7 +16,6 @@ import subprocess
 import time
 import re
 import os
-import hashlib
 import datetime
 
 from flask import g
@@ -57,12 +56,6 @@ def main_logic(common_db):
     """
     main logic
     """
-    container_base = os.getenv('CONTAINER_BASE')
-    if container_base == 'docker':
-        ansibleAg = DockerMode()
-    else:
-        ansibleAg = KubernetesMode()
-
     # メンテナンスモードのチェック
     try:
         maintenance_mode = get_maintenance_mode_setting()
@@ -75,6 +68,12 @@ def main_logic(common_db):
         g.applogger.error("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         g.applogger.error(g.appmsg.get_log_message("BKY-00008", []))
         return False
+
+    container_base = os.getenv('CONTAINER_BASE')
+    if container_base == 'docker':
+        ansibleAg = DockerMode()
+    else:
+        ansibleAg = KubernetesMode()
 
     # システム全体の同時実行数取得
     all_execution_limit = get_all_execution_limit("ita.system.ansible.execution_limit")
@@ -258,25 +257,23 @@ def execute_control(common_db, all_execution_limit, org_execution_limit):
             else:
                 time_book = rec["TIME_BOOK"]
 
-            # EXECUTION_NO + VIEW_NAME ＋ ワークスペースID + オーガナイゼーションIDのHASH値
-            data = rec["EXECUTION_NO"] + rec["VIEW_NAME"] + rec["WORKSPACE_ID"] + rec["ORGANIZATION_ID"]
-            hs = hashlib.md5(data.encode()).hexdigest()
             tmp_dict = {"ORGANIZATION_PRIORITY": organization_priority,
                         "TIME_BOOK": time_book,
                         "TIME_REGISTER": rec["TIME_REGISTER"],
-                        "HASH": hs,
                         "ORGANIZATION_ID": rec["ORGANIZATION_ID"],
                         "WORKSPACE_ID": rec["WORKSPACE_ID"],
                         "EXECUTION_NO": rec["EXECUTION_NO"],
                         "WORKSPACE_DB": rec["WORKSPACE_DB"],
                         "VIEW_NAME": rec["VIEW_NAME"]}
             execution_list.append(tmp_dict)
-            # 処理対象のソート
-            execution_list = sorted(execution_list, key=lambda x: (x["ORGANIZATION_PRIORITY"], x["TIME_BOOK"], x["TIME_REGISTER"], x["HASH"]))
 
             # organizationに実行中の処理があるか確認
             if rec["ORGANIZATION_ID"] not in org_exec_count_list:
                 org_exec_count_list[rec["ORGANIZATION_ID"]] = 0
+
+        # 処理対象のソート
+        execution_list = sorted(execution_list, key=lambda x: (x["ORGANIZATION_PRIORITY"], x["TIME_BOOK"], x["TIME_REGISTER"], x["EXECUTION_NO"]))
+
         return execution_list, all_exec_count, org_exec_count_list, records
     else:
         return [], 0, {}, []
@@ -350,8 +347,17 @@ def child_process_exist_check(common_db, target_shema, ansibleAg):
                     is_running = True
 
         # DBのステータスが実行中なのに、子プロセスが存在しない
-        # 実行エンジンがansibel agent以外の場合
-        if ans_if_info["ANSIBLE_EXEC_MODE"] != ansc_const.DF_EXEC_MODE_AG:
+        # 再起動判定前に現在の状況を取得
+        result = cm.get_execution_process_info(wsDb, ansc_const, execution_no)
+        if result[0] is False:
+            g.applogger.info(g.appmsg.get_log_message(result[1], [execution_no]))
+            return False
+        execute_data = result[1]
+
+        # 実行エンジンがAnsible-Coreか、AAP/AAPSで「準備中」である場合は再起動しない
+        if ans_if_info["ANSIBLE_EXEC_MODE"] == ansc_const.DF_EXEC_MODE_ANSIBLE \
+           or (ans_if_info["ANSIBLE_EXEC_MODE"] == ansc_const.DF_EXEC_MODE_AAC and execute_data["STATUS_ID"] == ansc_const.PREPARE) \
+           or (ans_if_info["ANSIBLE_EXEC_MODE"] == ansc_const.DF_EXEC_MODE_AAP_CLOUD and execute_data["STATUS_ID"] == ansc_const.PREPARE):
             if is_running is False:
                 g.applogger.info(g.appmsg.get_log_message("MSG-10056", [driver_name, execution_no]))
 
@@ -361,18 +367,10 @@ def child_process_exist_check(common_db, target_shema, ansibleAg):
                 # /tmpをゴミ掃除
                 rmAnsibleCreateFiles()
 
-                # 情報を再取得して、想定外エラーにする
-                result = cm.get_execution_process_info(wsDb, ansc_const, execution_no)
-                if result[0] is False:
-                    err_log = g.appmsg.get_log_message(result[1], [execution_no])
-                    wsDb.db_disconnect()
-                    raise Exception(err_log)
-                execute_data = result[1]
-
                 # 実行中か再確認
                 status_id_list = [ansc_const.PREPARE, ansc_const.PROCESSING, ansc_const.PROCESS_DELAYED]
                 if execute_data["STATUS_ID"] in status_id_list:
-                    # 更新
+                    # 想定外エラーに更新
                     wsDb.db_transaction_start()
                     time_stamp = get_timestamp()
                     data = {
@@ -405,13 +403,7 @@ def child_process_exist_check(common_db, target_shema, ansibleAg):
                 # /tmpをゴミ掃除
                 rmAnsibleCreateFiles()
 
-                # 情報を再取得して、子プロ再起動回数の上限に達するまで再起動する。子プロ再起動回数の上限に達している場合は想定外エラーにする
-                result = cm.get_execution_process_info(wsDb, ansc_const, execution_no)
-                if result[0] is False:
-                    g.applogger.info(g.appmsg.get_log_message(result[1], [execution_no]))
-                    return False
-                execute_data = result[1]
-
+                # 子プロ再起動回数の上限に達するまで再起動する。子プロ再起動回数の上限に達している場合は想定外エラーにする
                 # 実行中か再確認
                 status_id_list = [ansc_const.PREPARE, ansc_const.PROCESSING, ansc_const.PROCESS_DELAYED, ansc_const.PREPARE_COMPLETE, ansc_const.PROCESSING_WAIT]
                 if execute_data["STATUS_ID"] in status_id_list:

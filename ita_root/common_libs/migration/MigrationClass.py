@@ -217,6 +217,8 @@ class Migration:
                     (sql_files[1] == 'terraform_cli_master.sql' and 'terraform_cli' in no_install_driver) or \
                     (sql_files[0] == 'cicd.sql' and 'ci_cd' in no_install_driver) or \
                     (sql_files[1] == 'cicd_master.sql' and 'ci_cd' in no_install_driver) or \
+                    (sql_files[0] == 'ai_assistant.sql' and 'ai_assistant' in no_install_driver) or \
+                    (sql_files[1] == 'ai_assistant_master.sql' and 'ai_assistant' in no_install_driver) or \
                     (sql_files[0] == 'oase.sql' and 'oase' in no_install_driver) or \
                     (sql_files[1] == 'oase_master.sql' and 'oase' in no_install_driver):
 

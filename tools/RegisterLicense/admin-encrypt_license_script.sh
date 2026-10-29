@@ -582,7 +582,7 @@ post_form_api() {
 openssl_ecnrypt() {
     local text="$1"
     local passphrase="$2"
-    ENCRYPTED_TEXT=$(echo -n "${text}" | openssl enc -e -aes-256-cbc -pbkdf2 -iter 100 -base64 -k "${passphrase}")
+    ENCRYPTED_TEXT=$(echo -n "${text}" | openssl enc -e -aes-256-cbc -pbkdf2 -iter 100 -base64 -A -k "${passphrase}")
 }
 
 check_command() {

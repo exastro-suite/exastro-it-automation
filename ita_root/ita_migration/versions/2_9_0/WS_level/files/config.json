@@ -1,0 +1,7 @@
+{
+    "20114":
+    [
+        {"ita_fetch_common.yml":["/asset_file/1/old/1/","/asset_file/1/"]},
+        {"ita_put_results.yml": ["/asset_file/2/old/2/","/asset_file/2/"]}
+    ]
+}

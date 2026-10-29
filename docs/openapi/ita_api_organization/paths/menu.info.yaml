@@ -56,6 +56,8 @@ get:
                         $ref: '../schemas/column.info.yaml'
                       menu_info:
                         $ref: '../schemas/menu.info.yaml'
+                      ai_assistant:
+                        $ref: '../schemas/ai_assistant.info.yaml'
     '401':
       description: Unauthorized
       content:

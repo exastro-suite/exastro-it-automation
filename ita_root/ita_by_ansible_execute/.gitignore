@@ -3,3 +3,8 @@ common_libs/
 messages/
 backyard/
 .env
+pytest.ini
+/tests/temp/*
+!/tests/temp/.gitkeep
+tests/storage/*
+!tests/storage/.gitkeep

@@ -1,0 +1,16 @@
+# This Playbook file acquires the file path information specified by "ITA_DFLT_File_Path".
+# "ITA_DFLT_File_Path" can specify multiple file paths (list type).
+- name: Ensure ITA variable is recognized
+  ansible.builtin.set_fact:
+    ITA_DFLT_File_Path: "{{ ITA_DFLT_File_Path }}"
+  when: ITA_DFLT_File_Path is defined
+
+- name: Get information about Windows files
+  ansible.windows.win_stat:
+    path: "{{ item }}"
+    follow: true
+  loop: >-
+    {{
+      ITA_DFLT_File_Path if ITA_DFLT_File_Path is sequence and ITA_DFLT_File_Path is not string else [ITA_DFLT_File_Path]
+    }}
+  

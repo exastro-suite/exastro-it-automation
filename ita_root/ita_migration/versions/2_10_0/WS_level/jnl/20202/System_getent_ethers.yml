@@ -1,0 +1,17 @@
+- name: Read /etc/ethers
+  ansible.builtin.slurp:
+    src: /etc/ethers
+  register: ITA_RGST_ethers_file
+  failed_when: false
+
+- name: A wrapper to the unix getent utility (ethers)
+  ansible.builtin.getent:
+    database: ethers
+    key: "{{ item }}"
+    fail_key: false
+  loop: >-
+    {{
+      ITA_RGST_ethers_file.content | default('') | b64decode
+      | regex_findall('(?m)^[ \t]*([0-9A-Fa-f]{1,2}(?::[0-9A-Fa-f]{1,2}){5})[ \t]')
+    }}
+  register: ITA_DFLT_getent_ethers

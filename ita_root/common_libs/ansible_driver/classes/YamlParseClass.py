@@ -57,6 +57,9 @@ class YamlParse:
             r_obj.close()
 
             if yaml_var >= str(5):
+                def vault_constructor(loader, node):
+                    return loader.construct_scalar(node)
+                yaml.FullLoader.add_constructor('!vault', vault_constructor)
                 retParse = yaml.load(yaml_value, Loader=yaml.FullLoader)
             else:
                 retParse = yaml.load(yaml_value)

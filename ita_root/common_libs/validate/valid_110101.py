@@ -144,6 +144,11 @@ def agent_setting_valid(objdbca, objtable, option):
                 "WHERE EVENT_COLLECTION_SETTINGS_ID=%s",
                 [setting_id]
             )
+            # 指定されたイベント収集設定IDのレコードが存在しない場合はバリデエラー
+            if not record:
+                msg.append(g.appmsg.get_api_message("MSG-00007", [setting_id]))
+                retBool = False
+                return retBool, msg, option,
             if connection_method != record[0]["CONNECTION_METHOD_ID"]:
                 if password_entered is False:
                     entry_parameter["password"] = None

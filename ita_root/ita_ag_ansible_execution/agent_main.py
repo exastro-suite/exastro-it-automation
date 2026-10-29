@@ -19,6 +19,7 @@ import glob
 import json
 import re
 import mimetypes
+import traceback
 
 from flask import g
 from common_libs.common import *  # noqa: F403
@@ -31,7 +32,7 @@ from libs.util import *  # noqa: F403
 def agent_main(organization_id, workspace_id, loop_count, interval):
 
     # 環境変数の取得
-    baseUrl = os.environ["EXASTRO_URL"]
+    base_url = os.environ["EXASTRO_URL"]
     refresh_token = os.environ['EXASTRO_REFRESH_TOKEN']
 
     # 作業実行可能ステータス
@@ -45,7 +46,7 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
 
     # ITAのAPI呼び出しモジュール
     exastro_api = Exastro_API(
-        base_url=baseUrl,
+        base_url=base_url,
         refresh_token=refresh_token
     )
     exastro_api.get_access_token(organization_id, refresh_token)
@@ -55,7 +56,7 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
     # バージョン通知API実行
     g.applogger.info(g.appmsg.get_log_message("MSG-10996", [workspace_id]))
     status_code, response = post_agent_version(organization_id, workspace_id, exastro_api)  # noqa: F405
-    if not status_code == 200:
+    if status_code != 200:
         g.applogger.info(g.appmsg.get_log_message("MSG-10997", [workspace_id, status_code, response]))
     else:
         target_data = response["data"] if isinstance(response["data"], dict) else {}
@@ -70,7 +71,7 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
     while True:
         try:
             if main_logic_execute:
-                main_logic(organization_id, workspace_id, exastro_api, baseUrl)
+                main_logic(organization_id, workspace_id, exastro_api)
         except AppException as e:  # noqa F405
             app_exception(e)
         except Exception as e:
@@ -85,7 +86,7 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
             count = count + 1
 
 
-def main_logic(organization_id, workspace_id, exastro_api, baseUrl):
+def main_logic(organization_id, workspace_id, exastro_api):
 
     # 起動した未実行インスタンス
     start_up_list = []
@@ -99,9 +100,13 @@ def main_logic(organization_id, workspace_id, exastro_api, baseUrl):
     # 未実行作業取得の上限値取得
     _movement_limit = getenv_int('MOVEMENT_LIMIT', 1)
 
-    # 実行中のプロセス数
-    ps_exec_count, ps_error_count, working_ps_list, error_ps_list = get_working_child_process(organization_id, workspace_id, start_up_list)
+    # 実行中のプロセス数をカウントする
+    ps_exec_count, ps_error_count, working_ps_list, error_ps_list = get_working_child_process(organization_id, workspace_id)
 
+    g.applogger.debug("ps_exec_count:" + str(ps_exec_count))
+    g.applogger.debug("ps_error_count:" + str(ps_error_count))
+    g.applogger.debug("working_ps_list: " + str(working_ps_list))
+    g.applogger.debug("error_ps_list: " + str(error_ps_list))
     # 実行可能な作業数: 同時実行数の上限値 - 実行中のプロセス数
     allow_execution_limit = _execution_limit - ps_exec_count
     g.applogger.info(f"Process: {allow_execution_limit=} ({ps_exec_count}/{_execution_limit}) API: {_movement_limit=}")
@@ -152,10 +157,6 @@ def main_logic(organization_id, workspace_id, exastro_api, baseUrl):
         # 同時実行数制御で未実行作業取得をSKIP
         g.applogger.info(f"Skipped acquiring unexecuted tasks due to the concurrent task limit. Processes in progress: {ps_exec_count}")
 
-    # 子プロのステータスファイルより子プロの動作状況を判定し、必要に応じて子プロを再起動する
-    g.applogger.debug("Determine the operating status of the child program")
-    ps_exec_count, ps_error_count, working_ps_list, error_ps_list = get_working_child_process(organization_id, workspace_id, start_up_list)
-
     g.applogger.debug("ps_exec_count:" + str(ps_exec_count))
     g.applogger.debug("ps_error_count:" + str(ps_error_count))
     g.applogger.debug("working_ps_list: " + str(working_ps_list))
@@ -165,7 +166,7 @@ def main_logic(organization_id, workspace_id, exastro_api, baseUrl):
     if ps_exec_count != 0:
         g.applogger.info(g.appmsg.get_log_message("MSG-10998", [workspace_id, str(working_ps_list)]))
         status_code, response = post_notification_execution(organization_id, workspace_id, exastro_api, working_ps_list)  # noqa: F405
-        if not status_code == 200:
+        if status_code != 200:
             g.applogger.info(g.appmsg.get_log_message("MSG-10999", [workspace_id, str(working_ps_list), status_code, response]))
 
     # 子プロセスが存在しない作業がある場合、作業中通知
@@ -210,7 +211,7 @@ def conductor_decode_tar_file(base_64data, dir_path):
         raise AppException('MSG-11000', ["tar file type:conductor"])  # noqa: F405
 
 
-def child_process_exist_check(organization_id, workspace_id, execution_no, driver_id, build_type=None, runtime_data_del="0"):
+def child_process_exist_check(organization_id, workspace_id, execution_no, driver_id):
     """
     実行中の子プロの起動確認
 
@@ -226,11 +227,6 @@ def child_process_exist_check(organization_id, workspace_id, execution_no, drive
     child_process_2 = child_process_exist_check_ps()
     time.sleep(0.05)
     child_process_3 = child_process_exist_check_ps()
-
-    # プロセス再起動上限値
-    # 子プロ再起動は行わない
-    # プロセス再起動上限値は0とする
-    child_process_retry_limit = int(os.getenv('CHILD_PROCESS_RETRY_LIMIT', 0))
 
     # 子プロ起動確認
     is_running = False
@@ -255,60 +251,7 @@ def child_process_exist_check(organization_id, workspace_id, execution_no, drive
                 is_running = True
 
     if is_running is False:
-        if build_type is None and runtime_data_del is None:
-            # 不正な子プロ起動パラメータファイルのため、再起動処理を行わない
-            g.applogger.info(f"invalid execution_parameters_file execution_no={execution_no}")
-            return False
-        # ステータスファイルがあるか確認
-        status_file_dir_path, status_file_path = get_execution_status_file_path(organization_id, workspace_id, driver_id, execution_no)  # noqa: F405
-        os.listdir(os.path.dirname(status_file_dir_path.rstrip('/')))  # NFSストレージ対策：属性キャッシュ更新を試みる
-        if os.path.isfile(status_file_path):
-            # ステータスファイルに書き込まれている再起動回数取得
-            reboot_cnt = ""
-
-            @file_read_retry  # noqa: F405
-            def read_reboot_cnt():
-                nonlocal reboot_cnt
-                try:
-                    with open(status_file_path) as f:
-                        reboot_cnt = f.read()
-                    return True
-                except Exception as e:
-                    g.applogger.info("read_reboot_cnt failed. file_path={}".format(status_file_path))
-                    t = traceback.format_exc()  # noqa: F405
-                    g.applogger.info(arrange_stacktrace_format(t))  # noqa: F405
-                    raise e
-            read_reboot_cnt()
-
-            if len(reboot_cnt) == 0:
-                reboot_cnt = "0"
-
-            # 再起動回数回を超える場合、再起動しない
-            if int(reboot_cnt) < child_process_retry_limit:
-
-                @file_read_retry  # noqa: F405
-                def write_status_file():
-                    nonlocal reboot_cnt
-                    try:
-                        # ステータスファイルに再起動回数書き込み
-                        with open(status_file_path, "w") as f:
-                            reboot_cnt = int(reboot_cnt) + 1
-                            f.write(str(reboot_cnt))
-                        return True
-                    except Exception as e:
-                        g.applogger.info("write_status_file failed. file_path={}".format(status_file_path))
-                        t = traceback.format_exc()  # noqa: F405
-                        g.applogger.info(arrange_stacktrace_format(t))  # noqa: F405
-                        raise e
-                write_status_file()
-
-                g.applogger.info(g.appmsg.get_log_message("MSG-11005", [workspace_id, execution_no, str(reboot_cnt)]))
-                # 子プロ再起動
-                command = ["python3", "agent/agent_child_init.py", organization_id, workspace_id, execution_no, driver_id, runtime_data_del, "restart"]
-                cp = subprocess.Popen(command)  # noqa: F841
-            else:
-                g.applogger.info(g.appmsg.get_log_message("MSG-11004", [workspace_id, execution_no]))
-                return False
+        return False
 
     return True
 
@@ -356,13 +299,15 @@ def child_process_exist_check_ps():
         cp3.check_returncode()
 
 
-def get_working_child_process(organization_id, workspace_id, start_up_list):
+def get_working_child_process(organization_id, workspace_id):
     """ステータスファイルから作業一覧取得
     Args:
         organization_id (_type_): organization_id
         workspace_id (_type_): workspace_id
 
     Returns:
+        ps_exec_count: Num
+        ps_error_count: Num
         working_ps_list: { driver_id : []}
         error_ps_list: { driver_id : []}
     """
@@ -381,6 +326,7 @@ def get_working_child_process(organization_id, workspace_id, start_up_list):
     # プロセス再起動上限値
     # 子プロ再起動は行わない
     # プロセス再起動上限値は0とする
+    child_process_retry_limit = int(os.getenv('CHILD_PROCESS_RETRY_LIMIT', 0))
 
     # ドライバ毎の空リスト作成
     [working_ps_list.setdefault(_d, []) for _d in driver_id_list]
@@ -395,52 +341,93 @@ def get_working_child_process(organization_id, workspace_id, start_up_list):
             if not os.path.isfile(_file):
                 continue
 
-            # ステータスファイルに書き込まれている再起動回数取得
-            reboot_cnt = ""
-
-            @file_read_retry  # noqa: F405
-            def read_reboot_cnt():
-                nonlocal reboot_cnt
-                try:
-                    os.listdir(os.path.dirname(_file.rstrip('/')))  # NFSストレージ対策：属性キャッシュ更新を試みる
-                    with open(_file) as f:
-                        reboot_cnt = f.read()
-                    return True
-                except Exception as e:
-                    g.applogger.info("read_reboot_cnt failed. file_path={}".format(_file))
-                    t = traceback.format_exc()  # noqa: F405
-                    g.applogger.info(arrange_stacktrace_format(t))  # noqa: F405
-                    raise e
-            read_reboot_cnt()
-
-            if len(reboot_cnt) == 0:
-                reboot_cnt = "0"
-
             execution_no = os.path.basename(_file)
 
-            if execution_no in start_up_list:
-                # 起動直後の子プロ起動確認は行わず、次のループから実施
-                continue
-
-            # 子プロ起動パラメータ退避ファイルから起動パラメータ取得
-            build_type, runtime_data_del = get_execution_parameters_file(organization_id, workspace_id, driver_id, execution_no)  # noqa: F405
-            ret = child_process_exist_check(organization_id, workspace_id, execution_no, driver_id, build_type, runtime_data_del)
+            # 実行中の子プロの起動確認
+            ret = child_process_exist_check(organization_id, workspace_id, execution_no, driver_id)
             if ret is True:
-                # 子プロ実行中
+            # 子プロ実行中
                 g.applogger.debug(g.appmsg.get_log_message("MSG-11002", [workspace_id, execution_no]))
                 working_ps_list[driver_id].append(execution_no)
                 ps_exec_count += 1
             else:
-                # 子プロ未実行
-                g.applogger.debug(g.appmsg.get_log_message("MSG-11003", [workspace_id, execution_no]))
-                error_ps_list[driver_id].append(execution_no)
-                ps_error_count += 1
+            # 子プロが存在しない
+                # 再起動判定および再起動（ステータスファイルが読めないなどで再起動自体に失敗した場合は、リトライ回数を保持できない可能性もあるため、リトライは諦める）
+                ret = reboot_child_process(organization_id, workspace_id, driver_id, execution_no, child_process_retry_limit)
+                if ret is True:
+                    working_ps_list[driver_id].append(execution_no)
+                    ps_exec_count += 1
+                else:
+                    g.applogger.debug(g.appmsg.get_log_message("MSG-11003", [workspace_id, execution_no]))
+                    error_ps_list[driver_id].append(execution_no)
+                    ps_error_count += 1
 
     g.applogger.debug(f"working_ps_list: \n {json.dumps(working_ps_list, indent=4) if working_ps_list else {}}")
     g.applogger.debug(f"error_ps_list: \n {json.dumps(error_ps_list, indent=4) if error_ps_list else {}}")
 
     return ps_exec_count, ps_error_count, working_ps_list, error_ps_list
 
+def reboot_child_process(organization_id, workspace_id, driver_id, execution_no, child_process_retry_limit):
+    # ステータスファイルのパスを取得
+    status_file_dir_path, status_file_path = get_execution_status_file_path(organization_id, workspace_id, driver_id, execution_no)  # noqa: F405
+
+    # ステータスファイルに書き込まれている再起動回数取得
+    reboot_cnt = ""
+
+    @file_read_retry  # noqa: F405
+    def read_reboot_cnt():
+        nonlocal reboot_cnt
+
+        os.listdir(os.path.dirname(status_file_dir_path.rstrip('/')))  # NFSストレージ対策：属性キャッシュ更新を試みる
+        with open(status_file_path) as f:
+            reboot_cnt = f.read()
+            if len(reboot_cnt) == 0:
+                reboot_cnt = "0"
+        return True
+
+    try:
+        read_reboot_cnt()
+    except Exception as e:
+        g.applogger.info("read_reboot_cnt. file_path={}".format(status_file_path))
+        return False
+
+    reboot_cnt = int(reboot_cnt)
+
+    # 再起動回数制限内で再起動を行う
+    if reboot_cnt < child_process_retry_limit:
+        # 子プロ起動パラメータ退避ファイルから起動パラメータ取得
+        try:
+            build_type, runtime_data_del = get_execution_parameters_file(organization_id, workspace_id, driver_id, execution_no)  # noqa: F405
+        except Exception as e:
+            # 不正な子プロ起動パラメータファイルのため、再起動処理を行わない
+            g.applogger.info(f"invalid execution_parameters_file execution_no={execution_no}")
+            return False
+
+        @file_read_retry  # noqa: F405
+        def write_status_file():
+            nonlocal reboot_cnt
+
+            # ステータスファイルに再起動回数書き込み
+            with open(status_file_path, "w") as f:
+                reboot_cnt = reboot_cnt + 1
+                f.write(str(reboot_cnt))
+            return True
+
+        try:
+            write_status_file()
+        except Exception as e:
+            g.applogger.info("write_status_file failed. file_path={}".format(status_file_path))
+            return False
+
+        # 子プロ再起動 Restarted child process. (workspace id:{} execution no:{} count:{})
+        g.applogger.info(g.appmsg.get_log_message("MSG-11005", [workspace_id, execution_no, str(reboot_cnt)]))
+        command = ["python3", "agent/agent_child_init.py", organization_id, workspace_id, execution_no, driver_id, build_type, runtime_data_del, "restart"]
+        cp = subprocess.Popen(command)  # noqa: F841
+        return True
+    else:
+        # Child process restart count has been exceeded. (workspace id:{} execution no:{})
+        g.applogger.info(g.appmsg.get_log_message("MSG-11004", [workspace_id, execution_no]))
+        return False
 
 def update_error_executions(organization_id, workspace_id, exastro_api, error_ps_list):
     """エラー対象の作業状態通知送信
@@ -525,7 +512,7 @@ def update_error_executions(organization_id, workspace_id, exastro_api, error_ps
                 # 結果データ更新
                 g.applogger.info(g.appmsg.get_log_message("MSG-10994", [workspace_id, del_execution]))
                 status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, del_execution, body, form_data=form_data)  # noqa: F405
-                if not status_code == 200:
+                if status_code != 200:
                     g.applogger.info(g.appmsg.get_log_message("MSG-10995", [workspace_id, del_execution, status_code, response]))
                     status_update = False
 
@@ -533,14 +520,18 @@ def update_error_executions(organization_id, workspace_id, exastro_api, error_ps
                 if status_update:
                     g.applogger.info(g.appmsg.get_log_message("MSG-10990", [workspace_id, del_execution, status_id]))
                     status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, del_execution, body)  # noqa: F405
-                    if not status_code == 200:
+                    if status_code != 200:
                         g.applogger.info(g.appmsg.get_log_message("MSG-10991", [workspace_id, del_execution, status_id, status_code, response]))
                         status_update = False
 
             finally:
                 # 実行時削除フラグを取得しておく
-                if runtime_data_del == 2:
+                try:
                     _, runtime_data_del = get_execution_parameters_file(organization_id, workspace_id, driver_id, del_execution)  # noqa: F405
+                except Exception as e:
+                    # パラメータファイルが読めなかった場合、実行時削除はTrue扱いとする
+                    runtime_data_del = 1
+                    g.applogger.info(f"read execution_parameters_file failed. execution_no={del_execution}")
                 # ステータスファイルの削除
                 delete_status_file(organization_id, workspace_id, driver_id, del_execution)  # noqa: F405
                 # /tmpのゴミ掃除

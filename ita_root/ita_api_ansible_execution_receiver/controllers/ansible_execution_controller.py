@@ -362,3 +362,130 @@ def execution_notification(organization_id, workspace_id, body):  # noqa: E501
     finally:
         objdbca.db_disconnect()
     return result_data,
+
+
+@api_filter_download_temporary_file
+def get_populated_data_aap(organization_id, workspace_id, execution_no):  # noqa: E501
+    """get_populated_data_aap
+
+    投入データ取得 # noqa: E501
+
+    :param organization_id: OrganizationID
+    :type organization_id: str
+    :param workspace_id: WorkspaceID
+    :type workspace_id: str
+    :param execution_no: 作業番号
+    :type execution_no: str
+    :param driver_id: ドライバーID
+    :type driver_id: str
+
+    :rtype: InlineResponse2002
+    """
+
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('data_update_stop') == '1':
+        status_code = "498-00004"
+        raise AppException(status_code, [], [])  # noqa: F405
+
+    # DB接続
+    objdbca = DBConnectWs(workspace_id)  # noqa: F405
+
+    try:
+        res, t_exec_sts_inst, driver_id = check_driver_from_executionno(objdbca, execution_no)  # noqa: F405
+        # 該当する作業実行Noが無ければ、存在しない旨を出力
+        if res is False:
+            status_code = "499-00903"
+            log_msg_args = [execution_no]
+            api_msg_args = [execution_no]
+            raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
+
+        target_menu = {'legacy': 'execution_ansible_legacy', 'pioneer': 'execution_ansible_pioneer', 'legacy_role': 'execution_ansible_role'}
+
+        menu = target_menu[driver_id]
+
+        # メニューの存在確認
+        check_menu_info(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        privilege = check_auth_menu(menu, objdbca)
+        if privilege == '2':
+            status_code = "401-00001"
+            log_msg_args = [menu]
+            api_msg_args = [menu]
+            raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
+
+        # 作業実行関連のメニューの基本情報および項目情報の取得
+        result_data = get_populated_data_path_aap(objdbca, organization_id, workspace_id, execution_no, t_exec_sts_inst, driver_id)  # noqa: F405
+    except Exception as e:
+        raise e
+    finally:
+        objdbca.db_disconnect()
+    return result_data,
+
+
+@api_filter
+def update_result_data_aap(organization_id, workspace_id, execution_no, **kwargs):  # noqa: E501
+    """update_result_data_aap
+
+    結果データ受け取り・更新 # noqa: E501
+
+    :param organization_id: OrganizationID
+    :type organization_id: str
+    :param workspace_id: WorkspaceID
+    :type workspace_id: str
+    :param execution_no: 作業番号
+    :type execution_no: str
+    :param driver_id:
+    :type driver_id: str
+    :param status:
+    :type status: str
+    :param file:
+    :type file: dict | bytes
+
+    :rtype: InlineResponse2003
+    """
+
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('data_update_stop') == '1':
+        status_code = "498-00004"
+        raise AppException(status_code, [], [])  # noqa: F405
+
+    # DB接続
+    objdbca = DBConnectWs(workspace_id)  # noqa: F405
+
+    try:
+        res, t_exec_sts_inst, driver_id = check_driver_from_executionno(objdbca, execution_no)  # noqa: F405
+        # 該当する作業実行Noが無ければ、存在しない旨を出力
+        if res is False:
+            status_code = "499-00903"
+            log_msg_args = [execution_no]
+            api_msg_args = [execution_no]
+            raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
+
+        target_menu = {'legacy': 'execution_ansible_legacy', 'pioneer': 'execution_ansible_pioneer', 'legacy_role': 'execution_ansible_role'}
+
+        menu = target_menu[driver_id]
+
+        # メニューの存在確認
+        check_menu_info(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        privilege = check_auth_menu(menu, objdbca)
+        if privilege == '2':
+            status_code = "401-00001"
+            log_msg_args = [menu]
+            api_msg_args = [menu]
+            raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
+
+        # 各Driverパス
+        tmp_path = "/tmp/" + organization_id + "/" + workspace_id
+        # 並列で実行される可能性があるため、/tmp配下の使用は重複しないようにsecrets.token_hex(4)を使用する
+        para_id = secrets.token_hex(4)  # noqa: F405
+
+        retBool, parameters, file_paths = create_file_path_aap(connexion.request, tmp_path, execution_no, driver_id, para_id)  # noqa: F405
+
+        # 作業実行関連のメニューの基本情報および項目情報の取得
+        result_data = update_result_aap(objdbca, organization_id, workspace_id, execution_no, file_paths, t_exec_sts_inst, driver_id, para_id)  # noqa: F405
+    except Exception as e:
+        raise e
+    finally:
+        objdbca.db_disconnect()
+    return result_data,

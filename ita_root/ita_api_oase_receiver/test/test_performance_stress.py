@@ -329,6 +329,10 @@ class TestPerformanceAndStress:
 
             # 定期的なガベージコレクション
             if i % 100 == 0:
+                # MagicMockは呼び出し履歴（引数ごと）を蓄積するため、リーク計測のノイズになる。
+                # applogger/appmsgは末尾で検証しないので履歴を破棄する（bulksendはcall_count検証があるため残す）
+                g.applogger.reset_mock()
+                g.appmsg.reset_mock()
                 gc.collect()
                 _final_objects = len(gc.get_objects())
                 object_increase = _final_objects - initial_objects

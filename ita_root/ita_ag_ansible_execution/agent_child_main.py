@@ -17,6 +17,7 @@ import os
 import sys
 import time
 import pathlib
+import mimetypes
 
 from flask import g
 from common_libs.common import *  # noqa: F403
@@ -57,7 +58,7 @@ def agent_child_main():
             None, organization_id, workspace_id,
             execution_no, status, driver_id
         )
-        if not status_code == 200:
+        if status_code != 200:
             g.applogger.info(g.appmsg.get_log_message(error_code, error_arg))
     except Exception as e:
         exception(e)
@@ -68,7 +69,7 @@ def agent_child_main():
             None, organization_id, workspace_id,
             execution_no, status, driver_id
         )
-        if not status_code == 200:
+        if status_code != 200:
             g.applogger.info(g.appmsg.get_log_message(error_code, error_arg))
     finally:
         # ステータスファイルの削除
@@ -88,8 +89,8 @@ def agent_child():
     driver_id = args[4]
     build_type = args[5]
     runtime_data_del = args[6]
-    # 再起動の処理は実装しない
-    strat_mode = args[7]
+    # 再起動の処理は非提供
+    start_mode = args[7]
 
     # in/out親ディレクトリパス
     storagepath = os.environ.get('STORAGEPATH')
@@ -104,12 +105,12 @@ def agent_child():
     project_base_path = f"{storagepath}/{organization_id}/{workspace_id}/driver/ag_ansible_execution/{driver_id}/{execution_no}"
     os.environ['PROJECT_BASE_DIR'] = project_base_path
 
-    baseUrl = os.environ["EXASTRO_URL"]
+    base_url = os.environ["EXASTRO_URL"]
     refresh_token = os.environ['EXASTRO_REFRESH_TOKEN']
 
     # ITAのAPI呼び出しモジュール
     exastro_api = Exastro_API(
-        base_url=baseUrl,
+        base_url=base_url,
         refresh_token=refresh_token
     )
     exastro_api.get_access_token(organization_id, refresh_token)
@@ -119,7 +120,7 @@ def agent_child():
     g.applogger.info(g.appmsg.get_log_message("MSG-10992", [workspace_id, execution_no]))
     query= {"driver_id": driver_id}
     status_code, response = get_execution_populated_data(organization_id, workspace_id, exastro_api, execution_no, query=query)
-    if not status_code == 200:
+    if status_code != 200:
         g.applogger.info(g.appmsg.get_log_message("MSG-10993", [workspace_id, execution_no, status_code, response]))
         raise AppException("MSG-10993", [workspace_id, execution_no, status_code, response], [workspace_id, execution_no, status_code, response])
 
@@ -135,7 +136,7 @@ def agent_child():
                 f.flush()
 
         # tarファイルの中身のディレクトリ、ファイル移動
-        decompress_tar_file(organization_id, workspace_id, driver_id, dir_path, file_name, execution_no)
+        decompress_tar_file(organization_id, workspace_id, driver_id, dir_path, file_name, execution_no, start_mode)
 
     response.close()
 
@@ -184,34 +185,56 @@ def agent_child():
                 with open(child_error_log_pass, "w") as f:
                     pass
 
+    def container_running():
+        try:
+            container_name = f"ansible_runner_{execution_no}"
+            command = ["podman", "ps", "--filter", "name=" + container_name, "--format", "json"]
+
+            cp = subprocess.run(command, capture_output=True, text=True)
+            if cp.returncode != 0:
+                return False
+
+            # 戻りをjsonデコードして、一つだけ存在しているか確認
+            result_obj = json.loads(cp.stdout)
+
+            if len(result_obj) > 0:
+                return True
+        except Exception as e:
+            exception(e)
+
+        return False
+
+    is_container_running = False if start_mode == "start" else container_running()
+
     # start.sh実行
-    try:
-        g.applogger.debug(g.appmsg.get_log_message( "MSG-11008", [workspace_id, execution_no]))
-        start_result = True
-        cmd = ["sh", f"{root_dir_path}/runner_executable_files/start.sh"]
-        with open(child_error_log_pass, 'a') as fp:
-            ret = subprocess.run(cmd, check=True, stdout=fp, stderr=subprocess.STDOUT)
-    except subprocess.CalledProcessError as e:
-        exception(e)
-        start_result = False
+    if is_container_running is False:
+        try:
+            g.applogger.debug(g.appmsg.get_log_message( "MSG-11008", [workspace_id, execution_no]))
+            start_result = True
+            cmd = ["sh", f"{root_dir_path}/runner_executable_files/start.sh"]
+            with open(child_error_log_pass, 'a') as fp:
+                ret = subprocess.run(cmd, check=True, stdout=fp, stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as e:
+            exception(e)
+            start_result = False
 
-    except Exception as e:
-        exception(e)
-        start_result = False
-    finally:
-        # start.shの実行に失敗した場合完了(異常)
-        if start_result is False:
-            # ログ更新
-            erro_log = g.appmsg.get_log_message("MSG-10986", ["ansible-runner", "runner_executable_files/start.sh"])
-            error_log_write(child_error_log_pass, erro_log)
+        except Exception as e:
+            exception(e)
+            start_result = False
+        finally:
+            # start.shの実行に失敗した場合完了(異常)
+            if start_result is False:
+                # ログ更新
+                erro_log = g.appmsg.get_log_message("MSG-10986", ["ansible-runner", "runner_executable_files/start.sh"])
+                error_log_write(child_error_log_pass, erro_log)
 
-            status = AnscConst.FAILURE
-            log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
+                status = AnscConst.FAILURE
+                log_merge(exec_log_pass, error_log_pass, parent_error_log_pass, child_exec_log_pass, child_error_log_pass, runner_exec_log_pass, runner_error_log_pass, driver_id)
 
-            # agent_child_mainのAppExceptionで異常時の共通処理
-            status_code = "MSG-10986"
-            msg_args = ["ansible-runner", "runner_executable_files/start.sh"]
-            raise AppException(status_code, msg_args, msg_args)
+                # agent_child_mainのAppExceptionで異常時の共通処理
+                status_code = "MSG-10986"
+                msg_args = ["ansible-runner", "runner_executable_files/start.sh"]
+                raise AppException(status_code, msg_args, msg_args)
 
     while True:
         # 5秒スリーブ
@@ -273,7 +296,7 @@ def agent_child():
                                 exastro_api, organization_id, workspace_id,
                                 execution_no, status, driver_id
                         )
-                        if not status_code == 200:
+                        if status_code != 200:
                             raise AppException(error_code, error_arg)
 
                         break
@@ -299,7 +322,7 @@ def agent_child():
                                                         exastro_api, organization_id, workspace_id,
                                                         execution_no, status, driver_id
                                                     )
-                            if not status_code == 200:
+                            if status_code != 200:
                                 raise AppException(error_code, error_arg)
 
                             break
@@ -314,7 +337,7 @@ def agent_child():
                                                         exastro_api, organization_id, workspace_id,
                                                         execution_no, status, driver_id
                                                     )
-                            if not status_code == 200:
+                            if status_code != 200:
                                 raise AppException(error_code, error_arg)
 
                             break
@@ -328,7 +351,7 @@ def agent_child():
                                                         exastro_api, organization_id, workspace_id,
                                                         execution_no, status, driver_id
                                                     )
-                            if not status_code == 200:
+                            if status_code != 200:
                                 raise AppException(error_code, error_arg)
 
                             break
@@ -349,7 +372,7 @@ def agent_child():
                                 exastro_api, organization_id, workspace_id,
                                 execution_no, status, driver_id
                     )
-                    if not status_code == 200:
+                    if status_code != 200:
                         raise AppException(error_code, error_arg)
 
                     continue
@@ -364,7 +387,7 @@ def agent_child():
                                 exastro_api, organization_id, workspace_id,
                                 execution_no, status, driver_id
                     )
-                    if not status_code == 200:
+                    if status_code != 200:
                         raise AppException(error_code, error_arg)
 
                     break
@@ -379,7 +402,7 @@ def agent_child():
                                 exastro_api, organization_id, workspace_id,
                                 execution_no, status, driver_id
                     )
-                    if not status_code == 200:
+                    if status_code != 200:
                         raise AppException(error_code, error_arg)
 
                     break
@@ -404,7 +427,7 @@ def agent_child():
                                 exastro_api, organization_id, workspace_id,
                                 execution_no, status, driver_id
                 )
-                if not status_code == 200:
+                if status_code != 200:
                     raise AppException(error_code, error_arg)
 
                 break
@@ -419,7 +442,7 @@ def agent_child():
                                 exastro_api, organization_id, workspace_id,
                                 execution_no, status, driver_id
                 )
-                if not status_code == 200:
+                if status_code != 200:
                     raise AppException(error_code, error_arg)
 
                 break
@@ -434,7 +457,7 @@ def agent_child():
                                 exastro_api, organization_id, workspace_id,
                                 execution_no, status, driver_id
                 )
-                if not status_code == 200:
+                if status_code != 200:
                     raise AppException(error_code, error_arg)
 
                 break
@@ -468,7 +491,7 @@ def error_log_write(log_file, msg):
         f.write(msg + "\n")
 
 
-def decompress_tar_file(organization_id, workspace_id, driver_id, dir_path, file_name, execution_no):
+def decompress_tar_file(organization_id, workspace_id, driver_id, dir_path, file_name, execution_no, start_mode="start"):
     """
     tarファイルを解凍してagent用のディレクトリに移動する
     ARGS:
@@ -500,6 +523,30 @@ def decompress_tar_file(organization_id, workspace_id, driver_id, dir_path, file
     # 移動前に作業用ディレクトリを作成しておく
     retry_makedirs(root_dir_path)  # noqa: F405
 
+    def _retry_move(src_path, dest_path):
+        if start_mode == "start":
+            retry_move(src_path, dest_path)
+        else:
+        # 再起動のときは、既にディレクトリがある場合は無視する
+            @file_read_retry
+            def retry_move_on_restart(src_path, dest_path):
+                g.applogger.debug(f"retry_move({src_path, dest_path})")
+                try:
+                    os.listdir(os.path.dirname(src_path.rstrip('/')))  # NFSストレージ対策：属性キャッシュ更新を試みる コピー元のみ(コピー先は無いこともある)
+                    shutil.move(src_path, dest_path)
+                    return True
+                except Exception as e:
+                    # 既にある
+                    if str(e).find("already exists") != -1:
+                        return True
+
+                    g.applogger.info("retry_move failed. src_path={}, dest_path={}".format(src_path, dest_path))
+                    t = traceback.format_exc()
+                    g.applogger.debug(arrange_stacktrace_format(t))
+                    return False
+
+            retry_move_on_restart(src_path, dest_path)
+
     # 展開したファイルを移動する
     move_dir = ""
     for dir_name in lst:
@@ -512,22 +559,22 @@ def decompress_tar_file(organization_id, workspace_id, driver_id, dir_path, file
                     for in_dir_name in in_lst:
                         if in_dir_name in ["inventory", "env", "builder_executable_files", "runner_executable_files"]:
                             # 1つ上の階層へ移動
-                            retry_move(f"{tar_path}/{execution_no}/{dir_name}/{in_dir_name}", f"{tar_path}/{execution_no}")  # noqa: F405
+                            _retry_move(f"{tar_path}/{execution_no}/{dir_name}/{in_dir_name}", f"{tar_path}/{execution_no}")  # noqa: F405
                             # inventory,.env.,builder_executable_files,runner_executable_filesディレクトリの移動
                             join_path = f"{tar_path}/{execution_no}/{in_dir_name}"
-                            retry_move(join_path, root_dir_path)  # noqa: F405
+                            _retry_move(join_path, root_dir_path)  # noqa: F405
                     # inディレクトリの移動先
                     move_dir = root_dir_path + "/project"
                     join_path = f"{tar_path}/{execution_no}/{dir_name}"
-                    retry_move(join_path, move_dir)  # noqa: F405
+                    _retry_move(join_path, move_dir)  # noqa: F405
                 elif dir_name in ["out", ".tmp", "tmp"]:
                     # out,.tmp.,tmpディレクトリの移動
                     join_path = f"{tar_path}/{execution_no}/{dir_name}"
-                    retry_move(join_path, root_dir_path)  # noqa: F405
+                    _retry_move(join_path, root_dir_path)  # noqa: F405
         elif dir_name == "conductor":
             # conductorディレクトリの移動先
             join_path = f"{tar_path}/{dir_name}"
-            retry_move(join_path, root_dir_path)  # noqa: F405
+            _retry_move(join_path, root_dir_path)  # noqa: F405
 
     # 作業ディレクトリ削除
     clear_execution_tmpdir(organization_id, workspace_id, driver_id, execution_no)  # noqa: F405
@@ -543,12 +590,12 @@ def post_upload_file_and_status(exastro_api, organization_id, workspace_id, exec
 
     if exastro_api is None:
         # 環境変数の取得
-        baseUrl = os.environ["EXASTRO_URL"]
+        base_url = os.environ["EXASTRO_URL"]
         refresh_token = os.environ['EXASTRO_REFRESH_TOKEN']
 
         # ITAのAPI呼び出しモジュール
         exastro_api = Exastro_API(
-            base_url=baseUrl,
+            base_url=base_url,
             refresh_token=refresh_token
         )
         exastro_api.get_access_token(organization_id, refresh_token)
@@ -597,13 +644,13 @@ def post_upload_file_and_status(exastro_api, organization_id, workspace_id, exec
     # 結果データ更新
     g.applogger.info(g.appmsg.get_log_message("MSG-10994", [workspace_id, execution_no]))
     status_code, response = post_upload_execution_files(organization_id, workspace_id, exastro_api, execution_no, body, form_data=form_data)
-    if not status_code == 200:
+    if status_code != 200:
         return status_code, response, "MSG-10995", [workspace_id, execution_no, status_code, response]
 
     # 作業状態通知送信
     g.applogger.info(g.appmsg.get_log_message("MSG-10990", [workspace_id, execution_no, status]))
     status_code, response = post_update_execution_status(organization_id, workspace_id, exastro_api, execution_no, body)
-    if not status_code == 200:
+    if status_code != 200:
         return status_code, response, "MSG-10991", [workspace_id, execution_no, status, status_code, response]
 
 

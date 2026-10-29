@@ -4448,7 +4448,7 @@ panelTextareaHtml( note ) {
         <div class="panel-group-title">` + getMessage.FTE02065 + `</div>
         ${( cd.mode !== 'edit' && cd.mode!== 'update')?
             `<span class="view panel-note panel-span">${note}</span>`:
-            fn.html.textarea(['panel-note', 'panel-textarea', 'popup'], note, null, { title: getMessage.FTE02066}, true )
+            fn.html.textarea(['panel-note', 'panel-textarea', 'popup'], note, null, { title: getMessage.FTE02066}, 'sizing')
         }
     </div>`;
 }
@@ -5674,11 +5674,13 @@ callConductorUpdate( nodeID, id, name ) {
 
     const $node = $( cd.createId( nodeID ) );
     if ( id !== null ) {
-      cd.data[ nodeID ].call_conductor_id = id;
-      $node.addClass('call-select').find('.select-conductor-name-inner').text( name );
+        cd.data[ nodeID ].call_conductor_id = id;
+        cd.data[ nodeID ].call_conductor_name = name;
+        $node.addClass('call-select').find('.select-conductor-name-inner').text( name );
     } else {
-      cd.data[ nodeID ].call_conductor_id = null;
-      $node.removeClass('call-select').find('.select-conductor-name-inner').text('Not selected');
+        cd.data[ nodeID ].call_conductor_id = null;
+        cd.data[ nodeID ].call_conductor_name = null;
+        $node.removeClass('call-select').find('.select-conductor-name-inner').text('Not selected');
     }
     cd.nodeSet( $( cd.createId( nodeID ) ) );
     cd.connectEdgeUpdate( nodeID );
@@ -5835,7 +5837,16 @@ panelEvents() {
 
         switch ( type ) {
             case 'operation':
-                cd.selectModalOpen('operation').then(function( selectId ){
+                const currentOperationId = ( cd.data[ nodeId ] && cd.data[ nodeId ].operation_id )? cd.data[ nodeId ].operation_id: null;
+                const currentOperationName = cd.getOperationName( currentOperationId );
+                let currentSelectOperation = null;
+                if ( currentOperationId && currentOperationName ) {
+                    currentSelectOperation = {
+                        id: currentOperationId,
+                        name: currentOperationName
+                    };
+                }
+                cd.selectModalOpen('operation', currentSelectOperation ).then(function( selectId ){
                     if ( selectId ) {
                         if ( fn.typeof( selectId ) === 'array') {
                             selectId = selectId[0].id;
@@ -5851,7 +5862,16 @@ panelEvents() {
                 cd.operationUpdate( nodeId, null, null );
             break;
             case 'conductor':
-                cd.selectModalOpen('condcutor').then(function( selectId ){
+                const currentConductorId = ( cd.data[ nodeId ] && cd.data[ nodeId ].call_conductor_id )? cd.data[ nodeId ].call_conductor_id: null;
+                const currentConductorName = cd.getConductorName( currentConductorId );
+                let currentSelectConductor = null;
+                if ( currentConductorId && currentConductorName ) {
+                    currentSelectConductor = {
+                        id: currentConductorId,
+                        name: currentConductorName
+                    };
+                }
+                cd.selectModalOpen('condcutor', currentSelectConductor ).then(function( selectId ){
                     if ( selectId ) {
                         if ( fn.typeof( selectId ) === 'array') {
                             selectId = selectId[0].id;
@@ -6316,7 +6336,9 @@ conductorHistory() {
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-selectModalOpen( type ) {
+// currentSelectIdName 選択状態 {id:"id",name:"name"}
+
+selectModalOpen( type, currentSelectIdName ) {
     const cd = this;
 
     return new Promise(function( resolve ){
@@ -6336,6 +6358,13 @@ selectModalOpen( type ) {
             selectConfig.filter = `/menu/${cd.menu}/conductor/execute/filter/conductor_class_list/`;
             selectConfig.filterPulldown = `/menu/${cd.menu}/conductor/execute/filter/conductor_class_list/search/candidates/`;
             selectConfig.sub = 'conductor_class_list';
+        }
+
+        // 選択状態
+        if ( currentSelectIdName ) {
+            selectConfig.select = [ currentSelectIdName ];
+        } else {
+            selectConfig.select = [];
         }
 
         fn.selectModalOpen( type, title, cd.menu, selectConfig ).then(function( selectResut ){

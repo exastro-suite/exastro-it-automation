@@ -13,7 +13,7 @@
 #   limitations under the License.
 
 from common_libs.common import *  # noqa: F403
-from common_libs.common.dbconnect import DBConnectWs
+from common_libs.common.dbconnect import DBConnectWs, DBConnectOrg
 from common_libs.common import menu_info
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
 from common_libs.api import api_filter
@@ -77,7 +77,8 @@ def get_menu_info(organization_id, workspace_id, menu):  # noqa: E501
     """
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
-
+    objdborg = DBConnectOrg(organization_id)  # noqa: F405
+    
     try:
         # メニューの存在確認
         menu_record = check_menu_info(menu, objdbca)
@@ -95,10 +96,19 @@ def get_menu_info(organization_id, workspace_id, menu):  # noqa: E501
         else:
             # 独自メニュー用の基本情報および項目情報の取得
             data = menu_info.collect_custom_menu_info(objdbca, menu, menu_record, privilege, custom_file_list)
+        
+        # オーガナイゼーションからai_assistantドライバの情報取得
+        org_noinstall_driver = objdborg.get_no_install_driver()
+        ai_assistant_enabled = org_noinstall_driver is None or 'ai_assistant' not in org_noinstall_driver
+        data['ai_assistant'] = {
+            'enabled': ai_assistant_enabled
+        }
+        
     except Exception as e:
         raise e
     finally:
         objdbca.db_disconnect()
+        objdborg.db_disconnect()
     return data,
 
 

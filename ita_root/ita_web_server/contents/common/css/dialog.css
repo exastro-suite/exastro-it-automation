@@ -347,3 +347,11 @@ width: 100%!important;
 .dialogPrintMode .d2h-files-diff {
 height: auto;
 }
+
+.subDialogMode .dialog {
+flex-direction: row;
+gap: 24px;
+}
+.subDialogMode .dialogMain {
+flex: 1 1 100%;
+}

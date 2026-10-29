@@ -15,21 +15,15 @@
 ita_ag_ansible_execution agent common function module
 """
 from flask import g
-import traceback
 import os
 import datetime
 import tarfile
 import uuid
-import glob
-import shutil
-import shlex
-import subprocess
 import json
-import mimetypes
 import re
 
 from common_libs.common.exception import AppException
-from common_libs.common.util import arrange_stacktrace_format, retry_makedirs, retry_chmod, retry_rmtree, retry_copy, retry_copytree, retry_remove
+from common_libs.common.util import file_read_retry, retry_makedirs, retry_chmod, retry_rmtree, retry_copy, retry_copytree, retry_remove
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 
 
@@ -160,7 +154,6 @@ def retry_api_call(exastro_api, endpoint, mode="json" ,method="POST", body=None,
             if status_code == 200:
                 break
             else:
-                pass
                 g.applogger.info(f"{endpoint=} {status_code=} {response=} retry:{t}")
 
         except Exception as e:
@@ -502,16 +495,20 @@ def get_execution_parameters_file(organization_id, workspace_id, driver_id, exec
     """
     status_file_dir_path, status_file_path = get_execution_status_file_path(organization_id, workspace_id, driver_id, execution_no)
     status_file_path += "_parameter"
-    try:
-        with open(status_file_path, 'r') as f:
-            g.applogger.debug(f"read execution parameter file. (path:{status_file_path})")
-            ary_dump = f.read()
-            ary = json.loads(ary_dump)
-    except Exception:
-        # 起動パラメータが取得できないならNoneで埋める
-        ary = {"build_type": None, "runtime_data_del": None}
+    ret = {"build_type": None, "runtime_data_del": None}
 
-    return ary["build_type"], ary["runtime_data_del"]
+    @file_read_retry
+    def read_execution_parameters_file():
+        nonlocal ret
+
+        os.listdir(os.path.dirname(status_file_dir_path.rstrip('/')))  # NFSストレージ対策：属性キャッシュ更新を試みる
+        with open(status_file_path, 'r') as f:
+            ary_dump = f.read()
+            ret = json.loads(ary_dump)
+            return True
+    read_execution_parameters_file()
+
+    return ret["build_type"], ret["runtime_data_del"]
 
 
 def get_execution_restart_status_file(organization_id, workspace_id, driver_id, execution_no):

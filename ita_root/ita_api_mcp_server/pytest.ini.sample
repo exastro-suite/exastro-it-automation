@@ -1,0 +1,25 @@
+; 当ファイルをpytest.iniにコピーして利用してください
+[pytest]
+; pythonのimportディレクトリを/appからカレントディレクトリ(/workspace/ita_root/***)に変更
+; この設定を読み込まないとpytestのカバレッジやdebuggerがうまく動きません(/app配下のソースがimportされちゃう)
+pythonpath=
+    /workspace/exastro-it-automation-dev/ita_root
+    /workspace/exastro-it-automation-dev/ita_root/ita_api_mcp_server
+
+;
+; 環境変数
+;
+env =
+    ; DBアクセスはtests/conftest.pyで全てモックするため、実接続は行わない
+    ITA_API_ORAGANIZATION_HOST=dummy
+    ITA_API_ORAGANIZATION_PORT=7999
+    PLATFORM_API_HOST=dummy
+    PLATFORM_API_PORT=7999
+    QDRANT_HOST=dummy
+    QDRANT_PORT=6333
+    EMBEDDING_MODEL=dummy-model
+    EMBEDDING_MODEL_CACHE_PATH=/tmp/embedding_cache
+
+; pytestのデバック（debugger使用）時のみコメントアウトを解除してください
+; ※コメントアウトを解除中はカバレッジの情報は更新されません
+; addopts=--no-cov

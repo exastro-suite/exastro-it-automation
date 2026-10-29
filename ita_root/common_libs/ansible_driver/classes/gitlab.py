@@ -117,6 +117,17 @@ class GitLabAgent:
         """
         return "{protocol}://{user}:{token}@{host}:{port}/{user}/{project_name}.git".format(protocol=self.__protocol, host=self.__host, port=self.__port, user=self.__user, token=urllib.parse.quote(self.__token), project_name=project_name)  # noqa E501
 
+    def get_http_repo_url_scm(self, project_name):
+        """
+        get gitlab http repository url for SCM
+
+        Arguments:
+            project_name: project_name
+        Returns:
+            (str) url
+        """
+        return "{protocol}://{host}:{port}/{user}/{project_name}.git".format(protocol=self.__protocol, host=self.__host, port=self.__port, user=self.__user, project_name=project_name)  # noqa E501
+
     def get_user_self(self):
         # https://docs.gitlab.com/ee/api/users.html#for-normal-users-1
 

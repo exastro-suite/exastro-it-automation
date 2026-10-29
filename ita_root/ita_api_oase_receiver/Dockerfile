@@ -39,7 +39,8 @@ ENV PYTHONPATH=/exastro/ \
     OASE_RECEIVER_INTERNAL_API_WSGI_PROCESSES=1 \
     OASE_RECEIVER_INTERNAL_API_WSGI_THREADS=4 \
     OASE_RECEIVER_WSGI_PROCESSES=2 \
-    OASE_RECEIVER_WSGI_THREADS=8
+    OASE_RECEIVER_WSGI_THREADS=8 \
+    OASE_LOCK_WAIT_TIMEOUT_RETRY_LIMIT=5
 
 RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
     dnf install -y \

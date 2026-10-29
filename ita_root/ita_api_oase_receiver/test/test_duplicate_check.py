@@ -479,14 +479,14 @@ def test_duplicate_check_with_settings_update(mock_db, mock_mongo):
     find_doc = collection.find(filter)
     for doc in find_doc:
         print(doc)
-    assert collection.count_documents(filter) == 4
+    assert collection.count_documents(filter) == 2
 
     print("ecs2------------------------------")
     filter = {"labels._exastro_event_collection_settings_id": "ecs2"}
     find_doc = collection.find(filter)
     for doc in find_doc:
         print(doc)
-    assert collection.count_documents(filter) == 0
+    assert collection.count_documents(filter) == 2
 
     print("ecs3------------------------------")
     filter = {"labels._exastro_event_collection_settings_id": "ecs3"}
@@ -530,12 +530,12 @@ def test_process_event_group_upsert_insert(mock_mongo):
 
     mock_queue = queue.Queue()
     mock_mongo.find_one_and_update.return_value = event_group[0]  # ReturnDocument.AFTER
-    with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_ECS_MAP', new={"ecs_01": {}}):
-        with patch('libs.duplicate_check.is_new_event', new=MagicMock(return_value=True)):
-            duplicate_check._process_event_group(mock_mongo, event_group, mock_queue)
+    with patch('libs.duplicate_check.is_new_event', new=MagicMock(return_value=True)):
+        duplicate_check._process_event_group(mock_mongo, event_group, mock_queue, {}, {"ecs_01": []})
 
     mock_mongo.find_one_and_update.assert_called_once()
-    assert mock_queue.get() == {"insert_num": 1, "update_num": 0, "duplicate_notification_list": [], "recieve_notification_list": [event_group[0]]}
+    # 新規イベントは受信通知・新規（統合予定）通知の両方の対象になる
+    assert mock_queue.get() == {"insert_num": 1, "update_num": 0, "duplicate_notification_list": [event_group[0]], "recieve_notification_list": [event_group[0]]}
 
 
 def test_process_event_group_upsert_update(mock_mongo):
@@ -561,9 +561,8 @@ def test_process_event_group_upsert_update(mock_mongo):
     mock_queue = queue.Queue()
     mock_mongo.find_one_and_update.return_value = {"_id": "existing_id"}  # マッチするドキュメントがある場合を想定
 
-    with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_ECS_MAP', new={"ecs_01": {}}):
-        with patch('libs.duplicate_check.is_new_event', new=MagicMock(return_value=False)):
-            duplicate_check._process_event_group(mock_mongo, event_group, mock_queue)
+    with patch('libs.duplicate_check.is_new_event', new=MagicMock(return_value=False)):
+        duplicate_check._process_event_group(mock_mongo, event_group, mock_queue, {}, {"ecs_01": []})
 
     mock_mongo.find_one_and_update.assert_called_once()
     assert mock_queue.get() == {"insert_num": 0, "update_num": 1, 'recieve_notification_list': [], 'duplicate_notification_list': []}
@@ -585,7 +584,7 @@ def test_case1(mock_db, mock_mongo):
             イベント数:4
             重複数:2
             受信通知:6
-            重複通知:2
+            重複通知:4
     """
 
     _dtime = datetime.datetime.now()
@@ -1048,15 +1047,13 @@ def test_case1(mock_db, mock_mongo):
             'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 11, 8, 36, 53, 185093), }
     ]
     with patch('libs.duplicate_check.LABEL_KEY_MAP', label_key_map):
-        with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_MAP', duplication_settings_map):
-            with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_ECS_MAP', duplication_settings_ecs_map):
-                duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_1)
-                recieve_num += len(recieve_notification_list)
-                duplicate_num += len(duplicate_notification_list)
+        duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_1)
+        recieve_num += len(recieve_notification_list)
+        duplicate_num += len(duplicate_notification_list)
     # return値確認
     assert duplicate_check_result is True
     assert len(recieve_notification_list) == 1
-    assert len(duplicate_notification_list) == 0
+    assert len(duplicate_notification_list) == 1
 
     # mongoDB確認
     collection = mock_mongo.collection.return_value
@@ -1090,11 +1087,9 @@ def test_case1(mock_db, mock_mongo):
             'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 11, 8, 36, 53, 185093), }
     ]
     with patch('libs.duplicate_check.LABEL_KEY_MAP', label_key_map):
-        with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_MAP', duplication_settings_map):
-            with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_ECS_MAP', duplication_settings_ecs_map):
-                duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_2)
-                recieve_num += len(recieve_notification_list)
-                duplicate_num += len(duplicate_notification_list)
+        duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_2)
+        recieve_num += len(recieve_notification_list)
+        duplicate_num += len(duplicate_notification_list)
     # return値確認
     assert duplicate_check_result is True
     assert len(recieve_notification_list) == 2
@@ -1132,15 +1127,13 @@ def test_case1(mock_db, mock_mongo):
             'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 11, 8, 36, 53, 185093), }
     ]
     with patch('libs.duplicate_check.LABEL_KEY_MAP', label_key_map):
-        with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_MAP', duplication_settings_map):
-            with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_ECS_MAP', duplication_settings_ecs_map):
-                duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_3)
-                recieve_num += len(recieve_notification_list)
-                duplicate_num += len(duplicate_notification_list)
+        duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_3)
+        recieve_num += len(recieve_notification_list)
+        duplicate_num += len(duplicate_notification_list)
     # return値確認
     assert duplicate_check_result is True
     assert len(recieve_notification_list) == 1
-    assert len(duplicate_notification_list) == 1
+    assert len(duplicate_notification_list) == 0
 
     # mongoDB確認
     collection = mock_mongo.collection.return_value
@@ -1174,15 +1167,13 @@ def test_case1(mock_db, mock_mongo):
             'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 11, 8, 36, 53, 185093), }
     ]
     with patch('libs.duplicate_check.LABEL_KEY_MAP', label_key_map):
-        with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_MAP', duplication_settings_map):
-            with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_ECS_MAP', duplication_settings_ecs_map):
-                duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_4)
-                recieve_num += len(recieve_notification_list)
-                duplicate_num += len(duplicate_notification_list)
+        duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_4)
+        recieve_num += len(recieve_notification_list)
+        duplicate_num += len(duplicate_notification_list)
     # return値確認
     assert duplicate_check_result is True
     assert len(recieve_notification_list) == 1
-    assert len(duplicate_notification_list) == 0
+    assert len(duplicate_notification_list) == 1
 
     # mongoDB確認
     collection = mock_mongo.collection.return_value
@@ -1219,15 +1210,13 @@ def test_case1(mock_db, mock_mongo):
             'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 11, 8, 36, 53, 185093), }
     ]
     with patch('libs.duplicate_check.LABEL_KEY_MAP', label_key_map):
-        with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_MAP', duplication_settings_map):
-            with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_ECS_MAP', duplication_settings_ecs_map):
-                duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_5)
-                recieve_num += len(recieve_notification_list)
-                duplicate_num += len(duplicate_notification_list)
+        duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_5)
+        recieve_num += len(recieve_notification_list)
+        duplicate_num += len(duplicate_notification_list)
     # return値確認
     assert duplicate_check_result is True
     assert len(recieve_notification_list) == 1
-    assert len(duplicate_notification_list) == 0
+    assert len(duplicate_notification_list) == 1
 
     # mongoDB確認
     collection = mock_mongo.collection.return_value
@@ -1235,7 +1224,7 @@ def test_case1(mock_db, mock_mongo):
 
     # 通知の総数確認
     assert recieve_num == 6
-    assert duplicate_num == 2
+    assert duplicate_num == 4
 
 
 def test_case2(mock_db, mock_mongo):
@@ -1253,7 +1242,7 @@ def test_case2(mock_db, mock_mongo):
             イベント数:4
             重複数:0
             受信通知:4
-            重複通知:0
+            重複通知:4
     """
     import datetime
 
@@ -1752,16 +1741,14 @@ def test_case2(mock_db, mock_mongo):
             'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 11, 8, 36, 53, 185093), }
     ]
     with patch('libs.duplicate_check.LABEL_KEY_MAP', label_key_map):
-        with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_MAP', duplication_settings_map):
-            with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_ECS_MAP', duplication_settings_ecs_map):
-                duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_1)
-                recieve_num += len(recieve_notification_list)
-                duplicate_num += len(duplicate_notification_list)
+        duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_1)
+        recieve_num += len(recieve_notification_list)
+        duplicate_num += len(duplicate_notification_list)
 
     # return値確認
     assert duplicate_check_result is True
     assert len(recieve_notification_list) == 1
-    assert len(duplicate_notification_list) == 0
+    assert len(duplicate_notification_list) == 1
 
     # mongoDB確認
     collection = mock_mongo.collection.return_value
@@ -1795,15 +1782,13 @@ def test_case2(mock_db, mock_mongo):
             'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 11, 8, 36, 53, 185093), }
     ]
     with patch('libs.duplicate_check.LABEL_KEY_MAP', label_key_map):
-        with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_MAP', duplication_settings_map):
-            with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_ECS_MAP', duplication_settings_ecs_map):
-                duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_2)
-                recieve_num += len(recieve_notification_list)
-                duplicate_num += len(duplicate_notification_list)
+        duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_2)
+        recieve_num += len(recieve_notification_list)
+        duplicate_num += len(duplicate_notification_list)
     # return値確認
     assert duplicate_check_result is True
     assert len(recieve_notification_list) == 1
-    assert len(duplicate_notification_list) == 0
+    assert len(duplicate_notification_list) == 1
 
     # mongoDB確認
     collection = mock_mongo.collection.return_value
@@ -1837,11 +1822,9 @@ def test_case2(mock_db, mock_mongo):
             'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 11, 8, 36, 53, 185093), }
     ]
     with patch('libs.duplicate_check.LABEL_KEY_MAP', label_key_map):
-        with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_MAP', duplication_settings_map):
-            with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_ECS_MAP', duplication_settings_ecs_map):
-                duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_3)
-                recieve_num += len(recieve_notification_list)
-                duplicate_num += len(duplicate_notification_list)
+        duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_3)
+        recieve_num += len(recieve_notification_list)
+        duplicate_num += len(duplicate_notification_list)
     # return値確認
     assert duplicate_check_result is True
     assert len(recieve_notification_list) == 0
@@ -1879,15 +1862,13 @@ def test_case2(mock_db, mock_mongo):
             'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 11, 8, 36, 53, 185093), }
     ]
     with patch('libs.duplicate_check.LABEL_KEY_MAP', label_key_map):
-        with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_MAP', duplication_settings_map):
-            with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_ECS_MAP', duplication_settings_ecs_map):
-                duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_4)
-                recieve_num += len(recieve_notification_list)
-                duplicate_num += len(duplicate_notification_list)
+        duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_4)
+        recieve_num += len(recieve_notification_list)
+        duplicate_num += len(duplicate_notification_list)
     # return値確認
     assert duplicate_check_result is True
     assert len(recieve_notification_list) == 1
-    assert len(duplicate_notification_list) == 0
+    assert len(duplicate_notification_list) == 1
 
     # mongoDB確認
     collection = mock_mongo.collection.return_value
@@ -1924,15 +1905,13 @@ def test_case2(mock_db, mock_mongo):
             'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 11, 8, 36, 53, 185093), }
     ]
     with patch('libs.duplicate_check.LABEL_KEY_MAP', label_key_map):
-        with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_MAP', duplication_settings_map):
-            with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_ECS_MAP', duplication_settings_ecs_map):
-                duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_5)
-                recieve_num += len(recieve_notification_list)
-                duplicate_num += len(duplicate_notification_list)
+        duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_5)
+        recieve_num += len(recieve_notification_list)
+        duplicate_num += len(duplicate_notification_list)
     # return値確認
     assert duplicate_check_result is True
     assert len(recieve_notification_list) == 1
-    assert len(duplicate_notification_list) == 0
+    assert len(duplicate_notification_list) == 1
 
     # mongoDB確認
     collection = mock_mongo.collection.return_value
@@ -1940,7 +1919,7 @@ def test_case2(mock_db, mock_mongo):
 
     # 通知の総数確認
     assert recieve_num == 4
-    assert duplicate_num == 0
+    assert duplicate_num == 4
 
 
 def test_case3(mock_db, mock_mongo):
@@ -1959,7 +1938,7 @@ def test_case3(mock_db, mock_mongo):
             イベント数: 8
             重複数: 10
             受信通知: 13
-            重複通知: 5
+            重複通知: 8
     """
     import datetime
 
@@ -3042,11 +3021,9 @@ def test_case3(mock_db, mock_mongo):
             'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 11, 8, 36, 53, 185093), }
     ]
     with patch('libs.duplicate_check.LABEL_KEY_MAP', label_key_map):
-        with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_MAP', duplication_settings_map):
-            with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_ECS_MAP', duplication_settings_ecs_map):
-                duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_1)
-                recieve_num += len(recieve_notification_list)
-                duplicate_num += len(duplicate_notification_list)
+        duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_1)
+        recieve_num += len(recieve_notification_list)
+        duplicate_num += len(duplicate_notification_list)
     # return値確認
     assert duplicate_check_result is True
     assert len(recieve_notification_list) == 2
@@ -3084,11 +3061,9 @@ def test_case3(mock_db, mock_mongo):
             'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 11, 8, 36, 53, 185093), }
     ]
     with patch('libs.duplicate_check.LABEL_KEY_MAP', label_key_map):
-        with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_MAP', duplication_settings_map):
-            with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_ECS_MAP', duplication_settings_ecs_map):
-                duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_2)
-                recieve_num += len(recieve_notification_list)
-                duplicate_num += len(duplicate_notification_list)
+        duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_2)
+        recieve_num += len(recieve_notification_list)
+        duplicate_num += len(duplicate_notification_list)
     # return値確認
     assert duplicate_check_result is True
     assert len(recieve_notification_list) == 0
@@ -3126,11 +3101,9 @@ def test_case3(mock_db, mock_mongo):
             'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 11, 8, 36, 53, 185093), }
     ]
     with patch('libs.duplicate_check.LABEL_KEY_MAP', label_key_map):
-        with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_MAP', duplication_settings_map):
-            with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_ECS_MAP', duplication_settings_ecs_map):
-                duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_3)
-                recieve_num += len(recieve_notification_list)
-                duplicate_num += len(duplicate_notification_list)
+        duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_3)
+        recieve_num += len(recieve_notification_list)
+        duplicate_num += len(duplicate_notification_list)
     # return値確認
     assert duplicate_check_result is True
     assert len(recieve_notification_list) == 2
@@ -3168,11 +3141,9 @@ def test_case3(mock_db, mock_mongo):
             'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 11, 8, 36, 53, 185093), }
     ]
     with patch('libs.duplicate_check.LABEL_KEY_MAP', label_key_map):
-        with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_MAP', duplication_settings_map):
-            with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_ECS_MAP', duplication_settings_ecs_map):
-                duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_4)
-                recieve_num += len(recieve_notification_list)
-                duplicate_num += len(duplicate_notification_list)
+        duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_4)
+        recieve_num += len(recieve_notification_list)
+        duplicate_num += len(duplicate_notification_list)
     # return値確認
     assert duplicate_check_result is True
     assert len(recieve_notification_list) == 2
@@ -3210,11 +3181,9 @@ def test_case3(mock_db, mock_mongo):
             'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 11, 8, 36, 53, 185093), }
     ]
     with patch('libs.duplicate_check.LABEL_KEY_MAP', label_key_map):
-        with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_MAP', duplication_settings_map):
-            with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_ECS_MAP', duplication_settings_ecs_map):
-                duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_5)
-                recieve_num += len(recieve_notification_list)
-                duplicate_num += len(duplicate_notification_list)
+        duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_5)
+        recieve_num += len(recieve_notification_list)
+        duplicate_num += len(duplicate_notification_list)
     # return値確認
     assert duplicate_check_result is True
     assert len(recieve_notification_list) == 0
@@ -3252,11 +3221,9 @@ def test_case3(mock_db, mock_mongo):
             'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 11, 8, 36, 53, 185093), }
     ]
     with patch('libs.duplicate_check.LABEL_KEY_MAP', label_key_map):
-        with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_MAP', duplication_settings_map):
-            with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_ECS_MAP', duplication_settings_ecs_map):
-                duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_6)
-                recieve_num += len(recieve_notification_list)
-                duplicate_num += len(duplicate_notification_list)
+        duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_6)
+        recieve_num += len(recieve_notification_list)
+        duplicate_num += len(duplicate_notification_list)
     # return値確認
     assert duplicate_check_result is True
     assert len(recieve_notification_list) == 2
@@ -3294,15 +3261,13 @@ def test_case3(mock_db, mock_mongo):
             'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 11, 8, 36, 53, 185093), }
     ]
     with patch('libs.duplicate_check.LABEL_KEY_MAP', label_key_map):
-        with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_MAP', duplication_settings_map):
-            with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_ECS_MAP', duplication_settings_ecs_map):
-                duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_7)
-                recieve_num += len(recieve_notification_list)
-                duplicate_num += len(duplicate_notification_list)
+        duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_7)
+        recieve_num += len(recieve_notification_list)
+        duplicate_num += len(duplicate_notification_list)
     # return値確認
     assert duplicate_check_result is True
     assert len(recieve_notification_list) == 3
-    assert len(duplicate_notification_list) == 1
+    assert len(duplicate_notification_list) == 2
 
     # mongoDB確認
     collection = mock_mongo.collection.return_value
@@ -3339,15 +3304,13 @@ def test_case3(mock_db, mock_mongo):
             'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 11, 8, 36, 53, 185093), }
     ]
     with patch('libs.duplicate_check.LABEL_KEY_MAP', label_key_map):
-        with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_MAP', duplication_settings_map):
-            with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_ECS_MAP', duplication_settings_ecs_map):
-                duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_8)
-                recieve_num += len(recieve_notification_list)
-                duplicate_num += len(duplicate_notification_list)
+        duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_8)
+        recieve_num += len(recieve_notification_list)
+        duplicate_num += len(duplicate_notification_list)
     # return値確認
     assert duplicate_check_result is True
     assert len(recieve_notification_list) == 1
-    assert len(duplicate_notification_list) == 0
+    assert len(duplicate_notification_list) == 1
 
     # mongoDB確認
     collection = mock_mongo.collection.return_value
@@ -3384,15 +3347,13 @@ def test_case3(mock_db, mock_mongo):
             'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 11, 8, 36, 53, 185093), }
     ]
     with patch('libs.duplicate_check.LABEL_KEY_MAP', label_key_map):
-        with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_MAP', duplication_settings_map):
-            with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_ECS_MAP', duplication_settings_ecs_map):
-                duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_9)
-                recieve_num += len(recieve_notification_list)
-                duplicate_num += len(duplicate_notification_list)
+        duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_9)
+        recieve_num += len(recieve_notification_list)
+        duplicate_num += len(duplicate_notification_list)
     # return値確認
     assert duplicate_check_result is True
     assert len(recieve_notification_list) == 1
-    assert len(duplicate_notification_list) == 0
+    assert len(duplicate_notification_list) == 1
 
     # mongoDB確認
     collection = mock_mongo.collection.return_value
@@ -3426,11 +3387,9 @@ def test_case3(mock_db, mock_mongo):
             'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 11, 8, 36, 53, 185093), }
     ]
     with patch('libs.duplicate_check.LABEL_KEY_MAP', label_key_map):
-        with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_MAP', duplication_settings_map):
-            with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_ECS_MAP', duplication_settings_ecs_map):
-                duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_10)
-                recieve_num += len(recieve_notification_list)
-                duplicate_num += len(duplicate_notification_list)
+        duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_10)
+        recieve_num += len(recieve_notification_list)
+        duplicate_num += len(duplicate_notification_list)
     # return値確認
     assert duplicate_check_result is True
     assert len(recieve_notification_list) == 0
@@ -3863,15 +3822,13 @@ def test_case3_imbalance(mock_db, mock_mongo):
             'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 11, 8, 36, 53, 185093), }
     ]
     with patch('libs.duplicate_check.LABEL_KEY_MAP', label_key_map):
-        with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_MAP', duplication_settings_map):
-            with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_ECS_MAP', duplication_settings_ecs_map):
-                duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_11)
-                recieve_num += len(recieve_notification_list)
-                duplicate_num += len(duplicate_notification_list)
+        duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_11)
+        recieve_num += len(recieve_notification_list)
+        duplicate_num += len(duplicate_notification_list)
     # return値確認
     assert duplicate_check_result is True
     assert len(recieve_notification_list) == 1
-    assert len(duplicate_notification_list) == 0
+    assert len(duplicate_notification_list) == 1
 
     # mongoDB確認
     collection = mock_mongo.collection.return_value
@@ -3905,15 +3862,13 @@ def test_case3_imbalance(mock_db, mock_mongo):
             'LAST_UPDATE_TIMESTAMP': datetime.datetime(2025, 9, 11, 8, 36, 53, 185093), }
     ]
     with patch('libs.duplicate_check.LABEL_KEY_MAP', label_key_map):
-        with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_MAP', duplication_settings_map):
-            with patch('libs.duplicate_check.DEDUPLICATION_SETTINGS_ECS_MAP', duplication_settings_ecs_map):
-                duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_12)
-                recieve_num += len(recieve_notification_list)
-                duplicate_num += len(duplicate_notification_list)
+        duplicate_check_result, recieve_notification_list, duplicate_notification_list = duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list_12)
+        recieve_num += len(recieve_notification_list)
+        duplicate_num += len(duplicate_notification_list)
     # return値確認
     assert duplicate_check_result is True
     assert len(recieve_notification_list) == 1
-    assert len(duplicate_notification_list) == 1
+    assert len(duplicate_notification_list) == 0
 
     # mongoDB確認
     collection = mock_mongo.collection.return_value
@@ -4051,3 +4006,321 @@ def test_case4_2(mock_db, mock_mongo):
     # 通知の総数確認
     assert recieve_num == 3
     assert duplicate_num == 0
+
+
+# ==========================================================================
+# ロック取得のデッドロックリトライ（Issue #2961 ステップD）
+# ロック行が事前登録されていない設定があると SELECT FOR UPDATE→INSERT 経路に落ち、同時リクエスト同士で
+# ギャップロック相互待ち＝デッドロック(errno 1213)を起こしうる。
+# リトライする実装（duplicate_check.py の table_lock リトライループ）を検証する。
+# ==========================================================================
+
+def _make_deadlock_appexception():
+    """table_lock が投げる、errno 1213 でラップされた AppException を作る"""
+    from common_libs.common.exception import AppException
+    import pymysql
+    pymysql_error = pymysql.err.OperationalError(1213, "Deadlock found when trying to get lock")
+    # sql_execute のラップ形: AppException("999-00003", [db, last_executed, pymysql_error], [])
+    return AppException("999-00003", ["ws_db", "SELECT ... FOR UPDATE", pymysql_error], [])
+
+
+def _make_other_appexception():
+    """デッドロック以外（errno 1062: Duplicate entry）でラップされた AppException を作る"""
+    from common_libs.common.exception import AppException
+    import pymysql
+    pymysql_error = pymysql.err.IntegrityError(1062, "Duplicate entry")
+    return AppException("999-00003", ["ws_db", "INSERT ...", pymysql_error], [])
+
+
+def _dedup_single_setting():
+    """fan-out（find_one_and_update）まで到達する最小の設定＋イベントを返す"""
+    settings = [
+        {
+            "DEDUPLICATION_SETTING_ID": "dup1",
+            "DEDUPLICATION_SETTING_NAME": "test_dup_rule",
+            "SETTING_PRIORITY": 1,
+            "EVENT_SOURCE_REDUNDANCY_GROUP": '{"id": ["ecs1"]}',
+            "CONDITION_EXPRESSION_ID": "1",
+            "CONDITION_LABEL_KEY_IDS": '{"id": ["labelkey1"]}'
+        }
+    ]
+    labeled_event_list = [
+        {
+            "labels": {
+                "_exastro_event_collection_settings_id": "ecs1",
+                "_exastro_agent_name": "agentA",
+                "labelkey1_name": "value1"
+            },
+            "exastro_label_key_inputs": {"labelkey1_name": "labelkey1"},
+            "exastro_created_at": 1672531200,
+            "labels._exastro_end_time": 9999999999
+        }
+    ]
+    return settings, labeled_event_list
+
+
+def _make_lock_wait_timeout_appexception():
+    """table_lock が投げる、errno 1205 でラップされた AppException を作る"""
+    from common_libs.common.exception import AppException
+    import pymysql
+    pymysql_error = pymysql.err.OperationalError(1205, "Lock wait timeout exceeded; try restarting transaction")
+    # sql_execute のラップ形: AppException("999-00003", [db, last_executed, pymysql_error], [])
+    return AppException("999-00003", ["ws_db", "SELECT ... FOR UPDATE", pymysql_error], [])
+
+
+def _bind_real_lock_error_judges(mock_db):
+    """mock_db の errno 判定メソッドを本物のロジックに差し替える。
+
+    MagicMock のままだと戻り値が truthy になり、判定していないつもりの errno でも
+    リトライ経路に入ってしまうため、1213/1205 の両方を必ず束ねる。
+    """
+    from common_libs.common.dbconnect.dbconnect_common import DBConnectCommon
+    mock_db.is_deadlock_exception.side_effect = DBConnectCommon.is_deadlock_exception
+    mock_db.is_lock_wait_timeout_exception.side_effect = DBConnectCommon.is_lock_wait_timeout_exception
+
+
+def test_table_lock_deadlock_retry_then_success(mock_db, mock_mongo):
+    """①1回デッドロック→リトライして成功。fan-out まで到達する"""
+    settings, labeled_event_list = _dedup_single_setting()
+    mock_db.table_select.return_value = settings
+    _bind_real_lock_error_judges(mock_db)
+    # 1回目デッドロック、2回目は成功（None を返す＝正常）
+    mock_db.table_lock.side_effect = [_make_deadlock_appexception(), None]
+
+    with patch('libs.duplicate_check.LABEL_KEY_MAP', {"labelkey1": {"LABEL_KEY_NAME": "labelkey1_name"}}), \
+         patch('libs.duplicate_check.time.sleep') as mock_sleep:
+        duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list)
+
+    # table_lock は 2 回呼ばれた（1回失敗 + 1回成功）
+    assert mock_db.table_lock.call_count == 2
+    # リトライ待ちの sleep が 1 回入った
+    assert mock_sleep.call_count == 1
+    # rollback が 1 回（失敗時）、commit が 1 回（成功後の fan-out 完了時）
+    assert mock_db.db_transaction_end.call_args_list.count(((False,), {})) == 1
+    assert mock_db.db_transaction_end.call_args_list.count(((True,), {})) == 1
+    # fan-out まで到達して 1 件挿入された
+    collection = mock_mongo.collection.return_value
+    assert collection.count_documents({}) == 1
+
+
+def test_table_lock_deadlock_retry_exhausted_raises(mock_db, mock_mongo):
+    """②デッドロックがリトライ上限を超えたら例外を送出。fan-out に到達しない"""
+    settings, labeled_event_list = _dedup_single_setting()
+    mock_db.table_select.return_value = settings
+    _bind_real_lock_error_judges(mock_db)
+    # retry_limit=10 → 初回 + リトライ10回 = 11 回すべてデッドロック
+    mock_db.table_lock.side_effect = [_make_deadlock_appexception() for _ in range(11)]
+
+    from common_libs.common.exception import AppException
+    with patch('libs.duplicate_check.LABEL_KEY_MAP', {"labelkey1": {"LABEL_KEY_NAME": "labelkey1_name"}}), \
+         patch('libs.duplicate_check.time.sleep') as mock_sleep, \
+         pytest.raises(AppException):
+        duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list)
+
+    # 初回 + リトライ10回 = 11 回で打ち止め
+    assert mock_db.table_lock.call_count == 11
+    # sleep はリトライ分の 10 回のみ（上限到達時は待たずに raise）
+    assert mock_sleep.call_count == 10
+    # 毎回 rollback（commit は一度も無い）
+    assert mock_db.db_transaction_end.call_args_list.count(((True,), {})) == 0
+    # fan-out に到達していない＝挿入 0 件
+    collection = mock_mongo.collection.return_value
+    assert collection.count_documents({}) == 0
+
+
+def test_table_lock_non_deadlock_raises_immediately(mock_db, mock_mongo):
+    """③デッドロック以外(1062)のエラーはリトライせず即送出"""
+    settings, labeled_event_list = _dedup_single_setting()
+    mock_db.table_select.return_value = settings
+    _bind_real_lock_error_judges(mock_db)
+    mock_db.table_lock.side_effect = [_make_other_appexception()]
+
+    from common_libs.common.exception import AppException
+    with patch('libs.duplicate_check.LABEL_KEY_MAP', {"labelkey1": {"LABEL_KEY_NAME": "labelkey1_name"}}), \
+         patch('libs.duplicate_check.time.sleep') as mock_sleep, \
+         pytest.raises(AppException):
+        duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list)
+
+    # 1 回で即 raise（リトライしない）
+    assert mock_db.table_lock.call_count == 1
+    # sleep は呼ばれない
+    assert mock_sleep.call_count == 0
+    # rollback は 1 回、commit は無し
+    assert mock_db.db_transaction_end.call_args_list.count(((False,), {})) == 1
+    assert mock_db.db_transaction_end.call_args_list.count(((True,), {})) == 0
+    # fan-out 未到達
+    collection = mock_mongo.collection.return_value
+    assert collection.count_documents({}) == 0
+
+
+def test_table_lock_deadlock_retry_does_not_duplicate_fanout(mock_db, mock_mongo):
+    """⑤リトライしても fan-out（find_one_and_update）は重複実行されない。
+
+    ロック取得だけがリトライ対象で、Mongo 書き込みはループ外＝1回だけ走ることを保証する。
+    （table_lock を先に失敗させても Mongo に二重書き込みされないのが A案の安全性の肝）
+    """
+    settings, labeled_event_list = _dedup_single_setting()
+    mock_db.table_select.return_value = settings
+    _bind_real_lock_error_judges(mock_db)
+    # 2 回デッドロック → 3 回目で成功。リトライを複数回踏ませる
+    mock_db.table_lock.side_effect = [
+        _make_deadlock_appexception(),
+        _make_deadlock_appexception(),
+        None
+    ]
+
+    with patch('libs.duplicate_check.LABEL_KEY_MAP', {"labelkey1": {"LABEL_KEY_NAME": "labelkey1_name"}}), \
+         patch('libs.duplicate_check.time.sleep'):
+        duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list)
+
+    # table_lock は 3 回（2 失敗 + 1 成功）
+    assert mock_db.table_lock.call_count == 3
+    # 何度リトライしても Mongo への挿入は 1 件だけ（fan-out は巻き戻らない）
+    collection = mock_mongo.collection.return_value
+    assert collection.count_documents({}) == 1
+
+
+# ==========================================================================
+# ロック待ちタイムアウト(1205)のリトライ（Issue #2961 ステップE）
+# fan-out の前に取ったロックを commit まで保持するため、先行リクエストの臨界区間が
+# innodb_lock_wait_timeout を超えると後続は 1205 でロールバックされる。
+# 1213 とは別カウンタでリトライし、どちらかが上限に達したら例外送出することを検証する。
+# ==========================================================================
+
+def test_table_lock_lock_wait_timeout_retry_then_success(mock_db, mock_mongo):
+    """⑥1回ロック待ちタイムアウト(1205)→リトライして成功。fan-out まで到達する"""
+    settings, labeled_event_list = _dedup_single_setting()
+    mock_db.table_select.return_value = settings
+    _bind_real_lock_error_judges(mock_db)
+    # 1回目 1205、2回目は成功（None を返す＝正常）
+    mock_db.table_lock.side_effect = [_make_lock_wait_timeout_appexception(), None]
+
+    with patch('libs.duplicate_check.LABEL_KEY_MAP', {"labelkey1": {"LABEL_KEY_NAME": "labelkey1_name"}}), \
+         patch('libs.duplicate_check.time.sleep') as mock_sleep:
+        duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list)
+
+    # table_lock は 2 回呼ばれた（1回失敗 + 1回成功）
+    assert mock_db.table_lock.call_count == 2
+    # 1205 は innodb_lock_wait_timeout ぶん待たされた後なので、追加の sleep は入れない
+    assert mock_sleep.call_count == 0
+    # rollback が 1 回（失敗時）、commit が 1 回（成功後の fan-out 完了時）
+    assert mock_db.db_transaction_end.call_args_list.count(((False,), {})) == 1
+    assert mock_db.db_transaction_end.call_args_list.count(((True,), {})) == 1
+    # fan-out まで到達して 1 件挿入された
+    collection = mock_mongo.collection.return_value
+    assert collection.count_documents({}) == 1
+
+
+def test_table_lock_lock_wait_timeout_retry_exhausted_raises(mock_db, mock_mongo):
+    """⑦1205 がリトライ上限(既定5)を超えたら例外を送出。fan-out に到達しない"""
+    settings, labeled_event_list = _dedup_single_setting()
+    mock_db.table_select.return_value = settings
+    _bind_real_lock_error_judges(mock_db)
+    # 上限5 → 初回 + リトライ5回 = 6 回すべて 1205
+    mock_db.table_lock.side_effect = [_make_lock_wait_timeout_appexception() for _ in range(6)]
+
+    from common_libs.common.exception import AppException
+    with patch('libs.duplicate_check.LABEL_KEY_MAP', {"labelkey1": {"LABEL_KEY_NAME": "labelkey1_name"}}), \
+         patch('libs.duplicate_check.time.sleep') as mock_sleep, \
+         pytest.raises(AppException):
+        duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list)
+
+    # 初回 + リトライ5回 = 6 回で打ち止め
+    assert mock_db.table_lock.call_count == 6
+    # 1205 のリトライは sleep を挟まない
+    assert mock_sleep.call_count == 0
+    # 毎回 rollback（commit は一度も無い）
+    assert mock_db.db_transaction_end.call_args_list.count(((True,), {})) == 0
+    # fan-out に到達していない＝挿入 0 件
+    collection = mock_mongo.collection.return_value
+    assert collection.count_documents({}) == 0
+
+
+def test_table_lock_retry_counters_are_independent(mock_db, mock_mongo):
+    """⑧1213 と 1205 のリトライ回数は別勘定。
+
+    1205 を上限まで使い切っても、1213 側の残回数は独立に残っていてリトライできる。
+    """
+    settings, labeled_event_list = _dedup_single_setting()
+    mock_db.table_select.return_value = settings
+    _bind_real_lock_error_judges(mock_db)
+    # 1205 を 5 回（上限まで）→ その後 1213 を 1 回 → 成功
+    side_effect = [_make_lock_wait_timeout_appexception() for _ in range(5)]
+    side_effect.append(_make_deadlock_appexception())
+    side_effect.append(None)
+    mock_db.table_lock.side_effect = side_effect
+
+    with patch('libs.duplicate_check.LABEL_KEY_MAP', {"labelkey1": {"LABEL_KEY_NAME": "labelkey1_name"}}), \
+         patch('libs.duplicate_check.time.sleep') as mock_sleep:
+        duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list)
+
+    # 1205×5 + 1213×1 + 成功 = 7 回
+    assert mock_db.table_lock.call_count == 7
+    # sleep が入るのは 1213 の 1 回だけ（1205 は待たない）
+    assert mock_sleep.call_count == 1
+    # 最後に commit されて fan-out 到達
+    assert mock_db.db_transaction_end.call_args_list.count(((True,), {})) == 1
+    collection = mock_mongo.collection.return_value
+    assert collection.count_documents({}) == 1
+
+
+def test_table_lock_lock_wait_timeout_retry_limit_env_override(mock_db, mock_mongo):
+    """⑨1205 のリトライ上限は OASE_LOCK_WAIT_TIMEOUT_RETRY_LIMIT で変更できる"""
+    settings, labeled_event_list = _dedup_single_setting()
+    mock_db.table_select.return_value = settings
+    _bind_real_lock_error_judges(mock_db)
+    # 上限1 → 初回 + リトライ1回 = 2 回で打ち止め（3 個目は消費されない）
+    mock_db.table_lock.side_effect = [_make_lock_wait_timeout_appexception() for _ in range(3)]
+
+    from common_libs.common.exception import AppException
+    with patch('libs.duplicate_check.LABEL_KEY_MAP', {"labelkey1": {"LABEL_KEY_NAME": "labelkey1_name"}}), \
+         patch.dict('os.environ', {"OASE_LOCK_WAIT_TIMEOUT_RETRY_LIMIT": "1"}), \
+         patch('libs.duplicate_check.time.sleep') as mock_sleep, \
+         pytest.raises(AppException):
+        duplicate_check.duplicate_check(mock_db, mock_mongo, labeled_event_list)
+
+    assert mock_db.table_lock.call_count == 2
+    assert mock_sleep.call_count == 0
+    collection = mock_mongo.collection.return_value
+    assert collection.count_documents({}) == 0
+
+
+# ==========================================================================
+# errno 判定ヘルパーの単体テスト（dbconnect_common）
+# ==========================================================================
+
+def test_get_db_errno_extracts_errno():
+    """ラップされた AppException から errno を取り出せる"""
+    from common_libs.common.dbconnect.dbconnect_common import DBConnectCommon
+    assert DBConnectCommon.get_db_errno(_make_deadlock_appexception()) == 1213
+    assert DBConnectCommon.get_db_errno(_make_lock_wait_timeout_appexception()) == 1205
+    assert DBConnectCommon.get_db_errno(_make_other_appexception()) == 1062
+
+
+def test_get_db_errno_returns_none_for_unexpected_shape():
+    """想定外の形の例外は None（安全側）"""
+    from common_libs.common.dbconnect.dbconnect_common import DBConnectCommon
+    from common_libs.common.exception import AppException
+    assert DBConnectCommon.get_db_errno(ValueError("not a wrapped exception")) is None
+    assert DBConnectCommon.get_db_errno(AppException("999-00003", [], [])) is None
+    assert DBConnectCommon.get_db_errno(AppException("999-00003", ["ws_db", "SELECT ...", "not an exception"], [])) is None
+
+
+def test_is_deadlock_and_lock_wait_timeout_judges():
+    """1213/1205 の判定が互いを取り違えない"""
+    from common_libs.common.dbconnect.dbconnect_common import DBConnectCommon
+    deadlock = _make_deadlock_appexception()
+    lock_wait_timeout = _make_lock_wait_timeout_appexception()
+    other = _make_other_appexception()
+
+    assert DBConnectCommon.is_deadlock_exception(deadlock) is True
+    assert DBConnectCommon.is_deadlock_exception(lock_wait_timeout) is False
+    assert DBConnectCommon.is_deadlock_exception(other) is False
+
+    assert DBConnectCommon.is_lock_wait_timeout_exception(lock_wait_timeout) is True
+    assert DBConnectCommon.is_lock_wait_timeout_exception(deadlock) is False
+    assert DBConnectCommon.is_lock_wait_timeout_exception(other) is False
+
+    # 想定外の形はどちらも False
+    assert DBConnectCommon.is_deadlock_exception(ValueError("x")) is False
+    assert DBConnectCommon.is_lock_wait_timeout_exception(ValueError("x")) is False

@@ -1,0 +1,64 @@
+#   Copyright 2026 NEC Corporation
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+#
+
+# ログ出力設定ファイル
+# ita_api_organization / ita_api_admin と同じ設定を使用する(共通機能の流用)。
+# common_libs/common/logger.py の AppLog クラスがこのファイルを読み込んで
+# ロガー(stdAppLogger / fileAppLogger)を初期化する。
+#
+# Logging configuration file.
+# Uses the same settings as ita_api_organization / ita_api_admin (reusing the
+# common logging feature). common_libs/common/logger.py's AppLog class loads
+# this file to configure the loggers (stdAppLogger for containers /
+# fileAppLogger for non-container mode).
+version: 1
+formatters:
+  myformat:
+    format: '[%(asctime)s][%(levelname)s]%(message)s'
+handlers:
+  # コンテナ実行時: 標準出力にログを出すハンドラ
+  # Handler used in container mode: writes logs to stdout
+  console:
+    class: logging.StreamHandler
+    formatter: myformat
+    stream: ext://sys.stdout
+  # 非コンテナ実行時: ファイルにログを出すハンドラ
+  # Handler used in non-container mode: writes logs to a file
+  myfile:
+    class: logging.FileHandler
+    formatter: myformat
+    filename: app.log
+  # コンテナ実行時: 標準出力にログを出すハンドラ(stdAppLoggerが使用)
+  # Handler used in container mode by stdAppLogger: writes logs to stdout
+  myconsole:
+    class: logging.StreamHandler
+    formatter: myformat
+    stream: ext://sys.stdout
+loggers:
+  # 非コンテナ実行時に使用するロガー
+  # Logger used in non-container mode
+  fileAppLogger:
+    level: ERROR
+    handlers: [myfile]
+    propagate: no
+  # コンテナ実行時(SaaS)に使用するロガー
+  # Logger used in container(SaaS) mode
+  stdAppLogger:
+    level: INFO
+    handlers: [myconsole]
+    propagate: no
+root:
+  level: ERROR
+  handlers: [console]

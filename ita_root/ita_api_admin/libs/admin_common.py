@@ -189,6 +189,10 @@ def initial_settings_ansible(ws_db, body):
             update_settings[2] = ['0', '3']
         else:
             update_settings[2] = ['1', '3']
+        if 'Ansible Automation Platform (Cloud)' in body.get('execution_engine_list'):
+            update_settings[2] = ['0', '4']
+        else:
+            update_settings[2] = ['1', '4']
 
         sql = "UPDATE T_ANSC_EXEC_ENGINE SET DISUSE_FLAG=%s WHERE ID=%s"
         for update_setting in update_settings:

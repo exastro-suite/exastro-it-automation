@@ -264,9 +264,9 @@ def my_deep_merge(a, b):
 
         for item in b:
             if isinstance(b[item], dict):
-                m[item] = merge_dict(a[item], b[item])
+                m[item] = merge_dict(a.get(item), b[item])
             elif isinstance(b[item], list):
-                m[item] = merge_list(a[item], b[item])
+                m[item] = merge_list(a.get(item), b[item])
             else:
                 m[item] = b[item]
         return m

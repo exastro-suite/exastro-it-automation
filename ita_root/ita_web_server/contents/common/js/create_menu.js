@@ -271,6 +271,7 @@ setEditorEvents() {
     this.itemTitleInputEvent();
     this.itemCopyDeleteEvent();
     this.itemReferenceItemSelectEvent();
+    this.itemDisplaySettingEvent();
 
     this.itemInputChangeEvent();
     this.itemSetSelect2Event();
@@ -697,6 +698,9 @@ itemCopyDeleteEvent() {
                     const columnCounter = this.columnCounter++;
                     newId = `c${this.addItemIdCheck('c', columnCounter )}`;
                     $eachItem.attr('id', newId ).empty();
+
+                    // 画面表示設定の開閉状態を引き継ぐ
+                    if ( this.displaySettingOpenIds.has( id ) ) this.displaySettingOpenIds.add( newId );
                     $preview.attr('data-id', newId ).empty();
 
                     // 階層
@@ -778,6 +782,7 @@ itemCopyDeleteEvent() {
                 // データ削除
                 this.menuMap.delete( id );
                 this.deleteUniqueConstraintDispData( id );
+                this.displaySettingOpenIds.delete( id );
             });
 
             // 親グループが空になる場合
@@ -853,9 +858,21 @@ itemInputChangeEvent() {
         }
 
         // 値をセット
-        if ( key === 'required' || key === 'uniqued') {
+        if ( key === 'display_settings') {
+            // 画面表示設定
+            const settingKey = $input.attr('data-setting-key');
+            const displaySettings = ( fn.typeof( data.display_settings ) === 'object')? data.display_settings: {};
+            if ( $input.is('.config-color') ) {
+                // 色選択
+                data.display_settings = { ...displaySettings, [ settingKey ]: value };
+                this.setDisplaySettingColor( $input.get(0), value );
+            } else {
+                // チェックボックス
+                data.display_settings = { ...displaySettings, [ settingKey ]: $input.prop('checked') };
+            }
+        } else if ( key === 'required' || key === 'uniqued') {
             // 必須・一意
-            data[ key ] = ( value === 'on')? '1': '0';
+            data[ key ] = ( $input.prop('checked') )? '1': '0';
         } else if ( key === 'reference_item') {
             // プルダウン選択 参照項目
             data[ key ] = $input.text().split(',');
@@ -932,6 +949,66 @@ itemReferenceItemSelectEvent() {
     this.$.menuTable.on('click.itemReferenceItemSelect', '.reference-item-select', ( e ) => {
         this.itaModalOpen( getMessage.FTE01093, this.modalReferenceItemList, 'reference' , $( e.currentTarget ));
     });
+}
+/*
+##################################################
+    画面表示設定 開閉
+##################################################
+*/
+itemDisplaySettingEvent() {
+    this.$.menuTable.on('click.itemDisplaySetting', '.display-setting-toggle', ( e ) => {
+        const $toggle = $( e.currentTarget );
+        const $table = $toggle.closest('.menu-column-config-table').toggleClass('display-setting-open');
+        // 開閉状態を保持（画面外に出て再描画、コピーした場合に復元するため）
+        const id = $toggle.closest('.menu-column').attr('id');
+        if ( id === undefined ) return;
+        if ( $table.is('.display-setting-open') ) {
+            this.displaySettingOpenIds.add( id );
+        } else {
+            this.displaySettingOpenIds.delete( id );
+        }
+    });
+
+    // 色の設定を解除
+    this.$.menuTable.on('click.itemDisplaySettingColorClear', '.display-setting-color-clear', ( e ) => {
+        if ( this.editorMode === 'view') return;
+        const $button = $( e.currentTarget );
+        const input = $button.siblings('.config-color').get(0);
+        const id = $button.closest('.menu-column').attr('id');
+        const data = this.menuMap.get( id );
+        if ( !input || data === undefined ) return;
+
+        if ( fn.typeof( data.display_settings ) === 'object') {
+            const displaySettings = { ...data.display_settings };
+            delete displaySettings[ input.dataset.settingKey ];
+            data.display_settings = displaySettings;
+        }
+        this.setDisplaySettingColor( input, null );
+        this.updatePreviewColumn( id );
+        this.history.add();
+    });
+}
+// 画面表示設定：いずれかが設定済みか
+hasDisplaySetting( data ) {
+    const displaySettings = ( fn.typeof( data.display_settings ) === 'object')? data.display_settings: {};
+    return Object.values( displaySettings ).some( value => value !== false && value !== null && value !== undefined && value !== '');
+}
+// 画面表示設定：色の判定（#rrggbb形式のみ有効）
+isDisplaySettingColor( color ) {
+    return fn.typeof( color ) === 'string' && /^#[0-9a-fA-F]{6}$/.test( color );
+}
+// 画面表示設定：色選択の表示を更新
+setDisplaySettingColor( input, color ) {
+    const wrap = input.parentElement;
+    const text = wrap.querySelector('.display-setting-color-value');
+    if ( this.isDisplaySettingColor( color ) ) {
+        input.value = color;
+        wrap.classList.remove('color-unset');
+        text.textContent = color;
+    } else {
+        wrap.classList.add('color-unset');
+        text.textContent = getMessage.FTE01170;
+    }
 }
 // 参照項目一覧取得・選択
 modalReferenceItemList( $target ) {
@@ -2317,6 +2394,11 @@ setColumnContents( id ) {
     const configTable = clone.querySelector('.menu-column-config-table tbody');
     this.setColumnType( configTable, id, classId, data )
 
+    // 画面表示設定の開閉状態を復元
+    if ( this.displaySettingOpenIds.has( id ) ) {
+        clone.querySelector('.menu-column-config-table').classList.add('display-setting-open');
+    }
+
     return clone;
 }
 /*
@@ -2345,7 +2427,30 @@ setColumnType( configTable, id, classId, data ) {
             return;
         }
 
-        if ( key === 'required' || key === 'uniqued') {
+        if ( key === 'display_settings') {
+            // 画面表示設定
+            const settingKey = input.dataset.settingKey;
+            const settingValue = ( fn.typeof( value ) === 'object')? value[ settingKey ]: null;
+            if ( input.type === 'color') {
+                // 色選択
+                this.setDisplaySettingColor( input, settingValue );
+                // 編集不可
+                if ( this.editorMode === 'view' ) {
+                    input.disabled = true;
+                }
+            } else {
+                // チェックボックス
+                if ( settingValue === true ) input.checked = true;
+                // 編集不可
+                if ( this.editorMode === 'view' ) {
+                    input.disabled = true;
+                    input.classList.add('disabled-checkbox');
+                    const label = input.parentElement;
+                    label.setAttribute('disabled', 'disabled');
+                    label.classList.remove('on-hover');
+                }
+            }
+        } else if ( key === 'required' || key === 'uniqued') {
             // チェックボックス
             if ( value === '1') input.checked = true;
             // 編集不可
@@ -2502,6 +2607,29 @@ setPreviewColumnContents( id ) {
         item.classList.add( type );
     });
 
+    // 画面表示設定の色
+    const displaySettings = ( fn.typeof( data.display_settings ) === 'object')? data.display_settings: {};
+    if ( this.isDisplaySettingColor( displaySettings.header_color ) ) {
+        const headerCell = clone.querySelector('.previewColumnHeader > div');
+        const textColor = fn.contrastTextColor( displaySettings.header_color );
+        headerCell.style.backgroundColor = displaySettings.header_color;
+        headerCell.style.color = textColor;
+        // 黒文字の場合は白の影を消す
+        if ( textColor !== '#FFFFFF') headerCell.style.textShadow = 'none';
+    }
+    if ( this.isDisplaySettingColor( displaySettings.body_color ) ) {
+        // 奇数行はそのまま、偶数行はうっすら濃くする
+        const oddColor = displaySettings.body_color;
+        const evenColor = fn.darkenColor( oddColor );
+        const oddTextColor = fn.contrastTextColor( oddColor );
+        const evenTextColor = fn.contrastTextColor( evenColor );
+        clone.querySelectorAll('.previewColumnBody > div').forEach( ( cell, index ) => {
+            const isEven = ( index % 2 === 1 );
+            cell.style.backgroundColor = ( isEven )? evenColor: oddColor;
+            cell.style.color = ( isEven )? evenTextColor: oddTextColor;
+        });
+    }
+
     // 参照項目があれば追加して返す
     if ( classId === '7') {
         const list = data.reference_item ?? [];
@@ -2539,6 +2667,8 @@ getPreviewColumnPreviewContents( id ) {
     }
     return text;
 }
+// 画面表示設定を開いている項目ID
+displaySettingOpenIds = new Set();
 // 内容テキスト
 selectDummyText = {
     '0' : ['',''],
@@ -3027,7 +3157,8 @@ typeSingleTextHtml() {
         </td>
     </tr>
     ${this.typeCommonRequiredUniquehtml()}
-    ${this.typeCommonExplanationNotehtml()}`;
+    ${this.typeCommonExplanationNotehtml()}
+    ${this.typeCommonDisplaySettingHtml()}`;
 }
 // 文字列(複数行)
 typeMultipleTextHtml() {
@@ -3054,7 +3185,8 @@ typeMultipleTextHtml() {
         </td>
     </tr>
     ${this.typeCommonRequiredUniquehtml()}
-    ${this.typeCommonExplanationNotehtml()}`;
+    ${this.typeCommonExplanationNotehtml()}
+    ${this.typeCommonDisplaySettingHtml()}`;
 }
 // 整数
 typeIntegerHtml() {
@@ -3081,7 +3213,8 @@ typeIntegerHtml() {
         </td>
     </tr>
     ${this.typeCommonRequiredUniquehtml()}
-    ${this.typeCommonExplanationNotehtml()}`;
+    ${this.typeCommonExplanationNotehtml()}
+    ${this.typeCommonDisplaySettingHtml()}`;
 }
 // 小数
 typeFloatHtml() {
@@ -3115,7 +3248,8 @@ typeFloatHtml() {
         </td>
     </tr>
     ${this.typeCommonRequiredUniquehtml()}
-    ${this.typeCommonExplanationNotehtml()}`;
+    ${this.typeCommonExplanationNotehtml()}
+    ${this.typeCommonDisplaySettingHtml()}`;
 }
 // 日時
 typeDateHtml() {
@@ -3129,7 +3263,8 @@ typeDateHtml() {
         }</td>
     </tr>
     ${this.typeCommonRequiredUniquehtml()}
-    ${this.typeCommonExplanationNotehtml()}`;
+    ${this.typeCommonExplanationNotehtml()}
+    ${this.typeCommonDisplaySettingHtml()}`;
 }
 // 日付
 typeDayHtml() {
@@ -3143,7 +3278,8 @@ typeDayHtml() {
         }</td>
     </tr>
     ${this.typeCommonRequiredUniquehtml()}
-    ${this.typeCommonExplanationNotehtml()}`;
+    ${this.typeCommonExplanationNotehtml()}
+    ${this.typeCommonDisplaySettingHtml()}`;
 }
 // プルダウン選択
 typePulldownHtml() {
@@ -3183,7 +3319,8 @@ typePulldownHtml() {
         </td>
     </tr>
     ${this.typeCommonRequiredUniquehtml()}
-    ${this.typeCommonExplanationNotehtml()}`;
+    ${this.typeCommonExplanationNotehtml()}
+    ${this.typeCommonDisplaySettingHtml()}`;
 }
 typePulldownDefaultValueHtml() {
     return `
@@ -3205,7 +3342,8 @@ typePasswordHtml() {
         </td>
     </tr>
     ${this.typeCommonRequiredUniquehtml()}
-    ${this.typeCommonExplanationNotehtml()}`;
+    ${this.typeCommonExplanationNotehtml()}
+    ${this.typeCommonDisplaySettingHtml()}`;
 }
 // ファイルアップロード
 typeFileuploadHtml() {
@@ -3218,7 +3356,8 @@ typeFileuploadHtml() {
         </td>
     </tr>
     ${this.typeCommonRequiredUniquehtml()}
-    ${this.typeCommonExplanationNotehtml()}`;
+    ${this.typeCommonExplanationNotehtml()}
+    ${this.typeCommonDisplaySettingHtml()}`;
 }
 // リンク
 typeLinkHtml() {
@@ -3238,7 +3377,8 @@ typeLinkHtml() {
         </td>
     </tr>
     ${this.typeCommonRequiredUniquehtml()}
-    ${this.typeCommonExplanationNotehtml()}`;
+    ${this.typeCommonExplanationNotehtml()}
+    ${this.typeCommonDisplaySettingHtml()}`;
 }
 // パラメータシート参照
 typeParameterSheetHtml() {
@@ -3256,7 +3396,8 @@ typeParameterSheetHtml() {
             `<input class="input config-text" type="text" data-key="parameter_sheet_reference">`}
         </td>
     </tr>
-    ${this.typeCommonExplanationNotehtml()}`;
+    ${this.typeCommonExplanationNotehtml()}
+    ${this.typeCommonDisplaySettingHtml()}`;
 }
 /*
 ##################################################
@@ -3301,6 +3442,47 @@ typeCommonExplanationNotehtml() {
             </div>
         </td>
     </tr>`;
+}
+// 画面表示設定
+typeCommonDisplaySettingHtml() {
+    return `
+    <!-- 画面表示設定 -->
+    <tr class="display-setting-toggle-row">
+        <td colspan="2">
+            <button type="button" class="display-setting-toggle" title="${fn.escape(getMessage.FTE01163)}">
+                <span class="display-setting-toggle-mark"></span>${getMessage.FTE01162}
+            </button>
+        </td>
+    </tr>
+    <!-- 画面表示設定：画面からの編集を禁止 -->
+    <tr class="display-setting-row">
+        <td colspan="2">
+            <label class="display-setting-label on-hover" title="${fn.escape(getMessage.FTE01165)}">
+                <input class="config-checkbox display-setting" type="checkbox" data-key="display_settings" data-setting-key="disable_edit">
+                <span></span>${getMessage.FTE01164}
+            </label>
+        </td>
+    </tr>
+    <!-- 画面表示設定：ヘッダー色 -->
+    <tr class="display-setting-row" title="${fn.escape(getMessage.FTE01167)}">
+        <th class="half-cell"><span class="config-title">${getMessage.FTE01166}</span></th>
+        <td class="half-cell">${this.typeCommonDisplaySettingColorHtml('header_color')}</td>
+    </tr>
+    <!-- 画面表示設定：ボディ色 -->
+    <tr class="display-setting-row" title="${fn.escape(getMessage.FTE01169)}">
+        <th class="half-cell"><span class="config-title">${getMessage.FTE01168}</span></th>
+        <td class="half-cell">${this.typeCommonDisplaySettingColorHtml('body_color')}</td>
+    </tr>`;
+}
+// 画面表示設定：色選択
+typeCommonDisplaySettingColorHtml( settingKey ) {
+    const disabled = ( this.editorMode === 'view')? ' disabled': '';
+    return `
+    <div class="display-setting-color color-unset">
+        <input class="input config-color" type="color" data-key="display_settings" data-setting-key="${settingKey}" value="#ffffff">
+        <span class="display-setting-color-value">${getMessage.FTE01170}</span>
+        <button type="button" class="display-setting-color-clear" title="${fn.escape(getMessage.FTE01171)}"${disabled}></button>
+    </div>`;
 }
 /*
 ##################################################
@@ -4023,6 +4205,7 @@ createJsonData( mode = 'registration') {
                     column_class_id: column_class_id,
                     description: data.description ?? '',
                     remarks: data.remarks ?? '',
+                    display_settings: data.display_settings ?? null,
                     column_group: parents,
                     display_order: itemCount++
                 };
@@ -4244,6 +4427,45 @@ getItemData( data, setData ) {
 ##################################################
 */
 registrationMenu( type ) {
+    // 必須・初期値なし・画面からの編集禁止の項目があれば警告し、無視した場合は登録する
+    return this.disableEditRequiredConfirm().then( ( flag ) => {
+        if ( !flag ) return Promise.reject();
+        return this.registrationMenuExecute( type );
+    });
+}
+// 必須・初期値なし・画面からの編集禁止の項目チェック
+disableEditRequiredConfirm() {
+    const defaultValueKeys = {
+        '1': 'single_string_default_value',
+        '2': 'multi_string_default_value',
+        '3': 'integer_default_value',
+        '4': 'decimal_default_value',
+        '5': 'datetime_default_value',
+        '6': 'date_default_value',
+        '7': 'pulldown_selection_default_value',
+        '10': 'link_default_value'
+    };
+    const columns = this.createJsonData().column;
+    const itemNames = [];
+    for ( const key in columns ) {
+        const column = columns[ key ];
+        const displaySettings = ( fn.typeof( column.display_settings ) === 'object')? column.display_settings: {};
+        if ( column.required !== '1' || displaySettings.disable_edit !== true ) continue;
+
+        // 初期値が無い項目タイプ（パスワード、ファイルアップロード等）は常に対象
+        const defaultValueKey = defaultValueKeys[ column.column_class_id ];
+        const defaultValue = ( defaultValueKey )? column[ defaultValueKey ]: null;
+        if ( defaultValue === undefined || defaultValue === null || defaultValue === '') {
+            const groupName = ( column.column_group )? column.column_group + '/': '';
+            itemNames.push( '・' + groupName + column.item_name );
+        }
+    }
+    if ( !itemNames.length ) return Promise.resolve( true );
+
+    return fn.iconConfirm('circle_exclamation', getMessage.FTE10059, getMessage.FTE01172 + '\n\n' + itemNames.join('\n') + '\n\n' + getMessage.FTE01173 );
+}
+// 登録実行
+registrationMenuExecute( type ) {
     return new Promise( ( resolve, reject ) => {
         // 登録データ
         const registrationData = this.createJsonData();
@@ -4370,6 +4592,7 @@ async setMenu( setMode ) {
 
     // データ初期化
     this.menuMap = new Map();
+    this.displaySettingOpenIds = new Set();
     this.pulldownSelectionDefaultValue = {};
     this.menuIdList = [];
     this.floor = [];
@@ -4482,6 +4705,9 @@ async setMenu( setMode ) {
 
                 this.menuMap.set( id, columnData );
                 container.appendChild( column );
+
+                // 画面表示設定が設定済みなら開いた状態にする
+                if ( this.hasDisplaySetting( columnData ) ) this.displaySettingOpenIds.add( id );
 
                 // プレビュー
                 const preview = this.getFlagment('previewColumnContainerHtml');

@@ -15,6 +15,7 @@
 from flask import g
 import os
 import json
+import time
 import datetime
 import copy
 from pymongo import ASCENDING, InsertOne, ReturnDocument
@@ -23,6 +24,7 @@ from collections import defaultdict
 import queue
 
 from common_libs.common.mongoconnect.const import Const as mongoConst
+from common_libs.common.exception import AppException
 from common_libs.oase.const import oaseConst
 from libs.label_event import LABEL_KEY_MAP
 
@@ -96,6 +98,9 @@ def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
     bulkwrite_event_list = []
     # key: duplicate_check_key, value: list of event data (find_one_updateを実行するためのデータ)
     findoneupdate_event_group = defaultdict(list)
+
+    # このリクエストが含むイベント収集設定に紐づく重複排除設定IDを集約
+    lock_key_set = set()
 
     # イベント単位でループ
     # labeled_event_listは、既にfetched_time->exastro_created_atでソート済みの前提
@@ -188,10 +193,14 @@ def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
 
             # 検索条件を追加（重複排除ごとに検索するのではなく、まとめる）
             conditions_list.append((deduplication_settings_id, conditions))
+            # リクエスト内で使う重複排除設定＝ロックすべき設定。を追加
+            # （is_skipで抜けた設定は握らない＝並列度を落とさない）。
+            lock_key_set.add("OASE_DEDUPLICATION_" + deduplication_settings_id)
 
-            attribute_list["deduplication_settings_id"] = str(attribute_list["deduplication_settings_id"])
             # ラベルのkey&valueの組み合わせを不変集合にして、重複チェックキーと合わせて保持しておく
             attribute_list.update({key.removeprefix("labels."): value for key, value in tmp_user_labels.items()})
+
+        attribute_list["deduplication_settings_id"] = str(attribute_list["deduplication_settings_id"])
 
         # g.applogger.debug(f"{conditions_list=}")
         if len(conditions_list) == 0:
@@ -227,22 +236,82 @@ def duplicate_check(wsDb, wsMongo, labeled_event_list):  # noqa: C901
 
     q_findoneupdate_num = queue.Queue()
     if findoneupdate_event_group:
-        # スレッド数。I/Oバウンドな処理なので、CPUコア数より多めに設定するのが一般的
-        MAX_WORKERS = int(os.environ.get("MAX_WORKER_THREAD_POOL_SIZE", 12))
-        with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-            # 各グループを処理するタスクを投入
-            future_to_group = []
-            for attribute_key, event_group in findoneupdate_event_group.items():
-                future_to_group.append(executor.submit(_process_event_group, labeled_event_collection, event_group, q_findoneupdate_num, DEDUPLICATION_SETTINGS_MAP, DEDUPLICATION_SETTINGS_ECS_MAP))
-            findoneupdate_event_group = None
-            # 全てのタスクの完了を待ち、例外が発生した場合はログに出力
-            for future in concurrent.futures.as_completed(future_to_group):
-                try:
-                    future.result()  # result()を呼び出すことでワーカー関数内の例外を再発生させる
-                except Exception as e:
-                    executor.shutdown(wait=False, cancel_futures=True)
-                    raise e
-            future_to_group = None
+        # このリクエストで使う重複排除設定を1トランザクションで一括ロックする。
+        # 昇順ソート=デッドロック回避（全リクエストで取得順を一定にする）。
+        lock_keys = sorted(lock_key_set)
+
+        # ロック取得（デッドロック・ロック待ちタイムアウトでリトライ）
+        # 上限は errno ごとに独立して数え、どちらかが自分の上限に達した時点で例外にする
+        deadlock_retry_limit = 10  # デッドロック(1213)時の最大リトライ回数
+        lock_wait_timeout_retry_limit = int(os.environ.get("OASE_LOCK_WAIT_TIMEOUT_RETRY_LIMIT", 5))  # ロック待ちタイムアウト(1205)時の最大リトライ回数
+        retry_interval = 0.1       # デッドロック(1213)のリトライ間隔秒（1205 は待たずに再取得する）
+        deadlock_retry_count = 0
+        lock_wait_timeout_retry_count = 0
+        while True:
+            try:
+                wsDb.db_transaction_start()
+                # 重複排除設定ID単位で行ロック
+                wsDb.table_lock(lock_keys)
+                # 取得成功ログ。解放側(releasing/rolling back)と文言を揃え、跨ぎリクエストの直列化順を追える。
+                g.applogger.debug(f"deduplication setting lock acquired. {lock_keys=}")
+                break  # ロック取得成功
+            except AppException as lock_e:
+                # _is_transaction を False に戻すため rollback は必ず通す（次のstartが空振りしないように）
+                wsDb.db_transaction_end(False)
+                if wsDb.is_deadlock_exception(lock_e) and deadlock_retry_count < deadlock_retry_limit:
+                    # デッドロック(1213)
+                    #   起きる条件（複数リクエストの同時受信時）:
+                    #   table_lock は「SELECT ... IN (...) FOR UPDATE → 無ければINSERT → 再SELECT」で動く。
+                    #   ロックキーの行が未存在だと FOR UPDATE が実レコードでなくギャップロックを取り、
+                    #   複数リクエストが同一ギャップに同時保持できる(共存可)。
+                    #   その状態で各リクエストが INSERT に進むと、互いのギャップロックと
+                    #   衝突して循環待ちになるが、そのうちの1リクエストは続行される。
+                    #   それ以外をデッドロック(1213)でロールバックする。
+                    #   続行した側が行をINSERT済みなのでリトライ時は実レコードロックとなりこの経路に入らない。
+                    deadlock_retry_count += 1
+                    g.applogger.info(
+                        "deduplication setting lock deadlock(1213). retrying. "
+                        f"{deadlock_retry_count=}, {deadlock_retry_limit=}, {retry_interval=}, {lock_keys=}"
+                    )
+                    time.sleep(retry_interval)
+                    continue
+                if wsDb.is_lock_wait_timeout_exception(lock_e) and lock_wait_timeout_retry_count < lock_wait_timeout_retry_limit:
+                    # ロック待ちタイムアウト(1205)
+                    lock_wait_timeout_retry_count += 1
+                    g.applogger.info(
+                        "deduplication setting lock wait timeout(1205). retrying. "
+                        f"{lock_wait_timeout_retry_count=}, {lock_wait_timeout_retry_limit=}, {lock_keys=}"
+                    )
+                    continue
+                # 1213/1205 以外、またはどちらかのリトライ上限到達 → raise
+                raise
+
+        try:
+            # スレッド数。I/Oバウンドな処理なので、CPUコア数より多めに設定するのが一般的
+            MAX_WORKERS = int(os.environ.get("MAX_WORKER_THREAD_POOL_SIZE", 12))
+            with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+                # 各グループを処理するタスクを投入
+                future_to_group = []
+                for attribute_key, event_group in findoneupdate_event_group.items():
+                    future_to_group.append(executor.submit(_process_event_group, labeled_event_collection, event_group, q_findoneupdate_num, DEDUPLICATION_SETTINGS_MAP, DEDUPLICATION_SETTINGS_ECS_MAP))
+                findoneupdate_event_group = None
+                # 全てのタスクの完了を待ち、例外が発生した場合はログに出力
+                for future in concurrent.futures.as_completed(future_to_group):
+                    try:
+                        future.result()  # result()を呼び出すことでワーカー関数内の例外を再発生させる
+                    except Exception as e:
+                        executor.shutdown(wait=False, cancel_futures=True)
+                        raise e
+                future_to_group = None
+
+            # 全ワーカー正常完了したのでcommit（＝ロック一括解放）。
+            g.applogger.debug(f"deduplication setting lock releasing by commit. {lock_keys=}")
+            wsDb.db_transaction_end(True)
+        except Exception as e:
+            # ワーカーで例外＝rollback。
+            g.applogger.info(f"deduplication setting lock rolling back. {lock_keys=}")
+            wsDb.db_transaction_end(False)
+            raise e
 
     # スレッド毎に処理されたワーカーでの件数を集計する
     # ＃Aggregate the number of items processed by workers for each thread
